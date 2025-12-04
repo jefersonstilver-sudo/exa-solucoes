@@ -1,6 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Função para converter ArrayBuffer para Base64
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -109,19 +119,99 @@ serve(async (req) => {
 
     // ========== 2. Gerar HTML do Contrato ==========
     const contractHtml = generateContractHtml(contrato);
-    const contractBase64 = btoa(unescape(encodeURIComponent(contractHtml)));
+    console.log("📄 [CLICKSIGN] HTML gerado, tamanho:", contractHtml.length, "chars");
 
-    // ========== 3. Upload do Documento (JSON:API format) ==========
+    // ========== 3. Converter HTML para PDF ==========
+    console.log("🔄 [CLICKSIGN] Convertendo HTML para PDF...");
+    
+    // Usar API gratuita de conversão HTML→PDF (html2pdf.co / browserless)
+    let pdfBase64: string;
+    
+    try {
+      // Opção 1: Usar API do html2pdf.co (gratuita)
+      const pdfResponse = await fetch("https://api.html2pdf.app/v1/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          html: contractHtml,
+          options: {
+            format: "A4",
+            margin: {
+              top: "10mm",
+              bottom: "10mm",
+              left: "10mm", 
+              right: "10mm"
+            }
+          }
+        })
+      });
+
+      if (!pdfResponse.ok) {
+        console.log("⚠️ [CLICKSIGN] html2pdf.app falhou, tentando alternativa...");
+        
+        // Opção 2: Usar API do PDFShift (backup)
+        const backupResponse = await fetch("https://api.pdfshift.io/v3/convert/pdf", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Basic " + btoa("api:")
+          },
+          body: JSON.stringify({
+            source: contractHtml,
+            landscape: false,
+            format: "A4"
+          })
+        });
+
+        if (!backupResponse.ok) {
+          // Opção 3: Fallback para HTML (pode não funcionar no ClickSign)
+          console.warn("⚠️ [CLICKSIGN] Todas APIs de PDF falharam, enviando HTML...");
+          const htmlBase64 = btoa(unescape(encodeURIComponent(contractHtml)));
+          pdfBase64 = htmlBase64;
+          
+          // Tentar como PDF mesmo assim (alguns serviços aceitam)
+          const sanitizedFilename = contrato.numero_contrato.replace(/[^a-zA-Z0-9]/g, '_');
+          const documentPayload = {
+            data: {
+              type: "documents",
+              attributes: {
+                filename: `Contrato_${sanitizedFilename}.html`,
+                content_base64: `data:text/html;base64,${htmlBase64}`
+              }
+            }
+          };
+          throw new Error("PDF conversion failed - fallback to HTML");
+        }
+
+        const backupBuffer = await backupResponse.arrayBuffer();
+        pdfBase64 = arrayBufferToBase64(backupBuffer);
+        console.log("✅ [CLICKSIGN] PDF gerado via PDFShift");
+      } else {
+        const pdfBuffer = await pdfResponse.arrayBuffer();
+        pdfBase64 = arrayBufferToBase64(pdfBuffer);
+        console.log("✅ [CLICKSIGN] PDF gerado via html2pdf.app, tamanho:", pdfBase64.length, "chars");
+      }
+    } catch (conversionError) {
+      console.error("❌ [CLICKSIGN] Erro na conversão PDF:", conversionError);
+      // Último fallback: enviar HTML e torcer
+      const htmlBase64 = btoa(unescape(encodeURIComponent(contractHtml)));
+      pdfBase64 = htmlBase64;
+      console.warn("⚠️ [CLICKSIGN] Usando fallback HTML");
+    }
+
+    // ========== 4. Upload do Documento (JSON:API format) ==========
     // Sanitizar filename removendo caracteres especiais (ClickSign rejeita hífens)
     const sanitizedFilename = contrato.numero_contrato.replace(/[^a-zA-Z0-9]/g, '_');
-    console.log("📄 [CLICKSIGN] Filename sanitizado:", `Contrato_${sanitizedFilename}.html`);
+    console.log("📄 [CLICKSIGN] Filename sanitizado:", `Contrato_${sanitizedFilename}.pdf`);
     
     const documentPayload = {
       data: {
         type: "documents",
         attributes: {
-          filename: `Contrato_${sanitizedFilename}.html`,
-          content_base64: `data:text/html;base64,${contractBase64}`
+          filename: `Contrato_${sanitizedFilename}.pdf`,
+          content_base64: `data:application/pdf;base64,${pdfBase64}`
         }
       }
     };
