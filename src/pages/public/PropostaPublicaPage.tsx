@@ -20,6 +20,7 @@ interface Proposal {
   id: string;
   number: string;
   client_name: string;
+  client_company_name?: string | null;
   client_cnpj: string | null;
   client_phone: string | null;
   client_email: string | null;
@@ -1140,6 +1141,12 @@ const PropostaPublicaPage = () => {
             </div>
           </div>
           <div className="text-sm opacity-90 space-y-1">
+            {/* Nome da Empresa - destacado */}
+            {proposal.client_company_name && (
+              <div className="text-base font-bold">
+                🏢 {proposal.client_company_name}
+              </div>
+            )}
             <div>
               {isCortesia ? 'Você ganhou um presente!' : 'Cliente:'}{' '}
               <strong>{proposal.client_name}</strong>
