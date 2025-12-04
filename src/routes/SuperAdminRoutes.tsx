@@ -34,6 +34,7 @@ import NovaPropostaPage from '@/pages/admin/proposals/NovaPropostaPage';
 import PropostaDetalhesPage from '@/pages/admin/proposals/PropostaDetalhesPage';
 import ContratosPage from '@/pages/admin/contracts/ContratosPage';
 import NovoContratoPage from '@/pages/admin/contracts/NovoContratoPage';
+import NovoContratoSindicoPage from '@/pages/admin/contracts/NovoContratoSindicoPage';
 import ContratoDetalhesPage from '@/pages/admin/contracts/ContratoDetalhesPage';
 
 // Lazy imports para páginas do monitoramento-ia (integradas)
