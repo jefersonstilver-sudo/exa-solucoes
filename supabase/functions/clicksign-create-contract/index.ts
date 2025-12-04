@@ -65,19 +65,6 @@ serve(async (req) => {
     console.log("📄 Parcelas:", JSON.stringify(contrato.parcelas || []));
     console.log("========================================");
 
-    // ========== 1. Criar Envelope ==========
-    const envelopePayload = {
-      envelope: {
-        name: `Contrato ${contrato.numero_contrato} - ${contrato.cliente_nome}`,
-        locale: "pt-BR",
-        auto_close: true,
-        remind_interval: 3,
-        block_after_refusal: true
-      }
-    };
-    
-    console.log("📤 [CLICKSIGN] Payload envelope:", JSON.stringify(envelopePayload));
-
     // Headers padrão para ClickSign API v3 (JSON:API spec)
     const clicksignHeaders = {
       "Content-Type": "application/vnd.api+json",
@@ -86,7 +73,22 @@ serve(async (req) => {
     };
 
     console.log("🔑 [CLICKSIGN] Token (primeiros 10 chars):", clicksignToken.substring(0, 10) + "...");
-    console.log("📋 [CLICKSIGN] Headers:", JSON.stringify({ ...clicksignHeaders, Authorization: "***" }));
+
+    // ========== 1. Criar Envelope (JSON:API format) ==========
+    const envelopePayload = {
+      data: {
+        type: "envelopes",
+        attributes: {
+          name: `Contrato ${contrato.numero_contrato} - ${contrato.cliente_nome}`,
+          locale: "pt-BR",
+          auto_close: true,
+          remind_interval: 3,
+          block_after_refusal: true
+        }
+      }
+    };
+    
+    console.log("📤 [CLICKSIGN] Payload envelope:", JSON.stringify(envelopePayload));
 
     console.log("Criando envelope no ClickSign...");
     const envelopeResponse = await fetch("https://app.clicksign.com/api/v3/envelopes", {
@@ -109,11 +111,14 @@ serve(async (req) => {
     const contractHtml = generateContractHtml(contrato);
     const contractBase64 = btoa(unescape(encodeURIComponent(contractHtml)));
 
-    // ========== 3. Upload do Documento ==========
+    // ========== 3. Upload do Documento (JSON:API format) ==========
     const documentPayload = {
-      document: {
-        filename: `${contrato.numero_contrato}.html`,
-        content_base64: `data:text/html;base64,${contractBase64}`
+      data: {
+        type: "documents",
+        attributes: {
+          filename: `${contrato.numero_contrato}.html`,
+          content_base64: `data:text/html;base64,${contractBase64}`
+        }
       }
     };
 
@@ -131,20 +136,22 @@ serve(async (req) => {
     }
 
     const documentData = await documentResponse.json();
-    const documentKey = documentData.data?.key;
+    const documentKey = documentData.data?.id || documentData.data?.attributes?.key;
     console.log("Documento criado:", documentKey);
 
-    // ========== 4. Adicionar Signatário ==========
+    // ========== 4. Adicionar Signatário (JSON:API format) ==========
     const signerPayload = {
-      signer: {
-        name: contrato.cliente_nome,
-        email: contrato.cliente_email,
-        phone_number: contrato.cliente_telefone?.replace(/\D/g, "") || null,
-        documentation: contrato.cliente_cpf?.replace(/\D/g, "") || contrato.cliente_cnpj?.replace(/\D/g, "") || null,
-        birthday: null,
-        has_documentation: !!contrato.cliente_cnpj || !!contrato.cliente_cpf,
-        delivery: "email",
-        authentication: "email"
+      data: {
+        type: "signers",
+        attributes: {
+          name: contrato.cliente_nome,
+          email: contrato.cliente_email,
+          phone_number: contrato.cliente_telefone?.replace(/\D/g, "") || null,
+          documentation: contrato.cliente_cpf?.replace(/\D/g, "") || contrato.cliente_cnpj?.replace(/\D/g, "") || null,
+          has_documentation: !!contrato.cliente_cnpj || !!contrato.cliente_cpf,
+          delivery: "email",
+          authentication: "email"
+        }
       }
     };
 
@@ -162,15 +169,18 @@ serve(async (req) => {
     }
 
     const signerData = await signerResponse.json();
-    const signerKey = signerData.data?.key;
+    const signerKey = signerData.data?.id || signerData.data?.attributes?.key;
     console.log("Signatário adicionado:", signerKey);
 
-    // ========== 5. Vincular Signatário ao Documento ==========
+    // ========== 5. Vincular Signatário ao Documento (JSON:API format) ==========
     const signaturePayload = {
-      request_signature: {
-        signer_key: signerKey,
-        sign_as: "sign",
-        refusable: true
+      data: {
+        type: "request_signatures",
+        attributes: {
+          signer_key: signerKey,
+          sign_as: "sign",
+          refusable: true
+        }
       }
     };
 
@@ -188,7 +198,7 @@ serve(async (req) => {
     }
 
     const signatureData = await signatureResponse.json();
-    const requestSignatureKey = signatureData.data?.key;
+    const requestSignatureKey = signatureData.data?.id || signatureData.data?.attributes?.key;
     console.log("Assinatura vinculada:", requestSignatureKey);
 
     // ========== 6. Ativar Envelope ==========
@@ -206,16 +216,21 @@ serve(async (req) => {
 
     console.log("Envelope ativado!");
 
-    // ========== 7. Enviar Notificação ==========
+    // ========== 7. Enviar Notificação (JSON:API format) ==========
     console.log("Enviando notificação...");
+    const notifyPayload = {
+      data: {
+        type: "notifications",
+        attributes: {
+          message: `Olá ${contrato.cliente_nome}, você recebeu o contrato ${contrato.numero_contrato} da EXA Mídia para assinatura eletrônica.`
+        }
+      }
+    };
+
     const notifyResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/notifications`, {
       method: "POST",
       headers: clicksignHeaders,
-      body: JSON.stringify({
-        notification: {
-          message: `Olá ${contrato.cliente_nome}, você recebeu o contrato ${contrato.numero_contrato} da EXA Mídia para assinatura eletrônica.`
-        }
-      })
+      body: JSON.stringify(notifyPayload)
     });
 
     if (!notifyResponse.ok) {
