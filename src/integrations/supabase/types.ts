@@ -2068,14 +2068,21 @@ export type Database = {
           lista_predios: Json | null
           metodo_pagamento: string | null
           numero_contrato: string
+          numero_telas_instaladas: number | null
           objeto: string
           parcelas: Json | null
           pedido_id: string | null
           plano_meses: number | null
+          posicao_elevador: string | null
           prazo_assinatura: string | null
+          prazo_aviso_rescisao: number | null
+          predio_endereco: string | null
           predio_id: string | null
+          predio_nome: string | null
           proposta_id: string | null
           recusado_em: string | null
+          requer_internet: boolean | null
+          sindico_id: string | null
           status: string
           tipo_contrato: string
           tipo_produto: string | null
@@ -2115,14 +2122,21 @@ export type Database = {
           lista_predios?: Json | null
           metodo_pagamento?: string | null
           numero_contrato: string
+          numero_telas_instaladas?: number | null
           objeto?: string
           parcelas?: Json | null
           pedido_id?: string | null
           plano_meses?: number | null
+          posicao_elevador?: string | null
           prazo_assinatura?: string | null
+          prazo_aviso_rescisao?: number | null
+          predio_endereco?: string | null
           predio_id?: string | null
+          predio_nome?: string | null
           proposta_id?: string | null
           recusado_em?: string | null
+          requer_internet?: boolean | null
+          sindico_id?: string | null
           status?: string
           tipo_contrato: string
           tipo_produto?: string | null
@@ -2162,14 +2176,21 @@ export type Database = {
           lista_predios?: Json | null
           metodo_pagamento?: string | null
           numero_contrato?: string
+          numero_telas_instaladas?: number | null
           objeto?: string
           parcelas?: Json | null
           pedido_id?: string | null
           plano_meses?: number | null
+          posicao_elevador?: string | null
           prazo_assinatura?: string | null
+          prazo_aviso_rescisao?: number | null
+          predio_endereco?: string | null
           predio_id?: string | null
+          predio_nome?: string | null
           proposta_id?: string | null
           recusado_em?: string | null
+          requer_internet?: boolean | null
+          sindico_id?: string | null
           status?: string
           tipo_contrato?: string
           tipo_produto?: string | null
@@ -2199,6 +2220,13 @@ export type Database = {
             columns: ["proposta_id"]
             isOneToOne: false
             referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_legais_sindico_id_fkey"
+            columns: ["sindico_id"]
+            isOneToOne: false
+            referencedRelation: "sindicos_interessados"
             referencedColumns: ["id"]
           },
         ]
