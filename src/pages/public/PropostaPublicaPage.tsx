@@ -24,6 +24,9 @@ interface Proposal {
   client_cnpj: string | null;
   client_phone: string | null;
   client_email: string | null;
+  client_address?: string | null;
+  client_latitude?: number | null;
+  client_longitude?: number | null;
   selected_buildings: any[];
   total_panels: number;
   total_impressions_month: number;
@@ -1153,6 +1156,11 @@ const PropostaPublicaPage = () => {
             </div>
             {proposal.client_cnpj && (
               <div>CNPJ: <strong>{proposal.client_cnpj}</strong></div>
+            )}
+            {proposal.client_address && (
+              <div className="flex items-center gap-1 text-xs opacity-80 mt-1">
+                📍 {proposal.client_address}
+              </div>
             )}
           </div>
         </div>

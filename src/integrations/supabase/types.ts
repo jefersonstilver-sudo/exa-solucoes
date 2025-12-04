@@ -2053,6 +2053,8 @@ export type Database = {
           cliente_cpf: string | null
           cliente_email: string
           cliente_endereco: string | null
+          cliente_latitude: number | null
+          cliente_longitude: number | null
           cliente_nome: string
           cliente_razao_social: string | null
           cliente_segmento: string | null
@@ -2108,6 +2110,8 @@ export type Database = {
           cliente_cpf?: string | null
           cliente_email: string
           cliente_endereco?: string | null
+          cliente_latitude?: number | null
+          cliente_longitude?: number | null
           cliente_nome: string
           cliente_razao_social?: string | null
           cliente_segmento?: string | null
@@ -2163,6 +2167,8 @@ export type Database = {
           cliente_cpf?: string | null
           cliente_email?: string
           cliente_endereco?: string | null
+          cliente_latitude?: number | null
+          cliente_longitude?: number | null
           cliente_nome?: string
           cliente_razao_social?: string | null
           cliente_segmento?: string | null
@@ -5916,12 +5922,15 @@ export type Database = {
           access_token: string
           cash_total_value: number
           chosen_plan: string | null
+          client_address: string | null
           client_cnpj: string | null
           client_company_name: string | null
           client_country: string | null
           client_email: string | null
           client_first_name: string | null
           client_last_name: string | null
+          client_latitude: number | null
+          client_longitude: number | null
           client_name: string
           client_phone: string | null
           converted_order_id: string | null
@@ -5961,12 +5970,15 @@ export type Database = {
           access_token?: string
           cash_total_value: number
           chosen_plan?: string | null
+          client_address?: string | null
           client_cnpj?: string | null
           client_company_name?: string | null
           client_country?: string | null
           client_email?: string | null
           client_first_name?: string | null
           client_last_name?: string | null
+          client_latitude?: number | null
+          client_longitude?: number | null
           client_name: string
           client_phone?: string | null
           converted_order_id?: string | null
@@ -6006,12 +6018,15 @@ export type Database = {
           access_token?: string
           cash_total_value?: number
           chosen_plan?: string | null
+          client_address?: string | null
           client_cnpj?: string | null
           client_company_name?: string | null
           client_country?: string | null
           client_email?: string | null
           client_first_name?: string | null
           client_last_name?: string | null
+          client_latitude?: number | null
+          client_longitude?: number | null
           client_name?: string
           client_phone?: string | null
           converted_order_id?: string | null
@@ -6933,6 +6948,8 @@ export type Database = {
           empresa_aceite_termo_data: string | null
           empresa_documento: string | null
           empresa_endereco: string | null
+          empresa_latitude: number | null
+          empresa_longitude: number | null
           empresa_nome: string | null
           empresa_pais: string | null
           empresa_segmento: string | null
@@ -6966,6 +6983,8 @@ export type Database = {
           empresa_aceite_termo_data?: string | null
           empresa_documento?: string | null
           empresa_endereco?: string | null
+          empresa_latitude?: number | null
+          empresa_longitude?: number | null
           empresa_nome?: string | null
           empresa_pais?: string | null
           empresa_segmento?: string | null
@@ -6999,6 +7018,8 @@ export type Database = {
           empresa_aceite_termo_data?: string | null
           empresa_documento?: string | null
           empresa_endereco?: string | null
+          empresa_latitude?: number | null
+          empresa_longitude?: number | null
           empresa_nome?: string | null
           empresa_pais?: string | null
           empresa_segmento?: string | null
