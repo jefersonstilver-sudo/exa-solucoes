@@ -27,9 +27,9 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { proposalId, paymentId, paymentData } = body;
+    const { proposalId, paymentId, paymentData, installmentNumber } = body;
 
-    console.log('📥 Payload recebido:', JSON.stringify({ proposalId, paymentId, paymentData }, null, 2));
+    console.log('📥 Payload recebido:', JSON.stringify({ proposalId, paymentId, paymentData, installmentNumber }, null, 2));
 
     if (!proposalId) {
       console.error('❌ ERRO: proposalId é obrigatório');

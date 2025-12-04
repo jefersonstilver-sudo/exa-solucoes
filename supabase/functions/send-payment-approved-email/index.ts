@@ -9,6 +9,9 @@ const corsHeaders = {
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
+// Logo oficial da EXA
+const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/email-assets/exa-logo.png';
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -42,94 +45,135 @@ serve(async (req) => {
     const proposalNumber = proposalData?.number || 'N/A';
     const duration = proposalData?.duration_months || 1;
     const totalPanels = proposalData?.total_panels || 0;
-    const value = proposalData?.cash_total_value || proposalData?.fidel_monthly_value || 0;
+    
+    // Calcular valor baseado no tipo de pagamento
+    let value = proposalData?.cash_total_value || proposalData?.fidel_monthly_value || 0;
+    const isCustomPayment = proposalData?.payment_type === 'custom';
+    const customInstallments = proposalData?.custom_installments || [];
+    
+    // Para pagamentos personalizados, mostrar valor da primeira parcela
+    if (isCustomPayment && customInstallments.length > 0) {
+      value = Number(customInstallments[0]?.amount || 0);
+    }
 
+    // Template HTML com header vermelho EXA - Estilo corporativo profissional
     const htmlContent = `
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
   <title>Pagamento Aprovado - EXA Mídia</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f5f5f7;
+      color: #333333;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f7;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f7; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; background-color: #f5f5f7;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f7; padding: 48px 20px;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(139, 26, 26, 0.12);">
           
-          <!-- Header -->
+          <!-- HEADER VERMELHO EXA - GRADIENTE PROFISSIONAL -->
           <tr>
-            <td style="padding: 40px 40px 20px; text-align: center; border-bottom: 1px solid #f0f0f0;">
-              <img src="https://examidia.com.br/logo-exa.png" alt="EXA Mídia" width="120" style="margin-bottom: 20px;">
-              <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 40px; color: white;">✓</span>
-              </div>
-              <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #1a1a1a;">
-                🎉 Parabéns, ${firstName}!
+            <td style="background: linear-gradient(135deg, #8B1A1A 0%, #A52020 100%); padding: 56px 48px; text-align: center;">
+              <img src="${EXA_LOGO_URL}" alt="EXA Mídia" style="max-width: 180px; height: auto; display: block; margin: 0 auto 24px; filter: brightness(0) invert(1); drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));">
+              <h1 style="font-size: 28px; font-weight: 800; color: #ffffff; margin: 0 0 12px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); letter-spacing: -0.5px;">
+                🎉 Pagamento Aprovado!
               </h1>
-              <p style="margin: 10px 0 0; font-size: 18px; color: #6b7280;">
-                Seu pagamento foi aprovado com sucesso!
+              <p style="font-size: 15px; font-weight: 500; color: rgba(255, 255, 255, 0.95); margin: 0; letter-spacing: 0.3px;">
+                Sua transação foi confirmada com sucesso
               </p>
             </td>
           </tr>
           
-          <!-- Content -->
+          <!-- CONTENT -->
           <tr>
-            <td style="padding: 30px 40px;">
+            <td style="padding: 48px;">
               
-              <!-- Order Summary -->
-              <div style="background-color: #f9fafb; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-                <h2 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.5px;">
+              <!-- Greeting -->
+              <h2 style="font-size: 26px; font-weight: 800; color: #333333; margin: 0 0 24px; line-height: 1.3;">
+                Parabéns, ${firstName}!
+              </h2>
+              
+              <p style="font-size: 16px; line-height: 1.75; color: #666666; margin: 0 0 28px;">
+                Seu pagamento foi processado e aprovado. Agora você pode enviar seu vídeo publicitário e começar a anunciar nos painéis digitais da EXA!
+              </p>
+              
+              <!-- Order Summary Box -->
+              <div style="background: linear-gradient(135deg, #F9F9F9 0%, #F5F5F5 100%); border-left: 4px solid #8B1A1A; padding: 24px 28px; margin: 28px 0; border-radius: 12px;">
+                <h3 style="font-size: 14px; font-weight: 700; color: #8B1A1A; margin: 0 0 16px; text-transform: uppercase; letter-spacing: 0.5px;">
                   📋 Resumo do Contrato
-                </h2>
+                </h3>
                 <table width="100%" cellpadding="0" cellspacing="0">
                   <tr>
-                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Proposta:</td>
-                    <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; text-align: right; font-weight: 600;">#${proposalNumber}</td>
+                    <td style="padding: 8px 0; color: #666666; font-size: 14px;">Proposta:</td>
+                    <td style="padding: 8px 0; color: #333333; font-size: 14px; text-align: right; font-weight: 600;">#${proposalNumber}</td>
+                  </tr>
+                  ${orderId ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #666666; font-size: 14px;">Pedido:</td>
+                    <td style="padding: 8px 0; color: #333333; font-size: 14px; text-align: right; font-weight: 600;">#${orderId.slice(0, 8).toUpperCase()}</td>
+                  </tr>
+                  ` : ''}
+                  <tr>
+                    <td style="padding: 8px 0; color: #666666; font-size: 14px;">Duração:</td>
+                    <td style="padding: 8px 0; color: #333333; font-size: 14px; text-align: right; font-weight: 600;">${duration} ${duration === 1 ? 'mês' : 'meses'}</td>
                   </tr>
                   <tr>
-                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Duração:</td>
-                    <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; text-align: right; font-weight: 600;">${duration} ${duration === 1 ? 'mês' : 'meses'}</td>
+                    <td style="padding: 8px 0; color: #666666; font-size: 14px;">Telas contratadas:</td>
+                    <td style="padding: 8px 0; color: #333333; font-size: 14px; text-align: right; font-weight: 600;">${totalPanels} telas</td>
                   </tr>
-                  <tr>
-                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Telas contratadas:</td>
-                    <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; text-align: right; font-weight: 600;">${totalPanels} telas</td>
-                  </tr>
-                  <tr style="border-top: 1px solid #e5e7eb;">
-                    <td style="padding: 16px 0 8px; color: #1a1a1a; font-size: 16px; font-weight: 600;">Valor pago:</td>
-                    <td style="padding: 16px 0 8px; color: #10B981; font-size: 20px; text-align: right; font-weight: 700;">
+                  <tr style="border-top: 1px solid #E5E5E5;">
+                    <td style="padding: 16px 0 8px; color: #333333; font-size: 16px; font-weight: 600;">
+                      ${isCustomPayment ? 'Valor desta parcela:' : 'Valor pago:'}
+                    </td>
+                    <td style="padding: 16px 0 8px; color: #22C55E; font-size: 20px; text-align: right; font-weight: 700;">
                       R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
                 </table>
+                ${isCustomPayment && customInstallments.length > 1 ? `
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed #DDD;">
+                  <p style="font-size: 13px; color: #666; margin: 0;">
+                    <strong>Próximas parcelas:</strong> Você tem ${customInstallments.length - 1} parcela(s) restante(s).
+                  </p>
+                </div>
+                ` : ''}
               </div>
               
-              <!-- Next Steps -->
-              <div style="background: linear-gradient(135deg, #9C1E1E 0%, #7D1818 100%); border-radius: 12px; padding: 24px; margin-bottom: 24px; color: white;">
-                <h2 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+              <!-- Next Steps Box -->
+              <div style="background: linear-gradient(135deg, #8B1A1A 0%, #A52020 100%); border-radius: 12px; padding: 24px 28px; margin: 28px 0; color: white;">
+                <h3 style="margin: 0 0 16px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
                   🚀 Próximos Passos
-                </h2>
-                <ol style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
+                </h3>
+                <ol style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 2;">
                   <li>Acesse sua conta na plataforma EXA</li>
-                  <li>Envie seu vídeo publicitário (formato vertical)</li>
+                  <li>Envie seu vídeo publicitário (15 segundos, formato horizontal)</li>
                   <li>Aguarde a aprovação (em até 24h úteis)</li>
                   <li>Seu anúncio começará a rodar automaticamente!</li>
                 </ol>
               </div>
               
               <!-- CTA Button -->
-              <div style="text-align: center; margin: 32px 0;">
-                <a href="https://examidia.com.br/login" 
-                   style="display: inline-block; background: linear-gradient(135deg, #9C1E1E 0%, #7D1818 100%); color: white; text-decoration: none; padding: 16px 48px; border-radius: 12px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 14px rgba(156, 30, 30, 0.4);">
-                  Acessar Plataforma →
+              <div style="text-align: center; margin: 36px 0;">
+                <a href="https://examidia.com.br/anunciante/meus-pedidos" 
+                   style="display: inline-block; background: linear-gradient(135deg, #8B1A1A 0%, #A52020 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 12px; font-size: 16px; font-weight: 700; box-shadow: 0 4px 16px rgba(139, 26, 26, 0.3);">
+                  Acessar Meus Pedidos →
                 </a>
               </div>
               
               <!-- Support -->
-              <p style="margin: 24px 0 0; font-size: 14px; color: #6b7280; text-align: center;">
+              <p style="margin: 28px 0 0; font-size: 14px; color: #666666; text-align: center;">
                 Dúvidas? Entre em contato pelo WhatsApp:<br>
-                <a href="https://wa.me/5545991415856" style="color: #9C1E1E; text-decoration: none; font-weight: 600;">
+                <a href="https://wa.me/5545991415856" style="color: #8B1A1A; text-decoration: none; font-weight: 600;">
                   (45) 99141-5856
                 </a>
               </p>
@@ -137,11 +181,17 @@ serve(async (req) => {
             </td>
           </tr>
           
-          <!-- Footer -->
+          <!-- FOOTER -->
           <tr>
-            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; text-align: center; border-top: 1px solid #f0f0f0;">
-              <p style="margin: 0; font-size: 12px; color: #9ca3af;">
-                © ${new Date().getFullYear()} EXA Mídia. Todos os direitos reservados.<br>
+            <td style="background: linear-gradient(180deg, #FAFAFA 0%, #F5F5F5 100%); padding: 40px 48px; text-align: center; border-top: 1px solid #E5E5E5;">
+              <p style="font-size: 18px; font-weight: 900; color: #8B1A1A; margin: 0 0 8px; letter-spacing: 0.5px; text-transform: uppercase;">
+                EXA
+              </p>
+              <p style="font-size: 13px; color: #666666; margin: 0 0 24px; font-weight: 500;">
+                Publicidade Inteligente em Painéis Digitais
+              </p>
+              <p style="font-size: 12px; color: #999999; margin: 0;">
+                © ${new Date().getFullYear()} EXA Mídia - Todos os direitos reservados<br>
                 Foz do Iguaçu, PR - Brasil
               </p>
             </td>
@@ -177,6 +227,9 @@ serve(async (req) => {
         details: {
           email: clientEmail,
           email_id: emailResult?.id,
+          order_id: orderId,
+          value_paid: value,
+          is_custom_payment: isCustomPayment,
           timestamp: new Date().toISOString()
         }
       });

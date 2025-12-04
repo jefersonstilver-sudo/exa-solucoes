@@ -111,16 +111,26 @@ serve(async (req) => {
       throw new Error('external_reference não encontrado no pagamento');
     }
 
-    // ✅ NOVO: Detectar se é pagamento de PROPOSTA
+    // ✅ CORRIGIDO: Detectar se é pagamento de PROPOSTA e extrair UUID corretamente
     if (externalRef.startsWith('proposal:')) {
-      const proposalId = externalRef.replace('proposal:', '');
-      console.log(`🔔 [WEBHOOK-PIX-PROD] Detectado pagamento de PROPOSTA: ${proposalId}`);
+      // external_reference pode ser:
+      // - "proposal:UUID" (pagamento padrão)
+      // - "proposal:UUID:installment:1" (parcela personalizada)
+      const refWithoutPrefix = externalRef.replace('proposal:', '');
+      const parts = refWithoutPrefix.split(':installment:');
+      const proposalId = parts[0]; // Apenas o UUID limpo
+      const installmentNumber = parts.length > 1 ? parseInt(parts[1]) : null;
       
-      // Invocar convert-proposal-to-order
+      console.log(`🔔 [WEBHOOK-PIX-PROD] Detectado pagamento de PROPOSTA`);
+      console.log(`📋 ProposalId: ${proposalId}`);
+      console.log(`📋 Parcela: ${installmentNumber || 'única/primeira'}`);
+      
+      // Invocar convert-proposal-to-order com dados completos
       const { data: conversionResult, error: conversionError } = await supabase.functions.invoke('convert-proposal-to-order', {
         body: {
           proposalId,
           paymentId: payment.id,
+          installmentNumber, // ✅ Passar número da parcela
           paymentData: {
             method: 'pix',
             status: payment.status,
