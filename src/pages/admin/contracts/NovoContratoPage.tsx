@@ -310,6 +310,35 @@ const NovoContratoPage = () => {
     }
   };
 
+  // Buscar rascunhos salvos
+  const { data: rascunhos, refetch: refetchRascunhos } = useQuery({
+    queryKey: ['contratos-rascunhos'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contratos_legais')
+        .select('id, numero_contrato, cliente_nome, tipo_contrato, valor_total, created_at, tipo_produto')
+        .eq('status', 'rascunho')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Gerar objeto do contrato (para descrição)
+  const gerarObjetoContrato = (data: ContratoData) => {
+    const tipoProdutoTexto = data.tipo_produto === 'vertical_premium' 
+      ? 'Vertical Premium (tela cheia a cada 50s)' 
+      : 'Horizontal Padrão (até 15 segundos)';
+    
+    if (data.tipo_contrato === 'sindico') {
+      return `Cessão de espaço para instalação de painéis digitais no(s) elevador(es) do condomínio.`;
+    }
+    
+    return `Veiculação de publicidade em vídeo ${tipoProdutoTexto} nos painéis digitais da EXA MÍDIA em ${data.lista_predios.length} prédio(s), pelo período de ${data.plano_meses} mês(es).`;
+  };
+
   // Criar contrato
   const createContractMutation = useMutation({
     mutationFn: async (data: ContratoData & { enviar: boolean }) => {
@@ -324,9 +353,15 @@ const NovoContratoPage = () => {
           }))
         : data.parcelas;
 
+      // Calcular data fim
+      const dataInicio = new Date(data.data_inicio);
+      const dataFim = new Date(dataInicio);
+      dataFim.setMonth(dataFim.getMonth() + (data.plano_meses || 1));
+
       const contratoPayload = {
         numero_contrato: numeroContrato,
         tipo_contrato: data.tipo_contrato,
+        objeto: gerarObjetoContrato(data),
         pedido_id: data.pedido_id || null,
         proposta_id: data.proposta_id || null,
         cliente_nome: data.cliente_nome,
@@ -348,10 +383,13 @@ const NovoContratoPage = () => {
         clausulas_especiais: data.clausulas_especiais,
         total_paineis: data.lista_predios.reduce((acc: number, p: any) => acc + (p.quantidade_telas || 1), 0),
         data_inicio: data.data_inicio,
+        data_fim: dataFim.toISOString().split('T')[0],
         status: data.enviar ? 'enviado' : 'rascunho',
         criado_por: session?.user?.id,
         tipo_produto: data.tipo_produto
       };
+
+      console.log('📋 Criando contrato:', contratoPayload);
 
       const { data: contrato, error } = await supabase
         .from('contratos_legais')
@@ -359,28 +397,41 @@ const NovoContratoPage = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao criar contrato:', error);
+        throw error;
+      }
+
+      console.log('✅ Contrato criado:', contrato.id);
 
       if (data.enviar && contrato) {
+        console.log('📤 Enviando para ClickSign...');
         const { error: clicksignError } = await supabase.functions.invoke('clicksign-create-contract', {
           body: { contrato_id: contrato.id }
         });
 
         if (clicksignError) {
-          console.error('Erro ClickSign:', clicksignError);
-          toast.error('Contrato criado, mas falha ao enviar para assinatura');
+          console.error('❌ Erro ClickSign:', clicksignError);
+          toast.error('Contrato criado, mas falha ao enviar para assinatura. Verifique os logs.');
+        } else {
+          toast.success('Contrato enviado para assinatura!');
         }
       }
 
       return contrato;
     },
-    onSuccess: (contrato) => {
-      toast.success('Contrato criado com sucesso!');
+    onSuccess: (contrato, variables) => {
+      if (variables.enviar) {
+        toast.success('Contrato criado e enviado para assinatura!');
+      } else {
+        toast.success('Rascunho salvo com sucesso!');
+        refetchRascunhos();
+      }
       navigate(buildPath(`juridico/${contrato.id}`));
     },
     onError: (error: any) => {
-      console.error('Erro ao criar contrato:', error);
-      toast.error('Erro ao criar contrato');
+      console.error('❌ Erro ao criar contrato:', error);
+      toast.error(`Erro ao criar contrato: ${error.message || 'Erro desconhecido'}`);
     }
   });
 
@@ -535,6 +586,44 @@ const NovoContratoPage = () => {
                 </div>
               </Label>
             </RadioGroup>
+
+            {/* Lista de Rascunhos */}
+            {rascunhos && rascunhos.length > 0 && (
+              <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <h3 className="text-sm font-semibold text-amber-800 mb-3 flex items-center gap-2">
+                  <Save className="h-4 w-4" />
+                  Rascunhos Salvos ({rascunhos.length})
+                </h3>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {rascunhos.map(rascunho => (
+                    <div 
+                      key={rascunho.id}
+                      onClick={() => navigate(buildPath(`juridico/${rascunho.id}`))}
+                      className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-100 hover:border-amber-300 cursor-pointer transition-all hover:shadow-sm"
+                    >
+                      <div>
+                        <p className="font-medium text-sm">{rascunho.cliente_nome || 'Sem nome'}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {rascunho.numero_contrato} • {rascunho.tipo_contrato}
+                          {rascunho.tipo_produto === 'vertical_premium' && (
+                            <span className="ml-1 text-purple-600">• Vertical Premium</span>
+                          )}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-amber-700">
+                          {formatCurrency(rascunho.valor_total || 0)}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {new Date(rascunho.created_at).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end">
               <Button onClick={() => setStep('modo')} className="rounded-xl">
                 Próximo
@@ -1181,7 +1270,8 @@ const NovoContratoPage = () => {
                     : contratoData.parcelas,
                   metodo_pagamento: isCustomPaymentManual ? 'custom' : contratoData.metodo_pagamento,
                   valor_total: isCustomPaymentManual ? customTotalManual : contratoData.valor_total
-                }} 
+                }}
+                onEdit={() => setStep('contrato')}
               />
             </div>
 
