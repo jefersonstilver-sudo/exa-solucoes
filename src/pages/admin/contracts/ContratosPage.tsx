@@ -24,8 +24,10 @@ import {
   RefreshCw,
   Download,
   ShoppingBag,
-  AlertCircle
+  AlertCircle,
+  UserCheck
 } from 'lucide-react';
+import { SignatariosExaManager } from '@/components/admin/contracts/SignatariosExaManager';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -220,12 +222,16 @@ const ContratosPage = () => {
             <Scale className="h-4 w-4 mr-2" />
             Contratos
           </TabsTrigger>
-          <TabsTrigger value="pedidos-sem-contrato" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+        <TabsTrigger value="pedidos-sem-contrato" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <AlertCircle className="h-4 w-4 mr-2" />
             Pedidos Sem Contrato
             {stats.pedidosSemContrato > 0 && (
               <Badge className="ml-2 bg-red-500 text-white text-xs">{stats.pedidosSemContrato}</Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="signatarios" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <UserCheck className="h-4 w-4 mr-2" />
+            Signatários EXA
           </TabsTrigger>
         </TabsList>
 
@@ -465,6 +471,11 @@ const ContratosPage = () => {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* Tab: Signatários EXA */}
+        <TabsContent value="signatarios" className="mt-4">
+          <SignatariosExaManager />
         </TabsContent>
       </Tabs>
     </div>

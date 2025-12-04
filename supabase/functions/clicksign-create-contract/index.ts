@@ -233,67 +233,146 @@ serve(async (req) => {
     const documentKey = documentData.data?.id || documentData.data?.attributes?.key;
     console.log("Documento criado:", documentKey);
 
-    // ========== 4. Adicionar Signatário (JSON:API format) ==========
-    const signerPayload = {
+    // ========== 4. Buscar Signatário EXA (representante legal) ==========
+    console.log("🔍 [CLICKSIGN] Buscando signatário EXA padrão...");
+    const { data: signatarioExa, error: signatarioError } = await supabase
+      .from("signatarios_exa")
+      .select("*")
+      .eq("is_active", true)
+      .eq("is_default", true)
+      .single();
+
+    if (signatarioError || !signatarioExa) {
+      console.warn("⚠️ [CLICKSIGN] Signatário EXA não encontrado, usando apenas cliente");
+    } else {
+      console.log("✅ [CLICKSIGN] Signatário EXA encontrado:", signatarioExa.nome);
+    }
+
+    // ========== 5. Adicionar Signatário CLIENTE (JSON:API format - somente name e email) ==========
+    const clientSignerPayload = {
       data: {
         type: "signers",
         attributes: {
           name: contrato.cliente_nome,
-          email: contrato.cliente_email,
-          phone_number: contrato.cliente_telefone?.replace(/\D/g, "") || null,
-          documentation: contrato.cliente_cpf?.replace(/\D/g, "") || contrato.cliente_cnpj?.replace(/\D/g, "") || null,
-          has_documentation: !!contrato.cliente_cnpj || !!contrato.cliente_cpf,
-          delivery: "email",
-          authentication: "email"
+          email: contrato.cliente_email
+          // ClickSign v3 aceita APENAS name e email no payload de signers
         }
       }
     };
 
-    console.log("Adicionando signatário...");
-    const signerResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/signers`, {
+    console.log("📤 [CLICKSIGN] Payload signatário cliente:", JSON.stringify(clientSignerPayload));
+    console.log("👤 [CLICKSIGN] Adicionando signatário CLIENTE...");
+    const clientSignerResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/signers`, {
       method: "POST",
       headers: clicksignHeaders,
-      body: JSON.stringify(signerPayload)
+      body: JSON.stringify(clientSignerPayload)
     });
 
-    if (!signerResponse.ok) {
-      const errorText = await signerResponse.text();
-      console.error("Erro ao adicionar signatário:", errorText);
-      throw new Error(`Erro ClickSign (signer): ${errorText}`);
+    if (!clientSignerResponse.ok) {
+      const errorText = await clientSignerResponse.text();
+      console.error("❌ [CLICKSIGN] Erro ao adicionar signatário cliente:", errorText);
+      throw new Error(`Erro ClickSign (client signer): ${errorText}`);
     }
 
-    const signerData = await signerResponse.json();
-    const signerKey = signerData.data?.id || signerData.data?.attributes?.key;
-    console.log("Signatário adicionado:", signerKey);
+    const clientSignerData = await clientSignerResponse.json();
+    const clientSignerKey = clientSignerData.data?.id || clientSignerData.data?.attributes?.key;
+    console.log("✅ [CLICKSIGN] Signatário CLIENTE adicionado:", clientSignerKey);
 
-    // ========== 5. Vincular Signatário ao Documento (JSON:API format) ==========
-    const signaturePayload = {
+    // ========== 6. Adicionar Signatário EXA (se existir) ==========
+    let exaSignerKey = null;
+    if (signatarioExa) {
+      const exaSignerPayload = {
+        data: {
+          type: "signers",
+          attributes: {
+            name: signatarioExa.nome,
+            email: signatarioExa.email
+            // ClickSign v3 aceita APENAS name e email
+          }
+        }
+      };
+
+      console.log("📤 [CLICKSIGN] Payload signatário EXA:", JSON.stringify(exaSignerPayload));
+      console.log("🏢 [CLICKSIGN] Adicionando signatário EXA...");
+      const exaSignerResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/signers`, {
+        method: "POST",
+        headers: clicksignHeaders,
+        body: JSON.stringify(exaSignerPayload)
+      });
+
+      if (!exaSignerResponse.ok) {
+        const errorText = await exaSignerResponse.text();
+        console.warn("⚠️ [CLICKSIGN] Erro ao adicionar signatário EXA (continuando sem):", errorText);
+      } else {
+        const exaSignerData = await exaSignerResponse.json();
+        exaSignerKey = exaSignerData.data?.id || exaSignerData.data?.attributes?.key;
+        console.log("✅ [CLICKSIGN] Signatário EXA adicionado:", exaSignerKey);
+      }
+    }
+
+    // ========== 7. Vincular Signatário CLIENTE ao Documento ==========
+    const clientSignaturePayload = {
       data: {
         type: "request_signatures",
         attributes: {
-          signer_key: signerKey,
+          signer_key: clientSignerKey,
           sign_as: "sign",
           refusable: true
         }
       }
     };
 
-    console.log("Vinculando signatário ao documento...");
-    const signatureResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/documents/${documentKey}/request_signatures`, {
+    console.log("🔗 [CLICKSIGN] Vinculando signatário CLIENTE ao documento...");
+    const clientSignatureResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/documents/${documentKey}/request_signatures`, {
       method: "POST",
       headers: clicksignHeaders,
-      body: JSON.stringify(signaturePayload)
+      body: JSON.stringify(clientSignaturePayload)
     });
 
-    if (!signatureResponse.ok) {
-      const errorText = await signatureResponse.text();
-      console.error("Erro ao vincular assinatura:", errorText);
-      throw new Error(`Erro ClickSign (request_signature): ${errorText}`);
+    if (!clientSignatureResponse.ok) {
+      const errorText = await clientSignatureResponse.text();
+      console.error("❌ [CLICKSIGN] Erro ao vincular assinatura cliente:", errorText);
+      throw new Error(`Erro ClickSign (client request_signature): ${errorText}`);
     }
 
-    const signatureData = await signatureResponse.json();
-    const requestSignatureKey = signatureData.data?.id || signatureData.data?.attributes?.key;
-    console.log("Assinatura vinculada:", requestSignatureKey);
+    const clientSignatureData = await clientSignatureResponse.json();
+    const clientRequestSignatureKey = clientSignatureData.data?.id || clientSignatureData.data?.attributes?.key;
+    console.log("✅ [CLICKSIGN] Assinatura CLIENTE vinculada:", clientRequestSignatureKey);
+
+    // ========== 8. Vincular Signatário EXA ao Documento (se existir) ==========
+    let exaRequestSignatureKey = null;
+    if (exaSignerKey) {
+      const exaSignaturePayload = {
+        data: {
+          type: "request_signatures",
+          attributes: {
+            signer_key: exaSignerKey,
+            sign_as: "sign",
+            refusable: false // EXA não pode recusar
+          }
+        }
+      };
+
+      console.log("🔗 [CLICKSIGN] Vinculando signatário EXA ao documento...");
+      const exaSignatureResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/documents/${documentKey}/request_signatures`, {
+        method: "POST",
+        headers: clicksignHeaders,
+        body: JSON.stringify(exaSignaturePayload)
+      });
+
+      if (!exaSignatureResponse.ok) {
+        const errorText = await exaSignatureResponse.text();
+        console.warn("⚠️ [CLICKSIGN] Erro ao vincular assinatura EXA (continuando sem):", errorText);
+      } else {
+        const exaSignatureData = await exaSignatureResponse.json();
+        exaRequestSignatureKey = exaSignatureData.data?.id || exaSignatureData.data?.attributes?.key;
+        console.log("✅ [CLICKSIGN] Assinatura EXA vinculada:", exaRequestSignatureKey);
+      }
+    }
+
+    // Usar clientSignerKey como principal para manter compatibilidade
+    const signerKey = clientSignerKey;
+    const requestSignatureKey = clientRequestSignatureKey;
 
     // ========== 6. Ativar Envelope ==========
     console.log("Ativando envelope...");

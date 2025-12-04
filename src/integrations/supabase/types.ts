@@ -6296,6 +6296,57 @@ export type Database = {
         }
         Relationships: []
       }
+      signatarios_exa: {
+        Row: {
+          cargo: string
+          cidade: string | null
+          cpf: string | null
+          created_at: string
+          email: string
+          estado: string | null
+          estado_civil: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          nacionalidade: string | null
+          nome: string
+          profissao: string | null
+          updated_at: string
+        }
+        Insert: {
+          cargo?: string
+          cidade?: string | null
+          cpf?: string | null
+          created_at?: string
+          email: string
+          estado?: string | null
+          estado_civil?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          nacionalidade?: string | null
+          nome: string
+          profissao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cargo?: string
+          cidade?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string
+          estado?: string | null
+          estado_civil?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          nacionalidade?: string | null
+          nome?: string
+          profissao?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sindicos_interessados: {
         Row: {
           celular: string
