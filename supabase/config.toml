@@ -62,7 +62,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.logos]
-verify_jwt = true
+verify_jwt = false
 
 [functions.financial-security]
 verify_jwt = true
