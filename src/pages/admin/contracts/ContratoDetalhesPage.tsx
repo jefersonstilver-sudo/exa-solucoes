@@ -379,54 +379,56 @@ const ContratoDetalhesPage = () => {
         )}
       </div>
 
-      {/* Fixed Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-xl border-t border-gray-100 safe-area-bottom">
-        {contrato.status === 'rascunho' && (
-          <Button 
-            onClick={() => sendMutation.mutate()}
-            disabled={sendMutation.isPending}
-            className="w-full bg-[#9C1E1E] hover:bg-[#7D1818] h-11"
-          >
-            {sendMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <Send className="h-4 w-4 mr-2" />
-            )}
-            Enviar para Assinatura
-          </Button>
-        )}
-        {['enviado', 'visualizado'].includes(contrato.status) && (
-          <div className="flex gap-2">
+      {/* Fixed Bottom Actions - Mobile only, desktop uses inline buttons */}
+      {isMobile && (
+        <div className="fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-xl border-t border-gray-100 z-50" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+          {contrato.status === 'rascunho' && (
             <Button 
-              variant="outline"
-              onClick={() => resendMutation.mutate()}
-              disabled={resendMutation.isPending}
-              className="flex-1 h-11"
+              onClick={() => sendMutation.mutate()}
+              disabled={sendMutation.isPending}
+              className="w-full bg-[#9C1E1E] hover:bg-[#7D1818] h-11"
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Reenviar
+              {sendMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              Enviar para Assinatura
             </Button>
+          )}
+          {['enviado', 'visualizado'].includes(contrato.status) && (
+            <div className="flex gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => resendMutation.mutate()}
+                disabled={resendMutation.isPending}
+                className="flex-1 h-11"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Reenviar
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={() => cancelMutation.mutate()}
+                disabled={cancelMutation.isPending}
+                className="flex-1 h-11"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Cancelar
+              </Button>
+            </div>
+          )}
+          {contrato.status === 'assinado' && contrato.clicksign_download_url && (
             <Button 
-              variant="destructive"
-              onClick={() => cancelMutation.mutate()}
-              disabled={cancelMutation.isPending}
-              className="flex-1 h-11"
+              onClick={() => window.open(contrato.clicksign_download_url, '_blank')}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 h-11"
             >
-              <XCircle className="h-4 w-4 mr-2" />
-              Cancelar
+              <Download className="h-4 w-4 mr-2" />
+              Baixar PDF Assinado
             </Button>
-          </div>
-        )}
-        {contrato.status === 'assinado' && contrato.clicksign_download_url && (
-          <Button 
-            onClick={() => window.open(contrato.clicksign_download_url, '_blank')}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 h-11"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Baixar PDF Assinado
-          </Button>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Editor Modal */}
       {editorOpen && (
