@@ -254,38 +254,73 @@ const NovoContratoPage = () => {
   });
 
   // Vincular a pedido existente - Prioridade: Proposta > Users > Pedido direto
-  const handleVincularPedido = (pedido: any) => {
-    const listaPaineis = typeof pedido.lista_paineis === 'string' 
+  const handleVincularPedido = async (pedido: any) => {
+    // Parsear lista de painéis e filtrar vazios
+    let listaPaineis = typeof pedido.lista_paineis === 'string' 
       ? JSON.parse(pedido.lista_paineis) 
       : pedido.lista_paineis || [];
+    
+    // ✅ CORREÇÃO: Filtrar prédios vazios
+    listaPaineis = listaPaineis.filter((p: any) => p && (p.building_id || p.id) && (p.building_name || p.nome));
+
+    // ✅ CORREÇÃO: Buscar dados completos da proposta para condição de pagamento
+    let proposalData: any = null;
+    let paymentType = pedido.metodo_pagamento || 'pix_fidelidade';
+    let customInstallments: any[] = [];
+    
+    if (pedido.proposal_id) {
+      const { data: proposal } = await supabase
+        .from('proposals')
+        .select('*')
+        .eq('id', pedido.proposal_id)
+        .single();
+      
+      if (proposal) {
+        proposalData = proposal;
+        paymentType = proposal.payment_type || pedido.metodo_pagamento || 'pix_fidelidade';
+        
+        // ✅ CORREÇÃO: Extrair parcelas personalizadas
+        if (proposal.payment_type === 'custom' && Array.isArray(proposal.custom_installments)) {
+          customInstallments = proposal.custom_installments;
+          console.log('📋 Parcelas personalizadas encontradas:', customInstallments);
+        }
+      }
+    }
 
     // Prioridade de preenchimento: Proposta > Users > Pedido direto
     setContratoData(prev => ({
       ...prev,
       pedido_id: pedido.id,
+      proposta_id: pedido.proposal_id || undefined,
       // Nome: proposta > users > pedido
-      cliente_nome: pedido.proposta_nome || pedido.user_nome || pedido.client_name || '',
+      cliente_nome: proposalData?.client_name || pedido.proposta_nome || pedido.user_nome || pedido.client_name || '',
       // Email: proposta > users > pedido
-      cliente_email: pedido.proposta_email || pedido.user_email || pedido.client_email || '',
+      cliente_email: proposalData?.client_email || pedido.proposta_email || pedido.user_email || pedido.client_email || '',
       // Telefone: proposta > users > pedido
-      cliente_telefone: pedido.proposta_telefone || pedido.user_telefone || pedido.client_phone || '',
+      cliente_telefone: proposalData?.client_phone || pedido.proposta_telefone || pedido.user_telefone || pedido.client_phone || '',
       // CNPJ: proposta > users > pedido
-      cliente_cnpj: pedido.proposta_cnpj || pedido.user_cnpj || pedido.client_cnpj || '',
+      cliente_cnpj: proposalData?.client_cnpj || pedido.proposta_cnpj || pedido.user_cnpj || pedido.client_cnpj || '',
       // Razão Social: proposta > users > pedido
-      cliente_razao_social: pedido.proposta_razao_social || pedido.user_razao_social || pedido.client_company || '',
+      cliente_razao_social: proposalData?.client_company_name || pedido.proposta_razao_social || pedido.user_razao_social || pedido.client_company || '',
       // Segmento: users (único lugar que tem)
       cliente_segmento: pedido.user_segmento || '',
       // Endereço: users (único lugar que tem) - campo manual se não existir
       cliente_endereco: pedido.user_endereco || '',
       // Valores do pedido
-      valor_mensal: pedido.valor_mensal || pedido.valor_total / (pedido.plano_meses || 1),
-      valor_total: pedido.valor_total,
-      plano_meses: pedido.plano_meses || 1,
+      valor_mensal: proposalData?.fidel_monthly_value || pedido.valor_mensal || pedido.valor_total / (pedido.plano_meses || 1),
+      valor_total: proposalData?.cash_total_value || pedido.valor_total,
+      plano_meses: proposalData?.duration_months || pedido.plano_meses || 1,
       dia_vencimento: pedido.dia_vencimento || 10,
-      metodo_pagamento: pedido.metodo_pagamento || 'pix_fidelidade',
+      metodo_pagamento: paymentType,
       lista_predios: listaPaineis,
+      parcelas: customInstallments,
       data_inicio: pedido.data_inicio || new Date().toISOString().split('T')[0]
     }));
+
+    // Toast informativo sobre condição de pagamento
+    if (paymentType === 'custom' && customInstallments.length > 0) {
+      toast.info(`Condição personalizada: ${customInstallments.length} parcelas detectadas`);
+    }
 
     setStep('cliente');
   };

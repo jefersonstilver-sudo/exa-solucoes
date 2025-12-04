@@ -18,9 +18,10 @@ serve(async (req) => {
   }
 
   try {
-    const { proposalId, orderId, clientEmail, clientName } = await req.json();
+    const { proposalId, orderId, clientEmail, clientName, passwordResetLink } = await req.json();
 
     console.log('📧 [PAYMENT-APPROVED-EMAIL] Enviando para:', clientEmail);
+    console.log('📧 [PAYMENT-APPROVED-EMAIL] Password link recebido:', !!passwordResetLink);
 
     if (!clientEmail) {
       throw new Error('clientEmail é obrigatório');
@@ -55,6 +56,35 @@ serve(async (req) => {
     if (isCustomPayment && customInstallments.length > 0) {
       value = Number(customInstallments[0]?.amount || 0);
     }
+
+    // ✅ CORREÇÃO: Verificar se precisa de link de acesso
+    const needsAccessLink = !!passwordResetLink;
+    const accessSection = needsAccessLink ? `
+      <!-- Password Setup Section - CRITICAL -->
+      <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); border-radius: 12px; padding: 28px; margin: 28px 0; color: white; text-align: center;">
+        <h3 style="margin: 0 0 12px; font-size: 18px; font-weight: 700;">
+          🔐 Configure sua Senha
+        </h3>
+        <p style="margin: 0 0 20px; font-size: 14px; opacity: 0.95; line-height: 1.6;">
+          Para acessar sua conta e enviar seu vídeo, clique no botão abaixo:
+        </p>
+        <a href="${passwordResetLink}" 
+           style="display: inline-block; background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%); color: white; text-decoration: none; padding: 16px 48px; border-radius: 12px; font-size: 16px; font-weight: 700; box-shadow: 0 4px 16px rgba(34, 197, 94, 0.4);">
+          Definir Senha e Acessar →
+        </a>
+        <p style="margin: 16px 0 0; font-size: 12px; opacity: 0.8;">
+          Este link expira em 24 horas
+        </p>
+      </div>
+    ` : `
+      <!-- Access Button for existing users -->
+      <div style="text-align: center; margin: 36px 0;">
+        <a href="https://examidia.com.br/anunciante/meus-pedidos" 
+           style="display: inline-block; background: linear-gradient(135deg, #8B1A1A 0%, #A52020 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 12px; font-size: 16px; font-weight: 700; box-shadow: 0 4px 16px rgba(139, 26, 26, 0.3);">
+          Acessar Minha Conta →
+        </a>
+      </div>
+    `;
 
     // Template HTML com header vermelho EXA - Estilo corporativo profissional
     const htmlContent = `
@@ -149,25 +179,19 @@ serve(async (req) => {
                 ` : ''}
               </div>
               
+              ${accessSection}
+              
               <!-- Next Steps Box -->
               <div style="background: linear-gradient(135deg, #8B1A1A 0%, #A52020 100%); border-radius: 12px; padding: 24px 28px; margin: 28px 0; color: white;">
                 <h3 style="margin: 0 0 16px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
                   🚀 Próximos Passos
                 </h3>
                 <ol style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 2;">
-                  <li>Acesse sua conta na plataforma EXA</li>
+                  ${needsAccessLink ? '<li>Clique no botão acima e defina sua senha</li>' : '<li>Acesse sua conta na plataforma EXA</li>'}
                   <li>Envie seu vídeo publicitário (15 segundos, formato horizontal)</li>
                   <li>Aguarde a aprovação (em até 24h úteis)</li>
                   <li>Seu anúncio começará a rodar automaticamente!</li>
                 </ol>
-              </div>
-              
-              <!-- CTA Button -->
-              <div style="text-align: center; margin: 36px 0;">
-                <a href="https://examidia.com.br/anunciante/meus-pedidos" 
-                   style="display: inline-block; background: linear-gradient(135deg, #8B1A1A 0%, #A52020 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 12px; font-size: 16px; font-weight: 700; box-shadow: 0 4px 16px rgba(139, 26, 26, 0.3);">
-                  Acessar Meus Pedidos →
-                </a>
               </div>
               
               <!-- Support -->
@@ -230,6 +254,7 @@ serve(async (req) => {
           order_id: orderId,
           value_paid: value,
           is_custom_payment: isCustomPayment,
+          has_password_link: needsAccessLink,
           timestamp: new Date().toISOString()
         }
       });

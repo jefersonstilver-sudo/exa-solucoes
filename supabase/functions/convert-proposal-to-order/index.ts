@@ -85,27 +85,54 @@ serve(async (req) => {
     console.log('👤 Processando usuário...');
     let userId: string | null = null;
     let isNewUser = false;
+    let needsPasswordSetup = false;
     let passwordResetLink: string | null = null;
 
     const clientEmail = proposal.client_email?.toLowerCase().trim();
     console.log('📧 Email do cliente:', clientEmail);
     
     if (clientEmail) {
-      // Buscar usuário existente
-      console.log('🔍 Buscando usuário existente...');
-      const { data: existingUser, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', clientEmail)
-        .single();
-
-      if (userError && userError.code !== 'PGRST116') {
-        console.log('⚠️ Erro ao buscar usuário (não crítico):', userError.message);
-      }
-
-      if (existingUser) {
-        userId = existingUser.id;
-        console.log('✅ Usuário existente encontrado:', userId);
+      // Buscar usuário existente no Auth
+      console.log('🔍 Buscando usuário existente no Auth...');
+      const { data: authUsers, error: listError } = await supabase.auth.admin.listUsers();
+      
+      const existingAuthUser = authUsers?.users?.find(u => u.email?.toLowerCase() === clientEmail);
+      
+      if (existingAuthUser) {
+        userId = existingAuthUser.id;
+        console.log('✅ Usuário auth existente encontrado:', userId);
+        
+        // ✅ CORREÇÃO: Verificar se usuário tem senha definida
+        // Se foi criado via magic link ou proposta anterior sem definir senha, precisa de link
+        const hasPassword = existingAuthUser.user_metadata?.has_password === true;
+        const lastSignIn = existingAuthUser.last_sign_in_at;
+        
+        console.log('🔐 Verificação de senha:', {
+          hasPassword,
+          lastSignIn,
+          userMetadata: existingAuthUser.user_metadata
+        });
+        
+        // Se nunca fez login OU não tem senha definida, precisa do link
+        if (!hasPassword || !lastSignIn) {
+          needsPasswordSetup = true;
+          console.log('⚠️ Usuário existe mas precisa definir senha');
+        }
+        
+        // Atualizar dados do usuário na tabela users
+        const { error: updateUserError } = await supabase.from('users').upsert({
+          id: userId,
+          email: clientEmail,
+          nome: proposal.client_name || existingAuthUser.user_metadata?.nome || 'Cliente EXA',
+          role: 'client',
+          telefone: proposal.client_phone || existingAuthUser.user_metadata?.telefone,
+          status: 'active'
+        }, { onConflict: 'id' });
+        
+        if (updateUserError) {
+          console.error('⚠️ Erro ao atualizar usuário:', updateUserError);
+        }
+        
       } else {
         // Criar novo usuário via Auth
         console.log('🆕 Criando novo usuário:', clientEmail);
@@ -119,22 +146,18 @@ serve(async (req) => {
           user_metadata: {
             nome: proposal.client_name,
             telefone: proposal.client_phone,
-            created_from: 'proposal_conversion'
+            created_from: 'proposal_conversion',
+            has_password: false // Marcar que precisa definir senha
           }
         });
 
         if (authError) {
           console.error('❌ Erro ao criar usuário auth:', authError);
-          // Tentar buscar se já existe no auth
-          const { data: authUsers } = await supabase.auth.admin.listUsers();
-          const existingAuthUser = authUsers?.users?.find(u => u.email === clientEmail);
-          if (existingAuthUser) {
-            userId = existingAuthUser.id;
-            console.log('✅ Usuário auth existente encontrado:', userId);
-          }
+          throw new Error(`Erro ao criar conta: ${authError.message}`);
         } else if (authData?.user) {
           userId = authData.user.id;
           isNewUser = true;
+          needsPasswordSetup = true;
           console.log('✅ Novo usuário auth criado:', userId);
 
           // Criar registro na tabela users
@@ -154,23 +177,32 @@ serve(async (req) => {
           } else {
             console.log('✅ Usuário inserido na tabela users');
           }
+        }
+      }
 
-          // Gerar link de recuperação de senha
-          console.log('🔑 Gerando link de senha...');
-          const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-            type: 'recovery',
-            email: clientEmail,
-            options: {
-              redirectTo: 'https://examidia.com.br/definir-senha'
+      // ✅ CORREÇÃO: SEMPRE gerar link de senha se needsPasswordSetup = true
+      if (needsPasswordSetup && userId) {
+        console.log('🔑 Gerando link de definição de senha...');
+        const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+          type: 'recovery',
+          email: clientEmail,
+          options: {
+            redirectTo: 'https://examidia.com.br/definir-senha'
+          }
+        });
+
+        if (linkData?.properties?.action_link) {
+          passwordResetLink = linkData.properties.action_link;
+          console.log('✅ Link de senha gerado com sucesso');
+          
+          // Atualizar metadata do usuário para indicar que link foi enviado
+          await supabase.auth.admin.updateUserById(userId, {
+            user_metadata: {
+              password_reset_sent_at: new Date().toISOString()
             }
           });
-
-          if (linkData?.properties?.action_link) {
-            passwordResetLink = linkData.properties.action_link;
-            console.log('✅ Link de senha gerado');
-          } else {
-            console.error('⚠️ Erro ao gerar link:', linkError);
-          }
+        } else {
+          console.error('⚠️ Erro ao gerar link:', linkError);
         }
       }
     } else {
@@ -336,6 +368,7 @@ serve(async (req) => {
         payment_id: paymentId,
         user_id: userId,
         is_new_user: isNewUser,
+        needs_password_setup: needsPasswordSetup,
         is_custom_payment: isCustomPayment,
         installments_created: isCustomPayment ? customInstallments.length : 0,
         timestamp: new Date().toISOString()
@@ -345,7 +378,7 @@ serve(async (req) => {
     // 10. Log de evento do sistema
     await supabase.from('log_eventos_sistema').insert({
       tipo_evento: 'PROPOSTA_CONVERTIDA_EM_PEDIDO',
-      descricao: `Proposta ${proposal.number} convertida em pedido ${newOrder.id}. Novo usuário: ${isNewUser}. Pagamento personalizado: ${isCustomPayment}`
+      descricao: `Proposta ${proposal.number} convertida em pedido ${newOrder.id}. Novo usuário: ${isNewUser}. Precisa senha: ${needsPasswordSetup}. Pagamento personalizado: ${isCustomPayment}`
     });
 
     const duration = Date.now() - startTime;
@@ -354,6 +387,7 @@ serve(async (req) => {
     console.log('📦 Pedido ID:', newOrder.id);
     console.log('👤 User ID:', userId);
     console.log('🆕 Novo usuário:', isNewUser);
+    console.log('🔐 Precisa definir senha:', needsPasswordSetup);
     console.log('💳 Pagamento personalizado:', isCustomPayment);
     if (isCustomPayment) {
       console.log('📝 Parcelas criadas:', customInstallments.length);
@@ -369,32 +403,49 @@ serve(async (req) => {
       passwordResetLink: passwordResetLink || undefined
     };
 
-    // 11. Enviar emails
+    // 11. Enviar emails - ✅ CORREÇÃO: Sempre enviar se precisa de senha
     try {
       console.log('📧 Enviando emails...');
-      // Email de pagamento aprovado
+      
+      // Email de pagamento aprovado (sempre envia)
       await supabase.functions.invoke('send-payment-approved-email', {
         body: {
           proposalId,
           orderId: newOrder.id,
           clientEmail: proposal.client_email,
-          clientName: proposal.client_name
+          clientName: proposal.client_name,
+          passwordResetLink: needsPasswordSetup ? passwordResetLink : undefined
         }
       });
       console.log('✅ Email de pagamento aprovado enviado');
 
-      // Se novo usuário, enviar email de boas-vindas
-      if (isNewUser && passwordResetLink) {
+      // ✅ CORREÇÃO: Se precisa de senha (novo OU existente sem senha), enviar email de boas-vindas
+      if (needsPasswordSetup && passwordResetLink) {
         await supabase.functions.invoke('send-welcome-email', {
           body: {
             clientEmail: proposal.client_email,
             clientName: proposal.client_name,
             passwordResetLink,
-            orderId: newOrder.id
+            orderId: newOrder.id,
+            isNewUser
           }
         });
-        console.log('✅ Email de boas-vindas enviado');
+        console.log('✅ Email de boas-vindas/definição de senha enviado');
       }
+
+      // ✅ NOVA: Enviar WhatsApp ao cliente com confirmação e link de acesso
+      try {
+        await supabase.functions.invoke('zapi-send-message', {
+          body: {
+            phone: proposal.client_phone?.replace(/\D/g, ''),
+            message: `🎉 *Pagamento Confirmado!*\n\nOlá ${proposal.client_name?.split(' ')[0] || 'Cliente'}!\n\nSeu pagamento foi aprovado com sucesso! 🎊\n\n📦 *Pedido:* #${newOrder.id.slice(0, 8).toUpperCase()}\n💰 *Valor:* R$ ${valorTotal?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n\n${needsPasswordSetup ? `🔐 *Próximo passo:* Defina sua senha para acessar a plataforma:\n${passwordResetLink}\n\n` : ''}📹 Após acessar, envie seu vídeo publicitário (15 segundos, horizontal).\n\nObrigado pela confiança!\n_Equipe EXA Mídia_`
+          }
+        });
+        console.log('✅ WhatsApp de confirmação enviado');
+      } catch (whatsappError) {
+        console.error('⚠️ Erro ao enviar WhatsApp (não crítico):', whatsappError);
+      }
+      
     } catch (emailError) {
       console.error('⚠️ Erro ao enviar emails (não crítico):', emailError);
     }
