@@ -1,7 +1,13 @@
 // ============================================
 // TEMPLATE EMAIL - PROPOSTA ACEITA
-// Estilo corporativo SÓBRIO - branco/cinza com mínimo de cores
+// ✅ Header vermelho EXA + suporte pagamento personalizado
 // ============================================
+
+export interface CustomInstallment {
+  installment: number;
+  due_date: string;
+  amount: number;
+}
 
 export interface ProposalAcceptedEmailData {
   clientName: string;
@@ -14,7 +20,7 @@ export interface ProposalAcceptedEmailData {
   discountPercent: number;
   totalPanels: number;
   buildingsCount: number;
-  selectedPlan: 'avista' | 'fidelidade';
+  selectedPlan: 'avista' | 'fidelidade' | 'custom';
   sellerName: string;
   sellerPhone: string;
   // Payment data
@@ -33,101 +39,171 @@ export interface ProposalAcceptedEmailData {
   fullTotalPrice?: number;
   planDiscountPercent?: number;
   pixDiscountPercent?: number;
+  // Custom payment data
+  paymentType?: 'standard' | 'custom';
+  customInstallments?: CustomInstallment[];
+  currentInstallment?: number;
 }
 
 // Logo oficial EXA
 const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/email-assets/exa-logo.png';
 
 export function createProposalAcceptedEmail(data: ProposalAcceptedEmailData): string {
-  const fidelTotal = data.fidelMonthlyValue * data.durationMonths;
-  const selectedValue = data.selectedPlan === 'avista' ? data.cashTotalValue : fidelTotal;
-  const selectedLabel = data.selectedPlan === 'avista' ? 'À Vista' : 'Fidelidade';
-  
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
-  // Calculate discount breakdown
-  const fullMonthly = data.fullMonthlyPrice || 0;
-  const fullTotal = data.fullTotalPrice || (fullMonthly * data.durationMonths);
-  const planDiscount = data.planDiscountPercent || 0;
-  const pixDiscount = data.pixDiscountPercent || 0;
-  
-  // Calculate intermediate values
-  const afterPlanDiscount = fullTotal * (1 - planDiscount / 100);
-  const planDiscountAmount = fullTotal - afterPlanDiscount;
-  const pixDiscountAmount = afterPlanDiscount * (pixDiscount / 100);
-  const finalValue = afterPlanDiscount - pixDiscountAmount;
-  const totalSavings = fullTotal - finalValue;
-  const totalSavingsPercent = fullTotal > 0 ? Math.round((totalSavings / fullTotal) * 100) : 0;
+  const formatDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr + 'T00:00:00');
+      return date.toLocaleDateString('pt-BR');
+    } catch {
+      return dateStr;
+    }
+  };
 
-  // Plan name
-  const planNames: Record<number, string> = { 1: 'Mensal', 3: 'Trimestral', 6: 'Semestral', 12: 'Anual' };
-  const planName = planNames[data.durationMonths] || `${data.durationMonths} meses`;
+  // Detect if custom payment
+  const isCustomPayment = data.paymentType === 'custom' || data.selectedPlan === 'custom';
+  const customInstallments = data.customInstallments || [];
 
-  // Discount breakdown section
+  // Calculate values based on payment type
+  let selectedValue: number;
+  let selectedLabel: string;
   let discountBreakdownHtml = '';
-  if (fullTotal > 0 && (planDiscount > 0 || pixDiscount > 0)) {
+
+  if (isCustomPayment && customInstallments.length > 0) {
+    // CUSTOM PAYMENT: Sum all installments
+    selectedValue = customInstallments.reduce((sum, inst) => sum + Number(inst.amount), 0);
+    selectedLabel = 'Condição Personalizada';
+
+    // Build custom installments breakdown
     discountBreakdownHtml = `
       <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 24px 0;">
         <p style="color: #374151; margin: 0 0 16px 0; font-size: 14px; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px;">
-          Detalhamento do investimento
+          💳 Condição Personalizada
         </p>
         
         <table style="width: 100%; font-size: 13px; color: #4B5563; border-collapse: collapse;">
-          <tr>
-            <td style="padding: 6px 0;">Valor mensal (${data.buildingsCount} prédios × ${data.totalPanels} telas):</td>
-            <td style="text-align: right; font-weight: 500;">${formatCurrency(fullMonthly)}/mês</td>
-          </tr>
-          <tr>
-            <td style="padding: 6px 0;">Total sem desconto (${data.durationMonths} ${data.durationMonths === 1 ? 'mês' : 'meses'}):</td>
-            <td style="text-align: right; text-decoration: line-through; color: #9CA3AF;">${formatCurrency(fullTotal)}</td>
-          </tr>
+          ${customInstallments.map((inst, idx) => {
+            const isCurrentInstallment = idx === 0; // First installment is being paid
+            return `
+              <tr style="${isCurrentInstallment ? 'background-color: #fef3c7;' : ''}">
+                <td style="padding: 10px 8px; ${isCurrentInstallment ? 'border-radius: 6px 0 0 6px;' : ''}">
+                  <span style="font-weight: 600;">Parcela ${inst.installment}</span>
+                  <span style="color: #6B7280;"> • ${formatDate(inst.due_date)}</span>
+                  ${isCurrentInstallment ? '<span style="color: #D97706; font-weight: 600; font-size: 11px; margin-left: 8px;">← PAGANDO AGORA</span>' : ''}
+                </td>
+                <td style="text-align: right; padding: 10px 8px; font-weight: 600; ${isCurrentInstallment ? 'border-radius: 0 6px 6px 0; color: #8B1A1A;' : ''}">
+                  ${formatCurrency(Number(inst.amount))}
+                </td>
+              </tr>
+            `;
+          }).join('')}
         </table>
         
-        <div style="border-top: 1px dashed #D1D5DB; margin: 12px 0; padding-top: 12px;">
-          ${planDiscount > 0 ? `
-            <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 6px 0; color: #059669;">Desconto Plano ${planName} (${planDiscount}%)</td>
-                <td style="text-align: right; color: #059669; font-weight: 500;">-${formatCurrency(planDiscountAmount)}</td>
-              </tr>
-            </table>
-          ` : ''}
-          
-          ${pixDiscount > 0 ? `
-            <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 6px 0; color: #059669;">Desconto PIX à Vista (${pixDiscount}%)</td>
-                <td style="text-align: right; color: #059669; font-weight: 500;">-${formatCurrency(pixDiscountAmount)}</td>
-              </tr>
-            </table>
-          ` : ''}
-        </div>
-        
-        <div style="border-top: 2px solid #374151; margin-top: 12px; padding-top: 12px;">
+        <div style="border-top: 2px solid #374151; margin-top: 16px; padding-top: 16px;">
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
-              <td style="font-size: 15px; font-weight: 700; color: #111827;">VALOR FINAL:</td>
+              <td style="font-size: 15px; font-weight: 700; color: #111827;">TOTAL (${customInstallments.length} ${customInstallments.length === 1 ? 'parcela' : 'parcelas'}):</td>
               <td style="text-align: right; font-size: 18px; font-weight: 700; color: #8B1A1A;">${formatCurrency(selectedValue)}</td>
             </tr>
           </table>
-          <p style="text-align: right; margin: 4px 0 0 0; font-size: 12px; color: #059669; font-weight: 500;">
-            Economia de ${formatCurrency(totalSavings)} (${totalSavingsPercent}% OFF)
-          </p>
         </div>
       </div>
     `;
+  } else {
+    // STANDARD PAYMENT
+    const fidelTotal = data.fidelMonthlyValue * data.durationMonths;
+    selectedValue = data.selectedPlan === 'avista' ? data.cashTotalValue : fidelTotal;
+    selectedLabel = data.selectedPlan === 'avista' ? 'À Vista' : 'Fidelidade';
+
+    // Calculate discount breakdown for standard payments
+    const fullMonthly = data.fullMonthlyPrice || 0;
+    const fullTotal = data.fullTotalPrice || (fullMonthly * data.durationMonths);
+    const planDiscount = data.planDiscountPercent || 0;
+    const pixDiscount = data.pixDiscountPercent || 0;
+    
+    const afterPlanDiscount = fullTotal * (1 - planDiscount / 100);
+    const planDiscountAmount = fullTotal - afterPlanDiscount;
+    const pixDiscountAmount = afterPlanDiscount * (pixDiscount / 100);
+    const finalValue = afterPlanDiscount - pixDiscountAmount;
+    const totalSavings = fullTotal - finalValue;
+    const totalSavingsPercent = fullTotal > 0 ? Math.round((totalSavings / fullTotal) * 100) : 0;
+
+    const planNames: Record<number, string> = { 1: 'Mensal', 3: 'Trimestral', 6: 'Semestral', 12: 'Anual' };
+    const planName = planNames[data.durationMonths] || `${data.durationMonths} meses`;
+
+    if (fullTotal > 0 && (planDiscount > 0 || pixDiscount > 0)) {
+      discountBreakdownHtml = `
+        <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="color: #374151; margin: 0 0 16px 0; font-size: 14px; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px;">
+            Detalhamento do investimento
+          </p>
+          
+          <table style="width: 100%; font-size: 13px; color: #4B5563; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 6px 0;">Valor mensal (${data.buildingsCount} prédios × ${data.totalPanels} telas):</td>
+              <td style="text-align: right; font-weight: 500;">${formatCurrency(fullMonthly)}/mês</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0;">Total sem desconto (${data.durationMonths} ${data.durationMonths === 1 ? 'mês' : 'meses'}):</td>
+              <td style="text-align: right; text-decoration: line-through; color: #9CA3AF;">${formatCurrency(fullTotal)}</td>
+            </tr>
+          </table>
+          
+          <div style="border-top: 1px dashed #D1D5DB; margin: 12px 0; padding-top: 12px;">
+            ${planDiscount > 0 ? `
+              <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 6px 0; color: #059669;">Desconto Plano ${planName} (${planDiscount}%)</td>
+                  <td style="text-align: right; color: #059669; font-weight: 500;">-${formatCurrency(planDiscountAmount)}</td>
+                </tr>
+              </table>
+            ` : ''}
+            
+            ${pixDiscount > 0 ? `
+              <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 6px 0; color: #059669;">Desconto PIX à Vista (${pixDiscount}%)</td>
+                  <td style="text-align: right; color: #059669; font-weight: 500;">-${formatCurrency(pixDiscountAmount)}</td>
+                </tr>
+              </table>
+            ` : ''}
+          </div>
+          
+          <div style="border-top: 2px solid #374151; margin-top: 12px; padding-top: 12px;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="font-size: 15px; font-weight: 700; color: #111827;">VALOR FINAL:</td>
+                <td style="text-align: right; font-size: 18px; font-weight: 700; color: #8B1A1A;">${formatCurrency(selectedValue)}</td>
+              </tr>
+            </table>
+            <p style="text-align: right; margin: 4px 0 0 0; font-size: 12px; color: #059669; font-weight: 500;">
+              Economia de ${formatCurrency(totalSavings)} (${totalSavingsPercent}% OFF)
+            </p>
+          </div>
+        </div>
+      `;
+    }
   }
 
   // Payment section - PIX with QR Code
   let paymentSectionHtml = '';
   
+  // Calculate payment value for display
+  const paymentValue = isCustomPayment && customInstallments.length > 0 
+    ? Number(customInstallments[0].amount) 
+    : selectedValue;
+  
   if (data.paymentMethod === 'pix' && data.pixData) {
     paymentSectionHtml = `
       <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; text-align: center;">
-        <p style="color: #374151; margin: 0 0 16px 0; font-size: 15px; font-weight: 600;">
+        <p style="color: #374151; margin: 0 0 8px 0; font-size: 15px; font-weight: 600;">
           Pagamento via PIX
+        </p>
+        <p style="color: #8B1A1A; margin: 0 0 16px 0; font-size: 20px; font-weight: 700;">
+          ${formatCurrency(paymentValue)}
+          ${isCustomPayment ? '<span style="font-size: 12px; font-weight: 500; color: #6B7280;"> (1ª parcela)</span>' : ''}
         </p>
         
         ${data.pixData.qrCodeBase64 ? `
@@ -151,13 +227,17 @@ export function createProposalAcceptedEmail(data: ProposalAcceptedEmailData): st
     `;
   } else if (data.paymentMethod === 'boleto' && data.boletoData) {
     const formattedDueDate = data.boletoData.dueDate 
-      ? new Date(data.boletoData.dueDate + 'T00:00:00').toLocaleDateString('pt-BR')
+      ? formatDate(data.boletoData.dueDate)
       : 'Em até 3 dias úteis';
     
     paymentSectionHtml = `
       <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; text-align: center;">
-        <p style="color: #374151; margin: 0 0 16px 0; font-size: 15px; font-weight: 600;">
+        <p style="color: #374151; margin: 0 0 8px 0; font-size: 15px; font-weight: 600;">
           Boleto Bancário
+        </p>
+        <p style="color: #8B1A1A; margin: 0 0 16px 0; font-size: 20px; font-weight: 700;">
+          ${formatCurrency(paymentValue)}
+          ${isCustomPayment ? '<span style="font-size: 12px; font-weight: 500; color: #6B7280;"> (1ª parcela)</span>' : ''}
         </p>
         
         <p style="color: #6B7280; font-size: 14px; margin: 0 0 16px 0;">
@@ -202,17 +282,16 @@ export function createProposalAcceptedEmail(data: ProposalAcceptedEmailData): st
   <div class="email-wrapper" style="width: 100%; background-color: #f5f5f5; padding: 40px 20px;">
     <div class="email-container" style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);">
       
-      <!-- Header - CLEAN WHITE -->
-      <div style="background-color: #ffffff; padding: 32px; text-align: center; border-bottom: 1px solid #f0f0f0;">
-        <img src="${EXA_LOGO_URL}" alt="EXA Mídia" style="height: 48px; width: auto; display: block; margin: 0 auto;" />
+      <!-- Header - RED EXA GRADIENT -->
+      <div style="background: linear-gradient(135deg, #8B1A1A 0%, #A52020 100%); padding: 40px 32px; text-align: center;">
+        <img src="${EXA_LOGO_URL}" alt="EXA Mídia" style="height: 48px; width: auto; display: block; margin: 0 auto 16px auto; filter: brightness(0) invert(1);" />
+        <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          Proposta Aceita!
+        </h1>
       </div>
       
       <!-- Content -->
       <div style="padding: 40px 32px; background-color: #ffffff;">
-        
-        <h1 style="color: #111827; font-size: 22px; font-weight: 600; text-align: center; margin: 0 0 8px;">
-          Proposta Aceita!
-        </h1>
         
         <p style="color: #6B7280; font-size: 14px; text-align: center; margin: 0 0 24px;">
           Proposta ${data.proposalNumber}
@@ -226,9 +305,12 @@ export function createProposalAcceptedEmail(data: ProposalAcceptedEmailData): st
         <!-- Confirmation box -->
         <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 16px 0;">
           <p style="margin: 0; color: #166534; font-size: 14px;">
-            <strong>Proposta ${data.proposalNumber} aceita!</strong><br>
+            <strong>✅ Proposta ${data.proposalNumber} aceita!</strong><br>
             Opção escolhida: <strong>${selectedLabel}</strong><br>
-            Valor: <strong>${formatCurrency(selectedValue)}</strong>
+            ${isCustomPayment && customInstallments.length > 0 
+              ? `Valor da 1ª parcela: <strong>${formatCurrency(Number(customInstallments[0].amount))}</strong>`
+              : `Valor: <strong>${formatCurrency(selectedValue)}</strong>`
+            }
           </p>
         </div>
 

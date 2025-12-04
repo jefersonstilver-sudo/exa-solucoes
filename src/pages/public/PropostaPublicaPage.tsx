@@ -529,14 +529,21 @@ const PropostaPublicaPage = () => {
   const sendConfirmationEmail = async (email: string, payment?: PaymentData) => {
     if (!email) return;
     
+    // Detect if custom payment
+    const isCustom = proposal?.payment_type === 'custom';
+    
     try {
       const { error } = await supabase.functions.invoke('send-proposal-accepted-email', {
         body: {
           proposalId: proposal?.id,
           clientEmail: email,
-          selectedPlan,
+          selectedPlan: isCustom ? 'custom' : selectedPlan,
           paymentMethod: payment?.method,
-          paymentData: payment
+          paymentData: payment,
+          // Custom payment fields
+          isCustomPayment: isCustom,
+          customInstallments: isCustom ? proposal?.custom_installments : undefined,
+          currentInstallment: isCustom ? 1 : undefined
         }
       });
       
