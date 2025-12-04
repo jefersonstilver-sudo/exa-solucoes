@@ -25,7 +25,8 @@ import { PhoneVerificationInline } from '@/components/auth/PhoneVerificationInli
 
 const Cadastro: React.FC = () => {
   // Estados do formulário
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [phoneCountry, setPhoneCountry] = useState<'BR' | 'PY' | 'AR'>('BR');
@@ -132,8 +133,20 @@ const Cadastro: React.FC = () => {
         return;
       }
 
+      // Validações de nome
+      if (!firstName.trim() || firstName.trim().length < 2) {
+        setError('Primeiro nome é obrigatório (mínimo 2 caracteres)');
+        return;
+      }
+      if (!lastName.trim() || lastName.trim().length < 2) {
+        setError('Sobrenome é obrigatório (mínimo 2 caracteres)');
+        return;
+      }
+
+      const fullName = `${firstName.trim()} ${lastName.trim()}`;
+      
       // Validações
-      const passwordValidation = validatePassword(password, name);
+      const passwordValidation = validatePassword(password, fullName);
       if (!passwordValidation.valid) {
         setError(passwordValidation.message || 'Senha não atende aos requisitos de segurança');
         return;
@@ -193,7 +206,9 @@ const Cadastro: React.FC = () => {
         options: {
           emailRedirectTo: `${window.location.origin}${redirectTo}`,
           data: {
-            name,
+            name: fullName,
+            primeiro_nome: firstName.trim(),
+            sobrenome: lastName.trim(),
             phone: `${phoneCode}${phone.replace(/\D/g, '')}`,
             phoneCountry,
             document,
@@ -304,21 +319,39 @@ const Cadastro: React.FC = () => {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="flex items-center text-sm font-medium text-gray-900">
+                    <Label htmlFor="firstName" className="flex items-center text-sm font-medium text-gray-900">
                       <User className="h-4 w-4 mr-2 text-exa-red" /> 
-                      Nome completo <span className="text-red-500 ml-1">*</span>
+                      Nome <span className="text-red-500 ml-1">*</span>
                     </Label>
                     <Input 
-                      id="name" 
+                      id="firstName" 
                       type="text" 
-                      placeholder="Seu nome completo" 
-                      value={name} 
-                      onChange={(e) => setName(e.target.value)} 
+                      placeholder="Seu primeiro nome" 
+                      value={firstName} 
+                      onChange={(e) => setFirstName(e.target.value)} 
                       required 
                       className="h-11" 
                     />
                   </div>
                   
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName" className="flex items-center text-sm font-medium text-gray-900">
+                      <User className="h-4 w-4 mr-2 text-exa-red" /> 
+                      Sobrenome <span className="text-red-500 ml-1">*</span>
+                    </Label>
+                    <Input 
+                      id="lastName" 
+                      type="text" 
+                      placeholder="Seu sobrenome" 
+                      value={lastName} 
+                      onChange={(e) => setLastName(e.target.value)} 
+                      required 
+                      className="h-11" 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="email" className="flex items-center text-sm font-medium text-gray-900">
                       <Mail className="h-4 w-4 mr-2 text-exa-red" /> 
@@ -438,7 +471,7 @@ const Cadastro: React.FC = () => {
                   </div>
                 </div>
 
-                <PasswordRequirements password={password} userName={name} />
+                <PasswordRequirements password={password} userName={`${firstName} ${lastName}`} />
 
                 {confirmPassword && (
                   <div className="text-sm">
