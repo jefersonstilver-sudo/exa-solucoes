@@ -42,7 +42,8 @@ const NovaPropostaPage = () => {
 
   // Estado do formulário
   const [clientData, setClientData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     companyName: '',
     country: 'BR' as 'BR' | 'AR' | 'PY',
     document: '',
@@ -329,11 +330,15 @@ const NovaPropostaPage = () => {
       const randomNum = Math.floor(1000 + Math.random() * 9000);
       const proposalNumber = `EXA-${year}-${randomNum}`;
 
+      const fullName = `${clientData.firstName.trim()} ${clientData.lastName.trim()}`;
+      
       const { data: proposal, error } = await supabase
         .from('proposals')
         .insert([{
           number: proposalNumber,
-          client_name: clientData.name,
+          client_name: fullName,
+          client_first_name: clientData.firstName.trim(),
+          client_last_name: clientData.lastName.trim(),
           client_company_name: clientData.companyName || null,
           client_country: clientData.country || 'BR',
           client_cnpj: clientData.document || null,
@@ -421,8 +426,12 @@ const NovaPropostaPage = () => {
   });
 
   const handleOpenSendDialog = () => {
-    if (!clientData.name.trim()) {
-      toast.error('Preencha o nome do cliente');
+    if (!clientData.firstName.trim()) {
+      toast.error('Preencha o primeiro nome do cliente');
+      return;
+    }
+    if (!clientData.lastName.trim()) {
+      toast.error('Preencha o sobrenome do cliente');
       return;
     }
     if (selectedBuildings.length === 0) {
@@ -475,8 +484,8 @@ const NovaPropostaPage = () => {
 
   // Handler para abrir dialog de confirmação de cortesia
   const handleOpenCortesiaDialog = () => {
-    if (!clientData.name.trim()) {
-      toast.error('Preencha o nome do cliente');
+    if (!clientData.firstName.trim() || !clientData.lastName.trim()) {
+      toast.error('Preencha o nome e sobrenome do cliente');
       return;
     }
     if (!clientData.email.trim()) {
@@ -501,9 +510,11 @@ const NovaPropostaPage = () => {
         quantidade_telas: b.quantidade_telas || b.numero_elevadores || 0
       }));
 
+      const fullClientName = `${clientData.firstName.trim()} ${clientData.lastName.trim()}`;
+      
       const { data, error } = await supabase.functions.invoke('request-cortesia-code', {
         body: {
-          clientName: clientData.name,
+          clientName: fullClientName,
           clientEmail: clientData.email,
           clientPhone: clientData.phone,
           clientCnpj: clientData.document,
@@ -602,14 +613,25 @@ const NovaPropostaPage = () => {
           </div>
           
           <div className="space-y-3">
-            <div>
-              <Label className="text-xs">Nome do Cliente *</Label>
-              <Input
-                placeholder="Ex: João Silva - Empresa XYZ"
-                value={clientData.name}
-                onChange={(e) => setClientData(prev => ({ ...prev, name: e.target.value }))}
-                className="mt-1 h-12 text-base"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Nome *</Label>
+                <Input
+                  placeholder="Primeiro nome"
+                  value={clientData.firstName}
+                  onChange={(e) => setClientData(prev => ({ ...prev, firstName: e.target.value }))}
+                  className="mt-1 h-12 text-base"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Sobrenome *</Label>
+                <Input
+                  placeholder="Sobrenome"
+                  value={clientData.lastName}
+                  onChange={(e) => setClientData(prev => ({ ...prev, lastName: e.target.value }))}
+                  className="mt-1 h-12 text-base"
+                />
+              </div>
             </div>
             <div>
               <Label className="text-xs">Nome da Empresa *</Label>
@@ -1173,7 +1195,7 @@ const NovaPropostaPage = () => {
 
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              Selecione como deseja enviar a proposta para <strong>{clientData.name}</strong>:
+              Selecione como deseja enviar a proposta para <strong>{clientData.firstName} {clientData.lastName}</strong>:
             </p>
 
             {/* WhatsApp */}
@@ -1290,7 +1312,7 @@ const NovaPropostaPage = () => {
             <div className="p-4 bg-secondary/50 rounded-xl border border-border/30 space-y-2">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-primary" />
-                <span className="font-medium text-foreground">{clientData.name}</span>
+                <span className="font-medium text-foreground">{clientData.firstName} {clientData.lastName}</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4" />

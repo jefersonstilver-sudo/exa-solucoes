@@ -6911,8 +6911,10 @@ export type Database = {
           empresa_segmento: string | null
           id: string
           nome: string | null
+          primeiro_nome: string | null
           privacy_accepted_at: string | null
           role: string
+          sobrenome: string | null
           telefone: string | null
           telefone_verificado: boolean | null
           telefone_verificado_at: string | null
@@ -6942,8 +6944,10 @@ export type Database = {
           empresa_segmento?: string | null
           id: string
           nome?: string | null
+          primeiro_nome?: string | null
           privacy_accepted_at?: string | null
           role: string
+          sobrenome?: string | null
           telefone?: string | null
           telefone_verificado?: boolean | null
           telefone_verificado_at?: string | null
@@ -6973,8 +6977,10 @@ export type Database = {
           empresa_segmento?: string | null
           id?: string
           nome?: string | null
+          primeiro_nome?: string | null
           privacy_accepted_at?: string | null
           role?: string
+          sobrenome?: string | null
           telefone?: string | null
           telefone_verificado?: boolean | null
           telefone_verificado_at?: string | null

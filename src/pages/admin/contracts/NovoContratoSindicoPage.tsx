@@ -71,6 +71,7 @@ const NovoContratoSindicoPage = () => {
   const [selectedSindico, setSelectedSindico] = useState<SindicoInteressado | null>(null);
   const [formData, setFormData] = useState({
     cliente_nome: '',
+    cliente_sobrenome: '',
     cliente_email: '',
     cliente_telefone: '',
     cliente_cpf: '',
@@ -114,10 +115,16 @@ const NovoContratoSindicoPage = () => {
   }, [sindicoIdFromUrl, sindicos]);
 
   const selectSindico = (sindico: SindicoInteressado) => {
+    // Separar nome completo em nome e sobrenome
+    const nameParts = (sindico.nome_completo || '').trim().split(/\s+/);
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+    
     setSelectedSindico(sindico);
     setFormData(prev => ({
       ...prev,
-      cliente_nome: sindico.nome_completo,
+      cliente_nome: firstName,
+      cliente_sobrenome: lastName,
       cliente_email: sindico.email,
       cliente_telefone: sindico.celular,
       predio_nome: sindico.nome_predio,
@@ -146,10 +153,14 @@ const NovoContratoSindicoPage = () => {
     mutationFn: async (asDraft: boolean) => {
       const contractNumber = generateContractNumber();
       
+      // Concatenar nome completo para ClickSign
+      const clienteNomeCompleto = `${formData.cliente_nome.trim()} ${formData.cliente_sobrenome.trim()}`.trim();
+      
       const contractData = {
         tipo_contrato: 'comodato',
         numero_contrato: contractNumber,
-        cliente_nome: formData.cliente_nome,
+        cliente_nome: clienteNomeCompleto,
+        cliente_sobrenome: formData.cliente_sobrenome,
         cliente_email: formData.cliente_email,
         cliente_telefone: formData.cliente_telefone,
         cliente_cpf: formData.cliente_cpf || null,
@@ -360,12 +371,23 @@ const NovoContratoSindicoPage = () => {
             <div className="border-t pt-4 mt-4">
               <h4 className="font-medium text-sm mb-3">Dados do Responsável</h4>
               <div className="grid gap-3">
-                <div>
-                  <Label>Nome Completo *</Label>
-                  <Input
-                    value={formData.cliente_nome}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cliente_nome: e.target.value }))}
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Nome *</Label>
+                    <Input
+                      value={formData.cliente_nome}
+                      onChange={(e) => setFormData(prev => ({ ...prev, cliente_nome: e.target.value }))}
+                      placeholder="Primeiro nome"
+                    />
+                  </div>
+                  <div>
+                    <Label>Sobrenome *</Label>
+                    <Input
+                      value={formData.cliente_sobrenome}
+                      onChange={(e) => setFormData(prev => ({ ...prev, cliente_sobrenome: e.target.value }))}
+                      placeholder="Sobrenome"
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>

@@ -58,6 +58,7 @@ interface ContratoData {
   pedido_id?: string;
   proposta_id?: string;
   cliente_nome: string;
+  cliente_sobrenome: string;
   cliente_email: string;
   cliente_telefone: string;
   cliente_cnpj: string;
@@ -104,6 +105,7 @@ const NovoContratoPage = () => {
   const [contratoData, setContratoData] = useState<ContratoData>({
     tipo_contrato: 'anunciante',
     cliente_nome: '',
+    cliente_sobrenome: '',
     cliente_email: '',
     cliente_telefone: '',
     cliente_cnpj: '',
@@ -358,13 +360,17 @@ const NovoContratoPage = () => {
       const dataFim = new Date(dataInicio);
       dataFim.setMonth(dataFim.getMonth() + (data.plano_meses || 1));
 
+      // Concatenar nome completo para ClickSign
+      const clienteNomeCompleto = `${data.cliente_nome.trim()} ${data.cliente_sobrenome.trim()}`.trim();
+      
       const contratoPayload = {
         numero_contrato: numeroContrato,
         tipo_contrato: data.tipo_contrato,
         objeto: gerarObjetoContrato(data),
         pedido_id: data.pedido_id || null,
         proposta_id: data.proposta_id || null,
-        cliente_nome: data.cliente_nome,
+        cliente_nome: clienteNomeCompleto, // Nome completo para ClickSign
+        cliente_sobrenome: data.cliente_sobrenome,
         cliente_email: data.cliente_email,
         cliente_telefone: data.cliente_telefone,
         cliente_cnpj: data.cliente_cnpj,
@@ -456,11 +462,23 @@ const NovoContratoPage = () => {
     const customInstallments = pedido.proposta_custom_installments || [];
     const tipoProduto = pedido.proposta_tipo_produto || pedido.tipo_produto || 'horizontal';
 
+    // Função auxiliar para separar nome completo em nome e sobrenome
+    const splitFullName = (fullName: string) => {
+      const parts = (fullName || '').trim().split(/\s+/);
+      const firstName = parts[0] || '';
+      const lastName = parts.slice(1).join(' ') || '';
+      return { firstName, lastName };
+    };
+
+    const nomeCompleto = pedido.proposta_nome || pedido.user_nome || pedido.client_name || '';
+    const { firstName, lastName } = splitFullName(nomeCompleto);
+
     setContratoData(prev => ({
       ...prev,
       pedido_id: pedido.id,
       proposta_id: pedido.proposal_id || undefined,
-      cliente_nome: pedido.proposta_nome || pedido.user_nome || pedido.client_name || '',
+      cliente_nome: firstName,
+      cliente_sobrenome: lastName,
       cliente_email: pedido.proposta_email || pedido.user_email || pedido.client_email || '',
       cliente_telefone: pedido.proposta_telefone || pedido.user_telefone || pedido.client_phone || '',
       cliente_cnpj: pedido.proposta_cnpj || pedido.user_cnpj || pedido.client_cnpj || '',
@@ -803,13 +821,23 @@ const NovoContratoPage = () => {
             <h2 className="text-lg font-semibold">Dados do Cliente</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <Label htmlFor="cliente_nome">Nome Completo *</Label>
+              <div>
+                <Label htmlFor="cliente_nome">Nome *</Label>
                 <Input
                   id="cliente_nome"
                   value={contratoData.cliente_nome}
                   onChange={(e) => setContratoData(prev => ({ ...prev, cliente_nome: e.target.value }))}
-                  placeholder="Nome do representante legal"
+                  placeholder="Primeiro nome"
+                  className="rounded-xl"
+                />
+              </div>
+              <div>
+                <Label htmlFor="cliente_sobrenome">Sobrenome *</Label>
+                <Input
+                  id="cliente_sobrenome"
+                  value={contratoData.cliente_sobrenome}
+                  onChange={(e) => setContratoData(prev => ({ ...prev, cliente_sobrenome: e.target.value }))}
+                  placeholder="Sobrenome"
                   className="rounded-xl"
                 />
               </div>
