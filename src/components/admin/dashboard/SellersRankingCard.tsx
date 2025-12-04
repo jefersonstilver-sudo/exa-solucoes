@@ -41,17 +41,18 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
     }
   };
 
-  // Preparar dados para o gráfico
+  // Preparar dados para o gráfico - usando valorRecebido
   const chartData = vendedores.slice(0, 5).map((v, i) => ({
     name: v.vendedorNome.split(' ')[0], // Primeiro nome apenas
-    valor: v.valorVendido,
+    valor: v.valorRecebido,
+    projetado: v.valorProjetado,
     propostas: v.enviadas,
     aceitas: v.aceitas,
     taxa: v.taxaConversao,
     fill: getRankingColor(i)
   }));
 
-  const maxValue = Math.max(...vendedores.map(v => v.valorVendido), 1);
+  const maxValue = Math.max(...vendedores.map(v => v.valorRecebido), 1);
 
   if (loading) {
     return (
@@ -127,17 +128,22 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
               </p>
             </div>
             
-            {/* Valor */}
+            {/* Valor - Receita Efetiva e Projetada */}
             <div className="text-right">
               <p className="text-sm font-bold text-emerald-600">
-                {formatCurrency(vendedor.valorVendido)}
+                {formatCurrency(vendedor.valorRecebido)}
               </p>
+              {vendedor.valorProjetado > 0 && (
+                <p className="text-[10px] text-muted-foreground">
+                  +{formatCurrency(vendedor.valorProjetado)} proj.
+                </p>
+              )}
               {/* Barra de progresso */}
               <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden mt-1">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{
-                    width: `${(vendedor.valorVendido / maxValue) * 100}%`,
+                    width: `${(vendedor.valorRecebido / maxValue) * 100}%`,
                     backgroundColor: getRankingColor(index)
                   }}
                 />
@@ -174,7 +180,10 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
                       return (
                         <div className="bg-white/95 backdrop-blur-sm border border-border/50 rounded-lg p-2 shadow-lg text-xs">
                           <p className="font-semibold">{data.name}</p>
-                          <p className="text-emerald-600">{formatCurrency(data.valor)}</p>
+                          <p className="text-emerald-600">{formatCurrency(data.valor)} recebido</p>
+                          {data.projetado > 0 && (
+                            <p className="text-amber-600">+{formatCurrency(data.projetado)} projetado</p>
+                          )}
                           <p className="text-muted-foreground">
                             {data.aceitas}/{data.propostas} ({data.taxa.toFixed(0)}%)
                           </p>
@@ -197,25 +206,31 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
             </ResponsiveContainer>
           </div>
 
-          {/* Resumo */}
-          <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-border/30">
+          {/* Resumo com Recebido vs Projetado */}
+          <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-border/30">
             <div className="text-center">
               <p className="text-lg font-bold text-foreground">
                 {vendedores.reduce((sum, v) => sum + v.enviadas, 0)}
               </p>
-              <p className="text-[10px] text-muted-foreground">Total Enviadas</p>
+              <p className="text-[10px] text-muted-foreground">Enviadas</p>
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-blue-600">
+                {vendedores.reduce((sum, v) => sum + v.aceitas, 0)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Aceitas</p>
             </div>
             <div className="text-center">
               <p className="text-lg font-bold text-emerald-600">
-                {vendedores.reduce((sum, v) => sum + v.aceitas, 0)}
+                {formatCurrency(vendedores.reduce((sum, v) => sum + v.valorRecebido, 0))}
               </p>
-              <p className="text-[10px] text-muted-foreground">Total Aceitas</p>
+              <p className="text-[10px] text-muted-foreground">Recebido</p>
             </div>
             <div className="text-center">
-              <p className="text-lg font-bold text-primary">
-                {formatCurrency(vendedores.reduce((sum, v) => sum + v.valorVendido, 0))}
+              <p className="text-lg font-bold text-amber-600">
+                {formatCurrency(vendedores.reduce((sum, v) => sum + v.valorProjetado, 0))}
               </p>
-              <p className="text-[10px] text-muted-foreground">Total Vendas</p>
+              <p className="text-[10px] text-muted-foreground">Projetado</p>
             </div>
           </div>
         </div>

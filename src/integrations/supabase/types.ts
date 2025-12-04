@@ -7769,12 +7769,15 @@ export type Database = {
           data_inicio: string
           id: string
           is_fidelidade: boolean
-          lista_paineis: Json
+          lista_paineis: string[]
           lista_predios: string[]
           metodo_pagamento: string
           nome_pedido: string
+          parcela_atual: number
           plano_meses: number
           status: string
+          status_adimplencia: string
+          tipo_pagamento: string
           total_parcelas: number
           transaction_id: string
           updated_at: string
