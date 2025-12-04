@@ -342,7 +342,7 @@ export const WhatsAppVerificationModal: React.FC<WhatsAppVerificationModalProps>
 
               <PhoneInput
                 value={newPhone}
-                onChange={(e) => setNewPhone(e.target.value)}
+                onChange={(formatted) => setNewPhone(formatted)}
                 defaultCountry="BR"
                 required
               />
