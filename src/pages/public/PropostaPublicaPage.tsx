@@ -11,8 +11,8 @@ import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExp
 import { validateEmail } from '@/utils/inputValidation';
 
 interface CustomInstallment {
-  id: number;
-  dueDate: string;
+  installment: number;
+  due_date: string;
   amount: number;
 }
 
@@ -1234,7 +1234,7 @@ const PropostaPublicaPage = () => {
                   {/* Lista de Parcelas */}
                   <div className="space-y-2">
                     {(Array.isArray(proposal.custom_installments) ? proposal.custom_installments : []).map((installment: CustomInstallment, index: number) => (
-                      <div key={installment.id || index} className="flex justify-between items-center p-3 bg-white rounded-lg border">
+                      <div key={installment.installment || index} className="flex justify-between items-center p-3 bg-white rounded-lg border">
                         <div className="flex items-center gap-2">
                           <span className="w-6 h-6 bg-[#9C1E1E]/10 text-[#9C1E1E] rounded-full flex items-center justify-center text-xs font-bold">
                             {index + 1}
@@ -1242,7 +1242,7 @@ const PropostaPublicaPage = () => {
                           <div>
                             <div className="font-medium text-sm">Parcela {index + 1}</div>
                             <div className="text-xs text-muted-foreground">
-                              Venc: {new Date(installment.dueDate).toLocaleDateString('pt-BR')}
+                              Venc: {new Date(installment.due_date + 'T00:00:00').toLocaleDateString('pt-BR')}
                             </div>
                           </div>
                         </div>
