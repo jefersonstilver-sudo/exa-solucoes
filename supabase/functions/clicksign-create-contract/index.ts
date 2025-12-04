@@ -17,14 +17,27 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log("========================================");
+  console.log("🚀 [CLICKSIGN] EDGE FUNCTION INVOCADA");
+  console.log("========================================");
+  console.log("📅 Timestamp:", new Date().toISOString());
+  console.log("📍 Method:", req.method);
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let rawBody = "";
   try {
-    const { contrato_id } = await req.json();
+    rawBody = await req.text();
+    console.log("📥 [CLICKSIGN] Raw body recebido:", rawBody);
+    
+    const body = JSON.parse(rawBody);
+    const { contrato_id } = body;
+    console.log("📋 [CLICKSIGN] contrato_id parsed:", contrato_id);
 
     if (!contrato_id) {
+      console.error("❌ [CLICKSIGN] contrato_id não fornecido");
       return new Response(
         JSON.stringify({ error: "contrato_id é obrigatório" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
