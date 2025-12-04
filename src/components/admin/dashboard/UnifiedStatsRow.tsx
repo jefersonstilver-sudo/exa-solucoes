@@ -89,9 +89,9 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
           }
         />
 
-        {/* 3. Vendas */}
+        {/* 3. Vendas - Receita Efetiva */}
         <AppleLikeMetricCard
-          label="Receita Total"
+          label="Receita Efetiva"
           value={stats.loading ? '...' : formatCurrency(stats.vendas)}
           icon={DollarSign}
           description={!stats.loading ? vendasTrend.value : undefined}
@@ -100,10 +100,22 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
               <div>
                 <p className="text-sm font-semibold text-foreground mb-1">Receita do Período</p>
                 <p className="text-xs text-muted-foreground">
-                  Valor total em vendas confirmadas
+                  Valor efetivamente recebido (parcelas pagas)
                 </p>
               </div>
-              <div className="pt-2 border-t border-border/50">
+              <div className="space-y-2 pt-2 border-t border-border/50">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">💰 Receita Efetiva:</span>
+                  <span className="text-sm font-semibold text-emerald-600">{formatCurrency(stats.vendas)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">📅 Receita Projetada:</span>
+                  <span className="text-sm font-semibold text-blue-600">{formatCurrency(stats.vendasProjetadas)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-1 border-t border-border/30">
+                  <span className="text-xs text-muted-foreground">Total (efetiva + projetada):</span>
+                  <span className="text-sm font-semibold">{formatCurrency(stats.vendas + stats.vendasProjetadas)}</span>
+                </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Período Anterior:</span>
                   <span className="text-sm font-semibold">{formatCurrency(stats.vendasAnterior)}</span>
