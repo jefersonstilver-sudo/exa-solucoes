@@ -64,13 +64,12 @@ const Cadastro: React.FC = () => {
     setDocument(formatted);
   };
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhone(e.target.value);
-  };
-
-  const handlePhoneCountryChange = (country: string, code: string) => {
-    setPhoneCountry(country as 'BR' | 'PY' | 'AR');
-    setPhoneCode(code);
+  const handlePhoneChange = (formatted: string, fullNumber: string, countryCode: 'BR' | 'PY' | 'AR' | 'UY' | 'CL' | 'US') => {
+    setPhone(formatted);
+    setPhoneCountry(countryCode as 'BR' | 'PY' | 'AR');
+    // Extrair código do país
+    const codes: Record<string, string> = { BR: '+55', PY: '+595', AR: '+54', UY: '+598', CL: '+56', US: '+1' };
+    setPhoneCode(codes[countryCode] || '+55');
   };
 
   const validatePhone = (phoneNumber: string): boolean => {
@@ -386,7 +385,6 @@ const Cadastro: React.FC = () => {
                 <PhoneInput 
                   value={phone} 
                   onChange={handlePhoneChange}
-                  onCountryChange={handlePhoneCountryChange}
                   defaultCountry="BR"
                   required
                 />

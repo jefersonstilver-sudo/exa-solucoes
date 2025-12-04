@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Users } from 'lucide-react';
 import { PhoneVerificationOTP } from './PhoneVerificationOTP';
+import { PhoneInput, type CountryCode } from '@/components/ui/phone-input';
 interface Director {
   id: string;
   user_id: string | null;
@@ -234,16 +235,17 @@ export const AddDirectorDialog = ({
           </div>
 
           {/* Telefone */}
-          <div className="space-y-2">
-            <Label htmlFor="telefone">Telefone WhatsApp *</Label>
-            <Input id="telefone" value={formData.telefone} onChange={e => setFormData({
-            ...formData,
-            telefone: e.target.value
-          })} placeholder="11987654321" required />
-            {!director && <p className="text-xs text-gray-500">
-                ℹ️ Edite se necessário para formato WhatsApp
-              </p>}
-          </div>
+          <PhoneInput
+            value={formData.telefone}
+            onChange={(formatted, fullNumber) => setFormData({
+              ...formData,
+              telefone: fullNumber // Salvar número completo com código do país
+            })}
+            defaultCountry="BR"
+            label="Telefone WhatsApp"
+            required
+            compact
+          />
 
           {/* Verificação OTP (apenas para novos diretores) */}
           {!director && formData.telefone && <>

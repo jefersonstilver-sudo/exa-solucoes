@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { PhoneInput, type CountryCode } from '@/components/ui/phone-input';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,6 +47,8 @@ const NovaPropostaPage = () => {
     country: 'BR' as 'BR' | 'AR' | 'PY',
     document: '',
     phone: '',
+    phoneFullNumber: '', // Número completo com código do país
+    phoneCountry: 'BR' as CountryCode,
     email: ''
   });
 
@@ -317,7 +320,7 @@ const NovaPropostaPage = () => {
           client_company_name: clientData.companyName || null,
           client_country: clientData.country || 'BR',
           client_cnpj: clientData.document || null,
-          client_phone: clientData.phone || null,
+          client_phone: clientData.phoneFullNumber || clientData.phone || null, // Número completo com código do país
           client_email: clientData.email || null,
           selected_buildings: buildingsData as Json,
           total_panels: totalPanels,
@@ -637,15 +640,19 @@ const NovaPropostaPage = () => {
                 <p className="text-xs text-red-500 mt-1">{getDocumentLabel()} inválido</p>
               )}
             </div>
-            <div>
-              <Label className="text-xs">Telefone WhatsApp</Label>
-              <Input
-                placeholder="(00) 00000-0000"
-                value={clientData.phone}
-                onChange={(e) => setClientData(prev => ({ ...prev, phone: e.target.value }))}
-                className="mt-1 h-12 text-base"
-              />
-            </div>
+            <PhoneInput
+              value={clientData.phone}
+              onChange={(formatted, fullNumber, countryCode) => setClientData(prev => ({ 
+                ...prev, 
+                phone: formatted,
+                phoneFullNumber: fullNumber,
+                phoneCountry: countryCode
+              }))}
+              defaultCountry={clientData.country as CountryCode}
+              label="Telefone WhatsApp"
+              showLabel={true}
+              compact={false}
+            />
             <div>
               <Label className="text-xs">E-mail *</Label>
               <Input
