@@ -104,8 +104,9 @@ serve(async (req) => {
       paymentDescription = `Proposta ${proposal.number} - EXA Mídia`;
     }
 
-    if (amount < 5) {
-      throw new Error('Valor mínimo para pagamento é R$ 5,00');
+    // Validar valor mínimo apenas para boleto (R$ 5,00)
+    if (paymentMethod === 'boleto' && amount < 5) {
+      throw new Error('Valor mínimo para pagamento via Boleto é R$ 5,00');
     }
 
     // Get Mercado Pago access token (try both possible secret names)

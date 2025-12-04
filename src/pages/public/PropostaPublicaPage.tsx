@@ -422,9 +422,9 @@ const PropostaPublicaPage = () => {
         : proposal.fidel_monthly_value * proposal.duration_months;
     }
     
-    // Validar valor mínimo do Mercado Pago (R$ 5,00)
-    if (paymentValue < 5) {
-      toast.error('O valor mínimo para pagamento é R$ 5,00. Entre em contato com o vendedor.');
+    // Validar valor mínimo do Mercado Pago (R$ 5,00) - apenas para boleto
+    if (paymentMethod === 'boleto' && paymentValue < 5) {
+      toast.error('O valor mínimo para pagamento via Boleto é R$ 5,00. Entre em contato com o vendedor.');
       return;
     }
     
