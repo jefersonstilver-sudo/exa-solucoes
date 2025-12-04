@@ -54,6 +54,13 @@ interface Proposal {
   created_by?: string | null;
   seller_name?: string | null;
   seller_phone?: string | null;
+  // Custom payment fields
+  payment_type?: string | null;
+  custom_installments?: Array<{
+    installment: number;
+    due_date: string;
+    amount: number;
+  }> | null;
 }
 
 interface LiveViewNotification {
@@ -603,12 +610,25 @@ const PropostasPage = () => {
 
                     {/* Valores */}
                     <div className="flex gap-3 mt-2">
-                      <span className="text-xs">
-                        💳 <strong className="text-foreground">{formatCurrency(proposal.fidel_monthly_value)}</strong>/mês
-                      </span>
-                      <span className="text-xs">
-                        💵 <strong className="text-emerald-600">{formatCurrency(proposal.cash_total_value)}</strong> à vista
-                      </span>
+                      {proposal.payment_type === 'custom' && proposal.custom_installments ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-xs font-medium text-purple-600">
+                            💳 Condição Personalizada
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {proposal.custom_installments.length} parcelas • Total: <strong>{formatCurrency(proposal.cash_total_value)}</strong>
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-xs">
+                            💳 <strong className="text-foreground">{formatCurrency(proposal.fidel_monthly_value)}</strong>/mês
+                          </span>
+                          <span className="text-xs">
+                            💵 <strong className="text-emerald-600">{formatCurrency(proposal.cash_total_value)}</strong> à vista
+                          </span>
+                        </>
+                      )}
                     </div>
 
                     {/* Data - "há quanto tempo" para pendentes, data fixa para outras */}

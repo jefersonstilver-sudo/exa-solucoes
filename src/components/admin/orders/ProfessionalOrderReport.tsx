@@ -4,6 +4,17 @@ import exaLogo from '@/assets/exa-logo.png';
 import { Button } from '@/components/ui/button';
 import { useFixAuditData } from '@/hooks/admin/useFixAuditData';
 import { resyncVideoToExternalAPI } from '@/services/videoExternalSyncService';
+interface Parcela {
+  id: string;
+  numero_parcela: number;
+  valor_original: number;
+  valor_final: number;
+  data_vencimento: string;
+  status: string;
+  data_pagamento?: string | null;
+  metodo_pagamento?: string | null;
+}
+
 interface OrderData {
   id: string;
   created_at: string;
@@ -24,6 +35,7 @@ interface OrderData {
   expires_at?: string;
   // Campos de fidelidade
   tipo_pagamento?: string;
+  metodo_pagamento?: string;
   is_fidelidade?: boolean;
   dia_vencimento?: number;
   parcela_atual?: number;
@@ -37,6 +49,8 @@ interface OrderData {
     nomeEmpresa?: string;
   };
   versao_termo?: string;
+  // Parcelas
+  parcelas?: Parcela[];
 }
 interface PanelData {
   id: string;
@@ -366,11 +380,13 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               <div>
                 <p className="text-gray-500 mb-1">Tipo de Pagamento</p>
                 <p className="font-semibold text-gray-900">
+                  {order.tipo_pagamento === 'personalizado' && '💳 Condição Personalizada'}
+                  {order.metodo_pagamento === 'personalizado' && !order.tipo_pagamento && '💳 Condição Personalizada'}
                   {order.tipo_pagamento === 'pix_avista' && 'PIX à Vista'}
                   {order.tipo_pagamento === 'pix_fidelidade' && 'PIX Fidelidade'}
                   {order.tipo_pagamento === 'boleto_fidelidade' && 'Boleto Fidelidade'}
                   {order.tipo_pagamento === 'cartao' && 'Cartão de Crédito'}
-                  {!order.tipo_pagamento && (order.log_pagamento?.method === 'pix' ? 'PIX' : 'Não informado')}
+                  {!order.tipo_pagamento && order.metodo_pagamento !== 'personalizado' && (order.log_pagamento?.method === 'pix' ? 'PIX' : order.metodo_pagamento || 'Não informado')}
                 </p>
               </div>
               <div>
@@ -404,46 +420,107 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               )}
             </div>
             
-            {/* Badge de Status de Adimplência */}
+            {/* Badge de Status de Adimplência - Corrigido */}
             {order.is_fidelidade && (
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-gray-500">Status de Adimplência:</span>
-                  {order.status_adimplencia === 'em_dia' && order.parcela_atual && order.parcela_atual > 1 && (
+                  {/* Verificar se há parcelas pagas para determinar status correto */}
+                  {order.parcelas && order.parcelas.some(p => p.status === 'pago') ? (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       Em Dia
                     </span>
-                  )}
-                  {(order.status_adimplencia === 'em_dia' && (!order.parcela_atual || order.parcela_atual === 1)) && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                      <Clock className="h-3.5 w-3.5" />
-                      Aguardando 1º Pagamento
+                  ) : order.status_adimplencia === 'em_dia' && order.parcela_atual && order.parcela_atual > 1 ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Em Dia
                     </span>
-                  )}
-                  {order.status_adimplencia === 'aguardando_pagamento' && (
+                  ) : order.status_adimplencia === 'atrasado' ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
+                      <Clock className="h-3.5 w-3.5" />
+                      Atrasado
+                    </span>
+                  ) : order.status_adimplencia === 'suspenso' ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                      <XCircle className="h-3.5 w-3.5" />
+                      Suspenso
+                    </span>
+                  ) : (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
                       <Clock className="h-3.5 w-3.5" />
                       Aguardando Pagamento
                     </span>
                   )}
-                  {order.status_adimplencia === 'atrasado' && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
-                      <Clock className="h-3.5 w-3.5" />
-                      Atrasado
-                    </span>
-                  )}
-                  {order.status_adimplencia === 'suspenso' && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
-                      <XCircle className="h-3.5 w-3.5" />
-                      Suspenso
-                    </span>
-                  )}
-                  {!order.status_adimplencia && order.is_fidelidade && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
-                      Não Definido
-                    </span>
-                  )}
+                </div>
+              </div>
+            )}
+
+            {/* NOVA SEÇÃO: Detalhes das Parcelas */}
+            {order.parcelas && order.parcelas.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <h3 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Detalhes das Parcelas ({order.parcelas.length} parcelas)
+                </h3>
+                <div className="space-y-2">
+                  {order.parcelas.map((parcela) => (
+                    <div 
+                      key={parcela.id} 
+                      className={`flex items-center justify-between p-2 rounded text-xs ${
+                        parcela.status === 'pago' 
+                          ? 'bg-green-50 border border-green-200' 
+                          : parcela.status === 'atrasado'
+                          ? 'bg-red-50 border border-red-200'
+                          : 'bg-gray-50 border border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                          parcela.status === 'pago' 
+                            ? 'bg-green-500 text-white' 
+                            : parcela.status === 'atrasado'
+                            ? 'bg-red-500 text-white'
+                            : 'bg-gray-300 text-gray-700'
+                        }`}>
+                          {parcela.numero_parcela}
+                        </span>
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {formatCurrency(parcela.valor_final)}
+                          </p>
+                          <p className="text-gray-500">
+                            Vence: {formatSimpleDate(parcela.data_vencimento)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        {parcela.status === 'pago' ? (
+                          <div className="flex items-center gap-1.5 text-green-700">
+                            <CheckCircle2 className="h-4 w-4" />
+                            <div>
+                              <p className="font-semibold">Pago</p>
+                              {parcela.data_pagamento && (
+                                <p className="text-[10px] text-green-600">
+                                  em {formatSimpleDate(parcela.data_pagamento)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ) : parcela.status === 'atrasado' ? (
+                          <div className="flex items-center gap-1.5 text-red-700">
+                            <XCircle className="h-4 w-4" />
+                            <span className="font-semibold">Atrasado</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-gray-500">
+                            <Clock className="h-4 w-4" />
+                            <span className="font-semibold">Pendente</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
