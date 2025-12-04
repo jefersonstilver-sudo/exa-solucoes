@@ -3,11 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   ArrowLeft,
   FileSignature,
@@ -24,14 +24,20 @@ import {
   Calendar,
   Loader2,
   Edit3,
-  Maximize2,
-  FileText
+  FileText,
+  MoreVertical
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ContractPreview from '@/components/admin/contracts/ContractPreview';
 import FullscreenContractEditor from '@/components/admin/contracts/FullscreenContractEditor';
 import { ContractPDFExporter } from '@/components/admin/contracts/ContractPDFExporter';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   rascunho: { label: 'Rascunho', color: 'bg-gray-500', icon: FileSignature },
@@ -47,6 +53,7 @@ const ContratoDetalhesPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { buildPath } = useAdminBasePath();
+  const { isMobile } = useResponsiveLayout();
   const queryClient = useQueryClient();
   const [editorOpen, setEditorOpen] = useState(false);
 
@@ -80,7 +87,6 @@ const ContratoDetalhesPage = () => {
     enabled: !!id
   });
 
-  // Reenviar notificação
   const resendMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.functions.invoke('clicksign-resend', {
@@ -92,12 +98,9 @@ const ContratoDetalhesPage = () => {
       toast.success('Notificação reenviada!');
       queryClient.invalidateQueries({ queryKey: ['contrato-detalhes', id] });
     },
-    onError: () => {
-      toast.error('Erro ao reenviar');
-    }
+    onError: () => toast.error('Erro ao reenviar')
   });
 
-  // Cancelar contrato
   const cancelMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.functions.invoke('clicksign-cancel', {
@@ -109,12 +112,9 @@ const ContratoDetalhesPage = () => {
       toast.success('Contrato cancelado');
       queryClient.invalidateQueries({ queryKey: ['contrato-detalhes', id] });
     },
-    onError: () => {
-      toast.error('Erro ao cancelar');
-    }
+    onError: () => toast.error('Erro ao cancelar')
   });
 
-  // Enviar para assinatura (rascunho)
   const sendMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.functions.invoke('clicksign-create-contract', {
@@ -126,12 +126,9 @@ const ContratoDetalhesPage = () => {
       toast.success('Contrato enviado para assinatura!');
       queryClient.invalidateQueries({ queryKey: ['contrato-detalhes', id] });
     },
-    onError: () => {
-      toast.error('Erro ao enviar');
-    }
+    onError: () => toast.error('Erro ao enviar')
   });
 
-  // Salvar cláusulas especiais
   const saveClausulasMutation = useMutation({
     mutationFn: async (clausulas: string) => {
       const { error } = await supabase
@@ -144,27 +141,25 @@ const ContratoDetalhesPage = () => {
       toast.success('Cláusulas salvas!');
       queryClient.invalidateQueries({ queryKey: ['contrato-detalhes', id] });
     },
-    onError: () => {
-      toast.error('Erro ao salvar');
-    }
+    onError: () => toast.error('Erro ao salvar')
   });
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#9C1E1E]" />
       </div>
     );
   }
 
   if (!contrato) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 p-6">
-        <Card className="max-w-md mx-auto p-8 text-center">
-          <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Contrato não encontrado</h2>
-          <Button onClick={() => navigate(buildPath('juridico'))}>
-            Voltar para Lista
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 p-4">
+        <Card className="max-w-md mx-auto p-6 text-center bg-white/80">
+          <XCircle className="h-10 w-10 text-red-500 mx-auto mb-3" />
+          <h2 className="text-lg font-semibold mb-2">Contrato não encontrado</h2>
+          <Button size="sm" onClick={() => navigate(buildPath('juridico'))}>
+            Voltar
           </Button>
         </Card>
       </div>
@@ -180,412 +175,269 @@ const ContratoDetalhesPage = () => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
+  const timelineSteps = [
+    { key: 'created', label: 'Criado', date: contrato.created_at, done: true },
+    { key: 'sent', label: 'Enviado', date: contrato.enviado_em, done: !!contrato.enviado_em },
+    { key: 'viewed', label: 'Visualizado', date: contrato.visualizado_em, done: !!contrato.visualizado_em },
+    { key: 'signed', label: 'Assinado', date: contrato.assinado_em, done: !!contrato.assinado_em }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 p-3 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 pb-24">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(buildPath('juridico'))}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 py-3 safe-area-top">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-xl">
-              <FileSignature className="h-6 w-6 text-primary" />
-            </div>
+            <button 
+              onClick={() => navigate(buildPath('juridico'))}
+              className="p-2 -ml-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl md:text-2xl font-bold">{contrato.numero_contrato}</h1>
-                <Badge className={`${status.color} text-white`}>
-                  <StatusIcon className="h-3 w-3 mr-1" />
+                <h1 className="text-base font-bold">{contrato.numero_contrato}</h1>
+                <Badge className={`${status.color} text-white text-[10px] px-1.5 py-0`}>
                   {status.label}
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground">{contrato.cliente_nome}</p>
+              <p className="text-xs text-muted-foreground truncate max-w-[180px]">{contrato.cliente_nome}</p>
             </div>
           </div>
-        </div>
-        
-        {/* Actions */}
-        <div className="flex gap-2 flex-wrap">
-          {contrato.status === 'rascunho' && (
-            <>
-              <Button 
-                variant="outline"
-                onClick={async () => {
-                  try {
-                    const exporter = new ContractPDFExporter();
-                    await exporter.generateContractPDF({
-                      ...contrato,
-                      lista_predios: Array.isArray(contrato.lista_predios) ? contrato.lista_predios : [],
-                      parcelas: Array.isArray(contrato.parcelas) ? contrato.parcelas : []
-                    });
-                    toast.success('PDF gerado com sucesso!');
-                  } catch (err) {
-                    console.error('Erro ao gerar PDF:', err);
-                    toast.error('Erro ao gerar PDF');
-                  }
-                }}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Baixar PDF
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+                <MoreVertical className="h-5 w-5" />
               </Button>
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  // Gerar HTML editável para abrir no Word/Google Docs
-                  const parcelas = Array.isArray(contrato.parcelas) ? contrato.parcelas : [];
-                  const predios = Array.isArray(contrato.lista_predios) ? contrato.lista_predios : [];
-                  const formatCurrency = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
-                  
-                  const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>${contrato.numero_contrato}</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }
-    h1 { color: #9C1E1E; text-align: center; border-bottom: 2px solid #9C1E1E; padding-bottom: 10px; }
-    h2 { color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 30px; }
-    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-    th { background: #f5f5f5; }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .info-item { margin-bottom: 10px; }
-    .info-label { font-size: 12px; color: #666; }
-    .info-value { font-weight: bold; }
-    .signature-area { margin-top: 60px; display: flex; justify-content: space-around; }
-    .signature-box { text-align: center; width: 40%; }
-    .signature-line { border-top: 1px solid #333; margin-top: 60px; padding-top: 10px; }
-    .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 80px; color: rgba(200,200,200,0.3); z-index: -1; }
-  </style>
-</head>
-<body>
-  <div class="watermark">RASCUNHO</div>
-  <h1>CONTRATO DE PRESTAÇÃO DE SERVIÇOS<br><small style="font-size: 14px; color: #666;">${contrato.numero_contrato}</small></h1>
-  
-  <h2>CONTRATADA</h2>
-  <p><strong>EXA MÍDIA LTDA</strong><br>CNPJ: 42.538.968/0001-06<br>Av. Paraná, 3695 - 2º Andar, Centro - Foz do Iguaçu/PR</p>
-  
-  <h2>CONTRATANTE</h2>
-  <div class="info-grid">
-    <div class="info-item"><div class="info-label">Nome/Razão Social</div><div class="info-value">${contrato.cliente_razao_social || contrato.cliente_nome}</div></div>
-    <div class="info-item"><div class="info-label">CNPJ/CPF</div><div class="info-value">${contrato.cliente_cnpj || '-'}</div></div>
-    <div class="info-item"><div class="info-label">E-mail</div><div class="info-value">${contrato.cliente_email}</div></div>
-    <div class="info-item"><div class="info-label">Telefone</div><div class="info-value">${contrato.cliente_telefone || '-'}</div></div>
-  </div>
-  
-  <h2>OBJETO</h2>
-  <p>${contrato.objeto || 'Prestação de serviços de veiculação de publicidade em mídia digital indoor (painéis digitais em elevadores).'}</p>
-  
-  <h2>LOCAIS DE VEICULAÇÃO</h2>
-  <table>
-    <thead><tr><th>Prédio</th><th>Bairro</th><th>Telas</th></tr></thead>
-    <tbody>
-      ${predios.map((p: any) => `<tr><td>${p.building_name || p.nome}</td><td>${p.bairro || '-'}</td><td>${p.quantidade_telas || 1}</td></tr>`).join('')}
-    </tbody>
-  </table>
-  
-  <h2>CONDIÇÕES FINANCEIRAS</h2>
-  ${contrato.metodo_pagamento === 'custom' ? `
-  <p><strong>Condição Personalizada</strong></p>
-  <table>
-    <thead><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th></tr></thead>
-    <tbody>
-      ${parcelas.map((p: any, i: number) => `<tr><td>${i + 1}ª</td><td>${p.due_date ? new Date(p.due_date).toLocaleDateString('pt-BR') : '-'}</td><td>${formatCurrency(p.amount)}</td></tr>`).join('')}
-    </tbody>
-  </table>
-  <p><strong>Valor Total:</strong> ${formatCurrency(contrato.valor_total || 0)}</p>
-  ` : `
-  <p><strong>Valor Mensal:</strong> ${formatCurrency(contrato.valor_mensal || 0)}</p>
-  <p><strong>Duração:</strong> ${contrato.plano_meses} meses</p>
-  <p><strong>Valor Total:</strong> ${formatCurrency(contrato.valor_total || 0)}</p>
-  `}
-  
-  <h2>CLÁUSULAS CONTRATUAIS</h2>
-  <p><strong>1. DA VIGÊNCIA</strong><br>O presente contrato terá vigência de ${contrato.plano_meses || 1} meses.</p>
-  <p><strong>2. DO CONTEÚDO</strong><br>O CONTRATANTE é integralmente responsável pelo conteúdo publicitário veiculado.</p>
-  <p><strong>3. DAS ESPECIFICAÇÕES TÉCNICAS</strong><br>Os vídeos devem ter: duração de 15 segundos, formato horizontal (16:9), resolução mínima de 1920x1080, sem áudio.</p>
-  <p><strong>4. DA APROVAÇÃO</strong><br>O material publicitário está sujeito à aprovação da CONTRATADA.</p>
-  <p><strong>5. DO PAGAMENTO</strong><br>Os pagamentos deverão ser realizados conforme condição estabelecida.</p>
-  <p><strong>6. DA RESCISÃO</strong><br>A rescisão antecipada implica multa de 30% do valor restante.</p>
-  <p><strong>7. DO USO DE IMAGEM</strong><br>O CONTRATANTE autoriza uso de imagens para divulgação e portfólio.</p>
-  ${contrato.clausulas_especiais ? `<p><strong>8. CLÁUSULAS ESPECIAIS</strong><br>${contrato.clausulas_especiais}</p>` : ''}
-  
-  <div class="signature-area">
-    <div class="signature-box">
-      <div class="signature-line">EXA MÍDIA LTDA<br><small>CONTRATADA</small></div>
-    </div>
-    <div class="signature-box">
-      <div class="signature-line">${contrato.cliente_nome}<br><small>CONTRATANTE</small></div>
-    </div>
-  </div>
-</body>
-</html>`;
-                  
-                  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `${contrato.numero_contrato}_editavel.html`;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                  toast.success('Arquivo editável baixado!');
-                }}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Baixar Editável
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => setEditorOpen(true)}
-              >
-                <Edit3 className="h-4 w-4 mr-2" />
-                Editar Cláusulas
-              </Button>
-              <Button 
-                onClick={() => sendMutation.mutate()}
-                disabled={sendMutation.isPending}
-                className="bg-primary"
-              >
-                {sendMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-                Enviar para Assinatura
-              </Button>
-            </>
-          )}
-          {['enviado', 'visualizado'].includes(contrato.status) && (
-            <>
-              <Button 
-                variant="outline"
-                onClick={() => resendMutation.mutate()}
-                disabled={resendMutation.isPending}
-              >
-                {resendMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                Reenviar
-              </Button>
-              <Button 
-                variant="destructive"
-                onClick={() => cancelMutation.mutate()}
-                disabled={cancelMutation.isPending}
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Cancelar
-              </Button>
-            </>
-          )}
-          {contrato.status === 'assinado' && contrato.clicksign_download_url && (
-            <Button onClick={() => window.open(contrato.clicksign_download_url, '_blank')}>
-              <Download className="h-4 w-4 mr-2" />
-              Baixar PDF Assinado
-            </Button>
-          )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {contrato.status === 'rascunho' && (
+                <>
+                  <DropdownMenuItem onClick={() => setEditorOpen(true)}>
+                    <Edit3 className="h-4 w-4 mr-2" />
+                    Editar Cláusulas
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={async () => {
+                    try {
+                      const exporter = new ContractPDFExporter();
+                      await exporter.generateContractPDF({
+                        ...contrato,
+                        lista_predios: listaPredios,
+                        parcelas: Array.isArray(contrato.parcelas) ? contrato.parcelas : []
+                      });
+                      toast.success('PDF gerado!');
+                    } catch (err) {
+                      toast.error('Erro ao gerar PDF');
+                    }
+                  }}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Baixar PDF
+                  </DropdownMenuItem>
+                </>
+              )}
+              {contrato.status === 'assinado' && contrato.clicksign_download_url && (
+                <DropdownMenuItem onClick={() => window.open(contrato.clicksign_download_url, '_blank')}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Baixar Assinado
+                </DropdownMenuItem>
+              )}
+              {['enviado', 'visualizado'].includes(contrato.status) && (
+                <>
+                  <DropdownMenuItem onClick={() => resendMutation.mutate()}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Reenviar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => cancelMutation.mutate()} className="text-red-600">
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Cancelar
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Timeline */}
-          <Card className="p-6 bg-white/80 backdrop-blur-sm">
-            <h3 className="text-lg font-semibold mb-4">Timeline</h3>
-            <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              {[
-                { key: 'created', label: 'Criado', date: contrato.created_at, done: true },
-                { key: 'sent', label: 'Enviado', date: contrato.enviado_em, done: !!contrato.enviado_em },
-                { key: 'viewed', label: 'Visualizado', date: contrato.visualizado_em, done: !!contrato.visualizado_em },
-                { key: 'signed', label: 'Assinado', date: contrato.assinado_em, done: !!contrato.assinado_em }
-              ].map((step, i, arr) => (
-                <React.Fragment key={step.key}>
-                  <div className={`flex flex-col items-center min-w-[80px] ${step.done ? 'text-primary' : 'text-muted-foreground'}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      step.done ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                    }`}>
-                      {step.done ? <CheckCircle2 className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
-                    </div>
-                    <span className="text-xs mt-1 font-medium">{step.label}</span>
-                    {step.date && (
-                      <span className="text-[10px] text-muted-foreground">
-                        {format(new Date(step.date), "dd/MM HH:mm")}
-                      </span>
-                    )}
+      <div className="p-3 space-y-3">
+        {/* Timeline Horizontal */}
+        <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
+          <div className="flex items-center justify-between overflow-x-auto scrollbar-hide">
+            {timelineSteps.map((step, i, arr) => (
+              <React.Fragment key={step.key}>
+                <div className={`flex flex-col items-center min-w-[60px] ${step.done ? 'text-[#9C1E1E]' : 'text-gray-300'}`}>
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs ${
+                    step.done ? 'bg-[#9C1E1E] text-white' : 'bg-gray-100'
+                  }`}>
+                    {step.done ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
                   </div>
-                  {i < arr.length - 1 && (
-                    <div className={`flex-1 h-0.5 min-w-[20px] ${step.done ? 'bg-primary' : 'bg-muted'}`} />
+                  <span className="text-[10px] mt-1 font-medium">{step.label}</span>
+                  {step.date && (
+                    <span className="text-[9px] text-muted-foreground">
+                      {format(new Date(step.date), "dd/MM")}
+                    </span>
                   )}
-                </React.Fragment>
-              ))}
-            </div>
-          </Card>
+                </div>
+                {i < arr.length - 1 && (
+                  <div className={`flex-1 h-0.5 min-w-[20px] ${step.done ? 'bg-[#9C1E1E]' : 'bg-gray-200'}`} />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </Card>
 
-          {/* Dados do Cliente */}
-          <Card className="p-6 bg-white/80 backdrop-blur-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <User className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold">Dados do Cliente</h3>
+        {/* Cliente */}
+        <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
+          <div className="flex items-center gap-2 mb-2">
+            <User className="h-4 w-4 text-[#9C1E1E]" />
+            <h3 className="font-semibold text-sm">Cliente</h3>
+          </div>
+          <div className="space-y-1.5 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground text-xs">Nome</span>
+              <span className="font-medium text-xs">{contrato.cliente_nome}</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-muted-foreground">Nome</p>
-                <p className="font-medium">{contrato.cliente_nome}</p>
+            {contrato.cliente_cnpj && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-xs">CNPJ</span>
+                <span className="text-xs">{contrato.cliente_cnpj}</span>
               </div>
-              <div>
-                <p className="text-muted-foreground">E-mail</p>
-                <p className="font-medium">{contrato.cliente_email}</p>
+            )}
+            {contrato.cliente_email && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-xs">Email</span>
+                <span className="text-xs truncate ml-2 max-w-[150px]">{contrato.cliente_email}</span>
               </div>
-              <div>
-                <p className="text-muted-foreground">CNPJ</p>
-                <p className="font-medium">{contrato.cliente_cnpj || '-'}</p>
+            )}
+            {contrato.cliente_telefone && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-xs">Telefone</span>
+                <span className="text-xs">{contrato.cliente_telefone}</span>
               </div>
-              <div>
-                <p className="text-muted-foreground">Razão Social</p>
-                <p className="font-medium">{contrato.cliente_razao_social || '-'}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Telefone</p>
-                <p className="font-medium">{contrato.cliente_telefone || '-'}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Segmento</p>
-                <p className="font-medium">{contrato.cliente_segmento || '-'}</p>
-              </div>
-            </div>
-          </Card>
+            )}
+          </div>
+        </Card>
 
-          {/* Prédios */}
-          {listaPredios.length > 0 && (
-            <Card className="p-6 bg-white/80 backdrop-blur-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <Building2 className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-semibold">Locais Contratados</h3>
-              </div>
-              <div className="space-y-2">
-                {listaPredios.map((predio: any, i: number) => (
-                  <div key={i} className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
-                    <div>
-                      <p className="font-medium">{predio.nome || predio.building_name}</p>
-                      <p className="text-sm text-muted-foreground">{predio.bairro}</p>
-                    </div>
-                    <span className="text-sm">{predio.quantidade_telas || 1} tela(s)</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
-
-          {/* Preview do Contrato */}
-          <Card className="p-6 bg-white/80 backdrop-blur-sm">
-            <h3 className="text-lg font-semibold mb-4">Prévia do Contrato</h3>
-            <div className="border rounded-lg overflow-hidden max-h-[400px] overflow-y-auto">
-              <ContractPreview data={{
-                ...contrato,
-                lista_predios: Array.isArray(contrato.lista_predios) ? contrato.lista_predios : [],
-                parcelas: Array.isArray(contrato.parcelas) ? contrato.parcelas : []
-              }} />
+        {/* Valores */}
+        <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
+          <div className="flex items-center gap-2 mb-2">
+            <CreditCard className="h-4 w-4 text-[#9C1E1E]" />
+            <h3 className="font-semibold text-sm">Valores</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="p-2 bg-emerald-50 rounded-lg">
+              <p className="text-[10px] text-muted-foreground">Total</p>
+              <p className="text-base font-bold text-emerald-600">{formatCurrency(contrato.valor_total)}</p>
             </div>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Valores */}
-          <Card className="p-6 bg-white/80 backdrop-blur-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <CreditCard className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold">Valores</h3>
+            <div className="p-2 bg-gray-50 rounded-lg">
+              <p className="text-[10px] text-muted-foreground">Mensal</p>
+              <p className="text-base font-bold">{formatCurrency(contrato.valor_mensal)}</p>
             </div>
-            <div className="space-y-3">
-              {contrato.metodo_pagamento === 'custom' ? (
-                <>
-                  <div className="mb-2">
-                    <span className="text-xs font-medium text-amber-600 bg-amber-100 px-2 py-1 rounded">
-                      Condição Personalizada
+          </div>
+          <div className="mt-2 flex justify-between text-xs">
+            <span className="text-muted-foreground">Duração</span>
+            <span className="font-medium">{contrato.plano_meses} meses</span>
+          </div>
+        </Card>
+
+        {/* Prédios */}
+        <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
+          <div className="flex items-center gap-2 mb-2">
+            <Building2 className="h-4 w-4 text-[#9C1E1E]" />
+            <h3 className="font-semibold text-sm">Prédios ({listaPredios.length})</h3>
+          </div>
+          <div className="space-y-1.5 max-h-32 overflow-y-auto">
+            {listaPredios.map((predio: any, index: number) => (
+              <div key={index} className="flex justify-between text-xs p-1.5 bg-gray-50 rounded">
+                <span className="truncate">{predio.building_name || predio.nome}</span>
+                <span className="text-muted-foreground">{predio.quantidade_telas || 1} tela(s)</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Histórico */}
+        {logs && logs.length > 0 && (
+          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="h-4 w-4 text-[#9C1E1E]" />
+              <h3 className="font-semibold text-sm">Histórico</h3>
+            </div>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {logs.slice(0, 5).map((log: any) => (
+                <div key={log.id} className="flex items-start gap-2 text-xs">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#9C1E1E] mt-1.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <span className="font-medium">{log.acao}</span>
+                    <span className="text-muted-foreground ml-2">
+                      {format(new Date(log.created_at), "dd/MM HH:mm", { locale: ptBR })}
                     </span>
                   </div>
-                  {Array.isArray(contrato.parcelas) && contrato.parcelas.map((p: any, i: number) => (
-                    <div key={i} className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{i + 1}ª Parcela ({p.due_date ? new Date(p.due_date).toLocaleDateString('pt-BR') : '-'})</span>
-                      <span className="font-medium">{formatCurrency(p.amount)}</span>
-                    </div>
-                  ))}
-                </>
-              ) : (
-                <>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Valor Mensal</span>
-                    <span className="font-semibold">{formatCurrency(contrato.valor_mensal)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Duração</span>
-                    <span className="font-semibold">{contrato.plano_meses} meses</span>
-                  </div>
-                </>
-              )}
-              <Separator />
-              <div className="flex justify-between text-lg">
-                <span className="font-medium">Total</span>
-                <span className="font-bold text-primary">{formatCurrency(contrato.valor_total)}</span>
-              </div>
-            </div>
-          </Card>
-
-          {/* Datas */}
-          <Card className="p-6 bg-white/80 backdrop-blur-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <Calendar className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold">Datas</h3>
-            </div>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Criado em</span>
-                <span>{format(new Date(contrato.created_at), "dd/MM/yyyy", { locale: ptBR })}</span>
-              </div>
-              {contrato.data_inicio && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Início</span>
-                  <span>{format(new Date(contrato.data_inicio), "dd/MM/yyyy", { locale: ptBR })}</span>
-                </div>
-              )}
-              {contrato.dia_vencimento && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Vencimento</span>
-                  <span>Dia {contrato.dia_vencimento}</span>
-                </div>
-              )}
-            </div>
-          </Card>
-
-          {/* Histórico de Logs */}
-          <Card className="p-6 bg-white/80 backdrop-blur-sm">
-            <h3 className="text-lg font-semibold mb-4">Histórico</h3>
-            <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {logs?.map(log => (
-                <div key={log.id} className="flex gap-3 text-sm">
-                  <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-medium capitalize">{log.acao}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(log.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                    </p>
-                  </div>
                 </div>
               ))}
-              {(!logs || logs.length === 0) && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Nenhum evento registrado
-                </p>
-              )}
             </div>
           </Card>
-        </div>
+        )}
       </div>
 
-      {/* Editor de Cláusulas Especiais em Tela Cheia */}
-      <FullscreenContractEditor
-        isOpen={editorOpen}
-        onClose={() => setEditorOpen(false)}
-        initialContent={contrato.clausulas_especiais || ''}
-        onSave={(content) => saveClausulasMutation.mutate(content)}
-        title={`Editar Cláusulas - ${contrato.numero_contrato}`}
-      />
+      {/* Fixed Bottom Actions */}
+      <div className="fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-xl border-t border-gray-100 safe-area-bottom">
+        {contrato.status === 'rascunho' && (
+          <Button 
+            onClick={() => sendMutation.mutate()}
+            disabled={sendMutation.isPending}
+            className="w-full bg-[#9C1E1E] hover:bg-[#7D1818] h-11"
+          >
+            {sendMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Send className="h-4 w-4 mr-2" />
+            )}
+            Enviar para Assinatura
+          </Button>
+        )}
+        {['enviado', 'visualizado'].includes(contrato.status) && (
+          <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => resendMutation.mutate()}
+              disabled={resendMutation.isPending}
+              className="flex-1 h-11"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Reenviar
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => cancelMutation.mutate()}
+              disabled={cancelMutation.isPending}
+              className="flex-1 h-11"
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              Cancelar
+            </Button>
+          </div>
+        )}
+        {contrato.status === 'assinado' && contrato.clicksign_download_url && (
+          <Button 
+            onClick={() => window.open(contrato.clicksign_download_url, '_blank')}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 h-11"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Baixar PDF Assinado
+          </Button>
+        )}
+      </div>
+
+      {/* Editor Modal */}
+      {editorOpen && (
+        <FullscreenContractEditor
+          isOpen={editorOpen}
+          onClose={() => setEditorOpen(false)}
+          initialContent={contrato.clausulas_especiais || ''}
+          onSave={(clausulas) => saveClausulasMutation.mutate(clausulas)}
+          title={`Editar Cláusulas - ${contrato.numero_contrato}`}
+        />
+      )}
     </div>
   );
 };
