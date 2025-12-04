@@ -7778,6 +7778,43 @@ export type Database = {
           video_status: string
         }[]
       }
+      get_pedidos_com_status_correto: {
+        Args: {
+          p_client_id?: string
+          p_end_date?: string
+          p_limit?: number
+          p_page?: number
+          p_start_date?: string
+          p_status?: string
+        }
+        Returns: {
+          client_cpf: string
+          client_email: string
+          client_id: string
+          client_name: string
+          client_phone: string
+          correct_status: string
+          coupon_category: string
+          coupon_code: string
+          created_at: string
+          cupom_id: string
+          data_fim: string
+          data_inicio: string
+          id: string
+          is_fidelidade: boolean
+          lista_paineis: Json
+          metodo_pagamento: string
+          plano_meses: number
+          predios_selecionados: Json
+          selected_buildings: Json
+          status: string
+          tipo_pagamento: string
+          total_parcelas: number
+          type: string
+          valor_total: number
+          video_status: string
+        }[]
+      }
       get_pending_approval_videos: {
         Args: never
         Returns: {
