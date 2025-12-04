@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Check, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Lock, Check, Loader2, AlertCircle, LogIn, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
+
+type TokenErrorType = 'expired' | 'used' | 'invalid' | null;
 
 const DefinirSenhaPage = () => {
   const navigate = useNavigate();
@@ -19,48 +21,89 @@ const DefinirSenhaPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isValidating, setIsValidating] = useState(true);
+  const [tokenError, setTokenError] = useState<TokenErrorType>(null);
 
   // Validate token on mount
   useEffect(() => {
     const validateSession = async () => {
       try {
-        // Check if we have a valid session from the recovery link
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Session error:', error);
-          toast.error('Link inválido ou expirado. Solicite um novo link.');
-          setTimeout(() => navigate('/login'), 2000);
+        // Check URL hash for tokens or errors
+        const hash = window.location.hash;
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        const errorCode = params.get('error_code');
+        const errorDescription = params.get('error_description');
+        const error = params.get('error');
+
+        console.log('🔐 [DEFINIR SENHA] Validando sessão...', { 
+          hasHash: !!hash, 
+          hasAccessToken: !!accessToken,
+          errorCode,
+          errorDescription,
+          error 
+        });
+
+        // Check for error in URL (Supabase redirects with error if token invalid)
+        if (errorCode || error || errorDescription?.toLowerCase().includes('expired')) {
+          console.error('🔐 [DEFINIR SENHA] Erro detectado na URL:', errorCode, errorDescription);
+          setTokenError('expired');
+          setIsValidating(false);
           return;
         }
 
-        if (!session) {
-          // Try to exchange the token from URL
-          const hash = window.location.hash;
-          if (hash) {
-            const params = new URLSearchParams(hash.substring(1));
-            const accessToken = params.get('access_token');
-            const refreshToken = params.get('refresh_token');
+        // If we have tokens in URL, try to set session
+        if (accessToken && refreshToken) {
+          const { error: setError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+          
+          if (setError) {
+            console.error('🔐 [DEFINIR SENHA] Erro ao definir sessão:', setError);
             
-            if (accessToken && refreshToken) {
-              const { error: setError } = await supabase.auth.setSession({
-                access_token: accessToken,
-                refresh_token: refreshToken
-              });
-              
-              if (setError) {
-                console.error('Set session error:', setError);
-                toast.error('Link inválido ou expirado');
-                setTimeout(() => navigate('/login'), 2000);
-                return;
-              }
+            // Check error type
+            if (setError.message?.toLowerCase().includes('expired') || 
+                setError.message?.toLowerCase().includes('invalid')) {
+              setTokenError('expired');
+            } else {
+              setTokenError('invalid');
             }
+            setIsValidating(false);
+            return;
           }
+
+          // Success - session set from URL tokens
+          console.log('🔐 [DEFINIR SENHA] Sessão definida com sucesso via URL tokens');
+          setIsValidating(false);
+          return;
         }
+
+        // Check existing session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
+        if (sessionError) {
+          console.error('🔐 [DEFINIR SENHA] Erro ao verificar sessão:', sessionError);
+          setTokenError('invalid');
+          setIsValidating(false);
+          return;
+        }
+
+        if (session) {
+          // User already has valid session - can proceed
+          console.log('🔐 [DEFINIR SENHA] Sessão existente válida encontrada');
+          setIsValidating(false);
+          return;
+        }
+
+        // No session, no tokens in URL = link was already used or never valid
+        console.warn('🔐 [DEFINIR SENHA] Sem sessão e sem tokens na URL - link provavelmente já usado');
+        setTokenError('used');
         setIsValidating(false);
+        
       } catch (err) {
-        console.error('Validation error:', err);
+        console.error('🔐 [DEFINIR SENHA] Erro na validação:', err);
+        setTokenError('invalid');
         setIsValidating(false);
       }
     };
@@ -102,6 +145,15 @@ const DefinirSenhaPage = () => {
     setIsLoading(true);
 
     try {
+      // Verify session before updating
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        setTokenError('used');
+        setIsLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: password
       });
@@ -120,7 +172,14 @@ const DefinirSenhaPage = () => {
 
     } catch (err: any) {
       console.error('Password update error:', err);
-      toast.error(err.message || 'Erro ao definir senha. Tente novamente.');
+      
+      // Check if it's an auth session error
+      if (err.message?.toLowerCase().includes('session') || 
+          err.message?.toLowerCase().includes('auth')) {
+        setTokenError('used');
+      } else {
+        toast.error(err.message || 'Erro ao definir senha. Tente novamente.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -128,6 +187,7 @@ const DefinirSenhaPage = () => {
 
   const strength = passwordStrength();
 
+  // Loading state
   if (isValidating) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 flex items-center justify-center">
@@ -139,6 +199,73 @@ const DefinirSenhaPage = () => {
     );
   }
 
+  // Token error state - show friendly message with options
+  if (tokenError) {
+    const errorConfig = {
+      expired: {
+        title: 'Link Expirado',
+        message: 'Este link de definição de senha expirou. Links são válidos por 24 horas. Solicite um novo link ou tente fazer login.',
+        icon: <AlertCircle className="h-8 w-8 text-amber-600" />,
+        bgIcon: 'bg-amber-100'
+      },
+      used: {
+        title: 'Link Já Utilizado',
+        message: 'Parece que você já definiu sua senha anteriormente. Tente fazer login com sua senha atual ou solicite um novo link.',
+        icon: <Check className="h-8 w-8 text-blue-600" />,
+        bgIcon: 'bg-blue-100'
+      },
+      invalid: {
+        title: 'Link Inválido',
+        message: 'Este link não é válido. Verifique se copiou o link corretamente ou solicite um novo link.',
+        icon: <AlertCircle className="h-8 w-8 text-red-600" />,
+        bgIcon: 'bg-red-100'
+      }
+    };
+
+    const config = errorConfig[tokenError];
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full p-8 text-center bg-white/95 backdrop-blur-sm shadow-xl">
+          {/* Logo */}
+          <UnifiedLogo variant="light" size="lg" className="mx-auto mb-6" />
+          
+          {/* Error Icon */}
+          <div className={`w-16 h-16 ${config.bgIcon} rounded-full flex items-center justify-center mx-auto mb-6`}>
+            {config.icon}
+          </div>
+          
+          <h1 className="text-xl font-bold text-foreground mb-2">{config.title}</h1>
+          <p className="text-muted-foreground text-sm mb-8">{config.message}</p>
+          
+          <div className="space-y-3">
+            <Button 
+              onClick={() => navigate('/login')} 
+              className="w-full h-11 bg-[#9C1E1E] hover:bg-[#7D1818] text-white font-semibold"
+            >
+              <LogIn className="h-4 w-4 mr-2" />
+              Fazer Login
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/esqueci-senha')} 
+              className="w-full h-11"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Solicitar Novo Link
+            </Button>
+          </div>
+
+          <p className="text-xs text-muted-foreground mt-6">
+            Se precisar de ajuda, entre em contato com nosso suporte.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  // Success state
   if (isSuccess) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-white flex items-center justify-center p-4">
@@ -156,6 +283,7 @@ const DefinirSenhaPage = () => {
     );
   }
 
+  // Main form
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 flex items-center justify-center p-4">
       <Card className="max-w-md w-full p-8 bg-white/95 backdrop-blur-sm shadow-xl">
