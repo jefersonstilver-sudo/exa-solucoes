@@ -113,9 +113,15 @@ export function createProposalAcceptedEmail(data: ProposalAcceptedEmailData): st
     `;
   } else {
     // STANDARD PAYMENT
-    const fidelTotal = data.fidelMonthlyValue * data.durationMonths;
-    selectedValue = data.selectedPlan === 'avista' ? data.cashTotalValue : fidelTotal;
-    selectedLabel = data.selectedPlan === 'avista' ? 'À Vista' : 'Fidelidade';
+    if (data.selectedPlan === 'avista') {
+      selectedValue = data.cashTotalValue;
+      selectedLabel = 'À Vista (Pagamento Único)';
+    } else {
+      // FIDELIDADE: Mostrar valor mensal, não o total
+      selectedValue = data.fidelMonthlyValue;
+      const fidelTotal = data.fidelMonthlyValue * data.durationMonths;
+      selectedLabel = `Fidelidade (${data.durationMonths}x de ${formatCurrency(data.fidelMonthlyValue)})`;
+    }
 
     // Calculate discount breakdown for standard payments
     const fullMonthly = data.fullMonthlyPrice || 0;
@@ -230,14 +236,20 @@ export function createProposalAcceptedEmail(data: ProposalAcceptedEmailData): st
       ? formatDate(data.boletoData.dueDate)
       : 'Em até 3 dias úteis';
     
+    // Para fidelidade, mostrar valor mensal (1ª parcela), não total
+    const boletoDisplayValue = data.selectedPlan === 'fidelidade' && !isCustomPayment 
+      ? data.fidelMonthlyValue 
+      : paymentValue;
+    const showInstallmentLabel = data.selectedPlan === 'fidelidade' && !isCustomPayment;
+    
     paymentSectionHtml = `
       <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; text-align: center;">
         <p style="color: #374151; margin: 0 0 8px 0; font-size: 15px; font-weight: 600;">
           Boleto Bancário
         </p>
         <p style="color: #8B1A1A; margin: 0 0 16px 0; font-size: 20px; font-weight: 700;">
-          ${formatCurrency(paymentValue)}
-          ${isCustomPayment ? '<span style="font-size: 12px; font-weight: 500; color: #6B7280;"> (1ª parcela)</span>' : ''}
+          ${formatCurrency(boletoDisplayValue)}
+          ${isCustomPayment || showInstallmentLabel ? '<span style="font-size: 12px; font-weight: 500; color: #6B7280;"> (1ª parcela)</span>' : ''}
         </p>
         
         <p style="color: #6B7280; font-size: 14px; margin: 0 0 16px 0;">
@@ -309,7 +321,9 @@ export function createProposalAcceptedEmail(data: ProposalAcceptedEmailData): st
             Opção escolhida: <strong>${selectedLabel}</strong><br>
             ${isCustomPayment && customInstallments.length > 0 
               ? `Valor da 1ª parcela: <strong>${formatCurrency(Number(customInstallments[0].amount))}</strong>`
-              : `Valor: <strong>${formatCurrency(selectedValue)}</strong>`
+              : data.selectedPlan === 'avista'
+                ? `Valor Total: <strong>${formatCurrency(selectedValue)}</strong>`
+                : `Valor Mensal: <strong>${formatCurrency(data.fidelMonthlyValue)}</strong> × ${data.durationMonths} meses<br>Total: <strong>${formatCurrency(data.fidelMonthlyValue * data.durationMonths)}</strong>`
             }
           </p>
         </div>

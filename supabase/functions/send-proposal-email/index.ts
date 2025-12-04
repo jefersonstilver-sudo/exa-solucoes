@@ -109,21 +109,20 @@ serve(async (req) => {
   <div class="email-wrapper" style="width: 100%; background-color: #f5f5f5 !important; padding: 40px 20px;">
     <div class="email-container" style="max-width: 560px; margin: 0 auto; background-color: #ffffff !important; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);">
       
-      <!-- Header - CLEAN WHITE with logo -->
-      <div style="background-color: #ffffff; padding: 32px; text-align: center; border-bottom: 1px solid #f0f0f0;">
+      <!-- Header - RED EXA GRADIENT (igual aos outros emails) -->
+      <div style="background: linear-gradient(135deg, #8B1A1A 0%, #A52020 100%); padding: 40px 32px; text-align: center;">
         <img 
           src="${EXA_LOGO_URL}" 
           alt="EXA Mídia" 
-          style="height: 48px; width: auto; display: block; margin: 0 auto;"
+          style="height: 48px; width: auto; display: block; margin: 0 auto 16px auto; filter: brightness(0) invert(1);"
         />
+        <h1 style="color: #ffffff; font-size: 22px; font-weight: 700; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          Nova Proposta Comercial
+        </h1>
       </div>
       
       <!-- Content -->
       <div style="padding: 40px 32px; background-color: #ffffff !important;">
-        
-        <h1 style="color: #111827; font-size: 22px; font-weight: 600; text-align: center; margin: 0 0 8px;">
-          Nova Proposta Comercial
-        </h1>
         
         <p style="color: #6B7280; font-size: 14px; text-align: center; margin: 0 0 32px;">
           Proposta ${proposal.number}
