@@ -20,7 +20,9 @@ export interface VendedorProposalStats {
   enviadas: number;
   aguardando: number;
   aceitas: number;
-  valorVendido: number;
+  valorRecebido: number;     // Receita EFETIVA (parcelas pagas)
+  valorProjetado: number;    // Receita PROJETADA (parcelas pendentes)
+  valorVendido: number;      // Soma total (recebido + projetado)
   taxaConversao: number;
 }
 
@@ -344,7 +346,7 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       // 7. Propostas do Período
       const { data: propostasData } = await supabase
         .from('proposals')
-        .select('id, status, cash_total_value, created_by, seller_name')
+        .select('id, status, cash_total_value, created_by, seller_name, payment_type')
         .gte('created_at', start)
         .lte('created_at', end);
 
@@ -359,7 +361,58 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         sum + (p.cash_total_value || 0), 0
       ) || 0;
 
-      // Agrupar por vendedor
+      // Buscar pedidos convertidos de propostas aceitas para calcular receita efetiva
+      const propostasAceitasIds = propostasData
+        ?.filter(p => ['aceita', 'convertida'].includes(p.status))
+        .map(p => p.id) || [];
+
+      // Buscar pedidos que vieram dessas propostas
+      let pedidosPorPropostaMap: Record<string, { id: string; is_fidelidade: boolean; total_parcelas: number }> = {};
+      let parcelasPagasPorPedidoRanking: Record<string, number> = {};
+      let parcelasPendentesPorPedidoRanking: Record<string, number> = {};
+
+      if (propostasAceitasIds.length > 0) {
+        const { data: pedidosConvertidos } = await supabase
+          .from('pedidos')
+          .select('id, proposal_id, is_fidelidade, total_parcelas, metodo_pagamento')
+          .in('proposal_id', propostasAceitasIds);
+
+        pedidosConvertidos?.forEach(ped => {
+          if (ped.proposal_id) {
+            pedidosPorPropostaMap[ped.proposal_id] = {
+              id: ped.id,
+              is_fidelidade: ped.is_fidelidade || ped.metodo_pagamento === 'personalizado',
+              total_parcelas: ped.total_parcelas || 1
+            };
+          }
+        });
+
+        // Buscar parcelas pagas e pendentes desses pedidos
+        const pedidoIdsConvertidos = pedidosConvertidos?.map(p => p.id) || [];
+        if (pedidoIdsConvertidos.length > 0) {
+          const { data: parcelasRankingPagas } = await supabase
+            .from('parcelas')
+            .select('pedido_id, valor_final')
+            .in('pedido_id', pedidoIdsConvertidos)
+            .eq('status', 'pago');
+
+          const { data: parcelasRankingPendentes } = await supabase
+            .from('parcelas')
+            .select('pedido_id, valor_final')
+            .in('pedido_id', pedidoIdsConvertidos)
+            .in('status', ['pendente', 'atrasado']);
+
+          parcelasRankingPagas?.forEach(p => {
+            parcelasPagasPorPedidoRanking[p.pedido_id] = (parcelasPagasPorPedidoRanking[p.pedido_id] || 0) + (p.valor_final || 0);
+          });
+
+          parcelasRankingPendentes?.forEach(p => {
+            parcelasPendentesPorPedidoRanking[p.pedido_id] = (parcelasPendentesPorPedidoRanking[p.pedido_id] || 0) + (p.valor_final || 0);
+          });
+        }
+      }
+
+      // Agrupar por vendedor com receita efetiva e projetada
       const vendedoresMap: Record<string, VendedorProposalStats> = {};
       propostasData?.forEach(p => {
         const vendedorId = p.created_by || 'unknown';
@@ -372,6 +425,8 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
             enviadas: 0,
             aguardando: 0,
             aceitas: 0,
+            valorRecebido: 0,
+            valorProjetado: 0,
             valorVendido: 0,
             taxaConversao: 0
           };
@@ -385,17 +440,32 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         
         if (['aceita', 'convertida'].includes(p.status)) {
           vendedoresMap[vendedorId].aceitas++;
-          vendedoresMap[vendedorId].valorVendido += p.cash_total_value || 0;
+          
+          // Verificar se tem pedido convertido com parcelas
+          const pedidoConvertido = pedidosPorPropostaMap[p.id];
+          
+          if (pedidoConvertido && (pedidoConvertido.is_fidelidade || pedidoConvertido.total_parcelas > 1)) {
+            // Pedido parcelado: usar valores das parcelas
+            const valorPago = parcelasPagasPorPedidoRanking[pedidoConvertido.id] || 0;
+            const valorPendente = parcelasPendentesPorPedidoRanking[pedidoConvertido.id] || 0;
+            
+            vendedoresMap[vendedorId].valorRecebido += valorPago;
+            vendedoresMap[vendedorId].valorProjetado += valorPendente;
+          } else {
+            // Pagamento único (PIX à vista): usar valor cheio como recebido
+            vendedoresMap[vendedorId].valorRecebido += p.cash_total_value || 0;
+          }
         }
       });
 
-      // Calcular taxa de conversão e ordenar por valor vendido
+      // Calcular taxa de conversão e ordenar por valor RECEBIDO (não projetado)
       const propostasPorVendedor = Object.values(vendedoresMap)
         .map(v => ({
           ...v,
+          valorVendido: v.valorRecebido + v.valorProjetado,
           taxaConversao: v.enviadas > 0 ? (v.aceitas / v.enviadas) * 100 : 0
         }))
-        .sort((a, b) => b.valorVendido - a.valorVendido);
+        .sort((a, b) => b.valorRecebido - a.valorRecebido);
 
       setStats({
         cadastros: cadastros || 0,
