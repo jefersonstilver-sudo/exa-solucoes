@@ -479,6 +479,7 @@ export const CompanyBrandSection: React.FC = () => {
   const [companyCountry, setCompanyCountry] = useState<'BR' | 'AR' | 'PY' | ''>('');
   const [companyDocument, setCompanyDocument] = useState('');
   const [businessSegment, setBusinessSegment] = useState('');
+  const [companyAddress, setCompanyAddress] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsAcceptedDate, setTermsAcceptedDate] = useState<string | null>(null);
   const [segmentPopoverOpen, setSegmentPopoverOpen] = useState(false);
@@ -496,13 +497,14 @@ export const CompanyBrandSection: React.FC = () => {
       const {
         data,
         error
-      } = await supabase.from('users').select('empresa_nome, empresa_pais, empresa_documento, empresa_segmento, empresa_aceite_termo, empresa_aceite_termo_data').eq('id', user.id).single();
+      } = await supabase.from('users').select('empresa_nome, empresa_pais, empresa_documento, empresa_segmento, empresa_endereco, empresa_aceite_termo, empresa_aceite_termo_data').eq('id', user.id).single();
       if (error) throw error;
       if (data) {
         setCompanyName(data.empresa_nome || '');
         setCompanyCountry(data.empresa_pais as 'BR' | 'AR' | 'PY' || '');
         setCompanyDocument(data.empresa_documento || '');
         setBusinessSegment(data.empresa_segmento || '');
+        setCompanyAddress(data.empresa_endereco || '');
         setTermsAccepted(data.empresa_aceite_termo || false);
         setTermsAcceptedDate(data.empresa_aceite_termo_data || null);
       }
@@ -557,6 +559,7 @@ export const CompanyBrandSection: React.FC = () => {
         empresa_pais: companyCountry,
         empresa_documento: companyDocument,
         empresa_segmento: businessSegment,
+        empresa_endereco: companyAddress,
         empresa_aceite_termo: termsAccepted
       };
 
@@ -693,6 +696,22 @@ export const CompanyBrandSection: React.FC = () => {
           </Popover>
           <p className="text-xs text-gray-600">
             Digite para buscar o segmento que melhor descreve sua empresa
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="companyAddress" className="flex items-center">
+            <Building2 className="h-4 w-4 mr-2" />
+            Endereço Completo
+          </Label>
+          <Input 
+            id="companyAddress" 
+            value={companyAddress} 
+            onChange={e => setCompanyAddress(e.target.value)} 
+            placeholder="Rua, número, bairro, cidade - UF" 
+          />
+          <p className="text-xs text-gray-600">
+            Endereço que aparecerá nos contratos
           </p>
         </div>
 
