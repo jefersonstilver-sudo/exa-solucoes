@@ -3,12 +3,20 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-const CustomCheckbox = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  ({ className, ...props }, ref) => {
+interface CustomCheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  onCheckedChange?: (checked: boolean) => void;
+}
+
+const CustomCheckbox = React.forwardRef<HTMLInputElement, CustomCheckboxProps>(
+  ({ className, onCheckedChange, onChange, ...props }, ref) => {
     return (
       <input
         type="checkbox"
         ref={ref}
+        onChange={(e) => {
+          onChange?.(e);
+          onCheckedChange?.(e.target.checked);
+        }}
         className={cn(
           "border-1 relative box-border block h-[1.5rem] w-[1.5rem] cursor-pointer appearance-none rounded-md border-[#d9d9d9] bg-slate-200 transition-all duration-300",
           "before:absolute before:left-2/4 before:top-[42%] before:h-[10px] before:w-[6px]",
@@ -22,6 +30,7 @@ const CustomCheckbox = React.forwardRef<HTMLInputElement, React.InputHTMLAttribu
           "checked:before:rotate-45 checked:before:scale-x-[1.4] checked:before:scale-y-[1.4]",
           "checked:before:opacity-100 checked:before:transition-all checked:before:delay-100 checked:before:duration-200",
           "hover:border-[#1677ff] focus:outline-[#1677ff]",
+          "disabled:cursor-not-allowed disabled:opacity-40",
           "[&:active:not(:checked)]:after:opacity-100 [&:active:not(:checked)]:after:shadow-none [&:active:not(:checked)]:after:transition-none",
           className
         )}
