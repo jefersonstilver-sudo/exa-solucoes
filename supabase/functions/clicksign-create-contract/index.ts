@@ -310,69 +310,86 @@ serve(async (req) => {
       }
     }
 
-    // ========== 7. Vincular Signatário CLIENTE ao Documento ==========
-    const clientSignaturePayload = {
+    // ========== 7. Criar Requirement CLIENTE (vincular signatário ao documento) ==========
+    // ClickSign v3 usa /requirements com relationships para vincular signatários a documentos
+    const clientRequirementPayload = {
       data: {
-        type: "request_signatures",
+        type: "requirements",
         attributes: {
-          signer_key: clientSignerKey,
-          sign_as: "sign",
-          refusable: true
+          action: "sign",
+          role: "contractor"
+        },
+        relationships: {
+          document: {
+            data: { type: "documents", id: documentKey }
+          },
+          signer: {
+            data: { type: "signers", id: clientSignerKey }
+          }
         }
       }
     };
 
-    console.log("🔗 [CLICKSIGN] Vinculando signatário CLIENTE ao documento...");
-    const clientSignatureResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/documents/${documentKey}/request_signatures`, {
+    console.log("🔗 [CLICKSIGN] Criando requirement CLIENTE...");
+    console.log("📤 [CLICKSIGN] Payload requirement:", JSON.stringify(clientRequirementPayload));
+    
+    const clientRequirementResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/requirements`, {
       method: "POST",
       headers: clicksignHeaders,
-      body: JSON.stringify(clientSignaturePayload)
+      body: JSON.stringify(clientRequirementPayload)
     });
 
-    if (!clientSignatureResponse.ok) {
-      const errorText = await clientSignatureResponse.text();
-      console.error("❌ [CLICKSIGN] Erro ao vincular assinatura cliente:", errorText);
-      throw new Error(`Erro ClickSign (client request_signature): ${errorText}`);
+    if (!clientRequirementResponse.ok) {
+      const errorText = await clientRequirementResponse.text();
+      console.error("❌ [CLICKSIGN] Erro ao criar requirement cliente:", errorText);
+      throw new Error(`Erro ClickSign (client requirement): ${errorText}`);
     }
 
-    const clientSignatureData = await clientSignatureResponse.json();
-    const clientRequestSignatureKey = clientSignatureData.data?.id || clientSignatureData.data?.attributes?.key;
-    console.log("✅ [CLICKSIGN] Assinatura CLIENTE vinculada:", clientRequestSignatureKey);
+    const clientRequirementData = await clientRequirementResponse.json();
+    const clientRequirementKey = clientRequirementData.data?.id;
+    console.log("✅ [CLICKSIGN] Requirement CLIENTE criado:", clientRequirementKey);
 
-    // ========== 8. Vincular Signatário EXA ao Documento (se existir) ==========
-    let exaRequestSignatureKey = null;
+    // ========== 8. Criar Requirement EXA (se existir signatário) ==========
+    let exaRequirementKey = null;
     if (exaSignerKey) {
-      const exaSignaturePayload = {
+      const exaRequirementPayload = {
         data: {
-          type: "request_signatures",
+          type: "requirements",
           attributes: {
-            signer_key: exaSignerKey,
-            sign_as: "sign",
-            refusable: false // EXA não pode recusar
+            action: "sign",
+            role: "contractor"
+          },
+          relationships: {
+            document: {
+              data: { type: "documents", id: documentKey }
+            },
+            signer: {
+              data: { type: "signers", id: exaSignerKey }
+            }
           }
         }
       };
 
-      console.log("🔗 [CLICKSIGN] Vinculando signatário EXA ao documento...");
-      const exaSignatureResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/documents/${documentKey}/request_signatures`, {
+      console.log("🔗 [CLICKSIGN] Criando requirement EXA...");
+      const exaRequirementResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/requirements`, {
         method: "POST",
         headers: clicksignHeaders,
-        body: JSON.stringify(exaSignaturePayload)
+        body: JSON.stringify(exaRequirementPayload)
       });
 
-      if (!exaSignatureResponse.ok) {
-        const errorText = await exaSignatureResponse.text();
-        console.warn("⚠️ [CLICKSIGN] Erro ao vincular assinatura EXA (continuando sem):", errorText);
+      if (!exaRequirementResponse.ok) {
+        const errorText = await exaRequirementResponse.text();
+        console.warn("⚠️ [CLICKSIGN] Erro ao criar requirement EXA (continuando sem):", errorText);
       } else {
-        const exaSignatureData = await exaSignatureResponse.json();
-        exaRequestSignatureKey = exaSignatureData.data?.id || exaSignatureData.data?.attributes?.key;
-        console.log("✅ [CLICKSIGN] Assinatura EXA vinculada:", exaRequestSignatureKey);
+        const exaRequirementData = await exaRequirementResponse.json();
+        exaRequirementKey = exaRequirementData.data?.id;
+        console.log("✅ [CLICKSIGN] Requirement EXA criado:", exaRequirementKey);
       }
     }
 
     // Usar clientSignerKey como principal para manter compatibilidade
     const signerKey = clientSignerKey;
-    const requestSignatureKey = clientRequestSignatureKey;
+    const requestSignatureKey = clientRequirementKey;
 
     // ========== 6. Ativar Envelope ==========
     console.log("Ativando envelope...");
