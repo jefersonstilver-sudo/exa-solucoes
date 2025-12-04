@@ -27,6 +27,7 @@ import NovaPropostaPage from '@/pages/admin/proposals/NovaPropostaPage';
 import PropostaDetalhesPage from '@/pages/admin/proposals/PropostaDetalhesPage';
 import ContratosPage from '@/pages/admin/contracts/ContratosPage';
 import NovoContratoPage from '@/pages/admin/contracts/NovoContratoPage';
+import NovoContratoSindicoPage from '@/pages/admin/contracts/NovoContratoSindicoPage';
 import ContratoDetalhesPage from '@/pages/admin/contracts/ContratoDetalhesPage';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
@@ -54,6 +55,7 @@ const AdminRoutes = () => {
       <Route path="propostas/:id" element={<PropostaDetalhesPage />} />
       <Route path="juridico" element={<ContratosPage />} />
       <Route path="juridico/novo" element={<NovoContratoPage />} />
+      <Route path="juridico/novo-sindico" element={<NovoContratoSindicoPage />} />
       <Route path="juridico/:id" element={<ContratoDetalhesPage />} />
       <Route path="assinaturas" element={<AssinaturasPage />} />
       <Route path="aprovacoes" element={<ApprovalsPage />} />

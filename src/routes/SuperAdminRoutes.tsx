@@ -56,6 +56,7 @@ const SuperAdminRoutes = () => {
       <Route path="propostas/:id" element={<PropostaDetalhesPage />} />
       <Route path="juridico" element={<ContratosPage />} />
       <Route path="juridico/novo" element={<NovoContratoPage />} />
+      <Route path="juridico/novo-sindico" element={<NovoContratoSindicoPage />} />
       <Route path="juridico/:id" element={<ContratoDetalhesPage />} />
       <Route path="assinaturas" element={<AssinaturasPage />} />
       <Route path="aprovacoes" element={<ApprovalsPage />} />

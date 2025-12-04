@@ -55,21 +55,25 @@ const ContratosPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>('todos');
   const [tipoFilter, setTipoFilter] = useState<string>('todos');
   const [activeTab, setActiveTab] = useState<string>('contratos');
+  const [mainTab, setMainTab] = useState<'anunciantes' | 'sindicos'>('anunciantes');
 
   const { data: contratos, isLoading, refetch } = useQuery({
-    queryKey: ['contratos-legais', statusFilter, tipoFilter],
+    queryKey: ['contratos-legais', statusFilter, tipoFilter, mainTab],
     queryFn: async () => {
       let query = supabase
         .from('contratos_legais')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (statusFilter !== 'todos') {
-        query = query.eq('status', statusFilter);
+      // Filtrar por tipo principal (anunciante vs comodato/sindico)
+      if (mainTab === 'anunciantes') {
+        query = query.neq('tipo_contrato', 'comodato');
+      } else {
+        query = query.eq('tipo_contrato', 'comodato');
       }
 
-      if (tipoFilter !== 'todos') {
-        query = query.eq('tipo_contrato', tipoFilter);
+      if (statusFilter !== 'todos') {
+        query = query.eq('status', statusFilter);
       }
 
       const { data, error } = await query;
@@ -153,7 +157,7 @@ const ContratosPage = () => {
             </div>
             <Button 
               size="sm"
-              onClick={() => navigate(buildPath('juridico/novo'))}
+              onClick={() => navigate(buildPath(mainTab === 'anunciantes' ? 'juridico/novo' : 'juridico/novo-sindico'))}
               className="bg-[#9C1E1E] hover:bg-[#7D1818] h-9 px-3"
             >
               <Plus className="h-4 w-4" />
@@ -173,15 +177,43 @@ const ContratosPage = () => {
               </div>
             </div>
             <Button 
-              onClick={() => navigate(buildPath('juridico/novo'))}
+              onClick={() => navigate(buildPath(mainTab === 'anunciantes' ? 'juridico/novo' : 'juridico/novo-sindico'))}
               className="bg-[#9C1E1E] hover:bg-[#7D1818]"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Novo Contrato
+              {mainTab === 'anunciantes' ? 'Novo Contrato' : 'Novo Comodato'}
             </Button>
           </div>
         </div>
       )}
+
+      {/* Main Tabs: Anunciantes / Síndicos */}
+      <div className="px-3 md:px-6 pt-4">
+        <div className="inline-flex bg-gray-100 rounded-lg p-1 gap-1">
+          <button
+            onClick={() => { setMainTab('anunciantes'); setActiveTab('contratos'); }}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              mainTab === 'anunciantes'
+                ? 'bg-white text-[#9C1E1E] shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Building2 className="h-4 w-4 inline mr-1.5" />
+            Anunciantes
+          </button>
+          <button
+            onClick={() => { setMainTab('sindicos'); setActiveTab('contratos'); }}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              mainTab === 'sindicos'
+                ? 'bg-white text-[#9C1E1E] shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Users className="h-4 w-4 inline mr-1.5" />
+            Síndicos (Comodato)
+          </button>
+        </div>
+      </div>
 
       <div className="p-3 md:p-6 space-y-4">
         {/* Stats - 2x2 Grid Mobile */}
