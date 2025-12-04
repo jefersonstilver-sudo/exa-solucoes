@@ -350,6 +350,27 @@ function generateContractHtml(contrato: any): string {
   }
 
   // Contrato Anunciante
+  const metodoPagamentoNome = (metodo: string) => {
+    switch (metodo) {
+      case 'pix_avista': return 'PIX À VISTA';
+      case 'pix_fidelidade': return 'PIX FIDELIDADE';
+      case 'boleto_fidelidade': return 'BOLETO FIDELIDADE';
+      case 'cartao': return 'CARTÃO DE CRÉDITO';
+      case 'custom': return 'CONDIÇÃO PERSONALIZADA';
+      default: return (metodo || 'A DEFINIR').replace(/_/g, ' ').toUpperCase();
+    }
+  };
+
+  const planoNome = (meses: number) => {
+    switch (meses) {
+      case 1: return 'Mensal';
+      case 3: return 'Trimestral';
+      case 6: return 'Semestral';
+      case 12: return 'Anual';
+      default: return `${meses} meses`;
+    }
+  };
+
   return `
     <!DOCTYPE html>
     <html>
@@ -359,18 +380,111 @@ function generateContractHtml(contrato: any): string {
         body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.6; color: #333; margin: 40px; }
         h1 { text-align: center; font-size: 16pt; text-transform: uppercase; margin-bottom: 30px; }
         h2 { font-size: 12pt; font-weight: bold; margin-top: 20px; }
+        .header { background: linear-gradient(to right, #8B1A1A, #A52020); color: white; padding: 20px; margin: -40px -40px 30px -40px; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 18pt; font-weight: bold; }
         .parties { margin-bottom: 30px; }
         table { width: 100%; border-collapse: collapse; margin: 15px 0; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f5f5f5; }
+        .highlight { background-color: #f0f9ff; border: 1px solid #bae6fd; padding: 15px; border-radius: 4px; margin: 10px 0; }
         .signatures { margin-top: 60px; display: flex; justify-content: space-between; }
         .signature-box { width: 45%; text-align: center; }
         .signature-line { border-top: 1px solid #333; padding-top: 10px; margin-top: 60px; }
       </style>
     </head>
     <body>
-      <h1>Contrato de Prestação de Serviços Publicitários<br>
-      <small style="font-size: 10pt; color: #666;">Nº ${contrato.numero_contrato}</small></h1>
+      <div class="header">
+        <div class="header-content">
+          <div>
+            <div class="logo">EXA MÍDIA</div>
+            <div style="font-size: 10pt; opacity: 0.8;">Soluções Digitais em Elevadores</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight: bold;">CONTRATO DE PUBLICIDADE</div>
+            <div style="font-size: 10pt; opacity: 0.8;">Nº ${contrato.numero_contrato}</div>
+          </div>
+        </div>
+      </div>
+      
+      <h1>Contrato de Publicidade em Mídia Digital</h1>
+      
+      <div class="parties">
+        <p><strong>CONTRATANTE:</strong> ${contrato.cliente_razao_social || contrato.cliente_nome}${contrato.cliente_segmento ? ` (${contrato.cliente_segmento})` : ''}, ${contrato.cliente_endereco ? `com sede em ${contrato.cliente_endereco}` : `com sede em ${contrato.cliente_cidade || 'Foz do Iguaçu'}`}${contrato.cliente_cnpj ? `, inscrita no CNPJ sob o nº ${contrato.cliente_cnpj}` : ''}, neste ato representada por seu representante legal${contrato.cliente_nome ? `, Sr(a). ${contrato.cliente_nome}` : ''}${contrato.cliente_cargo ? ` (${contrato.cliente_cargo})` : ''}, doravante denominada "CONTRATANTE".</p>
+        <p><strong>CONTRATADA:</strong> EXA SOLUÇÕES DIGITAIS LTDA, pessoa jurídica de direito privado, inscrita no CNPJ sob nº 62.878.193/0001-35, com sede na Av. Paraná, nº 974, Sala 301, Centro, Foz do Iguaçu - PR, CEP 85852-000, doravante denominada "CONTRATADA".</p>
+      </div>
+      
+      <h2>CLÁUSULA 1ª - DO OBJETO</h2>
+      <p>1.1. O presente contrato tem por objeto a veiculação de anúncios publicitários em vídeo com duração de até 15 (quinze) segundos, fornecidos pela CONTRATANTE, nos painéis digitais da EXA MÍDIA, localizados em prédios residenciais da cidade de Foz do Iguaçu - PR.</p>
+      
+      <div class="highlight">
+        <h2>CLÁUSULA 2ª - DO PRAZO E VIGÊNCIA</h2>
+        <p>2.1. Plano contratado: <strong>${planoNome(contrato.plano_meses || 1)}</strong> (${contrato.plano_meses || 1} mês(es))</p>
+        <p>2.2. Data de início: <strong>${contrato.data_inicio || 'A definir após assinatura'}</strong></p>
+        <p>2.3. Data de término: <strong>${contrato.data_fim || 'A definir após assinatura'}</strong></p>
+      </div>
+      
+      <h2>CLÁUSULA 3ª - DOS LOCAIS CONTRATADOS</h2>
+      <p>3.1. A contratação abrange ${totalPaineis} tela(s) nos seguintes edifícios:</p>
+      ${listaPredios.length > 0 ? `
+        <table>
+          <thead>
+            <tr>
+              <th>Edifício</th>
+              <th>Bairro</th>
+              <th style="text-align: center;">Telas</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${prediosHtml}
+          </tbody>
+        </table>
+      ` : ''}
+      
+      <div class="highlight">
+        <h2>CLÁUSULA 4ª - DO VALOR E FORMA DE PAGAMENTO</h2>
+        <p>4.1. <strong>Valor Total:</strong> ${formatCurrency(contrato.valor_total)}</p>
+        <p>4.2. <strong>Valor Mensal:</strong> ${formatCurrency(contrato.valor_mensal)}</p>
+        <p>4.3. <strong>Forma de Pagamento:</strong> ${metodoPagamentoNome(contrato.metodo_pagamento)}</p>
+        ${contrato.dia_vencimento ? `<p>4.4. <strong>Vencimento:</strong> Dia ${contrato.dia_vencimento} de cada mês</p>` : ''}
+      </div>
+      <p>4.5. Após 10 (dez) dias de atraso no pagamento, a exibição será automaticamente suspensa até a regularização.</p>
+      <p>4.6. Multa por atraso: 2% (dois por cento) + 1% (um por cento) de juros ao mês.</p>
+      
+      <h2>CLÁUSULA 5ª - DO CONTEÚDO PUBLICITÁRIO</h2>
+      <p>5.1. A CONTRATANTE compromete-se a enviar vídeos conforme especificações técnicas da CONTRATADA (resolução 1920x1080, formato MP4, máximo 15 segundos).</p>
+      <p>5.2. Os vídeos podem ser substituídos a qualquer momento, mediante solicitação prévia.</p>
+      
+      <h2>CLÁUSULA 6ª - DA CESSÃO DE DIREITOS DE IMAGEM</h2>
+      <p>6.1. A CONTRATANTE autoriza expressamente a EXA MÍDIA a utilizar o material publicitário fornecido para veiculação nos painéis, materiais institucionais, portfólio, redes sociais e apresentações comerciais.</p>
+      
+      <h2>CLÁUSULA 7ª - DO CANCELAMENTO</h2>
+      <p>7.1. O cancelamento antecipado por parte da CONTRATANTE gerará multa de 30% sobre o saldo devedor restante.</p>
+      
+      <h2>CLÁUSULA 8ª - DO FORO</h2>
+      <p>8.1. Para dirimir eventuais dúvidas ou litígios, as partes elegem o foro da Comarca de Foz do Iguaçu - PR.</p>
+      
+      ${contrato.clausulas_especiais ? `<h2>CLÁUSULA 9ª - CONDIÇÕES ESPECIAIS</h2><p>${contrato.clausulas_especiais}</p>` : ''}
+      
+      <p style="text-align: center; margin-top: 40px;">Foz do Iguaçu - PR, ${dataAtual}.</p>
+      
+      <div class="signatures">
+        <div class="signature-box">
+          <div class="signature-line">
+            <strong>${contrato.cliente_razao_social || contrato.cliente_nome}</strong><br>
+            <span style="font-size: 10pt; color: #666;">CONTRATANTE</span>
+          </div>
+        </div>
+        <div class="signature-box">
+          <div class="signature-line">
+            <strong>EXA SOLUÇÕES DIGITAIS LTDA</strong><br>
+            <span style="font-size: 10pt; color: #666;">CONTRATADA</span>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
       
       <div class="parties">
         <p><strong>CONTRATANTE:</strong> ${contrato.cliente_razao_social || contrato.cliente_nome}${contrato.cliente_segmento ? ` (${contrato.cliente_segmento})` : ''}, ${contrato.cliente_endereco ? `com sede em ${contrato.cliente_endereco}` : `com sede em ${contrato.cliente_cidade || 'Foz do Iguaçu'}`}${contrato.cliente_cnpj ? `, inscrita no CNPJ sob o nº ${contrato.cliente_cnpj}` : ''}, neste ato representada por seu representante legal${contrato.cliente_nome ? `, Sr(a). ${contrato.cliente_nome}` : ''}${contrato.cliente_cargo ? ` (${contrato.cliente_cargo})` : ''}, doravante denominada "CONTRATANTE".</p>

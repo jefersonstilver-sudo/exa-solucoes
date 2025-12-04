@@ -26,12 +26,53 @@ interface ContractPreviewProps {
     total_paineis?: number;
     tipo_produto?: string;
   };
+  onEdit?: () => void;
 }
 
-const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
+const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
   const formatCurrency = (value: number | undefined) => {
     if (!value) return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
+
+  const formatDateExtended = (dateStr: string | undefined) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr + 'T00:00:00');
+      return format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const getPlanoNome = (meses: number | undefined) => {
+    switch (meses) {
+      case 1: return 'Mensal';
+      case 3: return 'Trimestral';
+      case 6: return 'Semestral';
+      case 12: return 'Anual';
+      default: return `${meses || 1} meses`;
+    }
+  };
+
+  const getMetodoPagamentoNome = (metodo: string | undefined) => {
+    switch (metodo) {
+      case 'pix_avista': return 'PIX À VISTA';
+      case 'pix_fidelidade': return 'PIX FIDELIDADE (parcelado)';
+      case 'boleto_fidelidade': return 'BOLETO FIDELIDADE (parcelado)';
+      case 'cartao': return 'CARTÃO DE CRÉDITO';
+      case 'custom': return 'CONDIÇÃO PERSONALIZADA';
+      default: return (metodo || 'A DEFINIR').replace(/_/g, ' ').toUpperCase();
+    }
+  };
+
+  const getNumeroExtenso = (num: number) => {
+    const extenso: Record<number, string> = {
+      1: 'um', 2: 'dois', 3: 'três', 4: 'quatro', 5: 'cinco',
+      6: 'seis', 7: 'sete', 8: 'oito', 9: 'nove', 10: 'dez',
+      11: 'onze', 12: 'doze'
+    };
+    return extenso[num] || String(num);
   };
 
   const listaPredios = Array.isArray(data.lista_predios) ? data.lista_predios : [];
@@ -41,19 +82,47 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
 
   const dataAtual = format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
 
+  // Calcular data fim do contrato
+  const calcularDataFim = () => {
+    if (!data.data_inicio) return '';
+    try {
+      const inicio = new Date(data.data_inicio + 'T00:00:00');
+      const fim = new Date(inicio);
+      fim.setMonth(fim.getMonth() + (data.plano_meses || 1));
+      return format(fim, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    } catch {
+      return '';
+    }
+  };
+
+  // Logo EXA component
+  const ExaLogo = () => (
+    <div className="flex items-center gap-3">
+      <img 
+        src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/site-assets/logo-exa-white.png" 
+        alt="EXA Mídia" 
+        className="h-10 w-auto"
+        onError={(e) => {
+          e.currentTarget.style.display = 'none';
+        }}
+      />
+      <div>
+        <h1 className="text-xl font-bold tracking-wide">EXA MÍDIA</h1>
+        <p className="text-red-100 text-xs mt-0.5">Soluções Digitais em Elevadores</p>
+      </div>
+    </div>
+  );
+
   // Contrato de Síndico
   if (data.tipo_contrato === 'sindico') {
     return (
       <div className="p-8 bg-white text-gray-900 font-serif text-sm leading-relaxed">
-        {/* Header EXA */}
+        {/* Header EXA com Logo */}
         <div className="bg-gradient-to-r from-[#8B1A1A] to-[#A52020] text-white p-6 -m-8 mb-8 rounded-t-lg">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold tracking-wide">EXA MÍDIA</h1>
-              <p className="text-red-100 text-xs mt-1">Soluções Digitais</p>
-            </div>
+            <ExaLogo />
             <div className="text-right">
-              <p className="text-sm font-semibold">TERMO DE CESSÃO</p>
+              <p className="text-sm font-semibold">TERMO DE CESSÃO DE ESPAÇO</p>
               {data.numero_contrato && (
                 <p className="text-xs text-red-100 mt-1">Nº {data.numero_contrato}</p>
               )}
@@ -165,15 +234,12 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
   // Contrato de Anunciante
   return (
     <div className="p-8 bg-white text-gray-900 font-serif text-sm leading-relaxed">
-      {/* Header EXA Profissional */}
+      {/* Header EXA Profissional com Logo */}
       <div className="bg-gradient-to-r from-[#8B1A1A] to-[#A52020] text-white p-6 -m-8 mb-8 rounded-t-lg">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold tracking-wide">EXA MÍDIA</h1>
-            <p className="text-red-100 text-xs mt-1">Soluções Digitais</p>
-          </div>
+          <ExaLogo />
           <div className="text-right">
-            <p className="text-sm font-semibold">CONTRATO DE SERVIÇOS</p>
+            <p className="text-sm font-semibold">CONTRATO DE PUBLICIDADE</p>
             {data.numero_contrato && (
               <p className="text-xs text-red-100 mt-1">Nº {data.numero_contrato}</p>
             )}
@@ -189,7 +255,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
       {/* Título */}
       <div className="text-center mb-8">
         <h1 className="text-lg font-bold uppercase tracking-wide">
-          Contrato de Prestação de Serviços Publicitários
+          Contrato de Publicidade em Mídia Digital
         </h1>
         {isVerticalPremium && (
           <p className="text-purple-700 text-sm font-semibold mt-1">
@@ -227,25 +293,39 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
               vídeo vertical com duração de <strong>10 (dez) segundos</strong>, no formato 
               <strong> Vertical Premium</strong>, exibido em <strong>tela cheia a cada 50 segundos</strong>, 
               nos painéis digitais da EXA MÍDIA, localizados em prédios residenciais da cidade de 
-              Foz do Iguaçu - PR, pelo prazo contratado de {data.plano_meses || 1} ({data.plano_meses === 1 ? 'um' : data.plano_meses}) 
-              {data.plano_meses === 1 ? ' mês' : ' meses'} de exibição.
+              Foz do Iguaçu - PR.
             </p>
           ) : (
             <p>
               1.1. O presente contrato tem por objeto a veiculação de anúncios publicitários em 
               vídeo com duração de até <strong>15 (quinze) segundos</strong>, fornecidos pela CONTRATANTE, nos 
               painéis digitais da EXA MÍDIA, localizados em prédios residenciais da cidade de 
-              Foz do Iguaçu - PR, pelo prazo contratado de {data.plano_meses || 1} ({data.plano_meses === 1 ? 'um' : data.plano_meses}) 
-              {data.plano_meses === 1 ? ' mês' : ' meses'} de exibição.
+              Foz do Iguaçu - PR.
             </p>
           )}
         </div>
 
+        {/* VIGÊNCIA DO CONTRATO */}
+        <div className="bg-blue-50 border border-blue-200 rounded p-3">
+          <h2 className="font-bold">CLÁUSULA 2ª - DO PRAZO E VIGÊNCIA</h2>
+          <p className="mt-2">
+            2.1. O presente contrato terá vigência de <strong>{data.plano_meses || 1} ({getNumeroExtenso(data.plano_meses || 1)}) {(data.plano_meses || 1) === 1 ? 'mês' : 'meses'}</strong>, 
+            correspondente ao plano <strong>{getPlanoNome(data.plano_meses)}</strong>.
+          </p>
+          <p className="mt-2">
+            2.2. <strong>Período de exibição:</strong>
+          </p>
+          <ul className="list-disc ml-6 mt-1">
+            <li>Data de início: <strong>{formatDateExtended(data.data_inicio) || 'A definir após assinatura'}</strong></li>
+            <li>Data de término: <strong>{calcularDataFim() || 'A definir após assinatura'}</strong></li>
+          </ul>
+        </div>
+
         <div>
-          <h2 className="font-bold">CLÁUSULA 2ª - DOS LOCAIS CONTRATADOS</h2>
+          <h2 className="font-bold">CLÁUSULA 3ª - DOS LOCAIS CONTRATADOS</h2>
           {isVerticalPremium ? (
             <>
-              <p>2.1. A modalidade <strong>Vertical Premium</strong> abrange <strong>TODOS os {listaPredios.length} prédios</strong> da rede EXA MÍDIA:</p>
+              <p>3.1. A modalidade <strong>Vertical Premium</strong> abrange <strong>TODOS os {listaPredios.length} prédios</strong> da rede EXA MÍDIA:</p>
               {listaPredios.length > 0 && (
                 <div className="mt-2 bg-purple-50 border border-purple-200 rounded p-3">
                   <p className="text-xs text-purple-700 font-medium mb-2">Prédios incluídos ({listaPredios.length} unidades):</p>
@@ -261,7 +341,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
             </>
           ) : (
             <>
-              <p>2.1. A contratação abrange {totalPaineis} tela(s) nos seguintes edifícios:</p>
+              <p>3.1. A contratação abrange {totalPaineis} tela(s) nos seguintes edifícios:</p>
               {listaPredios.length > 0 && (
                 <table className="w-full mt-2 border-collapse border border-gray-300">
                   <thead>
@@ -286,58 +366,93 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
           )}
         </div>
 
-        <div>
-          <h2 className="font-bold">CLÁUSULA 3ª - DO VALOR E PAGAMENTO</h2>
+        {/* CLÁUSULA DE VALOR E PAGAMENTO - DETALHADA */}
+        <div className="bg-green-50 border border-green-200 rounded p-3">
+          <h2 className="font-bold">CLÁUSULA 4ª - DO VALOR E FORMA DE PAGAMENTO</h2>
           
-          {data.metodo_pagamento === 'custom' && data.parcelas && data.parcelas.length > 0 ? (
-            <>
-              <p>3.1. Valor total do contrato: <strong>{formatCurrency(data.valor_total)}</strong></p>
-              <p>3.2. Condição de pagamento <strong>PERSONALIZADA</strong>:</p>
-              <div className="mt-2 bg-amber-50 border border-amber-200 rounded p-3">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-amber-300">
-                      <th className="text-left py-1">Parcela</th>
-                      <th className="text-left py-1">Vencimento</th>
-                      <th className="text-right py-1">Valor</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.parcelas.map((parcela: any, idx: number) => (
-                      <tr key={idx} className="border-b border-amber-100">
-                        <td className="py-1">{parcela.installment || idx + 1}ª</td>
-                        <td className="py-1">{parcela.due_date}</td>
-                        <td className="py-1 text-right font-medium">{formatCurrency(Number(parcela.amount))}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          ) : (
-            <>
-              <p>3.1. Valor mensal: <strong>{formatCurrency(data.valor_mensal)}</strong></p>
-              <p>3.2. Valor total do contrato: <strong>{formatCurrency(data.valor_total)}</strong></p>
-              <p>3.3. Forma de pagamento: {data.metodo_pagamento?.replace(/_/g, ' ').toUpperCase() || 'A DEFINIR'}</p>
-              {data.dia_vencimento && (
-                <p>3.4. Vencimento das parcelas: dia {data.dia_vencimento} de cada mês.</p>
-              )}
-            </>
+          <p className="mt-2">
+            4.1. <strong>Valor Total do Contrato:</strong> {formatCurrency(data.valor_total)}
+          </p>
+          
+          {data.valor_mensal && data.valor_mensal > 0 && (
+            <p className="mt-1">
+              4.2. <strong>Valor Mensal:</strong> {formatCurrency(data.valor_mensal)}
+            </p>
           )}
           
           <p className="mt-2">
-            3.{data.metodo_pagamento === 'custom' ? '3' : '5'}. Após 10 (dez) dias de atraso no pagamento, a exibição será automaticamente 
-            suspensa até a regularização.
+            4.3. <strong>Forma de Pagamento:</strong> {getMetodoPagamentoNome(data.metodo_pagamento)}
           </p>
-          <p>3.{data.metodo_pagamento === 'custom' ? '4' : '6'}. Multa por atraso: 2% (dois por cento) + 1% (um por cento) de juros ao mês.</p>
+
+          {/* Parcelas detalhadas */}
+          {data.metodo_pagamento === 'custom' && data.parcelas && data.parcelas.length > 0 ? (
+            <div className="mt-3">
+              <p className="font-semibold text-green-800">4.4. Condição de Pagamento Personalizada:</p>
+              <table className="w-full mt-2 text-sm border border-green-300">
+                <thead>
+                  <tr className="bg-green-100">
+                    <th className="border border-green-300 px-2 py-1 text-left">Parcela</th>
+                    <th className="border border-green-300 px-2 py-1 text-left">Vencimento</th>
+                    <th className="border border-green-300 px-2 py-1 text-right">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.parcelas.map((parcela: any, idx: number) => (
+                    <tr key={idx}>
+                      <td className="border border-green-300 px-2 py-1">{parcela.installment || idx + 1}ª parcela</td>
+                      <td className="border border-green-300 px-2 py-1">{formatDateExtended(parcela.due_date)}</td>
+                      <td className="border border-green-300 px-2 py-1 text-right font-medium">{formatCurrency(Number(parcela.amount))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : data.metodo_pagamento === 'pix_avista' ? (
+            <div className="mt-3">
+              <p className="font-semibold text-green-800">4.4. Pagamento à Vista via PIX:</p>
+              <p className="mt-1 text-sm">
+                O pagamento deverá ser realizado integralmente via PIX no valor de {formatCurrency(data.valor_total)}, 
+                em parcela única, antes do início da exibição.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-3">
+              <p className="font-semibold text-green-800">4.4. Condição de Pagamento Parcelada:</p>
+              <p className="mt-1 text-sm">
+                O pagamento será realizado em <strong>{data.plano_meses || 1} ({getNumeroExtenso(data.plano_meses || 1)}) parcela(s)</strong> de {formatCurrency(data.valor_mensal)}, 
+                com vencimento no <strong>dia {data.dia_vencimento || 10}</strong> de cada mês.
+              </p>
+              {data.dia_vencimento && data.data_inicio && (
+                <p className="mt-1 text-sm">
+                  <strong>Primeira parcela:</strong> Vencimento em {(() => {
+                    const inicio = new Date(data.data_inicio + 'T00:00:00');
+                    const primeiraParcela = new Date(inicio.getFullYear(), inicio.getMonth(), data.dia_vencimento);
+                    if (primeiraParcela < inicio) {
+                      primeiraParcela.setMonth(primeiraParcela.getMonth() + 1);
+                    }
+                    return format(primeiraParcela, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+                  })()}
+                </p>
+              )}
+            </div>
+          )}
+          
+          <p className="mt-3 text-sm">
+            4.5. Após 10 (dez) dias de atraso no pagamento, a exibição será automaticamente 
+            suspensa até a regularização, sem prejuízo da cobrança dos valores devidos.
+          </p>
+          <p className="text-sm">
+            4.6. Multa por atraso: 2% (dois por cento) sobre o valor da parcela, acrescido de 
+            juros de 1% (um por cento) ao mês, calculados pro rata die.
+          </p>
         </div>
 
         <div>
-          <h2 className="font-bold">CLÁUSULA 4ª - DO CONTEÚDO PUBLICITÁRIO</h2>
+          <h2 className="font-bold">CLÁUSULA 5ª - DO CONTEÚDO PUBLICITÁRIO</h2>
           {isVerticalPremium ? (
             <>
               <p>
-                4.1. A CONTRATANTE compromete-se a enviar vídeo conforme especificações técnicas:
+                5.1. A CONTRATANTE compromete-se a enviar vídeo conforme especificações técnicas:
               </p>
               <ul className="list-disc ml-6 mt-2">
                 <li>Formato: <strong>MP4 (H.264)</strong></li>
@@ -347,7 +462,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
                 <li>Áudio: Sem áudio</li>
               </ul>
               <p className="mt-2 bg-purple-50 border border-purple-200 rounded p-2 text-purple-800">
-                <strong>4.2. IMPORTANTE:</strong> A modalidade Vertical Premium <strong>NÃO inclui acesso</strong> ao 
+                <strong>5.2. IMPORTANTE:</strong> A modalidade Vertical Premium <strong>NÃO inclui acesso</strong> ao 
                 Portal do Anunciante. A gestão e substituição do vídeo será realizada diretamente 
                 pela EXA MÍDIA mediante solicitação por escrito.
               </p>
@@ -355,7 +470,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
           ) : (
             <>
               <p>
-                4.1. A CONTRATANTE compromete-se a enviar vídeos conforme especificações técnicas:
+                5.1. A CONTRATANTE compromete-se a enviar vídeos conforme especificações técnicas:
               </p>
               <ul className="list-disc ml-6 mt-2">
                 <li>Formato: <strong>MP4 (H.264)</strong></li>
@@ -364,7 +479,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
                 <li>Áudio: Sem áudio</li>
               </ul>
               <p className="mt-2">
-                4.2. A CONTRATANTE terá acesso ao <strong>Portal do Anunciante</strong> onde poderá:
+                5.2. A CONTRATANTE terá acesso ao <strong>Portal do Anunciante</strong> onde poderá:
               </p>
               <ul className="list-disc ml-6 mt-1">
                 <li>Visualizar relatórios detalhados de exibição</li>
@@ -373,7 +488,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
                 <li>Acompanhar métricas de visualização em tempo real</li>
               </ul>
               <p className="mt-2">
-                4.3. A CONTRATADA poderá recusar conteúdos que não atendam aos padrões técnicos 
+                5.3. A CONTRATADA poderá recusar conteúdos que não atendam aos padrões técnicos 
                 ou que contenham material ofensivo, ilegal ou que infrinja direitos de terceiros.
               </p>
             </>
@@ -382,9 +497,9 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
 
         {/* CLÁUSULA DE DIREITOS DE IMAGEM - SEMPRE PRESENTE */}
         <div className="bg-gray-50 border border-gray-200 rounded p-3">
-          <h2 className="font-bold">CLÁUSULA 5ª - DA CESSÃO DE DIREITOS DE IMAGEM</h2>
+          <h2 className="font-bold">CLÁUSULA 6ª - DA CESSÃO DE DIREITOS DE IMAGEM</h2>
           <p className="mt-2">
-            5.1. A CONTRATANTE <strong>autoriza expressamente</strong> a EXA MÍDIA a utilizar 
+            6.1. A CONTRATANTE <strong>autoriza expressamente</strong> a EXA MÍDIA a utilizar 
             o material publicitário fornecido para:
           </p>
           <ul className="list-disc ml-6 mt-2">
@@ -395,31 +510,31 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
             <li>Apresentações comerciais e demonstrações.</li>
           </ul>
           <p className="mt-2">
-            5.2. A autorização prevista nesta cláusula é concedida a título gratuito e por 
+            6.2. A autorização prevista nesta cláusula é concedida a título gratuito e por 
             prazo indeterminado, podendo ser revogada mediante comunicação escrita com 
             antecedência mínima de 30 (trinta) dias.
           </p>
         </div>
 
         <div>
-          <h2 className="font-bold">CLÁUSULA 6ª - DO CANCELAMENTO</h2>
+          <h2 className="font-bold">CLÁUSULA 7ª - DO CANCELAMENTO</h2>
           <p>
-            6.1. O cancelamento antecipado por parte da CONTRATANTE gerará multa de 30% 
+            7.1. O cancelamento antecipado por parte da CONTRATANTE gerará multa de 30% 
             (trinta por cento) sobre o saldo devedor restante.
           </p>
         </div>
 
         <div>
-          <h2 className="font-bold">CLÁUSULA 7ª - DO FORO</h2>
+          <h2 className="font-bold">CLÁUSULA 8ª - DO FORO</h2>
           <p>
-            7.1. Para dirimir eventuais dúvidas ou litígios oriundos deste contrato, as partes 
+            8.1. Para dirimir eventuais dúvidas ou litígios oriundos deste contrato, as partes 
             elegem o foro da Comarca de Foz do Iguaçu - PR, com renúncia expressa a qualquer outro.
           </p>
         </div>
 
         {data.clausulas_especiais && (
           <div>
-            <h2 className="font-bold">CLÁUSULA 8ª - CONDIÇÕES ESPECIAIS</h2>
+            <h2 className="font-bold">CLÁUSULA 9ª - CONDIÇÕES ESPECIAIS</h2>
             <p>{data.clausulas_especiais}</p>
           </div>
         )}
@@ -445,6 +560,18 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
           </div>
         </div>
       </div>
+
+      {/* Botão de edição se disponível */}
+      {onEdit && (
+        <div className="mt-6 text-center">
+          <button
+            onClick={onEdit}
+            className="text-primary hover:underline text-sm"
+          >
+            ✏️ Editar dados do contrato
+          </button>
+        </div>
+      )}
     </div>
   );
 };
