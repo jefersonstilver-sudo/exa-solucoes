@@ -49,9 +49,17 @@ serve(async (req) => {
       );
     }
 
-    // Clean phone number
+    // Clean phone number and handle international codes
     const cleanPhone = proposal.client_phone.replace(/\D/g, '');
-    const formattedPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+    
+    // Valid country codes for supported countries
+    const validCountryCodes = ['55', '595', '54', '598', '56', '1'];
+    const hasValidCountryCode = validCountryCodes.some(code => cleanPhone.startsWith(code));
+    
+    // Only add Brazil code (55) if no valid country code detected
+    const formattedPhone = hasValidCountryCode ? cleanPhone : `55${cleanPhone}`;
+    
+    console.log(`[SEND-PROPOSAL-WHATSAPP] Telefone: original=${proposal.client_phone}, limpo=${cleanPhone}, formatado=${formattedPhone}`);
 
     // Get buildings count
     const buildingsCount = Array.isArray(proposal.selected_buildings) 
