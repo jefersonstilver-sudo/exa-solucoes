@@ -291,11 +291,14 @@ serve(async (req) => {
     const exaSignerKeys: string[] = [];
     if (signatariosExa && signatariosExa.length > 0) {
       for (const signatario of signatariosExa) {
+        // Concatenar nome + sobrenome para nome completo (ClickSign exige)
+        const nomeCompleto = `${signatario.nome} ${signatario.sobrenome || ''}`.trim();
+        
         const exaSignerPayload = {
           data: {
             type: "signers",
             attributes: {
-              name: signatario.nome,
+              name: nomeCompleto,
               email: signatario.email,
               ...(signatario.data_nascimento && { birthday: signatario.data_nascimento })
             }
@@ -406,6 +409,7 @@ serve(async (req) => {
     console.log("Ativando envelope...");
     const activatePayload = {
       data: {
+        id: envelopeId,  // OBRIGATÓRIO: ClickSign exige id no payload
         type: "envelopes",
         attributes: {
           status: "running"
