@@ -1489,7 +1489,8 @@ const NovoContratoPage = () => {
                 <Button 
                   variant="outline"
                   onClick={async () => {
-                    const exporter = new ContractPDFExporter();
+                    // Tentar capturar o preview HTML se existir
+                    const previewElement = document.getElementById('contract-preview');
                     const tempContract = {
                       id: 'preview',
                       numero_contrato: 'RASCUNHO',
@@ -1523,7 +1524,12 @@ const NovoContratoPage = () => {
                       status: 'rascunho',
                       created_at: new Date().toISOString()
                     };
-                    await exporter.generateContractPDF(tempContract);
+                    
+                    if (previewElement) {
+                      await ContractPDFExporter.exportFromElement(previewElement, `Contrato_RASCUNHO.pdf`);
+                    } else {
+                      await ContractPDFExporter.exportFromData(tempContract);
+                    }
                     toast.success('PDF gerado com sucesso!');
                   }}
                   className="rounded-xl"
