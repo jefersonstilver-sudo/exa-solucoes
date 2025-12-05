@@ -402,11 +402,21 @@ serve(async (req) => {
     const signerKey = clientSignerKey;
     const requestSignatureKey = clientRequirementKey;
 
-    // ========== 10. Ativar Envelope ==========
+    // ========== 10. Ativar Envelope (mudar status para "running") ==========
     console.log("Ativando envelope...");
-    const activateResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/activate`, {
+    const activatePayload = {
+      data: {
+        type: "envelopes",
+        attributes: {
+          status: "running"
+        }
+      }
+    };
+
+    const activateResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}`, {
       method: "PATCH",
-      headers: clicksignHeaders
+      headers: clicksignHeaders,
+      body: JSON.stringify(activatePayload)
     });
 
     if (!activateResponse.ok) {
@@ -415,7 +425,8 @@ serve(async (req) => {
       throw new Error(`Erro ClickSign (activate): ${errorText}`);
     }
 
-    console.log("Envelope ativado!");
+    const activateData = await activateResponse.json();
+    console.log("Envelope ativado! Status:", activateData?.data?.attributes?.status);
 
     // ========== 11. Enviar Notificação ==========
     console.log("Enviando notificação...");

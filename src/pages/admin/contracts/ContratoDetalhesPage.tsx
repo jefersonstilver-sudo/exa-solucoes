@@ -381,7 +381,7 @@ const ContratoDetalhesPage = () => {
         <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
           <div className="flex items-center justify-between overflow-x-auto scrollbar-hide">
             {timelineSteps.map((step, i, arr) => (
-              <React.Fragment key={step.key}>
+              <div key={step.key} className="contents">
                 <div className={`flex flex-col items-center min-w-[60px] ${step.done ? 'text-[#9C1E1E]' : 'text-gray-300'}`}>
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs ${
                     step.done ? 'bg-[#9C1E1E] text-white' : 'bg-gray-100'
@@ -398,7 +398,7 @@ const ContratoDetalhesPage = () => {
                 {i < arr.length - 1 && (
                   <div className={`flex-1 h-0.5 min-w-[20px] ${step.done ? 'bg-[#9C1E1E]' : 'bg-gray-200'}`} />
                 )}
-              </React.Fragment>
+              </div>
             ))}
           </div>
         </Card>
