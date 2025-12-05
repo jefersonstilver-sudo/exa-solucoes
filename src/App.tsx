@@ -394,6 +394,13 @@ const AppContent = () => {
               {React.createElement(lazy(() => import('./pages/public/PropostaPublicaPage')))}
             </Suspense>
           } />
+
+          {/* ASSINATURA CONFIRMADA - Após pagamento recorrente com cartão */}
+          <Route path="/assinatura-confirmada" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
+              {React.createElement(lazy(() => import('./pages/public/AssinaturaConfirmadaPage')))}
+            </Suspense>
+          } />
           
           {/* DEFINIR SENHA - Para novos clientes via proposta */}
           <Route path="/definir-senha" element={

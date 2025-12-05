@@ -48,14 +48,18 @@ interface Proposal {
 }
 
 interface PaymentData {
-  method: 'pix' | 'boleto';
+  method: 'pix' | 'boleto' | 'cartao_recorrente';
   paymentId?: string;
+  subscriptionId?: string;
   status?: string;
   qrCode?: string;
   qrCodeBase64?: string;
   boletoUrl?: string;
   boletoBarcode?: string;
   dueDate?: string;
+  initPoint?: string;
+  monthlyValue?: number;
+  totalMonths?: number;
 }
 
 const PropostaPublicaPage = () => {
@@ -77,7 +81,7 @@ const PropostaPublicaPage = () => {
   
   // Payment states
   const [paymentStep, setPaymentStep] = useState<'select' | 'generating' | 'ready'>('select');
-  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'boleto' | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'boleto' | 'cartao_recorrente' | null>(null);
   const [diaVencimento, setDiaVencimento] = useState<5 | 10 | 15>(10);
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [isGeneratingPayment, setIsGeneratingPayment] = useState(false);
@@ -409,12 +413,51 @@ const PropostaPublicaPage = () => {
     }
   };
 
-  // Generate payment (PIX or Boleto)
+  // Generate payment (PIX, Boleto or Card Subscription)
   const handleGeneratePayment = async () => {
     if (!proposal || !paymentMethod) return;
     
     // Verificar se é pagamento personalizado
     const isCustomPayment = proposal.payment_type === 'custom' && Array.isArray(proposal.custom_installments) && proposal.custom_installments.length > 0;
+    
+    // Handle credit card subscription (recurring)
+    if (paymentMethod === 'cartao_recorrente') {
+      setIsGeneratingPayment(true);
+      setPaymentStep('generating');
+      
+      try {
+        const emailToUse = emailInput || proposal.client_email || '';
+        
+        const { data, error } = await supabase.functions.invoke('create-subscription-payment', {
+          body: {
+            proposalId: proposal.id,
+            clientEmail: emailToUse
+          }
+        });
+
+        if (error) throw error;
+        
+        if (!data?.success) {
+          throw new Error(data?.error || 'Erro ao criar assinatura');
+        }
+
+        // Redirect to Mercado Pago checkout
+        if (data.initPoint) {
+          toast.success('Redirecionando para pagamento...');
+          window.location.href = data.initPoint;
+        } else {
+          throw new Error('URL de pagamento não disponível');
+        }
+        
+      } catch (err: any) {
+        console.error('Erro ao criar assinatura:', err);
+        toast.error(err.message || 'Erro ao criar assinatura');
+        setPaymentStep('select');
+      } finally {
+        setIsGeneratingPayment(false);
+      }
+      return;
+    }
     
     // Calcular valor a ser pago
     let paymentValue: number;
@@ -867,6 +910,52 @@ const PropostaPublicaPage = () => {
                 )}
               </Card>
 
+              {/* Cartão de Crédito Recorrente Option */}
+              <Card 
+                className={`p-4 cursor-pointer transition-all border-2 ${
+                  paymentMethod === 'cartao_recorrente' 
+                    ? 'border-purple-500 bg-purple-50' 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => setPaymentMethod('cartao_recorrente')}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    paymentMethod === 'cartao_recorrente' ? 'bg-purple-500' : 'bg-gray-100'
+                  }`}>
+                    <svg className={`h-5 w-5 ${paymentMethod === 'cartao_recorrente' ? 'text-white' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                      <line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold flex items-center gap-2">
+                      Cartão de Crédito
+                      <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">Recorrente</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                        proposal?.fidel_monthly_value || 0
+                      )}/mês • {proposal?.duration_months || 1} {(proposal?.duration_months || 1) === 1 ? 'mês' : 'meses'}
+                    </div>
+                  </div>
+                  {paymentMethod === 'cartao_recorrente' && (
+                    <Check className="h-5 w-5 text-purple-500" />
+                  )}
+                </div>
+
+                {/* Info about recurring */}
+                {paymentMethod === 'cartao_recorrente' && (
+                  <div className="mt-4 pt-3 border-t border-purple-200">
+                    <div className="bg-purple-100 rounded-lg p-3 text-xs text-purple-800">
+                      <p className="font-medium mb-1">💳 Como funciona:</p>
+                      <p>Seu cartão será cobrado automaticamente todo mês, apenas o valor mensal de <strong>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(proposal?.fidel_monthly_value || 0)}</strong>.</p>
+                      <p className="mt-1 text-purple-600">Similar a Netflix/Spotify - débito mensal automático.</p>
+                    </div>
+                  </div>
+                )}
+              </Card>
+
               {/* Generate Payment Button - Dynamic based on selection */}
               <Button
                 className="w-full h-12 bg-[#9C1E1E] hover:bg-[#7D1818] text-white"
@@ -876,7 +965,7 @@ const PropostaPublicaPage = () => {
                 {isGeneratingPayment ? (
                   <>
                     <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    Gerando...
+                    {paymentMethod === 'cartao_recorrente' ? 'Criando assinatura...' : 'Gerando...'}
                   </>
                 ) : paymentMethod === 'pix' ? (
                   <>
@@ -887,6 +976,14 @@ const PropostaPublicaPage = () => {
                   <>
                     <FileBarChart className="h-5 w-5 mr-2" />
                     Gerar Boleto
+                  </>
+                ) : paymentMethod === 'cartao_recorrente' ? (
+                  <>
+                    <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                      <line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                    Pagar com Cartão
                   </>
                 ) : (
                   <>

@@ -5536,6 +5536,7 @@ export type Database = {
           lista_paineis: string[] | null
           lista_predios: string[] | null
           log_pagamento: Json | null
+          mercadopago_subscription_id: string | null
           metodo_pagamento: string | null
           nome_pedido: string | null
           parcela_atual: number | null
@@ -5588,6 +5589,7 @@ export type Database = {
           lista_paineis?: string[] | null
           lista_predios?: string[] | null
           log_pagamento?: Json | null
+          mercadopago_subscription_id?: string | null
           metodo_pagamento?: string | null
           nome_pedido?: string | null
           parcela_atual?: number | null
@@ -5640,6 +5642,7 @@ export type Database = {
           lista_paineis?: string[] | null
           lista_predios?: string[] | null
           log_pagamento?: Json | null
+          mercadopago_subscription_id?: string | null
           metodo_pagamento?: string | null
           nome_pedido?: string | null
           parcela_atual?: number | null
