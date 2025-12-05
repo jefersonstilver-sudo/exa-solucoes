@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { format, isToday, startOfMonth, endOfMonth, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExporter';
+import { ProposalMobileList } from '@/components/admin/proposals/ProposalMobileList';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Proposal {
@@ -440,120 +441,149 @@ const PropostasPage = () => {
           </div>
         </div>
 
-        {/* Bulk Actions */}
-        {selectedCount > 0 && (
-          <Card className="p-2 bg-[#9C1E1E]/10 border-[#9C1E1E]/20 flex items-center justify-between">
-            <span className="text-xs font-medium text-[#9C1E1E]">{selectedCount} selecionada(s)</span>
-            <div className="flex gap-2">
-              <Button size="sm" variant="ghost" onClick={clearSelection} className="h-7 text-xs">
-                Limpar
-              </Button>
-              <Button 
-                size="sm" 
-                variant="destructive" 
-                onClick={() => setShowDeleteDialog(true)}
-                className="h-7 text-xs"
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                Excluir
-              </Button>
-            </div>
-          </Card>
-        )}
-
-        {/* Proposals List */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-5 h-5 border-2 border-[#9C1E1E] border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : filteredProposals.length === 0 ? (
-          <Card className="p-8 text-center bg-white/80">
-            <FileText className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
-            <h3 className="text-sm font-semibold mb-1">Nenhuma proposta</h3>
-            <p className="text-xs text-muted-foreground mb-3">Crie sua primeira proposta</p>
-            <Button size="sm" onClick={() => navigate(buildPath('propostas/nova'))}>
-              <Plus className="h-3.5 w-3.5 mr-1" />
-              Criar
-            </Button>
-          </Card>
+        {/* Mobile: Use new component with long-press selection */}
+        {isMobile ? (
+          <ProposalMobileList
+            proposals={filteredProposals}
+            loading={isLoading}
+            onViewDetails={(id) => navigate(buildPath(`propostas/${id}`))}
+            onBulkDelete={async (ids) => {
+              setIsDeleting(true);
+              try {
+                await supabase.from('pedidos').update({ proposal_id: null }).in('proposal_id', ids);
+                await supabase.from('proposal_views').delete().in('proposal_id', ids);
+                await supabase.from('proposal_logs').delete().in('proposal_id', ids);
+                const { error } = await supabase.from('proposals').delete().in('id', ids);
+                if (error) throw error;
+                toast.success(`${ids.length} proposta${ids.length > 1 ? 's' : ''} excluída${ids.length > 1 ? 's' : ''}!`);
+                refetch();
+              } catch (error) {
+                console.error('Erro ao excluir propostas:', error);
+                toast.error('Erro ao excluir propostas');
+              } finally {
+                setIsDeleting(false);
+              }
+            }}
+          />
         ) : (
-          <div className="space-y-2">
-            {filteredProposals.map((proposal) => (
-              <Card 
-                key={proposal.id}
-                className="p-3 bg-white/80 backdrop-blur-sm border-white/50 hover:shadow-md transition-all duration-200 active:scale-[0.99]"
-                onClick={() => navigate(buildPath(`propostas/${proposal.id}`))}
-              >
-                <div className="flex items-start gap-3">
-                  {/* Checkbox */}
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <CustomCheckbox
-                      checked={isSelected(proposal.id)}
-                      onCheckedChange={() => toggleSelectItem(proposal.id)}
-                    />
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                      <span className="font-mono text-xs font-semibold text-[#9C1E1E]">
-                        {proposal.number}
-                      </span>
-                      {getStatusBadge(proposal.status, proposal)}
-                    </div>
-                    <h3 className="font-medium text-sm truncate">{proposal.client_name}</h3>
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(proposal.created_at), "dd/MM", { locale: ptBR })}
-                      </span>
-                      <span className="text-sm font-semibold">
-                        {formatCurrency(proposal.fidel_monthly_value)}/mês
-                      </span>
-                      {proposal.view_count && proposal.view_count > 0 && (
-                        <span className="text-[10px] text-purple-600 flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
-                          {proposal.view_count}x
-                          {proposal.total_time_spent_seconds && proposal.total_time_spent_seconds > 0 && (
-                            <span className="text-muted-foreground">
-                              ⏱️ {formatTimeSpent(proposal.total_time_spent_seconds)}
-                            </span>
-                          )}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => navigate(buildPath(`propostas/${proposal.id}`))}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Ver Detalhes
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleCopyLink(proposal)}>
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copiar Link
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => handleResend(proposal, 'whatsapp')}>
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Reenviar WhatsApp
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleResend(proposal, 'email')}>
-                        <Mail className="h-4 w-4 mr-2" />
-                        Reenviar Email
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+          /* Desktop: Keep existing list */
+          <>
+            {/* Bulk Actions */}
+            {selectedCount > 0 && (
+              <Card className="p-2 bg-[#9C1E1E]/10 border-[#9C1E1E]/20 flex items-center justify-between">
+                <span className="text-xs font-medium text-[#9C1E1E]">{selectedCount} selecionada(s)</span>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="ghost" onClick={clearSelection} className="h-7 text-xs">
+                    Limpar
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="destructive" 
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="h-7 text-xs"
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Excluir
+                  </Button>
                 </div>
               </Card>
-            ))}
-          </div>
+            )}
+
+            {/* Proposals List */}
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-5 h-5 border-2 border-[#9C1E1E] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : filteredProposals.length === 0 ? (
+              <Card className="p-8 text-center bg-white/80">
+                <FileText className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+                <h3 className="text-sm font-semibold mb-1">Nenhuma proposta</h3>
+                <p className="text-xs text-muted-foreground mb-3">Crie sua primeira proposta</p>
+                <Button size="sm" onClick={() => navigate(buildPath('propostas/nova'))}>
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Criar
+                </Button>
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                {filteredProposals.map((proposal) => (
+                  <Card 
+                    key={proposal.id}
+                    className="p-3 bg-white/80 backdrop-blur-sm border-white/50 hover:shadow-md transition-all duration-200 active:scale-[0.99]"
+                    onClick={() => navigate(buildPath(`propostas/${proposal.id}`))}
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Checkbox */}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <CustomCheckbox
+                          checked={isSelected(proposal.id)}
+                          onCheckedChange={() => toggleSelectItem(proposal.id)}
+                        />
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                          <span className="font-mono text-xs font-semibold text-[#9C1E1E]">
+                            {proposal.number}
+                          </span>
+                          {getStatusBadge(proposal.status, proposal)}
+                        </div>
+                        <h3 className="font-medium text-sm truncate">{proposal.client_name}</h3>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(proposal.created_at), "dd/MM", { locale: ptBR })}
+                          </span>
+                          <span className="text-sm font-semibold">
+                            {formatCurrency(proposal.fidel_monthly_value)}/mês
+                          </span>
+                          {proposal.view_count && proposal.view_count > 0 && (
+                            <span className="text-[10px] text-purple-600 flex items-center gap-1">
+                              <Eye className="h-3 w-3" />
+                              {proposal.view_count}x
+                              {proposal.total_time_spent_seconds && proposal.total_time_spent_seconds > 0 && (
+                                <span className="text-muted-foreground">
+                                  ⏱️ {formatTimeSpent(proposal.total_time_spent_seconds)}
+                                </span>
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => navigate(buildPath(`propostas/${proposal.id}`))}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver Detalhes
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleCopyLink(proposal)}>
+                            <Copy className="h-4 w-4 mr-2" />
+                            Copiar Link
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleResend(proposal, 'whatsapp')}>
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            Reenviar WhatsApp
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleResend(proposal, 'email')}>
+                            <Mail className="h-4 w-4 mr-2" />
+                            Reenviar Email
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
