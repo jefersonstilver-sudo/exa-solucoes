@@ -6370,6 +6370,7 @@ export type Database = {
           nome: string
           primeiro_nome: string | null
           profissao: string | null
+          rg: string | null
           sobrenome: string | null
           updated_at: string
         }
@@ -6388,6 +6389,7 @@ export type Database = {
           nome: string
           primeiro_nome?: string | null
           profissao?: string | null
+          rg?: string | null
           sobrenome?: string | null
           updated_at?: string
         }
@@ -6406,6 +6408,7 @@ export type Database = {
           nome?: string
           primeiro_nome?: string | null
           profissao?: string | null
+          rg?: string | null
           sobrenome?: string | null
           updated_at?: string
         }

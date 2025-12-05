@@ -30,7 +30,6 @@ serve(async (req) => {
   }
 
   let rawBody = "";
-  let contrato_id = "";
   
   try {
     rawBody = await req.text();
@@ -135,14 +134,28 @@ serve(async (req) => {
     const envelopeId = envelopeData.data?.id;
     console.log("Envelope criado:", envelopeId);
 
-    // ========== 2. Gerar HTML do Contrato ==========
-    const contractHtml = generateContractHtml(contrato);
+    // ========== 2. Buscar TODOS os Signatários EXA ativos ==========
+    console.log("🔍 [CLICKSIGN] Buscando TODOS signatários EXA ativos...");
+    const { data: signatariosExa, error: signatarioError } = await supabase
+      .from("signatarios_exa")
+      .select("*")
+      .eq("is_active", true)
+      .order("is_default", { ascending: false }); // Default primeiro
+
+    if (signatarioError) {
+      console.warn("⚠️ [CLICKSIGN] Erro ao buscar signatários EXA:", signatarioError);
+    } else {
+      console.log("✅ [CLICKSIGN] Signatários EXA encontrados:", signatariosExa?.length || 0);
+      signatariosExa?.forEach((s: any) => console.log("   - ", s.nome, "(", s.email, ")"));
+    }
+
+    // ========== 3. Gerar HTML do Contrato ==========
+    const contractHtml = generateContractHtml(contrato, signatariosExa || []);
     console.log("📄 [CLICKSIGN] HTML gerado, tamanho:", contractHtml.length, "chars");
 
-    // ========== 3. Converter HTML para PDF ==========
+    // ========== 4. Converter HTML para PDF ==========
     console.log("🔄 [CLICKSIGN] Convertendo HTML para PDF...");
     
-    // Usar API gratuita de conversão HTML→PDF (html2pdf.co / browserless)
     let pdfBase64: string;
     
     try {
@@ -184,22 +197,10 @@ serve(async (req) => {
         });
 
         if (!backupResponse.ok) {
-          // Opção 3: Fallback para HTML (pode não funcionar no ClickSign)
+          // Opção 3: Fallback para HTML
           console.warn("⚠️ [CLICKSIGN] Todas APIs de PDF falharam, enviando HTML...");
           const htmlBase64 = btoa(unescape(encodeURIComponent(contractHtml)));
           pdfBase64 = htmlBase64;
-          
-          // Tentar como PDF mesmo assim (alguns serviços aceitam)
-          const sanitizedFilename = contrato.numero_contrato.replace(/[^a-zA-Z0-9]/g, '_');
-          const documentPayload = {
-            data: {
-              type: "documents",
-              attributes: {
-                filename: `Contrato_${sanitizedFilename}.html`,
-                content_base64: `data:text/html;base64,${htmlBase64}`
-              }
-            }
-          };
           throw new Error("PDF conversion failed - fallback to HTML");
         }
 
@@ -219,8 +220,7 @@ serve(async (req) => {
       console.warn("⚠️ [CLICKSIGN] Usando fallback HTML");
     }
 
-    // ========== 4. Upload do Documento (JSON:API format) ==========
-    // Sanitizar filename removendo caracteres especiais (ClickSign rejeita hífens)
+    // ========== 5. Upload do Documento (JSON:API format) ==========
     const sanitizedFilename = contrato.numero_contrato.replace(/[^a-zA-Z0-9]/g, '_');
     console.log("📄 [CLICKSIGN] Filename sanitizado:", `Contrato_${sanitizedFilename}.pdf`);
     
@@ -251,29 +251,13 @@ serve(async (req) => {
     const documentKey = documentData.data?.id || documentData.data?.attributes?.key;
     console.log("Documento criado:", documentKey);
 
-    // ========== 4. Buscar Signatário EXA (representante legal) ==========
-    console.log("🔍 [CLICKSIGN] Buscando signatário EXA padrão...");
-    const { data: signatarioExa, error: signatarioError } = await supabase
-      .from("signatarios_exa")
-      .select("*")
-      .eq("is_active", true)
-      .eq("is_default", true)
-      .single();
-
-    if (signatarioError || !signatarioExa) {
-      console.warn("⚠️ [CLICKSIGN] Signatário EXA não encontrado, usando apenas cliente");
-    } else {
-      console.log("✅ [CLICKSIGN] Signatário EXA encontrado:", signatarioExa.nome);
-    }
-
-    // ========== 5. Adicionar Signatário CLIENTE (JSON:API format - somente name e email) ==========
+    // ========== 6. Adicionar Signatário CLIENTE ==========
     const clientSignerPayload = {
       data: {
         type: "signers",
         attributes: {
           name: contrato.cliente_nome,
           email: contrato.cliente_email
-          // ClickSign v3 aceita APENAS name e email no payload de signers
         }
       }
     };
@@ -296,46 +280,45 @@ serve(async (req) => {
     const clientSignerKey = clientSignerData.data?.id || clientSignerData.data?.attributes?.key;
     console.log("✅ [CLICKSIGN] Signatário CLIENTE adicionado:", clientSignerKey);
 
-    // ========== 6. Adicionar Signatário EXA (se existir) ==========
-    let exaSignerKey = null;
-    if (signatarioExa) {
-      const exaSignerPayload = {
-        data: {
-          type: "signers",
-          attributes: {
-            name: signatarioExa.nome,
-            email: signatarioExa.email
-            // ClickSign v3 aceita APENAS name e email
+    // ========== 7. Adicionar TODOS os Signatários EXA ==========
+    const exaSignerKeys: string[] = [];
+    if (signatariosExa && signatariosExa.length > 0) {
+      for (const signatario of signatariosExa) {
+        const exaSignerPayload = {
+          data: {
+            type: "signers",
+            attributes: {
+              name: signatario.nome,
+              email: signatario.email
+            }
           }
+        };
+
+        console.log(`🏢 [CLICKSIGN] Adicionando signatário EXA: ${signatario.nome}...`);
+        const exaSignerResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/signers`, {
+          method: "POST",
+          headers: clicksignHeaders,
+          body: JSON.stringify(exaSignerPayload)
+        });
+
+        if (!exaSignerResponse.ok) {
+          const errorText = await exaSignerResponse.text();
+          console.warn(`⚠️ [CLICKSIGN] Erro ao adicionar signatário EXA ${signatario.nome}:`, errorText);
+        } else {
+          const exaSignerData = await exaSignerResponse.json();
+          const exaSignerKey = exaSignerData.data?.id || exaSignerData.data?.attributes?.key;
+          exaSignerKeys.push(exaSignerKey);
+          console.log(`✅ [CLICKSIGN] Signatário EXA ${signatario.nome} adicionado:`, exaSignerKey);
         }
-      };
-
-      console.log("📤 [CLICKSIGN] Payload signatário EXA:", JSON.stringify(exaSignerPayload));
-      console.log("🏢 [CLICKSIGN] Adicionando signatário EXA...");
-      const exaSignerResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/signers`, {
-        method: "POST",
-        headers: clicksignHeaders,
-        body: JSON.stringify(exaSignerPayload)
-      });
-
-      if (!exaSignerResponse.ok) {
-        const errorText = await exaSignerResponse.text();
-        console.warn("⚠️ [CLICKSIGN] Erro ao adicionar signatário EXA (continuando sem):", errorText);
-      } else {
-        const exaSignerData = await exaSignerResponse.json();
-        exaSignerKey = exaSignerData.data?.id || exaSignerData.data?.attributes?.key;
-        console.log("✅ [CLICKSIGN] Signatário EXA adicionado:", exaSignerKey);
       }
     }
 
-    // ========== 7. Criar Requirement CLIENTE (vincular signatário ao documento) ==========
-    // ClickSign v3 usa /requirements com relationships para vincular signatários a documentos
+    // ========== 8. Criar Requirement CLIENTE (action: "agree" - CORRIGIDO) ==========
     const clientRequirementPayload = {
       data: {
         type: "requirements",
         attributes: {
-          action: "sign"
-          // ClickSign v3 não suporta campo 'role' - removido para evitar erro 400
+          action: "agree"  // CORRIGIDO: era "sign", agora é "agree"
         },
         relationships: {
           document: {
@@ -348,7 +331,7 @@ serve(async (req) => {
       }
     };
 
-    console.log("🔗 [CLICKSIGN] Criando requirement CLIENTE...");
+    console.log("🔗 [CLICKSIGN] Criando requirement CLIENTE com action: agree...");
     console.log("📤 [CLICKSIGN] Payload requirement:", JSON.stringify(clientRequirementPayload));
     
     const clientRequirementResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/requirements`, {
@@ -367,15 +350,14 @@ serve(async (req) => {
     const clientRequirementKey = clientRequirementData.data?.id;
     console.log("✅ [CLICKSIGN] Requirement CLIENTE criado:", clientRequirementKey);
 
-    // ========== 8. Criar Requirement EXA (se existir signatário) ==========
-    let exaRequirementKey = null;
-    if (exaSignerKey) {
+    // ========== 9. Criar Requirements para TODOS os Signatários EXA ==========
+    const exaRequirementKeys: string[] = [];
+    for (const exaSignerKey of exaSignerKeys) {
       const exaRequirementPayload = {
         data: {
           type: "requirements",
           attributes: {
-            action: "sign"
-            // ClickSign v3 não suporta campo 'role' - removido para evitar erro 400
+            action: "agree"  // CORRIGIDO: era "sign", agora é "agree"
           },
           relationships: {
             document: {
@@ -388,7 +370,7 @@ serve(async (req) => {
         }
       };
 
-      console.log("🔗 [CLICKSIGN] Criando requirement EXA...");
+      console.log(`🔗 [CLICKSIGN] Criando requirement EXA para signer ${exaSignerKey}...`);
       const exaRequirementResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/requirements`, {
         method: "POST",
         headers: clicksignHeaders,
@@ -397,11 +379,12 @@ serve(async (req) => {
 
       if (!exaRequirementResponse.ok) {
         const errorText = await exaRequirementResponse.text();
-        console.warn("⚠️ [CLICKSIGN] Erro ao criar requirement EXA (continuando sem):", errorText);
+        console.warn(`⚠️ [CLICKSIGN] Erro ao criar requirement EXA:`, errorText);
       } else {
         const exaRequirementData = await exaRequirementResponse.json();
-        exaRequirementKey = exaRequirementData.data?.id;
-        console.log("✅ [CLICKSIGN] Requirement EXA criado:", exaRequirementKey);
+        const exaRequirementKey = exaRequirementData.data?.id;
+        exaRequirementKeys.push(exaRequirementKey);
+        console.log(`✅ [CLICKSIGN] Requirement EXA criado:`, exaRequirementKey);
       }
     }
 
@@ -409,7 +392,7 @@ serve(async (req) => {
     const signerKey = clientSignerKey;
     const requestSignatureKey = clientRequirementKey;
 
-    // ========== 6. Ativar Envelope ==========
+    // ========== 10. Ativar Envelope ==========
     console.log("Ativando envelope...");
     const activateResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/activate`, {
       method: "PATCH",
@@ -424,7 +407,7 @@ serve(async (req) => {
 
     console.log("Envelope ativado!");
 
-    // ========== 7. Enviar Notificação (JSON:API format) ==========
+    // ========== 11. Enviar Notificação ==========
     console.log("Enviando notificação...");
     const notifyPayload = {
       data: {
@@ -447,7 +430,7 @@ serve(async (req) => {
       console.log("Notificação enviada!");
     }
 
-    // ========== 8. Atualizar Banco de Dados ==========
+    // ========== 12. Atualizar Banco de Dados ==========
     const { error: updateError } = await supabase
       .from("contratos_legais")
       .update({
@@ -471,7 +454,9 @@ serve(async (req) => {
       detalhes: {
         envelope_id: envelopeId,
         document_key: documentKey,
-        signer_key: signerKey
+        signer_key: signerKey,
+        exa_signers_count: exaSignerKeys.length,
+        exa_signer_keys: exaSignerKeys
       }
     });
 
@@ -482,7 +467,8 @@ serve(async (req) => {
         success: true,
         envelope_id: envelopeId,
         document_key: documentKey,
-        signer_key: signerKey
+        signer_key: signerKey,
+        exa_signers_count: exaSignerKeys.length
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -496,9 +482,9 @@ serve(async (req) => {
   }
 });
 
-// Função para gerar HTML do contrato
-function generateContractHtml(contrato: any): string {
-  console.log("🖨️ [CLICKSIGN] Gerando HTML do contrato...");
+// Função para gerar HTML do contrato com template profissional
+function generateContractHtml(contrato: any, signatariosExa: any[]): string {
+  console.log("🖨️ [CLICKSIGN] Gerando HTML do contrato PROFISSIONAL com 12 cláusulas...");
   
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
@@ -520,7 +506,7 @@ function generateContractHtml(contrato: any): string {
     const extenso: Record<number, string> = {
       1: 'um', 2: 'dois', 3: 'três', 4: 'quatro', 5: 'cinco',
       6: 'seis', 7: 'sete', 8: 'oito', 9: 'nove', 10: 'dez',
-      11: 'onze', 12: 'doze'
+      11: 'onze', 12: 'doze', 13: 'treze'
     };
     return extenso[num] || String(num);
   };
@@ -535,199 +521,14 @@ function generateContractHtml(contrato: any): string {
     year: 'numeric' 
   });
 
-  // Logo EXA em SVG inline (funciona em qualquer navegador/email)
-  const logoSvg = `
-    <svg width="50" height="50" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#f0f0f0;stop-opacity:1" />
-        </linearGradient>
-      </defs>
-      <rect x="5" y="5" width="90" height="90" rx="15" fill="url(#logoGrad)" stroke="#8B1A1A" stroke-width="3"/>
-      <text x="50" y="65" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="38" font-weight="900" fill="#8B1A1A">EXA</text>
-    </svg>
-  `;
-
   const prediosHtml = listaPredios.map((p: any) => `
     <tr>
-      <td style="border: 1px solid #ddd; padding: 8px;">${p.nome || p.building_name}</td>
-      <td style="border: 1px solid #ddd; padding: 8px;">${p.bairro}</td>
-      <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${p.quantidade_telas || 1}</td>
+      <td style="border: 1px solid #e5e7eb; padding: 10px; font-size: 11px;">${p.nome || p.building_name}</td>
+      <td style="border: 1px solid #e5e7eb; padding: 10px; font-size: 11px;">${p.bairro || '-'}</td>
+      <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; font-size: 11px;">${p.quantidade_telas || 1}</td>
     </tr>
   `).join('');
-  
-  // Gerar HTML das parcelas
-  const gerarParcelasHtml = () => {
-    if (contrato.metodo_pagamento === 'custom' && parcelas.length > 0) {
-      // Parcelas personalizadas
-      return `
-        <div style="background: #f0fdf4; border: 1px solid #86efac; padding: 15px; border-radius: 4px; margin: 10px 0;">
-          <p style="font-weight: bold; color: #166534;">📋 CONDIÇÃO PERSONALIZADA - Cronograma de Pagamento:</p>
-          <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-            <thead>
-              <tr style="background: #dcfce7;">
-                <th style="border: 1px solid #86efac; padding: 8px; text-align: left;">Parcela</th>
-                <th style="border: 1px solid #86efac; padding: 8px; text-align: left;">Vencimento</th>
-                <th style="border: 1px solid #86efac; padding: 8px; text-align: right;">Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${parcelas.map((p: any, idx: number) => `
-                <tr>
-                  <td style="border: 1px solid #86efac; padding: 8px;">${p.installment || idx + 1}ª parcela</td>
-                  <td style="border: 1px solid #86efac; padding: 8px;">${formatDateExtended(p.due_date)}</td>
-                  <td style="border: 1px solid #86efac; padding: 8px; text-align: right; font-weight: bold;">${formatCurrency(Number(p.amount))}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-            <tfoot>
-              <tr style="background: #bbf7d0; font-weight: bold;">
-                <td colspan="2" style="border: 1px solid #86efac; padding: 8px; text-align: right;">TOTAL:</td>
-                <td style="border: 1px solid #86efac; padding: 8px; text-align: right;">${formatCurrency(contrato.valor_total)}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      `;
-    } else if (contrato.metodo_pagamento === 'pix_avista') {
-      return `
-        <div style="background: #ecfdf5; border: 1px solid #6ee7b7; padding: 15px; border-radius: 4px; margin: 10px 0;">
-          <p style="font-weight: bold; color: #047857;">💰 PAGAMENTO ÚNICO VIA PIX</p>
-          <p style="margin-top: 8px;">
-            Valor total: <strong>${formatCurrency(contrato.valor_total)}</strong><br>
-            Forma: Pagamento único via PIX, à vista, antes do início da exibição.
-          </p>
-        </div>
-      `;
-    } else if (contrato.metodo_pagamento === 'cartao') {
-      return `
-        <div style="background: #eff6ff; border: 1px solid #93c5fd; padding: 15px; border-radius: 4px; margin: 10px 0;">
-          <p style="font-weight: bold; color: #1d4ed8;">💳 PAGAMENTO VIA CARTÃO DE CRÉDITO</p>
-          <p style="margin-top: 8px;">
-            Valor total: <strong>${formatCurrency(contrato.valor_total)}</strong><br>
-            Forma: Processado via cartão de crédito.
-          </p>
-        </div>
-      `;
-    } else {
-      // PIX ou Boleto Fidelidade - gerar todas as parcelas
-      const metodoPagamento = contrato.metodo_pagamento === 'pix_fidelidade' ? '📱 PIX FIDELIDADE' : '📄 BOLETO FIDELIDADE';
-      const planoMeses = contrato.plano_meses || 1;
-      
-      // Gerar cronograma de parcelas
-      let parcelasRows = '';
-      if (contrato.data_inicio && planoMeses > 0) {
-        for (let i = 0; i < planoMeses; i++) {
-          const inicio = new Date(contrato.data_inicio + 'T00:00:00');
-          const dataVencimento = new Date(inicio.getFullYear(), inicio.getMonth() + i, contrato.dia_vencimento || 10);
-          if (i === 0 && dataVencimento < inicio) {
-            dataVencimento.setMonth(dataVencimento.getMonth() + 1);
-          }
-          parcelasRows += `
-            <tr${i === 0 ? ' style="background: #fef9c3;"' : ''}>
-              <td style="border: 1px solid #fcd34d; padding: 8px;">${i + 1}ª parcela${i === 0 ? ' (primeira)' : ''}</td>
-              <td style="border: 1px solid #fcd34d; padding: 8px;">${formatDateExtended(dataVencimento.toISOString().split('T')[0])}</td>
-              <td style="border: 1px solid #fcd34d; padding: 8px; text-align: right; font-weight: bold;">${formatCurrency(contrato.valor_mensal)}</td>
-            </tr>
-          `;
-        }
-      }
 
-      return `
-        <div style="background: #fffbeb; border: 1px solid #fcd34d; padding: 15px; border-radius: 4px; margin: 10px 0;">
-          <p style="font-weight: bold; color: #92400e;">${metodoPagamento}</p>
-          <p style="margin-top: 8px;">
-            Pagamento em <strong>${planoMeses} (${getNumeroExtenso(planoMeses)}) parcela(s)</strong> de <strong>${formatCurrency(contrato.valor_mensal)}</strong><br>
-            Vencimento: Dia <strong>${contrato.dia_vencimento || 10}</strong> de cada mês
-          </p>
-          ${parcelasRows ? `
-            <p style="font-weight: bold; color: #92400e; margin-top: 15px;">📋 Cronograma Completo de Parcelas:</p>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-              <thead>
-                <tr style="background: #fef3c7;">
-                  <th style="border: 1px solid #fcd34d; padding: 8px; text-align: left;">Parcela</th>
-                  <th style="border: 1px solid #fcd34d; padding: 8px; text-align: left;">Vencimento</th>
-                  <th style="border: 1px solid #fcd34d; padding: 8px; text-align: right;">Valor</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${parcelasRows}
-              </tbody>
-              <tfoot>
-                <tr style="background: #fde68a; font-weight: bold;">
-                  <td colspan="2" style="border: 1px solid #fcd34d; padding: 8px; text-align: right;">TOTAL:</td>
-                  <td style="border: 1px solid #fcd34d; padding: 8px; text-align: right;">${formatCurrency(contrato.valor_total)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          ` : ''}
-        </div>
-      `;
-    }
-  };
-
-  if (contrato.tipo_contrato === 'sindico') {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.6; color: #333; margin: 40px; }
-          h1 { text-align: center; font-size: 16pt; text-transform: uppercase; margin-bottom: 30px; }
-          h2 { font-size: 12pt; font-weight: bold; margin-top: 20px; }
-          .parties { margin-bottom: 30px; }
-          .signatures { margin-top: 60px; display: flex; justify-content: space-between; }
-          .signature-box { width: 45%; text-align: center; }
-          .signature-line { border-top: 1px solid #333; padding-top: 10px; margin-top: 60px; }
-        </style>
-      </head>
-      <body>
-        <h1>Termo de Cessão de Espaço para Publicidade Digital<br>
-        <small style="font-size: 10pt; color: #666;">Nº ${contrato.numero_contrato}</small></h1>
-        
-        <div class="parties">
-          <p><strong>CEDENTE:</strong> ${contrato.cliente_razao_social || contrato.cliente_nome}${contrato.cliente_cnpj ? `, inscrito no CNPJ sob nº ${contrato.cliente_cnpj}` : ''}, representado por <strong>${contrato.cliente_nome}</strong>${contrato.cliente_cargo ? ` (${contrato.cliente_cargo})` : ''}, doravante denominado "CEDENTE".</p>
-          <p><strong>CESSIONÁRIA:</strong> EXA SOLUÇÕES DIGITAIS LTDA, pessoa jurídica de direito privado, inscrita no CNPJ sob nº 62.878.193/0001-35, com sede na Av. Paraná, nº 974, Sala 301, Centro, Foz do Iguaçu - PR, CEP 85852-000, doravante denominada "CESSIONÁRIA".</p>
-        </div>
-        
-        <h2>CLÁUSULA 1ª - DO OBJETO</h2>
-        <p>1.1. O presente termo tem por objeto a cessão gratuita de espaço no(s) elevador(es) do condomínio para instalação de painéis digitais da EXA MÍDIA, destinados à veiculação de conteúdo informativo e publicitário.</p>
-        
-        <h2>CLÁUSULA 2ª - DO LOCAL</h2>
-        <p>2.1. Quantidade de telas: ${totalPaineis} unidade(s).</p>
-        
-        <h2>CLÁUSULA 3ª - DAS OBRIGAÇÕES DA CESSIONÁRIA</h2>
-        <p>3.1. A CESSIONÁRIA compromete-se a fornecer e instalar os equipamentos sem qualquer custo ao CEDENTE, realizar manutenção preventiva e corretiva, e respeitar as normas do condomínio.</p>
-        
-        <h2>CLÁUSULA 4ª - DA VIGÊNCIA</h2>
-        <p>4.1. O presente termo entra em vigor na data de sua assinatura e terá prazo indeterminado, podendo ser rescindido por qualquer das partes mediante comunicação prévia de 30 (trinta) dias.</p>
-        
-        ${contrato.clausulas_especiais ? `<h2>CLÁUSULA 5ª - CONDIÇÕES ESPECIAIS</h2><p>${contrato.clausulas_especiais}</p>` : ''}
-        
-        <p style="text-align: center; margin-top: 40px;">Foz do Iguaçu - PR, ${dataAtual}.</p>
-        
-        <div class="signatures">
-          <div class="signature-box">
-            <div class="signature-line">
-              <strong>${contrato.cliente_nome}</strong><br>
-              <span style="font-size: 10pt; color: #666;">CEDENTE</span>
-            </div>
-          </div>
-          <div class="signature-box">
-            <div class="signature-line">
-              <strong>EXA SOLUÇÕES DIGITAIS LTDA</strong><br>
-              <span style="font-size: 10pt; color: #666;">CESSIONÁRIA</span>
-            </div>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  // Contrato Anunciante
   const metodoPagamentoNome = (metodo: string) => {
     switch (metodo) {
       case 'pix_avista': return 'PIX À VISTA';
@@ -749,120 +550,882 @@ function generateContractHtml(contrato: any): string {
     }
   };
 
-  console.log("🖨️ [CLICKSIGN] Gerando HTML anunciante com parcelas detalhadas...");
+  // Signatários EXA com RG/CPF
+  const signatariaExa1 = signatariosExa.find(s => s.cpf === '116.228.359-99') || {
+    nome: 'Natália Krause Guimarães Dantas',
+    rg: '13.038.569-9',
+    cpf: '116.228.359-99'
+  };
   
+  const signatarioExa2 = signatariosExa.find(s => s.cpf === '055.031.279-00') || {
+    nome: 'Jeferson Stilver Rodrigues Encina',
+    rg: '8.812.269-0',
+    cpf: '055.031.279-00'
+  };
+
+  // Template para contrato de síndico (Comodato)
+  if (contrato.tipo_contrato === 'sindico') {
+    return generateSindicoContractHtml(contrato, signatariaExa1, signatarioExa2, dataAtual, totalPaineis);
+  }
+
+  // Template para contrato de anunciante (Publicidade) - COM 12 CLÁUSULAS COMPLETAS
   return `
     <!DOCTYPE html>
-    <html>
+    <html lang="pt-BR">
     <head>
       <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Contrato ${contrato.numero_contrato}</title>
       <style>
-        body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.6; color: #333; margin: 40px; }
-        h1 { text-align: center; font-size: 16pt; text-transform: uppercase; margin-bottom: 30px; }
-        h2 { font-size: 12pt; font-weight: bold; margin-top: 20px; }
-        .header { background: linear-gradient(to right, #8B1A1A, #A52020); color: white; padding: 20px; margin: -40px -40px 30px -40px; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; }
-        .logo { display: flex; align-items: center; gap: 10px; }
-        .logo-text { font-size: 18pt; font-weight: bold; }
-        .parties { margin-bottom: 30px; }
-        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f5f5f5; }
-        .highlight { background-color: #f0f9ff; border: 1px solid #bae6fd; padding: 15px; border-radius: 4px; margin: 10px 0; }
-        .signatures { margin-top: 60px; display: flex; justify-content: space-between; }
-        .signature-box { width: 45%; text-align: center; }
-        .signature-line { border-top: 1px solid #333; padding-top: 10px; margin-top: 60px; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          font-size: 11px;
+          line-height: 1.6;
+          color: #1f2937;
+          background: #ffffff;
+        }
+        
+        .header {
+          background: linear-gradient(135deg, #8B1A1A 0%, #A52020 50%, #C62828 100%);
+          color: white;
+          padding: 30px 40px;
+          margin-bottom: 30px;
+          border-radius: 0 0 20px 20px;
+        }
+        
+        .header-content {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .logo-section {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        }
+        
+        .logo-box {
+          width: 50px;
+          height: 50px;
+          background: rgba(255,255,255,0.95);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 900;
+          font-size: 18px;
+          color: #8B1A1A;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .logo-text h1 {
+          font-size: 22px;
+          font-weight: 700;
+          letter-spacing: -0.5px;
+          margin-bottom: 2px;
+        }
+        
+        .logo-text p {
+          font-size: 11px;
+          opacity: 0.9;
+          font-weight: 400;
+        }
+        
+        .contract-badge {
+          text-align: right;
+        }
+        
+        .contract-badge .title {
+          font-size: 13px;
+          font-weight: 600;
+          opacity: 0.9;
+          margin-bottom: 5px;
+        }
+        
+        .contract-badge .number {
+          background: rgba(255,255,255,0.15);
+          padding: 8px 16px;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 700;
+          backdrop-filter: blur(10px);
+        }
+        
+        .container {
+          padding: 0 40px 40px 40px;
+          max-width: 100%;
+        }
+        
+        .document-title {
+          text-align: center;
+          margin-bottom: 25px;
+        }
+        
+        .document-title h2 {
+          font-size: 16px;
+          font-weight: 700;
+          color: #1f2937;
+          margin-bottom: 5px;
+        }
+        
+        .document-title .subtitle {
+          font-size: 12px;
+          color: #6b7280;
+          font-weight: 500;
+        }
+        
+        .section {
+          margin-bottom: 20px;
+        }
+        
+        .section-title {
+          font-size: 12px;
+          font-weight: 700;
+          color: #8B1A1A;
+          margin-bottom: 8px;
+          padding-bottom: 5px;
+          border-bottom: 2px solid #fee2e2;
+        }
+        
+        .parties-box {
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 25px;
+        }
+        
+        .party {
+          margin-bottom: 15px;
+        }
+        
+        .party:last-child {
+          margin-bottom: 0;
+        }
+        
+        .party-label {
+          font-size: 10px;
+          font-weight: 700;
+          color: #8B1A1A;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 5px;
+        }
+        
+        .party-content {
+          font-size: 11px;
+          color: #374151;
+          line-height: 1.5;
+        }
+        
+        .clause {
+          margin-bottom: 18px;
+        }
+        
+        .clause-title {
+          font-size: 11px;
+          font-weight: 700;
+          color: #1f2937;
+          margin-bottom: 8px;
+        }
+        
+        .clause-content {
+          font-size: 11px;
+          color: #4b5563;
+          text-align: justify;
+        }
+        
+        .clause-item {
+          margin-bottom: 6px;
+          padding-left: 10px;
+        }
+        
+        .highlight-box {
+          background: linear-gradient(135deg, #fef2f2 0%, #fff5f5 100%);
+          border: 1px solid #fecaca;
+          border-left: 4px solid #8B1A1A;
+          border-radius: 8px;
+          padding: 15px;
+          margin: 15px 0;
+        }
+        
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 12px 0;
+          font-size: 11px;
+        }
+        
+        th {
+          background: #f3f4f6;
+          color: #374151;
+          font-weight: 600;
+          padding: 10px;
+          text-align: left;
+          border: 1px solid #e5e7eb;
+        }
+        
+        td {
+          padding: 10px;
+          border: 1px solid #e5e7eb;
+        }
+        
+        .signatures-section {
+          margin-top: 50px;
+          padding-top: 30px;
+          border-top: 2px solid #e5e7eb;
+        }
+        
+        .signatures-title {
+          text-align: center;
+          font-size: 12px;
+          font-weight: 600;
+          color: #6b7280;
+          margin-bottom: 40px;
+        }
+        
+        .signatures-grid {
+          display: flex;
+          justify-content: space-between;
+          gap: 40px;
+        }
+        
+        .signature-box {
+          flex: 1;
+          text-align: center;
+        }
+        
+        .signature-line {
+          border-top: 1px solid #1f2937;
+          padding-top: 15px;
+          margin-top: 80px;
+        }
+        
+        .signature-name {
+          font-size: 11px;
+          font-weight: 600;
+          color: #1f2937;
+          margin-bottom: 3px;
+        }
+        
+        .signature-role {
+          font-size: 10px;
+          color: #6b7280;
+          font-weight: 500;
+        }
+        
+        .signature-docs {
+          font-size: 9px;
+          color: #9ca3af;
+          margin-top: 5px;
+        }
+        
+        .exa-representatives {
+          margin-top: 30px;
+        }
+        
+        .exa-rep-title {
+          font-size: 10px;
+          font-weight: 600;
+          color: #6b7280;
+          margin-bottom: 20px;
+          text-align: center;
+        }
+        
+        .exa-reps-grid {
+          display: flex;
+          justify-content: center;
+          gap: 60px;
+        }
+        
+        .exa-rep-box {
+          text-align: center;
+          min-width: 200px;
+        }
+        
+        .date-location {
+          text-align: center;
+          margin-top: 30px;
+          font-size: 11px;
+          color: #6b7280;
+        }
+        
+        .footer {
+          margin-top: 40px;
+          padding-top: 20px;
+          border-top: 1px solid #e5e7eb;
+          text-align: center;
+          font-size: 9px;
+          color: #9ca3af;
+        }
+      </style>
+    </head>
+    <body>
+      <!-- HEADER PROFISSIONAL IGUAL EMAIL BOAS-VINDAS -->
+      <div class="header">
+        <div class="header-content">
+          <div class="logo-section">
+            <div class="logo-box">EXA</div>
+            <div class="logo-text">
+              <h1>EXA MÍDIA</h1>
+              <p>Soluções Digitais em Elevadores</p>
+            </div>
+          </div>
+          <div class="contract-badge">
+            <div class="title">CONTRATO DE PUBLICIDADE</div>
+            <div class="number">Nº ${contrato.numero_contrato}</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="container">
+        <!-- TÍTULO DO DOCUMENTO -->
+        <div class="document-title">
+          <h2>CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE PUBLICIDADE DIGITAL — EXA</h2>
+          <div class="subtitle">Mídia: Painéis Indoor — Elevadores & Áreas Internas</div>
+        </div>
+        
+        <!-- IDENTIFICAÇÃO DAS PARTES -->
+        <div class="parties-box">
+          <div class="party">
+            <div class="party-label">CONTRATADA</div>
+            <div class="party-content">
+              <strong>EXA — Soluções Digitais / Publicidade Inteligente</strong>, pessoa jurídica inscrita no CNPJ nº 62.878.193/0001-35, com sede à Rua Sílvio Sotomaior, 187 — Bairro Três Bandeiras — Foz do Iguaçu/PR. Representantes legais: <strong>${signatariaExa1.nome}</strong> (RG ${signatariaExa1.rg || '13.038.569-9'} / CPF ${signatariaExa1.cpf}) e <strong>${signatarioExa2.nome}</strong> (RG ${signatarioExa2.rg || '8.812.269-0'} / CPF ${signatarioExa2.cpf}).
+            </div>
+          </div>
+          <div class="party">
+            <div class="party-label">CONTRATANTE</div>
+            <div class="party-content">
+              <strong>${contrato.cliente_razao_social || contrato.cliente_nome}</strong>${contrato.cliente_cnpj ? ` — CNPJ: ${contrato.cliente_cnpj}` : ''}; Endereço: ${contrato.cliente_endereco || contrato.cliente_cidade || 'Foz do Iguaçu — PR'}. Representante: Sr(a). <strong>${contrato.cliente_nome}</strong>${contrato.cliente_cargo ? ` (${contrato.cliente_cargo})` : ''}.
+            </div>
+          </div>
+        </div>
+        
+        <!-- CLÁUSULA 1 — DO OBJETO -->
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 1 — DO OBJETO</div>
+          <div class="clause-content">
+            <div class="clause-item">1.1. Veiculação de conteúdo publicitário fornecido pela CONTRATANTE nas telas digitais operadas pela EXA, instaladas em ${listaPredios.length} (${getNumeroExtenso(listaPredios.length)}) prédio(s).</div>
+            <div class="clause-item">1.2. Inclui gestão de playlist, aprovação de criativos, administração de horários e relatórios de exibição via plataforma EXA Cloud.</div>
+          </div>
+        </div>
+        
+        <!-- CLÁUSULA 2 — DO PRAZO -->
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 2 — DO PRAZO</div>
+          <div class="clause-content">
+            <div class="clause-item">2.1. Prazo: ${contrato.plano_meses || 1} (${getNumeroExtenso(contrato.plano_meses || 1)}) mês(es) a partir da data de início da veiculação. Renovação mediante acordo entre as partes ou encerramento ao término do prazo.</div>
+            ${contrato.data_inicio ? `<div class="clause-item">2.2. Data de início: ${formatDateExtended(contrato.data_inicio)}</div>` : ''}
+            ${contrato.data_fim ? `<div class="clause-item">2.3. Data de término: ${formatDateExtended(contrato.data_fim)}</div>` : ''}
+          </div>
+        </div>
+        
+        <!-- CLÁUSULA 3 — DO VALOR E PAGAMENTO -->
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 3 — DO VALOR E PAGAMENTO</div>
+          <div class="highlight-box">
+            <div class="clause-content">
+              <div class="clause-item">3.1. Valor: <strong>${formatCurrency(contrato.valor_mensal || contrato.valor_total)}</strong> ${contrato.valor_mensal ? 'mensais' : 'total'}, por ${contrato.plano_meses || 1} mês(es). Total: <strong>${formatCurrency(contrato.valor_total)}</strong></div>
+              <div class="clause-item">3.2. Forma de Pagamento: <strong>${metodoPagamentoNome(contrato.metodo_pagamento)}</strong>${contrato.dia_vencimento ? `, vencimento dia ${contrato.dia_vencimento} de cada mês` : ''}. Emissão e registro no portal www.examidia.com.br.</div>
+              <div class="clause-item">3.3. Atrasos: multa de 2%, juros de 1% ao mês e correção. Atraso >10 dias pode suspender veiculação; >30 dias autoriza rescisão e aplicação de multa contratual.</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- CLÁUSULA 4 — DO CONTEÚDO -->
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 4 — DO CONTEÚDO</div>
+          <div class="clause-content">
+            <div class="clause-item">4.1. Materiais devem observar especificações técnicas da EXA (resolução 1920x1080, formato MP4, máximo 15 segundos). Prazo de aprovação do moderador: até 1 (uma) hora em dias úteis; após aprovação, inserção na playlist conforme cronograma.</div>
+            <div class="clause-item">4.2. Conteúdos proibidos: político/eleitoral, pornográfico, ilegal, discriminatório ou que viole direitos. Conteúdo inadequado será removido sem prejuízo do faturamento.</div>
+          </div>
+        </div>
+        
+        <!-- CLÁUSULA 5 — ENTREGA, FREQUÊNCIA E SLA -->
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 5 — ENTREGA, FREQUÊNCIA E SLA</div>
+          <div class="clause-content">
+            <div class="clause-item">5.1. Exibições estimadas: 245 exibições por painel/dia (média). Relatório mensal será gerado e disponibilizado no painel administrativo.</div>
+            <div class="clause-item">5.2. SLA operacional: disponibilidade média mínima de 90% da rede. Falhas técnicas imputáveis à EXA serão tratadas em até 72 horas úteis.</div>
+          </div>
+        </div>
+        
+        <!-- CLÁUSULA 6 — RESPONSABILIDADES -->
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 6 — RESPONSABILIDADES</div>
+          <div class="clause-content">
+            <div class="clause-item">6.1. Responsabilidades da EXA: operação, manutenção, monitoramento, backup de logs, emissão de relatórios e suporte técnico.</div>
+            <div class="clause-item">6.2. Responsabilidades do CONTRATANTE: envio de material em conformidade, garantia de direitos autorais, pagamento em dia e cooperação em auditorias técnicas.</div>
+          </div>
+        </div>
+        
+        <!-- CLÁUSULA 7 — DIREITOS AUTORAIS -->
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 7 — DIREITOS AUTORAIS</div>
+          <div class="clause-content">
+            <div class="clause-item">7.1. O CONTRATANTE declara possuir todos os direitos sobre o material e indenizará a EXA por reivindicações de terceiros.</div>
+            <div class="clause-item">7.2. A CONTRATANTE autoriza expressamente a EXA MÍDIA a utilizar o material publicitário fornecido para veiculação nos painéis, materiais institucionais, portfólio, redes sociais e apresentações comerciais.</div>
+          </div>
+        </div>
+        
+        <!-- CLÁUSULA 8 — RESCISÃO E MULTA -->
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 8 — RESCISÃO E MULTA</div>
+          <div class="clause-content">
+            <div class="clause-item">8.1. Rescisão antecipada pelo CONTRATANTE: multa de 20% sobre o saldo remanescente, salvo outras condições previamente acordadas por escrito.</div>
+            <div class="clause-item">8.2. Rescisão por culpa da EXA: devolução proporcional de valores não utilizados.</div>
+          </div>
+        </div>
+        
+        <!-- CLÁUSULA 9 — REAJUSTE -->
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 9 — REAJUSTE</div>
+          <div class="clause-content">
+            <div class="clause-item">9.1. Reajuste anual pelo IPCA ou índice que venha a substituí-lo.</div>
+          </div>
+        </div>
+        
+        <!-- CLÁUSULA 10 — SEGURANÇA, PRIVACIDADE E AUTENTICAÇÃO -->
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 10 — SEGURANÇA, PRIVACIDADE E AUTENTICAÇÃO</div>
+          <div class="clause-content">
+            <div class="clause-item">10.1. <strong>Segurança Operacional:</strong> A EXA manterá políticas e controles de segurança razoáveis para proteger a plataforma, incluindo firewall, autenticação multifatorial para acessos administrativos, segregação de ambientes (produção / homologação), backups periódicos e monitoramento de integridade dos assets.</div>
+            <div class="clause-item">10.2. <strong>Proteção de Dados e Privacidade:</strong> Ambas as partes concordam em cumprir a legislação aplicável de proteção de dados (incl. LGPD). A EXA tratará dados pessoais apenas conforme instruções do CONTRATANTE e somente para execução do serviço. Vazamentos ou incidentes que envolvam dados pessoais serão comunicados em até 48 horas úteis após detecção.</div>
+            <div class="clause-item">10.3. <strong>Controle de Acesso e Tokens:</strong> A validação de propostas via QR Code será realizada por tokens únicos e de curta validade. Quaisquer tentativas de uso indevido serão registradas em logs de auditoria.</div>
+            <div class="clause-item">10.4. <strong>Logs, Auditoria e Retenção:</strong> A EXA manterá registros de logs de execução, exibição e ações administrativas por no mínimo 12 meses para fins de auditoria.</div>
+            <div class="clause-item">10.5. <strong>Segurança do Conteúdo:</strong> Materiais submetidos passam por verificação automatizada e humana (moderação). A EXA aplicará controles para prevenir execução de conteúdo malicioso.</div>
+            <div class="clause-item">10.6. <strong>Continuidade e Resposta a Incidentes:</strong> A EXA possui plano de resposta a incidentes. Em caso de indisponibilidade crítica, as partes concordam em executar o plano de contingência e comunicar stakeholders relevantes em até 24 horas úteis.</div>
+            <div class="clause-item">10.7. <strong>Confidencialidade:</strong> As partes comprometem-se a manter confidenciais termos comerciais, preços, relatórios e acessos técnicos. Informação confidencial não será divulgada sem autorização escrita, salvo obrigação legal.</div>
+            <div class="clause-item">10.8. <strong>Segurança Física:</strong> Equipamentos e painéis físicos são gerenciados por manutenção periódica; a EXA se responsabiliza por manutenções preventivas quando acordado contratualmente.</div>
+          </div>
+        </div>
+        
+        <!-- CLÁUSULA 11 — DISPOSIÇÕES GERAIS -->
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 11 — DISPOSIÇÕES GERAIS</div>
+          <div class="clause-content">
+            <div class="clause-item">11.1. Comunicações oficiais via portal, e-mail corporativo ou notificações do sistema EXA.</div>
+            <div class="clause-item">11.2. Alterações ao contrato somente por escrito e assinadas por representantes autorizados.</div>
+          </div>
+        </div>
+        
+        <!-- CLÁUSULA 12 — FORO -->
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 12 — FORO</div>
+          <div class="clause-content">
+            <div class="clause-item">12.1. Elegem as partes o foro da comarca de Foz do Iguaçu/PR para dirimir controvérsias, com renúncia a qualquer outro.</div>
+          </div>
+        </div>
+        
+        ${contrato.clausulas_especiais ? `
+        <div class="clause">
+          <div class="clause-title">CONDIÇÕES ESPECIAIS</div>
+          <div class="clause-content">
+            <div class="clause-item">${contrato.clausulas_especiais}</div>
+          </div>
+        </div>
+        ` : ''}
+        
+        <!-- LOCAIS CONTRATADOS (PRÉDIOS) -->
+        ${listaPredios.length > 0 ? `
+        <div class="section">
+          <div class="section-title">ANEXO I — LOCAIS CONTRATADOS</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Edifício</th>
+                <th>Bairro</th>
+                <th style="text-align: center;">Telas</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${prediosHtml}
+            </tbody>
+          </table>
+          <p style="font-size: 10px; color: #6b7280; margin-top: 8px;">Total: ${totalPaineis} tela(s) em ${listaPredios.length} edifício(s)</p>
+        </div>
+        ` : ''}
+        
+        <!-- LOCAL E DATA -->
+        <div class="date-location">
+          Foz do Iguaçu — PR, ${dataAtual}.
+        </div>
+        
+        <!-- ASSINATURAS -->
+        <div class="signatures-section">
+          <div class="signatures-title">ASSINATURAS DAS PARTES</div>
+          
+          <div class="signatures-grid">
+            <!-- CONTRATANTE -->
+            <div class="signature-box">
+              <div class="signature-line">
+                <div class="signature-name">${contrato.cliente_razao_social || contrato.cliente_nome}</div>
+                <div class="signature-role">CONTRATANTE</div>
+                ${contrato.cliente_cnpj ? `<div class="signature-docs">CNPJ: ${contrato.cliente_cnpj}</div>` : ''}
+                <div class="signature-docs">Representante: ${contrato.cliente_nome}</div>
+              </div>
+            </div>
+            
+            <!-- CONTRATADA (EXA) -->
+            <div class="signature-box">
+              <div class="signature-line">
+                <div class="signature-name">EXA — Soluções Digitais</div>
+                <div class="signature-role">CONTRATADA</div>
+                <div class="signature-docs">CNPJ: 62.878.193/0001-35</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- REPRESENTANTES LEGAIS EXA -->
+          <div class="exa-representatives">
+            <div class="exa-rep-title">Representantes Legais da CONTRATADA:</div>
+            <div class="exa-reps-grid">
+              <div class="exa-rep-box">
+                <div class="signature-line">
+                  <div class="signature-name">${signatariaExa1.nome}</div>
+                  <div class="signature-docs">RG ${signatariaExa1.rg || '13.038.569-9'} / CPF ${signatariaExa1.cpf}</div>
+                </div>
+              </div>
+              <div class="exa-rep-box">
+                <div class="signature-line">
+                  <div class="signature-name">${signatarioExa2.nome}</div>
+                  <div class="signature-docs">RG ${signatarioExa2.rg || '8.812.269-0'} / CPF ${signatarioExa2.cpf}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- FOOTER -->
+        <div class="footer">
+          <p>EXA — Soluções Digitais / Publicidade Inteligente</p>
+          <p>Rua Sílvio Sotomaior, 187 — Três Bandeiras — Foz do Iguaçu/PR — CNPJ 62.878.193/0001-35</p>
+          <p>www.examidia.com.br | contato@examidia.com.br</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// Template para contrato de síndico (Comodato)
+function generateSindicoContractHtml(contrato: any, signatariaExa1: any, signatarioExa2: any, dataAtual: string, totalPaineis: number): string {
+  return `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8">
+      <title>Contrato de Comodato ${contrato.numero_contrato}</title>
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          font-size: 11px;
+          line-height: 1.6;
+          color: #1f2937;
+          background: #ffffff;
+        }
+        
+        .header {
+          background: linear-gradient(135deg, #8B1A1A 0%, #A52020 50%, #C62828 100%);
+          color: white;
+          padding: 30px 40px;
+          margin-bottom: 30px;
+          border-radius: 0 0 20px 20px;
+        }
+        
+        .header-content {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .logo-section {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        }
+        
+        .logo-box {
+          width: 50px;
+          height: 50px;
+          background: rgba(255,255,255,0.95);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 900;
+          font-size: 18px;
+          color: #8B1A1A;
+        }
+        
+        .logo-text h1 {
+          font-size: 22px;
+          font-weight: 700;
+        }
+        
+        .logo-text p {
+          font-size: 11px;
+          opacity: 0.9;
+        }
+        
+        .contract-badge {
+          text-align: right;
+        }
+        
+        .contract-badge .number {
+          background: rgba(255,255,255,0.15);
+          padding: 8px 16px;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 700;
+        }
+        
+        .container {
+          padding: 0 40px 40px 40px;
+        }
+        
+        .document-title {
+          text-align: center;
+          margin-bottom: 25px;
+        }
+        
+        .document-title h2 {
+          font-size: 16px;
+          font-weight: 700;
+          color: #1f2937;
+        }
+        
+        .parties-box {
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 25px;
+        }
+        
+        .party {
+          margin-bottom: 15px;
+        }
+        
+        .party-label {
+          font-size: 10px;
+          font-weight: 700;
+          color: #8B1A1A;
+          text-transform: uppercase;
+          margin-bottom: 5px;
+        }
+        
+        .clause {
+          margin-bottom: 18px;
+        }
+        
+        .clause-title {
+          font-size: 11px;
+          font-weight: 700;
+          color: #1f2937;
+          margin-bottom: 8px;
+        }
+        
+        .clause-content {
+          font-size: 11px;
+          color: #4b5563;
+          text-align: justify;
+        }
+        
+        .signatures-section {
+          margin-top: 50px;
+          padding-top: 30px;
+          border-top: 2px solid #e5e7eb;
+        }
+        
+        .signatures-grid {
+          display: flex;
+          justify-content: space-between;
+          gap: 40px;
+        }
+        
+        .signature-box {
+          flex: 1;
+          text-align: center;
+        }
+        
+        .signature-line {
+          border-top: 1px solid #1f2937;
+          padding-top: 15px;
+          margin-top: 80px;
+        }
+        
+        .signature-name {
+          font-size: 11px;
+          font-weight: 600;
+        }
+        
+        .signature-role {
+          font-size: 10px;
+          color: #6b7280;
+        }
+        
+        .signature-docs {
+          font-size: 9px;
+          color: #9ca3af;
+          margin-top: 5px;
+        }
+        
+        .exa-representatives {
+          margin-top: 30px;
+        }
+        
+        .exa-rep-title {
+          font-size: 10px;
+          font-weight: 600;
+          color: #6b7280;
+          margin-bottom: 20px;
+          text-align: center;
+        }
+        
+        .exa-reps-grid {
+          display: flex;
+          justify-content: center;
+          gap: 60px;
+        }
+        
+        .date-location {
+          text-align: center;
+          margin-top: 30px;
+          font-size: 11px;
+          color: #6b7280;
+        }
       </style>
     </head>
     <body>
       <div class="header">
         <div class="header-content">
-          <div class="logo">
-            ${logoSvg}
-            <div>
-              <div class="logo-text">EXA MÍDIA</div>
-              <div style="font-size: 10pt; opacity: 0.8;">Soluções Digitais em Elevadores</div>
+          <div class="logo-section">
+            <div class="logo-box">EXA</div>
+            <div class="logo-text">
+              <h1>EXA MÍDIA</h1>
+              <p>Soluções Digitais em Elevadores</p>
             </div>
           </div>
-          <div style="text-align: right;">
-            <div style="font-weight: bold;">CONTRATO DE PUBLICIDADE</div>
-            <div style="font-size: 10pt; opacity: 0.8;">Nº ${contrato.numero_contrato}</div>
+          <div class="contract-badge">
+            <div style="font-size: 13px; opacity: 0.9; margin-bottom: 5px;">CONTRATO DE COMODATO</div>
+            <div class="number">Nº ${contrato.numero_contrato}</div>
           </div>
         </div>
       </div>
       
-      <h1>Contrato de Publicidade em Mídia Digital</h1>
-      
-      <div class="parties">
-        <p><strong>CONTRATANTE:</strong> ${contrato.cliente_razao_social || contrato.cliente_nome}${contrato.cliente_segmento ? ` (${contrato.cliente_segmento})` : ''}, ${contrato.cliente_endereco ? `com sede em ${contrato.cliente_endereco}` : `com sede em ${contrato.cliente_cidade || 'Foz do Iguaçu'}`}${contrato.cliente_cnpj ? `, inscrita no CNPJ sob o nº ${contrato.cliente_cnpj}` : ''}, neste ato representada por seu representante legal${contrato.cliente_nome ? `, Sr(a). ${contrato.cliente_nome}` : ''}${contrato.cliente_cargo ? ` (${contrato.cliente_cargo})` : ''}, doravante denominada "CONTRATANTE".</p>
-        <p><strong>CONTRATADA:</strong> EXA SOLUÇÕES DIGITAIS LTDA, pessoa jurídica de direito privado, inscrita no CNPJ sob nº 62.878.193/0001-35, com sede na Av. Paraná, nº 974, Sala 301, Centro, Foz do Iguaçu - PR, CEP 85852-000, doravante denominada "CONTRATADA".</p>
-      </div>
-      
-      <h2>CLÁUSULA 1ª - DO OBJETO</h2>
-      <p>1.1. O presente contrato tem por objeto a veiculação de anúncios publicitários em vídeo com duração de até 15 (quinze) segundos, fornecidos pela CONTRATANTE, nos painéis digitais da EXA MÍDIA, localizados em prédios residenciais da cidade de Foz do Iguaçu - PR.</p>
-      
-      <div class="highlight">
-        <h2>CLÁUSULA 2ª - DO PRAZO E VIGÊNCIA</h2>
-        <p>2.1. Plano contratado: <strong>${planoNome(contrato.plano_meses || 1)}</strong> (${contrato.plano_meses || 1} mês(es))</p>
-        <p>2.2. Data de início: <strong>${contrato.data_inicio || 'A definir após assinatura'}</strong></p>
-        <p>2.3. Data de término: <strong>${contrato.data_fim || 'A definir após assinatura'}</strong></p>
-      </div>
-      
-      <h2>CLÁUSULA 3ª - DOS LOCAIS CONTRATADOS</h2>
-      <p>3.1. A contratação abrange ${totalPaineis} tela(s) nos seguintes edifícios:</p>
-      ${listaPredios.length > 0 ? `
-        <table>
-          <thead>
-            <tr>
-              <th>Edifício</th>
-              <th>Bairro</th>
-              <th style="text-align: center;">Telas</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${prediosHtml}
-          </tbody>
-        </table>
-      ` : ''}
-      
-      <div class="highlight">
-        <h2>CLÁUSULA 4ª - DO VALOR E FORMA DE PAGAMENTO</h2>
-        <p>4.1. <strong>Valor Total do Contrato:</strong> ${formatCurrency(contrato.valor_total)}</p>
-        ${contrato.metodo_pagamento !== 'custom' && contrato.valor_mensal ? `<p>4.2. <strong>Valor Mensal:</strong> ${formatCurrency(contrato.valor_mensal)}</p>` : ''}
-        <p>4.${contrato.metodo_pagamento === 'custom' ? '2' : '3'}. <strong>Forma de Pagamento:</strong> ${metodoPagamentoNome(contrato.metodo_pagamento)}</p>
-        ${gerarParcelasHtml()}
-      </div>
-      <p>4.5. Após 10 (dez) dias de atraso no pagamento, a exibição será automaticamente suspensa até a regularização.</p>
-      <p>4.6. Multa por atraso: 2% (dois por cento) + 1% (um por cento) de juros ao mês.</p>
-      
-      <h2>CLÁUSULA 5ª - DO CONTEÚDO PUBLICITÁRIO</h2>
-      <p>5.1. A CONTRATANTE compromete-se a enviar vídeos conforme especificações técnicas da CONTRATADA (resolução 1920x1080, formato MP4, máximo 15 segundos).</p>
-      <p>5.2. Os vídeos podem ser substituídos a qualquer momento, mediante solicitação prévia.</p>
-      
-      <h2>CLÁUSULA 6ª - DA CESSÃO DE DIREITOS DE IMAGEM</h2>
-      <p>6.1. A CONTRATANTE autoriza expressamente a EXA MÍDIA a utilizar o material publicitário fornecido para veiculação nos painéis, materiais institucionais, portfólio, redes sociais e apresentações comerciais.</p>
-      
-      <h2>CLÁUSULA 7ª - DO CANCELAMENTO</h2>
-      <p>7.1. O cancelamento antecipado por parte da CONTRATANTE gerará multa de 30% sobre o saldo devedor restante.</p>
-      
-      <h2>CLÁUSULA 8ª - DO FORO</h2>
-      <p>8.1. Para dirimir eventuais dúvidas ou litígios, as partes elegem o foro da Comarca de Foz do Iguaçu - PR.</p>
-      
-      ${contrato.clausulas_especiais ? `<h2>CLÁUSULA 9ª - CONDIÇÕES ESPECIAIS</h2><p>${contrato.clausulas_especiais}</p>` : ''}
-      
-      <p style="text-align: center; margin-top: 40px;">Foz do Iguaçu - PR, ${dataAtual}.</p>
-      
-      <div class="signatures">
-        <div class="signature-box">
-          <div class="signature-line">
-            <strong>${contrato.cliente_razao_social || contrato.cliente_nome}</strong><br>
-            <span style="font-size: 10pt; color: #666;">CONTRATANTE</span>
+      <div class="container">
+        <div class="document-title">
+          <h2>Termo de Cessão de Espaço para Publicidade Digital</h2>
+        </div>
+        
+        <div class="parties-box">
+          <div class="party">
+            <div class="party-label">CEDENTE</div>
+            <div class="party-content">
+              <strong>${contrato.cliente_razao_social || contrato.cliente_nome}</strong>${contrato.cliente_cnpj ? `, inscrito no CNPJ sob nº ${contrato.cliente_cnpj}` : ''}, representado por <strong>${contrato.cliente_nome}</strong>${contrato.cliente_cargo ? ` (${contrato.cliente_cargo})` : ''}.
+            </div>
+          </div>
+          <div class="party">
+            <div class="party-label">CESSIONÁRIA</div>
+            <div class="party-content">
+              <strong>EXA SOLUÇÕES DIGITAIS LTDA</strong>, pessoa jurídica de direito privado, inscrita no CNPJ sob nº 62.878.193/0001-35, com sede na Rua Sílvio Sotomaior, 187 — Três Bandeiras — Foz do Iguaçu/PR. Representantes legais: <strong>${signatariaExa1.nome}</strong> (RG ${signatariaExa1.rg || '13.038.569-9'} / CPF ${signatariaExa1.cpf}) e <strong>${signatarioExa2.nome}</strong> (RG ${signatarioExa2.rg || '8.812.269-0'} / CPF ${signatarioExa2.cpf}).
+            </div>
           </div>
         </div>
-        <div class="signature-box">
-          <div class="signature-line">
-            <strong>EXA SOLUÇÕES DIGITAIS LTDA</strong><br>
-            <span style="font-size: 10pt; color: #666;">CONTRATADA</span>
+        
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 1ª — DO OBJETO</div>
+          <div class="clause-content">
+            O presente termo tem por objeto a cessão gratuita de espaço no(s) elevador(es) do condomínio para instalação de painéis digitais da EXA MÍDIA, destinados à veiculação de conteúdo informativo e publicitário.
+          </div>
+        </div>
+        
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 2ª — DO LOCAL</div>
+          <div class="clause-content">
+            ${contrato.predio_nome ? `Local: ${contrato.predio_nome}${contrato.predio_endereco ? `, ${contrato.predio_endereco}` : ''}.` : ''} Quantidade de telas: ${totalPaineis || contrato.numero_telas_instaladas || 1} unidade(s).
+          </div>
+        </div>
+        
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 3ª — DAS OBRIGAÇÕES DA CESSIONÁRIA</div>
+          <div class="clause-content">
+            A CESSIONÁRIA compromete-se a fornecer e instalar os equipamentos sem qualquer custo ao CEDENTE, realizar manutenção preventiva e corretiva, e respeitar as normas do condomínio.
+          </div>
+        </div>
+        
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 4ª — DA VIGÊNCIA</div>
+          <div class="clause-content">
+            O presente termo entra em vigor na data de sua assinatura e terá prazo indeterminado, podendo ser rescindido por qualquer das partes mediante comunicação prévia de ${contrato.prazo_aviso_rescisao || 30} (${contrato.prazo_aviso_rescisao === 60 ? 'sessenta' : contrato.prazo_aviso_rescisao === 90 ? 'noventa' : 'trinta'}) dias.
+          </div>
+        </div>
+        
+        ${contrato.clausulas_especiais ? `
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA 5ª — CONDIÇÕES ESPECIAIS</div>
+          <div class="clause-content">${contrato.clausulas_especiais}</div>
+        </div>
+        ` : ''}
+        
+        <div class="clause">
+          <div class="clause-title">CLÁUSULA ${contrato.clausulas_especiais ? '6' : '5'}ª — DO FORO</div>
+          <div class="clause-content">
+            Elegem as partes o foro da comarca de Foz do Iguaçu/PR para dirimir controvérsias, com renúncia a qualquer outro.
+          </div>
+        </div>
+        
+        <div class="date-location">
+          Foz do Iguaçu — PR, ${dataAtual}.
+        </div>
+        
+        <div class="signatures-section">
+          <div class="signatures-grid">
+            <div class="signature-box">
+              <div class="signature-line">
+                <div class="signature-name">${contrato.cliente_nome}</div>
+                <div class="signature-role">CEDENTE</div>
+              </div>
+            </div>
+            <div class="signature-box">
+              <div class="signature-line">
+                <div class="signature-name">EXA SOLUÇÕES DIGITAIS LTDA</div>
+                <div class="signature-role">CESSIONÁRIA</div>
+                <div class="signature-docs">CNPJ: 62.878.193/0001-35</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="exa-representatives">
+            <div class="exa-rep-title">Representantes Legais da CESSIONÁRIA:</div>
+            <div class="exa-reps-grid">
+              <div style="text-align: center; min-width: 200px;">
+                <div class="signature-line">
+                  <div class="signature-name">${signatariaExa1.nome}</div>
+                  <div class="signature-docs">RG ${signatariaExa1.rg || '13.038.569-9'} / CPF ${signatariaExa1.cpf}</div>
+                </div>
+              </div>
+              <div style="text-align: center; min-width: 200px;">
+                <div class="signature-line">
+                  <div class="signature-name">${signatarioExa2.nome}</div>
+                  <div class="signature-docs">RG ${signatarioExa2.rg || '8.812.269-0'} / CPF ${signatarioExa2.cpf}</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
