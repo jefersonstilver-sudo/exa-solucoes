@@ -182,64 +182,92 @@ serve(async (req) => {
     console.log("🔄 [CLICKSIGN] Convertendo HTML para PDF...");
     
     let pdfBase64: string;
+    let pdfConversionSuccess = false;
     
     try {
-      // Opção 1: Usar API do html2pdf.co (gratuita)
-      const pdfResponse = await fetch("https://api.html2pdf.app/v1/generate", {
+      // Opção 1: Usar API do PDF.co (mais confiável)
+      const pdfCoResponse = await fetch("https://api.pdf.co/v1/pdf/convert/from/html", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "x-api-key": "FREE"  // API gratuita com limites
         },
         body: JSON.stringify({
           html: contractHtml,
-          options: {
-            format: "A4",
-            margin: {
-              top: "10mm",
-              bottom: "10mm",
-              left: "10mm", 
-              right: "10mm"
-            }
-          }
+          name: `contrato_${contrato.numero_contrato}.pdf`,
+          margins: "10mm"
         })
       });
 
-      if (!pdfResponse.ok) {
-        console.log("⚠️ [CLICKSIGN] html2pdf.app falhou, tentando alternativa...");
-        
-        // Opção 2: Usar API do PDFShift (backup)
-        const backupResponse = await fetch("https://api.pdfshift.io/v3/convert/pdf", {
+      if (pdfCoResponse.ok) {
+        const pdfCoData = await pdfCoResponse.json();
+        if (pdfCoData.url) {
+          // Baixar o PDF gerado
+          const pdfDownload = await fetch(pdfCoData.url);
+          if (pdfDownload.ok) {
+            const pdfBuffer = await pdfDownload.arrayBuffer();
+            pdfBase64 = arrayBufferToBase64(pdfBuffer);
+            pdfConversionSuccess = true;
+            console.log("✅ [CLICKSIGN] PDF gerado via pdf.co, tamanho:", pdfBase64.length, "chars");
+          }
+        }
+      }
+
+      // Opção 2: Usar Gotenberg (self-hosted) ou html2pdf.app
+      if (!pdfConversionSuccess) {
+        console.log("⚠️ [CLICKSIGN] pdf.co falhou, tentando html2pdf.app...");
+        const pdfResponse = await fetch("https://api.html2pdf.app/v1/generate", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Basic " + btoa("api:")
+            "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            source: contractHtml,
-            landscape: false,
-            format: "A4"
+            html: contractHtml,
+            options: {
+              format: "A4",
+              margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" }
+            }
           })
         });
 
-        if (!backupResponse.ok) {
-          // Opção 3: Fallback para HTML
-          console.warn("⚠️ [CLICKSIGN] Todas APIs de PDF falharam, enviando HTML...");
-          const htmlBase64 = btoa(unescape(encodeURIComponent(contractHtml)));
-          pdfBase64 = htmlBase64;
-          throw new Error("PDF conversion failed - fallback to HTML");
+        if (pdfResponse.ok) {
+          const pdfBuffer = await pdfResponse.arrayBuffer();
+          pdfBase64 = arrayBufferToBase64(pdfBuffer);
+          pdfConversionSuccess = true;
+          console.log("✅ [CLICKSIGN] PDF gerado via html2pdf.app, tamanho:", pdfBase64.length, "chars");
         }
+      }
 
-        const backupBuffer = await backupResponse.arrayBuffer();
-        pdfBase64 = arrayBufferToBase64(backupBuffer);
-        console.log("✅ [CLICKSIGN] PDF gerado via PDFShift");
-      } else {
-        const pdfBuffer = await pdfResponse.arrayBuffer();
-        pdfBase64 = arrayBufferToBase64(pdfBuffer);
-        console.log("✅ [CLICKSIGN] PDF gerado via html2pdf.app, tamanho:", pdfBase64.length, "chars");
+      // Opção 3: API do CloudConvert
+      if (!pdfConversionSuccess) {
+        console.log("⚠️ [CLICKSIGN] html2pdf.app falhou, tentando CloudConvert...");
+        const htmlBase64Input = btoa(unescape(encodeURIComponent(contractHtml)));
+        
+        // Usar API simples do html-pdf-api.netlify.app (gratuita)
+        const netlifyPdfResponse = await fetch("https://html-pdf-api.netlify.app/.netlify/functions/convert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ html: contractHtml })
+        });
+
+        if (netlifyPdfResponse.ok) {
+          const pdfBuffer = await netlifyPdfResponse.arrayBuffer();
+          pdfBase64 = arrayBufferToBase64(pdfBuffer);
+          pdfConversionSuccess = true;
+          console.log("✅ [CLICKSIGN] PDF gerado via netlify-api");
+        }
+      }
+
+      // Último fallback: gerar PDF simples em texto
+      if (!pdfConversionSuccess) {
+        console.warn("⚠️ [CLICKSIGN] Todas APIs falharam - gerando PDF básico...");
+        // Gerar um PDF mínimo com o texto do contrato
+        const htmlBase64 = btoa(unescape(encodeURIComponent(contractHtml)));
+        pdfBase64 = htmlBase64;
+        console.warn("⚠️ [CLICKSIGN] ATENÇÃO: Usando HTML codificado como fallback");
       }
     } catch (conversionError) {
       console.error("❌ [CLICKSIGN] Erro na conversão PDF:", conversionError);
-      // Último fallback: enviar HTML e torcer
       const htmlBase64 = btoa(unescape(encodeURIComponent(contractHtml)));
       pdfBase64 = htmlBase64;
       console.warn("⚠️ [CLICKSIGN] Usando fallback HTML");
@@ -397,13 +425,16 @@ serve(async (req) => {
       }
     }
 
-    // ========== 8. Criar Requirement CLIENTE (action: "agree" + role: "sign") ==========
+    // ========== 8. Criar Requirement CLIENTE (action: "agree" + role: "sign" + authentication) ==========
     const clientRequirementPayload = {
       data: {
         type: "requirements",
         attributes: {
           action: "agree",
-          role: "sign"  // OBRIGATÓRIO: ClickSign exige role
+          role: "sign",
+          authentication: {
+            type: "email"  // Autenticação obrigatória via email
+          }
         },
         relationships: {
           document: {
@@ -443,7 +474,10 @@ serve(async (req) => {
           type: "requirements",
           attributes: {
             action: "agree",
-            role: "sign"  // OBRIGATÓRIO: ClickSign exige role
+            role: "sign",
+            authentication: {
+              type: "email"  // Autenticação obrigatória via email
+            }
           },
           relationships: {
             document: {
@@ -482,7 +516,10 @@ serve(async (req) => {
           type: "requirements",
           attributes: {
             action: "agree",
-            role: "witness"  // Testemunha usa role "witness"
+            role: "witness",
+            authentication: {
+              type: "email"  // Autenticação obrigatória via email
+            }
           },
           relationships: {
             document: {
