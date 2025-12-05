@@ -1,4 +1,4 @@
-// App rebuild - Fixed conditional hook issue - 2025-12-05T04:03
+// Force complete rebuild - 2025-12-05T04:08:30
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
