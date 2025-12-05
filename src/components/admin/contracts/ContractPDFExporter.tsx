@@ -100,6 +100,66 @@ export class ContractPDFExporter {
   }
 
   /**
+   * Gera PDF do elemento HTML e retorna como base64
+   * Usado para enviar ao ClickSign
+   */
+  static async generateBase64FromElement(element: HTMLElement): Promise<string> {
+    try {
+      console.log('📄 [ContractPDFExporter] Gerando PDF do elemento...');
+      
+      // Configurações para alta qualidade
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Dimensões A4 em mm
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      
+      // Calcular proporções
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = imgWidth / imgHeight;
+      
+      let finalWidth = pdfWidth - 20;
+      let finalHeight = finalWidth / ratio;
+      
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageContentHeight = pdfHeight - 20;
+      const totalPages = Math.ceil(finalHeight / pageContentHeight);
+
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) {
+          pdf.addPage();
+        }
+        const yOffset = -(page * pageContentHeight);
+        pdf.addImage(imgData, 'PNG', 10, 10 + yOffset, finalWidth, finalHeight);
+      }
+
+      // Retornar como base64 (sem o prefixo data:)
+      const pdfBase64 = pdf.output('datauristring').split(',')[1];
+      console.log('✅ [ContractPDFExporter] PDF gerado, tamanho base64:', pdfBase64.length);
+      
+      return pdfBase64;
+    } catch (error) {
+      console.error('❌ [ContractPDFExporter] Erro ao gerar PDF base64:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Gera PDF a partir dos dados do contrato (método legado)
    * Usado quando não há elemento HTML disponível
    */

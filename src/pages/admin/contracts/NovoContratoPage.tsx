@@ -460,9 +460,29 @@ const NovoContratoPage = () => {
       }
 
       if (data.enviar && contrato) {
-        console.log('📤 Enviando para ClickSign...');
+        console.log('📤 Gerando PDF e enviando para ClickSign...');
+        
+        // Gerar PDF no frontend para garantir qualidade
+        let pdfBase64: string | null = null;
+        try {
+          const previewElement = document.getElementById('contract-preview');
+          if (previewElement) {
+            console.log('📄 Gerando PDF do preview HTML...');
+            pdfBase64 = await ContractPDFExporter.generateBase64FromElement(previewElement);
+            console.log('✅ PDF gerado no frontend, tamanho:', pdfBase64?.length || 0);
+          } else {
+            console.warn('⚠️ Preview element não encontrado, backend gerará o PDF');
+          }
+        } catch (pdfError) {
+          console.error('⚠️ Erro ao gerar PDF no frontend:', pdfError);
+          // Continua sem PDF - backend tentará gerar
+        }
+
         const { error: clicksignError } = await supabase.functions.invoke('clicksign-create-contract', {
-          body: { contrato_id: contrato.id }
+          body: { 
+            contrato_id: contrato.id,
+            pdf_base64: pdfBase64  // PDF gerado no frontend
+          }
         });
 
         if (clicksignError) {
