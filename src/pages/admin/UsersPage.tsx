@@ -161,132 +161,133 @@ const UsersPage = () => {
       (u.nome || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Mobile View
+  // Mobile View - Apple/Nubank Style
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Mobile Header */}
-        <div className="bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-b border-white/10">
-          <div className="px-4 py-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center">
-                <Users className="w-4 h-4 text-white" />
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
+        {/* Mobile Header - Glassmorphism */}
+        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+          <div className="px-4 py-3 safe-area-top">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-[#9C1E1E]/10 rounded-xl">
+                  <Users className="h-5 w-5 text-[#9C1E1E]" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-semibold text-foreground">Usuários</h1>
+                  <p className="text-[11px] text-muted-foreground">{users.length} no sistema</p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-base font-semibold text-white tracking-tight">
-                  Gestão de Usuários
-                </h1>
-                <p className="text-xs text-white/80">
-                  {users.length} usuários no sistema
-                </p>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  onClick={handleRefresh}
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0"
+                  disabled={loading}
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                </Button>
+                <Button
+                  onClick={() => setIsCreateDialogOpen(true)}
+                  size="sm"
+                  className="h-8 bg-[#9C1E1E] hover:bg-[#7D1818] px-3"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
               </div>
-            </div>
-
-            {/* Botões de ação */}
-            <div className="mt-3 flex gap-2">
-              <Button
-                onClick={() => setIsCreateDialogOpen(true)}
-                size="sm"
-                className="flex-1 h-9 bg-white/10 hover:bg-white/20 text-white border-0 text-sm"
-              >
-                <Plus className="w-3.5 h-3.5 mr-1.5" />
-                Novo Admin
-              </Button>
-              <Button
-                onClick={handleRefresh}
-                size="sm"
-                variant="ghost"
-                className="h-9 w-9 p-0 text-white hover:bg-white/10"
-                disabled={loading}
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              </Button>
-            </div>
-            
-            {/* Botão Sincronizar Órfãos */}
-            <div className="mt-2">
-              <Button
-                onClick={handleSyncOrphanUsers}
-                disabled={syncingOrphans}
-                size="sm"
-                className="w-full h-9 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-0 text-sm"
-              >
-                <UserCog className={`w-3.5 h-3.5 mr-1.5 ${syncingOrphans ? 'animate-spin' : ''}`} />
-                Sincronizar Órfãos
-              </Button>
             </div>
           </div>
         </div>
 
-        {/* Dashboard de Estatísticas */}
-        <div className="px-4 py-4 bg-white border-b">
+        {/* Stats Grid Compacto */}
+        <div className="p-3">
           <UserStatsCards stats={stats} loading={loadingStats} />
         </div>
 
-        {/* Tabs Mobile */}
-        <div className="px-4 py-3 bg-white border-b">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 h-10">
-              <TabsTrigger value="team" className="text-xs">
-                <Crown className="h-3 w-3 mr-1" />
-                Equipe ({filteredTeam.length})
-              </TabsTrigger>
-              <TabsTrigger value="clients" className="text-xs">
-                <UserCheck className="h-3 w-3 mr-1" />
-                Clientes ({filteredClients.length})
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+        {/* Ação Sincronizar */}
+        <div className="px-3 pb-2">
+          <Button
+            onClick={handleSyncOrphanUsers}
+            disabled={syncingOrphans}
+            size="sm"
+            variant="outline"
+            className="w-full h-8 text-xs border-amber-200 text-amber-700 hover:bg-amber-50"
+          >
+            <UserCog className={`w-3.5 h-3.5 mr-1.5 ${syncingOrphans ? 'animate-spin' : ''}`} />
+            Sincronizar Órfãos
+          </Button>
         </div>
 
-        {/* Barra de Busca */}
-        <div className="px-4 py-3 bg-white border-b">
+        {/* Filter Pills Scrollable */}
+        <div className="overflow-x-auto scrollbar-hide px-3 pb-2">
+          <div className="inline-flex gap-1.5 min-w-max">
+            <button
+              onClick={() => setActiveTab('team')}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all flex items-center gap-1 ${
+                activeTab === 'team'
+                  ? 'bg-[#9C1E1E] text-white'
+                  : 'bg-white/80 text-gray-600 border border-gray-200'
+              }`}
+            >
+              <Crown className="h-3 w-3" />
+              Equipe
+              <span className={`text-[10px] ${activeTab === 'team' ? 'opacity-80' : 'text-gray-400'}`}>
+                {filteredTeam.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('clients')}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all flex items-center gap-1 ${
+                activeTab === 'clients'
+                  ? 'bg-[#9C1E1E] text-white'
+                  : 'bg-white/80 text-gray-600 border border-gray-200'
+              }`}
+            >
+              <UserCheck className="h-3 w-3" />
+              Clientes
+              <span className={`text-[10px] ${activeTab === 'clients' ? 'opacity-80' : 'text-gray-400'}`}>
+                {filteredClients.length}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Search */}
+        <div className="px-3 pb-3">
           <div className="relative">
             <Input
               type="text"
-              placeholder="Buscar por email ou nome..."
+              placeholder="Buscar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-10 pl-9 text-sm"
+              className="h-9 pl-9 text-sm bg-white/80"
             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           </div>
         </div>
 
         {/* Lista de Usuários */}
-        <div className="px-4 py-3 bg-gray-50">
+        <div className="px-3 pb-20">
           {activeTab === 'team' && (
             <>
-              <div className="mb-3 flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  {filteredTeam.length} membro{filteredTeam.length !== 1 ? 's' : ''} da equipe
-                  {searchTerm && ' encontrado' + (filteredTeam.length !== 1 ? 's' : '')}
-                </div>
-                {filteredTeam.length > 0 && (
-                  <Badge variant="secondary" className="text-xs">
-                    {filteredTeam.filter((u) => u.role === 'super_admin').length} Super Admins
-                  </Badge>
-                )}
-              </div>
               {loading ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-card rounded-lg border shadow-sm p-3 animate-pulse">
+                    <div key={i} className="bg-white/80 rounded-xl p-3 animate-pulse">
                       <div className="h-12 bg-gray-200 rounded" />
                     </div>
                   ))}
                 </div>
               ) : filteredTeam.length === 0 ? (
-                <Card className="p-6 text-center">
-                  <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                <Card className="p-6 text-center bg-white/80 backdrop-blur-sm">
+                  <Shield className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    {searchTerm
-                      ? 'Nenhum membro da equipe encontrado'
-                      : 'Nenhum membro da equipe cadastrado'}
+                    {searchTerm ? 'Nenhum membro encontrado' : 'Nenhum membro cadastrado'}
                   </p>
                 </Card>
               ) : (
-                <div className="space-y-3 pb-20">
+                <div className="space-y-2">
                   {filteredTeam.map((user) => (
                     <EnhancedUserMobileCard
                       key={user.id}
@@ -301,34 +302,23 @@ const UsersPage = () => {
 
           {activeTab === 'clients' && (
             <>
-              <div className="mb-3 flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  {filteredClients.length} cliente{filteredClients.length !== 1 ? 's' : ''}
-                  {searchTerm && ' encontrado' + (filteredClients.length !== 1 ? 's' : '')}
-                </div>
-                {filteredClients.length > 0 && (
-                  <Badge variant="secondary" className="text-xs">
-                    Base total
-                  </Badge>
-                )}
-              </div>
               {loading ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-card rounded-lg border shadow-sm p-3 animate-pulse">
+                    <div key={i} className="bg-white/80 rounded-xl p-3 animate-pulse">
                       <div className="h-12 bg-gray-200 rounded" />
                     </div>
                   ))}
                 </div>
               ) : filteredClients.length === 0 ? (
-                <Card className="p-6 text-center">
-                  <UserCheck className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                <Card className="p-6 text-center bg-white/80 backdrop-blur-sm">
+                  <UserCheck className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
                   <p className="text-sm text-muted-foreground">
                     {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
                   </p>
                 </Card>
               ) : (
-                <div className="space-y-3 pb-20">
+                <div className="space-y-2">
                   {filteredClients.map((user) => (
                     <EnhancedUserMobileCard
                       key={user.id}

@@ -249,7 +249,11 @@ const PropostasPage = () => {
   ];
 
   const getStatusBadge = (status: string, proposal?: Proposal) => {
-    if (proposal?.is_viewing) {
+    // Status finais NUNCA devem mostrar "Ao vivo" - prioridade máxima
+    const finalStatuses = ['recusada', 'paga', 'convertida', 'expirada', 'aceita'];
+    
+    // Só mostrar "Ao vivo" se is_viewing E status NÃO é final
+    if (proposal?.is_viewing && !finalStatuses.includes(status)) {
       return <Badge className="bg-green-500 hover:bg-green-600 animate-pulse text-[10px]">👁️ Ao vivo</Badge>;
     }
     
@@ -261,11 +265,19 @@ const PropostasPage = () => {
       aceita: { label: '✅ Aceita', className: 'bg-emerald-100 text-emerald-700' },
       paga: { label: '💰 Paga', className: 'bg-green-100 text-green-700' },
       convertida: { label: '🎉 Pedido', className: 'bg-green-600 text-white' },
-      recusada: { label: 'Recusada', className: 'bg-red-100 text-red-700' },
+      recusada: { label: '❌ Recusada', className: 'bg-red-100 text-red-700' },
       expirada: { label: 'Expirada', className: 'bg-gray-100 text-gray-500' },
     };
     const config = statusConfig[status] || { label: status, className: 'bg-gray-100 text-gray-700' };
     return <Badge className={`${config.className} text-[10px] px-1.5 py-0`}>{config.label}</Badge>;
+  };
+
+  // Formatar tempo de visualização
+  const formatTimeSpent = (seconds: number) => {
+    if (seconds < 60) return `${seconds}s`;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}min${secs > 0 ? ` ${secs}s` : ''}`;
   };
 
   const handleCopyLink = (proposal: Proposal) => {
@@ -498,9 +510,14 @@ const PropostasPage = () => {
                         {formatCurrency(proposal.fidel_monthly_value)}/mês
                       </span>
                       {proposal.view_count && proposal.view_count > 0 && (
-                        <span className="text-[10px] text-purple-600 flex items-center gap-0.5">
+                        <span className="text-[10px] text-purple-600 flex items-center gap-1">
                           <Eye className="h-3 w-3" />
                           {proposal.view_count}x
+                          {proposal.total_time_spent_seconds && proposal.total_time_spent_seconds > 0 && (
+                            <span className="text-muted-foreground">
+                              ⏱️ {formatTimeSpent(proposal.total_time_spent_seconds)}
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>
