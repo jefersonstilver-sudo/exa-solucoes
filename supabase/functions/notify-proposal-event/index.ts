@@ -116,19 +116,52 @@ serve(async (req) => {
 
     console.log(`📤 Sending notification to ${recipients.length} recipients`);
 
-    // Send notifications via EXA Alerts
-    const ZAPI_INSTANCE_ID = Deno.env.get('ZAPI_INSTANCE_ID');
-    const ZAPI_TOKEN = Deno.env.get('ZAPI_TOKEN');
+    // Fetch Z-API credentials from agents table (exa_alert agent)
+    const { data: exaAlertAgent, error: agentError } = await supabase
+      .from('agents')
+      .select('zapi_config')
+      .eq('key', 'exa_alert')
+      .single();
+
+    if (agentError || !exaAlertAgent?.zapi_config) {
+      console.error('❌ EXA Alert agent Z-API config not found:', agentError);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Z-API not configured for EXA Alert agent' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const zapiConfig = exaAlertAgent.zapi_config as { instance_id?: string; token?: string };
+    const ZAPI_INSTANCE_ID = zapiConfig.instance_id;
+    const ZAPI_TOKEN = zapiConfig.token;
     const ZAPI_CLIENT_TOKEN = Deno.env.get('ZAPI_CLIENT_TOKEN');
+
+    if (!ZAPI_INSTANCE_ID || !ZAPI_TOKEN) {
+      console.error('❌ Z-API instance_id or token missing in agent config');
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Z-API credentials incomplete' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`🔑 Z-API credentials loaded from exa_alert agent`);
 
     let notificationsSent = 0;
 
     for (const recipient of recipients) {
       if (recipient.receive_whatsapp && recipient.phone) {
         try {
-          // Format phone number
+          // Format phone number with international support
           const cleanPhone = recipient.phone.replace(/\D/g, '');
-          const formattedPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+          // Check if number already has country code (starts with valid codes)
+          const hasCountryCode = /^(55|595|54|598|56|1)/.test(cleanPhone);
+          const formattedPhone = hasCountryCode ? cleanPhone : `55${cleanPhone}`;
 
           // Send via Z-API
           if (ZAPI_INSTANCE_ID && ZAPI_TOKEN) {
