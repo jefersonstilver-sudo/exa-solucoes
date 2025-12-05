@@ -153,12 +153,31 @@ serve(async (req) => {
         descricao: `Pagamento PIX aprovado para proposta ${proposalId}. Pedido criado: ${conversionResult?.orderId}`
       });
 
-      // ========== NOTIFICAR VENDEDOR SOBRE PAGAMENTO ==========
+      // ========== NOTIFICAR VENDEDOR VIA EXA ALERTS ==========
       if (conversionResult?.orderId) {
-        console.log('📱 [WEBHOOK-PIX-PROD] Notificando vendedor sobre pagamento...');
+        console.log('📱 [WEBHOOK-PIX-PROD] Notificando vendedor sobre pagamento via EXA Alerts...');
         
         try {
-          const { error: notifyError } = await supabase.functions.invoke('notify-seller-payment-confirmed', {
+          // Notificação via EXA Alerts (notify-proposal-event)
+          const { error: notifyError } = await supabase.functions.invoke('notify-proposal-event', {
+            body: {
+              proposalId,
+              eventType: 'proposal_paid',
+              metadata: {
+                paymentMethod: 'PIX',
+                paymentAmount: payment.transaction_amount
+              }
+            }
+          });
+
+          if (notifyError) {
+            console.error('⚠️ [WEBHOOK-PIX-PROD] Erro ao notificar EXA Alerts (não crítico):', notifyError);
+          } else {
+            console.log('✅ [WEBHOOK-PIX-PROD] EXA Alerts notificado com sucesso');
+          }
+          
+          // Também chamar notify-seller-payment-confirmed para email
+          await supabase.functions.invoke('notify-seller-payment-confirmed', {
             body: {
               proposalId,
               orderId: conversionResult.orderId,
@@ -166,14 +185,8 @@ serve(async (req) => {
               paymentMethod: 'pix'
             }
           });
-
-          if (notifyError) {
-            console.error('⚠️ [WEBHOOK-PIX-PROD] Erro ao notificar vendedor (não crítico):', notifyError);
-          } else {
-            console.log('✅ [WEBHOOK-PIX-PROD] Vendedor notificado com sucesso');
-          }
         } catch (notifyErr) {
-          console.error('⚠️ [WEBHOOK-PIX-PROD] Exceção ao notificar vendedor:', notifyErr);
+          console.error('⚠️ [WEBHOOK-PIX-PROD] Exceção ao notificar:', notifyErr);
         }
       }
 

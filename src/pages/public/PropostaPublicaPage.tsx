@@ -357,6 +357,19 @@ const PropostaPublicaPage = () => {
         }
       });
 
+      // 🔔 Notificar vendedor via EXA Alerts
+      supabase.functions.invoke('notify-proposal-event', {
+        body: {
+          proposalId: proposal.id,
+          eventType: 'proposal_accepted',
+          metadata: { selectedPlan }
+        }
+      }).then(() => {
+        console.log('🔔 Notificação EXA Alerts enviada (proposal_accepted)');
+      }).catch(err => {
+        console.error('⚠️ Erro ao enviar notificação EXA Alerts:', err);
+      });
+
       // Check if email capture needed
       if (!proposal.client_email) {
         setShowEmailCapture(true);
@@ -672,6 +685,18 @@ const PropostaPublicaPage = () => {
         proposal_id: proposal.id,
         action: 'recusada',
         details: { timestamp: new Date().toISOString() }
+      });
+
+      // 🔔 Notificar vendedor via EXA Alerts
+      supabase.functions.invoke('notify-proposal-event', {
+        body: {
+          proposalId: proposal.id,
+          eventType: 'proposal_rejected'
+        }
+      }).then(() => {
+        console.log('🔔 Notificação EXA Alerts enviada (proposal_rejected)');
+      }).catch(err => {
+        console.error('⚠️ Erro ao enviar notificação EXA Alerts:', err);
       });
 
       setShowReject(true);

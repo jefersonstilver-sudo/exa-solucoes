@@ -8,12 +8,13 @@ const corsHeaders = {
 
 interface ProposalEventPayload {
   proposalId: string;
-  eventType: 'proposal_viewing' | 'proposal_viewed_again' | 'proposal_accepted' | 'proposal_rejected' | 'proposal_paid' | 'proposal_expired';
+  eventType: 'proposal_sent' | 'proposal_viewing' | 'proposal_viewed_again' | 'proposal_accepted' | 'proposal_rejected' | 'proposal_paid' | 'proposal_expired';
   metadata?: {
     viewCount?: number;
     paymentMethod?: string;
     paymentAmount?: number;
     deviceType?: string;
+    selectedPlan?: string;
   };
 }
 
@@ -77,6 +78,10 @@ serve(async (req) => {
     let emoji = '';
 
     switch (eventType) {
+      case 'proposal_sent':
+        emoji = '📤';
+        message = `${emoji} Proposta *${proposal.number}* enviada para *${clientDisplayName}*!\n\nVendedor: ${proposal.seller_name || 'N/A'}\nValor: R$ ${proposal.fidel_monthly_value?.toLocaleString('pt-BR')}/mês`;
+        break;
       case 'proposal_viewing':
         emoji = '👁️';
         message = `${emoji} *${clientDisplayName}* está visualizando a proposta *${proposal.number}* agora!`;
@@ -88,11 +93,12 @@ serve(async (req) => {
         break;
       case 'proposal_accepted':
         emoji = '✅';
-        message = `${emoji} *PROPOSTA ACEITA!*\n\nCliente: ${clientDisplayName}\nProposta: ${proposal.number}\nValor: R$ ${proposal.fidel_monthly_value?.toLocaleString('pt-BR')}/mês`;
+        const planText = metadata?.selectedPlan === 'avista' ? 'À Vista' : 'Fidelidade';
+        message = `${emoji} *PROPOSTA ACEITA!*\n\nCliente: ${clientDisplayName}\nProposta: ${proposal.number}\nPlano: ${planText}\nValor: R$ ${proposal.fidel_monthly_value?.toLocaleString('pt-BR')}/mês`;
         break;
       case 'proposal_rejected':
         emoji = '❌';
-        message = `${emoji} Proposta *${proposal.number}* foi RECUSADA pelo cliente ${clientDisplayName}`;
+        message = `${emoji} Proposta *${proposal.number}* foi *RECUSADA* pelo cliente ${clientDisplayName}`;
         break;
       case 'proposal_paid':
         emoji = '💳';

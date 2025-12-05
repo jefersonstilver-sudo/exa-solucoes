@@ -84,6 +84,23 @@ serve(async (req) => {
           console.error('❌ Erro na conversão:', conversionError);
         } else {
           console.log('✅ Conversão realizada:', conversionResult);
+          
+          // 🔔 Notificar vendedor via EXA Alerts
+          try {
+            await supabase.functions.invoke('notify-proposal-event', {
+              body: {
+                proposalId,
+                eventType: 'proposal_paid',
+                metadata: {
+                  paymentMethod: 'Cartão Recorrente',
+                  paymentAmount: subscription.auto_recurring?.transaction_amount
+                }
+              }
+            });
+            console.log('🔔 EXA Alerts notificado sobre pagamento cartão recorrente');
+          } catch (notifyErr) {
+            console.error('⚠️ Erro ao notificar EXA Alerts:', notifyErr);
+          }
         }
 
         // Log event

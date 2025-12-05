@@ -280,22 +280,38 @@ const NovaPropostaPage = () => {
     }
   });
 
-  // Buscar usuário atual
+  // Buscar usuário atual (incluindo telefone para EXA Alerts)
   const { data: currentUser } = useQuery({
-    queryKey: ['current-user'],
+    queryKey: ['current-user-with-phone'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
       
       const { data: userData } = await supabase
         .from('users')
-        .select('id, nome, email')
+        .select('id, nome, email, telefone')
         .eq('id', user.id)
         .single();
       
       return userData;
     }
   });
+
+  // 🔔 Adicionar vendedor automaticamente como destinatário de EXA Alerts
+  React.useEffect(() => {
+    if (currentUser?.telefone && alertRecipients.length === 0) {
+      const sellerRecipient: AlertRecipient = {
+        id: `seller_${currentUser.id}`,
+        name: currentUser.nome || currentUser.email || 'Vendedor',
+        phone: currentUser.telefone,
+        phoneCountry: 'BR' as CountryCode,
+        receiveWhatsapp: true,
+        active: true,
+      };
+      setAlertRecipients([sellerRecipient]);
+      console.log('🔔 Vendedor adicionado automaticamente como destinatário EXA Alerts');
+    }
+  }, [currentUser]);
 
   // Toggle individual building
   const toggleBuilding = (id: string) => {
@@ -506,6 +522,21 @@ const NovaPropostaPage = () => {
           }
         } catch (err) {
           console.error('Erro ao enviar Email:', err);
+        }
+      }
+
+      // 🔔 Notificar via EXA Alerts que proposta foi enviada
+      if (alertRecipients.length > 0) {
+        try {
+          await supabase.functions.invoke('notify-proposal-event', {
+            body: {
+              proposalId: proposal.id,
+              eventType: 'proposal_sent'
+            }
+          });
+          console.log('🔔 Notificação EXA Alerts enviada (proposal_sent)');
+        } catch (err) {
+          console.error('⚠️ Erro ao enviar notificação EXA Alerts:', err);
         }
       }
 
