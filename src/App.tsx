@@ -1,4 +1,4 @@
-// Force rebuild - 2025-12-05
+// Force rebuild - 2025-12-05T14:30:00Z - Clean rebuild after security fix
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
