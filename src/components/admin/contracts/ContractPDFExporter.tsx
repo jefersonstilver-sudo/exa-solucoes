@@ -108,39 +108,29 @@ export class ContractPDFExporter {
    * Gera PDF do elemento HTML e retorna como base64
    * Usado para enviar ao ClickSign
    * 
-   * IMPORTANTE: Este método RECORTA (crop) cada página do canvas
-   * em vez de usar yOffset, evitando duplicação de conteúdo
+   * QUEBRA INTELIGENTE: Identifica seções marcadas com .contract-section
+   * e garante que nenhuma seção seja cortada no meio
    */
   static async generateBase64FromElement(element: HTMLElement): Promise<string> {
     try {
-      console.log('📄 [ContractPDFExporter] Gerando PDF do elemento...');
-      
-      // Configurações para alta qualidade
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
-      });
-
-      console.log(`📏 Canvas capturado: ${canvas.width}x${canvas.height}px`);
+      console.log('📄 [ContractPDFExporter] Gerando PDF com quebra inteligente...');
       
       // Dimensões A4 em mm
       const a4WidthMM = 210;
       const a4HeightMM = 297;
-      const marginMM = 10;
-      const contentWidthMM = a4WidthMM - (marginMM * 2); // 190mm
-      const contentHeightMM = a4HeightMM - (marginMM * 2); // 277mm
+      const marginMM = 15;
+      const contentWidthMM = a4WidthMM - (marginMM * 2); // 180mm
+      const contentHeightMM = a4HeightMM - (marginMM * 2); // 267mm
 
-      // Calcular escala: pixels do canvas → mm do PDF
-      const pxPerMM = canvas.width / contentWidthMM;
-      const pageHeightPx = contentHeightMM * pxPerMM;
+      // Identificar todas as seções do contrato
+      const sections = element.querySelectorAll('.contract-section');
+      console.log(`📋 Encontradas ${sections.length} seções do contrato`);
 
-      // Calcular total de páginas necessárias
-      const totalPages = Math.ceil(canvas.height / pageHeightPx);
-      console.log(`📄 Total de páginas: ${totalPages}`);
+      // Se não encontrar seções marcadas, usar método de recorte simples
+      if (sections.length === 0) {
+        console.log('⚠️ Nenhuma seção encontrada, usando método padrão');
+        return this.generateBase64WithCrop(element);
+      }
 
       // Criar PDF
       const pdf = new jsPDF({
@@ -149,62 +139,154 @@ export class ContractPDFExporter {
         format: 'a4',
       });
 
-      // Para CADA página, recortar o pedaço correspondente do canvas
-      for (let page = 0; page < totalPages; page++) {
-        if (page > 0) {
+      // Escala para conversão px -> mm (A4 = 210mm de largura)
+      // Usamos uma largura fixa para renderização consistente
+      const renderWidthPx = 800;
+      const pxPerMM = renderWidthPx / contentWidthMM;
+      const maxPageHeightPx = contentHeightMM * pxPerMM;
+
+      // Agrupar seções em páginas lógicas
+      const pages: Element[][] = [];
+      let currentPage: Element[] = [];
+      let currentHeightPx = 0;
+
+      for (let i = 0; i < sections.length; i++) {
+        const section = sections[i];
+        const rect = section.getBoundingClientRect();
+        const sectionHeightPx = rect.height;
+
+        // Se adicionar esta seção ultrapassar a altura da página
+        if (currentHeightPx + sectionHeightPx > maxPageHeightPx && currentPage.length > 0) {
+          // Salvar página atual e começar nova
+          pages.push([...currentPage]);
+          currentPage = [section];
+          currentHeightPx = sectionHeightPx;
+        } else {
+          currentPage.push(section);
+          currentHeightPx += sectionHeightPx;
+        }
+      }
+      
+      // Adicionar última página
+      if (currentPage.length > 0) {
+        pages.push(currentPage);
+      }
+
+      console.log(`📄 Total de páginas calculadas: ${pages.length}`);
+
+      // Renderizar cada página
+      for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+        if (pageIndex > 0) {
           pdf.addPage();
         }
 
-        // Calcular área a recortar do canvas original
-        const srcY = page * pageHeightPx;
-        const srcHeight = Math.min(pageHeightPx, canvas.height - srcY);
+        // Criar container temporário para esta página
+        const tempContainer = document.createElement('div');
+        tempContainer.style.width = `${renderWidthPx}px`;
+        tempContainer.style.background = 'white';
+        tempContainer.style.padding = '20px';
+        tempContainer.style.fontFamily = 'serif';
+        tempContainer.style.fontSize = '14px';
+        tempContainer.style.lineHeight = '1.5';
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.top = '0';
 
-        // Criar canvas temporário com APENAS esta parte da página
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = srcHeight;
+        // Copiar as seções desta página
+        pages[pageIndex].forEach(section => {
+          const clone = section.cloneNode(true) as HTMLElement;
+          clone.style.marginBottom = '16px';
+          tempContainer.appendChild(clone);
+        });
+
+        document.body.appendChild(tempContainer);
+
+        // Capturar esta página
+        const canvas = await html2canvas(tempContainer, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          width: renderWidthPx,
+        });
+
+        // Converter para imagem JPEG
+        const imgData = canvas.toDataURL('image/jpeg', 0.92);
         
-        const ctx = tempCanvas.getContext('2d');
-        if (ctx) {
-          // Recortar a parte correspondente do canvas original
-          ctx.drawImage(
-            canvas,
-            0, srcY,                    // Source X, Y (de onde copiar)
-            canvas.width, srcHeight,    // Source width, height (tamanho a copiar)
-            0, 0,                       // Dest X, Y (onde colar)
-            canvas.width, srcHeight     // Dest width, height (tamanho do destino)
-          );
-        }
+        // Calcular altura proporcional em mm
+        const imgHeightMM = (canvas.height / canvas.width) * contentWidthMM;
 
-        // Converter este pedaço para imagem JPEG (menor que PNG)
-        const pageImgData = tempCanvas.toDataURL('image/jpeg', 0.92);
+        // Adicionar ao PDF
+        pdf.addImage(imgData, 'JPEG', marginMM, marginMM, contentWidthMM, imgHeightMM);
 
-        // Calcular altura em mm para esta página
-        const destHeightMM = srcHeight / pxPerMM;
+        // Limpar
+        document.body.removeChild(tempContainer);
 
-        // Adicionar ao PDF - cada página recebe SÓ seu pedaço
-        pdf.addImage(
-          pageImgData, 
-          'JPEG', 
-          marginMM,           // X position
-          marginMM,           // Y position (sempre no topo da página)
-          contentWidthMM,     // Width
-          destHeightMM        // Height (proporcional ao conteúdo)
-        );
-
-        console.log(`✅ Página ${page + 1}/${totalPages} adicionada`);
+        console.log(`✅ Página ${pageIndex + 1}/${pages.length} renderizada`);
       }
 
-      // Retornar como base64 (sem o prefixo data:)
+      // Retornar como base64
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
       const sizeKB = Math.round(pdfBase64.length * 0.75 / 1024);
-      console.log(`✅ [ContractPDFExporter] PDF gerado: ${totalPages} páginas, ~${sizeKB}KB`);
+      console.log(`✅ [ContractPDFExporter] PDF gerado: ${pages.length} páginas, ~${sizeKB}KB`);
       
       return pdfBase64;
     } catch (error) {
-      console.error('❌ [ContractPDFExporter] Erro ao gerar PDF base64:', error);
+      console.error('❌ [ContractPDFExporter] Erro ao gerar PDF:', error);
       throw error;
     }
+  }
+
+  /**
+   * Método de fallback com recorte simples (quando não há seções marcadas)
+   */
+  static async generateBase64WithCrop(element: HTMLElement): Promise<string> {
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      windowWidth: element.scrollWidth,
+      windowHeight: element.scrollHeight,
+    });
+
+    const a4WidthMM = 210;
+    const a4HeightMM = 297;
+    const marginMM = 10;
+    const contentWidthMM = a4WidthMM - (marginMM * 2);
+    const contentHeightMM = a4HeightMM - (marginMM * 2);
+
+    const pxPerMM = canvas.width / contentWidthMM;
+    const pageHeightPx = contentHeightMM * pxPerMM;
+    const totalPages = Math.ceil(canvas.height / pageHeightPx);
+
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    for (let page = 0; page < totalPages; page++) {
+      if (page > 0) pdf.addPage();
+
+      const srcY = page * pageHeightPx;
+      const srcHeight = Math.min(pageHeightPx, canvas.height - srcY);
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = srcHeight;
+      
+      const ctx = tempCanvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(canvas, 0, srcY, canvas.width, srcHeight, 0, 0, canvas.width, srcHeight);
+      }
+
+      const pageImgData = tempCanvas.toDataURL('image/jpeg', 0.92);
+      const destHeightMM = srcHeight / pxPerMM;
+      pdf.addImage(pageImgData, 'JPEG', marginMM, marginMM, contentWidthMM, destHeightMM);
+    }
+
+    return pdf.output('datauristring').split(',')[1];
   }
 
   /**

@@ -237,57 +237,59 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
   return (
     <div id="contract-preview" className="p-8 bg-white text-gray-900 font-serif text-sm leading-relaxed">
       {/* Header EXA Profissional com Logo */}
-      <div className="bg-gradient-to-r from-[#8B1A1A] to-[#A52020] text-white p-6 -m-8 mb-8 rounded-t-lg">
-        <div className="flex items-center justify-between">
-          <ExaLogo />
-          <div className="text-right">
-            <p className="text-sm font-semibold">CONTRATO DE PUBLICIDADE</p>
-            {data.numero_contrato && (
-              <p className="text-xs text-red-100 mt-1">Nº {data.numero_contrato}</p>
-            )}
-            {isVerticalPremium && (
-              <span className="inline-block mt-2 px-2 py-0.5 bg-white/20 text-white text-[10px] font-medium rounded">
-                VERTICAL PREMIUM
-              </span>
-            )}
+      <div className="contract-section" data-section="header">
+        <div className="bg-gradient-to-r from-[#8B1A1A] to-[#A52020] text-white p-6 -m-8 mb-8 rounded-t-lg">
+          <div className="flex items-center justify-between">
+            <ExaLogo />
+            <div className="text-right">
+              <p className="text-sm font-semibold">CONTRATO DE PUBLICIDADE</p>
+              {data.numero_contrato && (
+                <p className="text-xs text-red-100 mt-1">Nº {data.numero_contrato}</p>
+              )}
+              {isVerticalPremium && (
+                <span className="inline-block mt-2 px-2 py-0.5 bg-white/20 text-white text-[10px] font-medium rounded">
+                  VERTICAL PREMIUM
+                </span>
+              )}
+            </div>
           </div>
+        </div>
+
+        {/* Título */}
+        <div className="text-center mb-8">
+          <h1 className="text-lg font-bold uppercase tracking-wide">
+            Contrato de Publicidade em Mídia Digital
+          </h1>
+          {isVerticalPremium && (
+            <p className="text-purple-700 text-sm font-semibold mt-1">
+              Modalidade: Vertical Premium - Tela Cheia
+            </p>
+          )}
+        </div>
+
+        {/* Partes */}
+        <div className="mb-6">
+          <p className="mb-4">
+            <strong>CONTRATANTE:</strong> {data.cliente_razao_social || data.cliente_nome}
+            {data.cliente_segmento && ` (${data.cliente_segmento})`}, 
+            {data.cliente_endereco ? ` com sede em ${data.cliente_endereco},` : ` com sede em ${data.cliente_cidade || 'Foz do Iguaçu'},`}
+            {data.cliente_cnpj && ` inscrita no CNPJ sob o nº ${data.cliente_cnpj},`}
+            neste ato representada por seu representante legal
+            {data.cliente_nome && `, Sr(a). ${data.cliente_nome}`}
+            {data.cliente_cargo && ` (${data.cliente_cargo})`}, 
+            doravante denominada "CONTRATANTE".
+          </p>
+          <p>
+            <strong>CONTRATADA:</strong> EXA SOLUÇÕES DIGITAIS LTDA, pessoa jurídica de direito privado, 
+            inscrita no CNPJ sob nº 62.878.193/0001-35, com sede na Av. Paraná, nº 974, Sala 301, 
+            Centro, Foz do Iguaçu - PR, CEP 85852-000, doravante denominada "CONTRATADA".
+          </p>
         </div>
       </div>
 
-      {/* Título */}
-      <div className="text-center mb-8">
-        <h1 className="text-lg font-bold uppercase tracking-wide">
-          Contrato de Publicidade em Mídia Digital
-        </h1>
-        {isVerticalPremium && (
-          <p className="text-purple-700 text-sm font-semibold mt-1">
-            Modalidade: Vertical Premium - Tela Cheia
-          </p>
-        )}
-      </div>
-
-      {/* Partes */}
-      <div className="mb-6">
-        <p className="mb-4">
-          <strong>CONTRATANTE:</strong> {data.cliente_razao_social || data.cliente_nome}
-          {data.cliente_segmento && ` (${data.cliente_segmento})`}, 
-          {data.cliente_endereco ? ` com sede em ${data.cliente_endereco},` : ` com sede em ${data.cliente_cidade || 'Foz do Iguaçu'},`}
-          {data.cliente_cnpj && ` inscrita no CNPJ sob o nº ${data.cliente_cnpj},`}
-          neste ato representada por seu representante legal
-          {data.cliente_nome && `, Sr(a). ${data.cliente_nome}`}
-          {data.cliente_cargo && ` (${data.cliente_cargo})`}, 
-          doravante denominada "CONTRATANTE".
-        </p>
-        <p>
-          <strong>CONTRATADA:</strong> EXA SOLUÇÕES DIGITAIS LTDA, pessoa jurídica de direito privado, 
-          inscrita no CNPJ sob nº 62.878.193/0001-35, com sede na Av. Paraná, nº 974, Sala 301, 
-          Centro, Foz do Iguaçu - PR, CEP 85852-000, doravante denominada "CONTRATADA".
-        </p>
-      </div>
-
-      {/* Cláusulas */}
+      {/* Cláusulas - cada uma é uma seção separada para quebra inteligente */}
       <div className="space-y-4">
-        <div>
+        <div className="contract-section" data-section="clausula-1">
           <h2 className="font-bold">CLÁUSULA 1ª - DO OBJETO</h2>
           {isVerticalPremium ? (
             <p>
@@ -307,23 +309,24 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
           )}
         </div>
 
-        {/* VIGÊNCIA DO CONTRATO */}
-        <div className="bg-blue-50 border border-blue-200 rounded p-3">
-          <h2 className="font-bold">CLÁUSULA 2ª - DO PRAZO E VIGÊNCIA</h2>
-          <p className="mt-2">
-            2.1. O presente contrato terá vigência de <strong>{data.plano_meses || 1} ({getNumeroExtenso(data.plano_meses || 1)}) {(data.plano_meses || 1) === 1 ? 'mês' : 'meses'}</strong>, 
-            correspondente ao plano <strong>{getPlanoNome(data.plano_meses)}</strong>.
-          </p>
-          <p className="mt-2">
-            2.2. <strong>Período de exibição:</strong>
-          </p>
-          <ul className="list-disc ml-6 mt-1">
-            <li>Data de início: <strong>{formatDateExtended(data.data_inicio) || 'A definir após assinatura'}</strong></li>
-            <li>Data de término: <strong>{calcularDataFim() || 'A definir após assinatura'}</strong></li>
-          </ul>
+        <div className="contract-section" data-section="clausula-2">
+          <div className="bg-blue-50 border border-blue-200 rounded p-3">
+            <h2 className="font-bold">CLÁUSULA 2ª - DO PRAZO E VIGÊNCIA</h2>
+            <p className="mt-2">
+              2.1. O presente contrato terá vigência de <strong>{data.plano_meses || 1} ({getNumeroExtenso(data.plano_meses || 1)}) {(data.plano_meses || 1) === 1 ? 'mês' : 'meses'}</strong>, 
+              correspondente ao plano <strong>{getPlanoNome(data.plano_meses)}</strong>.
+            </p>
+            <p className="mt-2">
+              2.2. <strong>Período de exibição:</strong>
+            </p>
+            <ul className="list-disc ml-6 mt-1">
+              <li>Data de início: <strong>{formatDateExtended(data.data_inicio) || 'A definir após assinatura'}</strong></li>
+              <li>Data de término: <strong>{calcularDataFim() || 'A definir após assinatura'}</strong></li>
+            </ul>
+          </div>
         </div>
 
-        <div>
+        <div className="contract-section" data-section="clausula-3">
           <h2 className="font-bold">CLÁUSULA 3ª - DOS LOCAIS CONTRATADOS</h2>
           {isVerticalPremium ? (
             <>
@@ -369,138 +372,140 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
         </div>
 
         {/* CLÁUSULA DE VALOR E PAGAMENTO - DETALHADA */}
-        <div className="bg-green-50 border border-green-200 rounded p-3">
-          <h2 className="font-bold">CLÁUSULA 4ª - DO VALOR E FORMA DE PAGAMENTO</h2>
-          
-          <p className="mt-2">
-            4.1. <strong>Valor Total do Contrato:</strong> {formatCurrency(data.valor_total)}
-          </p>
-          
-          {/* Só mostrar valor mensal se NÃO for pagamento personalizado */}
-          {data.metodo_pagamento !== 'custom' && data.valor_mensal && data.valor_mensal > 0 && (
-            <p className="mt-1">
-              4.2. <strong>Valor Mensal:</strong> {formatCurrency(data.valor_mensal)}
-            </p>
-          )}
-          
-          <p className="mt-2">
-            4.{data.metodo_pagamento === 'custom' ? '2' : '3'}. <strong>Forma de Pagamento:</strong> {getMetodoPagamentoNome(data.metodo_pagamento)}
-          </p>
+        <div className="contract-section" data-section="clausula-4">
+          <div className="bg-green-50 border border-green-200 rounded p-3">
+            <h2 className="font-bold">CLÁUSULA 4ª - DO VALOR E FORMA DE PAGAMENTO</h2>
 
-          {/* Parcelas detalhadas */}
-          {data.metodo_pagamento === 'custom' && data.parcelas && data.parcelas.length > 0 ? (
-            <div className="mt-3">
-              <p className="font-semibold text-green-800">4.4. Condição de Pagamento Personalizada:</p>
-              <table className="w-full mt-2 text-sm border border-green-300">
-                <thead>
-                  <tr className="bg-green-100">
-                    <th className="border border-green-300 px-2 py-1 text-left">Parcela</th>
-                    <th className="border border-green-300 px-2 py-1 text-left">Vencimento</th>
-                    <th className="border border-green-300 px-2 py-1 text-right">Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.parcelas.map((parcela: any, idx: number) => (
-                    <tr key={idx}>
-                      <td className="border border-green-300 px-2 py-1">{parcela.installment || idx + 1}ª parcela</td>
-                      <td className="border border-green-300 px-2 py-1">{formatDateExtended(parcela.due_date)}</td>
-                      <td className="border border-green-300 px-2 py-1 text-right font-medium">{formatCurrency(Number(parcela.amount))}</td>
+            <p className="mt-2">
+              4.1. <strong>Valor Total do Contrato:</strong> {formatCurrency(data.valor_total)}
+            </p>
+            
+            {/* Só mostrar valor mensal se NÃO for pagamento personalizado */}
+            {data.metodo_pagamento !== 'custom' && data.valor_mensal && data.valor_mensal > 0 && (
+              <p className="mt-1">
+                4.2. <strong>Valor Mensal:</strong> {formatCurrency(data.valor_mensal)}
+              </p>
+            )}
+            
+            <p className="mt-2">
+              4.{data.metodo_pagamento === 'custom' ? '2' : '3'}. <strong>Forma de Pagamento:</strong> {getMetodoPagamentoNome(data.metodo_pagamento)}
+            </p>
+
+            {/* Parcelas detalhadas */}
+            {data.metodo_pagamento === 'custom' && data.parcelas && data.parcelas.length > 0 ? (
+              <div className="mt-3">
+                <p className="font-semibold text-green-800">4.4. Condição de Pagamento Personalizada:</p>
+                <table className="w-full mt-2 text-sm border border-green-300">
+                  <thead>
+                    <tr className="bg-green-100">
+                      <th className="border border-green-300 px-2 py-1 text-left">Parcela</th>
+                      <th className="border border-green-300 px-2 py-1 text-left">Vencimento</th>
+                      <th className="border border-green-300 px-2 py-1 text-right">Valor</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : data.metodo_pagamento === 'pix_avista' ? (
-            <div className="mt-3">
-              <p className="font-semibold text-green-800">4.4. Pagamento à Vista via PIX:</p>
-              <div className="mt-2 bg-emerald-50 border border-emerald-200 rounded p-3">
-                <p className="text-sm font-medium text-emerald-800">💰 PAGAMENTO ÚNICO</p>
-                <p className="mt-1 text-sm">
-                  O pagamento deverá ser realizado integralmente via <strong>PIX</strong> no valor de <strong>{formatCurrency(data.valor_total)}</strong>, 
-                  em parcela única, antes do início da exibição.
-                </p>
-              </div>
-            </div>
-          ) : data.metodo_pagamento === 'cartao' ? (
-            <div className="mt-3">
-              <p className="font-semibold text-green-800">4.4. Pagamento via Cartão de Crédito:</p>
-              <div className="mt-2 bg-blue-50 border border-blue-200 rounded p-3">
-                <p className="text-sm font-medium text-blue-800">💳 CARTÃO DE CRÉDITO</p>
-                <p className="mt-1 text-sm">
-                  O pagamento será processado via cartão de crédito no valor total de <strong>{formatCurrency(data.valor_total)}</strong>.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-3">
-              <p className="font-semibold text-green-800">4.4. Condição de Pagamento Parcelada ({data.metodo_pagamento === 'pix_fidelidade' ? 'PIX' : 'Boleto'}):</p>
-              <div className="mt-2 bg-amber-50 border border-amber-200 rounded p-3">
-                <p className="text-sm font-medium text-amber-800">
-                  {data.metodo_pagamento === 'pix_fidelidade' ? '📱 PIX FIDELIDADE' : '📄 BOLETO FIDELIDADE'}
-                </p>
-                <p className="mt-1 text-sm">
-                  O pagamento será realizado em <strong>{data.plano_meses || 1} ({getNumeroExtenso(data.plano_meses || 1)}) parcela(s)</strong> de <strong>{formatCurrency(data.valor_mensal)}</strong>, 
-                  com vencimento no <strong>dia {data.dia_vencimento || 10}</strong> de cada mês.
-                </p>
-              </div>
-              
-              {/* Tabela de TODAS as parcelas */}
-              {data.data_inicio && data.plano_meses && data.plano_meses > 0 && (
-                <div className="mt-3">
-                  <p className="text-sm font-semibold text-green-800 mb-2">📋 Cronograma de Parcelas:</p>
-                  <table className="w-full text-sm border border-green-300">
-                    <thead>
-                      <tr className="bg-green-100">
-                        <th className="border border-green-300 px-2 py-1 text-left">Parcela</th>
-                        <th className="border border-green-300 px-2 py-1 text-left">Vencimento</th>
-                        <th className="border border-green-300 px-2 py-1 text-right">Valor</th>
+                  </thead>
+                  <tbody>
+                    {data.parcelas.map((parcela: any, idx: number) => (
+                      <tr key={idx}>
+                        <td className="border border-green-300 px-2 py-1">{parcela.installment || idx + 1}ª parcela</td>
+                        <td className="border border-green-300 px-2 py-1">{formatDateExtended(parcela.due_date)}</td>
+                        <td className="border border-green-300 px-2 py-1 text-right font-medium">{formatCurrency(Number(parcela.amount))}</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {Array.from({ length: data.plano_meses }, (_, idx) => {
-                        const inicio = new Date(data.data_inicio + 'T00:00:00');
-                        const dataVencimento = new Date(inicio.getFullYear(), inicio.getMonth() + idx, data.dia_vencimento || 10);
-                        if (idx === 0 && dataVencimento < inicio) {
-                          dataVencimento.setMonth(dataVencimento.getMonth() + 1);
-                        }
-                        return (
-                          <tr key={idx} className={idx === 0 ? 'bg-green-50' : ''}>
-                            <td className="border border-green-300 px-2 py-1">
-                              {idx + 1}ª parcela {idx === 0 && <span className="text-green-600 text-xs">(próxima)</span>}
-                            </td>
-                            <td className="border border-green-300 px-2 py-1">
-                              {format(dataVencimento, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                            </td>
-                            <td className="border border-green-300 px-2 py-1 text-right font-medium">
-                              {formatCurrency(data.valor_mensal)}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-green-200 font-bold">
-                        <td colSpan={2} className="border border-green-300 px-2 py-1 text-right">TOTAL:</td>
-                        <td className="border border-green-300 px-2 py-1 text-right">{formatCurrency(data.valor_total)}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : data.metodo_pagamento === 'pix_avista' ? (
+              <div className="mt-3">
+                <p className="font-semibold text-green-800">4.4. Pagamento à Vista via PIX:</p>
+                <div className="mt-2 bg-emerald-50 border border-emerald-200 rounded p-3">
+                  <p className="text-sm font-medium text-emerald-800">💰 PAGAMENTO ÚNICO</p>
+                  <p className="mt-1 text-sm">
+                    O pagamento deverá ser realizado integralmente via <strong>PIX</strong> no valor de <strong>{formatCurrency(data.valor_total)}</strong>, 
+                    em parcela única, antes do início da exibição.
+                  </p>
                 </div>
-              )}
-            </div>
-          )}
-          
-          <p className="mt-3 text-sm">
-            4.5. Após 10 (dez) dias de atraso no pagamento, a exibição será automaticamente 
-            suspensa até a regularização, sem prejuízo da cobrança dos valores devidos.
-          </p>
-          <p className="text-sm">
-            4.6. Multa por atraso: 2% (dois por cento) sobre o valor da parcela, acrescido de 
-            juros de 1% (um por cento) ao mês, calculados pro rata die.
-          </p>
+              </div>
+            ) : data.metodo_pagamento === 'cartao' ? (
+              <div className="mt-3">
+                <p className="font-semibold text-green-800">4.4. Pagamento via Cartão de Crédito:</p>
+                <div className="mt-2 bg-blue-50 border border-blue-200 rounded p-3">
+                  <p className="text-sm font-medium text-blue-800">💳 CARTÃO DE CRÉDITO</p>
+                  <p className="mt-1 text-sm">
+                    O pagamento será processado via cartão de crédito no valor total de <strong>{formatCurrency(data.valor_total)}</strong>.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3">
+                <p className="font-semibold text-green-800">4.4. Condição de Pagamento Parcelada ({data.metodo_pagamento === 'pix_fidelidade' ? 'PIX' : 'Boleto'}):</p>
+                <div className="mt-2 bg-amber-50 border border-amber-200 rounded p-3">
+                  <p className="text-sm font-medium text-amber-800">
+                    {data.metodo_pagamento === 'pix_fidelidade' ? '📱 PIX FIDELIDADE' : '📄 BOLETO FIDELIDADE'}
+                  </p>
+                  <p className="mt-1 text-sm">
+                    O pagamento será realizado em <strong>{data.plano_meses || 1} ({getNumeroExtenso(data.plano_meses || 1)}) parcela(s)</strong> de <strong>{formatCurrency(data.valor_mensal)}</strong>, 
+                    com vencimento no <strong>dia {data.dia_vencimento || 10}</strong> de cada mês.
+                  </p>
+                </div>
+                
+                {/* Tabela de TODAS as parcelas */}
+                {data.data_inicio && data.plano_meses && data.plano_meses > 0 && (
+                  <div className="mt-3">
+                    <p className="text-sm font-semibold text-green-800 mb-2">📋 Cronograma de Parcelas:</p>
+                    <table className="w-full text-sm border border-green-300">
+                      <thead>
+                        <tr className="bg-green-100">
+                          <th className="border border-green-300 px-2 py-1 text-left">Parcela</th>
+                          <th className="border border-green-300 px-2 py-1 text-left">Vencimento</th>
+                          <th className="border border-green-300 px-2 py-1 text-right">Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.from({ length: data.plano_meses }, (_, idx) => {
+                          const inicio = new Date(data.data_inicio + 'T00:00:00');
+                          const dataVencimento = new Date(inicio.getFullYear(), inicio.getMonth() + idx, data.dia_vencimento || 10);
+                          if (idx === 0 && dataVencimento < inicio) {
+                            dataVencimento.setMonth(dataVencimento.getMonth() + 1);
+                          }
+                          return (
+                            <tr key={idx} className={idx === 0 ? 'bg-green-50' : ''}>
+                              <td className="border border-green-300 px-2 py-1">
+                                {idx + 1}ª parcela {idx === 0 && <span className="text-green-600 text-xs">(próxima)</span>}
+                              </td>
+                              <td className="border border-green-300 px-2 py-1">
+                                {format(dataVencimento, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                              </td>
+                              <td className="border border-green-300 px-2 py-1 text-right font-medium">
+                                {formatCurrency(data.valor_mensal)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-green-200 font-bold">
+                          <td colSpan={2} className="border border-green-300 px-2 py-1 text-right">TOTAL:</td>
+                          <td className="border border-green-300 px-2 py-1 text-right">{formatCurrency(data.valor_total)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <p className="mt-3 text-sm">
+              4.5. Após 10 (dez) dias de atraso no pagamento, a exibição será automaticamente 
+              suspensa até a regularização, sem prejuízo da cobrança dos valores devidos.
+            </p>
+            <p className="text-sm">
+              4.6. Multa por atraso: 2% (dois por cento) sobre o valor da parcela, acrescido de 
+              juros de 1% (um por cento) ao mês, calculados pro rata die.
+            </p>
+          </div>
         </div>
 
-        <div>
+        <div className="contract-section" data-section="clausula-5">
           <h2 className="font-bold">CLÁUSULA 5ª - ENTREGA, FREQUÊNCIA E SLA</h2>
           {isVerticalPremium ? (
             <>
@@ -540,7 +545,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
           </p>
         </div>
 
-        <div>
+        <div className="contract-section" data-section="clausula-6">
           <h2 className="font-bold">CLÁUSULA 6ª - RESPONSABILIDADES</h2>
           <p>6.1. <strong>Responsabilidades da EXA:</strong></p>
           <ul className="list-disc ml-6 mt-1">
@@ -556,7 +561,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
           </ul>
         </div>
 
-        <div>
+        <div className="contract-section" data-section="clausula-7">
           <h2 className="font-bold">CLÁUSULA 7ª - DIREITOS AUTORAIS E CESSÃO DE IMAGEM</h2>
           <p>
             7.1. O CONTRATANTE declara possuir <strong>todos os direitos</strong> sobre o material 
@@ -573,8 +578,9 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
           </ul>
         </div>
 
-        <div className="bg-amber-50 border border-amber-200 rounded p-3">
-          <h2 className="font-bold">CLÁUSULA 8ª - RESCISÃO E MULTA</h2>
+        <div className="contract-section" data-section="clausula-8">
+          <div className="bg-amber-50 border border-amber-200 rounded p-3">
+            <h2 className="font-bold">CLÁUSULA 8ª - RESCISÃO E MULTA</h2>
           <p>
             8.1. <strong>Rescisão antecipada pelo CONTRATANTE:</strong> multa de 20% sobre o saldo 
             remanescente, salvo outras condições previamente acordadas por escrito.
@@ -582,37 +588,40 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
           <p className="mt-2">
             8.2. <strong>Rescisão por culpa da EXA:</strong> devolução proporcional de valores não utilizados.
           </p>
+          </div>
         </div>
 
-        <div>
+        <div className="contract-section" data-section="clausula-9">
           <h2 className="font-bold">CLÁUSULA 9ª - REAJUSTE</h2>
           <p>
             9.1. Reajuste anual pelo <strong>IPCA</strong> ou índice que venha a substituí-lo.
           </p>
         </div>
 
-        <div className="bg-gray-50 border border-gray-200 rounded p-3">
-          <h2 className="font-bold">CLÁUSULA 10ª - SEGURANÇA, PRIVACIDADE E AUTENTICAÇÃO</h2>
-          <p className="mt-2">
-            10.1. <strong>Segurança Operacional:</strong> A EXA manterá políticas e controles de 
-            segurança incluindo firewall, autenticação multifatorial, segregação de ambientes, 
-            backups periódicos e monitoramento de integridade.
-          </p>
-          <p className="mt-2">
-            10.2. <strong>Proteção de Dados e Privacidade:</strong> Ambas as partes concordam em 
-            cumprir a legislação aplicável (incl. LGPD). Vazamentos serão comunicados em até 48 horas úteis.
-          </p>
-          <p className="mt-2">
-            10.3. <strong>Logs e Auditoria:</strong> A EXA manterá registros de logs por no mínimo 
-            12 meses para fins de auditoria.
-          </p>
-          <p className="mt-2">
-            10.4. <strong>Confidencialidade:</strong> As partes comprometem-se a manter confidenciais 
-            termos comerciais, preços, relatórios e acessos técnicos.
-          </p>
+        <div className="contract-section" data-section="clausula-10">
+          <div className="bg-gray-50 border border-gray-200 rounded p-3">
+            <h2 className="font-bold">CLÁUSULA 10ª - SEGURANÇA, PRIVACIDADE E AUTENTICAÇÃO</h2>
+            <p className="mt-2">
+              10.1. <strong>Segurança Operacional:</strong> A EXA manterá políticas e controles de 
+              segurança incluindo firewall, autenticação multifatorial, segregação de ambientes, 
+              backups periódicos e monitoramento de integridade.
+            </p>
+            <p className="mt-2">
+              10.2. <strong>Proteção de Dados e Privacidade:</strong> Ambas as partes concordam em 
+              cumprir a legislação aplicável (incl. LGPD). Vazamentos serão comunicados em até 48 horas úteis.
+            </p>
+            <p className="mt-2">
+              10.3. <strong>Logs e Auditoria:</strong> A EXA manterá registros de logs por no mínimo 
+              12 meses para fins de auditoria.
+            </p>
+            <p className="mt-2">
+              10.4. <strong>Confidencialidade:</strong> As partes comprometem-se a manter confidenciais 
+              termos comerciais, preços, relatórios e acessos técnicos.
+            </p>
+          </div>
         </div>
 
-        <div>
+        <div className="contract-section" data-section="clausula-11">
           <h2 className="font-bold">CLÁUSULA 11ª - DISPOSIÇÕES GERAIS</h2>
           <p>
             11.1. Comunicações oficiais via portal, e-mail corporativo ou notificações do sistema EXA.
@@ -622,7 +631,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
           </p>
         </div>
 
-        <div>
+        <div className="contract-section" data-section="clausula-12">
           <h2 className="font-bold">CLÁUSULA 12ª - FORO</h2>
           <p>
             12.1. Elegem as partes o foro da comarca de <strong>Foz do Iguaçu/PR</strong> para dirimir 
@@ -631,74 +640,78 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
         </div>
 
         {data.clausulas_especiais && (
-          <div className="bg-blue-50 border border-blue-200 rounded p-3">
-            <h2 className="font-bold">CLÁUSULA 13ª - CONDIÇÕES ESPECIAIS</h2>
-            <p>{data.clausulas_especiais}</p>
+          <div className="contract-section" data-section="clausula-13">
+            <div className="bg-blue-50 border border-blue-200 rounded p-3">
+              <h2 className="font-bold">CLÁUSULA 13ª - CONDIÇÕES ESPECIAIS</h2>
+              <p>{data.clausulas_especiais}</p>
+            </div>
           </div>
         )}
       </div>
 
       {/* Assinaturas - COM REPRESENTANTES EXA COMPLETOS */}
-      <div className="mt-12 pt-8 border-t-2 border-gray-300">
-        <p className="text-center mb-10 text-sm">
-          Foz do Iguaçu - PR, {dataAtual}.
-        </p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-          {/* CONTRATANTE */}
-          <div className="border border-gray-300 rounded-lg p-6 bg-gray-50">
-            <h3 className="font-bold text-center text-sm text-gray-600 mb-4 uppercase tracking-wide">
-              CONTRATANTE
-            </h3>
-            <div className="text-center space-y-2">
-              <p className="font-bold text-base">{data.cliente_razao_social || data.cliente_nome}</p>
-              {data.cliente_cnpj && (
-                <p className="text-sm text-gray-600">CNPJ: {data.cliente_cnpj}</p>
-              )}
-              <p className="text-sm">Representante: {data.cliente_nome}</p>
-              {data.cliente_cargo && (
-                <p className="text-xs text-gray-500">Cargo: {data.cliente_cargo}</p>
-              )}
-              
-              <div className="mt-8 pt-4">
-                <div className="border-t border-gray-400 mx-8"></div>
-                <p className="text-xs text-gray-500 mt-2">Assinatura</p>
-              </div>
-              <p className="text-xs text-gray-400 mt-2">Data: ____ / ____ / ________</p>
-            </div>
-          </div>
+      <div className="contract-section" data-section="assinaturas">
+        <div className="mt-12 pt-8 border-t-2 border-gray-300">
+          <p className="text-center mb-10 text-sm">
+            Foz do Iguaçu - PR, {dataAtual}.
+          </p>
           
-          {/* CONTRATADA - EXA com dois representantes */}
-          <div className="border border-gray-300 rounded-lg p-6 bg-gray-50">
-            <h3 className="font-bold text-center text-sm text-gray-600 mb-4 uppercase tracking-wide">
-              CONTRATADA
-            </h3>
-            <div className="text-center space-y-2">
-              <p className="font-bold text-base">EXA — Soluções Digitais</p>
-              <p className="text-sm text-gray-600">CNPJ: 62.878.193/0001-35</p>
-              <p className="text-xs text-gray-500 mt-2">Representantes legais:</p>
-              
-              {/* Natália */}
-              <div className="mt-4 pt-4 border-t border-dashed border-gray-300">
-                <p className="font-semibold text-sm">Natália Krause Guimarães Dantas</p>
-                <p className="text-xs text-gray-500">RG 13.038.569-9 / CPF 116.228.359-99</p>
-                <div className="mt-4 pt-2">
-                  <div className="border-t border-gray-400 mx-12"></div>
-                  <p className="text-xs text-gray-500 mt-1">Assinatura</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+            {/* CONTRATANTE */}
+            <div className="border border-gray-300 rounded-lg p-6 bg-gray-50">
+              <h3 className="font-bold text-center text-sm text-gray-600 mb-4 uppercase tracking-wide">
+                CONTRATANTE
+              </h3>
+              <div className="text-center space-y-2">
+                <p className="font-bold text-base">{data.cliente_razao_social || data.cliente_nome}</p>
+                {data.cliente_cnpj && (
+                  <p className="text-sm text-gray-600">CNPJ: {data.cliente_cnpj}</p>
+                )}
+                <p className="text-sm">Representante: {data.cliente_nome}</p>
+                {data.cliente_cargo && (
+                  <p className="text-xs text-gray-500">Cargo: {data.cliente_cargo}</p>
+                )}
+                
+                <div className="mt-8 pt-4">
+                  <div className="border-t border-gray-400 mx-8"></div>
+                  <p className="text-xs text-gray-500 mt-2">Assinatura</p>
                 </div>
+                <p className="text-xs text-gray-400 mt-2">Data: ____ / ____ / ________</p>
               </div>
-              
-              {/* Jeferson */}
-              <div className="mt-4 pt-4 border-t border-dashed border-gray-300">
-                <p className="font-semibold text-sm">Jeferson Stilver Rodrigues Encina</p>
-                <p className="text-xs text-gray-500">RG 8.812.269-0 / CPF 055.031.279-00</p>
-                <div className="mt-4 pt-2">
-                  <div className="border-t border-gray-400 mx-12"></div>
-                  <p className="text-xs text-gray-500 mt-1">Assinatura</p>
+            </div>
+            
+            {/* CONTRATADA - EXA com dois representantes */}
+            <div className="border border-gray-300 rounded-lg p-6 bg-gray-50">
+              <h3 className="font-bold text-center text-sm text-gray-600 mb-4 uppercase tracking-wide">
+                CONTRATADA
+              </h3>
+              <div className="text-center space-y-2">
+                <p className="font-bold text-base">EXA — Soluções Digitais</p>
+                <p className="text-sm text-gray-600">CNPJ: 62.878.193/0001-35</p>
+                <p className="text-xs text-gray-500 mt-2">Representantes legais:</p>
+                
+                {/* Natália */}
+                <div className="mt-4 pt-4 border-t border-dashed border-gray-300">
+                  <p className="font-semibold text-sm">Natália Krause Guimarães Dantas</p>
+                  <p className="text-xs text-gray-500">RG 13.038.569-9 / CPF 116.228.359-99</p>
+                  <div className="mt-4 pt-2">
+                    <div className="border-t border-gray-400 mx-12"></div>
+                    <p className="text-xs text-gray-500 mt-1">Assinatura</p>
+                  </div>
                 </div>
+                
+                {/* Jeferson */}
+                <div className="mt-4 pt-4 border-t border-dashed border-gray-300">
+                  <p className="font-semibold text-sm">Jeferson Stilver Rodrigues Encina</p>
+                  <p className="text-xs text-gray-500">RG 8.812.269-0 / CPF 055.031.279-00</p>
+                  <div className="mt-4 pt-2">
+                    <div className="border-t border-gray-400 mx-12"></div>
+                    <p className="text-xs text-gray-500 mt-1">Assinatura</p>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-gray-400 mt-4">Data: ____ / ____ / ________</p>
               </div>
-              
-              <p className="text-xs text-gray-400 mt-4">Data: ____ / ____ / ________</p>
             </div>
           </div>
         </div>
