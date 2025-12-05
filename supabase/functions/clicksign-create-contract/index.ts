@@ -134,20 +134,27 @@ serve(async (req) => {
     const envelopeId = envelopeData.data?.id;
     console.log("Envelope criado:", envelopeId);
 
-    // ========== 2. Buscar TODOS os Signatários EXA ativos ==========
-    console.log("🔍 [CLICKSIGN] Buscando TODOS signatários EXA ativos...");
-    const { data: signatariosExa, error: signatarioError } = await supabase
-      .from("signatarios_exa")
+    // ========== 2. Buscar Signatários do Contrato ==========
+    console.log("🔍 [CLICKSIGN] Buscando signatários do contrato...");
+    const { data: signatariosContrato, error: signatariosError } = await supabase
+      .from("contrato_signatarios")
       .select("*")
-      .eq("is_active", true)
-      .order("is_default", { ascending: false }); // Default primeiro
+      .eq("contrato_id", contrato_id)
+      .order("ordem", { ascending: true });
 
-    if (signatarioError) {
-      console.warn("⚠️ [CLICKSIGN] Erro ao buscar signatários EXA:", signatarioError);
-    } else {
-      console.log("✅ [CLICKSIGN] Signatários EXA encontrados:", signatariosExa?.length || 0);
-      signatariosExa?.forEach((s: any) => console.log("   - ", s.nome, "(", s.email, ")"));
+    if (signatariosError) {
+      console.warn("⚠️ [CLICKSIGN] Erro ao buscar signatários do contrato:", signatariosError);
     }
+
+    // Separar por tipo
+    const signatarioCliente = signatariosContrato?.find((s: any) => s.tipo === 'cliente');
+    const signatariosExa = signatariosContrato?.filter((s: any) => s.tipo === 'exa') || [];
+    const testemunhas = signatariosContrato?.filter((s: any) => s.tipo === 'testemunha') || [];
+
+    console.log("✅ [CLICKSIGN] Signatários encontrados:");
+    console.log("   - Cliente:", signatarioCliente?.nome || contrato.cliente_nome);
+    console.log("   - EXA:", signatariosExa.length);
+    console.log("   - Testemunhas:", testemunhas.length);
 
     // ========== 3. Gerar HTML do Contrato ==========
     const contractHtml = generateContractHtml(contrato, signatariosExa || []);
