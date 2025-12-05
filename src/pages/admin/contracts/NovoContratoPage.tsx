@@ -32,6 +32,7 @@ import {
   ArrowLeft,
   FileSignature,
   Users,
+  User,
   Building2,
   Loader2,
   Send,
@@ -48,7 +49,10 @@ import {
   Plus,
   Trash2,
   MapPin,
-  Download
+  Download,
+  UserCheck,
+  UserPlus,
+  Users2
 } from 'lucide-react';
 import { ContractPDFExporter } from '@/components/admin/contracts/ContractPDFExporter';
 import ContractPreview from '@/components/admin/contracts/ContractPreview';
@@ -56,9 +60,32 @@ import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { AutocompleteInput } from '@/components/ui/autocomplete-input';
 import { useCNPJConsult } from '@/hooks/useCNPJConsult';
 
-type Step = 'tipo' | 'modo' | 'vinculo' | 'cliente' | 'contrato' | 'preview';
+type Step = 'tipo' | 'modo' | 'vinculo' | 'cliente' | 'contrato' | 'signatarios' | 'preview';
 type FillMode = 'extract' | 'manual';
 type TipoProduto = 'horizontal' | 'vertical_premium';
+
+// Interface para signatários do contrato
+interface SignatarioContrato {
+  id: string;
+  tipo: 'cliente' | 'exa' | 'testemunha';
+  nome: string;
+  sobrenome: string;
+  email: string;
+  data_nascimento: string;
+  cpf: string;
+  cargo: string;
+  signatario_exa_id?: string;
+}
+
+interface SignatarioExa {
+  id: string;
+  nome: string;
+  email: string;
+  cpf: string | null;
+  cargo: string | null;
+  data_nascimento: string | null;
+  is_default: boolean;
+}
 
 interface ContratoData {
   tipo_contrato: 'anunciante' | 'sindico';
@@ -113,6 +140,12 @@ const NovoContratoPage = () => {
     { id: 1, dueDate: new Date(), amount: '' },
     { id: 2, dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), amount: '' }
   ]);
+  
+  // Estados para signatários do contrato
+  const [signatariosContrato, setSignatariosContrato] = useState<SignatarioContrato[]>([]);
+  const [selectedExaSignatarios, setSelectedExaSignatarios] = useState<string[]>([]);
+  const [clienteDataNascimento, setClienteDataNascimento] = useState('');
+  const [clienteCpf, setClienteCpf] = useState('');
   
   const [contratoData, setContratoData] = useState<ContratoData>({
     tipo_contrato: 'anunciante',
@@ -226,6 +259,21 @@ const NovoContratoPage = () => {
 
       if (error) throw error;
       return data || [];
+    }
+  });
+
+  // Buscar signatários EXA ativos
+  const { data: signatariosExa } = useQuery({
+    queryKey: ['signatarios-exa-ativos'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('signatarios_exa')
+        .select('id, nome, email, cpf, cargo, data_nascimento, is_default')
+        .eq('is_active', true)
+        .order('is_default', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as SignatarioExa[];
     }
   });
 
@@ -424,6 +472,69 @@ const NovoContratoPage = () => {
       }
 
       console.log('✅ Contrato criado:', contrato.id);
+
+      // Salvar signatários do contrato na tabela contrato_signatarios
+      const signatariosParaSalvar: any[] = [];
+      
+      // Signatário do cliente
+      signatariosParaSalvar.push({
+        contrato_id: contrato.id,
+        tipo: 'cliente',
+        nome: data.cliente_nome,
+        sobrenome: data.cliente_sobrenome,
+        email: data.cliente_email,
+        data_nascimento: clienteDataNascimento || null,
+        cpf: clienteCpf || null,
+        cargo: data.cliente_cargo || null,
+        ordem: 1
+      });
+
+      // Signatários EXA selecionados
+      selectedExaSignatarios.forEach((exaId, idx) => {
+        const signatario = signatariosExa?.find(s => s.id === exaId);
+        if (signatario) {
+          signatariosParaSalvar.push({
+            contrato_id: contrato.id,
+            tipo: 'exa',
+            nome: signatario.nome.split(' ')[0] || signatario.nome,
+            sobrenome: signatario.nome.split(' ').slice(1).join(' ') || '',
+            email: signatario.email,
+            data_nascimento: signatario.data_nascimento || null,
+            cpf: signatario.cpf || null,
+            cargo: signatario.cargo || 'Representante',
+            signatario_exa_id: signatario.id,
+            ordem: 2 + idx
+          });
+        }
+      });
+
+      // Testemunhas
+      signatariosContrato.filter(s => s.tipo === 'testemunha').forEach((testemunha, idx) => {
+        signatariosParaSalvar.push({
+          contrato_id: contrato.id,
+          tipo: 'testemunha',
+          nome: testemunha.nome,
+          sobrenome: testemunha.sobrenome,
+          email: testemunha.email,
+          data_nascimento: testemunha.data_nascimento || null,
+          cpf: testemunha.cpf || null,
+          cargo: 'Testemunha',
+          ordem: 100 + idx
+        });
+      });
+
+      // Inserir signatários
+      if (signatariosParaSalvar.length > 0) {
+        const { error: signatariosError } = await supabase
+          .from('contrato_signatarios')
+          .insert(signatariosParaSalvar);
+        
+        if (signatariosError) {
+          console.error('⚠️ Erro ao salvar signatários:', signatariosError);
+        } else {
+          console.log('✅ Signatários salvos:', signatariosParaSalvar.length);
+        }
+      }
 
       if (data.enviar && contrato) {
         console.log('📤 Enviando para ClickSign...');
@@ -1378,7 +1489,256 @@ const NovoContratoPage = () => {
               <Button variant="outline" onClick={() => setStep('cliente')} className="rounded-xl">
                 Voltar
               </Button>
-              <Button onClick={() => setStep('preview')} className="rounded-xl">
+              <Button onClick={() => setStep('signatarios')} className="rounded-xl">
+                <UserCheck className="h-4 w-4 mr-2" />
+                Configurar Signatários
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 6: Configurar Signatários */}
+        {step === 'signatarios' && (
+          <div className="space-y-6">
+            <h2 className="text-lg font-semibold">Configurar Signatários</h2>
+            <p className="text-sm text-muted-foreground">
+              Configure quem assinará este contrato. Todos os campos são obrigatórios para assinatura via ClickSign.
+            </p>
+
+            {/* Signatário do Cliente (Empresa) */}
+            <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50">
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <User className="h-4 w-4 text-[#9C1E1E]" />
+                Signatário do Cliente (Empresa)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Nome *</Label>
+                  <Input
+                    value={contratoData.cliente_nome}
+                    onChange={(e) => setContratoData(prev => ({ ...prev, cliente_nome: e.target.value }))}
+                    placeholder="Primeiro nome"
+                    className="rounded-xl"
+                  />
+                </div>
+                <div>
+                  <Label>Sobrenome *</Label>
+                  <Input
+                    value={contratoData.cliente_sobrenome}
+                    onChange={(e) => setContratoData(prev => ({ ...prev, cliente_sobrenome: e.target.value }))}
+                    placeholder="Sobrenome"
+                    className="rounded-xl"
+                  />
+                </div>
+                <div>
+                  <Label>E-mail *</Label>
+                  <Input
+                    type="email"
+                    value={contratoData.cliente_email}
+                    onChange={(e) => setContratoData(prev => ({ ...prev, cliente_email: e.target.value }))}
+                    placeholder="email@empresa.com"
+                    className="rounded-xl"
+                  />
+                </div>
+                <div>
+                  <Label>Data de Nascimento *</Label>
+                  <Input
+                    type="date"
+                    value={clienteDataNascimento}
+                    onChange={(e) => setClienteDataNascimento(e.target.value)}
+                    className="rounded-xl"
+                  />
+                </div>
+                <div>
+                  <Label>CPF</Label>
+                  <Input
+                    value={clienteCpf}
+                    onChange={(e) => setClienteCpf(e.target.value)}
+                    placeholder="000.000.000-00"
+                    className="rounded-xl"
+                  />
+                </div>
+                <div>
+                  <Label>Cargo</Label>
+                  <Input
+                    value={contratoData.cliente_cargo}
+                    onChange={(e) => setContratoData(prev => ({ ...prev, cliente_cargo: e.target.value }))}
+                    placeholder="Ex: Diretor, Sócio"
+                    className="rounded-xl"
+                  />
+                </div>
+              </div>
+            </Card>
+
+            {/* Signatários EXA Mídia */}
+            <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50">
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <UserCheck className="h-4 w-4 text-[#9C1E1E]" />
+                Signatários EXA Mídia
+              </h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Selecione quem assinará pela EXA Mídia. Pode selecionar múltiplos signatários.
+              </p>
+              
+              {signatariosExa && signatariosExa.length > 0 ? (
+                <div className="space-y-2">
+                  {signatariosExa.map((signatario) => {
+                    const isSelected = selectedExaSignatarios.includes(signatario.id);
+                    return (
+                      <div 
+                        key={signatario.id}
+                        className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
+                          isSelected ? 'bg-[#9C1E1E]/10 border border-[#9C1E1E]/30' : 'hover:bg-muted border border-transparent'
+                        }`}
+                        onClick={() => {
+                          setSelectedExaSignatarios(prev => 
+                            isSelected 
+                              ? prev.filter(id => id !== signatario.id)
+                              : [...prev, signatario.id]
+                          );
+                        }}
+                      >
+                        <Checkbox checked={isSelected} />
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{signatario.nome}</p>
+                          <p className="text-xs text-muted-foreground">{signatario.email}</p>
+                        </div>
+                        <div className="text-right text-xs text-muted-foreground">
+                          <p>{signatario.cargo || 'Representante'}</p>
+                          {signatario.is_default && (
+                            <span className="text-[10px] bg-[#9C1E1E]/10 text-[#9C1E1E] px-1.5 py-0.5 rounded">
+                              Padrão
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  <UserCheck className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Nenhum signatário EXA cadastrado</p>
+                  <p className="text-xs">Configure os signatários no botão "Signatários" da página de contratos</p>
+                </div>
+              )}
+            </Card>
+
+            {/* Testemunhas (opcional) */}
+            <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Users2 className="h-4 w-4 text-[#9C1E1E]" />
+                  Testemunhas (opcional)
+                </h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newId = crypto.randomUUID();
+                    setSignatariosContrato(prev => [...prev, {
+                      id: newId,
+                      tipo: 'testemunha',
+                      nome: '',
+                      sobrenome: '',
+                      email: '',
+                      data_nascimento: '',
+                      cpf: '',
+                      cargo: 'Testemunha'
+                    }]);
+                  }}
+                  className="text-xs h-8 rounded-lg"
+                >
+                  <UserPlus className="h-3 w-3 mr-1" />
+                  Adicionar Testemunha
+                </Button>
+              </div>
+              
+              {signatariosContrato.filter(s => s.tipo === 'testemunha').length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  Nenhuma testemunha adicionada. Testemunhas são opcionais.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {signatariosContrato.filter(s => s.tipo === 'testemunha').map((testemunha, idx) => (
+                    <div key={testemunha.id} className="p-3 bg-muted/50 rounded-xl">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium">Testemunha {idx + 1}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSignatariosContrato(prev => prev.filter(s => s.id !== testemunha.id))}
+                          className="h-6 w-6 p-0 text-red-500"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder="Nome"
+                          value={testemunha.nome}
+                          onChange={(e) => setSignatariosContrato(prev => 
+                            prev.map(s => s.id === testemunha.id ? { ...s, nome: e.target.value } : s)
+                          )}
+                          className="h-8 text-sm rounded-lg"
+                        />
+                        <Input
+                          placeholder="Sobrenome"
+                          value={testemunha.sobrenome}
+                          onChange={(e) => setSignatariosContrato(prev => 
+                            prev.map(s => s.id === testemunha.id ? { ...s, sobrenome: e.target.value } : s)
+                          )}
+                          className="h-8 text-sm rounded-lg"
+                        />
+                        <Input
+                          type="email"
+                          placeholder="E-mail"
+                          value={testemunha.email}
+                          onChange={(e) => setSignatariosContrato(prev => 
+                            prev.map(s => s.id === testemunha.id ? { ...s, email: e.target.value } : s)
+                          )}
+                          className="h-8 text-sm rounded-lg"
+                        />
+                        <Input
+                          type="date"
+                          placeholder="Data Nasc."
+                          value={testemunha.data_nascimento}
+                          onChange={(e) => setSignatariosContrato(prev => 
+                            prev.map(s => s.id === testemunha.id ? { ...s, data_nascimento: e.target.value } : s)
+                          )}
+                          className="h-8 text-sm rounded-lg"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            {/* Resumo */}
+            <Card className="p-4 bg-[#9C1E1E]/5 border-[#9C1E1E]/20">
+              <h4 className="font-semibold text-sm mb-2">Resumo dos Signatários</h4>
+              <div className="space-y-1 text-xs">
+                <p>• <strong>Cliente:</strong> {contratoData.cliente_nome} {contratoData.cliente_sobrenome} ({contratoData.cliente_email})</p>
+                <p>• <strong>EXA:</strong> {selectedExaSignatarios.length > 0 
+                  ? signatariosExa?.filter(s => selectedExaSignatarios.includes(s.id)).map(s => s.nome).join(', ')
+                  : 'Nenhum selecionado'
+                }</p>
+                {signatariosContrato.filter(s => s.tipo === 'testemunha').length > 0 && (
+                  <p>• <strong>Testemunhas:</strong> {signatariosContrato.filter(s => s.tipo === 'testemunha').length}</p>
+                )}
+              </div>
+            </Card>
+
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setStep('contrato')} className="rounded-xl">
+                Voltar
+              </Button>
+              <Button 
+                onClick={() => setStep('preview')} 
+                disabled={selectedExaSignatarios.length === 0}
+                className="rounded-xl"
+              >
                 <Eye className="h-4 w-4 mr-2" />
                 Visualizar Contrato
               </Button>
@@ -1386,7 +1746,7 @@ const NovoContratoPage = () => {
           </div>
         )}
 
-        {/* Step 6: Preview e Envio */}
+        {/* Step 7: Preview e Envio */}
         {step === 'preview' && (
           <div className="space-y-6">
             <h2 className="text-lg font-semibold">Prévia do Contrato</h2>
@@ -1410,7 +1770,7 @@ const NovoContratoPage = () => {
             </div>
 
             <div className="flex flex-col md:flex-row justify-between gap-4">
-              <Button variant="outline" onClick={() => setStep('contrato')} className="rounded-xl">
+              <Button variant="outline" onClick={() => setStep('signatarios')} className="rounded-xl">
                 Voltar
               </Button>
               <div className="flex gap-2 flex-wrap">

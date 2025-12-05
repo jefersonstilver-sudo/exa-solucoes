@@ -1981,6 +1981,66 @@ export type Database = {
         }
         Relationships: []
       }
+      contrato_signatarios: {
+        Row: {
+          cargo: string | null
+          contrato_id: string | null
+          cpf: string | null
+          created_at: string | null
+          data_nascimento: string | null
+          email: string
+          id: string
+          nome: string
+          ordem: number | null
+          signatario_exa_id: string | null
+          sobrenome: string | null
+          tipo: string
+        }
+        Insert: {
+          cargo?: string | null
+          contrato_id?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          data_nascimento?: string | null
+          email: string
+          id?: string
+          nome: string
+          ordem?: number | null
+          signatario_exa_id?: string | null
+          sobrenome?: string | null
+          tipo: string
+        }
+        Update: {
+          cargo?: string | null
+          contrato_id?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          data_nascimento?: string | null
+          email?: string
+          id?: string
+          nome?: string
+          ordem?: number | null
+          signatario_exa_id?: string | null
+          sobrenome?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contrato_signatarios_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos_legais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contrato_signatarios_signatario_exa_id_fkey"
+            columns: ["signatario_exa_id"]
+            isOneToOne: false
+            referencedRelation: "signatarios_exa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contratos: {
         Row: {
           created_at: string
@@ -2051,6 +2111,7 @@ export type Database = {
           cliente_cidade: string | null
           cliente_cnpj: string | null
           cliente_cpf: string | null
+          cliente_data_nascimento: string | null
           cliente_email: string
           cliente_endereco: string | null
           cliente_latitude: number | null
@@ -2108,6 +2169,7 @@ export type Database = {
           cliente_cidade?: string | null
           cliente_cnpj?: string | null
           cliente_cpf?: string | null
+          cliente_data_nascimento?: string | null
           cliente_email: string
           cliente_endereco?: string | null
           cliente_latitude?: number | null
@@ -2165,6 +2227,7 @@ export type Database = {
           cliente_cidade?: string | null
           cliente_cnpj?: string | null
           cliente_cpf?: string | null
+          cliente_data_nascimento?: string | null
           cliente_email?: string
           cliente_endereco?: string | null
           cliente_latitude?: number | null
