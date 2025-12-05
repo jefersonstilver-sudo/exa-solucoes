@@ -4,12 +4,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { ipGeolocationService } from '@/services/ipGeolocation';
 import { v4 as uuidv4 } from 'uuid';
 
-export const useActiveSession = () => {
+interface UseActiveSessionOptions {
+  enabled?: boolean;
+}
+
+export const useActiveSession = (options: UseActiveSessionOptions = {}) => {
+  const { enabled = true } = options;
   const { userProfile } = useAuth();
   const sessionIdRef = useRef<string>(uuidv4());
   const heartbeatIntervalRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
+    // Se desabilitado, não fazer nada
+    if (!enabled) {
+      console.log('🚫 useActiveSession: Desabilitado para esta rota');
+      return;
+    }
+    
     console.log('🔵 useActiveSession: Iniciando...');
     const sessionId = sessionIdRef.current;
 
@@ -173,7 +184,7 @@ export const useActiveSession = () => {
       }
       endSession();
     };
-  }, [userProfile?.id]);
+  }, [userProfile?.id, enabled]);
 };
 
 function getDeviceType(): string {
