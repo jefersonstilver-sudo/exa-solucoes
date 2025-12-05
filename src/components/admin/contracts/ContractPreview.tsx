@@ -7,8 +7,10 @@ interface ContractPreviewProps {
     tipo_contrato: string;
     numero_contrato?: string;
     cliente_nome: string;
+    cliente_sobrenome?: string;
     cliente_email?: string;
     cliente_cnpj?: string;
+    cliente_cpf?: string;
     cliente_razao_social?: string;
     cliente_cargo?: string;
     cliente_endereco?: string;
@@ -23,8 +25,11 @@ interface ContractPreviewProps {
     parcelas?: any[];
     clausulas_especiais?: string;
     data_inicio?: string;
+    data_fim?: string;
     total_paineis?: number;
     tipo_produto?: string;
+    status?: string;
+    created_at?: string;
   };
   onEdit?: () => void;
 }
@@ -35,695 +40,436 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
+  const formatDateShort = (dateStr: string | undefined) => {
+    if (!dateStr) return '—';
+    try {
+      return format(new Date(dateStr + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR });
+    } catch { return dateStr; }
+  };
+
   const formatDateExtended = (dateStr: string | undefined) => {
     if (!dateStr) return '';
     try {
-      const date = new Date(dateStr + 'T00:00:00');
-      return format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-    } catch {
-      return dateStr;
-    }
-  };
-
-  const getPlanoNome = (meses: number | undefined) => {
-    switch (meses) {
-      case 1: return 'Mensal';
-      case 3: return 'Trimestral';
-      case 6: return 'Semestral';
-      case 12: return 'Anual';
-      default: return `${meses || 1} meses`;
-    }
-  };
-
-  const getMetodoPagamentoNome = (metodo: string | undefined) => {
-    switch (metodo) {
-      case 'pix_avista': return 'PIX À VISTA';
-      case 'pix_fidelidade': return 'PIX FIDELIDADE (parcelado)';
-      case 'boleto_fidelidade': return 'BOLETO FIDELIDADE (parcelado)';
-      case 'cartao': return 'CARTÃO DE CRÉDITO';
-      case 'custom': return 'CONDIÇÃO PERSONALIZADA';
-      default: return (metodo || 'A DEFINIR').replace(/_/g, ' ').toUpperCase();
-    }
+      return format(new Date(dateStr + 'T00:00:00'), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    } catch { return dateStr; }
   };
 
   const getNumeroExtenso = (num: number) => {
-    const extenso: Record<number, string> = {
-      1: 'um', 2: 'dois', 3: 'três', 4: 'quatro', 5: 'cinco',
-      6: 'seis', 7: 'sete', 8: 'oito', 9: 'nove', 10: 'dez',
-      11: 'onze', 12: 'doze'
-    };
+    const extenso: Record<number, string> = { 1: 'um', 2: 'dois', 3: 'três', 4: 'quatro', 5: 'cinco', 6: 'seis', 7: 'sete', 8: 'oito', 9: 'nove', 10: 'dez', 11: 'onze', 12: 'doze' };
     return extenso[num] || String(num);
   };
 
-  const listaPredios = Array.isArray(data.lista_predios) ? data.lista_predios : [];
-  const totalPaineis = data.total_paineis || listaPredios.reduce((acc, p) => acc + (p.quantidade_telas || 1), 0);
-  const tipoProduto = data.tipo_produto || 'horizontal';
-  const isVerticalPremium = tipoProduto === 'vertical_premium';
+  const getMetodoPagamentoNome = (metodo: string | undefined) => {
+    const methods: Record<string, string> = {
+      'pix_avista': 'PIX à Vista', 'pix_fidelidade': 'PIX Fidelidade',
+      'boleto_fidelidade': 'Boleto Fidelidade', 'cartao': 'Cartão de Crédito',
+      'custom': 'Condição Personalizada'
+    };
+    return methods[metodo || ''] || metodo || 'Fidelidade';
+  };
 
-  const dataAtual = format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-
-  // Calcular data fim do contrato
   const calcularDataFim = () => {
     if (!data.data_inicio) return '';
     try {
       const inicio = new Date(data.data_inicio + 'T00:00:00');
-      const fim = new Date(inicio);
-      fim.setMonth(fim.getMonth() + (data.plano_meses || 1));
-      return format(fim, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-    } catch {
-      return '';
-    }
+      inicio.setMonth(inicio.getMonth() + (data.plano_meses || 1));
+      return format(inicio, "dd/MM/yyyy", { locale: ptBR });
+    } catch { return ''; }
   };
 
-  // Logo EXA em SVG inline (funciona em qualquer contexto)
-  const ExaLogo = () => (
-    <div className="flex items-center gap-3">
-      <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{stopColor: '#ffffff', stopOpacity: 1}} />
-            <stop offset="100%" style={{stopColor: '#f0f0f0', stopOpacity: 1}} />
-          </linearGradient>
-        </defs>
-        <rect x="5" y="5" width="90" height="90" rx="15" fill="url(#logoGrad)" stroke="#8B1A1A" strokeWidth="3"/>
-        <text x="50" y="65" textAnchor="middle" fontFamily="Arial Black, sans-serif" fontSize="38" fontWeight="900" fill="#8B1A1A">EXA</text>
-      </svg>
-      <div>
-        <h1 className="text-xl font-bold tracking-wide">EXA MÍDIA</h1>
-        <p className="text-red-100 text-xs mt-0.5">Soluções Digitais em Elevadores</p>
-      </div>
-    </div>
-  );
+  const listaPredios = Array.isArray(data.lista_predios) ? data.lista_predios : [];
+  const totalPaineis = data.total_paineis || listaPredios.reduce((acc, p) => acc + (p.quantidade_telas || 1), 0);
+  const isVerticalPremium = data.tipo_produto === 'vertical_premium';
+  const isSindico = data.tipo_contrato === 'sindico';
+  const dataAtual = format(new Date(), "dd/MM/yyyy • HH:mm", { locale: ptBR });
+  const clienteNomeCompleto = data.cliente_sobrenome ? `${data.cliente_nome} ${data.cliente_sobrenome}` : data.cliente_nome;
 
-  // Contrato de Síndico
-  if (data.tipo_contrato === 'sindico') {
-    return (
-      <div id="contract-preview" className="p-8 bg-white text-gray-900 font-serif text-sm leading-relaxed">
-        {/* Header EXA com Logo */}
-        <div className="bg-gradient-to-r from-[#8B1A1A] to-[#A52020] text-white p-6 -m-8 mb-8 rounded-t-lg">
-          <div className="flex items-center justify-between">
-            <ExaLogo />
-            <div className="text-right">
-              <p className="text-sm font-semibold">TERMO DE CESSÃO DE ESPAÇO</p>
-              {data.numero_contrato && (
-                <p className="text-xs text-red-100 mt-1">Nº {data.numero_contrato}</p>
-              )}
-            </div>
-          </div>
+  // Calcular impressões
+  const totalImpMes = listaPredios.reduce((acc, p) => {
+    const impDia = p.visualizacoes_mes ? Math.round(p.visualizacoes_mes / 30) : (p.impPerDayPanel || 3100);
+    const telas = p.quantidade_telas || p.panels || 1;
+    return acc + (impDia * 30 * telas);
+  }, 0);
+  const avgImpDia = listaPredios.length > 0 ? Math.round(totalImpMes / 30 / totalPaineis) : 3100;
+
+  const getStatusClass = (status: string) => {
+    if (status === 'assinado') return 'done';
+    if (status === 'enviado' || status === 'visualizado') return 'current';
+    return '';
+  };
+
+  return (
+    <div id="contract-preview" style={{ fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", background: 'linear-gradient(180deg, #fbfcfd, #f4f6f8)', color: '#071127', WebkitFontSmoothing: 'antialiased', maxWidth: '1100px', margin: '0 auto', padding: '18px' }}>
+      <style>{`
+        .contract-section { page-break-inside: avoid; break-inside: avoid; }
+        .clause { margin-top: 12px; border-left: 4px solid #f2f4f6; padding: 8px 12px; background: #fff; page-break-inside: avoid; }
+        @media print {
+          body { background: #fff !important; }
+          .contract-section { page-break-inside: avoid !important; }
+          .clause, .sign-block, .table { page-break-inside: avoid !important; break-inside: avoid !important; }
+        }
+      `}</style>
+
+      {/* ════════════════════════════════════════════════════════════════
+          HEADER CORPORATIVO
+      ════════════════════════════════════════════════════════════════ */}
+      <header className="contract-section" style={{ background: 'linear-gradient(90deg, #4a0f0f, #7D1818)', color: '#fff', padding: '20px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '18px', boxShadow: '0 14px 30px rgba(16,24,32,0.06)' }}>
+        <div style={{ width: '96px', height: '56px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Exa%20sozinha.png" alt="EXA" style={{ maxWidth: '88%', maxHeight: '88%', objectFit: 'contain' }} crossOrigin="anonymous" />
         </div>
-
-        {/* Título */}
-        <div className="text-center mb-8">
-          <h1 className="text-lg font-bold uppercase tracking-wide">
-            Termo de Cessão de Espaço para Publicidade Digital
+        <div style={{ flex: 1 }}>
+          <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>
+            {isSindico ? 'Contrato de Comodato — EXA Mídia' : 'Contrato de Prestação de Serviços — EXA Mídia'}
           </h1>
-        </div>
-
-        {/* Partes */}
-        <div className="mb-6">
-          <p className="mb-4">
-            <strong>CEDENTE:</strong> {data.cliente_razao_social || data.cliente_nome}, 
-            {data.cliente_cnpj && ` inscrito no CNPJ sob nº ${data.cliente_cnpj},`}
-            representado por <strong>{data.cliente_nome}</strong>
-            {data.cliente_cargo && ` (${data.cliente_cargo})`}, doravante denominado "CEDENTE".
-          </p>
-          <p>
-            <strong>CESSIONÁRIA:</strong> EXA SOLUÇÕES DIGITAIS LTDA, pessoa jurídica de direito privado, 
-            inscrita no CNPJ sob nº 62.878.193/0001-35, com sede na Av. Paraná, nº 974, Sala 301, 
-            Centro, Foz do Iguaçu - PR, CEP 85852-000, doravante denominada "CESSIONÁRIA".
-          </p>
-        </div>
-
-        {/* Cláusulas */}
-        <div className="space-y-4">
-          <div>
-            <h2 className="font-bold">CLÁUSULA 1ª - DO OBJETO</h2>
-            <p>
-              1.1. O presente termo tem por objeto a cessão gratuita de espaço no(s) elevador(es) 
-              do condomínio para instalação de painéis digitais da EXA MÍDIA, destinados à 
-              veiculação de conteúdo informativo e publicitário.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="font-bold">CLÁUSULA 2ª - DO LOCAL</h2>
-            <p>2.1. O espaço cedido localiza-se em:</p>
-            {listaPredios.length > 0 && (
-              <ul className="list-disc ml-6 mt-2">
-                {listaPredios.map((predio, i) => (
-                  <li key={i}>
-                    {predio.nome || predio.building_name} - {predio.bairro}
-                    {predio.endereco && ` (${predio.endereco})`}
-                  </li>
-                ))}
-              </ul>
+          <div style={{ marginTop: '8px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <span style={{ background: 'rgba(255,255,255,0.08)', padding: '8px 12px', borderRadius: '999px', fontWeight: 700, fontSize: '13px' }}>
+              Contrato nº <strong>{data.numero_contrato || 'EXA-CON-2025-0001'}</strong>
+            </span>
+            <span style={{ background: 'rgba(255,255,255,0.08)', padding: '8px 12px', borderRadius: '999px', fontWeight: 700, fontSize: '13px' }}>
+              Cliente: <strong>{data.cliente_razao_social || clienteNomeCompleto}</strong>
+            </span>
+            <span style={{ background: data.status === 'assinado' ? '#10b981' : data.status === 'enviado' ? '#3b82f6' : '#f59e0b', padding: '8px 12px', borderRadius: '999px', fontWeight: 700, fontSize: '13px', textTransform: 'uppercase' }}>
+              {data.status || 'RASCUNHO'}
+            </span>
+            {!isSindico && (
+              <span style={{ background: 'rgba(255,255,255,0.08)', padding: '8px 12px', borderRadius: '999px', fontWeight: 700, fontSize: '13px' }}>
+                Validade: <strong>72 horas</strong>
+              </span>
             )}
-            <p className="mt-2">2.2. Quantidade de telas: {totalPaineis} unidade(s).</p>
+          </div>
+        </div>
+      </header>
+
+      {/* ════════════════════════════════════════════════════════════════
+          RESUMO DO CONTRATO - Cards de métricas
+      ════════════════════════════════════════════════════════════════ */}
+      <section className="contract-section" style={{ background: '#fff', borderRadius: '12px', padding: '18px', boxShadow: '0 14px 30px rgba(16,24,32,0.06)', border: '1px solid rgba(16,24,32,0.03)', marginTop: '18px' }}>
+        <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Resumo do Contrato</h2>
+        <p style={{ color: '#6b7280', fontSize: '13px', marginTop: '4px' }}>Visão geral e parâmetros comerciais — modo <strong>{data.status?.toUpperCase() || 'RASCUNHO'}</strong></p>
+
+        <div style={{ display: 'flex', gap: '12px', marginTop: '14px', flexWrap: 'wrap' }}>
+          {!isSindico ? (
+            <>
+              <div style={{ flex: 1, minWidth: '120px', padding: '14px', borderRadius: '10px', background: 'linear-gradient(180deg, #fff, #fbfbfb)', textAlign: 'center', border: '1px solid #f1f3f5' }}>
+                <div style={{ fontWeight: 800, color: '#7D1818', fontSize: '20px' }}>{listaPredios.length || 1}</div>
+                <div style={{ color: '#6b7280', fontSize: '13px', marginTop: '6px' }}>Prédios contratados</div>
+              </div>
+              <div style={{ flex: 1, minWidth: '120px', padding: '14px', borderRadius: '10px', background: 'linear-gradient(180deg, #fff, #fbfbfb)', textAlign: 'center', border: '1px solid #f1f3f5' }}>
+                <div style={{ fontWeight: 800, color: '#7D1818', fontSize: '20px' }}>{totalPaineis}</div>
+                <div style={{ color: '#6b7280', fontSize: '13px', marginTop: '6px' }}>Telas ativadas</div>
+              </div>
+              <div style={{ flex: 1, minWidth: '120px', padding: '14px', borderRadius: '10px', background: 'linear-gradient(180deg, #fff, #fbfbfb)', textAlign: 'center', border: '1px solid #f1f3f5' }}>
+                <div style={{ fontWeight: 800, color: '#7D1818', fontSize: '20px' }}>{avgImpDia.toLocaleString('pt-BR')}</div>
+                <div style={{ color: '#6b7280', fontSize: '13px', marginTop: '6px' }}>Exibições/painel/dia</div>
+              </div>
+              <div style={{ flex: 1, minWidth: '120px', padding: '14px', borderRadius: '10px', background: 'linear-gradient(180deg, #fff, #fbfbfb)', textAlign: 'center', border: '1px solid #f1f3f5' }}>
+                <div style={{ fontWeight: 800, color: '#7D1818', fontSize: '20px' }}>{formatCurrency(data.valor_mensal)}</div>
+                <div style={{ color: '#6b7280', fontSize: '13px', marginTop: '6px' }}>Valor mensal</div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ flex: 1, minWidth: '120px', padding: '14px', borderRadius: '10px', background: 'linear-gradient(180deg, #fff, #fbfbfb)', textAlign: 'center', border: '1px solid #f1f3f5' }}>
+                <div style={{ fontWeight: 800, color: '#7D1818', fontSize: '20px' }}>{totalPaineis}</div>
+                <div style={{ color: '#6b7280', fontSize: '13px', marginTop: '6px' }}>Telas instaladas</div>
+              </div>
+              <div style={{ flex: 1, minWidth: '120px', padding: '14px', borderRadius: '10px', background: 'linear-gradient(180deg, #fff, #fbfbfb)', textAlign: 'center', border: '1px solid #f1f3f5' }}>
+                <div style={{ fontWeight: 800, color: '#10b981', fontSize: '20px' }}>Gratuito</div>
+                <div style={{ color: '#6b7280', fontSize: '13px', marginTop: '6px' }}>Custo para condomínio</div>
+              </div>
+              <div style={{ flex: 1, minWidth: '120px', padding: '14px', borderRadius: '10px', background: 'linear-gradient(180deg, #fff, #fbfbfb)', textAlign: 'center', border: '1px solid #f1f3f5' }}>
+                <div style={{ fontWeight: 800, color: '#7D1818', fontSize: '20px' }}>30 dias</div>
+                <div style={{ color: '#6b7280', fontSize: '13px', marginTop: '6px' }}>Aviso prévio</div>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '12px' }}>
+          {!isSindico && <>Período contratado: <strong>{data.plano_meses || 6} meses</strong> • Modalidade: <strong>{getMetodoPagamentoNome(data.metodo_pagamento)}</strong></>}
+        </div>
+
+        {/* Timeline */}
+        <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-end', marginTop: '18px' }}>
+          {[
+            { num: 1, label: 'Criado', sub: dataAtual, done: true },
+            { num: 2, label: 'Enviado', sub: 'E-mail / WhatsApp', done: ['enviado', 'visualizado', 'assinado'].includes(data.status || '') },
+            { num: 3, label: 'Visualizado', sub: '—', done: ['visualizado', 'assinado'].includes(data.status || '') },
+            { num: 4, label: 'Assinado', sub: '—', done: data.status === 'assinado' }
+          ].map((step, i) => (
+            <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ width: '52px', height: '52px', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, background: step.done ? '#7D1818' : '#fff', color: step.done ? '#fff' : '#7D1818', border: step.done ? 'none' : '3px solid #7D1818' }}>{step.num}</div>
+              <div style={{ marginTop: '8px', fontWeight: 700, color: step.done ? '#7D1818' : '#6b7280' }}>{step.label}</div>
+              <div style={{ color: '#6b7280', fontSize: '13px', marginTop: '6px' }}>{step.sub}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════════
+          LISTA DE PRÉDIOS
+      ════════════════════════════════════════════════════════════════ */}
+      {!isSindico && listaPredios.length > 0 && (
+        <section className="contract-section" style={{ background: '#fff', borderRadius: '12px', padding: '18px', boxShadow: '0 14px 30px rgba(16,24,32,0.06)', border: '1px solid rgba(16,24,32,0.03)', marginTop: '18px' }}>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Localizações e Veiculação</h2>
+          <p style={{ color: '#6b7280', fontSize: '13px', marginTop: '4px' }}>Lista de {listaPredios.length} prédios contratados</p>
+          <div style={{ marginTop: '12px', maxHeight: '260px', overflow: 'auto', paddingRight: '6px' }}>
+            {listaPredios.map((p, i) => {
+              const impDia = p.visualizacoes_mes ? Math.round(p.visualizacoes_mes / 30) : (p.impPerDayPanel || 3100);
+              const telas = p.quantidade_telas || p.panels || 1;
+              const impMes = impDia * 30 * telas;
+              return (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', borderRadius: '8px', border: '1px solid #f1f3f5', marginBottom: '8px', background: '#fff' }}>
+                  <div>
+                    <div style={{ fontWeight: 700 }}>{p.nome || p.building_name || p.name}</div>
+                    <div style={{ color: '#6b7280', fontSize: '13px', marginTop: '6px' }}>{telas} painel(is) • {impDia.toLocaleString('pt-BR')} imp./dia/painel • {p.bairro || p.neighborhood || 'Centro'}</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '13px', color: '#6b7280' }}>Imp./mês</div>
+                    <div style={{ fontWeight: 800 }}>{impMes.toLocaleString('pt-BR')}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════
+          CONDIÇÕES COMERCIAIS E CORPO DO CONTRATO
+      ════════════════════════════════════════════════════════════════ */}
+      <section className="contract-section" style={{ background: '#fff', borderRadius: '12px', padding: '18px', boxShadow: '0 14px 30px rgba(16,24,32,0.06)', border: '1px solid rgba(16,24,32,0.03)', marginTop: '18px' }}>
+        {!isSindico && (
+          <>
+            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Condições Comerciais e Pagamento</h2>
+            <p style={{ color: '#6b7280', fontSize: '13px', marginTop: '4px' }}>Plano escolhido: <strong>Fidelidade — {data.plano_meses || 6} meses</strong></p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <div style={{ fontSize: '13px', color: '#6b7280' }}>Mensalidade (fidelidade)</div>
+                <div style={{ fontWeight: 800, fontSize: '18px' }}>{formatCurrency(data.valor_mensal)}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '13px', color: '#6b7280' }}>Forma</div>
+                <div style={{ fontWeight: 800 }}>{getMetodoPagamentoNome(data.metodo_pagamento)} • vencimento dia {data.dia_vencimento || 10} • {data.plano_meses || 6} parcelas</div>
+              </div>
+            </div>
+            <div style={{ height: '1px', background: '#f2f4f6', margin: '12px 0', borderRadius: '4px' }}></div>
+          </>
+        )}
+
+        {/* CORPO DO CONTRATO */}
+        <div style={{ lineHeight: 1.45, color: '#111', fontSize: '15px' }}>
+          <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700, textAlign: 'center' }}>
+            {isSindico ? 'CONTRATO DE COMODATO DE EQUIPAMENTOS' : 'CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE PUBLICIDADE DIGITAL'}
+          </h3>
+          <p style={{ margin: '8px 0', textAlign: 'center' }}>Pelo presente instrumento particular, as partes abaixo identificadas têm entre si justo e contratado o que segue:</p>
+
+          <div className="clause contract-section">
+            <strong>CONTRATADA:</strong> EXA – Soluções Digitais LTDA, CNPJ nº 62.878.193/0001-35, com sede à Rua Sílvio Sotomaior, 187 — Bairro Três Bandeiras — Foz do Iguaçu/PR, doravante denominada <strong>CONTRATADA</strong>, neste ato representada por Jeferson Silver Rodrigues Encina, CPF 055.031.279-00, e Natália Krause Guimarães Dantas, CPF 116.228.359-99.
           </div>
 
-          <div>
-            <h2 className="font-bold">CLÁUSULA 3ª - DAS OBRIGAÇÕES DA CESSIONÁRIA</h2>
-            <p>3.1. A CESSIONÁRIA compromete-se a:</p>
-            <ul className="list-disc ml-6 mt-2">
-              <li>Fornecer e instalar os equipamentos sem qualquer custo ao CEDENTE;</li>
-              <li>Realizar manutenção preventiva e corretiva dos equipamentos;</li>
-              <li>Disponibilizar conteúdo informativo de utilidade pública;</li>
-              <li>Respeitar as normas do condomínio.</li>
-            </ul>
+          <div className="clause contract-section">
+            <strong>CONTRATANTE:</strong> {data.cliente_razao_social || clienteNomeCompleto}{data.cliente_cnpj && <>, CNPJ {data.cliente_cnpj}</>}{data.cliente_cpf && !data.cliente_cnpj && <>, CPF {data.cliente_cpf}</>}, com sede à {data.cliente_endereco || data.cliente_cidade || 'Foz do Iguaçu - PR'}, neste ato representada por {clienteNomeCompleto}{data.cliente_cargo && ` (${data.cliente_cargo})`}.
           </div>
 
-          <div>
-            <h2 className="font-bold">CLÁUSULA 4ª - DA VIGÊNCIA</h2>
-            <p>
-              4.1. O presente termo entra em vigor na data de sua assinatura e terá prazo 
-              indeterminado, podendo ser rescindido por qualquer das partes mediante 
-              comunicação prévia de 30 (trinta) dias.
-            </p>
+          {/* CLÁUSULA 1 - OBJETO */}
+          <div className="contract-section">
+            <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700 }}>CLÁUSULA 1 — OBJETO</h3>
+            {isSindico ? (
+              <><p style={{ margin: '8px 0' }}>1.1. O presente contrato tem por objeto o empréstimo gratuito (comodato) de equipamentos de mídia digital pela CONTRATADA à CONTRATANTE, para instalação em áreas comuns do edifício.</p><p style={{ margin: '8px 0' }}>1.2. Os equipamentos permanecerão de propriedade exclusiva da CONTRATADA, sendo cedidos em regime de comodato.</p></>
+            ) : isVerticalPremium ? (
+              <><p style={{ margin: '8px 0' }}>1.1. O presente contrato tem por objeto a veiculação de conteúdo publicitário vertical exclusivo (<strong>Vertical Premium</strong>) fornecido pela CONTRATANTE nas telas digitais operadas pela CONTRATADA.</p><p style={{ margin: '8px 0' }}>1.2. O formato Vertical Premium consiste em vídeo de 10 segundos, resolução 1080×1920 (vertical), exibido em tela cheia a cada 50 segundos de programação.</p><p style={{ margin: '8px 0' }}>1.3. A contratação inclui automaticamente <strong>todos os edifícios</strong> da rede EXA disponíveis.</p></>
+            ) : (
+              <><p style={{ margin: '8px 0' }}>1.1. O presente contrato tem por objeto a veiculação de conteúdos publicitários (vídeos e/ou imagens) fornecidos pela CONTRATANTE nas telas digitais operadas pela CONTRATADA, instaladas em elevadores e áreas internas dos edifícios listados no Anexo I.</p><p style={{ margin: '8px 0' }}>1.2. A veiculação obedecerá às características técnicas e à programação definida no sistema EXA Cloud, respeitando as quantidades de telas e frequência aqui contratadas.</p></>
+            )}
+          </div>
+
+          {/* CLÁUSULA 2 - PRAZO */}
+          <div className="contract-section">
+            <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700 }}>CLÁUSULA 2 — PRAZO</h3>
+            {isSindico ? (
+              <p style={{ margin: '8px 0' }}>2.1. O presente contrato vigorará por prazo indeterminado, podendo ser rescindido por qualquer das partes mediante aviso prévio de <strong>30 (trinta) dias</strong>.</p>
+            ) : (
+              <><p style={{ margin: '8px 0' }}>2.1. Vigência: {data.plano_meses || 6} ({getNumeroExtenso(data.plano_meses || 6)}) meses, com início em <strong>{formatDateShort(data.data_inicio)}</strong> e término em <strong>{data.data_fim ? formatDateShort(data.data_fim) : calcularDataFim()}</strong>.</p><p style={{ margin: '8px 0' }}>2.2. Após o prazo há renovação automática por iguais períodos caso não haja manifestação por escrito com antecedência mínima de 30 dias.</p></>
+            )}
+          </div>
+
+          {/* CLÁUSULA 3 - VALOR */}
+          {!isSindico && (
+            <div className="contract-section">
+              <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700 }}>CLÁUSULA 3 — VALOR E CONDIÇÕES DE PAGAMENTO</h3>
+              <p style={{ margin: '8px 0' }}>3.1. O CONTRATANTE pagará a título de remuneração <strong>{formatCurrency(data.valor_mensal)}</strong> mensais, totalizando <strong>{formatCurrency(data.valor_total)}</strong> pelo período de {data.plano_meses || 6} meses.</p>
+              <p style={{ margin: '8px 0' }}>3.2. Forma de pagamento: {getMetodoPagamentoNome(data.metodo_pagamento)} — vencimento dia <strong>{data.dia_vencimento || 10}</strong> de cada mês.</p>
+              <p style={{ margin: '8px 0' }}>3.3. Em caso de inadimplemento:</p>
+              <ul style={{ marginLeft: '24px' }}>
+                <li>a) Multa: 2% sobre o valor da parcela em atraso;</li>
+                <li>b) Juros: 1% ao mês, pro rata die;</li>
+                <li>c) Atraso superior a 10 dias autoriza a suspensão da veiculação.</li>
+              </ul>
+              <p style={{ margin: '8px 0' }}>3.4. Rescisão por iniciativa do CONTRATANTE antes do término implica multa de 20% (vinte por cento) sobre o saldo remanescente do contrato.</p>
+            </div>
+          )}
+
+          {/* CLÁUSULAS 4-12 */}
+          <div className="contract-section">
+            <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700 }}>CLÁUSULA {isSindico ? '3' : '4'} — ESPECIFICAÇÕES TÉCNICAS</h3>
+            {isSindico ? (
+              <><p style={{ margin: '8px 0' }}>3.1. A CONTRATADA fornecerá equipamentos de mídia digital (telas LED/LCD) com resolução Full HD, conexão via internet, player integrado.</p><p style={{ margin: '8px 0' }}>3.2. A manutenção preventiva e corretiva é de responsabilidade exclusiva da CONTRATADA.</p></>
+            ) : (
+              <><p style={{ margin: '8px 0' }}>{isSindico ? '3' : '4'}.1. O CONTRATANTE enviará material em conformidade com as especificações técnicas da EXA (preferencial: MP4 H.264; {isVerticalPremium ? '1080x1920 vertical' : '1920x1080 horizontal'}; até {isVerticalPremium ? '10' : '15'} segundos; sem áudio ou com mixagem própria).</p><p style={{ margin: '8px 0' }}>{isSindico ? '3' : '4'}.2. A EXA poderá adaptar resolução e bitrate para compatibilidade técnica, sem alterar a mensagem comercial.</p><p style={{ margin: '8px 0' }}>{isSindico ? '3' : '4'}.3. O CONTRATANTE garante possuir todos os direitos de uso, imagem e autorais do material.</p></>
+            )}
+          </div>
+
+          <div className="contract-section">
+            <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700 }}>CLÁUSULA {isSindico ? '4' : '5'} — {isSindico ? 'OBRIGAÇÕES DAS PARTES' : 'ENTREGA E MODERAÇÃO'}</h3>
+            {isSindico ? (
+              <><p style={{ margin: '8px 0' }}>4.1. <strong>CONTRATADA:</strong> Fornecer/instalar equipamentos; realizar manutenção; garantir 95% de disponibilidade; veicular conteúdos do condomínio gratuitamente.</p><p style={{ margin: '8px 0' }}>4.2. <strong>CONTRATANTE:</strong> Zelar pelos equipamentos; comunicar danos; permitir acesso técnico.</p></>
+            ) : (
+              <><p style={{ margin: '8px 0' }}>5.1. Após o envio do material correto, a exibição ocorrerá em até 72 horas úteis. Em dias úteis e após aprovação do moderador, o vídeo pode entrar no ar em até 1 hora.</p><p style={{ margin: '8px 0' }}>5.2. O CONTRATANTE pode solicitar substituição de vídeos a qualquer momento; a veiculação do novo material dependerá da aprovação do moderador.</p></>
+            )}
+          </div>
+
+          {!isSindico && (
+            <div className="contract-section">
+              <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700 }}>CLÁUSULA 6 — DISPONIBILIDADE E SLA</h3>
+              <p style={{ margin: '8px 0' }}>6.1. A EXA assegura disponibilidade mínima de 90% (noventa por cento) da rede mensal.</p>
+              <p style={{ margin: '8px 0' }}>6.2. Falhas técnicas atribuíveis à EXA serão tratadas dentro de 72 horas úteis, salvo eventos de força maior.</p>
+            </div>
+          )}
+
+          <div className="contract-section">
+            <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700 }}>CLÁUSULA {isSindico ? '5' : '7'} — {isSindico ? 'RESPONSABILIDADE PELOS EQUIPAMENTOS' : 'RESPONSABILIDADES'}</h3>
+            {isSindico ? (
+              <><p style={{ margin: '8px 0' }}>5.1. Os equipamentos permanecem de propriedade exclusiva da CONTRATADA.</p><p style={{ margin: '8px 0' }}>5.2. A CONTRATANTE responderá por danos causados por mau uso ou negligência.</p></>
+            ) : (
+              <><p style={{ margin: '8px 0' }}>7.1. A EXA será responsável pela operação, manutenção e reporte de exibições.</p><p style={{ margin: '8px 0' }}>7.2. O CONTRATANTE se responsabiliza pelo conteúdo, direitos autorais, e pagamentos.</p></>
+            )}
+          </div>
+
+          <div className="contract-section">
+            <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700 }}>CLÁUSULA {isSindico ? '6' : '8'} — RESCISÃO</h3>
+            <p style={{ margin: '8px 0' }}>{isSindico ? '6' : '8'}.1. O contrato poderá ser rescindido por mútuo acordo ou descumprimento de qualquer cláusula.</p>
+            <p style={{ margin: '8px 0' }}>{isSindico ? '6.2. Por qualquer das partes, mediante aviso prévio de 30 dias.' : '8.2. Rescisão antecipada pelo CONTRATANTE implicará multa de 20% sobre o saldo remanescente.'}</p>
+          </div>
+
+          {!isSindico && (
+            <>
+              <div className="contract-section">
+                <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700 }}>CLÁUSULA 9 — PROPRIEDADE INTELECTUAL</h3>
+                <p style={{ margin: '8px 0' }}>9.1. O CONTRATANTE declara e garante que possui todas as autorizações necessárias para veicular o material.</p>
+                <p style={{ margin: '8px 0' }}>9.2. A EXA está autorizada a utilizar o material apenas para execução e divulgação de case.</p>
+              </div>
+
+              <div className="contract-section">
+                <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700 }}>CLÁUSULA 10 — SIGILO E PROTEÇÃO DE DADOS</h3>
+                <p style={{ margin: '8px 0' }}>10.1. As partes comprometem-se a manter sigilo sobre informações comerciais sensíveis, observando a LGPD.</p>
+              </div>
+
+              <div className="contract-section">
+                <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700 }}>CLÁUSULA 11 — REAJUSTE</h3>
+                <p style={{ margin: '8px 0' }}>11.1. Valores reajustáveis anualmente pelo IPCA ou índice que o substituir.</p>
+              </div>
+            </>
+          )}
+
+          {isSindico && (
+            <div className="contract-section">
+              <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700 }}>CLÁUSULA 7 — AUTORIZAÇÃO DE USO DE IMAGEM</h3>
+              <p style={{ margin: '8px 0' }}>7.1. A CONTRATANTE autoriza a CONTRATADA a utilizar o nome e imagens externas do edifício para divulgação comercial.</p>
+            </div>
+          )}
+
+          <div className="contract-section">
+            <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700 }}>CLÁUSULA {isSindico ? '8' : '12'} — FORO</h3>
+            <p style={{ margin: '8px 0' }}>{isSindico ? '8' : '12'}.1. As partes elegem o foro da comarca de Foz do Iguaçu — PR para solução de quaisquer controvérsias, com renúncia a qualquer outro foro.</p>
           </div>
 
           {data.clausulas_especiais && (
-            <div>
-              <h2 className="font-bold">CLÁUSULA 5ª - CONDIÇÕES ESPECIAIS</h2>
-              <p>{data.clausulas_especiais}</p>
+            <div className="contract-section" style={{ background: '#fffbeb', padding: '12px', borderRadius: '8px', marginTop: '18px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>CLÁUSULA ADICIONAL — CONDIÇÕES ESPECIAIS</h3>
+              <p style={{ margin: '8px 0', whiteSpace: 'pre-wrap' }}>{data.clausulas_especiais}</p>
             </div>
           )}
-        </div>
 
-        {/* Assinaturas */}
-        <div className="mt-12">
-          <p className="text-center mb-8">
-            Foz do Iguaçu - PR, {dataAtual}.
-          </p>
-          <div className="grid grid-cols-2 gap-8 mt-16">
-            <div className="text-center">
-              <div className="border-t border-gray-400 pt-2">
-                <p className="font-bold">{data.cliente_nome}</p>
-                <p className="text-sm text-gray-600">CEDENTE</p>
-              </div>
+          {/* ANEXO I - PRÉDIOS */}
+          {!isSindico && listaPredios.length > 0 && (
+            <div className="contract-section">
+              <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700 }}>ANEXO I — Prédios, telas e exibições</h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px', fontSize: '14px' }}>
+                <thead>
+                  <tr style={{ background: '#f8f9fa' }}><th style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'left' }}>Edifício</th><th style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'left' }}>Bairro</th><th style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'center' }}>Telas</th><th style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'right' }}>Imp./dia</th><th style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'right' }}>Imp./mês</th></tr>
+                </thead>
+                <tbody>
+                  {listaPredios.map((p, i) => {
+                    const impDia = p.visualizacoes_mes ? Math.round(p.visualizacoes_mes / 30) : (p.impPerDayPanel || 3100);
+                    const telas = p.quantidade_telas || p.panels || 1;
+                    return (
+                      <tr key={i}><td style={{ border: '1px solid #e8eef2', padding: '10px' }}>{p.nome || p.building_name || p.name}</td><td style={{ border: '1px solid #e8eef2', padding: '10px' }}>{p.bairro || p.neighborhood || 'Centro'}</td><td style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'center' }}>{telas}</td><td style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'right' }}>{impDia.toLocaleString('pt-BR')}</td><td style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'right' }}>{(impDia * 30 * telas).toLocaleString('pt-BR')}</td></tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr style={{ background: '#f8f9fa', fontWeight: 700 }}><td colSpan={2} style={{ border: '1px solid #e8eef2', padding: '10px' }}>TOTAL</td><td style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'center' }}>{totalPaineis}</td><td style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'right' }}>—</td><td style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'right' }}>{totalImpMes.toLocaleString('pt-BR')}</td></tr>
+                </tfoot>
+              </table>
             </div>
-            <div className="text-center">
-              <div className="border-t border-gray-400 pt-2">
-                <p className="font-bold">EXA SOLUÇÕES DIGITAIS LTDA</p>
-                <p className="text-sm text-gray-600">CESSIONÁRIA</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Contrato de Anunciante
-  return (
-    <div id="contract-preview" className="p-8 bg-white text-gray-900 font-serif text-sm leading-relaxed">
-      {/* Header EXA Profissional com Logo */}
-      <div className="contract-section" data-section="header">
-        <div className="bg-gradient-to-r from-[#8B1A1A] to-[#A52020] text-white p-6 -m-8 mb-8 rounded-t-lg">
-          <div className="flex items-center justify-between">
-            <ExaLogo />
-            <div className="text-right">
-              <p className="text-sm font-semibold">CONTRATO DE PUBLICIDADE</p>
-              {data.numero_contrato && (
-                <p className="text-xs text-red-100 mt-1">Nº {data.numero_contrato}</p>
-              )}
-              {isVerticalPremium && (
-                <span className="inline-block mt-2 px-2 py-0.5 bg-white/20 text-white text-[10px] font-medium rounded">
-                  VERTICAL PREMIUM
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Título */}
-        <div className="text-center mb-8">
-          <h1 className="text-lg font-bold uppercase tracking-wide">
-            Contrato de Publicidade em Mídia Digital
-          </h1>
-          {isVerticalPremium && (
-            <p className="text-purple-700 text-sm font-semibold mt-1">
-              Modalidade: Vertical Premium - Tela Cheia
-            </p>
           )}
-        </div>
 
-        {/* Partes */}
-        <div className="mb-6">
-          <p className="mb-4">
-            <strong>CONTRATANTE:</strong> {data.cliente_razao_social || data.cliente_nome}
-            {data.cliente_segmento && ` (${data.cliente_segmento})`}, 
-            {data.cliente_endereco ? ` com sede em ${data.cliente_endereco},` : ` com sede em ${data.cliente_cidade || 'Foz do Iguaçu'},`}
-            {data.cliente_cnpj && ` inscrita no CNPJ sob o nº ${data.cliente_cnpj},`}
-            neste ato representada por seu representante legal
-            {data.cliente_nome && `, Sr(a). ${data.cliente_nome}`}
-            {data.cliente_cargo && ` (${data.cliente_cargo})`}, 
-            doravante denominada "CONTRATANTE".
-          </p>
-          <p>
-            <strong>CONTRATADA:</strong> EXA SOLUÇÕES DIGITAIS LTDA, pessoa jurídica de direito privado, 
-            inscrita no CNPJ sob nº 62.878.193/0001-35, com sede na Av. Paraná, nº 974, Sala 301, 
-            Centro, Foz do Iguaçu - PR, CEP 85852-000, doravante denominada "CONTRATADA".
-          </p>
-        </div>
-      </div>
-
-      {/* Cláusulas - cada uma é uma seção separada para quebra inteligente */}
-      <div className="space-y-4">
-        <div className="contract-section" data-section="clausula-1">
-          <h2 className="font-bold">CLÁUSULA 1ª - DO OBJETO</h2>
-          {isVerticalPremium ? (
-            <p>
-              1.1. O presente contrato tem por objeto a veiculação de anúncio publicitário em 
-              vídeo vertical com duração de <strong>10 (dez) segundos</strong>, no formato 
-              <strong> Vertical Premium</strong>, exibido em <strong>tela cheia a cada 50 segundos</strong>, 
-              nos painéis digitais da EXA MÍDIA, localizados em prédios residenciais da cidade de 
-              Foz do Iguaçu - PR.
-            </p>
-          ) : (
-            <p>
-              1.1. O presente contrato tem por objeto a veiculação de anúncios publicitários em 
-              vídeo com duração de até <strong>15 (quinze) segundos</strong>, fornecidos pela CONTRATANTE, nos 
-              painéis digitais da EXA MÍDIA, localizados em prédios residenciais da cidade de 
-              Foz do Iguaçu - PR.
-            </p>
-          )}
-        </div>
-
-        <div className="contract-section" data-section="clausula-2">
-          <div className="bg-blue-50 border border-blue-200 rounded p-3">
-            <h2 className="font-bold">CLÁUSULA 2ª - DO PRAZO E VIGÊNCIA</h2>
-            <p className="mt-2">
-              2.1. O presente contrato terá vigência de <strong>{data.plano_meses || 1} ({getNumeroExtenso(data.plano_meses || 1)}) {(data.plano_meses || 1) === 1 ? 'mês' : 'meses'}</strong>, 
-              correspondente ao plano <strong>{getPlanoNome(data.plano_meses)}</strong>.
-            </p>
-            <p className="mt-2">
-              2.2. <strong>Período de exibição:</strong>
-            </p>
-            <ul className="list-disc ml-6 mt-1">
-              <li>Data de início: <strong>{formatDateExtended(data.data_inicio) || 'A definir após assinatura'}</strong></li>
-              <li>Data de término: <strong>{calcularDataFim() || 'A definir após assinatura'}</strong></li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="contract-section" data-section="clausula-3">
-          <h2 className="font-bold">CLÁUSULA 3ª - DOS LOCAIS CONTRATADOS</h2>
-          {isVerticalPremium ? (
-            <>
-              <p>3.1. A modalidade <strong>Vertical Premium</strong> abrange <strong>TODOS os {listaPredios.length} prédios</strong> da rede EXA MÍDIA:</p>
-              {listaPredios.length > 0 && (
-                <div className="mt-2 bg-purple-50 border border-purple-200 rounded p-3">
-                  <p className="text-xs text-purple-700 font-medium mb-2">Prédios incluídos ({listaPredios.length} unidades):</p>
-                  <div className="grid grid-cols-2 gap-1 text-xs">
-                    {listaPredios.map((predio, i) => (
-                      <span key={i} className="text-purple-800">
-                        • {predio.nome || predio.building_name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <p>3.1. A contratação abrange {totalPaineis} tela(s) nos seguintes edifícios:</p>
-              {listaPredios.length > 0 && (
-                <table className="w-full mt-2 border-collapse border border-gray-300">
-                  <thead>
-                    <tr className="bg-gray-100">
-                      <th className="border border-gray-300 px-3 py-2 text-left">Edifício</th>
-                      <th className="border border-gray-300 px-3 py-2 text-left">Bairro</th>
-                      <th className="border border-gray-300 px-3 py-2 text-center">Telas</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {listaPredios.map((predio, i) => (
-                      <tr key={i}>
-                        <td className="border border-gray-300 px-3 py-2">{predio.nome || predio.building_name}</td>
-                        <td className="border border-gray-300 px-3 py-2">{predio.bairro}</td>
-                        <td className="border border-gray-300 px-3 py-2 text-center">{predio.quantidade_telas || 1}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* CLÁUSULA DE VALOR E PAGAMENTO - DETALHADA */}
-        <div className="contract-section" data-section="clausula-4">
-          <div className="bg-green-50 border border-green-200 rounded p-3">
-            <h2 className="font-bold">CLÁUSULA 4ª - DO VALOR E FORMA DE PAGAMENTO</h2>
-
-            <p className="mt-2">
-              4.1. <strong>Valor Total do Contrato:</strong> {formatCurrency(data.valor_total)}
-            </p>
-            
-            {/* Só mostrar valor mensal se NÃO for pagamento personalizado */}
-            {data.metodo_pagamento !== 'custom' && data.valor_mensal && data.valor_mensal > 0 && (
-              <p className="mt-1">
-                4.2. <strong>Valor Mensal:</strong> {formatCurrency(data.valor_mensal)}
-              </p>
-            )}
-            
-            <p className="mt-2">
-              4.{data.metodo_pagamento === 'custom' ? '2' : '3'}. <strong>Forma de Pagamento:</strong> {getMetodoPagamentoNome(data.metodo_pagamento)}
-            </p>
-
-            {/* Parcelas detalhadas */}
-            {data.metodo_pagamento === 'custom' && data.parcelas && data.parcelas.length > 0 ? (
-              <div className="mt-3">
-                <p className="font-semibold text-green-800">4.4. Condição de Pagamento Personalizada:</p>
-                <table className="w-full mt-2 text-sm border border-green-300">
-                  <thead>
-                    <tr className="bg-green-100">
-                      <th className="border border-green-300 px-2 py-1 text-left">Parcela</th>
-                      <th className="border border-green-300 px-2 py-1 text-left">Vencimento</th>
-                      <th className="border border-green-300 px-2 py-1 text-right">Valor</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.parcelas.map((parcela: any, idx: number) => (
-                      <tr key={idx}>
-                        <td className="border border-green-300 px-2 py-1">{parcela.installment || idx + 1}ª parcela</td>
-                        <td className="border border-green-300 px-2 py-1">{formatDateExtended(parcela.due_date)}</td>
-                        <td className="border border-green-300 px-2 py-1 text-right font-medium">{formatCurrency(Number(parcela.amount))}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : data.metodo_pagamento === 'pix_avista' ? (
-              <div className="mt-3">
-                <p className="font-semibold text-green-800">4.4. Pagamento à Vista via PIX:</p>
-                <div className="mt-2 bg-emerald-50 border border-emerald-200 rounded p-3">
-                  <p className="text-sm font-medium text-emerald-800">💰 PAGAMENTO ÚNICO</p>
-                  <p className="mt-1 text-sm">
-                    O pagamento deverá ser realizado integralmente via <strong>PIX</strong> no valor de <strong>{formatCurrency(data.valor_total)}</strong>, 
-                    em parcela única, antes do início da exibição.
-                  </p>
-                </div>
-              </div>
-            ) : data.metodo_pagamento === 'cartao' ? (
-              <div className="mt-3">
-                <p className="font-semibold text-green-800">4.4. Pagamento via Cartão de Crédito:</p>
-                <div className="mt-2 bg-blue-50 border border-blue-200 rounded p-3">
-                  <p className="text-sm font-medium text-blue-800">💳 CARTÃO DE CRÉDITO</p>
-                  <p className="mt-1 text-sm">
-                    O pagamento será processado via cartão de crédito no valor total de <strong>{formatCurrency(data.valor_total)}</strong>.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-3">
-                <p className="font-semibold text-green-800">4.4. Condição de Pagamento Parcelada ({data.metodo_pagamento === 'pix_fidelidade' ? 'PIX' : 'Boleto'}):</p>
-                <div className="mt-2 bg-amber-50 border border-amber-200 rounded p-3">
-                  <p className="text-sm font-medium text-amber-800">
-                    {data.metodo_pagamento === 'pix_fidelidade' ? '📱 PIX FIDELIDADE' : '📄 BOLETO FIDELIDADE'}
-                  </p>
-                  <p className="mt-1 text-sm">
-                    O pagamento será realizado em <strong>{data.plano_meses || 1} ({getNumeroExtenso(data.plano_meses || 1)}) parcela(s)</strong> de <strong>{formatCurrency(data.valor_mensal)}</strong>, 
-                    com vencimento no <strong>dia {data.dia_vencimento || 10}</strong> de cada mês.
-                  </p>
-                </div>
-                
-                {/* Tabela de TODAS as parcelas */}
-                {data.data_inicio && data.plano_meses && data.plano_meses > 0 && (
-                  <div className="mt-3">
-                    <p className="text-sm font-semibold text-green-800 mb-2">📋 Cronograma de Parcelas:</p>
-                    <table className="w-full text-sm border border-green-300">
-                      <thead>
-                        <tr className="bg-green-100">
-                          <th className="border border-green-300 px-2 py-1 text-left">Parcela</th>
-                          <th className="border border-green-300 px-2 py-1 text-left">Vencimento</th>
-                          <th className="border border-green-300 px-2 py-1 text-right">Valor</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Array.from({ length: data.plano_meses }, (_, idx) => {
-                          const inicio = new Date(data.data_inicio + 'T00:00:00');
-                          const dataVencimento = new Date(inicio.getFullYear(), inicio.getMonth() + idx, data.dia_vencimento || 10);
-                          if (idx === 0 && dataVencimento < inicio) {
-                            dataVencimento.setMonth(dataVencimento.getMonth() + 1);
-                          }
-                          return (
-                            <tr key={idx} className={idx === 0 ? 'bg-green-50' : ''}>
-                              <td className="border border-green-300 px-2 py-1">
-                                {idx + 1}ª parcela {idx === 0 && <span className="text-green-600 text-xs">(próxima)</span>}
-                              </td>
-                              <td className="border border-green-300 px-2 py-1">
-                                {format(dataVencimento, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                              </td>
-                              <td className="border border-green-300 px-2 py-1 text-right font-medium">
-                                {formatCurrency(data.valor_mensal)}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                      <tfoot>
-                        <tr className="bg-green-200 font-bold">
-                          <td colSpan={2} className="border border-green-300 px-2 py-1 text-right">TOTAL:</td>
-                          <td className="border border-green-300 px-2 py-1 text-right">{formatCurrency(data.valor_total)}</td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            <p className="mt-3 text-sm">
-              4.5. Após 10 (dez) dias de atraso no pagamento, a exibição será automaticamente 
-              suspensa até a regularização, sem prejuízo da cobrança dos valores devidos.
-            </p>
-            <p className="text-sm">
-              4.6. Multa por atraso: 2% (dois por cento) sobre o valor da parcela, acrescido de 
-              juros de 1% (um por cento) ao mês, calculados pro rata die.
-            </p>
-          </div>
-        </div>
-
-        <div className="contract-section" data-section="clausula-5">
-          <h2 className="font-bold">CLÁUSULA 5ª - ENTREGA, FREQUÊNCIA E SLA</h2>
-          {isVerticalPremium ? (
-            <>
-              <p>
-                5.1. Exibições estimadas: <strong>tela cheia a cada 50 segundos</strong>, 24 horas por dia, 7 dias por semana.
-              </p>
-              <p className="mt-2">
-                5.2. <strong>Especificações técnicas obrigatórias:</strong>
-              </p>
-              <ul className="list-disc ml-6 mt-2">
-                <li>Formato: <strong>MP4 (H.264)</strong></li>
-                <li>Resolução: <strong>1080x1920 (vertical)</strong></li>
-                <li>Duração: <strong>10 segundos</strong></li>
-                <li>Áudio: Sem áudio</li>
-              </ul>
-            </>
-          ) : (
-            <>
-              <p>
-                5.1. Exibições estimadas: <strong>245 exibições por painel/dia</strong> (média). 
-                Relatório mensal será gerado e disponibilizado no painel administrativo.
-              </p>
-              <p className="mt-2">
-                5.2. <strong>Especificações técnicas obrigatórias:</strong>
-              </p>
-              <ul className="list-disc ml-6 mt-2">
-                <li>Formato: <strong>MP4 (H.264)</strong></li>
-                <li>Resolução: <strong>1920x1080 (horizontal)</strong></li>
-                <li>Duração: <strong>até 15 segundos</strong></li>
-                <li>Áudio: Sem áudio</li>
-              </ul>
-            </>
-          )}
-          <p className="mt-2">
-            5.3. <strong>SLA operacional:</strong> disponibilidade média mínima de 90% da rede. 
-            Falhas técnicas imputáveis à EXA serão tratadas em até 72 horas úteis.
-          </p>
-        </div>
-
-        <div className="contract-section" data-section="clausula-6">
-          <h2 className="font-bold">CLÁUSULA 6ª - RESPONSABILIDADES</h2>
-          <p>6.1. <strong>Responsabilidades da EXA:</strong></p>
-          <ul className="list-disc ml-6 mt-1">
-            <li>Operação, manutenção e monitoramento dos painéis;</li>
-            <li>Backup de logs e emissão de relatórios;</li>
-            <li>Suporte técnico e assistência.</li>
-          </ul>
-          <p className="mt-2">6.2. <strong>Responsabilidades do CONTRATANTE:</strong></p>
-          <ul className="list-disc ml-6 mt-1">
-            <li>Envio de material em conformidade com especificações;</li>
-            <li>Garantia de direitos autorais sobre o conteúdo;</li>
-            <li>Pagamento em dia e cooperação em auditorias técnicas.</li>
-          </ul>
-        </div>
-
-        <div className="contract-section" data-section="clausula-7">
-          <h2 className="font-bold">CLÁUSULA 7ª - DIREITOS AUTORAIS E CESSÃO DE IMAGEM</h2>
-          <p>
-            7.1. O CONTRATANTE declara possuir <strong>todos os direitos</strong> sobre o material 
-            publicitário e indenizará a EXA por quaisquer reivindicações de terceiros.
-          </p>
-          <p className="mt-2">
-            7.2. A CONTRATANTE <strong>autoriza expressamente</strong> a EXA MÍDIA a utilizar 
-            o material publicitário para:
-          </p>
-          <ul className="list-disc ml-6 mt-1">
-            <li>Veiculação nos painéis digitais contratados;</li>
-            <li>Divulgação em materiais institucionais, portfólio e cases;</li>
-            <li>Redes sociais, website e apresentações comerciais.</li>
-          </ul>
-        </div>
-
-        <div className="contract-section" data-section="clausula-8">
-          <div className="bg-amber-50 border border-amber-200 rounded p-3">
-            <h2 className="font-bold">CLÁUSULA 8ª - RESCISÃO E MULTA</h2>
-          <p>
-            8.1. <strong>Rescisão antecipada pelo CONTRATANTE:</strong> multa de 20% sobre o saldo 
-            remanescente, salvo outras condições previamente acordadas por escrito.
-          </p>
-          <p className="mt-2">
-            8.2. <strong>Rescisão por culpa da EXA:</strong> devolução proporcional de valores não utilizados.
-          </p>
-          </div>
-        </div>
-
-        <div className="contract-section" data-section="clausula-9">
-          <h2 className="font-bold">CLÁUSULA 9ª - REAJUSTE</h2>
-          <p>
-            9.1. Reajuste anual pelo <strong>IPCA</strong> ou índice que venha a substituí-lo.
-          </p>
-        </div>
-
-        <div className="contract-section" data-section="clausula-10">
-          <div className="bg-gray-50 border border-gray-200 rounded p-3">
-            <h2 className="font-bold">CLÁUSULA 10ª - SEGURANÇA, PRIVACIDADE E AUTENTICAÇÃO</h2>
-            <p className="mt-2">
-              10.1. <strong>Segurança Operacional:</strong> A EXA manterá políticas e controles de 
-              segurança incluindo firewall, autenticação multifatorial, segregação de ambientes, 
-              backups periódicos e monitoramento de integridade.
-            </p>
-            <p className="mt-2">
-              10.2. <strong>Proteção de Dados e Privacidade:</strong> Ambas as partes concordam em 
-              cumprir a legislação aplicável (incl. LGPD). Vazamentos serão comunicados em até 48 horas úteis.
-            </p>
-            <p className="mt-2">
-              10.3. <strong>Logs e Auditoria:</strong> A EXA manterá registros de logs por no mínimo 
-              12 meses para fins de auditoria.
-            </p>
-            <p className="mt-2">
-              10.4. <strong>Confidencialidade:</strong> As partes comprometem-se a manter confidenciais 
-              termos comerciais, preços, relatórios e acessos técnicos.
-            </p>
-          </div>
-        </div>
-
-        <div className="contract-section" data-section="clausula-11">
-          <h2 className="font-bold">CLÁUSULA 11ª - DISPOSIÇÕES GERAIS</h2>
-          <p>
-            11.1. Comunicações oficiais via portal, e-mail corporativo ou notificações do sistema EXA.
-          </p>
-          <p className="mt-2">
-            11.2. Alterações ao contrato somente por escrito e assinadas por representantes autorizados.
-          </p>
-        </div>
-
-        <div className="contract-section" data-section="clausula-12">
-          <h2 className="font-bold">CLÁUSULA 12ª - FORO</h2>
-          <p>
-            12.1. Elegem as partes o foro da comarca de <strong>Foz do Iguaçu/PR</strong> para dirimir 
-            controvérsias, com renúncia a qualquer outro.
-          </p>
-        </div>
-
-        {data.clausulas_especiais && (
-          <div className="contract-section" data-section="clausula-13">
-            <div className="bg-blue-50 border border-blue-200 rounded p-3">
-              <h2 className="font-bold">CLÁUSULA 13ª - CONDIÇÕES ESPECIAIS</h2>
-              <p>{data.clausulas_especiais}</p>
+          {/* ANEXO II - PAGAMENTO */}
+          {!isSindico && data.plano_meses && data.plano_meses > 1 && (
+            <div className="contract-section">
+              <h3 style={{ marginTop: '18px', fontSize: '16px', fontWeight: 700 }}>ANEXO II — Forma de Pagamento</h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px', fontSize: '14px' }}>
+                <thead><tr style={{ background: '#f8f9fa' }}><th style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'left' }}>Parcela</th><th style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'center' }}>Vencimento</th><th style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'right' }}>Valor</th></tr></thead>
+                <tbody>
+                  {Array.from({ length: data.plano_meses }, (_, i) => {
+                    let venc = '';
+                    if (data.data_inicio) {
+                      try {
+                        const inicio = new Date(data.data_inicio + 'T00:00:00');
+                        const dataVenc = new Date(inicio.getFullYear(), inicio.getMonth() + i, data.dia_vencimento || 10);
+                        venc = format(dataVenc, 'dd/MM/yyyy', { locale: ptBR });
+                      } catch { venc = '—'; }
+                    }
+                    return (
+                      <tr key={i}><td style={{ border: '1px solid #e8eef2', padding: '10px' }}>{i + 1}ª parcela</td><td style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'center' }}>{venc}</td><td style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'right' }}>{formatCurrency(data.valor_mensal)}</td></tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot><tr style={{ background: '#f8f9fa', fontWeight: 700 }}><td colSpan={2} style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'right' }}>TOTAL</td><td style={{ border: '1px solid #e8eef2', padding: '10px', textAlign: 'right' }}>{formatCurrency(data.valor_total)}</td></tr></tfoot>
+              </table>
             </div>
-          </div>
-        )}
-      </div>
+          )}
 
-      {/* Assinaturas - COM REPRESENTANTES EXA COMPLETOS */}
-      <div className="contract-section" data-section="assinaturas">
-        <div className="mt-12 pt-8 border-t-2 border-gray-300">
-          <p className="text-center mb-10 text-sm">
-            Foz do Iguaçu - PR, {dataAtual}.
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-            {/* CONTRATANTE */}
-            <div className="border border-gray-300 rounded-lg p-6 bg-gray-50">
-              <h3 className="font-bold text-center text-sm text-gray-600 mb-4 uppercase tracking-wide">
-                CONTRATANTE
-              </h3>
-              <div className="text-center space-y-2">
-                <p className="font-bold text-base">{data.cliente_razao_social || data.cliente_nome}</p>
-                {data.cliente_cnpj && (
-                  <p className="text-sm text-gray-600">CNPJ: {data.cliente_cnpj}</p>
-                )}
-                <p className="text-sm">Representante: {data.cliente_nome}</p>
-                {data.cliente_cargo && (
-                  <p className="text-xs text-gray-500">Cargo: {data.cliente_cargo}</p>
-                )}
-                
-                <div className="mt-8 pt-4">
-                  <div className="border-t border-gray-400 mx-8"></div>
-                  <p className="text-xs text-gray-500 mt-2">Assinatura</p>
-                </div>
-                <p className="text-xs text-gray-400 mt-2">Data: ____ / ____ / ________</p>
+          {/* ASSINATURAS */}
+          <div className="contract-section" style={{ marginTop: '28px' }}>
+            <div style={{ display: 'flex', gap: '18px', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: '200px', textAlign: 'center', paddingTop: '30px' }}>
+                <div style={{ borderTop: '1px solid #ddd', paddingTop: '10px', fontWeight: 700 }}>_______________________________</div>
+                <div style={{ marginTop: '6px' }}>Pela CONTRATANTE</div>
+                <div style={{ fontSize: '13px', color: '#6b7280' }}>{data.cliente_razao_social || clienteNomeCompleto}</div>
+                {data.cliente_cnpj && <div style={{ fontSize: '13px', color: '#6b7280' }}>CNPJ: {data.cliente_cnpj}</div>}
               </div>
-            </div>
-            
-            {/* CONTRATADA - EXA com dois representantes */}
-            <div className="border border-gray-300 rounded-lg p-6 bg-gray-50">
-              <h3 className="font-bold text-center text-sm text-gray-600 mb-4 uppercase tracking-wide">
-                CONTRATADA
-              </h3>
-              <div className="text-center space-y-2">
-                <p className="font-bold text-base">EXA — Soluções Digitais</p>
-                <p className="text-sm text-gray-600">CNPJ: 62.878.193/0001-35</p>
-                <p className="text-xs text-gray-500 mt-2">Representantes legais:</p>
-                
-                {/* Natália */}
-                <div className="mt-4 pt-4 border-t border-dashed border-gray-300">
-                  <p className="font-semibold text-sm">Natália Krause Guimarães Dantas</p>
-                  <p className="text-xs text-gray-500">RG 13.038.569-9 / CPF 116.228.359-99</p>
-                  <div className="mt-4 pt-2">
-                    <div className="border-t border-gray-400 mx-12"></div>
-                    <p className="text-xs text-gray-500 mt-1">Assinatura</p>
-                  </div>
-                </div>
-                
-                {/* Jeferson */}
-                <div className="mt-4 pt-4 border-t border-dashed border-gray-300">
-                  <p className="font-semibold text-sm">Jeferson Stilver Rodrigues Encina</p>
-                  <p className="text-xs text-gray-500">RG 8.812.269-0 / CPF 055.031.279-00</p>
-                  <div className="mt-4 pt-2">
-                    <div className="border-t border-gray-400 mx-12"></div>
-                    <p className="text-xs text-gray-500 mt-1">Assinatura</p>
-                  </div>
-                </div>
-                
-                <p className="text-xs text-gray-400 mt-4">Data: ____ / ____ / ________</p>
+              <div style={{ flex: 1, minWidth: '200px', textAlign: 'center', paddingTop: '30px' }}>
+                <div style={{ borderTop: '1px solid #ddd', paddingTop: '10px', fontWeight: 700 }}>_______________________________</div>
+                <div style={{ marginTop: '6px' }}>Pela CONTRATADA</div>
+                <div style={{ fontSize: '13px', color: '#6b7280' }}>EXA — Soluções Digitais LTDA</div>
+                <div style={{ fontSize: '13px', color: '#6b7280' }}>Ass: Jeferson Silver Rodrigues Encina</div>
+                <div style={{ fontSize: '13px', color: '#6b7280' }}>CPF: 055.031.279-00</div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Botão de edição se disponível */}
+      {/* FOOTER */}
+      <footer style={{ marginTop: '18px', textAlign: 'center', color: '#6b7280', fontSize: '13px' }}>
+        Documento gerado por EXA Mídia — Contrato {data.numero_contrato || 'EXA-CON-2025-0001'}
+      </footer>
+
       {onEdit && (
-        <div className="mt-6 text-center">
-          <button
-            onClick={onEdit}
-            className="text-primary hover:underline text-sm"
-          >
+        <div style={{ marginTop: '16px', textAlign: 'center' }}>
+          <button onClick={onEdit} style={{ color: '#7D1818', cursor: 'pointer', background: 'none', border: 'none', fontSize: '14px' }}>
             ✏️ Editar dados do contrato
           </button>
         </div>
