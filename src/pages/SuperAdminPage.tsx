@@ -104,28 +104,22 @@ const SuperAdminPage = () => {
 
   if (isLoading || !hasChecked) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indexa-purple to-purple-800">
-        <div className="flex flex-col items-center space-y-6 p-8 bg-white rounded-xl shadow-2xl">
-          <div className="relative">
-            <Loader2 className="h-12 w-12 animate-spin text-indexa-purple" />
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
-          </div>
-        <div className="text-center space-y-2">
-          <UnifiedLogo 
-            size="custom" 
-            className="w-32 h-auto mx-auto"
-            logoUrl="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0"
-            altText="EXA Mídia"
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100 flex flex-col items-center justify-center">
+        {/* Logo EXA animada */}
+        <div className="text-center">
+          <img 
+            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0" 
+            alt="EXA Mídia" 
+            className="w-16 h-16 mx-auto mb-8 animate-pulse"
           />
-          <p className="text-gray-600">Carregando painel administrativo...</p>
-            <div className="flex items-center justify-center space-x-2 mt-3">
-              <Shield className="h-4 w-4 text-indexa-purple" />
-              <span className="text-sm text-indexa-purple font-medium">Sistema Seguro</span>
-            </div>
-            <div className="text-xs text-gray-500 mt-2">
-              Verificando credenciais de Super Admin...
-            </div>
+          
+          {/* Loader circular elegante estilo Nubank */}
+          <div className="relative w-10 h-10 mx-auto mb-6">
+            <div className="absolute inset-0 border-2 border-gray-200 rounded-full" />
+            <div className="absolute inset-0 border-2 border-[#9C1E1E] border-t-transparent rounded-full animate-spin" />
           </div>
+          
+          <p className="text-gray-600 text-sm font-medium">Carregando...</p>
         </div>
       </div>
     );

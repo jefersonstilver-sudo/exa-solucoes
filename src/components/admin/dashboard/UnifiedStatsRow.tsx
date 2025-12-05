@@ -149,29 +149,39 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
           }
         />
 
-        {/* 5. Prédios Ativos */}
+        {/* 5. Dispositivos Online (Painéis EXA) */}
         <AppleLikeMetricCard
-          label="Prédios Online"
-          value={stats.loading ? '...' : `${stats.prediosPercentual.toFixed(0)}%`}
+          label="Dispositivos Online"
+          value={stats.loading ? '...' : `${stats.devicesTotal > 0 ? ((stats.devicesOnline / stats.devicesTotal) * 100).toFixed(0) : 0}%`}
           icon={Building2}
-          description={stats.loading ? undefined : `${stats.prediosAtivos} de ${stats.prediosTotal}`}
+          description={stats.loading ? undefined : `${stats.devicesOnline} de ${stats.devicesTotal}`}
           hoverContent={
             <div className="space-y-3">
               <div>
-                <p className="text-sm font-semibold text-foreground mb-1">Status dos Prédios</p>
+                <p className="text-sm font-semibold text-foreground mb-1">Status dos Dispositivos</p>
                 <p className="text-xs text-muted-foreground">
-                  Percentual de prédios com status ativo
+                  Painéis EXA conectados e operacionais
                 </p>
               </div>
               <div className="space-y-2 pt-2 border-t border-border/50">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Prédios Ativos:</span>
-                  <span className="text-sm font-semibold text-emerald-600">{stats.prediosAtivos}</span>
+                  <span className="text-xs text-muted-foreground">🟢 Online:</span>
+                  <span className="text-sm font-semibold text-emerald-600">{stats.devicesOnline}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Total de Prédios:</span>
-                  <span className="text-sm font-semibold">{stats.prediosTotal}</span>
+                  <span className="text-xs text-muted-foreground">🔴 Offline:</span>
+                  <span className="text-sm font-semibold text-red-600">{stats.devicesOffline}</span>
                 </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Total:</span>
+                  <span className="text-sm font-semibold">{stats.devicesTotal}</span>
+                </div>
+                {stats.quedasPeriodo > 0 && (
+                  <div className="flex justify-between items-center pt-1 border-t border-border/30">
+                    <span className="text-xs text-muted-foreground">⚡ Quedas no período:</span>
+                    <span className="text-sm font-semibold text-amber-600">{stats.quedasPeriodo}</span>
+                  </div>
+                )}
               </div>
             </div>
           }
