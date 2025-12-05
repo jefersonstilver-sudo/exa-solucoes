@@ -34,11 +34,12 @@ serve(async (req) => {
   try {
     rawBody = await req.text();
     console.log("📥 [CLICKSIGN] Raw body length:", rawBody.length);
-    console.log("📥 [CLICKSIGN] Raw body:", rawBody.substring(0, 500));
+    console.log("📥 [CLICKSIGN] Raw body preview:", rawBody.substring(0, 200));
     
     const body = JSON.parse(rawBody);
-    const { contrato_id } = body;
+    const { contrato_id, pdf_base64: pdfFromFrontend } = body;
     console.log("📋 [CLICKSIGN] contrato_id parsed:", contrato_id);
+    console.log("📋 [CLICKSIGN] PDF do frontend recebido:", pdfFromFrontend ? `SIM (${pdfFromFrontend.length} chars)` : "NÃO");
 
     if (!contrato_id) {
       console.error("❌ [CLICKSIGN] contrato_id não fornecido");
@@ -178,99 +179,75 @@ serve(async (req) => {
     const contractHtml = generateContractHtml(contrato, signatariosExa || []);
     console.log("📄 [CLICKSIGN] HTML gerado, tamanho:", contractHtml.length, "chars");
 
-    // ========== 4. Converter HTML para PDF ==========
-    console.log("🔄 [CLICKSIGN] Convertendo HTML para PDF...");
+    // ========== 4. Usar PDF do Frontend ou Gerar ==========
+    console.log("🔄 [CLICKSIGN] Processando PDF...");
     
     let pdfBase64: string;
-    let pdfConversionSuccess = false;
     
-    try {
-      // Opção 1: Usar API do PDF.co (mais confiável)
-      const pdfCoResponse = await fetch("https://api.pdf.co/v1/pdf/convert/from/html", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": "FREE"  // API gratuita com limites
-        },
-        body: JSON.stringify({
-          html: contractHtml,
-          name: `contrato_${contrato.numero_contrato}.pdf`,
-          margins: "10mm"
-        })
-      });
-
-      if (pdfCoResponse.ok) {
-        const pdfCoData = await pdfCoResponse.json();
-        if (pdfCoData.url) {
-          // Baixar o PDF gerado
-          const pdfDownload = await fetch(pdfCoData.url);
-          if (pdfDownload.ok) {
-            const pdfBuffer = await pdfDownload.arrayBuffer();
-            pdfBase64 = arrayBufferToBase64(pdfBuffer);
-            pdfConversionSuccess = true;
-            console.log("✅ [CLICKSIGN] PDF gerado via pdf.co, tamanho:", pdfBase64.length, "chars");
-          }
-        }
-      }
-
-      // Opção 2: Usar Gotenberg (self-hosted) ou html2pdf.app
-      if (!pdfConversionSuccess) {
-        console.log("⚠️ [CLICKSIGN] pdf.co falhou, tentando html2pdf.app...");
-        const pdfResponse = await fetch("https://api.html2pdf.app/v1/generate", {
+    // PRIORIDADE: Usar PDF do frontend se disponível
+    if (pdfFromFrontend && pdfFromFrontend.length > 100) {
+      pdfBase64 = pdfFromFrontend;
+      console.log("✅ [CLICKSIGN] Usando PDF gerado no frontend, tamanho:", pdfBase64.length, "chars");
+    } else {
+      console.log("⚠️ [CLICKSIGN] PDF do frontend não disponível, tentando APIs externas...");
+      
+      let pdfConversionSuccess = false;
+      
+      try {
+        // Opção 1: Usar API do PDF.co
+        const pdfCoResponse = await fetch("https://api.pdf.co/v1/pdf/convert/from/html", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "x-api-key": "FREE"
           },
           body: JSON.stringify({
             html: contractHtml,
-            options: {
-              format: "A4",
-              margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" }
-            }
+            name: `contrato_${contrato.numero_contrato}.pdf`,
+            margins: "10mm"
           })
         });
 
-        if (pdfResponse.ok) {
-          const pdfBuffer = await pdfResponse.arrayBuffer();
-          pdfBase64 = arrayBufferToBase64(pdfBuffer);
-          pdfConversionSuccess = true;
-          console.log("✅ [CLICKSIGN] PDF gerado via html2pdf.app, tamanho:", pdfBase64.length, "chars");
+        if (pdfCoResponse.ok) {
+          const pdfCoData = await pdfCoResponse.json();
+          if (pdfCoData.url) {
+            const pdfDownload = await fetch(pdfCoData.url);
+            if (pdfDownload.ok) {
+              const pdfBuffer = await pdfDownload.arrayBuffer();
+              pdfBase64 = arrayBufferToBase64(pdfBuffer);
+              pdfConversionSuccess = true;
+              console.log("✅ [CLICKSIGN] PDF gerado via pdf.co, tamanho:", pdfBase64.length, "chars");
+            }
+          }
         }
-      }
 
-      // Opção 3: API do CloudConvert
-      if (!pdfConversionSuccess) {
-        console.log("⚠️ [CLICKSIGN] html2pdf.app falhou, tentando CloudConvert...");
-        const htmlBase64Input = btoa(unescape(encodeURIComponent(contractHtml)));
-        
-        // Usar API simples do html-pdf-api.netlify.app (gratuita)
-        const netlifyPdfResponse = await fetch("https://html-pdf-api.netlify.app/.netlify/functions/convert", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ html: contractHtml })
-        });
+        if (!pdfConversionSuccess) {
+          console.log("⚠️ [CLICKSIGN] pdf.co falhou, tentando html2pdf.app...");
+          const pdfResponse = await fetch("https://api.html2pdf.app/v1/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              html: contractHtml,
+              options: { format: "A4", margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" } }
+            })
+          });
 
-        if (netlifyPdfResponse.ok) {
-          const pdfBuffer = await netlifyPdfResponse.arrayBuffer();
-          pdfBase64 = arrayBufferToBase64(pdfBuffer);
-          pdfConversionSuccess = true;
-          console.log("✅ [CLICKSIGN] PDF gerado via netlify-api");
+          if (pdfResponse.ok) {
+            const pdfBuffer = await pdfResponse.arrayBuffer();
+            pdfBase64 = arrayBufferToBase64(pdfBuffer);
+            pdfConversionSuccess = true;
+            console.log("✅ [CLICKSIGN] PDF gerado via html2pdf.app");
+          }
         }
-      }
 
-      // Último fallback: gerar PDF simples em texto
-      if (!pdfConversionSuccess) {
-        console.warn("⚠️ [CLICKSIGN] Todas APIs falharam - gerando PDF básico...");
-        // Gerar um PDF mínimo com o texto do contrato
-        const htmlBase64 = btoa(unescape(encodeURIComponent(contractHtml)));
-        pdfBase64 = htmlBase64;
-        console.warn("⚠️ [CLICKSIGN] ATENÇÃO: Usando HTML codificado como fallback");
+        if (!pdfConversionSuccess) {
+          console.error("❌ [CLICKSIGN] TODAS APIs DE PDF FALHARAM - ABORTANDO");
+          throw new Error("Não foi possível gerar PDF. Envie o PDF do frontend.");
+        }
+      } catch (conversionError) {
+        console.error("❌ [CLICKSIGN] Erro crítico na conversão PDF:", conversionError);
+        throw new Error("Falha ao gerar PDF. Certifique-se de que o frontend está gerando o PDF corretamente.");
       }
-    } catch (conversionError) {
-      console.error("❌ [CLICKSIGN] Erro na conversão PDF:", conversionError);
-      const htmlBase64 = btoa(unescape(encodeURIComponent(contractHtml)));
-      pdfBase64 = htmlBase64;
-      console.warn("⚠️ [CLICKSIGN] Usando fallback HTML");
     }
 
     // ========== 5. Upload do Documento (JSON:API format) ==========
