@@ -289,7 +289,8 @@ serve(async (req) => {
             type: "signers",
             attributes: {
               name: signatario.nome,
-              email: signatario.email
+              email: signatario.email,
+              ...(signatario.data_nascimento && { birthday: signatario.data_nascimento })
             }
           }
         };
@@ -313,12 +314,13 @@ serve(async (req) => {
       }
     }
 
-    // ========== 8. Criar Requirement CLIENTE (action: "agree" - CORRIGIDO) ==========
+    // ========== 8. Criar Requirement CLIENTE (action: "agree" + role: "sign") ==========
     const clientRequirementPayload = {
       data: {
         type: "requirements",
         attributes: {
-          action: "agree"  // CORRIGIDO: era "sign", agora é "agree"
+          action: "agree",
+          role: "sign"  // OBRIGATÓRIO: ClickSign exige role
         },
         relationships: {
           document: {
@@ -357,7 +359,8 @@ serve(async (req) => {
         data: {
           type: "requirements",
           attributes: {
-            action: "agree"  // CORRIGIDO: era "sign", agora é "agree"
+            action: "agree",
+            role: "sign"  // OBRIGATÓRIO: ClickSign exige role
           },
           relationships: {
             document: {

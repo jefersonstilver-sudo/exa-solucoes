@@ -31,6 +31,8 @@ interface SignatarioExa {
   nome: string;
   email: string;
   cpf: string | null;
+  rg: string | null;
+  data_nascimento: string | null;
   cargo: string;
   nacionalidade: string | null;
   estado_civil: string | null;
@@ -47,6 +49,8 @@ const initialFormData = {
   nome: '',
   email: '',
   cpf: '',
+  rg: '',
+  data_nascimento: '',
   cargo: 'Representante Legal',
   nacionalidade: 'brasileiro',
   estado_civil: 'casado',
@@ -87,6 +91,8 @@ export const SignatariosExaManager = () => {
             nome: data.nome,
             email: data.email,
             cpf: data.cpf || null,
+            rg: data.rg || null,
+            data_nascimento: data.data_nascimento || null,
             cargo: data.cargo,
             nacionalidade: data.nacionalidade,
             estado_civil: data.estado_civil,
@@ -107,6 +113,8 @@ export const SignatariosExaManager = () => {
             nome: data.nome,
             email: data.email,
             cpf: data.cpf || null,
+            rg: data.rg || null,
+            data_nascimento: data.data_nascimento || null,
             cargo: data.cargo,
             nacionalidade: data.nacionalidade,
             estado_civil: data.estado_civil,
@@ -174,6 +182,8 @@ export const SignatariosExaManager = () => {
         nome: signatario.nome,
         email: signatario.email,
         cpf: signatario.cpf || '',
+        rg: signatario.rg || '',
+        data_nascimento: signatario.data_nascimento || '',
         cargo: signatario.cargo,
         nacionalidade: signatario.nacionalidade || 'brasileiro',
         estado_civil: signatario.estado_civil || 'casado',
@@ -356,12 +366,31 @@ export const SignatariosExaManager = () => {
               />
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>CPF</Label>
+                <Input
+                  value={formData.cpf}
+                  onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
+                  placeholder="000.000.000-00"
+                />
+              </div>
+              <div>
+                <Label>RG</Label>
+                <Input
+                  value={formData.rg}
+                  onChange={(e) => setFormData({ ...formData, rg: e.target.value })}
+                  placeholder="0.000.000-0"
+                />
+              </div>
+            </div>
+
             <div>
-              <Label>CPF</Label>
+              <Label>Data de Nascimento *</Label>
               <Input
-                value={formData.cpf}
-                onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
-                placeholder="000.000.000-00"
+                type="date"
+                value={formData.data_nascimento}
+                onChange={(e) => setFormData({ ...formData, data_nascimento: e.target.value })}
               />
             </div>
 

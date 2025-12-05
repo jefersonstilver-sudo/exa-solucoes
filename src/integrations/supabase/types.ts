@@ -6360,6 +6360,7 @@ export type Database = {
           cidade: string | null
           cpf: string | null
           created_at: string
+          data_nascimento: string | null
           email: string
           estado: string | null
           estado_civil: string | null
@@ -6379,6 +6380,7 @@ export type Database = {
           cidade?: string | null
           cpf?: string | null
           created_at?: string
+          data_nascimento?: string | null
           email: string
           estado?: string | null
           estado_civil?: string | null
@@ -6398,6 +6400,7 @@ export type Database = {
           cidade?: string | null
           cpf?: string | null
           created_at?: string
+          data_nascimento?: string | null
           email?: string
           estado?: string | null
           estado_civil?: string | null
