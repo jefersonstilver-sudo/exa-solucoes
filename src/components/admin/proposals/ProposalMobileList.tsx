@@ -21,6 +21,7 @@ interface Proposal {
   view_count: number | null;
   total_time_spent_seconds: number | null;
   is_viewing?: boolean;
+  last_heartbeat_at?: string | null;
 }
 
 interface ProposalMobileListProps {

@@ -25,7 +25,17 @@ interface Proposal {
   view_count: number | null;
   total_time_spent_seconds: number | null;
   is_viewing?: boolean;
+  last_heartbeat_at?: string | null;
 }
+
+// Check if client is actively viewing RIGHT NOW (heartbeat within last 45 seconds)
+const isActivelyViewing = (proposal: Proposal): boolean => {
+  if (!proposal.is_viewing || !proposal.last_heartbeat_at) return false;
+  const lastHeartbeat = new Date(proposal.last_heartbeat_at);
+  const now = new Date();
+  const secondsSinceHeartbeat = (now.getTime() - lastHeartbeat.getTime()) / 1000;
+  return secondsSinceHeartbeat < 45; // Only show "live" if heartbeat within last 45 seconds
+};
 
 interface ProposalMobileCardProps {
   proposal: Proposal;
@@ -84,7 +94,8 @@ export const ProposalMobileCard: React.FC<ProposalMobileCardProps> = ({
     threshold: 500,
   });
 
-  const statusConfig = getStatusConfig(proposal.status, proposal.is_viewing);
+  const isLive = isActivelyViewing(proposal);
+  const statusConfig = getStatusConfig(proposal.status, isLive);
   const timeAgo = formatDistanceToNow(new Date(proposal.created_at), {
     addSuffix: true,
     locale: ptBR,
