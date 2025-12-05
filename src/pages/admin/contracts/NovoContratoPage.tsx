@@ -50,6 +50,7 @@ import {
 } from 'lucide-react';
 import ContractPreview from '@/components/admin/contracts/ContractPreview';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
+import { useCNPJConsult } from '@/hooks/useCNPJConsult';
 
 type Step = 'tipo' | 'modo' | 'vinculo' | 'cliente' | 'contrato' | 'preview';
 type FillMode = 'extract' | 'manual';
@@ -89,6 +90,7 @@ const NovoContratoPage = () => {
   const [searchParams] = useSearchParams();
   const { buildPath } = useAdminBasePath();
   const { session } = useAuth();
+  const { consultCNPJ, isLoading: isLoadingCNPJ } = useCNPJConsult();
   const [step, setStep] = useState<Step>('tipo');
   const [fillMode, setFillMode] = useState<FillMode | null>(null);
   const [searchPedido, setSearchPedido] = useState('');
@@ -872,13 +874,43 @@ const NovoContratoPage = () => {
               </div>
               <div>
                 <Label htmlFor="cliente_cnpj">CNPJ</Label>
-                <Input
-                  id="cliente_cnpj"
-                  value={contratoData.cliente_cnpj}
-                  onChange={(e) => setContratoData(prev => ({ ...prev, cliente_cnpj: e.target.value }))}
-                  placeholder="00.000.000/0001-00"
-                  className="rounded-xl"
-                />
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    id="cliente_cnpj"
+                    value={contratoData.cliente_cnpj}
+                    onChange={(e) => setContratoData(prev => ({ ...prev, cliente_cnpj: e.target.value }))}
+                    placeholder="00.000.000/0001-00"
+                    className="rounded-xl flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 shrink-0 rounded-xl"
+                    disabled={isLoadingCNPJ || contratoData.cliente_cnpj.replace(/\D/g, '').length !== 14}
+                    onClick={async () => {
+                      const data = await consultCNPJ(contratoData.cliente_cnpj);
+                      if (data) {
+                        setContratoData(prev => ({
+                          ...prev,
+                          cliente_razao_social: data.razaoSocial || prev.cliente_razao_social,
+                          cliente_endereco: data.endereco || prev.cliente_endereco,
+                          cliente_cidade: data.cidade || prev.cliente_cidade,
+                          cliente_segmento: data.segmento || prev.cliente_segmento,
+                          cliente_telefone: data.telefone || prev.cliente_telefone,
+                          cliente_email: data.email || prev.cliente_email,
+                        }));
+                      }
+                    }}
+                    title="Consultar CNPJ"
+                  >
+                    {isLoadingCNPJ ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
               <div>
                 <Label htmlFor="cliente_razao_social">Razão Social</Label>

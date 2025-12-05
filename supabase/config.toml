@@ -385,6 +385,9 @@ verify_jwt = true
 [functions.clicksign-cancel]
 verify_jwt = true
 
+[functions.consultar-cnpj]
+verify_jwt = false
+
 [[cron]]
 function_name = "auto-cancel-expired-orders"
 schedule = "0 */1 * * *"
