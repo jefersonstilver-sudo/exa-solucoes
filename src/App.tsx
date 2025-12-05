@@ -126,10 +126,8 @@ const AppContent = () => {
   console.log('🔍 [SESSION] É display público?', isPublicDisplayRoute);
   console.log(isPublicDisplayRoute ? '🚫 [SESSION] Tracking desabilitado' : '✅ [SESSION] Tracking ativado');
   
-  // ⚠️ Active session tracking - DESABILITADO para painéis públicos
-  if (!isPublicDisplayRoute) {
-    useActiveSession();
-  }
+  // ⚠️ Active session tracking - passa flag para desabilitar internamente para painéis públicos
+  useActiveSession({ disabled: isPublicDisplayRoute });
   
   // Page transition hook
   const { isLoading: isTransitioning, loadingMessage } = usePageTransition({
