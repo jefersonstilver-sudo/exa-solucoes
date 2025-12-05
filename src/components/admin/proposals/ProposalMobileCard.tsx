@@ -57,10 +57,11 @@ const formatTimeSpent = (seconds: number | null) => {
   return `${mins}min`;
 };
 
-const getStatusConfig = (status: string, isViewing?: boolean) => {
+const getStatusConfig = (status: string, isLive?: boolean) => {
   const configs: Record<string, { label: string; className: string }> = {
-    pendente: { label: 'Pendente', className: 'bg-gray-100 text-gray-700' },
+    pendente: { label: 'Enviada', className: 'bg-blue-100 text-blue-700' },
     enviada: { label: 'Enviada', className: 'bg-blue-100 text-blue-700' },
+    visualizando: { label: 'Visualizada', className: 'bg-purple-100 text-purple-700' },
     visualizada: { label: 'Visualizada', className: 'bg-purple-100 text-purple-700' },
     aceita: { label: 'Aceita', className: 'bg-emerald-100 text-emerald-700' },
     paga: { label: 'Paga', className: 'bg-green-100 text-green-700' },
@@ -69,8 +70,8 @@ const getStatusConfig = (status: string, isViewing?: boolean) => {
     expirada: { label: 'Expirada', className: 'bg-gray-100 text-gray-500' },
   };
   return { 
-    ...configs[status] || configs.pendente,
-    isLive: isViewing && !['recusada', 'paga', 'convertida', 'expirada', 'aceita'].includes(status)
+    ...configs[status] || configs.enviada,
+    isLive: isLive && !['recusada', 'paga', 'convertida', 'expirada', 'aceita'].includes(status)
   };
 };
 
