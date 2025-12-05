@@ -48,21 +48,20 @@ const formatTimeSpent = (seconds: number | null) => {
 };
 
 const getStatusConfig = (status: string, isViewing?: boolean) => {
-  if (isViewing && !['recusada', 'paga', 'convertida', 'expirada', 'aceita'].includes(status)) {
-    return { label: '👁️ Ao vivo', className: 'bg-green-500 text-white animate-pulse' };
-  }
-  
   const configs: Record<string, { label: string; className: string }> = {
     pendente: { label: 'Pendente', className: 'bg-gray-100 text-gray-700' },
     enviada: { label: 'Enviada', className: 'bg-blue-100 text-blue-700' },
     visualizada: { label: 'Visualizada', className: 'bg-purple-100 text-purple-700' },
-    aceita: { label: '✅ Aceita', className: 'bg-emerald-100 text-emerald-700' },
-    paga: { label: '💰 Paga', className: 'bg-green-100 text-green-700' },
-    convertida: { label: '🎉 Pedido', className: 'bg-green-600 text-white' },
-    recusada: { label: '❌ Recusada', className: 'bg-red-100 text-red-700' },
+    aceita: { label: 'Aceita', className: 'bg-emerald-100 text-emerald-700' },
+    paga: { label: 'Paga', className: 'bg-green-100 text-green-700' },
+    convertida: { label: 'Pedido', className: 'bg-green-600 text-white' },
+    recusada: { label: 'Recusada', className: 'bg-red-100 text-red-700' },
     expirada: { label: 'Expirada', className: 'bg-gray-100 text-gray-500' },
   };
-  return configs[status] || configs.pendente;
+  return { 
+    ...configs[status] || configs.pendente,
+    isLive: isViewing && !['recusada', 'paga', 'convertida', 'expirada', 'aceita'].includes(status)
+  };
 };
 
 export const ProposalMobileCard: React.FC<ProposalMobileCardProps> = ({
@@ -96,9 +95,18 @@ export const ProposalMobileCard: React.FC<ProposalMobileCardProps> = ({
       {/* Header row */}
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-mono text-muted-foreground">{proposal.number}</span>
-        <Badge className={`${statusConfig.className} text-[10px] px-1.5 py-0 border-0`}>
-          {statusConfig.label}
-        </Badge>
+        <div className="flex items-center gap-1.5">
+          {/* Live indicator - minimal dot */}
+          {statusConfig.isLive && (
+            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-green-50 border border-green-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-[9px] font-medium text-green-700">Ao vivo</span>
+            </div>
+          )}
+          <Badge className={`${statusConfig.className} text-[10px] px-1.5 py-0 border-0`}>
+            {statusConfig.label}
+          </Badge>
+        </div>
       </div>
 
       {/* Client name */}
