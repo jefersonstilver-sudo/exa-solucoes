@@ -14,8 +14,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { PhoneInput, type CountryCode } from '@/components/ui/phone-input';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
+import { AutocompleteInput } from '@/components/ui/autocomplete-input';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
+import { useAutocompleteHistory } from '@/hooks/useAutocompleteHistory';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
@@ -57,6 +59,7 @@ const NovaPropostaPage = () => {
   const { isMobile } = useResponsiveLayout();
   const { buildPath } = useAdminBasePath();
   const { consultCNPJ, isLoading: isLoadingCNPJ } = useCNPJConsult();
+  const { saveClientData: saveAutocomplete } = useAutocompleteHistory();
 
   // Estado do formulário
   const [clientData, setClientData] = useState({
@@ -490,6 +493,17 @@ const NovaPropostaPage = () => {
       return proposal;
     },
     onSuccess: (proposal) => {
+      // Salvar dados do cliente no histórico de autocomplete
+      saveAutocomplete({
+        firstName: clientData.firstName,
+        lastName: clientData.lastName,
+        companyName: clientData.companyName,
+        cnpj: clientData.document,
+        email: clientData.email,
+        phone: clientData.phoneFullNumber || clientData.phone,
+        address: clientData.address
+      });
+      
       queryClient.invalidateQueries({ queryKey: ['proposals'] });
       toast.success(`Proposta ${proposal.number} criada e enviada!`);
       setSendDialogOpen(false);
@@ -692,10 +706,24 @@ const NovaPropostaPage = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Nome *</Label>
-                <Input
+                <AutocompleteInput
+                  fieldType="client_name"
                   placeholder="Primeiro nome"
                   value={clientData.firstName}
-                  onChange={(e) => setClientData(prev => ({ ...prev, firstName: e.target.value }))}
+                  onChange={(value) => setClientData(prev => ({ ...prev, firstName: value }))}
+                  onSelectSuggestion={(entry) => {
+                    const meta = entry.metadata || {};
+                    setClientData(prev => ({
+                      ...prev,
+                      firstName: meta.firstName || entry.field_value.split(' ')[0] || prev.firstName,
+                      lastName: meta.lastName || entry.field_value.split(' ').slice(1).join(' ') || prev.lastName,
+                      companyName: meta.companyName || prev.companyName,
+                      document: meta.cnpj || prev.document,
+                      email: meta.email || prev.email,
+                      phone: meta.phone || prev.phone,
+                      address: meta.address || prev.address
+                    }));
+                  }}
                   className="mt-1 h-12 text-base"
                 />
               </div>
@@ -711,10 +739,24 @@ const NovaPropostaPage = () => {
             </div>
             <div>
               <Label className="text-xs">Nome da Empresa *</Label>
-              <Input
+              <AutocompleteInput
+                fieldType="company_name"
                 placeholder="Razão Social ou Nome Fantasia"
                 value={clientData.companyName}
-                onChange={(e) => setClientData(prev => ({ ...prev, companyName: e.target.value }))}
+                onChange={(value) => setClientData(prev => ({ ...prev, companyName: value }))}
+                onSelectSuggestion={(entry) => {
+                  const meta = entry.metadata || {};
+                  setClientData(prev => ({
+                    ...prev,
+                    firstName: meta.firstName || prev.firstName,
+                    lastName: meta.lastName || prev.lastName,
+                    companyName: entry.field_value,
+                    document: meta.cnpj || prev.document,
+                    email: meta.email || prev.email,
+                    phone: meta.phone || prev.phone,
+                    address: meta.address || prev.address
+                  }));
+                }}
                 className="mt-1 h-12 text-base"
               />
             </div>
@@ -801,11 +843,24 @@ const NovaPropostaPage = () => {
             />
             <div>
               <Label className="text-xs">E-mail *</Label>
-              <Input
-                type="email"
+              <AutocompleteInput
+                fieldType="email"
                 placeholder="email@empresa.com"
                 value={clientData.email}
-                onChange={(e) => setClientData(prev => ({ ...prev, email: e.target.value }))}
+                onChange={(value) => setClientData(prev => ({ ...prev, email: value }))}
+                onSelectSuggestion={(entry) => {
+                  const meta = entry.metadata || {};
+                  setClientData(prev => ({
+                    ...prev,
+                    firstName: meta.firstName || prev.firstName,
+                    lastName: meta.lastName || prev.lastName,
+                    companyName: meta.companyName || prev.companyName,
+                    document: meta.cnpj || prev.document,
+                    email: entry.field_value,
+                    phone: meta.phone || prev.phone,
+                    address: meta.address || prev.address
+                  }));
+                }}
                 className="mt-1 h-12 text-base"
               />
             </div>
