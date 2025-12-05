@@ -30,7 +30,9 @@ import {
   AlertTriangle,
   Star,
   FileText,
-  Scale
+  Scale,
+  Sun,
+  Moon
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -40,6 +42,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,6 +80,8 @@ import { useEscalacoesPendentes } from '@/hooks/useEscalacoesPendentes';
 import { useOfflineAlerts } from '@/hooks/useOfflineAlerts';
 import { useSidebarFavorites } from '@/hooks/useSidebarFavorites';
 import { SidebarFavoritesStar } from './SidebarFavoritesStar';
+import { useTheme } from '@/components/ui/theme-provider';
+import { ThemeToggle } from './ThemeToggle';
 
 export function ModernAdminSidebar() {
   const { state, open, setOpen, setOpenMobile, isMobile: isSidebarMobile } = useSidebar();
@@ -607,7 +612,10 @@ export function ModernAdminSidebar() {
       </SidebarContent>
       
       <SidebarFooter className={`${collapsed ? 'p-2' : 'p-3'} border-t border-white/10 bg-[#0F0F0F]/95 backdrop-blur-sm`}>
-        <div className="flex items-center space-x-2 text-white/60 text-xs">
+        {/* Theme Toggle - Apple Style */}
+        <ThemeToggle collapsed={collapsed} />
+        
+        <div className="flex items-center space-x-2 text-white/60 text-xs mt-2">
           <Shield className="h-3 w-3 flex-shrink-0" />
           {!collapsed && <span className="text-[10px] truncate">Sistema Seguro</span>}
         </div>

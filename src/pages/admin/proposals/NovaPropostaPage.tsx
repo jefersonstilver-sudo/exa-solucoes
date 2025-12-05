@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search } from 'lucide-react';
+import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { validateCNPJ, formatCompanyDocument, validateCompanyDocument } from '@/utils/inputValidation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCNPJConsult } from '@/hooks/useCNPJConsult';
+import { ProposalAlertRecipients, type AlertRecipient } from '@/components/admin/proposals/ProposalAlertRecipients';
 
 interface Building {
   id: string;
@@ -149,6 +150,9 @@ const NovaPropostaPage = () => {
     visualizacoes_mes: 7200,
     publico_estimado: 100
   });
+  
+  // Estados para destinatários de notificações EXA Alerts
+  const [alertRecipients, setAlertRecipients] = useState<AlertRecipient[]>([]);
 
   // Opções de período
   const periodOptions = [
@@ -448,13 +452,28 @@ const NovaPropostaPage = () => {
 
       if (error) throw error;
 
+      // Salvar destinatários de notificações EXA Alerts
+      if (alertRecipients.length > 0) {
+        const recipientsToInsert = alertRecipients.map(r => ({
+          proposal_id: proposal.id,
+          name: r.name,
+          phone: r.phone,
+          receive_whatsapp: r.receiveWhatsapp,
+          active: r.active
+        }));
+        
+        await supabase.from('proposal_alert_recipients').insert(recipientsToInsert);
+        console.log(`✅ ${recipientsToInsert.length} destinatários de alertas salvos`);
+      }
+
       await supabase.from('proposal_logs').insert({
         proposal_id: proposal.id,
         action: 'criada',
         details: { 
           send_whatsapp: sendOptions.whatsapp, 
           send_email: sendOptions.email,
-          buildings_count: selectedBuildings.length
+          buildings_count: selectedBuildings.length,
+          alert_recipients_count: alertRecipients.length
         }
       });
 
@@ -902,6 +921,13 @@ const NovaPropostaPage = () => {
             </div>
           </div>
         </Card>
+
+        {/* Seção 1.5: Notificações EXA Alert */}
+        <ProposalAlertRecipients
+          recipients={alertRecipients}
+          onRecipientsChange={setAlertRecipients}
+          className="relative z-40"
+        />
 
         {/* Seção 2: Seleção de Prédios */}
         <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50 relative z-30">

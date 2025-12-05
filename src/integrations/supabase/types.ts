@@ -5873,6 +5873,7 @@ export type Database = {
           id: string
           name: string
           phone: string
+          proposal_id: string | null
           receive_email: boolean | null
           receive_whatsapp: boolean | null
           updated_at: string | null
@@ -5885,6 +5886,7 @@ export type Database = {
           id?: string
           name: string
           phone: string
+          proposal_id?: string | null
           receive_email?: boolean | null
           receive_whatsapp?: boolean | null
           updated_at?: string | null
@@ -5897,12 +5899,21 @@ export type Database = {
           id?: string
           name?: string
           phone?: string
+          proposal_id?: string | null
           receive_email?: boolean | null
           receive_whatsapp?: boolean | null
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "proposal_alert_recipients_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       proposal_logs: {
         Row: {
