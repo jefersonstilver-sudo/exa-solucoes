@@ -66,8 +66,9 @@ serve(async (req) => {
     // Calculate total fidelity value
     const fidelTotal = proposal.fidel_monthly_value * proposal.duration_months;
 
-    // Build proposal link - usar domínio Lovable (funciona!)
-    const proposalLink = `https://64f6806c-c0e0-422b-b85f-955fd5719544.lovableproject.com/propostacomercial/${proposal.id}`;
+    // Build proposal link - usar domínio de produção
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://examidia.com.br';
+    const proposalLink = `${siteUrl}/propostacomercial/${proposal.id}`;
 
     // Format expiration date
     const expiresAt = proposal.expires_at 

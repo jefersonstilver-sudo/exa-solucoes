@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X } from 'lucide-react';
+import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -21,6 +21,7 @@ import type { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { validateCNPJ, formatCompanyDocument, validateCompanyDocument } from '@/utils/inputValidation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCNPJConsult } from '@/hooks/useCNPJConsult';
 
 interface Building {
   id: string;
@@ -55,6 +56,7 @@ const NovaPropostaPage = () => {
   const queryClient = useQueryClient();
   const { isMobile } = useResponsiveLayout();
   const { buildPath } = useAdminBasePath();
+  const { consultCNPJ, isLoading: isLoadingCNPJ } = useCNPJConsult();
 
   // Estado do formulário
   const [clientData, setClientData] = useState({
@@ -736,20 +738,50 @@ const NovaPropostaPage = () => {
             </div>
             <div>
               <Label className="text-xs">{getDocumentLabel()}</Label>
-              <Input
-                placeholder={getDocumentPlaceholder()}
-                value={clientData.document}
-                onChange={(e) => {
-                  const formatted = formatCompanyDocument(e.target.value, clientData.country);
-                  setClientData(prev => ({ ...prev, document: formatted }));
-                }}
-                maxLength={getDocumentMaxLength()}
-                className={`mt-1 h-12 text-base ${
-                  !isDocumentValid()
-                    ? 'border-red-500 focus:border-red-500 focus-visible:ring-red-500' 
-                    : ''
-                }`}
-              />
+              <div className="flex gap-2 mt-1">
+                <Input
+                  placeholder={getDocumentPlaceholder()}
+                  value={clientData.document}
+                  onChange={(e) => {
+                    const formatted = formatCompanyDocument(e.target.value, clientData.country);
+                    setClientData(prev => ({ ...prev, document: formatted }));
+                  }}
+                  maxLength={getDocumentMaxLength()}
+                  className={`h-12 text-base flex-1 ${
+                    !isDocumentValid()
+                      ? 'border-red-500 focus:border-red-500 focus-visible:ring-red-500' 
+                      : ''
+                  }`}
+                />
+                {clientData.country === 'BR' && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-12 w-12 shrink-0"
+                    disabled={isLoadingCNPJ || clientData.document.replace(/\D/g, '').length !== 14}
+                    onClick={async () => {
+                      const data = await consultCNPJ(clientData.document);
+                      if (data) {
+                        setClientData(prev => ({
+                          ...prev,
+                          companyName: data.razaoSocial || prev.companyName,
+                          address: data.endereco || prev.address,
+                          email: data.email || prev.email,
+                          phone: data.telefone || prev.phone,
+                        }));
+                      }
+                    }}
+                    title="Consultar CNPJ"
+                  >
+                    {isLoadingCNPJ ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+              </div>
               {!isDocumentValid() && (
                 <p className="text-xs text-red-500 mt-1">{getDocumentLabel()} inválido</p>
               )}
