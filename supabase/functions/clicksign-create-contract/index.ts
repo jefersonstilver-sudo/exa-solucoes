@@ -482,6 +482,7 @@ serve(async (req) => {
     console.log("Ativando envelope...");
     const activatePayload = {
       data: {
+        id: envelopeId,
         type: "envelopes",
         attributes: {
           status: "running"
