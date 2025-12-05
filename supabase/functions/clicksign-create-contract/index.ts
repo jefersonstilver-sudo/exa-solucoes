@@ -259,12 +259,20 @@ serve(async (req) => {
     console.log("Documento criado:", documentKey);
 
     // ========== 6. Adicionar Signatário CLIENTE ==========
+    // Usar dados do signatário cliente da tabela contrato_signatarios que tem birthday
+    const clientNomeCompleto = signatarioCliente 
+      ? `${signatarioCliente.nome} ${signatarioCliente.sobrenome || ''}`.trim()
+      : contrato.cliente_nome;
+    const clientEmail = signatarioCliente?.email || contrato.cliente_email;
+    const clientBirthday = signatarioCliente?.data_nascimento;
+
     const clientSignerPayload = {
       data: {
         type: "signers",
         attributes: {
-          name: contrato.cliente_nome,
-          email: contrato.cliente_email
+          name: clientNomeCompleto,
+          email: clientEmail,
+          ...(clientBirthday && { birthday: clientBirthday })
         }
       }
     };
