@@ -7,6 +7,7 @@ import OrdersPage from '@/pages/admin/OrdersPage';
 import OrderDetails from '@/pages/admin/OrderDetails';
 import ApprovalsPage from '@/pages/admin/ApprovalsPage';
 import UsersPage from '@/pages/admin/UsersPage';
+import TiposContaPage from '@/pages/admin/TiposContaPage';
 import SindicosInteressados from '@/pages/admin/SindicosInteressados';
 import CouponsPage from '@/pages/admin/CouponsPage';
 import HomepageImagesPage from '@/pages/admin/HomepageImagesPage';
@@ -121,6 +122,7 @@ const SuperAdminRoutes = () => {
       
       {/* ============ SISTEMA ============ */}
       <Route path="usuarios" element={<UsersPage />} />
+      <Route path="tipos-conta" element={<TiposContaPage />} />
       <Route path="notificacoes" element={<NotificationsPage />} />
       <Route path="configuracoes" element={<ConfiguracoesPage />} />
       <Route path="seguranca" element={<SecurityDashboard />} />

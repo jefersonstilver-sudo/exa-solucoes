@@ -72,42 +72,59 @@ export const GlobalNotificationProvider: React.FC<{ children: React.ReactNode }>
 
     console.log('🔔 [GlobalNotifications] Ativando monitoramento global de alertas');
 
-    // Buscar alertas não resolvidos existentes (apenas na inicialização)
+    // Buscar alertas não resolvidos existentes - FILTRAR por dispositivos que ainda estão offline
     const fetchExistingAlerts = async () => {
+      // Primeiro buscar dispositivos online para filtrar alertas órfãos
+      const { data: onlineDevices } = await supabase
+        .from('devices')
+        .select('id')
+        .eq('status', 'online');
+      
+      const onlineDeviceIds = new Set(onlineDevices?.map(d => d.id) || []);
+
       const { data: existingAlerts } = await supabase
         .from('panel_alerts')
         .select('*')
         .eq('resolved', false)
         .eq('alert_type', 'offline')
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(10);
 
       if (existingAlerts && existingAlerts.length > 0) {
-        console.log(`⚠️ [GlobalNotifications] ${existingAlerts.length} painéis offline detectados`);
+        // Filtrar alertas de dispositivos que JÁ estão online (alertas órfãos)
+        const realOfflineAlerts = existingAlerts.filter(a => !onlineDeviceIds.has(a.device_id));
         
-        // Mostrar apenas um toast resumido
-        const deviceNames = existingAlerts
-          .map(a => (a.metadata as any)?.device_name || 'Painel')
-          .join(', ');
-        
-        toast.error(`${existingAlerts.length} painel(is) offline detectado(s)`, {
-          description: deviceNames,
-          duration: 10000,
-          icon: <AlertTriangle className="h-5 w-5" />,
-        });
-
-        // Tocar som se habilitado
-        if (preferences.panel_alerts_sound && audioRef.current) {
-          audioRef.current.play().catch(() => {
-            console.log('🔇 [GlobalNotifications] Não foi possível tocar som');
-          });
+        // Auto-resolver alertas órfãos silenciosamente
+        const orphanAlerts = existingAlerts.filter(a => onlineDeviceIds.has(a.device_id));
+        if (orphanAlerts.length > 0) {
+          console.log(`🧹 [GlobalNotifications] Resolvendo ${orphanAlerts.length} alertas órfãos`);
+          await supabase
+            .from('panel_alerts')
+            .update({ resolved: true, resolved_at: new Date().toISOString() })
+            .in('id', orphanAlerts.map(a => a.id));
         }
 
-        // Marcar todos como notificados
-        existingAlerts.forEach(alert => {
-          notifiedAlerts.add(alert.id);
-        });
-        setNotifiedAlerts(new Set(notifiedAlerts));
+        // Só notificar sobre alertas reais (dispositivos ainda offline)
+        if (realOfflineAlerts.length > 0) {
+          console.log(`⚠️ [GlobalNotifications] ${realOfflineAlerts.length} painéis realmente offline`);
+          
+          const deviceNames = realOfflineAlerts
+            .map(a => (a.metadata as any)?.device_name || 'Painel')
+            .join(', ');
+          
+          toast.error(`${realOfflineAlerts.length} painel(is) offline`, {
+            description: deviceNames,
+            duration: 10000,
+            icon: <AlertTriangle className="h-5 w-5" />,
+          });
+
+          if (preferences.panel_alerts_sound && audioRef.current) {
+            audioRef.current.play().catch(() => {});
+          }
+
+          realOfflineAlerts.forEach(alert => notifiedAlerts.add(alert.id));
+          setNotifiedAlerts(new Set(notifiedAlerts));
+        }
       }
     };
 

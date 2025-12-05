@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Users, Shield, Plus, RefreshCw, Search, UserCheck, UserPlus, UserCog } from 'lucide-react';
+import { Crown, Users, Shield, Plus, RefreshCw, Search, UserCheck, UserPlus, UserCog, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import IndexaTeamSection from '@/components/admin/users/IndexaTeamSection';
@@ -205,17 +205,26 @@ const UsersPage = () => {
           <UserStatsCards stats={stats} loading={loadingStats} />
         </div>
 
-        {/* Ação Sincronizar */}
-        <div className="px-3 pb-2">
+        {/* Botões de Ação */}
+        <div className="px-3 pb-2 flex gap-2">
+          <Button
+            onClick={() => window.location.href = '/super_admin/tipos-conta'}
+            size="sm"
+            variant="outline"
+            className="flex-1 h-8 text-xs border-[#9C1E1E]/20 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
+          >
+            <Settings className="w-3.5 h-3.5 mr-1.5" />
+            Tipos de Conta
+          </Button>
           <Button
             onClick={handleSyncOrphanUsers}
             disabled={syncingOrphans}
             size="sm"
             variant="outline"
-            className="w-full h-8 text-xs border-amber-200 text-amber-700 hover:bg-amber-50"
+            className="flex-1 h-8 text-xs border-amber-200 text-amber-700 hover:bg-amber-50"
           >
             <UserCog className={`w-3.5 h-3.5 mr-1.5 ${syncingOrphans ? 'animate-spin' : ''}`} />
-            Sincronizar Órfãos
+            Sincronizar
           </Button>
         </div>
 
