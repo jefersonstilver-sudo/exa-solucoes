@@ -134,19 +134,44 @@ serve(async (req) => {
     const envelopeId = envelopeData.data?.id;
     console.log("Envelope criado:", envelopeId);
 
-    // ========== 2. Buscar TODOS os Signatários EXA ativos ==========
-    console.log("🔍 [CLICKSIGN] Buscando TODOS signatários EXA ativos...");
-    const { data: signatariosExa, error: signatarioError } = await supabase
-      .from("signatarios_exa")
+    // ========== 2. Buscar Signatários da tabela contrato_signatarios ==========
+    console.log("🔍 [CLICKSIGN] Buscando signatários do contrato...");
+    const { data: contratoSignatarios, error: signatariosDbError } = await supabase
+      .from("contrato_signatarios")
       .select("*")
-      .eq("is_active", true)
-      .order("is_default", { ascending: false }); // Default primeiro
+      .eq("contrato_id", contrato_id)
+      .order("ordem");
 
-    if (signatarioError) {
-      console.warn("⚠️ [CLICKSIGN] Erro ao buscar signatários EXA:", signatarioError);
+    if (signatariosDbError) {
+      console.warn("⚠️ [CLICKSIGN] Erro ao buscar signatários:", signatariosDbError);
     } else {
-      console.log("✅ [CLICKSIGN] Signatários EXA encontrados:", signatariosExa?.length || 0);
-      signatariosExa?.forEach((s: any) => console.log("   - ", s.nome, "(", s.email, ")"));
+      console.log("✅ [CLICKSIGN] Signatários encontrados:", contratoSignatarios?.length || 0);
+      contratoSignatarios?.forEach((s: any) => console.log("   - ", s.tipo, ":", s.nome, s.sobrenome, "(", s.email, ")"));
+    }
+
+    // Separar signatários por tipo
+    const clienteSignatarios = contratoSignatarios?.filter((s: any) => s.tipo === 'cliente') || [];
+    const exaSignatarios = contratoSignatarios?.filter((s: any) => s.tipo === 'exa') || [];
+    const testemunhaSignatarios = contratoSignatarios?.filter((s: any) => s.tipo === 'testemunha') || [];
+
+    // Fallback: buscar signatários EXA da tabela legada se não houver no contrato
+    let signatariosExa = exaSignatarios;
+    if (exaSignatarios.length === 0) {
+      console.log("🔍 [CLICKSIGN] Nenhum signatário EXA no contrato, buscando da tabela signatarios_exa...");
+      const { data: signatariosExaLegacy, error: signatarioError } = await supabase
+        .from("signatarios_exa")
+        .select("*")
+        .eq("is_active", true)
+        .order("is_default", { ascending: false });
+
+      if (!signatarioError && signatariosExaLegacy?.length) {
+        signatariosExa = signatariosExaLegacy.map((s: any) => ({
+          ...s,
+          sobrenome: s.nome.split(' ').slice(1).join(' ') || '',
+          nome: s.nome.split(' ')[0] || s.nome
+        }));
+        console.log("✅ [CLICKSIGN] Signatários EXA (legado) encontrados:", signatariosExa.length);
+      }
     }
 
     // ========== 3. Gerar HTML do Contrato ==========
@@ -251,13 +276,28 @@ serve(async (req) => {
     const documentKey = documentData.data?.id || documentData.data?.attributes?.key;
     console.log("Documento criado:", documentKey);
 
-    // ========== 6. Adicionar Signatário CLIENTE ==========
+    // ========== 6. Adicionar Signatário(s) CLIENTE ==========
+    const allSignerKeys: { key: string; tipo: string }[] = [];
+    
+    // Usar dados da tabela contrato_signatarios se disponível
+    const clienteData = clienteSignatarios.length > 0 
+      ? clienteSignatarios[0] 
+      : { 
+          nome: contrato.cliente_nome?.split(' ')[0] || contrato.cliente_nome, 
+          sobrenome: contrato.cliente_nome?.split(' ').slice(1).join(' ') || '',
+          email: contrato.cliente_email,
+          data_nascimento: contrato.cliente_data_nascimento
+        };
+    
+    const clientFullName = `${clienteData.nome} ${clienteData.sobrenome || ''}`.trim();
+    
     const clientSignerPayload = {
       data: {
         type: "signers",
         attributes: {
-          name: contrato.cliente_nome,
-          email: contrato.cliente_email
+          name: clientFullName,
+          email: clienteData.email,
+          ...(clienteData.data_nascimento && { birthday: clienteData.data_nascimento })
         }
       }
     };
@@ -279,23 +319,28 @@ serve(async (req) => {
     const clientSignerData = await clientSignerResponse.json();
     const clientSignerKey = clientSignerData.data?.id || clientSignerData.data?.attributes?.key;
     console.log("✅ [CLICKSIGN] Signatário CLIENTE adicionado:", clientSignerKey);
+    allSignerKeys.push({ key: clientSignerKey, tipo: 'cliente' });
 
-    // ========== 7. Adicionar TODOS os Signatários EXA ==========
+    // ========== 7. Adicionar Signatários EXA ==========
     const exaSignerKeys: string[] = [];
     if (signatariosExa && signatariosExa.length > 0) {
       for (const signatario of signatariosExa) {
+        const exaFullName = signatario.sobrenome 
+          ? `${signatario.nome} ${signatario.sobrenome}`.trim()
+          : signatario.nome;
+        
         const exaSignerPayload = {
           data: {
             type: "signers",
             attributes: {
-              name: signatario.nome,
+              name: exaFullName,
               email: signatario.email,
               ...(signatario.data_nascimento && { birthday: signatario.data_nascimento })
             }
           }
         };
 
-        console.log(`🏢 [CLICKSIGN] Adicionando signatário EXA: ${signatario.nome}...`);
+        console.log(`🏢 [CLICKSIGN] Adicionando signatário EXA: ${exaFullName}...`);
         const exaSignerResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/signers`, {
           method: "POST",
           headers: clicksignHeaders,
@@ -304,12 +349,50 @@ serve(async (req) => {
 
         if (!exaSignerResponse.ok) {
           const errorText = await exaSignerResponse.text();
-          console.warn(`⚠️ [CLICKSIGN] Erro ao adicionar signatário EXA ${signatario.nome}:`, errorText);
+          console.warn(`⚠️ [CLICKSIGN] Erro ao adicionar signatário EXA ${exaFullName}:`, errorText);
         } else {
           const exaSignerData = await exaSignerResponse.json();
           const exaSignerKey = exaSignerData.data?.id || exaSignerData.data?.attributes?.key;
           exaSignerKeys.push(exaSignerKey);
-          console.log(`✅ [CLICKSIGN] Signatário EXA ${signatario.nome} adicionado:`, exaSignerKey);
+          allSignerKeys.push({ key: exaSignerKey, tipo: 'exa' });
+          console.log(`✅ [CLICKSIGN] Signatário EXA ${exaFullName} adicionado:`, exaSignerKey);
+        }
+      }
+    }
+
+    // ========== 7b. Adicionar Testemunhas (se houver) ==========
+    const testemunhaSignerKeys: string[] = [];
+    if (testemunhaSignatarios && testemunhaSignatarios.length > 0) {
+      for (const testemunha of testemunhaSignatarios) {
+        const testemunhaFullName = `${testemunha.nome} ${testemunha.sobrenome || ''}`.trim();
+        
+        const testemunhaSignerPayload = {
+          data: {
+            type: "signers",
+            attributes: {
+              name: testemunhaFullName,
+              email: testemunha.email,
+              ...(testemunha.data_nascimento && { birthday: testemunha.data_nascimento })
+            }
+          }
+        };
+
+        console.log(`👥 [CLICKSIGN] Adicionando testemunha: ${testemunhaFullName}...`);
+        const testemunhaSignerResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/signers`, {
+          method: "POST",
+          headers: clicksignHeaders,
+          body: JSON.stringify(testemunhaSignerPayload)
+        });
+
+        if (!testemunhaSignerResponse.ok) {
+          const errorText = await testemunhaSignerResponse.text();
+          console.warn(`⚠️ [CLICKSIGN] Erro ao adicionar testemunha ${testemunhaFullName}:`, errorText);
+        } else {
+          const testemunhaSignerData = await testemunhaSignerResponse.json();
+          const testemunhaSignerKey = testemunhaSignerData.data?.id || testemunhaSignerData.data?.attributes?.key;
+          testemunhaSignerKeys.push(testemunhaSignerKey);
+          allSignerKeys.push({ key: testemunhaSignerKey, tipo: 'testemunha' });
+          console.log(`✅ [CLICKSIGN] Testemunha ${testemunhaFullName} adicionada:`, testemunhaSignerKey);
         }
       }
     }
