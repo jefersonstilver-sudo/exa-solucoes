@@ -55,8 +55,9 @@ import ContractPreview from '@/components/admin/contracts/ContractPreview';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { AutocompleteInput } from '@/components/ui/autocomplete-input';
 import { useCNPJConsult } from '@/hooks/useCNPJConsult';
+import SignatariosStep, { SignatarioContrato } from '@/components/admin/contracts/SignatariosStep';
 
-type Step = 'tipo' | 'modo' | 'vinculo' | 'cliente' | 'contrato' | 'preview';
+type Step = 'tipo' | 'modo' | 'vinculo' | 'cliente' | 'contrato' | 'signatarios' | 'preview';
 type FillMode = 'extract' | 'manual';
 type TipoProduto = 'horizontal' | 'vertical_premium';
 
@@ -102,6 +103,7 @@ const NovoContratoPage = () => {
   const [showSendModal, setShowSendModal] = useState(false);
   const [sendEmail, setSendEmail] = useState('');
   const [sendNome, setSendNome] = useState('');
+  const [signatarios, setSignatarios] = useState<SignatarioContrato[]>([]);
   
   // Estados para pagamento personalizado manual
   const [isCustomPaymentManual, setIsCustomPaymentManual] = useState(false);
@@ -378,6 +380,10 @@ const NovoContratoPage = () => {
       // Concatenar nome completo para ClickSign
       const clienteNomeCompleto = `${data.cliente_nome.trim()} ${data.cliente_sobrenome.trim()}`.trim();
       
+      // Obter data de nascimento do cliente dos signatários
+      const clienteSignatario = signatarios.find(s => s.tipo === 'cliente');
+      const clienteDataNascimento = clienteSignatario?.data_nascimento || null;
+      
       const contratoPayload = {
         numero_contrato: numeroContrato,
         tipo_contrato: data.tipo_contrato,
@@ -394,6 +400,7 @@ const NovoContratoPage = () => {
         cliente_endereco: data.cliente_endereco,
         cliente_cidade: data.cliente_cidade,
         cliente_segmento: data.cliente_segmento,
+        cliente_data_nascimento: clienteDataNascimento,
         valor_mensal: data.valor_mensal,
         valor_total: isCustomPaymentManual ? customTotalManual : data.valor_total,
         plano_meses: data.plano_meses,
@@ -424,6 +431,33 @@ const NovoContratoPage = () => {
       }
 
       console.log('✅ Contrato criado:', contrato.id);
+
+      // Salvar signatários na tabela contrato_signatarios
+      if (signatarios.length > 0) {
+        console.log('📝 Salvando signatários...');
+        const signatariosPayload = signatarios.map((s, idx) => ({
+          contrato_id: contrato.id,
+          tipo: s.tipo,
+          nome: s.nome,
+          sobrenome: s.sobrenome || '',
+          email: s.email,
+          data_nascimento: s.data_nascimento || null,
+          cpf: s.cpf || null,
+          cargo: s.cargo || null,
+          signatario_exa_id: s.signatario_exa_id || null,
+          ordem: idx + 1
+        }));
+
+        const { error: signatariosError } = await supabase
+          .from('contrato_signatarios')
+          .insert(signatariosPayload);
+
+        if (signatariosError) {
+          console.error('⚠️ Erro ao salvar signatários:', signatariosError);
+        } else {
+          console.log('✅ Signatários salvos:', signatarios.length);
+        }
+      }
 
       if (data.enviar && contrato) {
         console.log('📤 Enviando para ClickSign...');
@@ -545,6 +579,7 @@ const NovoContratoPage = () => {
     { key: 'vinculo', label: 'Dados' },
     { key: 'cliente', label: 'Cliente' },
     { key: 'contrato', label: 'Contrato' },
+    { key: 'signatarios', label: 'Signatários' },
     { key: 'preview', label: 'Preview' }
   ];
 
@@ -1378,6 +1413,34 @@ const NovoContratoPage = () => {
               <Button variant="outline" onClick={() => setStep('cliente')} className="rounded-xl">
                 Voltar
               </Button>
+              <Button onClick={() => setStep('signatarios')} className="rounded-xl">
+                Próximo: Signatários
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 6: Signatários */}
+        {step === 'signatarios' && (
+          <div className="space-y-6">
+            <h2 className="text-lg font-semibold">Configurar Signatários</h2>
+            <p className="text-sm text-muted-foreground">
+              Configure os dados dos signatários para assinatura digital via ClickSign.
+            </p>
+            
+            <SignatariosStep
+              clienteNome={contratoData.cliente_nome}
+              clienteSobrenome={contratoData.cliente_sobrenome}
+              clienteEmail={contratoData.cliente_email}
+              clienteCargo={contratoData.cliente_cargo}
+              signatarios={signatarios}
+              onSignatariosChange={setSignatarios}
+            />
+
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setStep('contrato')} className="rounded-xl">
+                Voltar
+              </Button>
               <Button onClick={() => setStep('preview')} className="rounded-xl">
                 <Eye className="h-4 w-4 mr-2" />
                 Visualizar Contrato
@@ -1386,7 +1449,7 @@ const NovoContratoPage = () => {
           </div>
         )}
 
-        {/* Step 6: Preview e Envio */}
+        {/* Step 7: Preview e Envio */}
         {step === 'preview' && (
           <div className="space-y-6">
             <h2 className="text-lg font-semibold">Prévia do Contrato</h2>
@@ -1410,7 +1473,7 @@ const NovoContratoPage = () => {
             </div>
 
             <div className="flex flex-col md:flex-row justify-between gap-4">
-              <Button variant="outline" onClick={() => setStep('contrato')} className="rounded-xl">
+              <Button variant="outline" onClick={() => setStep('signatarios')} className="rounded-xl">
                 Voltar
               </Button>
               <div className="flex gap-2 flex-wrap">
