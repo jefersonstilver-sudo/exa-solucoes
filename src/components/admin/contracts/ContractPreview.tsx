@@ -501,29 +501,30 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
         </div>
 
         <div>
-          <h2 className="font-bold">CLÁUSULA 5ª - DO CONTEÚDO PUBLICITÁRIO</h2>
+          <h2 className="font-bold">CLÁUSULA 5ª - ENTREGA, FREQUÊNCIA E SLA</h2>
           {isVerticalPremium ? (
             <>
               <p>
-                5.1. A CONTRATANTE compromete-se a enviar vídeo conforme especificações técnicas:
+                5.1. Exibições estimadas: <strong>tela cheia a cada 50 segundos</strong>, 24 horas por dia, 7 dias por semana.
+              </p>
+              <p className="mt-2">
+                5.2. <strong>Especificações técnicas obrigatórias:</strong>
               </p>
               <ul className="list-disc ml-6 mt-2">
                 <li>Formato: <strong>MP4 (H.264)</strong></li>
                 <li>Resolução: <strong>1080x1920 (vertical)</strong></li>
                 <li>Duração: <strong>10 segundos</strong></li>
-                <li>Exibição: <strong>Tela cheia a cada 50 segundos</strong></li>
                 <li>Áudio: Sem áudio</li>
               </ul>
-              <p className="mt-2 bg-purple-50 border border-purple-200 rounded p-2 text-purple-800">
-                <strong>5.2. IMPORTANTE:</strong> A modalidade Vertical Premium <strong>NÃO inclui acesso</strong> ao 
-                Portal do Anunciante. A gestão e substituição do vídeo será realizada diretamente 
-                pela EXA MÍDIA mediante solicitação por escrito.
-              </p>
             </>
           ) : (
             <>
               <p>
-                5.1. A CONTRATANTE compromete-se a enviar vídeos conforme especificações técnicas:
+                5.1. Exibições estimadas: <strong>245 exibições por painel/dia</strong> (média). 
+                Relatório mensal será gerado e disponibilizado no painel administrativo.
+              </p>
+              <p className="mt-2">
+                5.2. <strong>Especificações técnicas obrigatórias:</strong>
               </p>
               <ul className="list-disc ml-6 mt-2">
                 <li>Formato: <strong>MP4 (H.264)</strong></li>
@@ -531,84 +532,173 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
                 <li>Duração: <strong>até 15 segundos</strong></li>
                 <li>Áudio: Sem áudio</li>
               </ul>
-              <p className="mt-2">
-                5.2. A CONTRATANTE terá acesso ao <strong>Portal do Anunciante</strong> onde poderá:
-              </p>
-              <ul className="list-disc ml-6 mt-1">
-                <li>Visualizar relatórios detalhados de exibição</li>
-                <li>Agendar até <strong>4 (quatro) vídeos diferentes</strong></li>
-                <li>Substituir vídeos a qualquer momento</li>
-                <li>Acompanhar métricas de visualização em tempo real</li>
-              </ul>
-              <p className="mt-2">
-                5.3. A CONTRATADA poderá recusar conteúdos que não atendam aos padrões técnicos 
-                ou que contenham material ofensivo, ilegal ou que infrinja direitos de terceiros.
-              </p>
             </>
           )}
+          <p className="mt-2">
+            5.3. <strong>SLA operacional:</strong> disponibilidade média mínima de 90% da rede. 
+            Falhas técnicas imputáveis à EXA serão tratadas em até 72 horas úteis.
+          </p>
         </div>
 
-        {/* CLÁUSULA DE DIREITOS DE IMAGEM - SEMPRE PRESENTE */}
-        <div className="bg-gray-50 border border-gray-200 rounded p-3">
-          <h2 className="font-bold">CLÁUSULA 6ª - DA CESSÃO DE DIREITOS DE IMAGEM</h2>
-          <p className="mt-2">
-            6.1. A CONTRATANTE <strong>autoriza expressamente</strong> a EXA MÍDIA a utilizar 
-            o material publicitário fornecido para:
-          </p>
-          <ul className="list-disc ml-6 mt-2">
-            <li>Veiculação nos painéis digitais contratados;</li>
-            <li>Divulgação em materiais institucionais da EXA MÍDIA;</li>
-            <li>Portfólio e cases de sucesso;</li>
-            <li>Redes sociais e website da EXA MÍDIA;</li>
-            <li>Apresentações comerciais e demonstrações.</li>
+        <div>
+          <h2 className="font-bold">CLÁUSULA 6ª - RESPONSABILIDADES</h2>
+          <p>6.1. <strong>Responsabilidades da EXA:</strong></p>
+          <ul className="list-disc ml-6 mt-1">
+            <li>Operação, manutenção e monitoramento dos painéis;</li>
+            <li>Backup de logs e emissão de relatórios;</li>
+            <li>Suporte técnico e assistência.</li>
           </ul>
+          <p className="mt-2">6.2. <strong>Responsabilidades do CONTRATANTE:</strong></p>
+          <ul className="list-disc ml-6 mt-1">
+            <li>Envio de material em conformidade com especificações;</li>
+            <li>Garantia de direitos autorais sobre o conteúdo;</li>
+            <li>Pagamento em dia e cooperação em auditorias técnicas.</li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 className="font-bold">CLÁUSULA 7ª - DIREITOS AUTORAIS E CESSÃO DE IMAGEM</h2>
+          <p>
+            7.1. O CONTRATANTE declara possuir <strong>todos os direitos</strong> sobre o material 
+            publicitário e indenizará a EXA por quaisquer reivindicações de terceiros.
+          </p>
           <p className="mt-2">
-            6.2. A autorização prevista nesta cláusula é concedida a título gratuito e por 
-            prazo indeterminado, podendo ser revogada mediante comunicação escrita com 
-            antecedência mínima de 30 (trinta) dias.
+            7.2. A CONTRATANTE <strong>autoriza expressamente</strong> a EXA MÍDIA a utilizar 
+            o material publicitário para:
+          </p>
+          <ul className="list-disc ml-6 mt-1">
+            <li>Veiculação nos painéis digitais contratados;</li>
+            <li>Divulgação em materiais institucionais, portfólio e cases;</li>
+            <li>Redes sociais, website e apresentações comerciais.</li>
+          </ul>
+        </div>
+
+        <div className="bg-amber-50 border border-amber-200 rounded p-3">
+          <h2 className="font-bold">CLÁUSULA 8ª - RESCISÃO E MULTA</h2>
+          <p>
+            8.1. <strong>Rescisão antecipada pelo CONTRATANTE:</strong> multa de 20% sobre o saldo 
+            remanescente, salvo outras condições previamente acordadas por escrito.
+          </p>
+          <p className="mt-2">
+            8.2. <strong>Rescisão por culpa da EXA:</strong> devolução proporcional de valores não utilizados.
           </p>
         </div>
 
         <div>
-          <h2 className="font-bold">CLÁUSULA 7ª - DO CANCELAMENTO</h2>
+          <h2 className="font-bold">CLÁUSULA 9ª - REAJUSTE</h2>
           <p>
-            7.1. O cancelamento antecipado por parte da CONTRATANTE gerará multa de 30% 
-            (trinta por cento) sobre o saldo devedor restante.
+            9.1. Reajuste anual pelo <strong>IPCA</strong> ou índice que venha a substituí-lo.
+          </p>
+        </div>
+
+        <div className="bg-gray-50 border border-gray-200 rounded p-3">
+          <h2 className="font-bold">CLÁUSULA 10ª - SEGURANÇA, PRIVACIDADE E AUTENTICAÇÃO</h2>
+          <p className="mt-2">
+            10.1. <strong>Segurança Operacional:</strong> A EXA manterá políticas e controles de 
+            segurança incluindo firewall, autenticação multifatorial, segregação de ambientes, 
+            backups periódicos e monitoramento de integridade.
+          </p>
+          <p className="mt-2">
+            10.2. <strong>Proteção de Dados e Privacidade:</strong> Ambas as partes concordam em 
+            cumprir a legislação aplicável (incl. LGPD). Vazamentos serão comunicados em até 48 horas úteis.
+          </p>
+          <p className="mt-2">
+            10.3. <strong>Logs e Auditoria:</strong> A EXA manterá registros de logs por no mínimo 
+            12 meses para fins de auditoria.
+          </p>
+          <p className="mt-2">
+            10.4. <strong>Confidencialidade:</strong> As partes comprometem-se a manter confidenciais 
+            termos comerciais, preços, relatórios e acessos técnicos.
           </p>
         </div>
 
         <div>
-          <h2 className="font-bold">CLÁUSULA 8ª - DO FORO</h2>
+          <h2 className="font-bold">CLÁUSULA 11ª - DISPOSIÇÕES GERAIS</h2>
           <p>
-            8.1. Para dirimir eventuais dúvidas ou litígios oriundos deste contrato, as partes 
-            elegem o foro da Comarca de Foz do Iguaçu - PR, com renúncia expressa a qualquer outro.
+            11.1. Comunicações oficiais via portal, e-mail corporativo ou notificações do sistema EXA.
+          </p>
+          <p className="mt-2">
+            11.2. Alterações ao contrato somente por escrito e assinadas por representantes autorizados.
+          </p>
+        </div>
+
+        <div>
+          <h2 className="font-bold">CLÁUSULA 12ª - FORO</h2>
+          <p>
+            12.1. Elegem as partes o foro da comarca de <strong>Foz do Iguaçu/PR</strong> para dirimir 
+            controvérsias, com renúncia a qualquer outro.
           </p>
         </div>
 
         {data.clausulas_especiais && (
-          <div>
-            <h2 className="font-bold">CLÁUSULA 9ª - CONDIÇÕES ESPECIAIS</h2>
+          <div className="bg-blue-50 border border-blue-200 rounded p-3">
+            <h2 className="font-bold">CLÁUSULA 13ª - CONDIÇÕES ESPECIAIS</h2>
             <p>{data.clausulas_especiais}</p>
           </div>
         )}
       </div>
 
-      {/* Assinaturas */}
-      <div className="mt-12">
-        <p className="text-center mb-8">
+      {/* Assinaturas - COM REPRESENTANTES EXA COMPLETOS */}
+      <div className="mt-12 pt-8 border-t-2 border-gray-300">
+        <p className="text-center mb-10 text-sm">
           Foz do Iguaçu - PR, {dataAtual}.
         </p>
-        <div className="grid grid-cols-2 gap-8 mt-16">
-          <div className="text-center">
-            <div className="border-t border-gray-400 pt-2">
-              <p className="font-bold">{data.cliente_razao_social || data.cliente_nome}</p>
-              <p className="text-sm text-gray-600">CONTRATANTE</p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+          {/* CONTRATANTE */}
+          <div className="border border-gray-300 rounded-lg p-6 bg-gray-50">
+            <h3 className="font-bold text-center text-sm text-gray-600 mb-4 uppercase tracking-wide">
+              CONTRATANTE
+            </h3>
+            <div className="text-center space-y-2">
+              <p className="font-bold text-base">{data.cliente_razao_social || data.cliente_nome}</p>
+              {data.cliente_cnpj && (
+                <p className="text-sm text-gray-600">CNPJ: {data.cliente_cnpj}</p>
+              )}
+              <p className="text-sm">Representante: {data.cliente_nome}</p>
+              {data.cliente_cargo && (
+                <p className="text-xs text-gray-500">Cargo: {data.cliente_cargo}</p>
+              )}
+              
+              <div className="mt-8 pt-4">
+                <div className="border-t border-gray-400 mx-8"></div>
+                <p className="text-xs text-gray-500 mt-2">Assinatura</p>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">Data: ____ / ____ / ________</p>
             </div>
           </div>
-          <div className="text-center">
-            <div className="border-t border-gray-400 pt-2">
-              <p className="font-bold">EXA SOLUÇÕES DIGITAIS LTDA</p>
-              <p className="text-sm text-gray-600">CONTRATADA</p>
+          
+          {/* CONTRATADA - EXA com dois representantes */}
+          <div className="border border-gray-300 rounded-lg p-6 bg-gray-50">
+            <h3 className="font-bold text-center text-sm text-gray-600 mb-4 uppercase tracking-wide">
+              CONTRATADA
+            </h3>
+            <div className="text-center space-y-2">
+              <p className="font-bold text-base">EXA — Soluções Digitais</p>
+              <p className="text-sm text-gray-600">CNPJ: 62.878.193/0001-35</p>
+              <p className="text-xs text-gray-500 mt-2">Representantes legais:</p>
+              
+              {/* Natália */}
+              <div className="mt-4 pt-4 border-t border-dashed border-gray-300">
+                <p className="font-semibold text-sm">Natália Krause Guimarães Dantas</p>
+                <p className="text-xs text-gray-500">RG 13.038.569-9 / CPF 116.228.359-99</p>
+                <div className="mt-4 pt-2">
+                  <div className="border-t border-gray-400 mx-12"></div>
+                  <p className="text-xs text-gray-500 mt-1">Assinatura</p>
+                </div>
+              </div>
+              
+              {/* Jeferson */}
+              <div className="mt-4 pt-4 border-t border-dashed border-gray-300">
+                <p className="font-semibold text-sm">Jeferson Stilver Rodrigues Encina</p>
+                <p className="text-xs text-gray-500">RG 8.812.269-0 / CPF 055.031.279-00</p>
+                <div className="mt-4 pt-2">
+                  <div className="border-t border-gray-400 mx-12"></div>
+                  <p className="text-xs text-gray-500 mt-1">Assinatura</p>
+                </div>
+              </div>
+              
+              <p className="text-xs text-gray-400 mt-4">Data: ____ / ____ / ________</p>
             </div>
           </div>
         </div>

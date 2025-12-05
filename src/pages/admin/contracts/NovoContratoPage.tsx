@@ -47,8 +47,10 @@ import {
   CheckCircle,
   Plus,
   Trash2,
-  MapPin
+  MapPin,
+  Download
 } from 'lucide-react';
+import { ContractPDFExporter } from '@/components/admin/contracts/ContractPDFExporter';
 import ContractPreview from '@/components/admin/contracts/ContractPreview';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { AutocompleteInput } from '@/components/ui/autocomplete-input';
@@ -1411,7 +1413,7 @@ const NovoContratoPage = () => {
               <Button variant="outline" onClick={() => setStep('contrato')} className="rounded-xl">
                 Voltar
               </Button>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button 
                   variant="outline" 
                   onClick={() => handleSubmit(false)}
@@ -1420,6 +1422,51 @@ const NovoContratoPage = () => {
                 >
                   <Save className="h-4 w-4 mr-2" />
                   Salvar Rascunho
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={async () => {
+                    const exporter = new ContractPDFExporter();
+                    const tempContract = {
+                      id: 'preview',
+                      numero_contrato: 'RASCUNHO',
+                      cliente_nome: `${contratoData.cliente_nome} ${contratoData.cliente_sobrenome}`.trim(),
+                      cliente_email: contratoData.cliente_email,
+                      cliente_cnpj: contratoData.cliente_cnpj,
+                      cliente_razao_social: contratoData.cliente_razao_social,
+                      cliente_telefone: contratoData.cliente_telefone,
+                      cliente_segmento: contratoData.cliente_segmento,
+                      cliente_endereco: contratoData.cliente_endereco,
+                      cliente_cidade: contratoData.cliente_cidade,
+                      lista_predios: contratoData.lista_predios,
+                      total_paineis: totalPaineis,
+                      valor_mensal: contratoData.valor_mensal,
+                      valor_total: isCustomPaymentManual ? customTotalManual : contratoData.valor_total,
+                      plano_meses: contratoData.plano_meses,
+                      metodo_pagamento: isCustomPaymentManual ? 'custom' : contratoData.metodo_pagamento,
+                      dia_vencimento: contratoData.dia_vencimento,
+                      data_inicio: contratoData.data_inicio,
+                      data_fim: null,
+                      objeto: null,
+                      clausulas_especiais: contratoData.clausulas_especiais,
+                      parcelas: isCustomPaymentManual 
+                        ? customInstallmentsManual.map((p, idx) => ({
+                            installment: idx + 1,
+                            due_date: formatDateForInput(p.dueDate),
+                            amount: parseFloat(p.amount) || 0
+                          }))
+                        : contratoData.parcelas,
+                      tipo_produto: contratoData.tipo_produto,
+                      status: 'rascunho',
+                      created_at: new Date().toISOString()
+                    };
+                    await exporter.generateContractPDF(tempContract);
+                    toast.success('PDF gerado com sucesso!');
+                  }}
+                  className="rounded-xl"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download PDF
                 </Button>
                 <Button 
                   onClick={() => {
