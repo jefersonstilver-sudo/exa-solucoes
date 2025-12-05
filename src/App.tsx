@@ -1,4 +1,3 @@
-// Force rebuild - 2025-12-05T14:30:00Z - Clean rebuild after security fix
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -127,8 +126,10 @@ const AppContent = () => {
   console.log('🔍 [SESSION] É display público?', isPublicDisplayRoute);
   console.log(isPublicDisplayRoute ? '🚫 [SESSION] Tracking desabilitado' : '✅ [SESSION] Tracking ativado');
   
-  // ✅ Active session tracking - Desabilitado para painéis públicos via parâmetro
-  useActiveSession({ enabled: !isPublicDisplayRoute });
+  // ⚠️ Active session tracking - DESABILITADO para painéis públicos
+  if (!isPublicDisplayRoute) {
+    useActiveSession();
+  }
   
   // Page transition hook
   const { isLoading: isTransitioning, loadingMessage } = usePageTransition({
