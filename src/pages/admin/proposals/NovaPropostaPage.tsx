@@ -680,7 +680,7 @@ const NovaPropostaPage = () => {
 
       <div className="p-4 space-y-4 pb-32">
         {/* Seção 1: Dados do Cliente */}
-        <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50 overflow-visible">
+        <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50 overflow-visible relative z-40">
           <div className="flex items-center gap-2 mb-4">
             <User className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Dados do Cliente</h2>
@@ -817,7 +817,7 @@ const NovaPropostaPage = () => {
         </Card>
 
         {/* Seção 2: Seleção de Prédios */}
-        <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50">
+        <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50 relative z-30">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-primary" />
