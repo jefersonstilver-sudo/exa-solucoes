@@ -680,7 +680,7 @@ const NovaPropostaPage = () => {
 
       <div className="p-4 space-y-4 pb-32">
         {/* Seção 1: Dados do Cliente */}
-        <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50">
+        <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50 overflow-visible">
           <div className="flex items-center gap-2 mb-4">
             <User className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Dados do Cliente</h2>
@@ -779,7 +779,7 @@ const NovaPropostaPage = () => {
             </div>
             
             {/* Campo de Endereço - Condicional por país */}
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 relative z-50">
               <Label className="text-xs flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
                 Endereço da Empresa
