@@ -4,6 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { useAuth } from '@/hooks/useAuth';
+import { useAutocompleteHistory } from '@/hooks/useAutocompleteHistory';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -50,6 +51,7 @@ import {
 } from 'lucide-react';
 import ContractPreview from '@/components/admin/contracts/ContractPreview';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
+import { AutocompleteInput } from '@/components/ui/autocomplete-input';
 import { useCNPJConsult } from '@/hooks/useCNPJConsult';
 
 type Step = 'tipo' | 'modo' | 'vinculo' | 'cliente' | 'contrato' | 'preview';
@@ -91,6 +93,7 @@ const NovoContratoPage = () => {
   const { buildPath } = useAdminBasePath();
   const { session } = useAuth();
   const { consultCNPJ, isLoading: isLoadingCNPJ } = useCNPJConsult();
+  const { saveClientData: saveAutocomplete } = useAutocompleteHistory();
   const [step, setStep] = useState<Step>('tipo');
   const [fillMode, setFillMode] = useState<FillMode | null>(null);
   const [searchPedido, setSearchPedido] = useState('');
@@ -437,6 +440,17 @@ const NovoContratoPage = () => {
       return contrato;
     },
     onSuccess: (contrato, variables) => {
+      // Salvar dados do cliente no histórico de autocomplete
+      saveAutocomplete({
+        firstName: contratoData.cliente_nome,
+        lastName: contratoData.cliente_sobrenome,
+        companyName: contratoData.cliente_razao_social,
+        cnpj: contratoData.cliente_cnpj,
+        email: contratoData.cliente_email,
+        phone: contratoData.cliente_telefone,
+        address: contratoData.cliente_endereco
+      });
+      
       if (variables.enviar) {
         toast.success('Contrato criado e enviado para assinatura!');
       } else {
@@ -833,10 +847,24 @@ const NovoContratoPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="cliente_nome">Nome *</Label>
-                <Input
+                <AutocompleteInput
                   id="cliente_nome"
+                  fieldType="client_name"
                   value={contratoData.cliente_nome}
-                  onChange={(e) => setContratoData(prev => ({ ...prev, cliente_nome: e.target.value }))}
+                  onChange={(value) => setContratoData(prev => ({ ...prev, cliente_nome: value }))}
+                  onSelectSuggestion={(entry) => {
+                    const meta = entry.metadata || {};
+                    setContratoData(prev => ({
+                      ...prev,
+                      cliente_nome: meta.firstName || entry.field_value.split(' ')[0] || prev.cliente_nome,
+                      cliente_sobrenome: meta.lastName || entry.field_value.split(' ').slice(1).join(' ') || prev.cliente_sobrenome,
+                      cliente_razao_social: meta.companyName || prev.cliente_razao_social,
+                      cliente_cnpj: meta.cnpj || prev.cliente_cnpj,
+                      cliente_email: meta.email || prev.cliente_email,
+                      cliente_telefone: meta.phone || prev.cliente_telefone,
+                      cliente_endereco: meta.address || prev.cliente_endereco
+                    }));
+                  }}
                   placeholder="Primeiro nome"
                   className="rounded-xl"
                 />
@@ -853,11 +881,24 @@ const NovoContratoPage = () => {
               </div>
               <div>
                 <Label htmlFor="cliente_email">E-mail *</Label>
-                <Input
+                <AutocompleteInput
                   id="cliente_email"
-                  type="email"
+                  fieldType="email"
                   value={contratoData.cliente_email}
-                  onChange={(e) => setContratoData(prev => ({ ...prev, cliente_email: e.target.value }))}
+                  onChange={(value) => setContratoData(prev => ({ ...prev, cliente_email: value }))}
+                  onSelectSuggestion={(entry) => {
+                    const meta = entry.metadata || {};
+                    setContratoData(prev => ({
+                      ...prev,
+                      cliente_nome: meta.firstName || prev.cliente_nome,
+                      cliente_sobrenome: meta.lastName || prev.cliente_sobrenome,
+                      cliente_razao_social: meta.companyName || prev.cliente_razao_social,
+                      cliente_cnpj: meta.cnpj || prev.cliente_cnpj,
+                      cliente_email: entry.field_value,
+                      cliente_telefone: meta.phone || prev.cliente_telefone,
+                      cliente_endereco: meta.address || prev.cliente_endereco
+                    }));
+                  }}
                   placeholder="email@empresa.com"
                   className="rounded-xl"
                 />

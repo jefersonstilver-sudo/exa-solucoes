@@ -6746,6 +6746,42 @@ export type Database = {
           },
         ]
       }
+      user_autocomplete_history: {
+        Row: {
+          created_at: string | null
+          display_label: string | null
+          field_type: string
+          field_value: string
+          frequency: number | null
+          id: string
+          last_used_at: string | null
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_label?: string | null
+          field_type: string
+          field_value: string
+          frequency?: number | null
+          id?: string
+          last_used_at?: string | null
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_label?: string | null
+          field_type?: string
+          field_value?: string
+          frequency?: number | null
+          id?: string
+          last_used_at?: string | null
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_behavior_tracking: {
         Row: {
           created_at: string | null
@@ -8596,6 +8632,15 @@ export type Database = {
           p_terms_accepted_at?: string
         }
         Returns: boolean
+      }
+      upsert_autocomplete_history: {
+        Args: {
+          p_display_label?: string
+          p_field_type: string
+          p_field_value: string
+          p_metadata?: Json
+        }
+        Returns: undefined
       }
       validate_benefit_token: { Args: { p_token: string }; Returns: Json }
       validate_coupon_secure:
