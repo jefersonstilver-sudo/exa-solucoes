@@ -15,12 +15,10 @@ export const useActiveSession = (options: UseActiveSessionOptions = {}) => {
   const heartbeatIntervalRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    // ✅ Verificação condicional DENTRO do useEffect (permitido pelo React)
     if (!enabled) {
-      console.log('🚫 useActiveSession: Desabilitado para esta rota');
+      console.log('🔴 useActiveSession: Desabilitado para esta rota');
       return;
     }
-    
     console.log('🔵 useActiveSession: Iniciando...');
     const sessionId = sessionIdRef.current;
 
