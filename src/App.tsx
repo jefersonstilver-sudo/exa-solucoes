@@ -1,4 +1,4 @@
-// Force rebuild - 2025-12-05
+// App rebuild - Fixed conditional hook issue - 2025-12-05T04:03
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -127,10 +127,8 @@ const AppContent = () => {
   console.log('🔍 [SESSION] É display público?', isPublicDisplayRoute);
   console.log(isPublicDisplayRoute ? '🚫 [SESSION] Tracking desabilitado' : '✅ [SESSION] Tracking ativado');
   
-  // ⚠️ Active session tracking - DESABILITADO para painéis públicos
-  if (!isPublicDisplayRoute) {
-    useActiveSession();
-  }
+  // ⚠️ Active session tracking - Sempre chamado (regra dos hooks), mas desabilitado internamente para painéis públicos
+  useActiveSession({ enabled: !isPublicDisplayRoute });
   
   // Page transition hook
   const { isLoading: isTransitioning, loadingMessage } = usePageTransition({
