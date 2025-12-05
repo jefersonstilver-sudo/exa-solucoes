@@ -49,8 +49,10 @@ serve(async (req) => {
         .eq('id', proposalId)
         .single();
 
+      const newViewCount = (proposal?.view_count || 0) + 1;
+      
       const updates: any = {
-        view_count: (proposal?.view_count || 0) + 1,
+        view_count: newViewCount,
         last_viewed_at: new Date().toISOString(),
         is_viewing: true,
         last_heartbeat_at: new Date().toISOString(),
@@ -83,6 +85,25 @@ serve(async (req) => {
         .eq('id', proposalId);
 
       console.log('✅ View registered, is_viewing: true, view_count:', updates.view_count);
+
+      // 🔔 Enviar notificação via EXA Alerts
+      const eventType = newViewCount > 1 ? 'proposal_viewed_again' : 'proposal_viewing';
+      try {
+        await supabase.functions.invoke('notify-proposal-event', {
+          body: {
+            proposalId,
+            eventType,
+            metadata: {
+              viewCount: newViewCount,
+              deviceType,
+            }
+          }
+        });
+        console.log(`🔔 Notification sent: ${eventType}`);
+      } catch (notifyError) {
+        console.error('⚠️ Error sending notification:', notifyError);
+        // Não falhar a requisição principal por erro de notificação
+      }
 
     } else if (action === 'heartbeat' && timeSpentSeconds > 0) {
       // Heartbeat: update time incrementally and keep viewing status active
