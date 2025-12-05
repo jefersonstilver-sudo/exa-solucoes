@@ -135,6 +135,56 @@ export const superAdminBulkDeletePedidos = async (
       console.log(`   ℹ️ Nenhum vídeo para deletar da AWS`);
     }
 
+    // ✅ FASE 2.5: Cancelar boletos pendentes no Mercado Pago
+    console.log(`\n💳 [${getTimestamp()}] FASE 2.5: Cancelando boletos pendentes no Mercado Pago...`);
+    try {
+      // Buscar parcelas com mercadopago_payment_id pendentes
+      const { data: parcelasPendentes, error: parcelasError } = await supabase
+        .from('parcelas')
+        .select('mercadopago_payment_id')
+        .in('pedido_id', pedidoIds)
+        .not('mercadopago_payment_id', 'is', null)
+        .in('status', ['pendente', 'aguardando_pagamento']);
+
+      if (parcelasError) {
+        console.warn(`   ⚠️ Erro ao buscar parcelas:`, parcelasError);
+      } else if (parcelasPendentes && parcelasPendentes.length > 0) {
+        const paymentIds = parcelasPendentes
+          .map(p => p.mercadopago_payment_id)
+          .filter((id): id is string => id !== null);
+
+        console.log(`   Encontrados ${paymentIds.length} boleto(s) pendente(s) para cancelar`);
+        console.log(`   IDs Mercado Pago:`, paymentIds);
+
+        if (paymentIds.length > 0) {
+          const { data: cancelResult, error: cancelError } = await supabase.functions.invoke(
+            'cancel-mercadopago-payment',
+            { body: { payment_ids: paymentIds } }
+          );
+
+          if (cancelError) {
+            console.warn(`   ⚠️ Erro ao cancelar boletos:`, cancelError);
+            toast.warning(`⚠️ Erro ao cancelar boletos no Mercado Pago. Verifique os logs.`);
+          } else if (cancelResult) {
+            console.log(`   ✅ Boletos cancelados: ${cancelResult.cancelled_count}`);
+            console.log(`   ❌ Falhas: ${cancelResult.failed_count}`);
+            
+            if (cancelResult.cancelled_count > 0) {
+              toast.success(`✅ ${cancelResult.cancelled_count} boleto(s) cancelado(s) no Mercado Pago`);
+            }
+            if (cancelResult.failed_count > 0) {
+              toast.warning(`⚠️ ${cancelResult.failed_count} boleto(s) falharam ao cancelar`);
+            }
+          }
+        }
+      } else {
+        console.log(`   ℹ️ Nenhum boleto pendente para cancelar`);
+      }
+    } catch (boletoError) {
+      console.warn(`   ⚠️ Exceção ao cancelar boletos:`, boletoError);
+      // Não bloqueia a deleção, apenas loga o erro
+    }
+
     // ✅ FASE 3: Deletar do banco
     console.log(`\n🗑️ [${getTimestamp()}] FASE 3: Deletando do banco Supabase...`);
 
