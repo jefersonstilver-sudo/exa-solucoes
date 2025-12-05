@@ -474,6 +474,45 @@ serve(async (req) => {
       }
     }
 
+    // ========== 9b. Criar Requirements para TESTEMUNHAS ==========
+    const testemunhaRequirementKeys: string[] = [];
+    for (const testemunhaSignerKey of testemunhaSignerKeys) {
+      const testemunhaRequirementPayload = {
+        data: {
+          type: "requirements",
+          attributes: {
+            action: "agree",
+            role: "witness"  // Testemunha usa role "witness"
+          },
+          relationships: {
+            document: {
+              data: { type: "documents", id: documentKey }
+            },
+            signer: {
+              data: { type: "signers", id: testemunhaSignerKey }
+            }
+          }
+        }
+      };
+
+      console.log(`🔗 [CLICKSIGN] Criando requirement TESTEMUNHA para signer ${testemunhaSignerKey}...`);
+      const testemunhaRequirementResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/requirements`, {
+        method: "POST",
+        headers: clicksignHeaders,
+        body: JSON.stringify(testemunhaRequirementPayload)
+      });
+
+      if (!testemunhaRequirementResponse.ok) {
+        const errorText = await testemunhaRequirementResponse.text();
+        console.warn(`⚠️ [CLICKSIGN] Erro ao criar requirement testemunha:`, errorText);
+      } else {
+        const testemunhaRequirementData = await testemunhaRequirementResponse.json();
+        const testemunhaRequirementKey = testemunhaRequirementData.data?.id;
+        testemunhaRequirementKeys.push(testemunhaRequirementKey);
+        console.log(`✅ [CLICKSIGN] Requirement TESTEMUNHA criado:`, testemunhaRequirementKey);
+      }
+    }
+
     // Usar clientSignerKey como principal para manter compatibilidade
     const signerKey = clientSignerKey;
     const requestSignatureKey = clientRequirementKey;
