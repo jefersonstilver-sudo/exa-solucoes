@@ -175,7 +175,7 @@ export function AddressAutocomplete({
   const showDropdown = isOpen && (suggestions.length > 0 || isLoading);
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" style={{ zIndex: isOpen ? 9999 : 'auto' }}>
       <div className="relative">
         <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         
@@ -211,7 +211,7 @@ export function AddressAutocomplete({
       </div>
 
       {showDropdown && (
-        <div className="absolute top-full left-0 right-0 z-[100] mt-1 bg-white dark:bg-gray-800 border border-border rounded-md shadow-lg">
+        <div className="absolute top-full left-0 right-0 z-[9999] mt-1 bg-white dark:bg-gray-800 border border-border rounded-md shadow-lg">
           <ul
             ref={listRef}
             className="max-h-[400px] overflow-auto py-1"
