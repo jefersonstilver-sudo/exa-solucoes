@@ -461,7 +461,41 @@ serve(async (req) => {
 
     const clientRequirementData = await clientRequirementResponse.json();
     const clientRequirementKey = clientRequirementData.data?.id;
-    console.log("✅ [CLICKSIGN] Requirement CLIENTE criado:", clientRequirementKey);
+    console.log("✅ [CLICKSIGN] Requirement qualificação CLIENTE criado:", clientRequirementKey);
+
+    // ========== 8b. Criar Requirement de EVIDÊNCIA/AUTENTICAÇÃO CLIENTE ==========
+    const clientEvidencePayload = {
+      data: {
+        type: "requirements",
+        attributes: {
+          action: "provide_evidence",
+          auth: "email"
+        },
+        relationships: {
+          document: {
+            data: { type: "documents", id: documentKey }
+          },
+          signer: {
+            data: { type: "signers", id: clientSignerKey }
+          }
+        }
+      }
+    };
+
+    console.log("🔐 [CLICKSIGN] Criando requirement evidência CLIENTE com auth: email...");
+    const clientEvidenceResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/requirements`, {
+      method: "POST",
+      headers: clicksignHeaders,
+      body: JSON.stringify(clientEvidencePayload)
+    });
+
+    if (!clientEvidenceResponse.ok) {
+      const errorText = await clientEvidenceResponse.text();
+      console.warn("⚠️ [CLICKSIGN] Erro ao criar requirement evidência cliente:", errorText);
+    } else {
+      const clientEvidenceData = await clientEvidenceResponse.json();
+      console.log("✅ [CLICKSIGN] Requirement evidência CLIENTE criado:", clientEvidenceData.data?.id);
+    }
 
     // ========== 9. Criar Requirements para TODOS os Signatários EXA ==========
     const exaRequirementKeys: string[] = [];
@@ -498,7 +532,41 @@ serve(async (req) => {
         const exaRequirementData = await exaRequirementResponse.json();
         const exaRequirementKey = exaRequirementData.data?.id;
         exaRequirementKeys.push(exaRequirementKey);
-        console.log(`✅ [CLICKSIGN] Requirement EXA criado:`, exaRequirementKey);
+        console.log(`✅ [CLICKSIGN] Requirement qualificação EXA criado:`, exaRequirementKey);
+
+        // Criar requirement de evidência para EXA
+        const exaEvidencePayload = {
+          data: {
+            type: "requirements",
+            attributes: {
+              action: "provide_evidence",
+              auth: "email"
+            },
+            relationships: {
+              document: {
+                data: { type: "documents", id: documentKey }
+              },
+              signer: {
+                data: { type: "signers", id: exaSignerKey }
+              }
+            }
+          }
+        };
+
+        console.log(`🔐 [CLICKSIGN] Criando requirement evidência EXA para signer ${exaSignerKey}...`);
+        const exaEvidenceResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/requirements`, {
+          method: "POST",
+          headers: clicksignHeaders,
+          body: JSON.stringify(exaEvidencePayload)
+        });
+
+        if (!exaEvidenceResponse.ok) {
+          const errorText = await exaEvidenceResponse.text();
+          console.warn(`⚠️ [CLICKSIGN] Erro ao criar requirement evidência EXA:`, errorText);
+        } else {
+          const exaEvidenceData = await exaEvidenceResponse.json();
+          console.log(`✅ [CLICKSIGN] Requirement evidência EXA criado:`, exaEvidenceData.data?.id);
+        }
       }
     }
 
@@ -537,7 +605,41 @@ serve(async (req) => {
         const testemunhaRequirementData = await testemunhaRequirementResponse.json();
         const testemunhaRequirementKey = testemunhaRequirementData.data?.id;
         testemunhaRequirementKeys.push(testemunhaRequirementKey);
-        console.log(`✅ [CLICKSIGN] Requirement TESTEMUNHA criado:`, testemunhaRequirementKey);
+        console.log(`✅ [CLICKSIGN] Requirement qualificação TESTEMUNHA criado:`, testemunhaRequirementKey);
+
+        // Criar requirement de evidência para TESTEMUNHA
+        const testemunhaEvidencePayload = {
+          data: {
+            type: "requirements",
+            attributes: {
+              action: "provide_evidence",
+              auth: "email"
+            },
+            relationships: {
+              document: {
+                data: { type: "documents", id: documentKey }
+              },
+              signer: {
+                data: { type: "signers", id: testemunhaSignerKey }
+              }
+            }
+          }
+        };
+
+        console.log(`🔐 [CLICKSIGN] Criando requirement evidência TESTEMUNHA para signer ${testemunhaSignerKey}...`);
+        const testemunhaEvidenceResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/requirements`, {
+          method: "POST",
+          headers: clicksignHeaders,
+          body: JSON.stringify(testemunhaEvidencePayload)
+        });
+
+        if (!testemunhaEvidenceResponse.ok) {
+          const errorText = await testemunhaEvidenceResponse.text();
+          console.warn(`⚠️ [CLICKSIGN] Erro ao criar requirement evidência testemunha:`, errorText);
+        } else {
+          const testemunhaEvidenceData = await testemunhaEvidenceResponse.json();
+          console.log(`✅ [CLICKSIGN] Requirement evidência TESTEMUNHA criado:`, testemunhaEvidenceData.data?.id);
+        }
       }
     }
 
