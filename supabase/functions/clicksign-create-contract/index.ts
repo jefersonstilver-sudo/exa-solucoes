@@ -425,16 +425,13 @@ serve(async (req) => {
       }
     }
 
-    // ========== 8. Criar Requirement CLIENTE (action: "agree" + role: "sign" + authentication) ==========
+    // ========== 8. Criar Requirement CLIENTE (action: "agree" + role: "sign") ==========
     const clientRequirementPayload = {
       data: {
         type: "requirements",
         attributes: {
           action: "agree",
-          role: "sign",
-          authentication: {
-            type: "email"  // Autenticação obrigatória via email
-          }
+          role: "sign"
         },
         relationships: {
           document: {
@@ -474,10 +471,7 @@ serve(async (req) => {
           type: "requirements",
           attributes: {
             action: "agree",
-            role: "sign",
-            authentication: {
-              type: "email"  // Autenticação obrigatória via email
-            }
+            role: "sign"
           },
           relationships: {
             document: {
@@ -516,10 +510,7 @@ serve(async (req) => {
           type: "requirements",
           attributes: {
             action: "agree",
-            role: "witness",
-            authentication: {
-              type: "email"  // Autenticação obrigatória via email
-            }
+            role: "witness"
           },
           relationships: {
             document: {

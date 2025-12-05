@@ -118,7 +118,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
   // Contrato de Síndico
   if (data.tipo_contrato === 'sindico') {
     return (
-      <div className="p-8 bg-white text-gray-900 font-serif text-sm leading-relaxed">
+      <div id="contract-preview" className="p-8 bg-white text-gray-900 font-serif text-sm leading-relaxed">
         {/* Header EXA com Logo */}
         <div className="bg-gradient-to-r from-[#8B1A1A] to-[#A52020] text-white p-6 -m-8 mb-8 rounded-t-lg">
           <div className="flex items-center justify-between">
@@ -235,7 +235,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
 
   // Contrato de Anunciante
   return (
-    <div className="p-8 bg-white text-gray-900 font-serif text-sm leading-relaxed">
+    <div id="contract-preview" className="p-8 bg-white text-gray-900 font-serif text-sm leading-relaxed">
       {/* Header EXA Profissional com Logo */}
       <div className="bg-gradient-to-r from-[#8B1A1A] to-[#A52020] text-white p-6 -m-8 mb-8 rounded-t-lg">
         <div className="flex items-center justify-between">

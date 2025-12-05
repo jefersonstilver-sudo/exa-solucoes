@@ -189,12 +189,17 @@ const ContratoDetalhesPage = () => {
   const handleDownloadPDF = async () => {
     if (!contrato) return;
     try {
-      const exporter = new ContractPDFExporter();
-      await exporter.generateContractPDF({
-        ...contrato,
-        lista_predios: listaPredios,
-        parcelas: parcelas
-      });
+      // Tentar capturar o preview HTML se existir
+      const previewElement = document.getElementById('contract-preview');
+      if (previewElement) {
+        await ContractPDFExporter.exportFromElement(previewElement, `Contrato_${contrato.numero_contrato}.pdf`);
+      } else {
+        await ContractPDFExporter.exportFromData({
+          ...contrato,
+          lista_predios: listaPredios,
+          parcelas: parcelas
+        });
+      }
       toast.success('PDF gerado!');
     } catch (err) {
       console.error('Erro ao gerar PDF:', err);
