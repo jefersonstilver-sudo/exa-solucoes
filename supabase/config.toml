@@ -391,6 +391,12 @@ verify_jwt = false
 [functions.cancel-mercadopago-payment]
 verify_jwt = false
 
+[functions.create-subscription-payment]
+verify_jwt = false
+
+[functions.mercadopago-subscription-webhook]
+verify_jwt = false
+
 [[cron]]
 function_name = "auto-cancel-expired-orders"
 schedule = "0 */1 * * *"

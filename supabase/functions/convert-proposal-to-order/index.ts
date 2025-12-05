@@ -250,10 +250,23 @@ serve(async (req) => {
     // 6. Criar pedido
     console.log('📦 Criando pedido no banco...');
     
+    // Check if is recurring card payment
+    const isRecurringCard = paymentData?.method === 'cartao_recorrente';
+    
     // Calcular valor total (custom ou padrão)
     const valorTotal = isCustomPayment
       ? customInstallments.reduce((sum: number, inst: any) => sum + Number(inst.amount || 0), 0)
       : (proposal.cash_total_value || proposal.fidel_monthly_value);
+
+    // Determine metodo_pagamento
+    let metodoPagamento = 'pix';
+    if (isRecurringCard) {
+      metodoPagamento = 'cartao_recorrente';
+    } else if (isCustomPayment) {
+      metodoPagamento = 'personalizado';
+    } else if (paymentData?.method) {
+      metodoPagamento = paymentData.method;
+    }
 
     const orderData = {
       client_id: userId,
@@ -264,11 +277,11 @@ serve(async (req) => {
       data_inicio: startDate.toISOString(),
       data_fim: endDate.toISOString(),
       lista_paineis: listaPaineis,
-      metodo_pagamento: isCustomPayment ? 'personalizado' : (paymentData?.method || 'pix'),
-      tipo_pagamento: isCustomPayment ? 'personalizado' : (paymentData?.method === 'pix' ? 'pix_avista' : 'pix_avista'),
+      metodo_pagamento: metodoPagamento,
+      tipo_pagamento: isRecurringCard ? 'cartao_recorrente' : (isCustomPayment ? 'personalizado' : (paymentData?.method === 'pix' ? 'pix_avista' : 'pix_avista')),
       proposal_id: proposalId,
-      is_fidelidade: isCustomPayment,
-      total_parcelas: isCustomPayment ? customInstallments.length : 1,
+      is_fidelidade: isCustomPayment || isRecurringCard,
+      total_parcelas: isCustomPayment ? customInstallments.length : (isRecurringCard ? (proposal.duration_months || 1) : 1),
       parcela_atual: isCustomPayment ? 2 : 1, // Se pagou a 1ª parcela, próxima é 2
       status_adimplencia: 'em_dia',
       log_pagamento: {
@@ -277,6 +290,8 @@ serve(async (req) => {
         payment_id: paymentId,
         payment_data: paymentData,
         payment_type: proposal.payment_type,
+        is_recurring_card: isRecurringCard,
+        subscription_id: isRecurringCard ? paymentData?.subscriptionId : null,
         custom_installments: isCustomPayment ? customInstallments : null,
         converted_at: new Date().toISOString()
       }
@@ -332,6 +347,44 @@ serve(async (req) => {
         // Log do erro mas não interrompe o fluxo
       } else {
         console.log('✅ Parcelas criadas com sucesso:', customInstallments.length, 'parcelas');
+      }
+    }
+
+    // 7.1 SE É CARTÃO RECORRENTE: Criar registros na tabela parcelas
+    if (isRecurringCard && !isCustomPayment) {
+      console.log('💳 Criando registros de parcelas para cartão recorrente...');
+      
+      const durationMonths = proposal.duration_months || 1;
+      const monthlyValue = proposal.fidel_monthly_value || (valorTotal / durationMonths);
+      
+      const parcelasData = [];
+      for (let i = 0; i < durationMonths; i++) {
+        const dueDate = new Date(startDate);
+        dueDate.setMonth(dueDate.getMonth() + i);
+        
+        parcelasData.push({
+          pedido_id: newOrder.id,
+          numero_parcela: i + 1,
+          valor_original: monthlyValue,
+          valor_final: monthlyValue,
+          data_vencimento: dueDate.toISOString().split('T')[0],
+          status: i === 0 ? 'pago' : 'aguardando_cobranca',
+          metodo_pagamento: 'cartao_recorrente',
+          data_pagamento: i === 0 ? new Date().toISOString() : null,
+          mercadopago_payment_id: i === 0 ? String(paymentId) : null
+        });
+      }
+
+      console.log('💳 Parcelas recorrentes a criar:', parcelasData.length);
+
+      const { error: parcelasError } = await supabase
+        .from('parcelas')
+        .insert(parcelasData);
+
+      if (parcelasError) {
+        console.error('⚠️ Erro ao criar parcelas recorrentes:', parcelasError);
+      } else {
+        console.log('✅ Parcelas recorrentes criadas:', durationMonths, 'meses');
       }
     }
 
