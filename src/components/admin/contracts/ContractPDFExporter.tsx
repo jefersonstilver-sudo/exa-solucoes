@@ -471,79 +471,101 @@ export class ContractPDFExporter {
   }
 
   private drawContractClauses(contract: ContractData): void {
-    this.checkPageBreak(100);
+    this.checkPageBreak(60);
     this.drawSectionTitle('CLÁUSULAS CONTRATUAIS');
     
     const clauses = [
       {
-        title: '1. DA VIGÊNCIA',
-        content: `O presente contrato terá vigência de ${contract.plano_meses || 1} (${this.getNumeroExtenso(contract.plano_meses || 1)}) meses, com início em ${contract.data_inicio ? this.formatDateExtended(contract.data_inicio) : '[data de aprovação do primeiro vídeo]'}.`
+        title: '1. DO OBJETO',
+        content: `Veiculação de conteúdo publicitário fornecido pela CONTRATANTE nas telas digitais operadas pela EXA, instaladas em ${contract.lista_predios?.length || 0} prédio(s). Inclui gestão de playlist, aprovação de criativos, administração de horários e relatórios de exibição via plataforma EXA Cloud.`
       },
       {
-        title: '2. DO CONTEÚDO',
-        content: 'O CONTRATANTE é integralmente responsável pelo conteúdo publicitário veiculado, isentando a CONTRATADA de qualquer responsabilidade sobre o material apresentado.'
+        title: '2. DO PRAZO',
+        content: `Prazo: ${contract.plano_meses || 1} (${this.getNumeroExtenso(contract.plano_meses || 1)}) mês(es) a partir da data de início da veiculação. Renovação mediante acordo entre as partes ou encerramento ao término do prazo.`
       },
       {
-        title: '3. DAS ESPECIFICAÇÕES TÉCNICAS',
-        content: 'Os vídeos devem ter: duração de 15 segundos, formato horizontal (16:9), resolução mínima de 1920x1080, sem áudio.'
+        title: '3. DO VALOR E PAGAMENTO',
+        content: `Valor: ${this.formatCurrency(contract.valor_mensal || 0)} mensais, por ${contract.plano_meses || 1} meses. Total: ${this.formatCurrency(contract.valor_total || 0)}. Atrasos: multa de 2%, juros de 1% ao mês. Atraso >10 dias pode suspender veiculação; >30 dias autoriza rescisão e multa contratual.`
       },
       {
-        title: '4. DA APROVAÇÃO',
-        content: 'O material publicitário está sujeito à aprovação da CONTRATADA e das administrações condominiais, que poderão recusar conteúdos inadequados.'
+        title: '4. DO CONTEÚDO',
+        content: 'Materiais devem observar especificações técnicas da EXA. Prazo de aprovação: até 1 hora em dias úteis. Conteúdos proibidos: político/eleitoral, pornográfico, ilegal, discriminatório ou que viole direitos.'
       },
       {
-        title: '5. DO PAGAMENTO',
-        content: `Os pagamentos deverão ser realizados conforme condição estabelecida neste instrumento. O não pagamento acarretará suspensão imediata da veiculação após ${contract.metodo_pagamento === 'pix_avista' ? 'o vencimento' : '10 dias de inadimplência'}.`
+        title: '5. ENTREGA, FREQUÊNCIA E SLA',
+        content: 'Exibições estimadas: 245 exibições por painel/dia (média). Relatório mensal disponibilizado no painel administrativo. SLA operacional: disponibilidade média mínima de 90% da rede. Falhas técnicas tratadas em até 72 horas úteis.'
       },
       {
-        title: '6. DA RESCISÃO',
-        content: 'A rescisão antecipada por parte do CONTRATANTE implicará no pagamento de multa equivalente a 30% do valor restante do contrato.'
+        title: '6. RESPONSABILIDADES',
+        content: 'EXA: operação, manutenção, monitoramento, backup de logs, relatórios e suporte técnico. CONTRATANTE: envio de material conforme especificações, garantia de direitos autorais, pagamento em dia e cooperação em auditorias.'
       },
       {
-        title: '7. DO USO DE IMAGEM',
-        content: 'O CONTRATANTE autoriza a EXA MÍDIA a utilizar imagens e vídeos de suas campanhas para fins de divulgação e portfólio, preservando sempre a integridade da marca.'
+        title: '7. DIREITOS AUTORAIS',
+        content: 'O CONTRATANTE declara possuir todos os direitos sobre o material e indenizará a EXA por reivindicações de terceiros. Autoriza uso em divulgação institucional, portfólio, redes sociais e apresentações comerciais.'
+      },
+      {
+        title: '8. RESCISÃO E MULTA',
+        content: 'Rescisão antecipada pelo CONTRATANTE: multa de 20% sobre saldo remanescente. Rescisão por culpa da EXA: devolução proporcional de valores não utilizados.'
+      },
+      {
+        title: '9. REAJUSTE',
+        content: 'Reajuste anual pelo IPCA ou índice que venha a substituí-lo.'
+      },
+      {
+        title: '10. SEGURANÇA E PRIVACIDADE',
+        content: 'A EXA manterá políticas de segurança incluindo firewall, autenticação multifatorial, backups e monitoramento. Ambas as partes concordam em cumprir LGPD. Vazamentos comunicados em até 48h. Logs mantidos por 12 meses. Confidencialidade de termos comerciais.'
+      },
+      {
+        title: '11. DISPOSIÇÕES GERAIS',
+        content: 'Comunicações oficiais via portal, e-mail ou sistema EXA. Alterações ao contrato somente por escrito e assinadas por representantes autorizados.'
+      },
+      {
+        title: '12. FORO',
+        content: 'Elegem as partes o foro da comarca de Foz do Iguaçu/PR para dirimir controvérsias, com renúncia a qualquer outro.'
       }
     ];
     
     clauses.forEach(clause => {
-      this.checkPageBreak(25);
+      this.checkPageBreak(20);
       
       this.setColor(this.colors.darkGray);
-      this.doc.setFontSize(9);
+      this.doc.setFontSize(8);
       this.doc.setFont('helvetica', 'bold');
       this.doc.text(clause.title, this.margin, this.yPosition);
-      this.yPosition += 5;
+      this.yPosition += 4;
       
       this.doc.setFont('helvetica', 'normal');
+      this.doc.setFontSize(7);
       const lines = this.doc.splitTextToSize(clause.content, this.contentWidth);
       lines.forEach((line: string) => {
-        this.checkPageBreak(5);
+        this.checkPageBreak(4);
         this.doc.text(line, this.margin, this.yPosition);
-        this.yPosition += 4.5;
+        this.yPosition += 3.5;
       });
       
-      this.yPosition += 3;
+      this.yPosition += 2;
     });
     
     // Cláusulas especiais
     if (contract.clausulas_especiais) {
-      this.checkPageBreak(30);
+      this.checkPageBreak(25);
       
       this.setColor(this.colors.darkGray);
-      this.doc.setFontSize(9);
+      this.doc.setFontSize(8);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text('8. CLÁUSULAS ESPECIAIS', this.margin, this.yPosition);
-      this.yPosition += 5;
+      this.doc.text('13. CLÁUSULAS ESPECIAIS', this.margin, this.yPosition);
+      this.yPosition += 4;
       
       this.doc.setFont('helvetica', 'normal');
+      this.doc.setFontSize(7);
       const lines = this.doc.splitTextToSize(contract.clausulas_especiais, this.contentWidth);
       lines.forEach((line: string) => {
-        this.checkPageBreak(5);
+        this.checkPageBreak(4);
         this.doc.text(line, this.margin, this.yPosition);
-        this.yPosition += 4.5;
+        this.yPosition += 3.5;
       });
       
-      this.yPosition += 5;
+      this.yPosition += 3;
     }
   }
 
@@ -557,9 +579,10 @@ export class ContractPDFExporter {
   }
 
   private drawSignatureArea(contract: ContractData): void {
-    this.checkPageBreak(80);
-    this.yPosition += 10;
+    this.checkPageBreak(100);
+    this.yPosition += 8;
     
+    // Data
     const dataAtual = new Date().toLocaleDateString('pt-BR', { 
       day: 'numeric', 
       month: 'long', 
@@ -567,81 +590,146 @@ export class ContractPDFExporter {
     });
     
     this.setColor(this.colors.darkGray);
-    this.doc.setFontSize(9);
+    this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'normal');
     this.doc.text(`Foz do Iguaçu/PR, ${dataAtual}`, this.pageWidth / 2, this.yPosition, { align: 'center' });
     
-    this.yPosition += 20;
+    this.yPosition += 15;
     
     const colWidth = this.contentWidth / 2;
+    const leftColX = this.margin;
+    const rightColX = this.margin + colWidth + 5;
     
-    // Assinatura CONTRATADA
+    // ===== CONTRATANTE (lado esquerdo) =====
+    // Box
+    this.setColor(this.colors.lightGray, 'fill');
+    this.doc.roundedRect(leftColX, this.yPosition, colWidth - 5, 55, 2, 2, 'F');
+    
+    // Título
+    this.setColor(this.colors.mediumGray);
+    this.doc.setFontSize(7);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text('CONTRATANTE', leftColX + (colWidth - 5) / 2, this.yPosition + 6, { align: 'center' });
+    
+    // Dados
+    this.setColor(this.colors.darkGray);
+    this.doc.setFontSize(8);
+    this.doc.setFont('helvetica', 'bold');
+    const clientName = (contract.cliente_razao_social || contract.cliente_nome).substring(0, 35);
+    this.doc.text(clientName, leftColX + (colWidth - 5) / 2, this.yPosition + 14, { align: 'center' });
+    
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.setFontSize(7);
+    if (contract.cliente_cnpj) {
+      this.doc.text(`CNPJ: ${contract.cliente_cnpj}`, leftColX + (colWidth - 5) / 2, this.yPosition + 20, { align: 'center' });
+    }
+    this.doc.text(`Representante: ${contract.cliente_nome}`, leftColX + (colWidth - 5) / 2, this.yPosition + 26, { align: 'center' });
+    
+    // Linha de assinatura
     this.setColor(this.colors.darkGray, 'draw');
     this.doc.setLineWidth(0.3);
-    this.doc.line(this.margin + 10, this.yPosition, this.margin + colWidth - 10, this.yPosition);
+    this.doc.line(leftColX + 15, this.yPosition + 42, leftColX + colWidth - 20, this.yPosition + 42);
     
+    this.setColor(this.colors.mediumGray);
+    this.doc.setFontSize(6);
+    this.doc.text('Assinatura', leftColX + (colWidth - 5) / 2, this.yPosition + 47, { align: 'center' });
+    this.doc.text('Data: ____ / ____ / ________', leftColX + (colWidth - 5) / 2, this.yPosition + 52, { align: 'center' });
+    
+    // ===== CONTRATADA - EXA (lado direito) =====
+    // Box maior para dois representantes
+    this.setColor(this.colors.lightGray, 'fill');
+    this.doc.roundedRect(rightColX, this.yPosition, colWidth - 5, 80, 2, 2, 'F');
+    
+    // Título
+    this.setColor(this.colors.mediumGray);
+    this.doc.setFontSize(7);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text('CONTRATADA', rightColX + (colWidth - 5) / 2, this.yPosition + 6, { align: 'center' });
+    
+    // Dados da empresa
     this.setColor(this.colors.darkGray);
-    this.doc.setFontSize(9);
+    this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('EXA MÍDIA LTDA', this.margin + colWidth / 2, this.yPosition + 6, { align: 'center' });
+    this.doc.text('EXA — Soluções Digitais', rightColX + (colWidth - 5) / 2, this.yPosition + 14, { align: 'center' });
     
     this.doc.setFont('helvetica', 'normal');
-    this.doc.setFontSize(8);
-    this.doc.text('CONTRATADA', this.margin + colWidth / 2, this.yPosition + 11, { align: 'center' });
+    this.doc.setFontSize(7);
+    this.doc.text('CNPJ: 62.878.193/0001-35', rightColX + (colWidth - 5) / 2, this.yPosition + 20, { align: 'center' });
     
-    // Assinatura CONTRATANTE
-    this.doc.line(this.margin + colWidth + 10, this.yPosition, this.pageWidth - this.margin - 10, this.yPosition);
+    this.setColor(this.colors.mediumGray);
+    this.doc.setFontSize(6);
+    this.doc.text('Representantes legais:', rightColX + (colWidth - 5) / 2, this.yPosition + 26, { align: 'center' });
     
-    this.doc.setFontSize(9);
+    // Natália
+    this.setColor(this.colors.darkGray);
+    this.doc.setFontSize(7);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(contract.cliente_nome, this.margin + colWidth + colWidth / 2, this.yPosition + 6, { align: 'center' });
-    
+    this.doc.text('Natália Krause Guimarães Dantas', rightColX + (colWidth - 5) / 2, this.yPosition + 32, { align: 'center' });
     this.doc.setFont('helvetica', 'normal');
-    this.doc.setFontSize(8);
-    this.doc.text('CONTRATANTE', this.margin + colWidth + colWidth / 2, this.yPosition + 11, { align: 'center' });
+    this.doc.setFontSize(6);
+    this.doc.text('RG 13.038.569-9 / CPF 116.228.359-99', rightColX + (colWidth - 5) / 2, this.yPosition + 36, { align: 'center' });
+    
+    // Linha assinatura Natália
+    this.setColor(this.colors.darkGray, 'draw');
+    this.doc.line(rightColX + 20, this.yPosition + 46, rightColX + colWidth - 25, this.yPosition + 46);
+    
+    // Jeferson
+    this.setColor(this.colors.darkGray);
+    this.doc.setFontSize(7);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text('Jeferson Stilver Rodrigues Encina', rightColX + (colWidth - 5) / 2, this.yPosition + 54, { align: 'center' });
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.setFontSize(6);
+    this.doc.text('RG 8.812.269-0 / CPF 055.031.279-00', rightColX + (colWidth - 5) / 2, this.yPosition + 58, { align: 'center' });
+    
+    // Linha assinatura Jeferson
+    this.setColor(this.colors.darkGray, 'draw');
+    this.doc.line(rightColX + 20, this.yPosition + 68, rightColX + colWidth - 25, this.yPosition + 68);
+    
+    // Data
+    this.setColor(this.colors.mediumGray);
+    this.doc.setFontSize(6);
+    this.doc.text('Data: ____ / ____ / ________', rightColX + (colWidth - 5) / 2, this.yPosition + 76, { align: 'center' });
+    
+    this.yPosition += 85;
   }
 
   private drawFooter(): void {
-    const footerY = this.pageHeight - 10;
+    const footerY = this.pageHeight - 8;
     
     this.setColor(this.colors.mediumGray);
-    this.doc.setFontSize(7);
+    this.doc.setFontSize(6);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text('EXA Mídia LTDA | CNPJ: 42.538.968/0001-06 | contato@examidia.com.br | (45) 99814-1585', 
+    this.doc.text('EXA — Soluções Digitais | CNPJ: 62.878.193/0001-35 | contato@examidia.com.br | (45) 99814-1585', 
       this.pageWidth / 2, footerY, { align: 'center' });
   }
 
   private drawDraftWatermark(): void {
-    // Marca d'água diagonal em todas as páginas
     const totalPages = this.doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       this.doc.setPage(i);
       this.doc.saveGraphicsState();
       
-      // Texto diagonal
-      this.doc.setFontSize(60);
-      this.doc.setTextColor(220, 220, 220);
+      this.doc.setFontSize(50);
+      this.doc.setTextColor(230, 230, 230);
       this.doc.setFont('helvetica', 'bold');
       
-      // Rotacionar e posicionar no centro
       const text = 'RASCUNHO';
       const centerX = this.pageWidth / 2;
       const centerY = this.pageHeight / 2;
       
-      // jsPDF não suporta rotação de texto diretamente, então desenhamos múltiplas vezes
-      this.doc.text(text, centerX - 50, centerY - 30, { angle: 45 });
+      this.doc.text(text, centerX - 45, centerY - 25, { angle: 45 });
       
       this.doc.restoreGraphicsState();
     }
   }
 
   private drawStatusBadge(contract: ContractData): void {
-    // Badge de status no canto superior direito
     const statusText = contract.status === 'assinado' ? '✓ ASSINADO' : '⚠ NÃO ASSINADO';
     const statusColor = contract.status === 'assinado' ? this.colors.success : { r: 200, g: 150, b: 0 };
     
-    const badgeWidth = 35;
-    const badgeHeight = 8;
+    const badgeWidth = 32;
+    const badgeHeight = 7;
     const badgeX = this.pageWidth - this.margin - badgeWidth;
     const badgeY = 28;
     
@@ -649,13 +737,17 @@ export class ContractPDFExporter {
     this.doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 2, 2, 'F');
     
     this.setColor(this.colors.white);
-    this.doc.setFontSize(6);
+    this.doc.setFontSize(5);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(statusText, badgeX + badgeWidth / 2, badgeY + 5.5, { align: 'center' });
+    this.doc.text(statusText, badgeX + badgeWidth / 2, badgeY + 4.5, { align: 'center' });
   }
 
   public async generateContractPDF(contract: ContractData): Promise<void> {
-    this.doc = new jsPDF();
+    this.doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
     this.yPosition = 0;
     
     // Header
@@ -683,10 +775,10 @@ export class ContractPDFExporter {
     // Parcelas (se houver)
     this.drawInstallments(contract);
     
-    // Cláusulas
+    // Cláusulas - 12 completas
     this.drawContractClauses(contract);
     
-    // Assinaturas
+    // Assinaturas com representantes EXA
     this.drawSignatureArea(contract);
     
     // Footer em todas as páginas
