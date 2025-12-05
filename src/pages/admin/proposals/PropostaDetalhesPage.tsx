@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   ArrowLeft, FileText, Clock, User, Building2, Send, Eye, 
   MessageSquare, Mail, Smartphone, Monitor, Copy, Download, 
-  RefreshCw, Gift, Timer, Check, X, MoreVertical
+  RefreshCw, Gift, Timer, Check, X, MoreVertical, Phone, ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -17,11 +17,13 @@ import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExporter';
+import { motion } from 'framer-motion';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
 interface ProposalLog {
@@ -123,19 +125,38 @@ const PropostaDetalhesPage = () => {
     return `${hours}h ${remainingMinutes}min`;
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; className: string }> = {
-      pendente: { label: 'Pendente', className: 'bg-gray-100 text-gray-700' },
-      enviada: { label: 'Enviada', className: 'bg-blue-100 text-blue-700' },
-      visualizada: { label: 'Visualizada', className: 'bg-purple-100 text-purple-700' },
-      aceita: { label: 'Aceita', className: 'bg-emerald-100 text-emerald-700' },
-      paga: { label: 'Paga', className: 'bg-green-100 text-green-700' },
-      convertida: { label: 'Pedido Criado', className: 'bg-green-600 text-white' },
-      recusada: { label: 'Recusada', className: 'bg-red-100 text-red-700' },
-      expirada: { label: 'Expirada', className: 'bg-gray-100 text-gray-500' },
+  const formatTimeShort = (seconds: number | null) => {
+    if (!seconds) return '0s';
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}m`;
+  };
+
+  const getStatusConfig = (status: string) => {
+    const configs: Record<string, { label: string; className: string; icon?: React.ReactNode }> = {
+      pendente: { label: 'Pendente', className: 'bg-gray-100 text-gray-700 border-gray-200' },
+      enviada: { label: 'Enviada', className: 'bg-blue-100 text-blue-700 border-blue-200' },
+      visualizada: { label: 'Visualizada', className: 'bg-purple-100 text-purple-700 border-purple-200' },
+      aceita: { label: 'Aceita', className: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+      paga: { label: 'Paga', className: 'bg-green-100 text-green-700 border-green-200' },
+      convertida: { label: 'Pedido Criado', className: 'bg-green-600 text-white border-green-600' },
+      recusada: { label: 'Recusada', className: 'bg-red-100 text-red-700 border-red-200' },
+      expirada: { label: 'Expirada', className: 'bg-gray-100 text-gray-500 border-gray-200' },
     };
-    const config = statusConfig[status] || statusConfig.pendente;
-    return <Badge className={`${config.className} text-[10px] px-1.5`}>{config.label}</Badge>;
+    return configs[status] || configs.pendente;
+  };
+
+  const getLogIcon = (action: string) => {
+    const icons: Record<string, { icon: React.ReactNode; color: string }> = {
+      proposta_criada: { icon: <FileText className="h-3 w-3" />, color: 'bg-blue-500' },
+      proposta_enviada: { icon: <Send className="h-3 w-3" />, color: 'bg-green-500' },
+      proposta_visualizada: { icon: <Eye className="h-3 w-3" />, color: 'bg-purple-500' },
+      proposta_aceita: { icon: <Check className="h-3 w-3" />, color: 'bg-emerald-500' },
+      proposta_recusada: { icon: <X className="h-3 w-3" />, color: 'bg-red-500' },
+      proposta_prorrogada: { icon: <Timer className="h-3 w-3" />, color: 'bg-amber-500' },
+      condicao_especial_enviada: { icon: <Gift className="h-3 w-3" />, color: 'bg-pink-500' },
+    };
+    return icons[action] || { icon: <Clock className="h-3 w-3" />, color: 'bg-gray-400' };
   };
 
   const handleExtendProposal = async () => {
@@ -264,232 +285,355 @@ const PropostaDetalhesPage = () => {
   }
 
   const selectedBuildings = proposal.selected_buildings as any[] || [];
+  const statusConfig = getStatusConfig(proposal.status);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 pb-24">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 pb-28">
+      {/* Premium Sticky Header */}
+      <motion.div 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="sticky top-0 z-40 bg-white/90 backdrop-blur-2xl border-b border-gray-100/50 shadow-sm"
+      >
         <div className="flex items-center justify-between px-4 py-3 safe-area-top">
           <div className="flex items-center gap-3">
-            <button
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={() => navigate(buildPath('propostas'))}
-              className="p-2 -ml-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 -ml-2 rounded-xl hover:bg-gray-100 transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
-            </button>
+            </motion.button>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold">{proposal.number}</h1>
-                {getStatusBadge(proposal.status)}
+                <h1 className="text-base font-bold tracking-tight">{proposal.number}</h1>
               </div>
-              <p className="text-xs text-muted-foreground truncate max-w-[180px]">{proposal.client_name}</p>
+              <p className="text-xs text-muted-foreground truncate max-w-[160px]">{proposal.client_name}</p>
             </div>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
-                <MoreVertical className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleCopyLink}>
-                <Copy className="h-4 w-4 mr-2" />
-                Copiar Link
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleResend('whatsapp')}>
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Reenviar WhatsApp
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleResend('email')}>
-                <Mail className="h-4 w-4 mr-2" />
-                Reenviar Email
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowExtendDialog(true)}>
-                <Timer className="h-4 w-4 mr-2" />
-                Prorrogar
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowBetterOfferDialog(true)}>
-                <Gift className="h-4 w-4 mr-2" />
-                Condição Especial
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          
+          {/* Large Status Badge */}
+          <motion.div
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Badge className={`${statusConfig.className} text-xs px-2.5 py-1 border font-medium`}>
+              {statusConfig.label}
+            </Badge>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       <div className="p-3 space-y-3">
-        {/* Engajamento */}
-        <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-          <div className="flex items-center gap-2 mb-2">
-            <Eye className="h-4 w-4 text-purple-600" />
-            <h3 className="font-semibold text-sm">Engajamento</h3>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="p-2 bg-purple-50 rounded-lg">
-              <p className="text-[10px] text-muted-foreground">Visualizações</p>
-              <p className="text-lg font-bold text-purple-600">{proposal.view_count || 0}x</p>
-            </div>
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <p className="text-[10px] text-muted-foreground">Tempo</p>
-              <p className="text-lg font-bold text-blue-600">{formatTimeSpent(proposal.total_time_spent_seconds)}</p>
-            </div>
-          </div>
-          {proposal.first_viewed_at && (
-            <div className="mt-2 text-[10px] space-y-0.5">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Primeira visita:</span>
-                <span>{format(new Date(proposal.first_viewed_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+        {/* Hero Value Card - Apple Style */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-white via-white to-gray-50/80">
+            <div className="p-5">
+              <div className="text-center">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Valor à Vista</p>
+                <motion.p 
+                  initial={{ scale: 0.9 }}
+                  animate={{ scale: 1 }}
+                  className="text-3xl font-bold text-[#9C1E1E] mt-1 tracking-tight"
+                >
+                  {formatCurrency(proposal.cash_total_value)}
+                </motion.p>
+                {proposal.discount_percent > 0 && (
+                  <Badge className="mt-2 bg-emerald-100 text-emerald-700 border-0 text-[10px] font-medium">
+                    {proposal.discount_percent}% OFF
+                  </Badge>
+                )}
               </div>
-              {proposal.last_viewed_at && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Última visita:</span>
-                  <span>{format(new Date(proposal.last_viewed_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+              
+              <div className="grid grid-cols-2 gap-4 mt-5 pt-4 border-t border-gray-100">
+                <div className="text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Fidelidade/mês</p>
+                  <p className="text-lg font-bold mt-0.5">{formatCurrency(proposal.fidel_monthly_value)}</p>
                 </div>
-              )}
-            </div>
-          )}
-          {views.length > 0 && (
-            <div className="mt-2 flex gap-1">
-              {views.some(v => v.device_type === 'mobile') && (
-                <Badge variant="outline" className="text-[10px] gap-1 px-1.5 py-0">
-                  <Smartphone className="h-2.5 w-2.5" /> Mobile
-                </Badge>
-              )}
-              {views.some(v => v.device_type === 'desktop') && (
-                <Badge variant="outline" className="text-[10px] gap-1 px-1.5 py-0">
-                  <Monitor className="h-2.5 w-2.5" /> Desktop
-                </Badge>
-              )}
-            </div>
-          )}
-        </Card>
-
-        {/* Cliente */}
-        <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-          <div className="flex items-center gap-2 mb-2">
-            <User className="h-4 w-4 text-[#9C1E1E]" />
-            <h3 className="font-semibold text-sm">Cliente</h3>
-          </div>
-          <div className="space-y-1 text-xs">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Nome:</span>
-              <span className="font-medium">{proposal.client_name}</span>
-            </div>
-            {proposal.client_cnpj && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">CNPJ:</span>
-                <span>{proposal.client_cnpj}</span>
-              </div>
-            )}
-            {proposal.client_phone && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Telefone:</span>
-                <span>{proposal.client_phone}</span>
-              </div>
-            )}
-            {proposal.client_email && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">E-mail:</span>
-                <span className="truncate ml-2 max-w-[140px]">{proposal.client_email}</span>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {/* Prédios */}
-        <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-          <div className="flex items-center gap-2 mb-2">
-            <Building2 className="h-4 w-4 text-[#9C1E1E]" />
-            <h3 className="font-semibold text-sm">Prédios ({selectedBuildings.length})</h3>
-          </div>
-          <div className="space-y-1 max-h-28 overflow-y-auto">
-            {selectedBuildings.map((building: any, index: number) => (
-              <div key={index} className="flex justify-between text-xs p-1.5 bg-gray-50 rounded">
-                <span className="truncate">{building.building_name || building.nome}</span>
-                <span className="text-muted-foreground">{building.quantidade_telas || 1} tela(s)</span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-1.5 pt-1.5 border-t text-xs flex justify-between">
-            <span className="text-muted-foreground">Total painéis:</span>
-            <span className="font-medium">{proposal.total_panels}</span>
-          </div>
-        </Card>
-
-        {/* Valores */}
-        <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-          <div className="flex items-center gap-2 mb-2">
-            <FileText className="h-4 w-4 text-[#9C1E1E]" />
-            <h3 className="font-semibold text-sm">Valores</h3>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-100">
-              <p className="text-[10px] text-muted-foreground">À Vista (10% OFF)</p>
-              <p className="text-base font-bold text-emerald-600">{formatCurrency(proposal.cash_total_value)}</p>
-            </div>
-            <div className="p-2 bg-gray-50 rounded-lg">
-              <p className="text-[10px] text-muted-foreground">Fidelidade/mês</p>
-              <p className="text-base font-bold">{formatCurrency(proposal.fidel_monthly_value)}</p>
-            </div>
-          </div>
-          <div className="mt-2 text-xs space-y-0.5">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Período:</span>
-              <span className="font-medium">{proposal.duration_months} meses</span>
-            </div>
-            {proposal.discount_percent > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Desconto:</span>
-                <span className="font-medium text-emerald-600">{proposal.discount_percent}% OFF</span>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {/* Histórico */}
-        {logs.length > 0 && (
-          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-            <div className="flex items-center gap-2 mb-2">
-              <Clock className="h-4 w-4 text-[#9C1E1E]" />
-              <h3 className="font-semibold text-sm">Histórico</h3>
-            </div>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {logs.map((log) => (
-                <div key={log.id} className="flex items-start gap-2 text-xs">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#9C1E1E] mt-1.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <span className="font-medium">{log.action.replace(/_/g, ' ')}</span>
-                    <span className="text-muted-foreground ml-2">
-                      {format(new Date(log.created_at), "dd/MM HH:mm", { locale: ptBR })}
-                    </span>
-                  </div>
+                <div className="text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Período</p>
+                  <p className="text-lg font-bold mt-0.5">{proposal.duration_months} meses</p>
                 </div>
-              ))}
+              </div>
             </div>
           </Card>
+        </motion.div>
+
+        {/* Apple Activity Style Metrics */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="flex justify-center gap-6 py-2"
+        >
+          <div className="text-center">
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="w-16 h-16 rounded-2xl bg-purple-100 flex items-center justify-center mb-1.5 shadow-sm mx-auto"
+            >
+              <Eye className="h-7 w-7 text-purple-600" />
+            </motion.div>
+            <p className="text-2xl font-bold text-purple-600">{proposal.view_count || 0}</p>
+            <p className="text-[10px] text-muted-foreground">visualizações</p>
+          </div>
+          
+          <div className="text-center">
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center mb-1.5 shadow-sm mx-auto"
+            >
+              <Clock className="h-7 w-7 text-blue-600" />
+            </motion.div>
+            <p className="text-2xl font-bold text-blue-600">{formatTimeShort(proposal.total_time_spent_seconds)}</p>
+            <p className="text-[10px] text-muted-foreground">tempo total</p>
+          </div>
+
+          <div className="text-center">
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mb-1.5 shadow-sm mx-auto"
+            >
+              <Building2 className="h-7 w-7 text-amber-600" />
+            </motion.div>
+            <p className="text-2xl font-bold text-amber-600">{proposal.total_panels}</p>
+            <p className="text-[10px] text-muted-foreground">painéis</p>
+          </div>
+        </motion.div>
+
+        {/* Device badges */}
+        {views.length > 0 && (
+          <div className="flex justify-center gap-2">
+            {views.some(v => v.device_type === 'mobile') && (
+              <Badge variant="outline" className="text-[10px] gap-1 px-2 py-0.5 bg-white/80">
+                <Smartphone className="h-2.5 w-2.5" /> Mobile
+              </Badge>
+            )}
+            {views.some(v => v.device_type === 'desktop') && (
+              <Badge variant="outline" className="text-[10px] gap-1 px-2 py-0.5 bg-white/80">
+                <Monitor className="h-2.5 w-2.5" /> Desktop
+              </Badge>
+            )}
+          </div>
+        )}
+
+        {/* Client Card - Elegant */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50 shadow-md">
+            <div className="flex items-start gap-3">
+              {/* Avatar */}
+              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#9C1E1E] to-[#7D1818] flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-sm">
+                  {proposal.client_name?.charAt(0)?.toUpperCase()}
+                </span>
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm truncate">{proposal.client_name}</h3>
+                {proposal.client_cnpj && (
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{proposal.client_cnpj}</p>
+                )}
+                
+                {/* Contact buttons */}
+                <div className="flex gap-2 mt-2">
+                  {proposal.client_phone && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-7 px-2 text-[10px] gap-1"
+                      onClick={() => window.open(`tel:${proposal.client_phone}`, '_blank')}
+                    >
+                      <Phone className="h-3 w-3" />
+                      Ligar
+                    </Button>
+                  )}
+                  {proposal.client_email && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-7 px-2 text-[10px] gap-1"
+                      onClick={() => window.open(`mailto:${proposal.client_email}`, '_blank')}
+                    >
+                      <Mail className="h-3 w-3" />
+                      Email
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Buildings - Horizontal Scroll */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.35 }}
+        >
+          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50 shadow-md">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-[#9C1E1E]" />
+                <h3 className="font-semibold text-sm">Prédios</h3>
+              </div>
+              <Badge variant="outline" className="text-[10px]">{selectedBuildings.length}</Badge>
+            </div>
+            <div className="overflow-x-auto scrollbar-hide -mx-1 px-1">
+              <div className="inline-flex gap-2 min-w-max pb-1">
+                {selectedBuildings.map((building: any, index: number) => (
+                  <div 
+                    key={index} 
+                    className="flex-shrink-0 px-3 py-2 bg-gray-50 rounded-xl border border-gray-100 min-w-[140px]"
+                  >
+                    <p className="text-xs font-medium truncate">{building.building_name || building.nome}</p>
+                    <p className="text-[10px] text-muted-foreground">{building.quantidade_telas || 1} tela(s)</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Timeline / History - Elegant */}
+        {logs.length > 0 && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50 shadow-md">
+              <div className="flex items-center gap-2 mb-3">
+                <Clock className="h-4 w-4 text-[#9C1E1E]" />
+                <h3 className="font-semibold text-sm">Histórico</h3>
+              </div>
+              <div className="relative pl-5">
+                {/* Vertical line */}
+                <div className="absolute left-[7px] top-1 bottom-1 w-0.5 bg-gray-200 rounded-full" />
+                
+                <div className="space-y-3">
+                  {logs.slice().reverse().slice(0, 5).map((log, index) => {
+                    const logIcon = getLogIcon(log.action);
+                    return (
+                      <div key={log.id} className="relative flex items-start gap-3">
+                        {/* Icon bubble */}
+                        <div className={`absolute -left-5 w-4 h-4 rounded-full ${logIcon.color} flex items-center justify-center text-white`}>
+                          {logIcon.icon}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium capitalize">
+                            {log.action.replace(/_/g, ' ')}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: ptBR })}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* View timestamps */}
+        {proposal.first_viewed_at && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.45 }}
+          >
+            <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50 shadow-md">
+              <div className="flex items-center gap-2 mb-2">
+                <Eye className="h-4 w-4 text-purple-600" />
+                <h3 className="font-semibold text-sm">Visualizações</h3>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Primeira visita</span>
+                  <span className="font-medium">{format(new Date(proposal.first_viewed_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                </div>
+                {proposal.last_viewed_at && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Última visita</span>
+                    <span className="font-medium">{format(new Date(proposal.last_viewed_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Tempo total</span>
+                  <span className="font-medium text-blue-600">{formatTimeSpent(proposal.total_time_spent_seconds)}</span>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
         )}
       </div>
 
-      {/* Fixed Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-xl border-t border-gray-100 safe-area-bottom">
-        <div className="flex gap-2">
-          <Button 
-            variant="outline"
-            onClick={() => handleResend('whatsapp')}
-            className="flex-1 h-11"
-          >
-            <MessageSquare className="h-4 w-4 mr-2" />
-            WhatsApp
-          </Button>
-          <Button 
-            onClick={() => setShowBetterOfferDialog(true)}
-            className="flex-1 h-11 bg-[#9C1E1E] hover:bg-[#7D1818]"
-          >
-            <Gift className="h-4 w-4 mr-2" />
-            Condição Especial
-          </Button>
+      {/* Fixed Bottom Actions - Premium */}
+      <motion.div 
+        initial={{ y: 50 }}
+        animate={{ y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom"
+      >
+        <div className="bg-white/95 backdrop-blur-2xl border-t border-gray-100 shadow-2xl px-4 py-3">
+          <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => handleResend('whatsapp')}
+              className="flex-1 h-11 text-sm font-medium"
+            >
+              <MessageSquare className="h-4 w-4 mr-1.5" />
+              WhatsApp
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => handleResend('email')}
+              className="h-11 px-4"
+            >
+              <Mail className="h-4 w-4" />
+            </Button>
+            <Button 
+              onClick={() => setShowBetterOfferDialog(true)}
+              className="flex-1 h-11 bg-[#9C1E1E] hover:bg-[#7D1818] text-sm font-medium"
+            >
+              <Gift className="h-4 w-4 mr-1.5" />
+              Condição Especial
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-11 w-11">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={handleCopyLink}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copiar Link
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.open(`https://examidia.com.br/propostacomercial/${id}`, '_blank')}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Ver Página Pública
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowExtendDialog(true)}>
+                  <Timer className="h-4 w-4 mr-2" />
+                  Prorrogar Validade
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Extend Dialog */}
       <Dialog open={showExtendDialog} onOpenChange={setShowExtendDialog}>
@@ -500,7 +644,7 @@ const PropostaDetalhesPage = () => {
               Selecione por quanto tempo deseja prorrogar
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-2 py-3">
+          <div className="grid grid-cols-3 gap-2 py-3">
             {[24, 72, 168].map(hours => (
               <Button
                 key={hours}
