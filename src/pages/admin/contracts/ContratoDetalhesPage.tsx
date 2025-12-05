@@ -735,7 +735,7 @@ const ContratoDetalhesPage = () => {
       </div>
 
       {/* Fixed Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-xl border-t border-gray-100 z-50" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+      <div className="fixed bottom-0 left-0 right-0 md:left-64 p-3 bg-white/95 backdrop-blur-xl border-t border-gray-100 z-50" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
         {contrato.status === 'rascunho' && (
           <Button 
             onClick={() => sendMutation.mutate()}

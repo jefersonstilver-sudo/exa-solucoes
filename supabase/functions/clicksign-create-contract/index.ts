@@ -330,7 +330,8 @@ serve(async (req) => {
         type: "requirements",
         attributes: {
           action: "agree",
-          role: "sign"  // OBRIGATÓRIO: ClickSign exige role
+          role: "sign",  // OBRIGATÓRIO: ClickSign exige role
+          auth: "email"  // OBRIGATÓRIO: tipo de autenticação para ativação
         },
         relationships: {
           document: {
@@ -370,7 +371,8 @@ serve(async (req) => {
           type: "requirements",
           attributes: {
             action: "agree",
-            role: "sign"  // OBRIGATÓRIO: ClickSign exige role
+            role: "sign",  // OBRIGATÓRIO: ClickSign exige role
+            auth: "email"  // OBRIGATÓRIO: tipo de autenticação para ativação
           },
           relationships: {
             document: {
