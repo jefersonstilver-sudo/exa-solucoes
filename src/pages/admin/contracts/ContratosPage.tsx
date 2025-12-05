@@ -9,6 +9,12 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Scale,
   Plus,
   Search,
@@ -25,7 +31,8 @@ import {
   AlertCircle,
   UserCheck,
   MoreVertical,
-  ArrowLeft
+  ArrowLeft,
+  PenTool
 } from 'lucide-react';
 import { SignatariosExaManager } from '@/components/admin/contracts/SignatariosExaManager';
 import { format } from 'date-fns';
@@ -56,6 +63,7 @@ const ContratosPage = () => {
   const [tipoFilter, setTipoFilter] = useState<string>('todos');
   const [activeTab, setActiveTab] = useState<string>('contratos');
   const [mainTab, setMainTab] = useState<'anunciantes' | 'sindicos'>('anunciantes');
+  const [showSignatarios, setShowSignatarios] = useState(false);
 
   const { data: contratos, isLoading, refetch } = useQuery({
     queryKey: ['contratos-legais', statusFilter, tipoFilter, mainTab],
@@ -155,13 +163,24 @@ const ContratosPage = () => {
                 <p className="text-[11px] text-muted-foreground">Contratos e Documentos</p>
               </div>
             </div>
-            <Button 
-              size="sm"
-              onClick={() => navigate(buildPath(mainTab === 'anunciantes' ? 'juridico/novo' : 'juridico/novo-sindico'))}
-              className="bg-[#9C1E1E] hover:bg-[#7D1818] h-9 px-3"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                size="sm"
+                variant="outline"
+                onClick={() => setShowSignatarios(true)}
+                className="border-[#9C1E1E]/30 text-[#9C1E1E] h-9 px-2"
+                title="Signatários"
+              >
+                <PenTool className="h-4 w-4" />
+              </Button>
+              <Button 
+                size="sm"
+                onClick={() => navigate(buildPath(mainTab === 'anunciantes' ? 'juridico/novo' : 'juridico/novo-sindico'))}
+                className="bg-[#9C1E1E] hover:bg-[#7D1818] h-9 px-3"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       ) : (
@@ -176,13 +195,24 @@ const ContratosPage = () => {
                 <p className="text-sm text-muted-foreground">Gestão de Contratos e Documentos Legais</p>
               </div>
             </div>
-            <Button 
-              onClick={() => navigate(buildPath(mainTab === 'anunciantes' ? 'juridico/novo' : 'juridico/novo-sindico'))}
-              className="bg-[#9C1E1E] hover:bg-[#7D1818]"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {mainTab === 'anunciantes' ? 'Novo Contrato' : 'Novo Comodato'}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => setShowSignatarios(true)}
+                className="border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/10"
+                title="Signatários EXA"
+              >
+                <PenTool className="h-4 w-4 mr-2" />
+                Signatários
+              </Button>
+              <Button 
+                onClick={() => navigate(buildPath(mainTab === 'anunciantes' ? 'juridico/novo' : 'juridico/novo-sindico'))}
+                className="bg-[#9C1E1E] hover:bg-[#7D1818]"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {mainTab === 'anunciantes' ? 'Novo Contrato' : 'Novo Comodato'}
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -478,6 +508,19 @@ const ContratosPage = () => {
           <SignatariosExaManager />
         )}
       </div>
+
+      {/* Dialog de Signatários EXA */}
+      <Dialog open={showSignatarios} onOpenChange={setShowSignatarios}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PenTool className="h-5 w-5 text-[#9C1E1E]" />
+              Signatários EXA Mídia
+            </DialogTitle>
+          </DialogHeader>
+          <SignatariosExaManager />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
