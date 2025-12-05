@@ -1,6 +1,5 @@
 import React from 'react';
 import { Sun, Moon } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
 import { useTheme } from '@/components/ui/theme-provider';
 
 interface ThemeToggleProps {
@@ -9,44 +8,46 @@ interface ThemeToggleProps {
 
 export function ThemeToggle({ collapsed = false }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
+  const isDark = theme === 'dark';
   
   if (collapsed) {
     return (
       <button
-        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-        className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-white/10 transition-colors"
-        title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
+        onClick={() => setTheme(isDark ? 'light' : 'dark')}
+        className="w-full flex items-center justify-center p-1.5 rounded-md hover:bg-white/10 transition-colors"
+        title={isDark ? 'Modo Claro' : 'Modo Escuro'}
       >
-        {theme === 'dark' ? (
-          <Moon className="h-4 w-4 text-amber-300" />
+        {isDark ? (
+          <Moon className="h-3.5 w-3.5 text-amber-300" />
         ) : (
-          <Sun className="h-4 w-4 text-amber-400" />
+          <Sun className="h-3.5 w-3.5 text-amber-400" />
         )}
       </button>
     );
   }
 
   return (
-    <div className="flex items-center justify-between py-2 px-1 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-      <div className="flex items-center gap-1.5">
-        <Sun className={`h-3.5 w-3.5 transition-colors ${theme === 'light' ? 'text-amber-400' : 'text-white/40'}`} />
-        <span className={`text-[10px] font-medium transition-colors ${theme === 'light' ? 'text-white' : 'text-white/40'}`}>
-          Claro
-        </span>
-      </div>
+    <div className="flex items-center gap-2 px-1">
+      <Sun className={`h-3 w-3 transition-colors ${!isDark ? 'text-amber-400' : 'text-white/30'}`} />
       
-      <Switch
-        checked={theme === 'dark'}
-        onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
-        className="data-[state=checked]:bg-red-600 data-[state=unchecked]:bg-white/20 h-5 w-9"
-      />
+      {/* iOS-style toggle */}
+      <button
+        onClick={() => setTheme(isDark ? 'light' : 'dark')}
+        className={`
+          relative w-9 h-5 rounded-full transition-colors duration-200 ease-in-out
+          ${isDark ? 'bg-red-600' : 'bg-white/25'}
+        `}
+      >
+        <span
+          className={`
+            absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm
+            transition-transform duration-200 ease-in-out
+            ${isDark ? 'translate-x-4' : 'translate-x-0'}
+          `}
+        />
+      </button>
       
-      <div className="flex items-center gap-1.5">
-        <span className={`text-[10px] font-medium transition-colors ${theme === 'dark' ? 'text-white' : 'text-white/40'}`}>
-          Escuro
-        </span>
-        <Moon className={`h-3.5 w-3.5 transition-colors ${theme === 'dark' ? 'text-amber-300' : 'text-white/40'}`} />
-      </div>
+      <Moon className={`h-3 w-3 transition-colors ${isDark ? 'text-amber-300' : 'text-white/30'}`} />
     </div>
   );
 }
