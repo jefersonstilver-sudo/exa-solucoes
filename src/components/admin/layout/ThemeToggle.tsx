@@ -14,40 +14,44 @@ export function ThemeToggle({ collapsed = false }: ThemeToggleProps) {
     return (
       <button
         onClick={() => setTheme(isDark ? 'light' : 'dark')}
-        className="flex items-center justify-center p-1 rounded-md hover:bg-white/10 transition-colors"
+        className="flex items-center justify-center p-2 rounded-lg hover:bg-white/10 transition-colors min-h-[40px] min-w-[40px]"
         title={isDark ? 'Modo Claro' : 'Modo Escuro'}
       >
         {isDark ? (
-          <Moon className="h-3 w-3 text-amber-300" />
+          <Moon className="h-4 w-4 text-amber-300" />
         ) : (
-          <Sun className="h-3 w-3 text-amber-400" />
+          <Sun className="h-4 w-4 text-amber-400" />
         )}
       </button>
     );
   }
 
+  // Two simple touchable icons - Apple style
   return (
-    <div className="flex items-center gap-1.5 px-1">
-      <Sun className={`h-2.5 w-2.5 transition-colors ${!isDark ? 'text-amber-400' : 'text-white/30'}`} />
-      
-      {/* Minimal pill toggle */}
+    <div className="flex items-center justify-center gap-1">
       <button
-        onClick={() => setTheme(isDark ? 'light' : 'dark')}
-        className={`
-          relative w-6 h-3 rounded-full transition-colors duration-200
-          ${isDark ? 'bg-white/30' : 'bg-white/20'}
-        `}
+        onClick={() => setTheme('light')}
+        className={`flex items-center justify-center p-2 rounded-lg transition-all duration-200 min-h-[40px] min-w-[40px] ${
+          !isDark 
+            ? 'bg-white/10 text-amber-400' 
+            : 'text-white/30 hover:text-white/50 hover:bg-white/5'
+        }`}
+        title="Modo Claro"
       >
-        <span
-          className={`
-            absolute top-0.5 left-0.5 w-2 h-2 bg-white rounded-full shadow-sm
-            transition-transform duration-200
-            ${isDark ? 'translate-x-3' : 'translate-x-0'}
-          `}
-        />
+        <Sun className="h-4 w-4" />
       </button>
       
-      <Moon className={`h-2.5 w-2.5 transition-colors ${isDark ? 'text-amber-300' : 'text-white/30'}`} />
+      <button
+        onClick={() => setTheme('dark')}
+        className={`flex items-center justify-center p-2 rounded-lg transition-all duration-200 min-h-[40px] min-w-[40px] ${
+          isDark 
+            ? 'bg-white/10 text-amber-300' 
+            : 'text-white/30 hover:text-white/50 hover:bg-white/5'
+        }`}
+        title="Modo Escuro"
+      >
+        <Moon className="h-4 w-4" />
+      </button>
     </div>
   );
 }

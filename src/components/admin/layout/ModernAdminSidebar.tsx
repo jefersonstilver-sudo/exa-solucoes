@@ -476,11 +476,11 @@ export function ModernAdminSidebar() {
                       <SidebarMenuButton asChild>
                         <NavLink
                           to={item.href}
-                          className={`flex items-center ${collapsed ? 'px-2 py-2.5 justify-center' : 'px-3 py-2.5 gap-3'} rounded-lg transition-all duration-200 font-medium group relative ${
+                          className={`flex items-center ${collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2 gap-3'} rounded-lg transition-all duration-200 font-medium group relative h-10 ${
                             isActive 
-                              ? "bg-gradient-to-r from-amber-600/80 to-amber-700/80 text-white shadow-lg shadow-amber-900/30" 
-                              : "text-amber-100/80 hover:bg-amber-500/15 hover:text-white active:scale-[0.98]"
-                          } min-h-[44px] touch-manipulation`}
+                              ? "bg-amber-500/10 text-white border-l-[3px] border-amber-500 rounded-l-none" 
+                              : "text-amber-100/80 hover:bg-amber-500/10 hover:text-white active:scale-[0.98]"
+                          } touch-manipulation`}
                           onClick={() => {
                             if (isMobile || isSidebarMobile) {
                               setOpenMobile(false);
@@ -537,11 +537,11 @@ export function ModernAdminSidebar() {
                   const linkContent = (
                     <NavLink
                       to={item.href}
-                      className={`flex items-center ${collapsed ? 'px-2 py-2.5 justify-center' : 'px-3 py-2.5 gap-3'} rounded-lg transition-all duration-200 font-medium group relative ${
+                      className={`flex items-center ${collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2 gap-3'} rounded-lg transition-all duration-200 font-medium group relative h-10 ${
                         isActive 
-                          ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-900/40" 
-                          : "text-red-100/80 hover:bg-red-500/15 hover:text-white active:scale-[0.98]"
-                      } min-h-[44px] touch-manipulation`}
+                          ? "bg-red-500/10 text-white border-l-[3px] border-red-500 rounded-l-none" 
+                          : "text-red-100/80 hover:bg-red-500/10 hover:text-white active:scale-[0.98]"
+                      } touch-manipulation`}
                       style={{
                         WebkitTapHighlightColor: 'transparent',
                       }}
@@ -611,19 +611,8 @@ export function ModernAdminSidebar() {
         ))}
       </SidebarContent>
       
-      <SidebarFooter className={`${collapsed ? 'p-2' : 'p-3'} border-t border-white/10 bg-[#0F0F0F]/95 backdrop-blur-sm`}>
-        {/* Theme Toggle - Apple Style */}
+      <SidebarFooter className="p-2 border-t border-white/10 bg-[#0F0F0F]/95 backdrop-blur-sm">
         <ThemeToggle collapsed={collapsed} />
-        
-        <div className="flex items-center space-x-2 text-white/60 text-xs mt-2">
-          <Shield className="h-3 w-3 flex-shrink-0" />
-          {!collapsed && <span className="text-[10px] truncate">Sistema Seguro</span>}
-        </div>
-        {!collapsed && (
-          <div className="text-[10px] text-white/40 mt-0.5">
-            EXA Admin v3.0
-          </div>
-        )}
       </SidebarFooter>
     </Sidebar>
   );
