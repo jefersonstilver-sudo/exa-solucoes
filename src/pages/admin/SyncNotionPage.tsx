@@ -1,30 +1,201 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Building2, Clock, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { RefreshCw, Building2, Clock, AlertCircle, CheckCircle, Loader2, Wrench, Users, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronDown } from 'lucide-react';
+
+interface Building {
+  id: string;
+  nome: string;
+  endereco: string;
+  bairro: string;
+  status: string;
+  notion_status: string | null;
+  notion_page_id: string | null;
+  notion_last_synced_at: string | null;
+  notion_oti: string | null;
+  notion_internal_id: number | null;
+  numero_unidades: number | null;
+  publico_estimado: number | null;
+  notion_fotos: any;
+  imagem_principal: string | null;
+}
+
+// Status groupings matching Notion board
+const STATUS_GROUPS = {
+  online: {
+    title: 'PRÉDIOS ONLINE',
+    icon: CheckCircle,
+    statuses: ['Ativo'],
+    bgColor: 'bg-emerald-50',
+    borderColor: 'border-emerald-200',
+    iconColor: 'text-emerald-600',
+    badgeColor: 'bg-emerald-100 text-emerald-700 border-emerald-300'
+  },
+  offline: {
+    title: 'PRÉDIOS OFFLINE',
+    icon: AlertCircle,
+    statuses: ['Subir Nuc', 'Manutenção', 'Pausado'],
+    bgColor: 'bg-red-50',
+    borderColor: 'border-red-200',
+    iconColor: 'text-red-600',
+    badgeColor: 'bg-red-100 text-red-700 border-red-300'
+  },
+  manutencao: {
+    title: 'EM MANUTENÇÃO / INSTALAÇÃO',
+    icon: Wrench,
+    statuses: ['Instalação', 'Instalação Internet'],
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-200',
+    iconColor: 'text-blue-600',
+    badgeColor: 'bg-blue-100 text-blue-700 border-blue-300'
+  },
+  leads: {
+    title: 'SÍNDICO LEAD',
+    icon: Users,
+    statuses: ['Lead', 'Síndico Lead'],
+    bgColor: 'bg-amber-50',
+    borderColor: 'border-amber-200',
+    iconColor: 'text-amber-600',
+    badgeColor: 'bg-amber-100 text-amber-700 border-amber-300'
+  }
+};
+
+// Building Card Component
+const BuildingCard = ({ building, badgeColor }: { building: Building; badgeColor: string }) => {
+  // Get image from notion_fotos or imagem_principal
+  const getImageUrl = () => {
+    if (building.notion_fotos) {
+      try {
+        const fotos = typeof building.notion_fotos === 'string' 
+          ? JSON.parse(building.notion_fotos) 
+          : building.notion_fotos;
+        if (Array.isArray(fotos) && fotos.length > 0) {
+          return fotos[0]?.url || fotos[0];
+        }
+      } catch (e) {
+        console.error('Error parsing notion_fotos:', e);
+      }
+    }
+    return building.imagem_principal || null;
+  };
+
+  const imageUrl = getImageUrl();
+
+  return (
+    <div className="flex-shrink-0 w-[180px] md:w-[200px] bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 group cursor-pointer">
+      {/* Image */}
+      <div className="h-[120px] md:h-[140px] bg-gray-100 relative overflow-hidden">
+        {imageUrl ? (
+          <img 
+            src={imageUrl} 
+            alt={building.nome}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+            <Building2 className="h-10 w-10 text-gray-300" />
+          </div>
+        )}
+        {/* Status badge overlay */}
+        <div className="absolute top-2 left-2">
+          <Badge className={`${badgeColor} text-[10px] px-1.5 py-0.5 shadow-sm`}>
+            {building.notion_status || 'N/A'}
+          </Badge>
+        </div>
+        {/* OTI badge if exists */}
+        {building.notion_oti && (
+          <div className="absolute top-2 right-2">
+            <Badge className="bg-purple-100 text-purple-700 border-purple-300 text-[10px] px-1.5 py-0.5 shadow-sm">
+              {building.notion_oti}
+            </Badge>
+          </div>
+        )}
+      </div>
+      
+      {/* Content */}
+      <div className="p-3">
+        <h3 className="font-semibold text-sm text-gray-900 truncate">{building.nome}</h3>
+        <p className="text-xs text-gray-500 truncate mt-0.5">{building.bairro}</p>
+        <div className="flex items-center gap-2 mt-2 text-[10px] text-gray-400">
+          {building.numero_unidades && (
+            <span className="flex items-center gap-0.5">
+              <Building2 className="h-3 w-3" />
+              {building.numero_unidades}
+            </span>
+          )}
+          {building.publico_estimado && (
+            <span className="flex items-center gap-0.5">
+              <Users className="h-3 w-3" />
+              {building.publico_estimado.toLocaleString()}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Status Section Component
+const StatusSection = ({ 
+  group, 
+  buildings 
+}: { 
+  group: typeof STATUS_GROUPS[keyof typeof STATUS_GROUPS];
+  buildings: Building[];
+}) => {
+  const Icon = group.icon;
+  
+  if (buildings.length === 0) return null;
+
+  return (
+    <div className={`rounded-2xl ${group.bgColor} ${group.borderColor} border p-4 md:p-5`}>
+      {/* Section Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Icon className={`h-5 w-5 ${group.iconColor}`} />
+          <h2 className="font-semibold text-gray-800 text-sm md:text-base">{group.title}</h2>
+          <Badge variant="secondary" className="text-xs">{buildings.length}</Badge>
+        </div>
+      </div>
+      
+      {/* Horizontal scrolling cards */}
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+        {buildings.map((building) => (
+          <BuildingCard 
+            key={building.id} 
+            building={building} 
+            badgeColor={group.badgeColor}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const SyncNotionPage = () => {
   const queryClient = useQueryClient();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [logsOpen, setLogsOpen] = useState(false);
 
-  // Fetch buildings with notion data
+  // Fetch buildings with notion data including photos
   const { data: buildings, isLoading: loadingBuildings } = useQuery({
     queryKey: ['notion-buildings'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('buildings')
-        .select('id, nome, endereco, bairro, status, notion_status, notion_page_id, notion_last_synced_at, notion_oti, notion_internal_id, numero_unidades, publico_estimado')
+        .select('id, nome, endereco, bairro, status, notion_status, notion_page_id, notion_last_synced_at, notion_oti, notion_internal_id, numero_unidades, publico_estimado, notion_fotos, imagem_principal')
         .not('notion_page_id', 'is', null)
         .order('nome');
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as Building[];
     }
   });
 
@@ -64,217 +235,142 @@ const SyncNotionPage = () => {
     }
   });
 
-  const lastSync = syncLogs?.[0];
-  const totalBuildings = buildings?.length || 0;
-  const activeBuildings = buildings?.filter(b => b.notion_status === 'Ativo')?.length || 0;
-  const leadsBuildings = buildings?.filter(b => b.notion_status === 'Lead')?.length || 0;
-
-  const getStatusBadge = (status: string | null) => {
-    switch (status) {
-      case 'Ativo':
-        return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Ativo</Badge>;
-      case 'Lead':
-        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Lead</Badge>;
-      case 'Instalação':
-        return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Instalação</Badge>;
-      case 'Pausado':
-        return <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">Pausado</Badge>;
-      default:
-        return <Badge variant="outline">{status || 'N/A'}</Badge>;
-    }
+  // Group buildings by status
+  const groupedBuildings = {
+    online: buildings?.filter(b => STATUS_GROUPS.online.statuses.includes(b.notion_status || '')) || [],
+    offline: buildings?.filter(b => STATUS_GROUPS.offline.statuses.includes(b.notion_status || '')) || [],
+    manutencao: buildings?.filter(b => STATUS_GROUPS.manutencao.statuses.includes(b.notion_status || '')) || [],
+    leads: buildings?.filter(b => STATUS_GROUPS.leads.statuses.includes(b.notion_status || '')) || []
   };
 
+  const lastSync = syncLogs?.[0];
+  const totalBuildings = buildings?.length || 0;
+
   return (
-    <div className="p-4 md:p-6 space-y-6 bg-gradient-to-br from-background to-muted/20 min-h-screen">
+    <div className="p-4 md:p-6 space-y-5 bg-gradient-to-br from-gray-50 to-slate-100 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
-            <RefreshCw className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+          <h1 className="text-lg md:text-xl font-bold text-gray-900 flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <RefreshCw className="h-5 w-5 text-primary" />
+            </div>
             Sync Notion
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Sincronização bidirecional com Notion
+          <p className="text-xs text-gray-500 mt-1 ml-11">
+            Sincronização bidirecional • {totalBuildings} prédios
           </p>
         </div>
         <Button
           onClick={() => syncMutation.mutate()}
           disabled={isSyncing}
-          className="bg-primary hover:bg-primary/90"
+          size="sm"
+          className="bg-primary hover:bg-primary/90 shadow-md"
         >
           {isSyncing ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <Zap className="h-4 w-4 mr-2" />
           )}
           Forçar Sincronização
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <Card className="glass-card-mobile-subtle">
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-primary" />
-              <span className="text-xs text-muted-foreground">Total Prédios</span>
-            </div>
-            <p className="text-xl md:text-2xl font-bold mt-1">{totalBuildings}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card-mobile-subtle">
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-emerald-500" />
-              <span className="text-xs text-muted-foreground">Ativos</span>
-            </div>
-            <p className="text-xl md:text-2xl font-bold mt-1 text-emerald-500">{activeBuildings}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card-mobile-subtle">
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-500" />
-              <span className="text-xs text-muted-foreground">Leads</span>
-            </div>
-            <p className="text-xl md:text-2xl font-bold mt-1 text-amber-500">{leadsBuildings}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card-mobile-subtle">
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-blue-500" />
-              <span className="text-xs text-muted-foreground">Última Sync</span>
-            </div>
-            <p className="text-sm md:text-base font-medium mt-1 truncate">
-              {lastSync?.sync_started_at 
-                ? format(new Date(lastSync.sync_started_at), "dd/MM HH:mm", { locale: ptBR })
-                : 'Nunca'
-              }
-            </p>
-          </CardContent>
-        </Card>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-4 gap-2 md:gap-3">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-white/50 text-center">
+          <div className="text-xl md:text-2xl font-bold text-emerald-600">{groupedBuildings.online.length}</div>
+          <div className="text-[10px] text-gray-500">Online</div>
+        </div>
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-white/50 text-center">
+          <div className="text-xl md:text-2xl font-bold text-red-600">{groupedBuildings.offline.length}</div>
+          <div className="text-[10px] text-gray-500">Offline</div>
+        </div>
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-white/50 text-center">
+          <div className="text-xl md:text-2xl font-bold text-blue-600">{groupedBuildings.manutencao.length}</div>
+          <div className="text-[10px] text-gray-500">Instalação</div>
+        </div>
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-white/50 text-center">
+          <div className="text-xl md:text-2xl font-bold text-amber-600">{groupedBuildings.leads.length}</div>
+          <div className="text-[10px] text-gray-500">Leads</div>
+        </div>
       </div>
 
-      {/* Buildings List */}
-      <Card className="glass-card-mobile-subtle">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            Prédios Sincronizados
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {loadingBuildings ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <div className="divide-y divide-border">
-              {buildings?.map((building) => (
-                <div key={building.id} className="p-3 md:p-4 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm truncate">{building.nome}</span>
-                        {getStatusBadge(building.notion_status)}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1 truncate">
-                        {building.endereco}, {building.bairro}
-                      </p>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                        {building.notion_oti && (
-                          <span className="bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded">
-                            OTI: {building.notion_oti}
-                          </span>
-                        )}
-                        {building.numero_unidades && (
-                          <span>{building.numero_unidades} un.</span>
-                        )}
-                        {building.publico_estimado && (
-                          <span>{building.publico_estimado.toLocaleString()} público</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right text-xs text-muted-foreground shrink-0">
-                      {building.notion_last_synced_at && (
-                        <span>
-                          {format(new Date(building.notion_last_synced_at), "dd/MM HH:mm", { locale: ptBR })}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {buildings?.length === 0 && (
-                <div className="p-8 text-center text-muted-foreground">
-                  <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>Nenhum prédio sincronizado ainda</p>
-                  <p className="text-xs mt-1">Clique em "Forçar Sincronização" para começar</p>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Loading State */}
+      {loadingBuildings ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      ) : (
+        /* Status Sections */
+        <div className="space-y-4">
+          <StatusSection group={STATUS_GROUPS.online} buildings={groupedBuildings.online} />
+          <StatusSection group={STATUS_GROUPS.offline} buildings={groupedBuildings.offline} />
+          <StatusSection group={STATUS_GROUPS.manutencao} buildings={groupedBuildings.manutencao} />
+          <StatusSection group={STATUS_GROUPS.leads} buildings={groupedBuildings.leads} />
+        </div>
+      )}
 
-      {/* Sync Logs */}
-      <Card className="glass-card-mobile-subtle">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Histórico de Sincronizações
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {loadingLogs ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <div className="divide-y divide-border">
-              {syncLogs?.map((log) => (
-                <div key={log.id} className="p-3 md:p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {log.status === 'success' ? (
-                        <CheckCircle className="h-4 w-4 text-emerald-500" />
-                      ) : log.status === 'error' ? (
-                        <AlertCircle className="h-4 w-4 text-red-500" />
-                      ) : (
-                        <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
-                      )}
-                      <span className="text-sm font-medium">
-                        {format(new Date(log.sync_started_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      {log.buildings_created > 0 && (
-                        <span className="text-emerald-500">+{log.buildings_created}</span>
-                      )}
-                      {log.buildings_updated > 0 && (
-                        <span className="text-blue-500">↻{log.buildings_updated}</span>
-                      )}
-                      {log.duration_ms && (
-                        <span>{(log.duration_ms / 1000).toFixed(1)}s</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {syncLogs?.length === 0 && (
-                <div className="p-8 text-center text-muted-foreground">
-                  <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>Nenhuma sincronização realizada</p>
-                </div>
+      {/* Sync Logs - Collapsible */}
+      <Collapsible open={logsOpen} onOpenChange={setLogsOpen}>
+        <CollapsibleTrigger asChild>
+          <button className="w-full bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-white/50 flex items-center justify-between hover:bg-white transition-colors">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Histórico de Sincronizações</span>
+              {lastSync && (
+                <span className="text-xs text-gray-400">
+                  Última: {format(new Date(lastSync.sync_started_at), "dd/MM HH:mm", { locale: ptBR })}
+                </span>
               )}
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${logsOpen ? 'rotate-180' : ''}`} />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-2">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 divide-y divide-gray-100">
+            {loadingLogs ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              </div>
+            ) : (
+              syncLogs?.map((log) => (
+                <div key={log.id} className="p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {log.status === 'success' ? (
+                      <CheckCircle className="h-4 w-4 text-emerald-500" />
+                    ) : log.status === 'error' ? (
+                      <AlertCircle className="h-4 w-4 text-red-500" />
+                    ) : (
+                      <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+                    )}
+                    <span className="text-sm text-gray-700">
+                      {format(new Date(log.sync_started_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    {log.buildings_created > 0 && (
+                      <span className="text-emerald-600 font-medium">+{log.buildings_created}</span>
+                    )}
+                    {log.buildings_updated > 0 && (
+                      <span className="text-blue-600 font-medium">↻{log.buildings_updated}</span>
+                    )}
+                    {log.duration_ms && (
+                      <span className="text-gray-400">{(log.duration_ms / 1000).toFixed(1)}s</span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+            {syncLogs?.length === 0 && (
+              <div className="p-6 text-center text-gray-400">
+                <Clock className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Nenhuma sincronização realizada</p>
+              </div>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 };
