@@ -119,18 +119,29 @@ serve(async (req) => {
           console.log('⚠️ Usuário existe mas precisa definir senha');
         }
         
-        // Atualizar dados do usuário na tabela users
+        // Atualizar dados do usuário na tabela users COM DADOS DA EMPRESA DA PROPOSTA
         const { error: updateUserError } = await supabase.from('users').upsert({
           id: userId,
           email: clientEmail,
           nome: proposal.client_name || existingAuthUser.user_metadata?.nome || 'Cliente EXA',
           role: 'client',
           telefone: proposal.client_phone || existingAuthUser.user_metadata?.telefone,
-          status: 'active'
+          status: 'active',
+          // ✅ TRANSFERIR dados da empresa da proposta
+          empresa_nome: proposal.client_company_name,
+          empresa_pais: proposal.client_country || 'BR',
+          empresa_documento: proposal.client_cnpj,
+          empresa_endereco: proposal.client_address,
+          empresa_latitude: proposal.client_latitude,
+          empresa_longitude: proposal.client_longitude,
+          empresa_aceite_termo: true,
+          empresa_aceite_termo_data: new Date().toISOString()
         }, { onConflict: 'id' });
         
         if (updateUserError) {
           console.error('⚠️ Erro ao atualizar usuário:', updateUserError);
+        } else {
+          console.log('✅ Dados da empresa transferidos para o usuário');
         }
         
       } else {
@@ -160,7 +171,7 @@ serve(async (req) => {
           needsPasswordSetup = true;
           console.log('✅ Novo usuário auth criado:', userId);
 
-          // Criar registro na tabela users
+          // Criar registro na tabela users COM DADOS DA EMPRESA DA PROPOSTA
           console.log('📝 Criando registro na tabela users...');
           const { error: insertUserError } = await supabase.from('users').insert({
             id: userId,
@@ -169,13 +180,22 @@ serve(async (req) => {
             role: 'client',
             telefone: proposal.client_phone,
             status: 'active',
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            // ✅ TRANSFERIR dados da empresa da proposta
+            empresa_nome: proposal.client_company_name,
+            empresa_pais: proposal.client_country || 'BR',
+            empresa_documento: proposal.client_cnpj,
+            empresa_endereco: proposal.client_address,
+            empresa_latitude: proposal.client_latitude,
+            empresa_longitude: proposal.client_longitude,
+            empresa_aceite_termo: true,
+            empresa_aceite_termo_data: new Date().toISOString()
           });
 
           if (insertUserError) {
             console.error('⚠️ Erro ao inserir usuário na tabela users:', insertUserError);
           } else {
-            console.log('✅ Usuário inserido na tabela users');
+            console.log('✅ Usuário inserido com dados da empresa');
           }
         }
       }

@@ -69,21 +69,22 @@ export const CompanyTermsCheckbox: React.FC<CompanyTermsCheckboxProps> = ({
         {COMPANY_TERMS_TEXT}
       </div>
       
-      <div className="flex items-start space-x-2">
+      <div className="flex items-start space-x-3">
         <Checkbox 
           id="company-terms" 
           checked={accepted}
           onCheckedChange={onAcceptedChange}
           disabled={disabled}
+          className="mt-0.5 border-2 border-amber-600 data-[state=checked]:bg-amber-600 data-[state=checked]:border-amber-600"
         />
         <label 
           htmlFor="company-terms" 
           className={cn(
-            "text-sm cursor-pointer",
+            "text-sm cursor-pointer leading-tight",
             disabled ? "text-gray-500 cursor-not-allowed" : "text-gray-700"
           )}
         >
-          Li e concordo com o Termo de Responsabilidade acima <span className="text-red-500">*</span>
+          <span className="font-semibold text-amber-900">EU CONFIRMO</span> que li e concordo com o Termo de Responsabilidade acima <span className="text-red-500">*</span>
         </label>
       </div>
       {disabled && acceptedDate && (

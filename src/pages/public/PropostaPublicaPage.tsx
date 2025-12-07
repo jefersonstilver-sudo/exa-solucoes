@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import UnifiedLogo from '@/components/layout/UnifiedLogo';
 import { supabase } from '@/integrations/supabase/client';
 import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExporter';
 import { validateEmail } from '@/utils/inputValidation';
+import { PaymentSuccessModal } from '@/components/public/PaymentSuccessModal';
 
 interface CustomInstallment {
   installment: number;
@@ -96,6 +97,11 @@ const PropostaPublicaPage = () => {
   // Current building data for accurate panel count
   const [enrichedBuildings, setEnrichedBuildings] = useState<any[]>([]);
   const [realTotalPanels, setRealTotalPanels] = useState(0);
+  
+  // Payment polling states
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+  const [convertedOrderId, setConvertedOrderId] = useState<string | null>(null);
+  const [isPollingPayment, setIsPollingPayment] = useState(false);
 
   // Track page view time with heartbeat system (works on mobile!)
   const pageLoadTime = React.useRef<number>(Date.now());
@@ -180,6 +186,51 @@ const PropostaPublicaPage = () => {
       }
     };
   }, [id]);
+
+  // Payment polling - check every 5 seconds if payment was approved
+  useEffect(() => {
+    if (!isPollingPayment || !proposal?.id || !paymentData?.paymentId) return;
+    
+    console.log('🔄 POLLING: Iniciando verificação de pagamento', { paymentId: paymentData.paymentId });
+    
+    const checkPaymentStatus = async () => {
+      try {
+        // Check if proposal was converted (payment approved)
+        const { data: proposalData, error } = await supabase
+          .from('proposals')
+          .select('status, converted_order_id')
+          .eq('id', proposal.id)
+          .single();
+        
+        if (error) {
+          console.error('❌ Erro ao verificar status:', error);
+          return;
+        }
+        
+        console.log('📊 Status atual:', proposalData);
+        
+        if (proposalData?.status === 'convertida' && proposalData.converted_order_id) {
+          console.log('🎉 PAGAMENTO APROVADO! Order ID:', proposalData.converted_order_id);
+          setIsPollingPayment(false);
+          setConvertedOrderId(proposalData.converted_order_id);
+          setShowPaymentSuccess(true);
+        }
+      } catch (err) {
+        console.error('❌ Erro no polling:', err);
+      }
+    };
+    
+    // Check immediately
+    checkPaymentStatus();
+    
+    // Then poll every 5 seconds
+    const pollInterval = setInterval(checkPaymentStatus, 5000);
+    
+    return () => {
+      console.log('🛑 POLLING: Parando verificação');
+      clearInterval(pollInterval);
+    };
+  }, [isPollingPayment, proposal?.id, paymentData?.paymentId]);
 
   // Buscar proposta do banco de dados
   useEffect(() => {
@@ -522,6 +573,11 @@ const PropostaPublicaPage = () => {
 
       setPaymentData(data.paymentData);
       setPaymentStep('ready');
+      
+      // Start polling for payment status (PIX only)
+      if (paymentMethod === 'pix') {
+        setIsPollingPayment(true);
+      }
       
       // Send confirmation email with payment data
       await sendConfirmationEmail(emailToUse, data.paymentData);
@@ -1034,6 +1090,12 @@ const PropostaPublicaPage = () => {
               <div className="bg-emerald-50 rounded-xl p-4 text-center">
                 <Zap className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
                 <h3 className="font-semibold text-emerald-700">PIX Gerado!</h3>
+                {isPollingPayment && (
+                  <p className="text-xs text-emerald-600 mt-1 flex items-center justify-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Aguardando confirmação do pagamento...
+                  </p>
+                )}
               </div>
 
               {/* QR Code */}
@@ -1071,11 +1133,21 @@ const PropostaPublicaPage = () => {
               <Button
                 variant="outline"
                 className="w-full h-10 border-gray-300 text-gray-600 hover:bg-gray-50"
-                onClick={() => window.location.href = '/'}
+                onClick={() => {
+                  setIsPollingPayment(false);
+                  window.location.href = '/';
+                }}
               >
                 <Clock className="h-4 w-4 mr-2" />
                 Pagar Depois
               </Button>
+              
+              {/* Payment Success Modal */}
+              <PaymentSuccessModal
+                isOpen={showPaymentSuccess}
+                orderId={convertedOrderId || undefined}
+                clientName={proposal?.client_name}
+              />
             </div>
           )}
 
