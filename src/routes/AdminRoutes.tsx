@@ -29,6 +29,7 @@ import ContratosPage from '@/pages/admin/contracts/ContratosPage';
 import NovoContratoPage from '@/pages/admin/contracts/NovoContratoPage';
 import NovoContratoSindicoPage from '@/pages/admin/contracts/NovoContratoSindicoPage';
 import ContratoDetalhesPage from '@/pages/admin/contracts/ContratoDetalhesPage';
+import SyncNotionPage from '@/pages/admin/SyncNotionPage';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
 
@@ -48,6 +49,7 @@ const AdminRoutes = () => {
     <Routes>
       {/* ============ GESTÃO PRINCIPAL ============ */}
       <Route index element={<Dashboard />} />
+      <Route path="sync-notion" element={<SyncNotionPage />} />
       <Route path="pedidos" element={<OrdersPage />} />
       <Route path="pedidos/:id" element={<OrderDetails />} />
       <Route path="propostas" element={<PropostasPage />} />

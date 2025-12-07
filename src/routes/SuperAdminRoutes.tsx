@@ -30,6 +30,7 @@ import AssinaturasPage from '@/pages/admin/AssinaturasPage';
 import EmailLogs from '@/pages/admin/EmailLogs';
 import LogosAdmin from '@/components/admin/LogosAdmin';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
+import SyncNotionPage from '@/pages/admin/SyncNotionPage';
 import PropostasPage from '@/pages/admin/proposals/PropostasPage';
 import NovaPropostaPage from '@/pages/admin/proposals/NovaPropostaPage';
 import PropostaDetalhesPage from '@/pages/admin/proposals/PropostaDetalhesPage';
@@ -51,6 +52,7 @@ const SuperAdminRoutes = () => {
     <Routes>
       {/* ============ GESTÃO PRINCIPAL ============ */}
       <Route index element={<Dashboard />} />
+      <Route path="sync-notion" element={<SyncNotionPage />} />
       <Route path="pedidos" element={<OrdersPage />} />
       <Route path="pedidos/:id" element={<OrderDetails />} />
       <Route path="propostas" element={<PropostasPage />} />
