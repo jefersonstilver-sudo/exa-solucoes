@@ -973,6 +973,7 @@ export type Database = {
           imagem_principal: string | null
           imageurl: string | null
           latitude: number | null
+          local_updated_at: string | null
           location_type: string
           longitude: number | null
           manual_latitude: number | null
@@ -982,6 +983,19 @@ export type Database = {
           nome_contato_predio: string | null
           nome_sindico: string | null
           nome_vice_sindico: string | null
+          notion_contrato_url: string | null
+          notion_fotos: Json | null
+          notion_internal_id: number | null
+          notion_last_synced_at: string | null
+          notion_oti: string | null
+          notion_out_date: string | null
+          notion_page_id: string | null
+          notion_portaria: string | null
+          notion_properties: Json | null
+          notion_status: string | null
+          notion_tipo: string | null
+          notion_updated_at: string | null
+          notion_whatsapp_url: string | null
           numero_andares: number | null
           numero_blocos: number | null
           numero_contato_predio: string | null
@@ -1017,6 +1031,7 @@ export type Database = {
           imagem_principal?: string | null
           imageurl?: string | null
           latitude?: number | null
+          local_updated_at?: string | null
           location_type?: string
           longitude?: number | null
           manual_latitude?: number | null
@@ -1026,6 +1041,19 @@ export type Database = {
           nome_contato_predio?: string | null
           nome_sindico?: string | null
           nome_vice_sindico?: string | null
+          notion_contrato_url?: string | null
+          notion_fotos?: Json | null
+          notion_internal_id?: number | null
+          notion_last_synced_at?: string | null
+          notion_oti?: string | null
+          notion_out_date?: string | null
+          notion_page_id?: string | null
+          notion_portaria?: string | null
+          notion_properties?: Json | null
+          notion_status?: string | null
+          notion_tipo?: string | null
+          notion_updated_at?: string | null
+          notion_whatsapp_url?: string | null
           numero_andares?: number | null
           numero_blocos?: number | null
           numero_contato_predio?: string | null
@@ -1061,6 +1089,7 @@ export type Database = {
           imagem_principal?: string | null
           imageurl?: string | null
           latitude?: number | null
+          local_updated_at?: string | null
           location_type?: string
           longitude?: number | null
           manual_latitude?: number | null
@@ -1070,6 +1099,19 @@ export type Database = {
           nome_contato_predio?: string | null
           nome_sindico?: string | null
           nome_vice_sindico?: string | null
+          notion_contrato_url?: string | null
+          notion_fotos?: Json | null
+          notion_internal_id?: number | null
+          notion_last_synced_at?: string | null
+          notion_oti?: string | null
+          notion_out_date?: string | null
+          notion_page_id?: string | null
+          notion_portaria?: string | null
+          notion_properties?: Json | null
+          notion_status?: string | null
+          notion_tipo?: string | null
+          notion_updated_at?: string | null
+          notion_whatsapp_url?: string | null
           numero_andares?: number | null
           numero_blocos?: number | null
           numero_contato_predio?: string | null
@@ -4841,6 +4883,45 @@ export type Database = {
         }
         Relationships: []
       }
+      notion_sync_logs: {
+        Row: {
+          buildings_created: number | null
+          buildings_synced_to_notion: number | null
+          buildings_updated: number | null
+          details: Json | null
+          duration_ms: number | null
+          errors: Json | null
+          id: string
+          status: string
+          sync_completed_at: string | null
+          sync_started_at: string
+        }
+        Insert: {
+          buildings_created?: number | null
+          buildings_synced_to_notion?: number | null
+          buildings_updated?: number | null
+          details?: Json | null
+          duration_ms?: number | null
+          errors?: Json | null
+          id?: string
+          status?: string
+          sync_completed_at?: string | null
+          sync_started_at?: string
+        }
+        Update: {
+          buildings_created?: number | null
+          buildings_synced_to_notion?: number | null
+          buildings_updated?: number | null
+          details?: Json | null
+          duration_ms?: number | null
+          errors?: Json | null
+          id?: string
+          status?: string
+          sync_completed_at?: string | null
+          sync_started_at?: string
+        }
+        Relationships: []
+      }
       paineis_comandos: {
         Row: {
           comando: string
@@ -8313,6 +8394,7 @@ export type Database = {
         Returns: Json
       }
       get_last_12_months_stats: { Args: never; Returns: Json }
+      get_last_successful_notion_sync: { Args: never; Returns: string }
       get_leads_exa_secure: {
         Args: never
         Returns: {
