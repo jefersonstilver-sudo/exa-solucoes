@@ -123,6 +123,14 @@ export function ModernAdminSidebar() {
           permission: 'canViewDashboard'
         },
         {
+          title: 'Sync Notion',
+          href: buildPath('sync-notion'),
+          icon: Building2,
+          permission: 'canManageBuildings',
+          badge: '🔄',
+          badgeColor: 'bg-blue-500'
+        },
+        {
           title: 'Pedidos',
           href: buildPath('pedidos'),
           icon: ShoppingBag,
