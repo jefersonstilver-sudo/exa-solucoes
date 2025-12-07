@@ -5,6 +5,7 @@ import ModernAdminSidebar from './ModernAdminSidebar';
 import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
+import { useRealtimePanelAlerts } from '@/hooks/useRealtimePanelAlerts';
 
 interface ModernAdminLayoutProps {
   children?: React.ReactNode;
@@ -12,6 +13,9 @@ interface ModernAdminLayoutProps {
 
 const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
   const { isMobile, isTablet } = useAdvancedResponsive();
+  
+  // Listen for real-time panel status changes and show toasts
+  useRealtimePanelAlerts();
   
   return (
     <SidebarProvider 

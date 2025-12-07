@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   ChevronDown, 
@@ -17,18 +18,20 @@ import {
   Plus, 
   Trash2,
   Settings2,
-  Phone
+  Phone,
+  User,
+  Users
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { formatPhoneNumber } from '@/utils/phoneUtils';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AlertConfig {
   id: string;
   ativo: boolean;
-  tempo_offline_minutos: number; // Agora usado como segundos
+  tempo_offline_minutos: number;
   repetir_ate_resolver: boolean;
-  intervalo_repeticao_minutos: number; // Agora usado como segundos
+  intervalo_repeticao_minutos: number;
   notificar_quando_online: boolean;
 }
 
@@ -39,17 +42,59 @@ interface Recipient {
   ativo: boolean;
 }
 
+interface AdminUser {
+  id: string;
+  primeiro_nome: string;
+  sobrenome: string;
+  telefone: string;
+  email: string;
+  role: string;
+}
+
+// Format phone for display
+const formatPhoneDisplay = (phone: string): string => {
+  const numbers = phone.replace(/\D/g, '');
+  if (numbers.startsWith('55') && numbers.length >= 12) {
+    const ddd = numbers.slice(2, 4);
+    const part1 = numbers.slice(4, 9);
+    const part2 = numbers.slice(9);
+    return `+55 (${ddd}) ${part1}-${part2}`;
+  }
+  if (numbers.length === 11) {
+    const ddd = numbers.slice(0, 2);
+    const part1 = numbers.slice(2, 7);
+    const part2 = numbers.slice(7);
+    return `+55 (${ddd}) ${part1}-${part2}`;
+  }
+  return phone;
+};
+
+// Format phone for storage (with country code)
+const formatPhoneForStorage = (phone: string): string => {
+  const numbers = phone.replace(/\D/g, '');
+  if (!numbers.startsWith('55') && numbers.length === 11) {
+    return '+55' + numbers;
+  }
+  if (numbers.startsWith('55')) {
+    return '+' + numbers;
+  }
+  return '+' + numbers;
+};
+
 export const AlertaPainelOfflineCard = () => {
+  const { userProfile } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isRecipientsOpen, setIsRecipientsOpen] = useState(true);
   const [config, setConfig] = useState<AlertConfig | null>(null);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
   // New recipient form
   const [newRecipientName, setNewRecipientName] = useState('');
   const [newRecipientPhone, setNewRecipientPhone] = useState('');
+  const [showManualInput, setShowManualInput] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -75,6 +120,16 @@ export const AlertaPainelOfflineCard = () => {
 
       if (recipientsError) throw recipientsError;
       setRecipients(recipientsData || []);
+
+      // Load admin users with phone numbers
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, primeiro_nome, sobrenome, telefone, email, role')
+        .in('role', ['admin', 'super_admin'])
+        .not('telefone', 'is', null);
+
+      if (usersError) throw usersError;
+      setAdminUsers(usersData || []);
     } catch (error) {
       console.error('Error loading offline alert data:', error);
       toast.error('Erro ao carregar configurações');
@@ -103,18 +158,55 @@ export const AlertaPainelOfflineCard = () => {
     }
   };
 
-  const addRecipient = async () => {
+  const isUserAlreadyRecipient = (userId: string): boolean => {
+    const user = adminUsers.find(u => u.id === userId);
+    if (!user) return false;
+    const userPhone = formatPhoneForStorage(user.telefone);
+    return recipients.some(r => formatPhoneForStorage(r.telefone) === userPhone);
+  };
+
+  const addAdminAsRecipient = async (user: AdminUser) => {
+    if (isUserAlreadyRecipient(user.id)) {
+      toast.info('Este usuário já está na lista');
+      return;
+    }
+
+    try {
+      const fullName = `${user.primeiro_nome} ${user.sobrenome || ''}`.trim();
+      const formattedPhone = formatPhoneForStorage(user.telefone);
+      
+      const { error } = await supabase
+        .from('panel_offline_alert_recipients')
+        .insert({
+          nome: fullName,
+          telefone: formattedPhone,
+          ativo: true
+        });
+
+      if (error) throw error;
+      
+      loadData();
+      toast.success(`${user.primeiro_nome} adicionado como destinatário`);
+    } catch (error) {
+      console.error('Error adding recipient:', error);
+      toast.error('Erro ao adicionar destinatário');
+    }
+  };
+
+  const addManualRecipient = async () => {
     if (!newRecipientName.trim() || !newRecipientPhone.trim()) {
       toast.error('Preencha nome e telefone');
       return;
     }
 
     try {
+      const formattedPhone = formatPhoneForStorage(newRecipientPhone);
+      
       const { error } = await supabase
         .from('panel_offline_alert_recipients')
         .insert({
           nome: newRecipientName.trim(),
-          telefone: newRecipientPhone.trim(),
+          telefone: formattedPhone,
           ativo: true
         });
 
@@ -122,6 +214,7 @@ export const AlertaPainelOfflineCard = () => {
       
       setNewRecipientName('');
       setNewRecipientPhone('');
+      setShowManualInput(false);
       loadData();
       toast.success('Destinatário adicionado');
     } catch (error) {
@@ -177,6 +270,10 @@ export const AlertaPainelOfflineCard = () => {
       </Card>
     );
   }
+
+  // Current user info
+  const currentUserPhone = userProfile?.telefone ? formatPhoneForStorage(userProfile.telefone) : null;
+  const isCurrentUserRecipient = currentUserPhone && recipients.some(r => formatPhoneForStorage(r.telefone) === currentUserPhone);
 
   return (
     <motion.div
@@ -333,64 +430,169 @@ export const AlertaPainelOfflineCard = () => {
                   )}
                 </CollapsibleTrigger>
                 
-                <CollapsibleContent className="mt-4 space-y-3">
-                  {/* Add new recipient form */}
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Nome"
-                      value={newRecipientName}
-                      onChange={(e) => setNewRecipientName(e.target.value)}
-                      className="h-9"
-                    />
-                    <Input
-                      placeholder="+55 45 99999-9999"
-                      value={newRecipientPhone}
-                      onChange={(e) => setNewRecipientPhone(formatPhoneNumber(e.target.value))}
-                      className="h-9"
-                    />
-                    <Button size="sm" onClick={addRecipient} className="h-9 px-3">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  {/* Recipients list */}
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {recipients.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        Nenhum destinatário cadastrado
-                      </p>
-                    ) : (
-                      recipients.map((recipient) => (
-                        <div
-                          key={recipient.id}
-                          className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                            recipient.ativo 
-                              ? 'border-border bg-background' 
-                              : 'border-muted bg-muted/30 opacity-60'
-                          }`}
-                        >
-                          <div>
-                            <p className="text-sm font-medium">{recipient.nome}</p>
-                            <p className="text-xs text-muted-foreground">{recipient.telefone}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={recipient.ativo}
-                              onCheckedChange={() => toggleRecipient(recipient.id, recipient.ativo)}
-                            />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => removeRecipient(recipient.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                <CollapsibleContent className="mt-4 space-y-4">
+                  {/* Quick add: Current user */}
+                  {userProfile?.telefone && !isCurrentUserRecipient && (
+                    <div 
+                      className="flex items-center justify-between p-3 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors"
+                      onClick={() => addAdminAsRecipient({
+                        id: userProfile.id,
+                        primeiro_nome: (userProfile as any).primeiro_nome || userProfile.name || userProfile.nome || 'Eu',
+                        sobrenome: (userProfile as any).sobrenome || '',
+                        telefone: userProfile.telefone!,
+                        email: userProfile.email || '',
+                        role: userProfile.role || 'admin'
+                      })}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                          <User className="h-4 w-4 text-primary" />
                         </div>
-                      ))
-                    )}
-                  </div>
+                        <div>
+                          <p className="text-sm font-medium text-primary">Meu número</p>
+                          <p className="text-xs text-muted-foreground">{formatPhoneDisplay(userProfile.telefone)}</p>
+                        </div>
+                      </div>
+                      <Plus className="h-5 w-5 text-primary" />
+                    </div>
+                  )}
+
+                  {/* Admin users list */}
+                  {adminUsers.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                        <Users className="h-3 w-3" />
+                        Administradores disponíveis
+                      </p>
+                      <div className="grid gap-2">
+                        {adminUsers
+                          .filter(u => u.id !== userProfile?.id)
+                          .map((user) => {
+                            const isAdded = isUserAlreadyRecipient(user.id);
+                            return (
+                              <div
+                                key={user.id}
+                                className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                                  isAdded 
+                                    ? 'border-green-500/30 bg-green-500/5 opacity-60' 
+                                    : 'border-border bg-background cursor-pointer hover:bg-muted/50'
+                                }`}
+                                onClick={() => !isAdded && addAdminAsRecipient(user)}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                                    <User className="h-4 w-4" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      {user.primeiro_nome} {user.sobrenome}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {formatPhoneDisplay(user.telefone)}
+                                    </p>
+                                  </div>
+                                </div>
+                                {isAdded ? (
+                                  <Badge variant="outline" className="text-xs bg-green-500/10 border-green-500/30 text-green-600">
+                                    ✓ Adicionado
+                                  </Badge>
+                                ) : (
+                                  <Plus className="h-5 w-5 text-muted-foreground" />
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Manual add */}
+                  {!showManualInput ? (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => setShowManualInput(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar outro número
+                    </Button>
+                  ) : (
+                    <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Nome"
+                          value={newRecipientName}
+                          onChange={(e) => setNewRecipientName(e.target.value)}
+                          className="h-9"
+                        />
+                        <Input
+                          placeholder="+55 45 99999-9999"
+                          value={newRecipientPhone}
+                          onChange={(e) => setNewRecipientPhone(e.target.value)}
+                          className="h-9"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={addManualRecipient} className="flex-1 h-8">
+                          <Plus className="h-4 w-4 mr-1" />
+                          Adicionar
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => {
+                            setShowManualInput(false);
+                            setNewRecipientName('');
+                            setNewRecipientPhone('');
+                          }}
+                          className="h-8"
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Current recipients list */}
+                  {recipients.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Destinatários cadastrados
+                      </p>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {recipients.map((recipient) => (
+                          <div
+                            key={recipient.id}
+                            className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                              recipient.ativo 
+                                ? 'border-border bg-background' 
+                                : 'border-muted bg-muted/30 opacity-60'
+                            }`}
+                          >
+                            <div>
+                              <p className="text-sm font-medium">{recipient.nome}</p>
+                              <p className="text-xs text-muted-foreground">{formatPhoneDisplay(recipient.telefone)}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={recipient.ativo}
+                                onCheckedChange={() => toggleRecipient(recipient.id, recipient.ativo)}
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => removeRecipient(recipient.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CollapsibleContent>
               </Collapsible>
             </CardContent>

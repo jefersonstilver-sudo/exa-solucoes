@@ -5,42 +5,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface HorarioFuncionamento {
-  inicio: string;
-  fim: string;
-  herdar_predio: boolean;
-}
-
 interface AlertConfig {
   ativo: boolean;
-  tempo_offline_minutos: number; // Now stored as seconds
+  tempo_offline_minutos: number; // Stored as seconds
   repetir_ate_resolver: boolean;
-  intervalo_repeticao_minutos: number; // Now stored as seconds
+  intervalo_repeticao_minutos: number; // Stored as seconds
   notificar_quando_online: boolean;
-}
-
-// Check if current time is within operating hours
-function isWithinOperatingHours(horario: HorarioFuncionamento | null): boolean {
-  if (!horario) return true; // If no schedule, always active
-
-  const now = new Date();
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
-  const currentTime = currentHour * 60 + currentMinute;
-
-  const [inicioHour, inicioMin] = horario.inicio.split(':').map(Number);
-  const [fimHour, fimMin] = horario.fim.split(':').map(Number);
-  const inicioTime = inicioHour * 60 + inicioMin;
-  const fimTime = fimHour * 60 + fimMin;
-
-  // Handle overnight schedule (e.g., 04:00 to 00:00)
-  if (fimTime <= inicioTime) {
-    // Active if current time is after inicio OR before fim
-    return currentTime >= inicioTime || currentTime < fimTime;
-  }
-  
-  // Normal schedule (e.g., 08:00 to 18:00)
-  return currentTime >= inicioTime && currentTime < fimTime;
 }
 
 Deno.serve(async (req) => {
@@ -49,7 +19,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('🤖 [MONITOR] Iniciando verificação de painéis...');
+    console.log('🤖 [MONITOR] Iniciando verificação de painéis (devices)...');
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -76,65 +46,42 @@ Deno.serve(async (req) => {
       .select('*')
       .eq('ativo', true);
 
-    // 3. Get all active panels with their buildings
-    const { data: paineis, error: paineisError } = await supabase
-      .from('painels')
-      .select(`
-        *,
-        buildings (
-          id,
-          nome,
-          endereco,
-          horario_funcionamento_padrao
-        )
-      `)
-      .eq('status_vinculo', 'vinculado');
+    // 3. Get all active devices (the actual panels with AnyDesk)
+    const { data: devices, error: devicesError } = await supabase
+      .from('devices')
+      .select('*')
+      .eq('is_active', true);
 
-    if (paineisError) {
-      console.error('❌ [MONITOR] Erro ao buscar painéis:', paineisError);
-      throw paineisError;
+    if (devicesError) {
+      console.error('❌ [MONITOR] Erro ao buscar devices:', devicesError);
+      throw devicesError;
     }
 
-    console.log(`📊 [MONITOR] Analisando ${paineis?.length || 0} painéis vinculados...`);
+    console.log(`📊 [MONITOR] Analisando ${devices?.length || 0} devices ativos...`);
 
     const now = new Date();
-    // Values are now in seconds (field names kept for backwards compatibility)
-    const offlineThresholdMs = (alertConfig.tempo_offline_minutos || 60) * 1000; // seconds to ms
-    const repeatIntervalMs = (alertConfig.intervalo_repeticao_minutos || 300) * 1000; // seconds to ms
+    // Values are in seconds
+    const offlineThresholdMs = (alertConfig.tempo_offline_minutos || 60) * 1000;
+    const repeatIntervalMs = (alertConfig.intervalo_repeticao_minutos || 300) * 1000;
     
     let offlineDetected = 0;
     let backOnlineDetected = 0;
     let alertsSent = 0;
 
-    for (const painel of paineis || []) {
-      // Get operating hours (panel's own or inherited from building)
-      let horario: HorarioFuncionamento | null = null;
-      
-      if (painel.horario_funcionamento) {
-        horario = painel.horario_funcionamento as HorarioFuncionamento;
-        if (horario.herdar_predio && painel.buildings?.horario_funcionamento_padrao) {
-          horario = painel.buildings.horario_funcionamento_padrao as HorarioFuncionamento;
-        }
-      }
-
-      // Check if within operating hours
-      if (!isWithinOperatingHours(horario)) {
-        console.log(`⏰ [MONITOR] Painel ${painel.code} fora do horário de funcionamento - ignorando`);
-        continue;
-      }
-
-      const lastOnline = painel.ultima_sync ? new Date(painel.ultima_sync) : null;
+    for (const device of devices || []) {
+      const lastOnline = device.last_online_at ? new Date(device.last_online_at) : null;
       const timeSinceLastOnline = lastOnline ? now.getTime() - lastOnline.getTime() : Infinity;
       const isOffline = timeSinceLastOnline > offlineThresholdMs;
-      const currentStatus = painel.status;
+      const currentStatus = device.status;
 
       // Detect: online → offline
       if (currentStatus !== 'offline' && isOffline) {
-        console.warn(`🔴 [MONITOR] Painel OFFLINE detectado: ${painel.code}`);
+        console.warn(`🔴 [MONITOR] Device OFFLINE detectado: ${device.name}`);
         offlineDetected++;
 
-        // Check if we should send alert (first time or repeat interval passed)
-        const lastAlertAt = painel.last_offline_alert_at ? new Date(painel.last_offline_alert_at) : null;
+        // Get metadata for alert tracking
+        const metadata = (device.metadata || {}) as { last_offline_alert_at?: string; offline_alert_count?: number };
+        const lastAlertAt = metadata.last_offline_alert_at ? new Date(metadata.last_offline_alert_at) : null;
         const shouldSendAlert = !lastAlertAt || 
           (alertConfig.repetir_ate_resolver && (now.getTime() - lastAlertAt.getTime() > repeatIntervalMs));
 
@@ -143,7 +90,7 @@ Deno.serve(async (req) => {
           const offlineDisplay = offlineSeconds >= 60 
             ? `${Math.floor(offlineSeconds / 60)}min ${offlineSeconds % 60}s`
             : `${offlineSeconds}s`;
-          const alertCount = (painel.offline_alert_count || 0) + 1;
+          const alertCount = (metadata.offline_alert_count || 0) + 1;
           
           // Send WhatsApp alert via Z-API
           try {
@@ -157,77 +104,99 @@ Deno.serve(async (req) => {
               const zapiConfig = agent.zapi_config as { instance_id: string; token: string };
               
               for (const recipient of recipients) {
-                const phone = recipient.telefone.replace(/\D/g, '');
+                // Ensure phone has country code
+                let phone = recipient.telefone.replace(/\D/g, '');
+                if (!phone.startsWith('55') && phone.length === 11) {
+                  phone = '55' + phone;
+                }
+                
                 const message = `🔴 *PAINEL OFFLINE*\n\n` +
-                  `📍 Prédio: ${painel.buildings?.nome || 'N/A'}\n` +
-                  `🖥️ Painel: ${painel.code}\n` +
+                  `📍 Local: ${device.condominio_name || device.name}\n` +
+                  `🖥️ Painel: ${device.name}\n` +
                   `⏱️ Offline há: ${offlineDisplay}\n` +
                   `📅 Detectado às: ${now.toLocaleTimeString('pt-BR')}\n` +
                   (alertCount > 1 ? `\n⚠️ Este é o ${alertCount}º aviso` : '');
 
-                await fetch(`https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`, {
+                console.log(`📱 [MONITOR] Enviando alerta para ${phone}...`);
+                
+                const zapiResponse = await fetch(`https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ phone, message })
                 });
+                
+                const zapiResult = await zapiResponse.json();
+                console.log(`📱 [MONITOR] Z-API response:`, zapiResult);
               }
               alertsSent++;
+            } else {
+              console.error('❌ [MONITOR] Z-API config não encontrada para exa_alert');
             }
           } catch (err) {
             console.error('❌ [MONITOR] Erro ao enviar alerta:', err);
           }
 
-          // Update panel alert tracking
+          // Update device metadata for alert tracking
+          const newMetadata = {
+            ...device.metadata,
+            last_offline_alert_at: now.toISOString(),
+            offline_alert_count: alertCount
+          };
+          
           await supabase
-            .from('painels')
+            .from('devices')
             .update({ 
               status: 'offline',
-              last_offline_alert_at: now.toISOString(),
-              offline_alert_count: alertCount
+              metadata: newMetadata
             })
-            .eq('id', painel.id);
+            .eq('id', device.id);
 
           // Log alert
-          const offlineMinutesForLog = Math.round(timeSinceLastOnline / 60000);
           await supabase.from('panel_offline_alerts_history').insert({
-            painel_id: painel.id,
+            painel_id: device.id,
             tipo: 'offline',
-            mensagem: `Painel offline há ${offlineDisplay}`,
-            tempo_offline_minutos: offlineMinutesForLog,
+            mensagem: `Device ${device.name} offline há ${offlineDisplay}`,
+            tempo_offline_minutos: Math.round(timeSinceLastOnline / 60000),
             destinatarios_notificados: recipients.map(r => r.telefone)
           });
         } else {
           // Just update status without sending alert
           await supabase
-            .from('painels')
+            .from('devices')
             .update({ status: 'offline' })
-            .eq('id', painel.id);
+            .eq('id', device.id);
         }
       }
 
       // Detect: offline → online
       if (currentStatus === 'offline' && !isOffline) {
-        console.log(`🟢 [MONITOR] Painel VOLTOU ONLINE: ${painel.code}`);
+        console.log(`🟢 [MONITOR] Device VOLTOU ONLINE: ${device.name}`);
         backOnlineDetected++;
 
-        // Reset alert tracking
+        const metadata = (device.metadata || {}) as { last_offline_alert_at?: string; offline_alert_count?: number };
+
+        // Reset alert tracking in metadata
+        const newMetadata = {
+          ...device.metadata,
+          last_offline_alert_at: null,
+          offline_alert_count: 0
+        };
+        
         await supabase
-          .from('painels')
+          .from('devices')
           .update({ 
             status: 'online',
-            last_offline_alert_at: null,
-            offline_alert_count: 0
+            metadata: newMetadata
           })
-          .eq('id', painel.id);
+          .eq('id', device.id);
 
         // Send online notification
         if (alertConfig.notificar_quando_online && recipients && recipients.length > 0) {
-          const offlineSeconds = painel.offline_alert_count ? 
-            Math.round((now.getTime() - new Date(painel.last_offline_alert_at || now).getTime()) / 1000) : 0;
+          const offlineSeconds = metadata.last_offline_alert_at ? 
+            Math.round((now.getTime() - new Date(metadata.last_offline_alert_at).getTime()) / 1000) : 0;
           const offlineDisplay = offlineSeconds >= 60 
             ? `${Math.floor(offlineSeconds / 60)}min ${offlineSeconds % 60}s`
             : `${offlineSeconds}s`;
-            
 
           try {
             const { data: agent } = await supabase
@@ -240,10 +209,14 @@ Deno.serve(async (req) => {
               const zapiConfig = agent.zapi_config as { instance_id: string; token: string };
               
               for (const recipient of recipients) {
-                const phone = recipient.telefone.replace(/\D/g, '');
+                let phone = recipient.telefone.replace(/\D/g, '');
+                if (!phone.startsWith('55') && phone.length === 11) {
+                  phone = '55' + phone;
+                }
+                
                 const message = `🟢 *PAINEL ONLINE*\n\n` +
-                  `📍 Prédio: ${painel.buildings?.nome || 'N/A'}\n` +
-                  `🖥️ Painel: ${painel.code}\n` +
+                  `📍 Local: ${device.condominio_name || device.name}\n` +
+                  `🖥️ Painel: ${device.name}\n` +
                   `✅ Voltou online às: ${now.toLocaleTimeString('pt-BR')}\n` +
                   (offlineSeconds > 0 ? `⏱️ Ficou offline por: ${offlineDisplay}` : '');
 
@@ -259,12 +232,11 @@ Deno.serve(async (req) => {
           }
 
           // Log online event
-          const offlineMinutesForLog = Math.round(offlineSeconds / 60);
           await supabase.from('panel_offline_alerts_history').insert({
-            painel_id: painel.id,
+            painel_id: device.id,
             tipo: 'online',
-            mensagem: `Painel voltou online após ${offlineDisplay}`,
-            tempo_offline_minutos: offlineMinutesForLog,
+            mensagem: `Device ${device.name} voltou online após ${offlineDisplay}`,
+            tempo_offline_minutos: Math.round(offlineSeconds / 60),
             destinatarios_notificados: recipients.map(r => r.telefone)
           });
         }
@@ -273,7 +245,7 @@ Deno.serve(async (req) => {
 
     const summary = {
       timestamp: now.toISOString(),
-      total_paineis: paineis?.length || 0,
+      total_devices: devices?.length || 0,
       offline_detected: offlineDetected,
       back_online_detected: backOnlineDetected,
       alerts_sent: alertsSent,
