@@ -153,6 +153,9 @@ const NovaPropostaPage = () => {
   
   // Estados para destinatários de notificações EXA Alerts
   const [alertRecipients, setAlertRecipients] = useState<AlertRecipient[]>([]);
+  
+  // Estado para preview da proposta
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Opções de período
   const periodOptions = [
