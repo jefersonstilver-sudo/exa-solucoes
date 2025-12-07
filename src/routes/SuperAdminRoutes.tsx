@@ -43,8 +43,10 @@ const CRMUnificado = lazy(() => import('@/modules/monitoramento-ia/pages/CRMUnif
 const EscalacoesComerciais = lazy(() => import('@/modules/monitoramento-ia/pages/EscalacoesComerciais'));
 const Agentes = lazy(() => import('@/modules/monitoramento-ia/pages/Agentes').then(m => ({ default: m.Agentes })));
 const AlertasPage = lazy(() => import('@/modules/monitoramento-ia/pages/Alertas').then(m => ({ default: m.AlertasPage })));
-const PaineisPage = lazy(() => import('@/modules/monitoramento-ia/pages/Paineis').then(m => ({ default: m.PaineisPage })));
 const AgentKnowledge = lazy(() => import('@/modules/monitoramento-ia/pages/agents/AgentKnowledge').then(m => ({ default: m.AgentKnowledge })));
+
+// Import PaineisExa diretamente (não lazy, para consistência com AdminRoutes)
+import PaineisExa from '@/pages/admin/PaineisExa';
 
 const SuperAdminRoutes = () => {
   return (
@@ -100,11 +102,7 @@ const SuperAdminRoutes = () => {
       
       {/* ============ ATIVOS ============ */}
       <Route path="predios" element={<BuildingsManagement />} />
-      <Route path="paineis-exa" element={
-        <Suspense fallback={<GlobalLoadingPage message="Carregando Painéis EXA..." />}>
-          <PaineisPage />
-        </Suspense>
-      } />
+      <Route path="paineis-exa" element={<PaineisExa />} />
       
       {/* ============ LEADS & CLIENTES ============ */}
       <Route path="sindicos-interessados" element={<SindicosInteressados />} />
