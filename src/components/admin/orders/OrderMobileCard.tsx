@@ -1,14 +1,23 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, DollarSign, Calendar, Building2, Phone, Mail, Check } from 'lucide-react';
+import { User, DollarSign, Calendar, Building2, Phone, Mail, Check, Clock, CreditCard } from 'lucide-react';
 import { CollapsibleCard } from '@/components/admin/shared/CollapsibleCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CouponBadge } from '@/components/admin/orders/CouponBadge';
+import { InstallmentProgress } from '@/components/admin/shared/InstallmentProgress';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useLongPress } from '@/hooks/useLongPress';
 import { cn } from '@/lib/utils';
+
+interface Installment {
+  installment: number;
+  due_date: string;
+  amount: number;
+  status?: string;
+  paid_at?: string;
+}
 
 interface OrderMobileCardProps {
   order: any;
@@ -17,6 +26,7 @@ interface OrderMobileCardProps {
   isSelected?: boolean;
   onLongPress?: () => void;
   onToggleSelect?: () => void;
+  installments?: Installment[];
 }
 
 export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
@@ -26,6 +36,7 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
   isSelected = false,
   onLongPress,
   onToggleSelect,
+  installments = [],
 }) => {
   const navigate = useNavigate();
 
@@ -77,12 +88,33 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
     locale: ptBR,
   });
 
+  // Check if order has custom installments
+  const hasCustomInstallments = installments && installments.length > 0;
+  const isCustomPayment = order.payment_type === 'custom' || hasCustomInstallments;
+
+  // Calculate paid stats for custom installments
+  const paidInstallments = installments.filter(i => i.status === 'pago');
+  const paidAmount = paidInstallments.reduce((sum, i) => sum + i.amount, 0);
+  const totalAmount = installments.reduce((sum, i) => sum + i.amount, 0) || order.valor_total;
+  const progressPercent = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
+
+  // Find next and last paid
+  const pendingInstallments = installments.filter(i => i.status !== 'pago').sort((a, b) => a.installment - b.installment);
+  const nextInstallment = pendingInstallments[0];
+  const lastPaid = paidInstallments.sort((a, b) => b.installment - a.installment)[0];
+
   const preview = (
     <>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">#{order.id.substring(0, 8)}</span>
           <CouponBadge couponCode={order.coupon_code} couponCategory={order.coupon_category} size="sm" />
+          {isCustomPayment && (
+            <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0 border-0">
+              <CreditCard className="h-2.5 w-2.5 mr-0.5" />
+              {installments.length}x
+            </Badge>
+          )}
         </div>
         <Badge className={`${getStatusColor(order.status)} text-white border-0`}>
           {getStatusText(order.status)}
@@ -94,18 +126,68 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
           {order.client_name || 'Cliente não informado'}
         </span>
       </div>
-      <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-2">
-          <DollarSign className="h-4 w-4 text-green-600 flex-shrink-0" />
-          <span className="font-semibold text-foreground">
-            {formatCurrency(order.valor_total)}
-          </span>
+
+      {/* Custom installments progress */}
+      {isCustomPayment && hasCustomInstallments ? (
+        <div className="space-y-1.5">
+          {/* Progress bar */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className={cn(
+                  "h-full rounded-full transition-all duration-500",
+                  progressPercent === 100 ? "bg-emerald-500" : "bg-[#9C1E1E]"
+                )}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">
+              {progressPercent}%
+            </span>
+          </div>
+
+          {/* Next and last paid */}
+          <div className="flex items-center justify-between text-[10px]">
+            {lastPaid ? (
+              <div className="flex items-center gap-1 text-emerald-600">
+                <Check className="h-3 w-3" />
+                <span>Pago: {formatCurrency(lastPaid.amount)}</span>
+              </div>
+            ) : (
+              <span className="text-muted-foreground">Aguardando 1ª</span>
+            )}
+            {nextInstallment && (
+              <div className="flex items-center gap-1 text-amber-600">
+                <Clock className="h-3 w-3" />
+                <span>
+                  Próx: {formatCurrency(nextInstallment.amount)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Total */}
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">
+              Total: <span className="font-semibold text-foreground">{formatCurrency(totalAmount)}</span>
+            </span>
+            <span className="text-muted-foreground">{timeAgo}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-          <span className="text-muted-foreground">{timeAgo}</span>
+      ) : (
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-green-600 flex-shrink-0" />
+            <span className="font-semibold text-foreground">
+              {formatCurrency(order.valor_total)}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <span className="text-muted-foreground">{timeAgo}</span>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 
@@ -160,6 +242,17 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
         <p className="text-xs text-muted-foreground">Criado</p>
         <p className="text-sm text-foreground">{timeAgo}</p>
       </div>
+
+      {/* Custom installments full details */}
+      {isCustomPayment && hasCustomInstallments && (
+        <div className="pt-3 border-t">
+          <InstallmentProgress 
+            installments={installments}
+            totalValue={totalAmount}
+            showDetails={true}
+          />
+        </div>
+      )}
 
       {/* Actions */}
       <div className="pt-3 border-t space-y-2">
