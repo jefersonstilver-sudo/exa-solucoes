@@ -26,9 +26,9 @@ import { formatPhoneNumber } from '@/utils/phoneUtils';
 interface AlertConfig {
   id: string;
   ativo: boolean;
-  tempo_offline_minutos: number;
+  tempo_offline_minutos: number; // Agora usado como segundos
   repetir_ate_resolver: boolean;
-  intervalo_repeticao_minutos: number;
+  intervalo_repeticao_minutos: number; // Agora usado como segundos
   notificar_quando_online: boolean;
 }
 
@@ -209,7 +209,7 @@ export const AlertaPainelOfflineCard = () => {
                   variant="outline" 
                   className="text-xs bg-amber-500/10 border-amber-500/30 hidden sm:inline-flex"
                 >
-                  ⏱️ {config.tempo_offline_minutos}min
+                  ⏱️ {config.tempo_offline_minutos}s
                 </Badge>
               )}
               <Switch 
@@ -243,36 +243,48 @@ export const AlertaPainelOfflineCard = () => {
                   Configurações do Alerta
                 </p>
 
-                {/* Tempo offline */}
+                {/* Tempo offline em segundos */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      Alertar após (min)
+                      Alertar após (seg)
                     </Label>
                     <Input
                       type="number"
-                      min={1}
-                      max={60}
-                      value={config?.tempo_offline_minutos || 10}
-                      onChange={(e) => updateConfig({ tempo_offline_minutos: parseInt(e.target.value) || 10 })}
+                      min={10}
+                      max={3600}
+                      step={10}
+                      value={config?.tempo_offline_minutos || 60}
+                      onChange={(e) => updateConfig({ tempo_offline_minutos: parseInt(e.target.value) || 60 })}
                       className="h-9"
                     />
+                    <p className="text-[10px] text-muted-foreground">
+                      {config?.tempo_offline_minutos && config.tempo_offline_minutos >= 60 
+                        ? `= ${Math.floor(config.tempo_offline_minutos / 60)}min ${config.tempo_offline_minutos % 60}s`
+                        : ''}
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs flex items-center gap-1">
                       <RefreshCw className="h-3 w-3" />
-                      Repetir a cada (min)
+                      Repetir a cada (seg)
                     </Label>
                     <Input
                       type="number"
-                      min={5}
-                      max={120}
-                      value={config?.intervalo_repeticao_minutos || 30}
-                      onChange={(e) => updateConfig({ intervalo_repeticao_minutos: parseInt(e.target.value) || 30 })}
+                      min={30}
+                      max={7200}
+                      step={30}
+                      value={config?.intervalo_repeticao_minutos || 300}
+                      onChange={(e) => updateConfig({ intervalo_repeticao_minutos: parseInt(e.target.value) || 300 })}
                       className="h-9"
                       disabled={!config?.repetir_ate_resolver}
                     />
+                    <p className="text-[10px] text-muted-foreground">
+                      {config?.intervalo_repeticao_minutos && config.intervalo_repeticao_minutos >= 60 
+                        ? `= ${Math.floor(config.intervalo_repeticao_minutos / 60)}min ${config.intervalo_repeticao_minutos % 60}s`
+                        : ''}
+                    </p>
                   </div>
                 </div>
 

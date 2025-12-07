@@ -13,9 +13,9 @@ interface HorarioFuncionamento {
 
 interface AlertConfig {
   ativo: boolean;
-  tempo_offline_minutos: number;
+  tempo_offline_minutos: number; // Now stored as seconds
   repetir_ate_resolver: boolean;
-  intervalo_repeticao_minutos: number;
+  intervalo_repeticao_minutos: number; // Now stored as seconds
   notificar_quando_online: boolean;
 }
 
@@ -98,8 +98,9 @@ Deno.serve(async (req) => {
     console.log(`📊 [MONITOR] Analisando ${paineis?.length || 0} painéis vinculados...`);
 
     const now = new Date();
-    const offlineThresholdMs = (alertConfig.tempo_offline_minutos || 10) * 60 * 1000;
-    const repeatIntervalMs = (alertConfig.intervalo_repeticao_minutos || 30) * 60 * 1000;
+    // Values are now in seconds (field names kept for backwards compatibility)
+    const offlineThresholdMs = (alertConfig.tempo_offline_minutos || 60) * 1000; // seconds to ms
+    const repeatIntervalMs = (alertConfig.intervalo_repeticao_minutos || 300) * 1000; // seconds to ms
     
     let offlineDetected = 0;
     let backOnlineDetected = 0;
@@ -138,7 +139,10 @@ Deno.serve(async (req) => {
           (alertConfig.repetir_ate_resolver && (now.getTime() - lastAlertAt.getTime() > repeatIntervalMs));
 
         if (shouldSendAlert && recipients && recipients.length > 0) {
-          const offlineMinutes = Math.round(timeSinceLastOnline / 60000);
+          const offlineSeconds = Math.round(timeSinceLastOnline / 1000);
+          const offlineDisplay = offlineSeconds >= 60 
+            ? `${Math.floor(offlineSeconds / 60)}min ${offlineSeconds % 60}s`
+            : `${offlineSeconds}s`;
           const alertCount = (painel.offline_alert_count || 0) + 1;
           
           // Send WhatsApp alert via Z-API
@@ -157,7 +161,7 @@ Deno.serve(async (req) => {
                 const message = `🔴 *PAINEL OFFLINE*\n\n` +
                   `📍 Prédio: ${painel.buildings?.nome || 'N/A'}\n` +
                   `🖥️ Painel: ${painel.code}\n` +
-                  `⏱️ Offline há: ${offlineMinutes} minutos\n` +
+                  `⏱️ Offline há: ${offlineDisplay}\n` +
                   `📅 Detectado às: ${now.toLocaleTimeString('pt-BR')}\n` +
                   (alertCount > 1 ? `\n⚠️ Este é o ${alertCount}º aviso` : '');
 
@@ -184,11 +188,12 @@ Deno.serve(async (req) => {
             .eq('id', painel.id);
 
           // Log alert
+          const offlineMinutesForLog = Math.round(timeSinceLastOnline / 60000);
           await supabase.from('panel_offline_alerts_history').insert({
             painel_id: painel.id,
             tipo: 'offline',
-            mensagem: `Painel offline há ${offlineMinutes} minutos`,
-            tempo_offline_minutos: offlineMinutes,
+            mensagem: `Painel offline há ${offlineDisplay}`,
+            tempo_offline_minutos: offlineMinutesForLog,
             destinatarios_notificados: recipients.map(r => r.telefone)
           });
         } else {
@@ -217,8 +222,12 @@ Deno.serve(async (req) => {
 
         // Send online notification
         if (alertConfig.notificar_quando_online && recipients && recipients.length > 0) {
-          const offlineMinutes = painel.offline_alert_count ? 
-            Math.round((now.getTime() - new Date(painel.last_offline_alert_at || now).getTime()) / 60000) : 0;
+          const offlineSeconds = painel.offline_alert_count ? 
+            Math.round((now.getTime() - new Date(painel.last_offline_alert_at || now).getTime()) / 1000) : 0;
+          const offlineDisplay = offlineSeconds >= 60 
+            ? `${Math.floor(offlineSeconds / 60)}min ${offlineSeconds % 60}s`
+            : `${offlineSeconds}s`;
+            
 
           try {
             const { data: agent } = await supabase
@@ -236,7 +245,7 @@ Deno.serve(async (req) => {
                   `📍 Prédio: ${painel.buildings?.nome || 'N/A'}\n` +
                   `🖥️ Painel: ${painel.code}\n` +
                   `✅ Voltou online às: ${now.toLocaleTimeString('pt-BR')}\n` +
-                  (offlineMinutes > 0 ? `⏱️ Ficou offline por: ${offlineMinutes} minutos` : '');
+                  (offlineSeconds > 0 ? `⏱️ Ficou offline por: ${offlineDisplay}` : '');
 
                 await fetch(`https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`, {
                   method: 'POST',
@@ -250,11 +259,12 @@ Deno.serve(async (req) => {
           }
 
           // Log online event
+          const offlineMinutesForLog = Math.round(offlineSeconds / 60);
           await supabase.from('panel_offline_alerts_history').insert({
             painel_id: painel.id,
             tipo: 'online',
-            mensagem: `Painel voltou online após ${offlineMinutes} minutos`,
-            tempo_offline_minutos: offlineMinutes,
+            mensagem: `Painel voltou online após ${offlineDisplay}`,
+            tempo_offline_minutos: offlineMinutesForLog,
             destinatarios_notificados: recipients.map(r => r.telefone)
           });
         }
