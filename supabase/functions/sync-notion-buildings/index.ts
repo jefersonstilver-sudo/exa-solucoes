@@ -94,7 +94,7 @@ function mapNotionToBuilding(page: NotionPage): Record<string, any> {
     // Required fields with defaults
     bairro: '', // Will be extracted from endereco if needed
     status: 'lead', // Default status for new buildings
-    location_type: 'Residencial',
+    location_type: tipo?.toLowerCase() === 'comercial' ? 'commercial' : 'residential',
   };
 }
 
