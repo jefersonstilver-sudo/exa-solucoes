@@ -14,11 +14,16 @@ interface HorarioFuncionamento {
   herdar_predio: boolean;
 }
 
-interface Painel {
+// Interface flexível para aceitar tanto Device quanto Painel
+interface PainelItem {
   id: string;
-  code: string;
+  name?: string;
+  code?: string;
   building_id?: string;
   buildings?: {
+    nome: string;
+  } | null;
+  building?: {
     nome: string;
   } | null;
   horario_funcionamento?: HorarioFuncionamento | null;
@@ -27,8 +32,8 @@ interface Painel {
 interface ConfigHorarioDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  paineis: Painel[];
-  onSuccess: () => void;
+  paineis: PainelItem[];
+  onSuccess?: () => void;
 }
 
 export const ConfigHorarioDialog = ({
@@ -80,7 +85,7 @@ export const ConfigHorarioDialog = ({
       if (error) throw error;
 
       toast.success(`Horário configurado em ${paineisSelecionados.length} painel(is)`);
-      onSuccess();
+      onSuccess?.();
       onOpenChange(false);
     } catch (error) {
       console.error('Erro ao salvar horário:', error);
@@ -185,9 +190,9 @@ export const ConfigHorarioDialog = ({
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium">{painel.code}</p>
+                      <p className="text-sm font-medium">{painel.name || painel.code || painel.id}</p>
                       <p className="text-xs text-muted-foreground">
-                        {painel.buildings?.nome || 'Sem prédio'}
+                        {painel.buildings?.nome || painel.building?.nome || 'Sem prédio'}
                       </p>
                     </div>
                   </div>

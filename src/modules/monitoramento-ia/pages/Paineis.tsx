@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, Maximize2 } from 'lucide-react';
+import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, Maximize2, Clock } from 'lucide-react';
 import {
   Device,
   calculateDeviceStats,
@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { MobileHeader } from '../components/MobileHeader';
 import { PeriodSelector, PeriodType } from '../components/PeriodSelector';
+import { ConfigHorarioDialog } from '@/components/admin/paineis-exa/ConfigHorarioDialog';
 
 // Compact Stat Icon Component for mobile
 const CompactStatIcon = ({ icon: Icon, value, color, label }: { 
@@ -118,6 +119,7 @@ export const PaineisPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
+  const [configHorarioOpen, setConfigHorarioOpen] = useState(false);
   
   // Hook de alertas offline
   const { offlineDevices, activeAlerts, dismissAlert } = useOfflineAlerts();
@@ -262,6 +264,14 @@ export const PaineisPage = () => {
                 customStartDate={customStartDate}
                 customEndDate={customEndDate}
               />
+              {/* Botão Configurar Horário de Funcionamento */}
+              <button
+                onClick={() => setConfigHorarioOpen(true)}
+                title="Configurar Horário de Funcionamento"
+                className="p-2 lg:p-2.5 bg-muted hover:bg-muted/80 text-foreground rounded-lg transition-colors border border-border"
+              >
+                <Clock className="w-4 h-4" />
+              </button>
               <button
                 onClick={handleSyncAnyDesk}
                 disabled={syncing}
@@ -458,6 +468,13 @@ export const PaineisPage = () => {
             ))}
         </AnimatePresence>
       </div>
+
+      {/* Dialog de Configuração de Horário de Funcionamento */}
+      <ConfigHorarioDialog
+        open={configHorarioOpen}
+        onOpenChange={setConfigHorarioOpen}
+        paineis={devices}
+      />
       </div>
     </div>
   );
