@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2 } from 'lucide-react';
+import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -15,10 +15,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { useBulkSelection } from '@/hooks/useBulkSelection';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, isToday, startOfMonth, endOfMonth, formatDistanceToNow } from 'date-fns';
+import { format, isToday, startOfMonth, endOfMonth, formatDistanceToNow, isWithinInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExporter';
 import { ProposalMobileList } from '@/components/admin/proposals/ProposalMobileList';
+import { ProposalPreviewModal } from '@/components/admin/proposals/ProposalPreviewModal';
+import { ProposalsPeriodSelector, getDefaultPeriod, type PeriodRange } from '@/components/admin/proposals/ProposalsPeriodSelector';
+import { SellerStatsPanel } from '@/components/admin/proposals/SellerStatsPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Proposal {
@@ -28,6 +31,7 @@ interface Proposal {
   client_cnpj?: string | null;
   client_phone: string | null;
   client_email: string | null;
+  client_company_name?: string | null;
   total_panels: number;
   total_impressions_month: number;
   fidel_monthly_value: number;
@@ -49,12 +53,14 @@ interface Proposal {
   created_by?: string | null;
   seller_name?: string | null;
   seller_phone?: string | null;
+  seller_email?: string | null;
   payment_type?: string | null;
   custom_installments?: Array<{
     installment: number;
     due_date: string;
     amount: number;
   }> | null;
+  metadata?: { type?: string };
 }
 
 interface LiveViewNotification {
@@ -68,17 +74,27 @@ const formatCurrency = (value: number) => {
   return value?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'R$ 0,00';
 };
 
+const formatCurrencyCompact = (value: number) => {
+  if (value >= 1000) {
+    return `R$ ${(value / 1000).toFixed(1)}k`;
+  }
+  return formatCurrency(value);
+};
+
 const PropostasPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isMobile } = useResponsiveLayout();
   const { buildPath } = useAdminBasePath();
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('todas');
   const [liveViewNotifications, setLiveViewNotifications] = useState<LiveViewNotification[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange>(getDefaultPeriod());
+  const [showSellerStats, setShowSellerStats] = useState(false);
+  const [previewProposal, setPreviewProposal] = useState<Proposal | null>(null);
 
   const { data: proposals = [], isLoading, refetch } = useQuery({
     queryKey: ['proposals'],
@@ -94,19 +110,58 @@ const PropostasPage = () => {
         if (proposal.created_by) {
           const { data: userData } = await supabase
             .from('users')
-            .select('nome, telefone')
+            .select('nome, telefone, email')
             .eq('id', proposal.created_by)
             .single();
           return { 
             ...proposal, 
             seller_name: userData?.nome || null,
-            seller_phone: userData?.telefone || null 
+            seller_phone: userData?.telefone || null,
+            seller_email: userData?.email || null
           };
         }
         return proposal;
       }));
       
       return proposalsWithSellers as Proposal[];
+    }
+  });
+
+  // Query para buscar valores recebidos e a receber
+  const { data: financialData } = useQuery({
+    queryKey: ['proposals-financial', selectedPeriod],
+    queryFn: async () => {
+      // Buscar pedidos com proposal_id não nulo
+      const { data: orders, error: ordersError } = await supabase
+        .from('pedidos')
+        .select('id, proposal_id, valor_total, status')
+        .not('proposal_id', 'is', null);
+      
+      if (ordersError) throw ordersError;
+
+      // Buscar todas as parcelas
+      const { data: parcelas, error: parcelasError } = await supabase
+        .from('parcelas')
+        .select('pedido_id, valor_final, status, data_pagamento');
+      
+      if (parcelasError) throw parcelasError;
+
+      // Calcular valores
+      let valorRecebido = 0;
+      let valorAReceber = 0;
+
+      orders?.forEach(order => {
+        const orderParcelas = parcelas?.filter(p => p.pedido_id === order.id) || [];
+        orderParcelas.forEach(p => {
+          if (p.status === 'pago' || p.status === 'paga') {
+            valorRecebido += p.valor_final || 0;
+          } else if (p.status === 'pendente' || p.status === 'aguardando_pagamento') {
+            valorAReceber += p.valor_final || 0;
+          }
+        });
+      });
+
+      return { valorRecebido, valorAReceber };
     }
   });
 
@@ -227,15 +282,54 @@ const PropostasPage = () => {
   };
 
   const pagasCount = proposals.filter(p => ['paga', 'convertida'].includes(p.status)).length;
+  
+  // Filter proposals by selected period
+  const proposalsInPeriod = useMemo(() => {
+    return proposals.filter(p => {
+      const createdAt = new Date(p.created_at);
+      return isWithinInterval(createdAt, { start: selectedPeriod.startDate, end: selectedPeriod.endDate });
+    });
+  }, [proposals, selectedPeriod]);
+
+  // Calculate seller stats
+  const sellerStats = useMemo(() => {
+    const sellersMap = new Map<string, {
+      id: string;
+      name: string;
+      proposalsSent: number;
+      proposalsAccepted: number;
+      valueReceived: number;
+      valueToReceive: number;
+    }>();
+
+    proposalsInPeriod.forEach(p => {
+      if (!p.created_by || !p.seller_name) return;
+      
+      const existing = sellersMap.get(p.created_by) || {
+        id: p.created_by,
+        name: p.seller_name,
+        proposalsSent: 0,
+        proposalsAccepted: 0,
+        valueReceived: 0,
+        valueToReceive: 0
+      };
+
+      existing.proposalsSent++;
+      if (['aceita', 'paga', 'convertida'].includes(p.status)) {
+        existing.proposalsAccepted++;
+      }
+
+      sellersMap.set(p.created_by, existing);
+    });
+
+    return Array.from(sellersMap.values()).sort((a, b) => b.proposalsSent - a.proposalsSent);
+  }, [proposalsInPeriod]);
+
   const stats = {
     proposalsToday: proposals.filter(p => isToday(new Date(p.created_at))).length,
     pendentes: proposals.filter(p => ['pendente', 'enviada', 'visualizada'].includes(p.status)).length,
-    aceitasMes: proposals.filter(p => {
-      const createdAt = new Date(p.created_at);
-      return ['aceita', 'paga', 'convertida'].includes(p.status) && 
-        createdAt >= startOfMonth(new Date()) && 
-        createdAt <= endOfMonth(new Date());
-    }).length,
+    valorRecebido: financialData?.valorRecebido || 0,
+    valorAReceber: financialData?.valorAReceber || 0,
     valorPotencial: proposals
       .filter(p => ['pendente', 'enviada', 'visualizada'].includes(p.status))
       .reduce((sum, p) => sum + (p.fidel_monthly_value * p.duration_months), 0)
@@ -244,7 +338,7 @@ const PropostasPage = () => {
   const filters = [
     { id: 'todas', label: 'Todas', count: proposals.length },
     { id: 'pendentes', label: '⏳ Pendentes', count: stats.pendentes },
-    { id: 'aceitas', label: '✅ Aceitas', count: stats.aceitasMes },
+    { id: 'aceitas', label: '✅ Aceitas', count: proposalsInPeriod.filter(p => ['aceita', 'paga', 'convertida'].includes(p.status)).length },
     { id: 'pagas', label: '💰 Pagas', count: pagasCount },
     { id: 'recusadas', label: '❌ Recusadas', count: proposals.filter(p => p.status === 'recusada').length },
   ];
@@ -376,37 +470,52 @@ const PropostasPage = () => {
       )}
 
       <div className="p-3 md:p-6 space-y-3">
+        {/* Period Selector + Stats Header */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-muted-foreground">Dashboard</span>
+          <ProposalsPeriodSelector value={selectedPeriod} onChange={setSelectedPeriod} />
+        </div>
+
         {/* Stats 2x2 Grid */}
         <div className="grid grid-cols-2 gap-2">
           <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-blue-600" />
+              <DollarSign className="h-4 w-4 text-green-600" />
+              <span className="text-[10px] text-muted-foreground">Recebido</span>
+            </div>
+            <div className="text-sm font-bold text-green-600">{formatCurrencyCompact(stats.valorRecebido)}</div>
+          </Card>
+          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-amber-600" />
+              <span className="text-[10px] text-muted-foreground">A Receber</span>
+            </div>
+            <div className="text-sm font-bold text-amber-600">{formatCurrencyCompact(stats.valorAReceber)}</div>
+          </Card>
+          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-blue-600" />
+              <span className="text-[10px] text-muted-foreground">Pendentes</span>
+            </div>
+            <div className="text-lg font-bold text-blue-600">{stats.pendentes}</div>
+          </Card>
+          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-purple-600" />
               <span className="text-[10px] text-muted-foreground">Hoje</span>
             </div>
             <div className="text-lg font-bold">{stats.proposalsToday}</div>
           </Card>
-          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-amber-600" />
-              <span className="text-[10px] text-muted-foreground">Pendentes</span>
-            </div>
-            <div className="text-lg font-bold text-amber-600">{stats.pendentes}</div>
-          </Card>
-          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-            <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-emerald-600" />
-              <span className="text-[10px] text-muted-foreground">Aceitas/mês</span>
-            </div>
-            <div className="text-lg font-bold text-emerald-600">{stats.aceitasMes}</div>
-          </Card>
-          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-            <div className="flex items-center gap-2">
-              <Eye className="h-4 w-4 text-purple-600" />
-              <span className="text-[10px] text-muted-foreground">Potencial</span>
-            </div>
-            <div className="text-sm font-bold text-purple-600">{formatCurrency(stats.valorPotencial)}</div>
-          </Card>
         </div>
+
+        {/* Seller Stats Toggle */}
+        <SellerStatsPanel
+          sellers={sellerStats}
+          isLoading={isLoading}
+          isOpen={showSellerStats}
+          onToggle={() => setShowSellerStats(!showSellerStats)}
+          period={selectedPeriod}
+        />
 
         {/* Search */}
         <div className="relative">
@@ -559,8 +668,12 @@ const PropostasPage = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(buildPath(`propostas/${proposal.id}`))}>
+                          <DropdownMenuItem onClick={() => setPreviewProposal(proposal)}>
                             <Eye className="h-4 w-4 mr-2" />
+                            Ver Preview
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(buildPath(`propostas/${proposal.id}`))}>
+                            <FileText className="h-4 w-4 mr-2" />
                             Ver Detalhes
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleCopyLink(proposal)}>
@@ -608,6 +721,18 @@ const PropostasPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Preview Modal */}
+      {previewProposal && (
+        <ProposalPreviewModal
+          open={!!previewProposal}
+          onClose={() => setPreviewProposal(null)}
+          proposal={previewProposal}
+          sellerName={previewProposal.seller_name || undefined}
+          sellerPhone={previewProposal.seller_phone || undefined}
+          sellerEmail={previewProposal.seller_email || undefined}
+        />
+      )}
     </div>
   );
 };
