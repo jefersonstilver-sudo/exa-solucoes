@@ -127,17 +127,29 @@ const PropostasPage = () => {
     }
   });
 
-  // Query para buscar valores recebidos e a receber
+  // Query para buscar valores recebidos e a receber (agrupado por vendedor)
   const { data: financialData } = useQuery({
     queryKey: ['proposals-financial', selectedPeriod],
     queryFn: async () => {
-      // Buscar pedidos com proposal_id não nulo
+      // Buscar pedidos com proposal_id não nulo e dados da proposta associada
       const { data: orders, error: ordersError } = await supabase
         .from('pedidos')
         .select('id, proposal_id, valor_total, status')
         .not('proposal_id', 'is', null);
       
       if (ordersError) throw ordersError;
+
+      // Buscar proposals para mapear created_by
+      const proposalIds = orders?.map(o => o.proposal_id).filter(Boolean) || [];
+      const { data: proposalsData } = await supabase
+        .from('proposals')
+        .select('id, created_by')
+        .in('id', proposalIds);
+      
+      const proposalCreatorMap = new Map<string, string>();
+      proposalsData?.forEach(p => {
+        if (p.created_by) proposalCreatorMap.set(p.id, p.created_by);
+      });
 
       // Buscar todas as parcelas
       const { data: parcelas, error: parcelasError } = await supabase
@@ -146,22 +158,38 @@ const PropostasPage = () => {
       
       if (parcelasError) throw parcelasError;
 
-      // Calcular valores
+      // Calcular valores totais e por vendedor
       let valorRecebido = 0;
       let valorAReceber = 0;
+      const sellerFinancials = new Map<string, { received: number; toReceive: number }>();
 
       orders?.forEach(order => {
+        const creatorId = order.proposal_id ? proposalCreatorMap.get(order.proposal_id) : null;
         const orderParcelas = parcelas?.filter(p => p.pedido_id === order.id) || [];
+        
         orderParcelas.forEach(p => {
-          if (p.status === 'pago' || p.status === 'paga') {
+          const isPaid = p.status === 'pago' || p.status === 'paga';
+          const isPending = p.status === 'pendente' || p.status === 'aguardando_pagamento';
+          
+          if (isPaid) {
             valorRecebido += p.valor_final || 0;
-          } else if (p.status === 'pendente' || p.status === 'aguardando_pagamento') {
+            if (creatorId) {
+              const existing = sellerFinancials.get(creatorId) || { received: 0, toReceive: 0 };
+              existing.received += p.valor_final || 0;
+              sellerFinancials.set(creatorId, existing);
+            }
+          } else if (isPending) {
             valorAReceber += p.valor_final || 0;
+            if (creatorId) {
+              const existing = sellerFinancials.get(creatorId) || { received: 0, toReceive: 0 };
+              existing.toReceive += p.valor_final || 0;
+              sellerFinancials.set(creatorId, existing);
+            }
           }
         });
       });
 
-      return { valorRecebido, valorAReceber };
+      return { valorRecebido, valorAReceber, sellerFinancials };
     }
   });
 
@@ -291,7 +319,7 @@ const PropostasPage = () => {
     });
   }, [proposals, selectedPeriod]);
 
-  // Calculate seller stats
+  // Calculate seller stats with financial data
   const sellerStats = useMemo(() => {
     const sellersMap = new Map<string, {
       id: string;
@@ -305,13 +333,16 @@ const PropostasPage = () => {
     proposalsInPeriod.forEach(p => {
       if (!p.created_by || !p.seller_name) return;
       
+      // Get financial data for this seller
+      const sellerFinancial = financialData?.sellerFinancials?.get(p.created_by);
+      
       const existing = sellersMap.get(p.created_by) || {
         id: p.created_by,
         name: p.seller_name,
         proposalsSent: 0,
         proposalsAccepted: 0,
-        valueReceived: 0,
-        valueToReceive: 0
+        valueReceived: sellerFinancial?.received || 0,
+        valueToReceive: sellerFinancial?.toReceive || 0
       };
 
       existing.proposalsSent++;
@@ -323,7 +354,7 @@ const PropostasPage = () => {
     });
 
     return Array.from(sellersMap.values()).sort((a, b) => b.proposalsSent - a.proposalsSent);
-  }, [proposalsInPeriod]);
+  }, [proposalsInPeriod, financialData?.sellerFinancials]);
 
   const stats = {
     proposalsToday: proposals.filter(p => isToday(new Date(p.created_at))).length,
@@ -643,9 +674,20 @@ const PropostasPage = () => {
                           <span className="text-xs text-muted-foreground">
                             {format(new Date(proposal.created_at), "dd/MM", { locale: ptBR })}
                           </span>
-                          <span className="text-sm font-semibold">
-                            {formatCurrency(proposal.fidel_monthly_value)}/mês
-                          </span>
+                          {proposal.payment_type === 'custom' && proposal.custom_installments?.length ? (
+                            <div className="flex items-center gap-1">
+                              <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1 py-0 border-0">
+                                Personalizado
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {proposal.custom_installments.length}x • 1ª: {formatCurrency(proposal.custom_installments[0].amount)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-sm font-semibold">
+                              {formatCurrency(proposal.fidel_monthly_value)}/mês
+                            </span>
+                          )}
                           {proposal.view_count && proposal.view_count > 0 && (
                             <span className="text-[10px] text-purple-600 flex items-center gap-1">
                               <Eye className="h-3 w-3" />
