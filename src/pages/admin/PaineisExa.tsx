@@ -4,16 +4,19 @@ import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PaineisStats } from "@/components/admin/paineis-exa/PaineisStats";
 import { PaineisTable } from "@/components/admin/paineis-exa/PaineisTable";
 import { GerarPainelDialog } from "@/components/admin/paineis-exa/GerarPainelDialog";
 import { GerarCodigoDialog } from "@/components/admin/paineis-exa/GerarCodigoDialog";
-import { Plus, Link2 } from "lucide-react";
+import { ConfigHorarioDialog } from "@/components/admin/paineis-exa/ConfigHorarioDialog";
+import { Plus, Link2, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 const PaineisExa = () => {
   const [gerarPainelOpen, setGerarPainelOpen] = useState(false);
   const [gerarCodigoOpen, setGerarCodigoOpen] = useState(false);
+  const [configHorarioOpen, setConfigHorarioOpen] = useState(false);
 
   const { data: paineis = [], isLoading, refetch } = useQuery({
     queryKey: ['paineis-exa'],
@@ -103,6 +106,23 @@ const PaineisExa = () => {
             </p>
           </div>
           <div className="flex gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    onClick={() => setConfigHorarioOpen(true)}
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10"
+                  >
+                    <Clock className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Configurar Horário de Funcionamento</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button 
               onClick={() => setGerarCodigoOpen(true)}
               variant="outline"
@@ -142,6 +162,13 @@ const PaineisExa = () => {
         open={gerarCodigoOpen}
         onOpenChange={setGerarCodigoOpen}
         onSuccess={handleCodigoGerado}
+      />
+
+      <ConfigHorarioDialog
+        open={configHorarioOpen}
+        onOpenChange={setConfigHorarioOpen}
+        paineis={paineis as any}
+        onSuccess={refetch}
       />
     </>
   );
