@@ -964,6 +964,7 @@ export type Database = {
           contato_vice_sindico: string | null
           created_at: string | null
           endereco: string
+          horario_funcionamento_padrao: Json | null
           id: string
           image_urls: string[] | null
           imagem_2: string | null
@@ -1007,6 +1008,7 @@ export type Database = {
           contato_vice_sindico?: string | null
           created_at?: string | null
           endereco: string
+          horario_funcionamento_padrao?: Json | null
           id?: string
           image_urls?: string[] | null
           imagem_2?: string | null
@@ -1050,6 +1052,7 @@ export type Database = {
           contato_vice_sindico?: string | null
           created_at?: string | null
           endereco?: string
+          horario_funcionamento_padrao?: Json | null
           id?: string
           image_urls?: string[] | null
           imagem_2?: string | null
@@ -5025,8 +5028,10 @@ export type Database = {
           data_vinculacao: string | null
           device_fingerprint: string | null
           device_info: Json | null
+          horario_funcionamento: Json | null
           id: string
           ip_interno: string | null
+          last_offline_alert_at: string | null
           link_instalacao: string | null
           localizacao: string | null
           mac_address: string | null
@@ -5035,6 +5040,7 @@ export type Database = {
           modo: string | null
           numero_painel: string | null
           observacoes: string | null
+          offline_alert_count: number | null
           orientacao: string | null
           polegada: string | null
           primeira_conexao_at: string | null
@@ -5056,8 +5062,10 @@ export type Database = {
           data_vinculacao?: string | null
           device_fingerprint?: string | null
           device_info?: Json | null
+          horario_funcionamento?: Json | null
           id?: string
           ip_interno?: string | null
+          last_offline_alert_at?: string | null
           link_instalacao?: string | null
           localizacao?: string | null
           mac_address?: string | null
@@ -5066,6 +5074,7 @@ export type Database = {
           modo?: string | null
           numero_painel?: string | null
           observacoes?: string | null
+          offline_alert_count?: number | null
           orientacao?: string | null
           polegada?: string | null
           primeira_conexao_at?: string | null
@@ -5087,8 +5096,10 @@ export type Database = {
           data_vinculacao?: string | null
           device_fingerprint?: string | null
           device_info?: Json | null
+          horario_funcionamento?: Json | null
           id?: string
           ip_interno?: string | null
+          last_offline_alert_at?: string | null
           link_instalacao?: string | null
           localizacao?: string | null
           mac_address?: string | null
@@ -5097,6 +5108,7 @@ export type Database = {
           modo?: string | null
           numero_painel?: string | null
           observacoes?: string | null
+          offline_alert_count?: number | null
           orientacao?: string | null
           polegada?: string | null
           primeira_conexao_at?: string | null
@@ -5236,6 +5248,110 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      panel_offline_alert_config: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          horario_silencio_fim: string | null
+          horario_silencio_inicio: string | null
+          id: string
+          intervalo_repeticao_minutos: number | null
+          notificar_quando_online: boolean | null
+          repetir_ate_resolver: boolean | null
+          tempo_offline_minutos: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          horario_silencio_fim?: string | null
+          horario_silencio_inicio?: string | null
+          id?: string
+          intervalo_repeticao_minutos?: number | null
+          notificar_quando_online?: boolean | null
+          repetir_ate_resolver?: boolean | null
+          tempo_offline_minutos?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          horario_silencio_fim?: string | null
+          horario_silencio_inicio?: string | null
+          id?: string
+          intervalo_repeticao_minutos?: number | null
+          notificar_quando_online?: boolean | null
+          repetir_ate_resolver?: boolean | null
+          tempo_offline_minutos?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      panel_offline_alert_recipients: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          id: string
+          nome: string
+          telefone: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome: string
+          telefone: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome?: string
+          telefone?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      panel_offline_alerts_history: {
+        Row: {
+          created_at: string | null
+          destinatarios_notificados: Json | null
+          id: string
+          mensagem: string | null
+          painel_id: string | null
+          tempo_offline_minutos: number | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string | null
+          destinatarios_notificados?: Json | null
+          id?: string
+          mensagem?: string | null
+          painel_id?: string | null
+          tempo_offline_minutos?: number | null
+          tipo: string
+        }
+        Update: {
+          created_at?: string | null
+          destinatarios_notificados?: Json | null
+          id?: string
+          mensagem?: string | null
+          painel_id?: string | null
+          tempo_offline_minutos?: number | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panel_offline_alerts_history_painel_id_fkey"
+            columns: ["painel_id"]
+            isOneToOne: false
+            referencedRelation: "painels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       parcelas: {
         Row: {

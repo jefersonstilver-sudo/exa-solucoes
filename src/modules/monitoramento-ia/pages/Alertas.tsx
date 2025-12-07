@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react';
 import { EXAAlertsHeader } from '../components/exa-alerts/EXAAlertsHeader';
 import { AlertaCEOCard } from '../components/exa-alerts/AlertaCEOCard';
 import { AlertaPropostasCard } from '../components/exa-alerts/AlertaPropostasCard';
+import { AlertaPainelOfflineCard } from '../components/exa-alerts/AlertaPainelOfflineCard';
 import { AlertCard } from '../components/exa-alerts/AlertCard';
 import { AddAlertDialog } from '../components/exa-alerts/AddAlertDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -147,6 +148,9 @@ export const AlertasPage = () => {
 
         {/* Proposals Alert Card */}
         <AlertaPropostasCard />
+
+        {/* Panel Offline Alert Card */}
+        <AlertaPainelOfflineCard />
 
         {/* Other Alerts Grid */}
         {alerts.length > 0 && (
