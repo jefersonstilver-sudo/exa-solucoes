@@ -352,8 +352,24 @@ const PropostaDetalhesPage = () => {
               
               <div className="grid grid-cols-2 gap-4 mt-5 pt-4 border-t border-gray-100">
                 <div className="text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Fidelidade/mês</p>
-                  <p className="text-lg font-bold mt-0.5">{formatCurrency(proposal.fidel_monthly_value)}</p>
+                  {proposal.payment_type === 'custom' && Array.isArray(proposal.custom_installments) && proposal.custom_installments.length > 0 ? (
+                    <>
+                      <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0.5 border-0 mb-1">
+                        Personalizado
+                      </Badge>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                        {proposal.custom_installments.length} parcelas
+                      </p>
+                      <p className="text-lg font-bold mt-0.5">
+                        1ª: {formatCurrency((proposal.custom_installments[0] as { amount: number }).amount)}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Fidelidade/mês</p>
+                      <p className="text-lg font-bold mt-0.5">{formatCurrency(proposal.fidel_monthly_value)}</p>
+                    </>
+                  )}
                 </div>
                 <div className="text-center">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Período</p>
