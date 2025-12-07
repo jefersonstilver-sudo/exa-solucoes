@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Clock, User, Check, Building2 } from 'lucide-react';
+import { Eye, Clock, User, Check, Building2, CreditCard } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { CollapsibleCard } from '@/components/admin/shared/CollapsibleCard';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,12 @@ import { ptBR } from 'date-fns/locale';
 import { useLongPress } from '@/hooks/useLongPress';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+
+interface CustomInstallment {
+  installment: number;
+  due_date: string;
+  amount: number;
+}
 
 interface Proposal {
   id: string;
@@ -26,6 +32,8 @@ interface Proposal {
   total_time_spent_seconds: number | null;
   is_viewing?: boolean;
   last_heartbeat_at?: string | null;
+  payment_type?: string | null;
+  custom_installments?: CustomInstallment[] | null;
 }
 
 // Check if client is actively viewing RIGHT NOW (heartbeat within last 45 seconds)
@@ -127,23 +135,57 @@ export const ProposalMobileCard: React.FC<ProposalMobileCardProps> = ({
         <span className="font-medium text-foreground truncate text-sm">{proposal.client_name}</span>
       </div>
 
-      {/* Values row */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div>
-            <p className="text-[10px] text-muted-foreground">À Vista</p>
-            <p className="text-sm font-bold text-emerald-600">{formatCurrency(proposal.cash_total_value)}</p>
+      {/* Values row - Custom installments vs Standard */}
+      {proposal.payment_type === 'custom' && proposal.custom_installments && proposal.custom_installments.length > 0 ? (
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0 border-0">
+              <CreditCard className="h-2.5 w-2.5 mr-1" />
+              Personalizado
+            </Badge>
+            <span className="text-[10px] text-muted-foreground">
+              {proposal.custom_installments.length} parcelas
+            </span>
           </div>
-          <div>
-            <p className="text-[10px] text-muted-foreground">Fidelidade</p>
-            <p className="text-sm font-semibold">{formatCurrency(proposal.fidel_monthly_value)}/mês</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 text-xs">
+              <span className="text-muted-foreground">
+                1ª: <span className="font-semibold text-foreground">{formatCurrency(proposal.custom_installments[0].amount)}</span>
+              </span>
+              {proposal.custom_installments.length > 1 && (
+                <span className="text-muted-foreground">
+                  Última: <span className="font-semibold text-foreground">
+                    {formatCurrency(proposal.custom_installments[proposal.custom_installments.length - 1].amount)}
+                  </span>
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] text-muted-foreground">{timeAgo}</span>
+          </div>
+          <div className="text-[10px] text-muted-foreground">
+            Total: <span className="font-semibold text-foreground">
+              {formatCurrency(proposal.custom_installments.reduce((sum, i) => sum + i.amount, 0))}
+            </span>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-[10px] text-muted-foreground">{proposal.duration_months} meses</p>
-          <p className="text-[10px] text-muted-foreground">{timeAgo}</p>
+      ) : (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-[10px] text-muted-foreground">À Vista</p>
+              <p className="text-sm font-bold text-emerald-600">{formatCurrency(proposal.cash_total_value)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">Fidelidade</p>
+              <p className="text-sm font-semibold">{formatCurrency(proposal.fidel_monthly_value)}/mês</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] text-muted-foreground">{proposal.duration_months} meses</p>
+            <p className="text-[10px] text-muted-foreground">{timeAgo}</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Engagement metrics */}
       {(proposal.view_count || proposal.total_time_spent_seconds) && (

@@ -5,11 +5,20 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Package } from 'lucide-react';
 import { useBulkSelection } from '@/hooks/useBulkSelection';
 
+interface Installment {
+  installment: number;
+  due_date: string;
+  amount: number;
+  status?: string;
+  paid_at?: string;
+}
+
 interface OrderMobileListProps {
   orders: any[];
   loading?: boolean;
   onViewDetails: (orderId: string) => void;
   onBulkDelete?: (orderIds: string[]) => Promise<void>;
+  installmentsMap?: Record<string, Installment[]>;
 }
 
 export const OrderMobileList: React.FC<OrderMobileListProps> = ({
@@ -17,6 +26,7 @@ export const OrderMobileList: React.FC<OrderMobileListProps> = ({
   loading = false,
   onViewDetails,
   onBulkDelete,
+  installmentsMap = {},
 }) => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -89,6 +99,7 @@ export const OrderMobileList: React.FC<OrderMobileListProps> = ({
             isSelected={selectedIds.has(order.id)}
             onLongPress={() => handleLongPress(order.id)}
             onToggleSelect={() => toggleSelectItem(order.id)}
+            installments={installmentsMap[order.id] || []}
           />
         ))}
       </div>
