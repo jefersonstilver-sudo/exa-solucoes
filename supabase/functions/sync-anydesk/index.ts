@@ -135,17 +135,53 @@ serve(async (req) => {
 
     console.log('[SYNC-ANYDESK] 🔑 Authentication token generated');
 
-    // Fetch clients
+    // Fetch clients with retry logic for HTTP/2 connection errors
     const anydeskUrl = `https://v1.api.anydesk.com:8081/clients`;
-    const response = await fetch(anydeskUrl, {
-      method: 'GET',
-      headers: { 'Authorization': authHeader, 'Content-Type': 'application/json' },
-    });
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+    let response: Response | null = null;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[SYNC-ANYDESK] ❌ API Error:', errorText);
-      throw new Error(`AnyDesk API error: ${response.status} - ${errorText}`);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[SYNC-ANYDESK] 🔄 Attempt ${attempt}/${maxRetries} to fetch AnyDesk API...`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+        
+        response = await fetch(anydeskUrl, {
+          method: 'GET',
+          headers: { 
+            'Authorization': authHeader, 
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          console.log(`[SYNC-ANYDESK] ✅ API request successful on attempt ${attempt}`);
+          break;
+        } else {
+          const errorText = await response.text();
+          lastError = new Error(`AnyDesk API error: ${response.status} - ${errorText}`);
+          console.warn(`[SYNC-ANYDESK] ⚠️ API returned ${response.status} on attempt ${attempt}`);
+        }
+      } catch (fetchError) {
+        lastError = fetchError;
+        console.warn(`[SYNC-ANYDESK] ⚠️ Fetch error on attempt ${attempt}:`, fetchError.message);
+        
+        if (attempt < maxRetries) {
+          const delay = Math.pow(2, attempt) * 1000; // Exponential backoff: 2s, 4s, 8s
+          console.log(`[SYNC-ANYDESK] ⏳ Waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    if (!response || !response.ok) {
+      console.error('[SYNC-ANYDESK] ❌ All retry attempts failed:', lastError?.message);
+      throw lastError || new Error('Failed to fetch AnyDesk API after all retries');
     }
 
     const anydeskData = await response.json();
