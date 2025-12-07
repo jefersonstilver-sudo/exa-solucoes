@@ -1489,26 +1489,35 @@ const NovaPropostaPage = () => {
 
       {/* Footer Fixo com Botões */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-200 p-4 z-20">
-        <div className="flex gap-3 max-w-lg mx-auto">
+        <div className="flex gap-2 max-w-lg mx-auto">
           {/* Botão Cortesia */}
           <Button
             variant="outline"
             onClick={handleOpenCortesiaDialog}
             disabled={selectedBuildings.length === 0 || !clientData.email}
-            className="flex-1 h-12 border-pink-200 text-pink-600 hover:bg-pink-50"
+            className="h-11 px-3 border-pink-200 text-pink-600 hover:bg-pink-50"
           >
-            <Gift className="h-4 w-4 mr-2" />
-            Cortesia
+            <Gift className="h-4 w-4" />
+          </Button>
+          
+          {/* Botão Preview */}
+          <Button
+            variant="outline"
+            onClick={() => setShowPreviewModal(true)}
+            disabled={selectedBuildings.length === 0}
+            className="h-11 px-3 border-gray-200 text-gray-600 hover:bg-gray-50"
+          >
+            <Eye className="h-4 w-4" />
           </Button>
           
           {/* Botão Enviar Proposta */}
           <Button
             onClick={handleOpenSendDialog}
             disabled={selectedBuildings.length === 0 || (isCustomPayment ? customTotal <= 0 : !fidelValue)}
-            className="flex-[2] h-12 gap-2"
+            className="flex-1 h-11 gap-2"
           >
             <Send className="h-4 w-4" />
-            Enviar Proposta
+            Enviar
           </Button>
         </div>
       </div>
