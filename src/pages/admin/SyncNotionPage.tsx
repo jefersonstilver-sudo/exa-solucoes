@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
+import { BuildingColumnVisibility } from '@/components/admin/buildings/BuildingColumnVisibility';
 
 interface Building {
   id: string;
@@ -261,19 +262,22 @@ const SyncNotionPage = () => {
             Sincronização bidirecional • {totalBuildings} prédios
           </p>
         </div>
-        <Button
-          onClick={() => syncMutation.mutate()}
-          disabled={isSyncing}
-          size="sm"
-          className="bg-primary hover:bg-primary/90 shadow-md"
-        >
-          {isSyncing ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Zap className="h-4 w-4 mr-2" />
-          )}
-          Forçar Sincronização
-        </Button>
+        <div className="flex items-center gap-2">
+          <BuildingColumnVisibility />
+          <Button
+            onClick={() => syncMutation.mutate()}
+            disabled={isSyncing}
+            size="sm"
+            className="bg-primary hover:bg-primary/90 shadow-md"
+          >
+            {isSyncing ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Zap className="h-4 w-4 mr-2" />
+            )}
+            Forçar Sincronização
+          </Button>
+        </div>
       </div>
 
       {/* Quick Stats */}
