@@ -35,7 +35,7 @@ export interface DevicesFilters {
 }
 
 export interface DevicesSort {
-  field: 'name' | 'condominio_name' | 'last_online_at' | 'status';
+  field: 'name' | 'condominio_name' | 'last_online_at' | 'status' | 'offline_count';
   order: 'asc' | 'desc';
 }
 

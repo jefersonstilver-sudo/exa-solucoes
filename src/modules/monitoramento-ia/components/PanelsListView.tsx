@@ -10,14 +10,23 @@ interface PanelsListViewProps {
   sort: DevicesSort;
   onSortChange: (sort: DevicesSort) => void;
   onDeviceClick: (device: Device) => void;
+  periodEventsMap?: Map<string, number>;
+  periodLabel?: string;
 }
 
-export const PanelsListView = ({ devices, sort, onSortChange, onDeviceClick }: PanelsListViewProps) => {
+export const PanelsListView = ({ 
+  devices, 
+  sort, 
+  onSortChange, 
+  onDeviceClick,
+  periodEventsMap,
+  periodLabel = 'hoje'
+}: PanelsListViewProps) => {
   const handleSort = (field: DevicesSort['field']) => {
     if (sort.field === field) {
       onSortChange({ field, order: sort.order === 'asc' ? 'desc' : 'asc' });
     } else {
-      onSortChange({ field, order: 'asc' });
+      onSortChange({ field, order: 'desc' });
     }
   };
 
@@ -42,6 +51,11 @@ export const PanelsListView = ({ devices, sort, onSortChange, onDeviceClick }: P
     if (upperProvider.includes('LIGGA')) return 'text-orange-600';
     if (upperProvider.includes('TELECOM FOZ')) return 'text-blue-600';
     return 'text-foreground';
+  };
+
+  // Get period events count for a device
+  const getPeriodEventsCount = (deviceId: string) => {
+    return periodEventsMap?.get(deviceId) || 0;
   };
 
   return (
@@ -70,7 +84,15 @@ export const PanelsListView = ({ devices, sort, onSortChange, onDeviceClick }: P
                 </div>
               </TableHead>
               <TableHead className="text-center">Operadora</TableHead>
-              <TableHead className="text-center">Nº Quedas</TableHead>
+              <TableHead 
+                onClick={() => handleSort('offline_count')} 
+                className="cursor-pointer hover:bg-muted/70 transition-colors text-center"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  Quedas {periodLabel}
+                  <SortIcon field="offline_count" />
+                </div>
+              </TableHead>
               <TableHead 
                 onClick={() => handleSort('last_online_at')} 
                 className="cursor-pointer hover:bg-muted/70 transition-colors"
@@ -87,6 +109,7 @@ export const PanelsListView = ({ devices, sort, onSortChange, onDeviceClick }: P
             {devices.map((device) => {
               const displayName = (device.comments || device.name).split(' - ')[0].trim();
               const provider = device.provider || 'Sem provedor';
+              const periodEvents = getPeriodEventsCount(device.id);
               
               return (
                 <TableRow 
@@ -115,7 +138,9 @@ export const PanelsListView = ({ devices, sort, onSortChange, onDeviceClick }: P
                     </span>
                   </TableCell>
                   <TableCell className="text-center font-bold">
-                    {device.total_events || 0}
+                    <span className={periodEvents > 0 ? 'text-destructive' : 'text-muted-foreground'}>
+                      {periodEvents}
+                    </span>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {humanizeDate(device.last_online_at)}
@@ -135,6 +160,7 @@ export const PanelsListView = ({ devices, sort, onSortChange, onDeviceClick }: P
         {devices.map((device) => {
           const displayName = (device.comments || device.name).split(' - ')[0].trim();
           const provider = device.provider || 'Sem provedor';
+          const periodEvents = getPeriodEventsCount(device.id);
           const statusConfig = (() => {
             const variants: Record<string, { variant: 'default' | 'destructive' | 'secondary'; label: string }> = {
               online: { variant: 'default', label: 'Online' },
@@ -176,9 +202,9 @@ export const PanelsListView = ({ devices, sort, onSortChange, onDeviceClick }: P
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Quedas</p>
-                  <p className="font-bold text-foreground">
-                    {device.total_events || 0}
+                  <p className="text-muted-foreground">Quedas {periodLabel}</p>
+                  <p className={`font-bold ${periodEvents > 0 ? 'text-destructive' : 'text-foreground'}`}>
+                    {periodEvents}
                   </p>
                 </div>
                 <div>
