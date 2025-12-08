@@ -3247,6 +3247,33 @@ export type Database = {
         }
         Relationships: []
       }
+      curriculum_alert_config: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          recipient_name: string | null
+          recipient_phone: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          recipient_name?: string | null
+          recipient_phone: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          recipient_name?: string | null
+          recipient_phone?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       daily_report_config: {
         Row: {
           created_at: string | null
@@ -3635,6 +3662,54 @@ export type Database = {
           subject?: string
           template_id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      email_processing_log: {
+        Row: {
+          ai_analysis: string | null
+          alert_sent: boolean | null
+          alert_sent_at: string | null
+          candidate_data: Json | null
+          error_message: string | null
+          from_email: string | null
+          from_name: string | null
+          id: string
+          is_curriculum: boolean | null
+          message_id: string | null
+          processed_at: string | null
+          received_at: string | null
+          subject: string | null
+        }
+        Insert: {
+          ai_analysis?: string | null
+          alert_sent?: boolean | null
+          alert_sent_at?: string | null
+          candidate_data?: Json | null
+          error_message?: string | null
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          is_curriculum?: boolean | null
+          message_id?: string | null
+          processed_at?: string | null
+          received_at?: string | null
+          subject?: string | null
+        }
+        Update: {
+          ai_analysis?: string | null
+          alert_sent?: boolean | null
+          alert_sent_at?: string | null
+          candidate_data?: Json | null
+          error_message?: string | null
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          is_curriculum?: boolean | null
+          message_id?: string | null
+          processed_at?: string | null
+          received_at?: string | null
+          subject?: string | null
         }
         Relationships: []
       }
@@ -8030,6 +8105,42 @@ export type Database = {
           read_at?: string | null
           status?: string
           zapi_message_id?: string | null
+        }
+        Relationships: []
+      }
+      zoho_email_config: {
+        Row: {
+          access_token: string | null
+          account_id: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_checked_at: string | null
+          refresh_token: string | null
+          token_expires_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          account_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_checked_at?: string | null
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          account_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_checked_at?: string | null
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }

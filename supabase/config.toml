@@ -403,6 +403,18 @@ verify_jwt = false
 [functions.sync-notion-buildings]
 verify_jwt = false
 
+[functions.zoho-oauth-callback]
+verify_jwt = false
+
+[functions.check-zoho-emails]
+verify_jwt = false
+
+[functions.analyze-curriculum]
+verify_jwt = false
+
+[functions.notify-curriculum-received]
+verify_jwt = false
+
 [[cron]]
 function_name = "auto-cancel-expired-orders"
 schedule = "0 */1 * * *"
@@ -434,3 +446,7 @@ schedule = "0 8 * * *"
 [[cron]]
 function_name = "sync-notion-buildings"
 schedule = "* * * * *"
+
+[[cron]]
+function_name = "check-zoho-emails"
+schedule = "*/2 * * * *"
