@@ -124,19 +124,26 @@ export const PaineisPage = () => {
   // Hook de alertas offline
   const { offlineDevices, activeAlerts, dismissAlert } = useOfflineAlerts();
 
-  // Sort devices: 1. Offline first, 2. By period events count (descending)
+  // Sort devices based on current sort selection
   const sortedDevices = useMemo(() => {
     return [...devices].sort((a, b) => {
-      // 1. Offline devices always first
+      // If sorting by offline_count, use period events
+      if (sort.field === 'offline_count') {
+        const eventsA = periodEventsMap.get(a.id) || 0;
+        const eventsB = periodEventsMap.get(b.id) || 0;
+        return sort.order === 'desc' ? eventsB - eventsA : eventsA - eventsB;
+      }
+      
+      // Otherwise, offline devices always first for default view
       if (a.status === 'offline' && b.status !== 'offline') return -1;
       if (a.status !== 'offline' && b.status === 'offline') return 1;
       
-      // 2. Among same status, sort by period events count (more events first)
+      // Among same status, sort by period events count (more events first) as secondary
       const eventsA = periodEventsMap.get(a.id) || 0;
       const eventsB = periodEventsMap.get(b.id) || 0;
       return eventsB - eventsA;
     });
-  }, [devices, periodEventsMap]);
+  }, [devices, periodEventsMap, sort]);
 
   const handleRefresh = () => {
     refresh();
@@ -407,6 +414,8 @@ export const PaineisPage = () => {
                 setSelectedDevice(device);
                 setIsDetailModalOpen(true);
               }}
+              periodEventsMap={periodEventsMap}
+              periodLabel={getPeriodLabel(period)}
             />
           )}
 
