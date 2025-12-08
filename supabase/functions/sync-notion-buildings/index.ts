@@ -12,11 +12,15 @@ interface NotionProperty {
   rich_text?: { plain_text: string }[];
   number?: number;
   select?: { name: string };
+  status?: { name: string };
   checkbox?: boolean;
   url?: string;
+  email?: string;
+  phone_number?: string;
   files?: { name: string; file?: { url: string }; external?: { url: string } }[];
   date?: { start: string };
   last_edited_time?: string;
+  unique_id?: { number: number; prefix?: string };
 }
 
 interface NotionPage {
@@ -25,76 +29,149 @@ interface NotionPage {
   last_edited_time: string;
 }
 
-function extractPropertyValue(prop: NotionProperty): any {
-  if (!prop) return null;
+// Map Notion status to EXA database status
+function mapNotionStatus(notionStatus: string | null): string {
+  if (!notionStatus) return 'lead';
   
-  switch (prop.type) {
-    case 'title':
-      return prop.title?.map(t => t.plain_text).join('') || null;
-    case 'rich_text':
-      return prop.rich_text?.map(t => t.plain_text).join('') || null;
-    case 'number':
-      return prop.number ?? null;
-    case 'select':
-      return prop.select?.name || null;
-    case 'checkbox':
-      return prop.checkbox ?? false;
-    case 'url':
-      return prop.url || null;
-    case 'files':
-      return prop.files?.map(f => f.file?.url || f.external?.url).filter(Boolean) || [];
-    case 'date':
-      return prop.date?.start || null;
-    case 'last_edited_time':
-      return prop.last_edited_time || null;
+  const statusLower = notionStatus.toLowerCase().trim();
+  
+  // Status mapping based on Notion values
+  switch (statusLower) {
+    case 'online':
+    case '🟢 online':
+      return 'ativo';
+    case 'offline':
+    case '🔴 offline':
+      return 'inativo';
+    case 'manut':
+    case 'manutenção':
+    case '🟡 manut':
+      return 'manutencao';
+    case 'instalação':
+    case '🟡 instalação':
+      return 'instalacao';
+    case 'interesse':
+    case 'lead':
+    case '⚪ interesse':
+      return 'lead';
     default:
-      return null;
+      console.log(`[SYNC-NOTION] ⚠️ Unknown status: ${notionStatus}, defaulting to 'lead'`);
+      return 'lead';
   }
+}
+
+// Map Notion type to location_type
+function mapNotionTipo(notionTipo: string | null): string {
+  if (!notionTipo) return 'residential';
+  
+  const tipoLower = notionTipo.toLowerCase().trim();
+  
+  if (tipoLower.includes('comercial') || tipoLower.includes('business')) {
+    return 'commercial';
+  }
+  
+  return 'residential';
+}
+
+// Extract bairro from address if possible
+function extractBairro(endereco: string | null): string {
+  if (!endereco) return '';
+  
+  // Try to extract bairro from address (usually after comma or dash)
+  const parts = endereco.split(/[,\-]/);
+  if (parts.length >= 2) {
+    return parts[1].trim();
+  }
+  
+  return '';
 }
 
 function mapNotionToBuilding(page: NotionPage): Record<string, any> {
   const props = page.properties;
   
-  // Extract all properties
-  const nome = extractPropertyValue(props['Nome'] || props['nome']);
-  const endereco = extractPropertyValue(props['Endereço'] || props['endereco']);
-  const unidades = extractPropertyValue(props['Unidades'] || props['unidades']);
-  const notionId = extractPropertyValue(props['ID'] || props['id']);
-  const publicoAprox = extractPropertyValue(props['Público Aprox.'] || props['publico_aprox']);
-  const status = extractPropertyValue(props['Status'] || props['status']);
-  const tipo = extractPropertyValue(props['Tipo'] || props['tipo']);
-  const oti = extractPropertyValue(props['O.T.I'] || props['oti']);
-  const portaria = extractPropertyValue(props['Portaria'] || props['portaria']);
-  const fotos = extractPropertyValue(props['Fotos'] || props['fotos']);
-  const contrato = props['Contrato'] || props['contrato'];
-  const contratoUrl = contrato?.files?.[0]?.file?.url || contrato?.files?.[0]?.external?.url || null;
-  const whatsapp = extractPropertyValue(props['Whatsapp'] || props['whatsapp']);
-  const outDate = extractPropertyValue(props['Out'] || props['out']);
+  // Extract all 24 properties using exact Notion property names
+  const nome = props['Nome do Prédio']?.title?.[0]?.plain_text || null;
+  const endereco = props['Endereço']?.rich_text?.[0]?.plain_text || null;
+  const numeroAndares = props['Nº Andares']?.number ?? null;
+  const numeroBlocos = props['Nº Blocos']?.number ?? null;
+  const numeroUnidades = props['Unidades']?.number ?? null;
+  const numeroElevadores = props['Elevadores sociais']?.number ?? null;
+  const publicoAprox = props['Publico Aprox.']?.number ?? null;
+  
+  // Status field (status type in Notion)
+  const notionStatus = props['Status']?.status?.name || null;
+  
+  // Select fields
+  const notionTipo = props['Tipo']?.select?.name || null;
+  const notionPortaria = props['Portaria?']?.select?.name || null;
+  const notionInternet = props['INTERNET']?.select?.name || null;
+  
+  // Contact fields
+  const contatoSindico = props['Contato Sindico']?.phone_number || null;
+  const notionEmail = props['E-mail']?.email || null;
+  
+  // URL fields
+  const notionWhatsappUrl = props['Whatsapp']?.url || null;
+  const notionContratoUrl = props['Contrato']?.url || null;
+  
+  // Rich text fields
+  const notionOti = props['O.T.I']?.rich_text?.[0]?.plain_text || null;
+  
+  // Files/media fields
+  const notionFotos = props['Fotos']?.files?.map(f => f.file?.url || f.external?.url).filter(Boolean) || [];
+  const notionTermoAceite = props['Termo de Aceite']?.files || null;
+  
+  // Date fields
+  const notionInstalado = props['instalado']?.date?.start || null;
+  const notionDataTrabalho = props['Data Trabalho']?.date?.start || null;
+  const notionOutDate = props['Out 2025']?.date?.start || null;
+  
+  // Unique ID field
+  const notionInternalId = props['ID']?.unique_id?.number ?? null;
+  
+  // Last edited time (from page metadata or property)
+  const notionUpdatedAt = props['Atualização']?.last_edited_time || page.last_edited_time;
+  
+  // Map status to EXA status
+  const status = mapNotionStatus(notionStatus);
+  const locationType = mapNotionTipo(notionTipo);
+  const bairro = extractBairro(endereco);
   
   return {
     notion_page_id: page.id,
-    notion_updated_at: page.last_edited_time,
-    notion_properties: props, // Store all properties as JSONB
+    notion_updated_at: notionUpdatedAt,
+    notion_properties: props, // Store all properties as JSONB backup
     
-    // Mapped fields
+    // Core building fields
     nome: nome || 'Sem nome',
     endereco: endereco || '',
-    numero_unidades: unidades,
+    bairro: bairro,
+    numero_andares: numeroAndares,
+    numero_blocos: numeroBlocos,
+    numero_unidades: numeroUnidades,
+    numero_elevadores: numeroElevadores,
     publico_estimado: publicoAprox,
-    notion_status: status,
-    notion_tipo: tipo,
-    notion_oti: oti,
-    notion_portaria: portaria,
-    notion_fotos: fotos || [],
-    notion_contrato_url: contratoUrl,
-    notion_whatsapp_url: whatsapp,
-    notion_internal_id: notionId,
-    notion_out_date: outDate,
     
-    // Required fields with defaults
-    bairro: '', // Will be extracted from endereco if needed
-    status: 'lead', // Default status for new buildings
-    location_type: tipo?.toLowerCase() === 'comercial' ? 'commercial' : 'residential',
+    // Status fields
+    status: status,
+    notion_status: notionStatus,
+    location_type: locationType,
+    
+    // Notion-specific fields
+    notion_tipo: notionTipo,
+    notion_portaria: notionPortaria,
+    notion_internet: notionInternet,
+    notion_oti: notionOti,
+    notion_email: notionEmail,
+    contato_sindico: contatoSindico,
+    notion_whatsapp_url: notionWhatsappUrl,
+    notion_contrato_url: notionContratoUrl,
+    notion_fotos: notionFotos,
+    notion_termo_aceite: notionTermoAceite,
+    notion_instalado: notionInstalado,
+    notion_data_trabalho: notionDataTrabalho,
+    notion_out_date: notionOutDate,
+    notion_internal_id: notionInternalId,
   };
 }
 
@@ -196,16 +273,6 @@ serve(async (req) => {
     const notionPages = await fetchNotionDatabase(notionApiKey, notionDatabaseId);
     console.log(`[SYNC-NOTION] 📊 Found ${notionPages.length} pages in Notion`);
 
-    // DEBUG: Log exact property names from Notion
-    if (notionPages.length > 0) {
-      const firstPage = notionPages[0];
-      console.log('[SYNC-NOTION] 🔍 ========== PROPRIEDADES DO NOTION ==========');
-      console.log('[SYNC-NOTION] 🔍 NOMES DAS PROPRIEDADES:', JSON.stringify(Object.keys(firstPage.properties)));
-      console.log('[SYNC-NOTION] 🔍 DADOS COMPLETOS PRIMEIRA PÁGINA:');
-      console.log(JSON.stringify(firstPage.properties, null, 2));
-      console.log('[SYNC-NOTION] 🔍 ============================================');
-    }
-
     // Fetch existing buildings with notion_page_id
     const { data: existingBuildings, error: fetchError } = await supabase
       .from('buildings')
@@ -262,7 +329,7 @@ serve(async (req) => {
               // Map local status back to Notion status if changed
               if (existing.status !== mappedData.status) {
                 notionProperties['Status'] = {
-                  select: { name: existing.notion_status || existing.status }
+                  status: { name: existing.notion_status || existing.status }
                 };
               }
               

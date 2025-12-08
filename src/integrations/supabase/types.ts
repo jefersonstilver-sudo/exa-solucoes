@@ -825,6 +825,36 @@ export type Database = {
           },
         ]
       }
+      building_column_visibility: {
+        Row: {
+          column_key: string
+          created_at: string
+          display_order: number
+          id: string
+          is_visible: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          column_key: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          column_key?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       building_geocodes: {
         Row: {
           address: string
@@ -961,6 +991,7 @@ export type Database = {
           caracteristicas: string[] | null
           codigo_predio: string | null
           contato_sindico: string | null
+          contato_sindico_telefone: string | null
           contato_vice_sindico: string | null
           created_at: string | null
           endereco: string
@@ -984,8 +1015,12 @@ export type Database = {
           nome_sindico: string | null
           nome_vice_sindico: string | null
           notion_contrato_url: string | null
+          notion_data_trabalho: string | null
+          notion_email: string | null
           notion_fotos: Json | null
+          notion_instalado: string | null
           notion_internal_id: number | null
+          notion_internet: string | null
           notion_last_synced_at: string | null
           notion_oti: string | null
           notion_out_date: string | null
@@ -993,6 +1028,7 @@ export type Database = {
           notion_portaria: string | null
           notion_properties: Json | null
           notion_status: string | null
+          notion_termo_aceite: Json | null
           notion_tipo: string | null
           notion_updated_at: string | null
           notion_whatsapp_url: string | null
@@ -1019,6 +1055,7 @@ export type Database = {
           caracteristicas?: string[] | null
           codigo_predio?: string | null
           contato_sindico?: string | null
+          contato_sindico_telefone?: string | null
           contato_vice_sindico?: string | null
           created_at?: string | null
           endereco: string
@@ -1042,8 +1079,12 @@ export type Database = {
           nome_sindico?: string | null
           nome_vice_sindico?: string | null
           notion_contrato_url?: string | null
+          notion_data_trabalho?: string | null
+          notion_email?: string | null
           notion_fotos?: Json | null
+          notion_instalado?: string | null
           notion_internal_id?: number | null
+          notion_internet?: string | null
           notion_last_synced_at?: string | null
           notion_oti?: string | null
           notion_out_date?: string | null
@@ -1051,6 +1092,7 @@ export type Database = {
           notion_portaria?: string | null
           notion_properties?: Json | null
           notion_status?: string | null
+          notion_termo_aceite?: Json | null
           notion_tipo?: string | null
           notion_updated_at?: string | null
           notion_whatsapp_url?: string | null
@@ -1077,6 +1119,7 @@ export type Database = {
           caracteristicas?: string[] | null
           codigo_predio?: string | null
           contato_sindico?: string | null
+          contato_sindico_telefone?: string | null
           contato_vice_sindico?: string | null
           created_at?: string | null
           endereco?: string
@@ -1100,8 +1143,12 @@ export type Database = {
           nome_sindico?: string | null
           nome_vice_sindico?: string | null
           notion_contrato_url?: string | null
+          notion_data_trabalho?: string | null
+          notion_email?: string | null
           notion_fotos?: Json | null
+          notion_instalado?: string | null
           notion_internal_id?: number | null
+          notion_internet?: string | null
           notion_last_synced_at?: string | null
           notion_oti?: string | null
           notion_out_date?: string | null
@@ -1109,6 +1156,7 @@ export type Database = {
           notion_portaria?: string | null
           notion_properties?: Json | null
           notion_status?: string | null
+          notion_termo_aceite?: Json | null
           notion_tipo?: string | null
           notion_updated_at?: string | null
           notion_whatsapp_url?: string | null
