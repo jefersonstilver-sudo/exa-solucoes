@@ -29,43 +29,47 @@ interface Building {
   notion_data_trabalho: string | null;
 }
 
-// Status groupings matching Notion board - CORRECTED
+// Status groupings matching Notion board - DARK THEME
 const STATUS_GROUPS = {
   online: {
     title: 'PRÉDIOS ONLINE',
     icon: CheckCircle,
     statuses: ['Ativo'],
-    bgColor: 'bg-emerald-50',
-    borderColor: 'border-emerald-200',
-    iconColor: 'text-emerald-600',
-    badgeColor: 'bg-emerald-100 text-emerald-700 border-emerald-300'
+    bgColor: 'bg-[#2D3B2D]', // Verde escuro Notion
+    borderColor: 'border-emerald-800/30',
+    iconColor: 'text-emerald-400',
+    headerColor: 'text-emerald-400',
+    badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
   },
   offline: {
     title: 'PRÉDIOS OFF-LINE',
     icon: AlertCircle,
     statuses: ['Subir Nuc', 'Troca painel', 'Manutenção'],
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-200',
-    iconColor: 'text-red-600',
-    badgeColor: 'bg-red-100 text-red-700 border-red-300'
+    bgColor: 'bg-[#4D2D2D]', // Vermelho escuro Notion
+    borderColor: 'border-red-800/30',
+    iconColor: 'text-red-400',
+    headerColor: 'text-red-400',
+    badgeColor: 'bg-red-500/20 text-red-400 border-red-500/30'
   },
   instalacao: {
-    title: 'INSTALAÇÃO',
+    title: 'EM INSTALAÇÃO',
     icon: Wrench,
     statuses: ['Instalação Internet', 'Instalação'],
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-    iconColor: 'text-blue-600',
-    badgeColor: 'bg-blue-100 text-blue-700 border-blue-300'
+    bgColor: 'bg-[#3D2D1D]', // Marrom/bronze Notion
+    borderColor: 'border-amber-800/30',
+    iconColor: 'text-amber-400',
+    headerColor: 'text-amber-400',
+    badgeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/30'
   },
   instalacaoInternet: {
-    title: 'INSTALAÇÃO INTERNET',
+    title: 'INSTALAÇÃO DE INTERNET',
     icon: Wifi,
     statuses: ['Primeira Reunião', 'Visita Técnica'],
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-200',
-    iconColor: 'text-purple-600',
-    badgeColor: 'bg-purple-100 text-purple-700 border-purple-300'
+    bgColor: 'bg-[#3D3D3D]', // Cinza escuro
+    borderColor: 'border-gray-700/30',
+    iconColor: 'text-gray-300',
+    headerColor: 'text-gray-300',
+    badgeColor: 'bg-purple-500/20 text-purple-400 border-purple-500/30'
   }
 };
 
@@ -93,8 +97,8 @@ const BuildingCard = ({ building, badgeColor }: { building: Building; badgeColor
   const imageUrl = getImageUrl();
 
   return (
-    <div className="flex-shrink-0 w-[180px] md:w-[200px] bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 group cursor-pointer">
-      <div className="h-[120px] md:h-[140px] bg-gray-100 relative overflow-hidden">
+    <div className="flex-shrink-0 w-[180px] md:w-[200px] bg-[#2D2D2D] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-700/50 group cursor-pointer">
+      <div className="h-[120px] md:h-[140px] bg-gray-800 relative overflow-hidden">
         {imageUrl ? (
           <img 
             src={imageUrl} 
@@ -102,8 +106,8 @@ const BuildingCard = ({ building, badgeColor }: { building: Building; badgeColor
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-            <Building2 className="h-10 w-10 text-gray-300" />
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-700">
+            <Building2 className="h-10 w-10 text-gray-600" />
           </div>
         )}
         <div className="absolute top-2 left-2">
@@ -113,7 +117,7 @@ const BuildingCard = ({ building, badgeColor }: { building: Building; badgeColor
         </div>
         {building.notion_oti && (
           <div className="absolute top-2 right-2">
-            <Badge className="bg-purple-100 text-purple-700 border-purple-300 text-[10px] px-1.5 py-0.5 shadow-sm">
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-[10px] px-1.5 py-0.5 shadow-sm">
               {building.notion_oti}
             </Badge>
           </div>
@@ -121,9 +125,9 @@ const BuildingCard = ({ building, badgeColor }: { building: Building; badgeColor
       </div>
       
       <div className="p-3">
-        <h3 className="font-semibold text-sm text-gray-900 truncate">{building.nome}</h3>
-        <p className="text-xs text-gray-500 truncate mt-0.5">{building.bairro}</p>
-        <div className="flex items-center gap-2 mt-2 text-[10px] text-gray-400">
+        <h3 className="font-semibold text-sm text-white truncate">{building.nome}</h3>
+        <p className="text-xs text-gray-400 truncate mt-0.5">{building.bairro}</p>
+        <div className="flex items-center gap-2 mt-2 text-[10px] text-gray-500">
           {building.numero_unidades && (
             <span className="flex items-center gap-0.5">
               <Building2 className="h-3 w-3" />
@@ -159,12 +163,12 @@ const StatusSection = ({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Icon className={`h-5 w-5 ${group.iconColor}`} />
-          <h2 className="font-semibold text-gray-800 text-sm md:text-base">{group.title}</h2>
-          <Badge variant="secondary" className="text-xs">{buildings.length}</Badge>
+          <h2 className={`font-semibold ${group.headerColor} text-sm md:text-base`}>{group.title}</h2>
+          <Badge className="bg-gray-600/50 text-white text-xs border-gray-500/30">{buildings.length}</Badge>
         </div>
       </div>
       
-      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
         {buildings.map((building) => (
           <BuildingCard 
             key={building.id} 
@@ -434,17 +438,17 @@ const SyncNotionPage = () => {
   const totalBuildings = buildings?.length || 0;
 
   return (
-    <div className="p-4 md:p-6 space-y-5 bg-gradient-to-br from-gray-50 to-slate-100 min-h-screen">
+    <div className="p-4 md:p-6 space-y-5 bg-[#1E1E1E] min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-lg md:text-xl font-bold text-gray-900 flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-primary/10">
-              <RefreshCw className="h-5 w-5 text-primary" />
+          <h1 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-white/10">
+              <RefreshCw className="h-5 w-5 text-white" />
             </div>
             Sync Notion
           </h1>
-          <p className="text-xs text-gray-500 mt-1 ml-11">
+          <p className="text-xs text-gray-400 mt-1 ml-11">
             Sincronização bidirecional • {totalBuildings} prédios
           </p>
         </div>
@@ -454,7 +458,7 @@ const SyncNotionPage = () => {
             onClick={() => syncMutation.mutate()}
             disabled={isSyncing}
             size="sm"
-            className="bg-primary hover:bg-primary/90 shadow-md"
+            className="bg-blue-600 hover:bg-blue-700 shadow-md text-white"
           >
             {isSyncing ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -468,21 +472,21 @@ const SyncNotionPage = () => {
 
       {/* Quick Stats - 4 metrics */}
       <div className="grid grid-cols-4 gap-2 md:gap-3">
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-white/50 text-center">
-          <div className="text-xl md:text-2xl font-bold text-emerald-600">{groupedBuildings.online.length}</div>
-          <div className="text-[10px] text-gray-500">Online</div>
+        <div className="bg-[#2D3B2D] rounded-xl p-3 shadow-sm border border-emerald-800/30 text-center">
+          <div className="text-xl md:text-2xl font-bold text-emerald-400">{groupedBuildings.online.length}</div>
+          <div className="text-[10px] text-emerald-300/70">Online</div>
         </div>
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-white/50 text-center">
-          <div className="text-xl md:text-2xl font-bold text-red-600">{groupedBuildings.offline.length}</div>
-          <div className="text-[10px] text-gray-500">Offline</div>
+        <div className="bg-[#4D2D2D] rounded-xl p-3 shadow-sm border border-red-800/30 text-center">
+          <div className="text-xl md:text-2xl font-bold text-red-400">{groupedBuildings.offline.length}</div>
+          <div className="text-[10px] text-red-300/70">Offline</div>
         </div>
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-white/50 text-center">
-          <div className="text-xl md:text-2xl font-bold text-blue-600">{groupedBuildings.instalacao.length}</div>
-          <div className="text-[10px] text-gray-500">Instalação</div>
+        <div className="bg-[#3D2D1D] rounded-xl p-3 shadow-sm border border-amber-800/30 text-center">
+          <div className="text-xl md:text-2xl font-bold text-amber-400">{groupedBuildings.instalacao.length}</div>
+          <div className="text-[10px] text-amber-300/70">Instalação</div>
         </div>
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-white/50 text-center">
-          <div className="text-xl md:text-2xl font-bold text-purple-600">{groupedBuildings.instalacaoInternet.length}</div>
-          <div className="text-[10px] text-gray-500">Aguardando</div>
+        <div className="bg-[#3D3D3D] rounded-xl p-3 shadow-sm border border-gray-700/30 text-center">
+          <div className="text-xl md:text-2xl font-bold text-gray-300">{groupedBuildings.instalacaoInternet.length}</div>
+          <div className="text-[10px] text-gray-400">Aguardando</div>
         </div>
       </div>
 
@@ -501,13 +505,28 @@ const SyncNotionPage = () => {
             <StatusSection group={STATUS_GROUPS.instalacaoInternet} buildings={groupedBuildings.instalacaoInternet} />
           </div>
 
-          {/* Calendar + Maintenance List - 2 Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
-            <div className="lg:col-span-2">
-              <CalendarSection buildings={buildings || []} />
+          {/* Calendar + Maintenance List - Unified Container */}
+          <div className="bg-[#252525] rounded-2xl p-4 mt-6">
+            {/* Header with tabs */}
+            <div className="flex items-center gap-6 mb-4 border-b border-gray-700 pb-3">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-white" />
+                <h2 className="text-white font-semibold text-sm">AGENDAMENTO</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <List className="h-4 w-4 text-gray-400" />
+                <h2 className="text-gray-400 font-semibold text-sm">MANUTENÇÃO</h2>
+              </div>
             </div>
-            <div>
-              <MaintenanceList buildings={buildings || []} />
+            
+            {/* Two columns side by side */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="lg:col-span-2">
+                <CalendarSection buildings={buildings || []} />
+              </div>
+              <div>
+                <MaintenanceList buildings={buildings || []} />
+              </div>
             </div>
           </div>
         </>
@@ -516,12 +535,12 @@ const SyncNotionPage = () => {
       {/* Sync Logs - Collapsible */}
       <Collapsible open={logsOpen} onOpenChange={setLogsOpen}>
         <CollapsibleTrigger asChild>
-          <button className="w-full bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-white/50 flex items-center justify-between hover:bg-white transition-colors">
+          <button className="w-full bg-[#2D2D2D] rounded-xl p-3 shadow-sm border border-gray-700/50 flex items-center justify-between hover:bg-[#3D3D3D] transition-colors">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">Histórico de Sincronizações</span>
+              <Clock className="h-4 w-4 text-gray-400" />
+              <span className="text-sm font-medium text-gray-300">Histórico de Sincronizações</span>
               {lastSync && (
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-500">
                   Última: {format(new Date(lastSync.sync_started_at), "dd/MM HH:mm", { locale: ptBR })}
                 </span>
               )}
@@ -530,7 +549,7 @@ const SyncNotionPage = () => {
           </button>
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-2">
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 divide-y divide-gray-100">
+          <div className="bg-[#2D2D2D] rounded-xl shadow-sm border border-gray-700/50 divide-y divide-gray-700/50">
             {loadingLogs ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -540,32 +559,32 @@ const SyncNotionPage = () => {
                 <div key={log.id} className="p-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {log.status === 'success' ? (
-                      <CheckCircle className="h-4 w-4 text-emerald-500" />
+                      <CheckCircle className="h-4 w-4 text-emerald-400" />
                     ) : log.status === 'error' ? (
-                      <AlertCircle className="h-4 w-4 text-red-500" />
+                      <AlertCircle className="h-4 w-4 text-red-400" />
                     ) : (
-                      <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+                      <Loader2 className="h-4 w-4 text-blue-400 animate-spin" />
                     )}
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-gray-300">
                       {format(new Date(log.sync_started_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-xs">
                     {log.buildings_created > 0 && (
-                      <span className="text-emerald-600 font-medium">+{log.buildings_created}</span>
+                      <span className="text-emerald-400 font-medium">+{log.buildings_created}</span>
                     )}
                     {log.buildings_updated > 0 && (
-                      <span className="text-blue-600 font-medium">↻{log.buildings_updated}</span>
+                      <span className="text-blue-400 font-medium">↻{log.buildings_updated}</span>
                     )}
                     {log.duration_ms && (
-                      <span className="text-gray-400">{(log.duration_ms / 1000).toFixed(1)}s</span>
+                      <span className="text-gray-500">{(log.duration_ms / 1000).toFixed(1)}s</span>
                     )}
                   </div>
                 </div>
               ))
             )}
             {syncLogs?.length === 0 && (
-              <div className="p-6 text-center text-gray-400">
+              <div className="p-6 text-center text-gray-500">
                 <Clock className="h-6 w-6 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">Nenhuma sincronização realizada</p>
               </div>
