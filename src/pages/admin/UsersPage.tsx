@@ -373,6 +373,14 @@ const UsersPage = () => {
         </div>
         <div className="flex gap-2">
           <Button 
+            onClick={() => window.location.href = '/super_admin/tipos-conta'}
+            variant="outline"
+            className="border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Tipos de Conta
+          </Button>
+          <Button 
             onClick={handleSyncOrphanUsers}
             variant="outline"
             disabled={syncingOrphans}
