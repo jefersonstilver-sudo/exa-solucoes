@@ -196,6 +196,16 @@ serve(async (req) => {
     const notionPages = await fetchNotionDatabase(notionApiKey, notionDatabaseId);
     console.log(`[SYNC-NOTION] 📊 Found ${notionPages.length} pages in Notion`);
 
+    // DEBUG: Log exact property names from Notion
+    if (notionPages.length > 0) {
+      const firstPage = notionPages[0];
+      console.log('[SYNC-NOTION] 🔍 ========== PROPRIEDADES DO NOTION ==========');
+      console.log('[SYNC-NOTION] 🔍 NOMES DAS PROPRIEDADES:', JSON.stringify(Object.keys(firstPage.properties)));
+      console.log('[SYNC-NOTION] 🔍 DADOS COMPLETOS PRIMEIRA PÁGINA:');
+      console.log(JSON.stringify(firstPage.properties, null, 2));
+      console.log('[SYNC-NOTION] 🔍 ============================================');
+    }
+
     // Fetch existing buildings with notion_page_id
     const { data: existingBuildings, error: fetchError } = await supabase
       .from('buildings')
