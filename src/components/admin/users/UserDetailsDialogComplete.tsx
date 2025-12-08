@@ -599,11 +599,52 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
                         ⚠️ Zona de Perigo
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3">
+                    <CardContent className="space-y-4">
                       <p className="text-sm text-red-700 dark:text-red-300">
-                        Ações irreversíveis que afetam permanentemente esta conta.
+                        Ações sensíveis que afetam esta conta.
                       </p>
+                      
+                      {/* Reset de Senha */}
+                      <div className="space-y-2 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                        <p className="text-xs font-semibold text-amber-900 dark:text-amber-100">
+                          🔑 Resetar Senha
+                        </p>
+                        <p className="text-xs text-amber-700 dark:text-amber-300">
+                          Envia um email para o usuário com link para redefinir a senha.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              setLoading(true);
+                              const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+                                redirectTo: `${window.location.origin}/reset-password`
+                              });
+                              if (error) throw error;
+                              toast.success('Email de reset enviado!', {
+                                description: `Link enviado para ${user.email}`
+                              });
+                            } catch (error: any) {
+                              toast.error('Erro ao enviar email', { description: error.message });
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
+                          disabled={loading}
+                          className="w-full border-amber-300 text-amber-700 hover:bg-amber-100"
+                        >
+                          {loading ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Key className="h-4 w-4 mr-2" />
+                          )}
+                          Enviar Email de Reset de Senha
+                        </Button>
+                      </div>
+
                       <Separator className="bg-red-200 dark:bg-red-800" />
+                      
                       <div className="space-y-2">
                         <p className="text-xs font-semibold text-red-900 dark:text-red-100">
                           🗑️ Eliminar Conta Permanentemente
