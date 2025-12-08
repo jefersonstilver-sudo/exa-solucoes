@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Building2, Clock, AlertCircle, CheckCircle, Loader2, Wrench, Users, Zap } from 'lucide-react';
+import { RefreshCw, Building2, Clock, AlertCircle, CheckCircle, Loader2, Wrench, Users, Zap, Wifi, ChevronLeft, ChevronRight, CalendarDays, List } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
@@ -26,9 +26,10 @@ interface Building {
   publico_estimado: number | null;
   notion_fotos: any;
   imagem_principal: string | null;
+  notion_data_trabalho: string | null;
 }
 
-// Status groupings matching Notion board
+// Status groupings matching Notion board - CORRECTED
 const STATUS_GROUPS = {
   online: {
     title: 'PRÉDIOS ONLINE',
@@ -40,37 +41,39 @@ const STATUS_GROUPS = {
     badgeColor: 'bg-emerald-100 text-emerald-700 border-emerald-300'
   },
   offline: {
-    title: 'PRÉDIOS OFFLINE',
+    title: 'PRÉDIOS OFF-LINE',
     icon: AlertCircle,
-    statuses: ['Subir Nuc', 'Manutenção', 'Pausado'],
+    statuses: ['Subir Nuc', 'Troca painel', 'Manutenção'],
     bgColor: 'bg-red-50',
     borderColor: 'border-red-200',
     iconColor: 'text-red-600',
     badgeColor: 'bg-red-100 text-red-700 border-red-300'
   },
-  manutencao: {
-    title: 'EM MANUTENÇÃO / INSTALAÇÃO',
+  instalacao: {
+    title: 'INSTALAÇÃO',
     icon: Wrench,
-    statuses: ['Instalação', 'Instalação Internet'],
+    statuses: ['Instalação Internet', 'Instalação'],
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
     iconColor: 'text-blue-600',
     badgeColor: 'bg-blue-100 text-blue-700 border-blue-300'
   },
-  leads: {
-    title: 'SÍNDICO LEAD',
-    icon: Users,
-    statuses: ['Lead', 'Síndico Lead'],
-    bgColor: 'bg-amber-50',
-    borderColor: 'border-amber-200',
-    iconColor: 'text-amber-600',
-    badgeColor: 'bg-amber-100 text-amber-700 border-amber-300'
+  instalacaoInternet: {
+    title: 'INSTALAÇÃO INTERNET',
+    icon: Wifi,
+    statuses: ['Primeira Reunião', 'Visita Técnica'],
+    bgColor: 'bg-purple-50',
+    borderColor: 'border-purple-200',
+    iconColor: 'text-purple-600',
+    badgeColor: 'bg-purple-100 text-purple-700 border-purple-300'
   }
 };
 
+// Statuses that need maintenance work
+const MAINTENANCE_STATUSES = ['Instalação Internet', 'Instalação', 'Subir Nuc', 'Troca painel', 'Manutenção'];
+
 // Building Card Component
 const BuildingCard = ({ building, badgeColor }: { building: Building; badgeColor: string }) => {
-  // Get image from notion_fotos or imagem_principal
   const getImageUrl = () => {
     if (building.notion_fotos) {
       try {
@@ -91,7 +94,6 @@ const BuildingCard = ({ building, badgeColor }: { building: Building; badgeColor
 
   return (
     <div className="flex-shrink-0 w-[180px] md:w-[200px] bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 group cursor-pointer">
-      {/* Image */}
       <div className="h-[120px] md:h-[140px] bg-gray-100 relative overflow-hidden">
         {imageUrl ? (
           <img 
@@ -104,13 +106,11 @@ const BuildingCard = ({ building, badgeColor }: { building: Building; badgeColor
             <Building2 className="h-10 w-10 text-gray-300" />
           </div>
         )}
-        {/* Status badge overlay */}
         <div className="absolute top-2 left-2">
           <Badge className={`${badgeColor} text-[10px] px-1.5 py-0.5 shadow-sm`}>
             {building.notion_status || 'N/A'}
           </Badge>
         </div>
-        {/* OTI badge if exists */}
         {building.notion_oti && (
           <div className="absolute top-2 right-2">
             <Badge className="bg-purple-100 text-purple-700 border-purple-300 text-[10px] px-1.5 py-0.5 shadow-sm">
@@ -120,7 +120,6 @@ const BuildingCard = ({ building, badgeColor }: { building: Building; badgeColor
         )}
       </div>
       
-      {/* Content */}
       <div className="p-3">
         <h3 className="font-semibold text-sm text-gray-900 truncate">{building.nome}</h3>
         <p className="text-xs text-gray-500 truncate mt-0.5">{building.bairro}</p>
@@ -157,7 +156,6 @@ const StatusSection = ({
 
   return (
     <div className={`rounded-2xl ${group.bgColor} ${group.borderColor} border p-4 md:p-5`}>
-      {/* Section Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Icon className={`h-5 w-5 ${group.iconColor}`} />
@@ -166,7 +164,6 @@ const StatusSection = ({
         </div>
       </div>
       
-      {/* Horizontal scrolling cards */}
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
         {buildings.map((building) => (
           <BuildingCard 
@@ -180,18 +177,207 @@ const StatusSection = ({
   );
 };
 
+// Calendar Section Component
+const CalendarSection = ({ buildings }: { buildings: Building[] }) => {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  // Group buildings by work date
+  const buildingsByDate = useMemo(() => {
+    const map = new Map<string, Building[]>();
+    buildings.forEach(b => {
+      if (b.notion_data_trabalho) {
+        const dateKey = b.notion_data_trabalho.split('T')[0]; // Get just the date part
+        if (!map.has(dateKey)) map.set(dateKey, []);
+        map.get(dateKey)!.push(b);
+      }
+    });
+    return map;
+  }, [buildings]);
+
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+  // Get weekday names
+  const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+  // Get leading empty cells for the first week
+  const leadingEmptyCells = monthStart.getDay();
+
+  return (
+    <div className="bg-[#2D2D2D] rounded-2xl p-4 shadow-lg">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="h-5 w-5 text-white" />
+          <h2 className="font-semibold text-white text-sm">AGENDAMENTO</h2>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-white/10"
+            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-white text-sm font-medium min-w-[120px] text-center">
+            {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
+          </span>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-white/10"
+            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Weekday Headers */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {weekDays.map(day => (
+          <div key={day} className="text-center text-[10px] text-gray-500 font-medium py-1">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {/* Leading empty cells */}
+        {Array.from({ length: leadingEmptyCells }).map((_, i) => (
+          <div key={`empty-${i}`} className="aspect-square" />
+        ))}
+        
+        {/* Days */}
+        {daysInMonth.map(day => {
+          const dateKey = format(day, 'yyyy-MM-dd');
+          const dayBuildings = buildingsByDate.get(dateKey) || [];
+          const hasEvents = dayBuildings.length > 0;
+          const isTodayDate = isToday(day);
+
+          return (
+            <div 
+              key={dateKey}
+              className={`
+                aspect-square rounded-lg p-1 flex flex-col items-center justify-start cursor-pointer
+                transition-all duration-200
+                ${hasEvents ? 'bg-blue-600/20 hover:bg-blue-600/30' : 'hover:bg-white/5'}
+                ${isTodayDate ? 'ring-1 ring-blue-400' : ''}
+              `}
+              title={dayBuildings.map(b => b.nome).join('\n')}
+            >
+              <span className={`text-[11px] ${isTodayDate ? 'text-blue-400 font-bold' : 'text-gray-400'}`}>
+                {format(day, 'd')}
+              </span>
+              {hasEvents && (
+                <div className="flex flex-wrap gap-0.5 mt-0.5 justify-center">
+                  {dayBuildings.slice(0, 3).map((b, idx) => (
+                    <div 
+                      key={b.id}
+                      className="w-1.5 h-1.5 rounded-full bg-blue-500"
+                      title={b.nome}
+                    />
+                  ))}
+                  {dayBuildings.length > 3 && (
+                    <span className="text-[8px] text-blue-400">+{dayBuildings.length - 3}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="mt-3 pt-3 border-t border-gray-600/30">
+        <div className="flex items-center gap-2 text-[10px] text-gray-400">
+          <div className="w-2 h-2 rounded-full bg-blue-500" />
+          <span>Trabalho agendado</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Maintenance List Component - Buildings WITHOUT work date scheduled (URGENT)
+const MaintenanceList = ({ buildings }: { buildings: Building[] }) => {
+  // Filter buildings that need work BUT don't have a scheduled date
+  const pendingWork = useMemo(() => {
+    return buildings.filter(b => 
+      MAINTENANCE_STATUSES.includes(b.notion_status || '') &&
+      !b.notion_data_trabalho // Work date is EMPTY
+    );
+  }, [buildings]);
+
+  return (
+    <div className="bg-[#2D2D2D] rounded-2xl p-4 shadow-lg">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <List className="h-5 w-5 text-white" />
+          <h2 className="font-semibold text-white text-sm">MANUTENÇÃO</h2>
+        </div>
+        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
+          {pendingWork.length} pendentes
+        </Badge>
+      </div>
+
+      {/* Subtitle */}
+      <p className="text-[10px] text-gray-400 mb-3">
+        Prédios aguardando agendamento de trabalho
+      </p>
+
+      {/* List */}
+      <div className="space-y-2 max-h-[350px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+        {pendingWork.length === 0 ? (
+          <div className="text-center py-6 text-gray-500">
+            <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-xs">Todos os trabalhos agendados</p>
+          </div>
+        ) : (
+          pendingWork.map(building => (
+            <div 
+              key={building.id} 
+              className="flex items-center justify-between p-2.5 bg-[#3D3D3D] rounded-lg hover:bg-[#454545] transition-colors cursor-pointer"
+            >
+              <div className="flex-1 min-w-0">
+                <span className="text-white text-sm font-medium truncate block">{building.nome}</span>
+                <span className="text-gray-400 text-[10px] truncate block">{building.bairro}</span>
+              </div>
+              <Badge 
+                className={`text-[9px] ml-2 flex-shrink-0 ${
+                  building.notion_status === 'Subir Nuc' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                  building.notion_status === 'Manutenção' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
+                  building.notion_status === 'Troca painel' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                  building.notion_status === 'Instalação' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                  'bg-purple-500/20 text-purple-400 border-purple-500/30'
+                }`}
+              >
+                {building.notion_status}
+              </Badge>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
 const SyncNotionPage = () => {
   const queryClient = useQueryClient();
   const [isSyncing, setIsSyncing] = useState(false);
   const [logsOpen, setLogsOpen] = useState(false);
 
-  // Fetch buildings with notion data including photos
+  // Fetch buildings with notion data including photos and work date
   const { data: buildings, isLoading: loadingBuildings } = useQuery({
     queryKey: ['notion-buildings'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('buildings')
-        .select('id, nome, endereco, bairro, status, notion_status, notion_page_id, notion_last_synced_at, notion_oti, notion_internal_id, numero_unidades, publico_estimado, notion_fotos, imagem_principal')
+        .select('id, nome, endereco, bairro, status, notion_status, notion_page_id, notion_last_synced_at, notion_oti, notion_internal_id, numero_unidades, publico_estimado, notion_fotos, imagem_principal, notion_data_trabalho')
         .not('notion_page_id', 'is', null)
         .order('nome');
       
@@ -237,12 +423,12 @@ const SyncNotionPage = () => {
   });
 
   // Group buildings by status
-  const groupedBuildings = {
+  const groupedBuildings = useMemo(() => ({
     online: buildings?.filter(b => STATUS_GROUPS.online.statuses.includes(b.notion_status || '')) || [],
     offline: buildings?.filter(b => STATUS_GROUPS.offline.statuses.includes(b.notion_status || '')) || [],
-    manutencao: buildings?.filter(b => STATUS_GROUPS.manutencao.statuses.includes(b.notion_status || '')) || [],
-    leads: buildings?.filter(b => STATUS_GROUPS.leads.statuses.includes(b.notion_status || '')) || []
-  };
+    instalacao: buildings?.filter(b => STATUS_GROUPS.instalacao.statuses.includes(b.notion_status || '')) || [],
+    instalacaoInternet: buildings?.filter(b => STATUS_GROUPS.instalacaoInternet.statuses.includes(b.notion_status || '')) || []
+  }), [buildings]);
 
   const lastSync = syncLogs?.[0];
   const totalBuildings = buildings?.length || 0;
@@ -280,7 +466,7 @@ const SyncNotionPage = () => {
         </div>
       </div>
 
-      {/* Quick Stats */}
+      {/* Quick Stats - 4 metrics */}
       <div className="grid grid-cols-4 gap-2 md:gap-3">
         <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-white/50 text-center">
           <div className="text-xl md:text-2xl font-bold text-emerald-600">{groupedBuildings.online.length}</div>
@@ -291,12 +477,12 @@ const SyncNotionPage = () => {
           <div className="text-[10px] text-gray-500">Offline</div>
         </div>
         <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-white/50 text-center">
-          <div className="text-xl md:text-2xl font-bold text-blue-600">{groupedBuildings.manutencao.length}</div>
+          <div className="text-xl md:text-2xl font-bold text-blue-600">{groupedBuildings.instalacao.length}</div>
           <div className="text-[10px] text-gray-500">Instalação</div>
         </div>
         <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-white/50 text-center">
-          <div className="text-xl md:text-2xl font-bold text-amber-600">{groupedBuildings.leads.length}</div>
-          <div className="text-[10px] text-gray-500">Leads</div>
+          <div className="text-xl md:text-2xl font-bold text-purple-600">{groupedBuildings.instalacaoInternet.length}</div>
+          <div className="text-[10px] text-gray-500">Aguardando</div>
         </div>
       </div>
 
@@ -306,13 +492,25 @@ const SyncNotionPage = () => {
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
         </div>
       ) : (
-        /* Status Sections */
-        <div className="space-y-4">
-          <StatusSection group={STATUS_GROUPS.online} buildings={groupedBuildings.online} />
-          <StatusSection group={STATUS_GROUPS.offline} buildings={groupedBuildings.offline} />
-          <StatusSection group={STATUS_GROUPS.manutencao} buildings={groupedBuildings.manutencao} />
-          <StatusSection group={STATUS_GROUPS.leads} buildings={groupedBuildings.leads} />
-        </div>
+        <>
+          {/* Status Sections - 4 Gallery Sections */}
+          <div className="space-y-4">
+            <StatusSection group={STATUS_GROUPS.online} buildings={groupedBuildings.online} />
+            <StatusSection group={STATUS_GROUPS.offline} buildings={groupedBuildings.offline} />
+            <StatusSection group={STATUS_GROUPS.instalacao} buildings={groupedBuildings.instalacao} />
+            <StatusSection group={STATUS_GROUPS.instalacaoInternet} buildings={groupedBuildings.instalacaoInternet} />
+          </div>
+
+          {/* Calendar + Maintenance List - 2 Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
+            <div className="lg:col-span-2">
+              <CalendarSection buildings={buildings || []} />
+            </div>
+            <div>
+              <MaintenanceList buildings={buildings || []} />
+            </div>
+          </div>
+        </>
       )}
 
       {/* Sync Logs - Collapsible */}
