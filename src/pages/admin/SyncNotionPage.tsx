@@ -209,34 +209,28 @@ const CalendarSection = ({ buildings }: { buildings: Building[] }) => {
   const leadingEmptyCells = monthStart.getDay();
 
   return (
-    <div className="bg-[#2D2D2D] rounded-2xl p-4 shadow-lg">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-5 w-5 text-white" />
-          <h2 className="font-semibold text-white text-sm">AGENDAMENTO</h2>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button 
-            size="sm" 
-            variant="ghost" 
-            className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-white/10"
-            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-white text-sm font-medium min-w-[120px] text-center">
-            {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
-          </span>
-          <Button 
-            size="sm" 
-            variant="ghost" 
-            className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-white/10"
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+    <div>
+      {/* Month Navigation */}
+      <div className="flex items-center justify-center gap-1 mb-4">
+        <Button 
+          size="sm" 
+          variant="ghost" 
+          className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-white/10"
+          onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <span className="text-white text-sm font-medium min-w-[120px] text-center">
+          {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
+        </span>
+        <Button 
+          size="sm" 
+          variant="ghost" 
+          className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-white/10"
+          onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Weekday Headers */}
@@ -317,18 +311,7 @@ const MaintenanceList = ({ buildings }: { buildings: Building[] }) => {
   }, [buildings]);
 
   return (
-    <div className="bg-[#2D2D2D] rounded-2xl p-4 shadow-lg">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <List className="h-5 w-5 text-white" />
-          <h2 className="font-semibold text-white text-sm">MANUTENÇÃO</h2>
-        </div>
-        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
-          {pendingWork.length} pendentes
-        </Badge>
-      </div>
-
+    <div>
       {/* Subtitle */}
       <p className="text-[10px] text-gray-400 mb-3">
         Prédios aguardando agendamento de trabalho
