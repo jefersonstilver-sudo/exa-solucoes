@@ -351,6 +351,7 @@ serve(async (req) => {
                 started_at: new Date().toISOString(),
               });
             } else {
+              // Device came back online - close any open offline session
               const { data: lastOffline } = await supabase
                 .from('connection_history')
                 .select('*')
@@ -367,12 +368,9 @@ serve(async (req) => {
                   .update({ ended_at: new Date().toISOString(), duration_seconds: duration })
                   .eq('id', lastOffline.id);
               }
-
-              await supabase.from('connection_history').insert({
-                computer_id: existingDevice.id,
-                event_type: 'online',
-                started_at: new Date().toISOString(),
-              });
+              
+              // NOTE: Do NOT create new "online" record here - 
+              // we only track offline events (quedas) to avoid polluting the database
             }
           }
         } else {

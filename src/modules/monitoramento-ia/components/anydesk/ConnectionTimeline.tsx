@@ -24,16 +24,28 @@ export const ConnectionTimeline = ({ computerId }: ConnectionTimelineProps) => {
 
   const fetchConnectionHistory = async () => {
     try {
+      // Fetch only real status transitions (offline events with duration, or active events)
       // @ts-ignore - Table will exist after migration is executed
       const { data, error } = await (supabase as any)
         .from("connection_history")
         .select("id, event_type, started_at, ended_at, duration_seconds")
         .eq("computer_id", computerId)
+        .or("event_type.eq.offline,and(event_type.eq.online,ended_at.not.is.null)")
         .order("started_at", { ascending: false })
-        .limit(20);
+        .limit(50);
 
       if (error) throw error;
-      setEvents((data || []) as any as ConnectionEvent[]);
+      
+      // Filter to show meaningful events only
+      const meaningfulEvents = (data || []).filter((event: any) => {
+        // Always show offline events (quedas)
+        if (event.event_type === 'offline') return true;
+        // Show online events only if they have an ended_at (completed session)
+        if (event.event_type === 'online' && event.ended_at) return true;
+        return false;
+      });
+      
+      setEvents(meaningfulEvents.slice(0, 20) as any as ConnectionEvent[]);
     } catch (error) {
       console.error("Error fetching connection history:", error);
       setEvents([]);
@@ -81,7 +93,7 @@ export const ConnectionTimeline = ({ computerId }: ConnectionTimelineProps) => {
   return (
     <div className="space-y-4">
       {events.length === 0 ? (
-        <p className="text-module-secondary text-center py-8">Nenhum histórico de conexão disponível</p>
+        <p className="text-module-secondary text-center py-8">Nenhuma queda registrada</p>
       ) : (
         <div className="relative">
           {/* Linha vertical conectando eventos */}

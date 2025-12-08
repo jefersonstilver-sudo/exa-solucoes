@@ -56,10 +56,11 @@ export const usePeriodDeviceEvents = (
     try {
       setLoading(true);
       
-      // Query connection_history for events in the period
+      // Query connection_history for OFFLINE events only (real falls)
       const { data, error } = await supabase
         .from('connection_history')
         .select('computer_id')
+        .eq('event_type', 'offline')
         .gte('started_at', dateRange.start.toISOString())
         .lte('started_at', dateRange.end.toISOString());
 

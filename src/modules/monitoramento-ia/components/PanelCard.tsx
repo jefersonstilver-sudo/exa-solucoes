@@ -83,9 +83,9 @@ export const PanelCard = ({
     return 'text-white/90';
   };
 
-  // Use period events count if provided, otherwise fallback to total_events
-  const displayEventsCount = periodEventsCount !== undefined ? periodEventsCount : (device.total_events || 0);
-  const eventsLabel = periodEventsCount !== undefined ? `${displayEventsCount} eventos ${periodLabel}` : `${displayEventsCount} eventos`;
+  // Use period events count if provided, otherwise fallback to offline_count
+  const displayEventsCount = periodEventsCount !== undefined ? periodEventsCount : (device.offline_count || 0);
+  const eventsLabel = periodEventsCount !== undefined ? `${displayEventsCount} quedas ${periodLabel}` : `${displayEventsCount} quedas`;
 
   return (
     <div 
