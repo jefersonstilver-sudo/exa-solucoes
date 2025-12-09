@@ -321,7 +321,7 @@ const UsersPage = () => {
         {/* Floating Action Button - Elegant EXA Red */}
         <motion.button
           onClick={() => setIsCreateDialogOpen(true)}
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-[hsl(var(--exa-red))] text-white shadow-lg shadow-red-500/30 flex items-center justify-center z-50 hover:shadow-xl hover:shadow-red-500/40 transition-shadow"
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-[#9C1E1E] text-white shadow-xl shadow-red-900/40 flex items-center justify-center z-50"
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.3 }}
