@@ -8,7 +8,7 @@ import AdminBuildingStatsCards from './AdminBuildingStatsCards';
 import BuildingSearchSection from './BuildingSearchSection';
 import AdminBuildingsContentSection from './AdminBuildingsContentSection';
 import BuildingFormDialog from './BuildingFormDialog';
-import MobileBuildingsPage from './mobile/MobileBuildingsPage';
+import MobileBuildingsPageV2 from './mobile/MobileBuildingsPageV2';
 
 interface AdminBuildingsPageContentProps {
   buildings: any[];
@@ -51,7 +51,7 @@ const AdminBuildingsPageContent: React.FC<AdminBuildingsPageContentProps> = ({
   // Use mobile layout on mobile devices
   if (isMobile) {
     return (
-      <MobileBuildingsPage
+      <MobileBuildingsPageV2
         buildings={buildings}
         stats={stats}
         loading={loading}
