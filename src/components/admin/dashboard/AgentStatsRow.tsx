@@ -33,27 +33,39 @@ const AgentStatsRow: React.FC<AgentStatsRowProps> = ({ stats }) => {
 
   const compactCards = [
     {
-      label: 'Mensagens Eduardo',
+      label: 'Msg Eduardo Enviadas',
       value: formatNumber(eduardoStats.enviadas),
       icon: MessageSquare,
       showHover: true,
       hoverData: getSortedTypes(eduardoStats.enviadasPorTipo),
     },
     {
-      label: 'Leads Eduardo',
+      label: 'Msg Eduardo Recebidas',
+      value: formatNumber(eduardoStats.recebidas),
+      icon: MessageSquare,
+      showHover: false,
+    },
+    {
+      label: 'Conversas Eduardo',
       value: formatNumber(eduardoStats.conversas),
       icon: Users,
       showHover: false,
     },
     {
-      label: 'Mensagens Sofia',
+      label: 'Msg Sofia Enviadas',
       value: formatNumber(sofiaStats.enviadas),
       icon: MessageSquare,
       showHover: true,
       hoverData: getSortedTypes(sofiaStats.enviadasPorTipo),
     },
     {
-      label: 'Leads Sofia',
+      label: 'Msg Sofia Recebidas',
+      value: formatNumber(sofiaStats.recebidas),
+      icon: MessageSquare,
+      showHover: false,
+    },
+    {
+      label: 'Conversas Sofia',
       value: formatNumber(sofiaStats.conversas),
       icon: Users,
       showHover: false,
@@ -62,7 +74,7 @@ const AgentStatsRow: React.FC<AgentStatsRowProps> = ({ stats }) => {
 
   return (
     <div className="w-full">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         {compactCards.map((card) => (
           <AppleLikeMetricCard
             key={card.label}
