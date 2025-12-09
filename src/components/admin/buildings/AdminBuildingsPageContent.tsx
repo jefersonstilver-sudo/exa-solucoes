@@ -1,12 +1,14 @@
 
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
 import BuildingsPageHeader from './BuildingsPageHeader';
 import AdminBuildingsConnectionStatus from './AdminBuildingsConnectionStatus';
 import AdminBuildingStatsCards from './AdminBuildingStatsCards';
 import BuildingSearchSection from './BuildingSearchSection';
 import AdminBuildingsContentSection from './AdminBuildingsContentSection';
 import BuildingFormDialog from './BuildingFormDialog';
+import MobileBuildingsPage from './mobile/MobileBuildingsPage';
 
 interface AdminBuildingsPageContentProps {
   buildings: any[];
@@ -44,6 +46,27 @@ const AdminBuildingsPageContent: React.FC<AdminBuildingsPageContentProps> = ({
   onViewPlaylist
 }) => {
   const { userProfile } = useAuth();
+  const isMobile = useIsMobile();
+
+  // Use mobile layout on mobile devices
+  if (isMobile) {
+    return (
+      <MobileBuildingsPage
+        buildings={buildings}
+        stats={stats}
+        loading={loading}
+        refetch={refetch}
+        showFormDialog={showFormDialog}
+        onFormDialogChange={onFormDialogChange}
+        selectedBuilding={selectedBuilding}
+        onNewBuilding={onNewBuilding}
+        onView={onView}
+        onEdit={onEdit}
+        onImageManager={onImageManager}
+        onDelete={onDelete}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

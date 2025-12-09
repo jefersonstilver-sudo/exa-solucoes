@@ -72,6 +72,17 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
     }).format(value);
   };
 
+  const getMonthlyPrice = (totalPrice: number | null | undefined, months: number) => {
+    if (!totalPrice) return '—';
+    const monthly = totalPrice / months;
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(monthly);
+  };
+
   return (
     <>
       <BuildingVideoPlaylistPreview
@@ -201,15 +212,15 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                   </div>
                   <div>
                     <div className="text-[10px] text-gray-500 uppercase">3 meses</div>
-                    <div className="text-sm font-bold text-green-700">{formatPrice(building.preco_trimestral)}</div>
+                    <div className="text-sm font-bold text-green-700">{getMonthlyPrice(building.preco_trimestral, 3)}</div>
                   </div>
                   <div>
                     <div className="text-[10px] text-gray-500 uppercase">6 meses</div>
-                    <div className="text-sm font-bold text-green-700">{formatPrice(building.preco_semestral)}</div>
+                    <div className="text-sm font-bold text-green-700">{getMonthlyPrice(building.preco_semestral, 6)}</div>
                   </div>
                   <div>
                     <div className="text-[10px] text-gray-500 uppercase">12 meses</div>
-                    <div className="text-sm font-bold text-green-700">{formatPrice(building.preco_anual)}</div>
+                    <div className="text-sm font-bold text-green-700">{getMonthlyPrice(building.preco_anual, 12)}</div>
                   </div>
                 </div>
               </div>
