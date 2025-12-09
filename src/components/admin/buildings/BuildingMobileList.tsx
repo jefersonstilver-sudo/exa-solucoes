@@ -3,6 +3,7 @@ import { BuildingMobileCard } from './BuildingMobileCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Building2 } from 'lucide-react';
 import { useBuildingsVideoCount } from '@/hooks/useBuildingsVideoCount';
+import { useBuildingsPanelsStatus } from '@/hooks/useBuildingPanelsStatus';
 
 interface BuildingMobileListProps {
   buildings: any[];
@@ -11,6 +12,7 @@ interface BuildingMobileListProps {
   onEdit: (building: any) => void;
   onImageManager: (building: any) => void;
   onViewPlaylist: (building: any) => void;
+  onDelete?: (building: any) => void;
 }
 
 export const BuildingMobileList: React.FC<BuildingMobileListProps> = ({
@@ -20,9 +22,14 @@ export const BuildingMobileList: React.FC<BuildingMobileListProps> = ({
   onEdit,
   onImageManager,
   onViewPlaylist,
+  onDelete,
 }) => {
   const buildingIds = buildings.map(b => b.id);
   const { counts: videoCounts } = useBuildingsVideoCount(buildingIds);
+  
+  // Get panels status for all buildings
+  const { data: panelsStatusMap, isLoading: panelsStatusLoading } = useBuildingsPanelsStatus(buildingIds);
+
   if (loading) {
     return (
       <div className="space-y-3">
@@ -52,10 +59,13 @@ export const BuildingMobileList: React.FC<BuildingMobileListProps> = ({
           key={building.id}
           building={building}
           videoCount={videoCounts[building.id]}
+          panelsStatus={panelsStatusMap?.[building.id]}
+          panelsStatusLoading={panelsStatusLoading}
           onView={onView}
           onEdit={onEdit}
           onImageManager={onImageManager}
           onViewPlaylist={onViewPlaylist}
+          onDelete={onDelete}
         />
       ))}
     </div>
