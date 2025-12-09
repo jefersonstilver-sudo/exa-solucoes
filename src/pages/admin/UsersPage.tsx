@@ -200,34 +200,38 @@ const UsersPage = () => {
           </Button>
         </div>
 
-        {/* Filter Pills Scrollable */}
-        <div className="overflow-x-auto scrollbar-hide px-3 pb-2">
-          <div className="inline-flex gap-1.5 min-w-max">
+        {/* Filter Pills - Grid Layout for Better Mobile Display */}
+        <div className="px-3 pb-2">
+          <div className="flex gap-2">
             <button
               onClick={() => setActiveTab('team')}
-              className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all flex items-center gap-1 ${
+              className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === 'team'
-                  ? 'bg-[hsl(var(--exa-red))] text-white'
+                  ? 'bg-[hsl(var(--exa-red))] text-white shadow-md'
                   : 'bg-white/80 text-gray-600 border border-gray-200'
               }`}
             >
-              <Crown className="h-3 w-3" />
+              <Crown className="h-3.5 w-3.5" />
               Equipe
-              <span className={`text-[10px] ${activeTab === 'team' ? 'opacity-80' : 'text-gray-400'}`}>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                activeTab === 'team' ? 'bg-white/20' : 'bg-gray-100'
+              }`}>
                 {filteredTeam.length}
               </span>
             </button>
             <button
               onClick={() => setActiveTab('clients')}
-              className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all flex items-center gap-1 ${
+              className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === 'clients'
-                  ? 'bg-[hsl(var(--exa-red))] text-white'
+                  ? 'bg-[hsl(var(--exa-red))] text-white shadow-md'
                   : 'bg-white/80 text-gray-600 border border-gray-200'
               }`}
             >
-              <UserCheck className="h-3 w-3" />
+              <UserCheck className="h-3.5 w-3.5" />
               Clientes
-              <span className={`text-[10px] ${activeTab === 'clients' ? 'opacity-80' : 'text-gray-400'}`}>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                activeTab === 'clients' ? 'bg-white/20' : 'bg-gray-100'
+              }`}>
                 {filteredClients.length}
               </span>
             </button>
