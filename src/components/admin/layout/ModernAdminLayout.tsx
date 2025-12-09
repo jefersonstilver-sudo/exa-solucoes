@@ -44,7 +44,7 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
             }`} />
             <ModernAdminHeader />
           </header>
-          <main className={`flex-1 overflow-y-auto bg-gradient-to-b from-background to-muted/20 min-h-0 overflow-x-hidden ${
+          <main className={`flex-1 overflow-y-auto bg-white min-h-0 overflow-x-hidden ${
             isMobile ? 'pb-20' : 'p-6'
           }`}>
             {children || <Outlet />}

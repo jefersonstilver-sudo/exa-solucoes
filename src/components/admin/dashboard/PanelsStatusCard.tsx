@@ -18,7 +18,7 @@ const PanelsStatusCard = ({ metrics, quedasPeriodo = 0 }: PanelsStatusCardProps)
     : 0;
 
   return (
-    <Card className="bg-gradient-to-br from-background via-background to-accent/5 rounded-2xl border border-border/40 shadow-lg hover:shadow-xl hover:border-primary/20 transition-all">
+    <Card className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.005] transition-all duration-300 ease-out">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm md:text-base flex items-center justify-between">
           <div className="flex items-center gap-2">
