@@ -73,6 +73,18 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
     return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`;
   };
 
+  const getMonthlyPrice = (totalPrice: number | null | undefined, months: number) => {
+    if (!totalPrice) return '—';
+    const monthly = totalPrice / months;
+    return `R$ ${Math.round(monthly).toLocaleString('pt-BR')}`;
+  };
+
+  const formatViews = (views: number | null | undefined) => {
+    if (!views) return '0';
+    if (views >= 1000) return `${(views / 1000).toFixed(0)}k`;
+    return views.toString();
+  };
+
   const preview = (
     <div className="space-y-3">
       {/* Header with name, status badges */}
@@ -114,26 +126,24 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
         </div>
       </div>
       
-      {/* Quick stats */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {building.quantidade_telas && (
-          <div className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded text-xs">
-            <Tv className="h-3 w-3 text-[#9C1E1E]" />
-            <span className="font-medium">{building.quantidade_telas}</span>
-          </div>
-        )}
-        {building.publico_estimado && (
-          <div className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded text-xs">
-            <Users className="h-3 w-3 text-[#9C1E1E]" />
-            <span className="font-medium">{building.publico_estimado.toLocaleString()}</span>
-          </div>
-        )}
-        {typeof videoCount === 'number' && videoCount > 0 && (
-          <div className="flex items-center gap-1 px-2 py-1 bg-green-500/10 border border-green-500/30 rounded text-green-600 text-xs">
-            <Video className="h-3 w-3" />
-            <span className="font-medium">{videoCount} ao vivo</span>
-          </div>
-        )}
+      {/* Dashboard Stats - Single Row */}
+      <div className="grid grid-cols-4 gap-1.5 text-center">
+        <div className="bg-muted/50 rounded-lg py-1.5 px-1">
+          <p className="text-[9px] text-muted-foreground uppercase">Telas</p>
+          <p className="font-bold text-base text-foreground">{building.quantidade_telas || 0}</p>
+        </div>
+        <div className="bg-muted/50 rounded-lg py-1.5 px-1">
+          <p className="text-[9px] text-muted-foreground uppercase">Público</p>
+          <p className="font-bold text-base text-foreground">{(building.publico_estimado || 0).toLocaleString()}</p>
+        </div>
+        <div className="bg-muted/50 rounded-lg py-1.5 px-1">
+          <p className="text-[9px] text-muted-foreground uppercase">Views/Mês</p>
+          <p className="font-bold text-base text-foreground">{formatViews(building.visualizacoes_mes)}</p>
+        </div>
+        <div className="bg-muted/50 rounded-lg py-1.5 px-1">
+          <p className="text-[9px] text-muted-foreground uppercase">Vendas</p>
+          <p className="font-bold text-base text-foreground">{videoCount || 0}</p>
+        </div>
       </div>
     </div>
   );
@@ -153,15 +163,15 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
           </div>
           <div>
             <p className="text-[10px] text-muted-foreground font-medium uppercase">3 Meses</p>
-            <p className="font-bold text-sm text-[#9C1E1E]">{formatPrice(building.preco_trimestral)}</p>
+            <p className="font-bold text-sm text-[#9C1E1E]">{getMonthlyPrice(building.preco_trimestral, 3)}</p>
           </div>
           <div>
             <p className="text-[10px] text-muted-foreground font-medium uppercase">6 Meses</p>
-            <p className="font-bold text-sm text-[#9C1E1E]">{formatPrice(building.preco_semestral)}</p>
+            <p className="font-bold text-sm text-[#9C1E1E]">{getMonthlyPrice(building.preco_semestral, 6)}</p>
           </div>
           <div>
             <p className="text-[10px] text-muted-foreground font-medium uppercase">12 Meses</p>
-            <p className="font-bold text-sm text-[#9C1E1E]">{formatPrice(building.preco_anual)}</p>
+            <p className="font-bold text-sm text-[#9C1E1E]">{getMonthlyPrice(building.preco_anual, 12)}</p>
           </div>
         </div>
       </div>
