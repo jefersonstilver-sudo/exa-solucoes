@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, Settings, Megaphone, Wallet, Briefcase, User, Monitor,
   Plus, Pencil, Trash2, ChevronRight, Check, X, Loader2, ArrowLeft,
-  Users, ShoppingCart, Copy, AlertTriangle
+  Users, ShoppingCart, Copy, AlertTriangle, LayoutGrid
 } from 'lucide-react';
 import {
   Dialog,
@@ -40,6 +40,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import ModulePermissionsModal from '@/components/admin/account-types/ModulePermissionsModal';
 
 interface RoleType {
   id: string;
@@ -90,6 +91,7 @@ export default function TiposContaPage() {
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const [selectedRole, setSelectedRole] = useState<RoleType | null>(null);
+  const [modulePermissionsRole, setModulePermissionsRole] = useState<RoleType | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<RoleType | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
@@ -387,10 +389,12 @@ export default function TiposContaPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-white/80 backdrop-blur-sm rounded-xl border border-white/50 shadow-md p-4"
-                  onClick={() => setSelectedRole(role)}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                    <div 
+                      className="flex items-center gap-3 flex-1 cursor-pointer"
+                      onClick={() => setSelectedRole(role)}
+                    >
                       <div 
                         className="p-2.5 rounded-xl"
                         style={{ backgroundColor: `${role.color}15` }}
@@ -420,7 +424,21 @@ export default function TiposContaPage() {
                         </div>
                       </div>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-[11px]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setModulePermissionsRole(role);
+                        }}
+                      >
+                        <LayoutGrid className="h-3.5 w-3.5 mr-1" />
+                        Módulos
+                      </Button>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
                   </div>
                 </motion.div>
               );
@@ -739,18 +757,19 @@ export default function TiposContaPage() {
                     const isSelected = selectedRole?.key === role.key;
                     
                     return (
-                      <motion.button
+                      <motion.div
                         key={role.id}
-                        onClick={() => setSelectedRole(role)}
                         className={`w-full p-3 rounded-xl text-left transition-all ${
                           isSelected 
                             ? 'bg-[hsl(var(--exa-red))]/10 border-2 border-[hsl(var(--exa-red))]/30' 
                             : 'hover:bg-gray-50 border-2 border-transparent'
                         }`}
                         whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.99 }}
                       >
-                        <div className="flex items-center gap-3">
+                        <div 
+                          className="flex items-center gap-3 cursor-pointer"
+                          onClick={() => setSelectedRole(role)}
+                        >
                           <div 
                             className="p-2 rounded-lg"
                             style={{ backgroundColor: `${role.color}15` }}
@@ -779,7 +798,21 @@ export default function TiposContaPage() {
                             </div>
                           </div>
                         </div>
-                      </motion.button>
+                        <div className="mt-2 pl-10">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-[10px]"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setModulePermissionsRole(role);
+                            }}
+                          >
+                            <LayoutGrid className="h-3 w-3 mr-1" />
+                            Configurar Módulos
+                          </Button>
+                        </div>
+                      </motion.div>
                     );
                   })
                 )}
@@ -1055,6 +1088,14 @@ export default function TiposContaPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Module Permissions Modal */}
+      {modulePermissionsRole && (
+        <ModulePermissionsModal
+          role={modulePermissionsRole}
+          onClose={() => setModulePermissionsRole(null)}
+        />
+      )}
     </div>
   );
 }
