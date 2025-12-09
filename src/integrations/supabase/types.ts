@@ -5550,6 +5550,48 @@ export type Database = {
         }
         Relationships: []
       }
+      panel_offline_alert_rules: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          intervalo_repeticao_segundos: number | null
+          nome: string
+          notificar_quando_online: boolean | null
+          prioridade: number | null
+          repetir_ate_resolver: boolean | null
+          tempo_offline_segundos: number
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          intervalo_repeticao_segundos?: number | null
+          nome: string
+          notificar_quando_online?: boolean | null
+          prioridade?: number | null
+          repetir_ate_resolver?: boolean | null
+          tempo_offline_segundos?: number
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          intervalo_repeticao_segundos?: number | null
+          nome?: string
+          notificar_quando_online?: boolean | null
+          prioridade?: number | null
+          repetir_ate_resolver?: boolean | null
+          tempo_offline_segundos?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       panel_offline_alerts_history: {
         Row: {
           created_at: string | null
@@ -5557,6 +5599,8 @@ export type Database = {
           id: string
           mensagem: string | null
           painel_id: string | null
+          regra_id: string | null
+          regra_nome: string | null
           tempo_offline_minutos: number | null
           tipo: string
         }
@@ -5566,6 +5610,8 @@ export type Database = {
           id?: string
           mensagem?: string | null
           painel_id?: string | null
+          regra_id?: string | null
+          regra_nome?: string | null
           tempo_offline_minutos?: number | null
           tipo: string
         }
@@ -5575,6 +5621,8 @@ export type Database = {
           id?: string
           mensagem?: string | null
           painel_id?: string | null
+          regra_id?: string | null
+          regra_nome?: string | null
           tempo_offline_minutos?: number | null
           tipo?: string
         }
@@ -5584,6 +5632,13 @@ export type Database = {
             columns: ["painel_id"]
             isOneToOne: false
             referencedRelation: "painels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "panel_offline_alerts_history_regra_id_fkey"
+            columns: ["regra_id"]
+            isOneToOne: false
+            referencedRelation: "panel_offline_alert_rules"
             referencedColumns: ["id"]
           },
         ]
