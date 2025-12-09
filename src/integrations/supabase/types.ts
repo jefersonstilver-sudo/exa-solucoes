@@ -7487,6 +7487,7 @@ export type Database = {
           avatar_url: string | null
           can_use_video_editor: boolean | null
           cpf: string | null
+          dashboard_preferences: Json | null
           data_criacao: string | null
           documento_estrangeiro: string | null
           documento_frente_url: string | null
@@ -7522,6 +7523,7 @@ export type Database = {
           avatar_url?: string | null
           can_use_video_editor?: boolean | null
           cpf?: string | null
+          dashboard_preferences?: Json | null
           data_criacao?: string | null
           documento_estrangeiro?: string | null
           documento_frente_url?: string | null
@@ -7557,6 +7559,7 @@ export type Database = {
           avatar_url?: string | null
           can_use_video_editor?: boolean | null
           cpf?: string | null
+          dashboard_preferences?: Json | null
           data_criacao?: string | null
           documento_estrangeiro?: string | null
           documento_frente_url?: string | null

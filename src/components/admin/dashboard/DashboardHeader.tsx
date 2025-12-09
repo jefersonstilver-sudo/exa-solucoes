@@ -13,6 +13,8 @@ interface DashboardHeaderProps {
   onRefetch: () => void;
   showSecondaryStats?: boolean;
   onToggleSecondaryStats?: () => void;
+  savePeriodEnabled?: boolean;
+  onSavePeriodChange?: (enabled: boolean) => void;
 }
 
 const DashboardHeader = ({
@@ -23,7 +25,9 @@ const DashboardHeader = ({
   onCustomDateChange,
   onRefetch,
   showSecondaryStats = false,
-  onToggleSecondaryStats
+  onToggleSecondaryStats,
+  savePeriodEnabled = false,
+  onSavePeriodChange
 }: DashboardHeaderProps) => {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -33,7 +37,9 @@ const DashboardHeader = ({
           onChange={onPeriodChange} 
           customStartDate={customStartDate} 
           customEndDate={customEndDate} 
-          onCustomDateChange={onCustomDateChange} 
+          onCustomDateChange={onCustomDateChange}
+          savePeriodEnabled={savePeriodEnabled}
+          onSavePeriodChange={onSavePeriodChange}
         />
         
         {onToggleSecondaryStats && (

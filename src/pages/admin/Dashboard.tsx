@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useMonthlyDashboardData } from '@/hooks/useMonthlyDashboardData';
 import { useDashboardUnifiedStats } from '@/hooks/useDashboardUnifiedStats';
+import { useDashboardPreferences } from '@/hooks/useDashboardPreferences';
 import DashboardCharts from '@/components/admin/charts/DashboardCharts';
 import DashboardHeader from '@/components/admin/dashboard/DashboardHeader';
 import DashboardFinancialSummary from '@/components/admin/dashboard/DashboardFinancialSummary';
@@ -18,10 +19,30 @@ import { ElegantPeriodType, getElegantPeriodDates } from '@/components/admin/das
 const Dashboard = () => {
   console.log('🎯 [DASHBOARD] Componente renderizado');
   
+  // Preferences hook for cross-device persistence
+  const { 
+    savedPeriod, 
+    savePeriodEnabled, 
+    loading: prefsLoading,
+    updateSavePeriodEnabled,
+    savePeriodPreference 
+  } = useDashboardPreferences();
+  
   const [periodFilter, setPeriodFilter] = useState<ElegantPeriodType>('today');
   const [customStartDate, setCustomStartDate] = useState<Date>();
   const [customEndDate, setCustomEndDate] = useState<Date>();
   const [showSecondaryStats, setShowSecondaryStats] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  // Initialize period from saved preference
+  useEffect(() => {
+    if (!prefsLoading && !initialized) {
+      if (savedPeriod && savePeriodEnabled) {
+        setPeriodFilter(savedPeriod);
+      }
+      setInitialized(true);
+    }
+  }, [prefsLoading, savedPeriod, savePeriodEnabled, initialized]);
 
   const { start, end } = useMemo(() => {
     return getElegantPeriodDates(periodFilter, customStartDate, customEndDate);
@@ -40,6 +61,12 @@ const Dashboard = () => {
 
   const handlePeriodChange = (period: ElegantPeriodType) => {
     setPeriodFilter(period);
+    // Save to database if preference is enabled
+    savePeriodPreference(period);
+  };
+
+  const handleSavePeriodChange = (enabled: boolean) => {
+    updateSavePeriodEnabled(enabled, periodFilter);
   };
 
   const handleCustomDateChange = (start: Date | undefined, end: Date | undefined) => {
@@ -84,6 +111,8 @@ const Dashboard = () => {
           onRefetch={refetch}
           showSecondaryStats={showSecondaryStats}
           onToggleSecondaryStats={() => setShowSecondaryStats(!showSecondaryStats)}
+          savePeriodEnabled={savePeriodEnabled}
+          onSavePeriodChange={handleSavePeriodChange}
         />
 
         {/* Unified Stats Row - Nova linha única com 6 cards elegantes */}
