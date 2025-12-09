@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Crown, Shield, UserCheck, Loader2, DollarSign, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -25,6 +27,7 @@ import { z } from 'zod';
 import { useEmailCheck } from '@/hooks/useEmailCheck';
 import ExistingUserAlert from './ExistingUserAlert';
 import EmailConfigWarning from './EmailConfigWarning';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Schema de validação
 const createUserSchema = z.object({
@@ -64,6 +67,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
   onOpenChange,
   onSuccess,
 }) => {
+  const isMobile = useIsMobile();
   const [email, setEmail] = useState('');
   const [nome, setNome] = useState('');
   const [sobrenome, setSobrenome] = useState('');
@@ -270,224 +274,280 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
     }
   };
 
+  // Form content component for reuse
+  const formContent = (
+    <div className={`space-y-4 ${isMobile ? 'px-1' : ''}`}>
+      {/* Aviso de configuração de email */}
+      {emailError && (
+        <EmailConfigWarning show={true} errorMessage={emailError} />
+      )}
+
+      {/* Nome e Sobrenome */}
+      <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-2 gap-4'}`}>
+        <div>
+          <Label htmlFor="nome" className="text-foreground text-sm">
+            Nome <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="nome"
+            type="text"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="João"
+            className={`bg-background border-input text-foreground ${isMobile ? 'h-11' : ''} ${
+              errors.nome ? 'border-destructive' : ''
+            }`}
+            maxLength={100}
+          />
+          {errors.nome && (
+            <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              {errors.nome}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <Label htmlFor="sobrenome" className="text-foreground text-sm">
+            Sobrenome <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="sobrenome"
+            type="text"
+            value={sobrenome}
+            onChange={(e) => setSobrenome(e.target.value)}
+            placeholder="Silva"
+            className={`bg-background border-input text-foreground ${isMobile ? 'h-11' : ''} ${
+              errors.sobrenome ? 'border-destructive' : ''
+            }`}
+            maxLength={100}
+          />
+          {errors.sobrenome && (
+            <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              {errors.sobrenome}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Email */}
+      <div>
+        <Label htmlFor="email" className="text-foreground text-sm">
+          Email <span className="text-destructive">*</span>
+        </Label>
+        <div className="relative">
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onBlur={handleEmailBlur}
+            placeholder="admin@exemplo.com"
+            className={`bg-background border-input text-foreground ${isMobile ? 'h-11' : ''} ${
+              errors.email ? 'border-destructive' : ''
+            } ${emailCheckResult?.exists ? 'border-amber-500' : ''}`}
+            maxLength={255}
+          />
+          {checkingEmail && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+          )}
+          {emailCheckResult?.exists && !checkingEmail && (
+            <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />
+          )}
+          {email && !emailCheckResult?.exists && !checkingEmail && email.includes('@') && (
+            <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+          )}
+        </div>
+        {errors.email && (
+          <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+            <AlertCircle className="h-3 w-3" />
+            {errors.email}
+          </p>
+        )}
+        {emailCheckResult?.exists && !errors.email && (
+          <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+            <AlertCircle className="h-3 w-3" />
+            Este email já está cadastrado.
+          </p>
+        )}
+      </div>
+
+      {/* CPF/Documento */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <Label htmlFor="cpf" className="text-foreground text-sm">
+            CPF/Documento
+            {documentoObrigatorio && <span className="text-destructive ml-1">*</span>}
+            {!documentoObrigatorio && (
+              <span className="text-xs text-muted-foreground font-normal ml-1">(Opcional)</span>
+            )}
+          </Label>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="documento-obrigatorio"
+              checked={documentoObrigatorio}
+              onCheckedChange={setDocumentoObrigatorio}
+            />
+            <Label
+              htmlFor="documento-obrigatorio"
+              className="text-xs text-muted-foreground cursor-pointer"
+            >
+              Obrigatório
+            </Label>
+          </div>
+        </div>
+        <Input
+          id="cpf"
+          type="text"
+          value={cpf}
+          onChange={handleCPFChange}
+          placeholder="000.000.000-00"
+          className={`bg-background border-input text-foreground font-mono ${isMobile ? 'h-11' : ''} ${
+            errors.cpf ? 'border-destructive' : ''
+          }`}
+          maxLength={14}
+        />
+        {errors.cpf && (
+          <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+            <AlertCircle className="h-3 w-3" />
+            {errors.cpf}
+          </p>
+        )}
+      </div>
+
+      {/* Tipo de Conta */}
+      <div>
+        <Label htmlFor="role" className="text-foreground text-sm">
+          Tipo de Conta <span className="text-destructive">*</span>
+        </Label>
+        <Select value={role} onValueChange={setRole}>
+          <SelectTrigger className={`bg-background border-input text-foreground ${isMobile ? 'h-11' : ''}`}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-background border-input">
+            <SelectItem value="admin">
+              <div className="flex items-center space-x-2">
+                <Shield className="h-4 w-4 text-blue-500" />
+                <span>Administrador Geral</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="admin_marketing">
+              <div className="flex items-center space-x-2">
+                <UserCheck className="h-4 w-4 text-purple-500" />
+                <span>Admin Marketing</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="admin_financeiro">
+              <div className="flex items-center space-x-2">
+                <DollarSign className="h-4 w-4 text-green-500" />
+                <span>Admin Financeiro</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="super_admin">
+              <div className="flex items-center space-x-2">
+                <Crown className="h-4 w-4 text-yellow-500" />
+                <span>Super Administrador</span>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Aviso de Senha */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <p className={`text-blue-900 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+          <strong>💡</strong> Senha padrão:{' '}
+          <code className="bg-blue-100 px-1.5 py-0.5 rounded font-mono text-xs">exa2025</code>
+        </p>
+      </div>
+    </div>
+  );
+
+  // Footer buttons
+  const footerButtons = (
+    <div className={`flex gap-2 ${isMobile ? 'flex-col-reverse' : ''}`}>
+      <Button 
+        variant="outline" 
+        onClick={() => onOpenChange(false)} 
+        disabled={creating}
+        className={isMobile ? 'w-full h-11' : ''}
+      >
+        Cancelar
+      </Button>
+      <Button 
+        onClick={handleCreate} 
+        disabled={creating || checkingEmail || emailCheckResult?.exists}
+        className={`bg-[hsl(var(--exa-red))] hover:bg-[hsl(var(--exa-red))]/90 text-white ${isMobile ? 'w-full h-11' : ''}`}
+      >
+        {creating ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Criando...
+          </>
+        ) : (
+          'Criar Conta'
+        )}
+      </Button>
+    </div>
+  );
+
+  // Mobile: Sheet (bottom-sheet style)
+  if (isMobile) {
+    return (
+      <>
+        <Sheet open={open} onOpenChange={onOpenChange}>
+          <SheetContent side="bottom" className="h-[85vh] bg-background rounded-t-3xl">
+            <SheetHeader className="pb-4">
+              <SheetTitle className="text-lg font-semibold text-foreground">
+                Nova Conta Administrativa
+              </SheetTitle>
+              <SheetDescription className="text-sm text-muted-foreground">
+                Preencha os dados abaixo
+              </SheetDescription>
+            </SheetHeader>
+            
+            <ScrollArea className="h-[calc(85vh-180px)] pr-2">
+              {formContent}
+            </ScrollArea>
+            
+            <div className="pt-4 pb-safe">
+              {footerButtons}
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* Alert de Email Existente */}
+        <ExistingUserAlert
+          open={showExistingAlert}
+          onOpenChange={setShowExistingAlert}
+          email={email}
+          role={emailCheckResult?.role}
+          nome={emailCheckResult?.nome}
+          onDeleted={() => {
+            setShowExistingAlert(false);
+            clearResult();
+          }}
+        />
+      </>
+    );
+  }
+
+  // Desktop: Dialog
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-background max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-black">Criar Nova Conta Administrativa</DialogTitle>
-          <DialogDescription className="text-gray-600">
+          <DialogTitle className="text-foreground">Criar Nova Conta Administrativa</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
             Senha padrão: <span className="font-mono font-semibold">exa2025</span>
           </DialogDescription>
         </DialogHeader>
 
-        {/* Aviso de configuração de email */}
-        {emailError && (
-          <EmailConfigWarning show={true} errorMessage={emailError} />
-        )}
-
-        <div className="space-y-4">
-          {/* Nome e Sobrenome */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="nome" className="text-black">
-                Nome <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="nome"
-                type="text"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                placeholder="João"
-                className={`bg-white border-gray-300 text-black ${
-                  errors.nome ? 'border-red-500' : ''
-                }`}
-                maxLength={100}
-              />
-              {errors.nome && (
-                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {errors.nome}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="sobrenome" className="text-black">
-                Sobrenome <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="sobrenome"
-                type="text"
-                value={sobrenome}
-                onChange={(e) => setSobrenome(e.target.value)}
-                placeholder="Silva"
-                className={`bg-white border-gray-300 text-black ${
-                  errors.sobrenome ? 'border-red-500' : ''
-                }`}
-                maxLength={100}
-              />
-              {errors.sobrenome && (
-                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {errors.sobrenome}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Email */}
-          <div>
-            <Label htmlFor="email" className="text-black">
-              Email <span className="text-red-500">*</span>
-            </Label>
-            <div className="relative">
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onBlur={handleEmailBlur}
-                placeholder="admin@exemplo.com"
-                className={`bg-white border-gray-300 text-black ${
-                  errors.email ? 'border-red-500' : ''
-                } ${emailCheckResult?.exists ? 'border-amber-500' : ''}`}
-                maxLength={255}
-              />
-              {checkingEmail && (
-                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
-              )}
-              {emailCheckResult?.exists && !checkingEmail && (
-                <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />
-              )}
-              {email && !emailCheckResult?.exists && !checkingEmail && email.includes('@') && (
-                <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
-              )}
-            </div>
-            {errors.email && (
-              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {errors.email}
-              </p>
-            )}
-            {emailCheckResult?.exists && !errors.email && (
-              <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                Este email já está cadastrado. Clique para ver detalhes.
-              </p>
-            )}
-          </div>
-
-          {/* CPF/Documento */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label htmlFor="cpf" className="text-black">
-                CPF/Documento
-                {documentoObrigatorio && <span className="text-red-500 ml-1">*</span>}
-                {!documentoObrigatorio && (
-                  <span className="text-xs text-gray-500 font-normal ml-1">(Opcional)</span>
-                )}
-              </Label>
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="documento-obrigatorio"
-                  checked={documentoObrigatorio}
-                  onCheckedChange={setDocumentoObrigatorio}
-                />
-                <Label
-                  htmlFor="documento-obrigatorio"
-                  className="text-xs text-gray-700 cursor-pointer"
-                >
-                  Tornar obrigatório
-                </Label>
-              </div>
-            </div>
-            <Input
-              id="cpf"
-              type="text"
-              value={cpf}
-              onChange={handleCPFChange}
-              placeholder="000.000.000-00"
-              className={`bg-white border-gray-300 text-black font-mono ${
-                errors.cpf ? 'border-red-500' : ''
-              }`}
-              maxLength={14}
-            />
-            {errors.cpf && (
-              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {errors.cpf}
-              </p>
-            )}
-            <p className="text-xs text-gray-500 mt-1">
-              Digite apenas números, a formatação será aplicada automaticamente
-            </p>
-          </div>
-
-          {/* Tipo de Conta */}
-          <div>
-            <Label htmlFor="role" className="text-black">
-              Tipo de Conta <span className="text-red-500">*</span>
-            </Label>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger className="bg-white border-gray-300 text-black">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-300">
-                <SelectItem value="admin">
-                  <div className="flex items-center space-x-2">
-                    <Shield className="h-4 w-4 text-blue-500" />
-                    <span>Administrador Geral</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="admin_marketing">
-                  <div className="flex items-center space-x-2">
-                    <UserCheck className="h-4 w-4 text-purple-500" />
-                    <span>Administrador Marketing</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="admin_financeiro">
-                  <div className="flex items-center space-x-2">
-                    <DollarSign className="h-4 w-4 text-green-500" />
-                    <span>Administrador Financeiro</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="super_admin">
-                  <div className="flex items-center space-x-2">
-                    <Crown className="h-4 w-4 text-yellow-500" />
-                    <span>Super Administrador</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Aviso de Senha */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-sm text-blue-900">
-              <strong>💡 Importante:</strong> A senha padrão{' '}
-              <code className="bg-blue-100 px-2 py-0.5 rounded font-mono">exa2025</code> será
-              enviada automaticamente. O usuário deve alterá-la no primeiro acesso.
-            </p>
-          </div>
-        </div>
+        {formContent}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={creating}>
-            Cancelar
-          </Button>
-          <Button 
-            onClick={handleCreate} 
-            disabled={creating || checkingEmail || emailCheckResult?.exists}
-          >
-            {creating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Criando...
-              </>
-            ) : (
-              'Criar Conta'
-            )}
-          </Button>
+          {footerButtons}
         </DialogFooter>
       </DialogContent>
 
