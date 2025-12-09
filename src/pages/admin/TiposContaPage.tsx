@@ -693,6 +693,14 @@ export default function TiposContaPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Module Permissions Modal - Mobile */}
+        {modulePermissionsRole && (
+          <ModulePermissionsModal
+            role={modulePermissionsRole}
+            onClose={() => setModulePermissionsRole(null)}
+          />
+        )}
       </div>
     );
   }
