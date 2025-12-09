@@ -51,7 +51,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import NotificationCenter from '@/components/notifications/NotificationCenter';
+import NotificationCenter from '@/components/admin/layout/NotificationCenter';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import {
   Tooltip,
