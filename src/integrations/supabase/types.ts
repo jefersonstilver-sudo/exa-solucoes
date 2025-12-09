@@ -9329,16 +9329,29 @@ export type Database = {
         Args: { p_pedido_id: string; p_reason?: string }
         Returns: Json
       }
-      update_device_alert_metadata: {
-        Args: {
-          p_device_id: string
-          p_last_offline_alert_at: string
-          p_last_rule_id: string
-          p_offline_alert_count: number
-          p_triggered_rules: string[]
-        }
-        Returns: undefined
-      }
+      update_device_alert_metadata:
+        | {
+            Args: {
+              p_device_id: string
+              p_last_offline_alert_at: string
+              p_last_rule_id: string
+              p_offline_alert_count: number
+              p_triggered_rules: string[]
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_device_id: string
+              p_last_offline_alert_at: string
+              p_last_rule_id: string
+              p_notified_back_online?: boolean
+              p_offline_alert_count: number
+              p_offline_started_at?: string
+              p_triggered_rules: string[]
+            }
+            Returns: undefined
+          }
       update_expired_contracts: { Args: never; Returns: Json }
       update_expired_contracts_daily: { Args: never; Returns: Json }
       update_panel_secure: {
