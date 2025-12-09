@@ -25,10 +25,6 @@ interface ZAPIMessage {
   video?: any;
 }
 
-interface ZAPIResponse {
-  messages: ZAPIMessage[];
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -40,23 +36,57 @@ serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   const stats = {
+    agent_used: '',
     contacts_processed: 0,
     messages_fetched_from_zapi: 0,
     messages_synced: 0,
     messages_outbound_synced: 0,
     messages_inbound_synced: 0,
     duplicates_skipped: 0,
+    chats_found: 0,
     errors: [] as string[]
   };
 
   try {
-    console.log('🔄 [FETCH-ZAPI-HISTORY] Iniciando busca de histórico do Z-API');
+    // Parsear body da requisição para parâmetros opcionais
+    let agentKey: string | null = null;
+    let fromDate: Date | null = null;
+    let toDate: Date | null = null;
+    let limitConversations: number | null = null;
 
-    // Buscar configuração do agente Eduardo ou Sofia
-    const { data: agents, error: agentsError } = await supabase
+    if (req.method === 'POST') {
+      try {
+        const body = await req.json();
+        agentKey = body.agent_key || null; // 'eduardo', 'sofia', ou null para ambos
+        fromDate = body.from_date ? new Date(body.from_date) : null;
+        toDate = body.to_date ? new Date(body.to_date) : null;
+        limitConversations = body.limit || null;
+        
+        console.log('📥 [FETCH-ZAPI-HISTORY] Parâmetros recebidos:', { 
+          agentKey, 
+          fromDate: fromDate?.toISOString(), 
+          toDate: toDate?.toISOString(),
+          limitConversations 
+        });
+      } catch (e) {
+        console.log('📥 [FETCH-ZAPI-HISTORY] Sem body ou body inválido, usando defaults');
+      }
+    }
+
+    console.log('🔄 [FETCH-ZAPI-HISTORY] Iniciando busca de histórico do Z-API (Multi-Device Compatible)');
+
+    // Buscar configuração do agente específico ou todos com Z-API
+    let agentsQuery = supabase
       .from('agents')
-      .select('key, zapi_config, whatsapp_number')
-      .in('key', ['sofia', 'eduardo']);
+      .select('key, zapi_config, whatsapp_number');
+    
+    if (agentKey) {
+      agentsQuery = agentsQuery.eq('key', agentKey);
+    } else {
+      agentsQuery = agentsQuery.in('key', ['sofia', 'eduardo']);
+    }
+
+    const { data: agents, error: agentsError } = await agentsQuery;
 
     if (agentsError) {
       throw new Error(`Erro ao buscar agentes: ${agentsError.message}`);
@@ -65,7 +95,7 @@ serve(async (req) => {
     // Encontrar agente com Z-API configurado
     const agentWithZapi = agents?.find(a => a.zapi_config);
     if (!agentWithZapi) {
-      throw new Error('Nenhum agente com Z-API configurado');
+      throw new Error(`Nenhum agente ${agentKey || ''} com Z-API configurado`);
     }
 
     const zapiConfig = agentWithZapi.zapi_config as { instance_id: string; token: string };
@@ -75,23 +105,67 @@ serve(async (req) => {
       throw new Error('Configuração Z-API incompleta');
     }
 
-    console.log(`📱 [FETCH-ZAPI-HISTORY] Usando agente: ${agentWithZapi.key}`);
+    stats.agent_used = agentWithZapi.key;
+    console.log(`📱 [FETCH-ZAPI-HISTORY] Usando agente: ${agentWithZapi.key} (Instance: ${zapiConfig.instance_id})`);
 
-    // Buscar todas as conversas existentes
-    const { data: conversations, error: convError } = await supabase
+    // ESTRATÉGIA MULTI-DEVICE: Usar endpoint /chats para listar conversas do Z-API
+    // e depois /load-earlier-messages para buscar mensagens
+    const chatsUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/chats`;
+    
+    console.log('📋 [FETCH-ZAPI-HISTORY] Buscando lista de chats do Z-API...');
+    
+    const chatsResponse = await fetch(chatsUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(zapiClientToken && { 'Client-Token': zapiClientToken })
+      }
+    });
+
+    if (!chatsResponse.ok) {
+      const errorText = await chatsResponse.text();
+      throw new Error(`Erro ao buscar chats: ${chatsResponse.status} - ${errorText}`);
+    }
+
+    const zapiChats = await chatsResponse.json();
+    
+    if (!Array.isArray(zapiChats)) {
+      throw new Error('Resposta de chats inválida');
+    }
+
+    stats.chats_found = zapiChats.length;
+    console.log(`✅ [FETCH-ZAPI-HISTORY] ${zapiChats.length} chats encontrados no Z-API`);
+
+    // Buscar conversas existentes no banco
+    let conversationsQuery = supabase
       .from('conversations')
       .select('id, contact_phone, agent_key');
+    
+    if (agentKey) {
+      conversationsQuery = conversationsQuery.eq('agent_key', agentKey);
+    }
+
+    const { data: conversations, error: convError } = await conversationsQuery;
 
     if (convError) {
       throw new Error(`Erro ao buscar conversas: ${convError.message}`);
     }
 
-    console.log(`📊 [FETCH-ZAPI-HISTORY] ${conversations?.length || 0} conversas encontradas`);
+    // Criar mapa de telefone -> conversa
+    const phoneToConversation = new Map<string, { id: string; agent_key: string }>();
+    for (const conv of conversations || []) {
+      if (conv.contact_phone) {
+        const cleanPhone = conv.contact_phone.replace(/\D/g, '');
+        phoneToConversation.set(cleanPhone, { id: conv.id, agent_key: conv.agent_key });
+      }
+    }
+
+    console.log(`📊 [FETCH-ZAPI-HISTORY] ${conversations?.length || 0} conversas no banco para ${agentKey || 'todos os agentes'}`);
 
     // Buscar mensagens existentes para evitar duplicatas
     const { data: existingMessages } = await supabase
       .from('messages')
-      .select('id, external_message_id, body, conversation_id, created_at');
+      .select('id, external_message_id, body, conversation_id');
 
     const existingExternalIds = new Set(
       existingMessages?.map(m => m.external_message_id).filter(Boolean) || []
@@ -100,37 +174,71 @@ serve(async (req) => {
       existingMessages?.map(m => [`${m.body}_${m.conversation_id}`, m.id]) || []
     );
 
-    // Processar cada conversa
-    for (const conv of conversations || []) {
-      if (!conv.contact_phone) continue;
+    // Processar cada chat do Z-API
+    const chatsToProcess = limitConversations ? zapiChats.slice(0, limitConversations) : zapiChats;
+    
+    for (const chat of chatsToProcess) {
+      const phone = chat.phone?.replace(/\D/g, '') || chat.id?.split('@')[0]?.replace(/\D/g, '');
+      
+      if (!phone) continue;
+      
+      // Verificar se existe conversa no banco
+      let conversationId = phoneToConversation.get(phone)?.id;
+      
+      // Se não existe conversa, criar uma nova
+      if (!conversationId) {
+        console.log(`🆕 [FETCH-ZAPI-HISTORY] Criando nova conversa para: ${phone}`);
+        
+        const { data: newConv, error: createError } = await supabase
+          .from('conversations')
+          .insert({
+            contact_phone: phone,
+            contact_name: chat.name || chat.chatName || phone,
+            agent_key: agentKey || 'eduardo',
+            status: 'open'
+          })
+          .select('id')
+          .single();
+
+        if (createError) {
+          console.warn(`⚠️ Erro ao criar conversa para ${phone}: ${createError.message}`);
+          stats.errors.push(`Create conv ${phone}: ${createError.message}`);
+          continue;
+        }
+
+        conversationId = newConv.id;
+        phoneToConversation.set(phone, { id: conversationId, agent_key: agentKey || 'eduardo' });
+      }
       
       stats.contacts_processed++;
       
       try {
-        // Formatar telefone para Z-API (apenas números)
-        const phone = conv.contact_phone.replace(/\D/g, '');
-        
-        console.log(`📞 [FETCH-ZAPI-HISTORY] Buscando histórico para: ${phone}`);
+        console.log(`📞 [FETCH-ZAPI-HISTORY] Processando mensagens de: ${phone}`);
 
-        // Chamar Z-API para buscar mensagens do chat
-        const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/chat-messages/${phone}`;
+        // Usar endpoint load-earlier-messages que funciona com multi-device
+        const messagesUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/load-earlier-messages`;
         
-        const response = await fetch(zapiUrl, {
-          method: 'GET',
+        const messagesResponse = await fetch(messagesUrl, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             ...(zapiClientToken && { 'Client-Token': zapiClientToken })
-          }
+          },
+          body: JSON.stringify({
+            phone: phone,
+            messageId: null, // null para buscar desde o início
+            count: 50 // Buscar últimas 50 mensagens
+          })
         });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.warn(`⚠️ [FETCH-ZAPI-HISTORY] Erro Z-API para ${phone}: ${response.status} - ${errorText}`);
-          stats.errors.push(`${phone}: ${response.status}`);
+        if (!messagesResponse.ok) {
+          const errorText = await messagesResponse.text();
+          console.warn(`⚠️ [FETCH-ZAPI-HISTORY] Erro Z-API para ${phone}: ${messagesResponse.status} - ${errorText}`);
+          stats.errors.push(`${phone}: ${messagesResponse.status}`);
           continue;
         }
 
-        const zapiMessages: ZAPIMessage[] = await response.json();
+        const zapiMessages: ZAPIMessage[] = await messagesResponse.json();
         
         if (!Array.isArray(zapiMessages)) {
           console.warn(`⚠️ [FETCH-ZAPI-HISTORY] Resposta inválida para ${phone}`);
@@ -142,6 +250,17 @@ serve(async (req) => {
 
         // Processar cada mensagem
         for (const msg of zapiMessages) {
+          // Calcular data da mensagem
+          const messageDate = new Date(msg.momment * 1000);
+          
+          // Filtrar por período se especificado
+          if (fromDate && messageDate < fromDate) {
+            continue;
+          }
+          if (toDate && messageDate > toDate) {
+            continue;
+          }
+
           // Pular se já existe
           if (msg.messageId && existingExternalIds.has(msg.messageId)) {
             stats.duplicates_skipped++;
@@ -157,20 +276,20 @@ serve(async (req) => {
           if (!messageText) continue;
 
           // Verificar duplicata por conteúdo
-          const bodyKey = `${messageText}_${conv.id}`;
+          const bodyKey = `${messageText}_${conversationId}`;
           if (existingBodyMap.has(bodyKey)) {
             stats.duplicates_skipped++;
             continue;
           }
 
           const direction = msg.fromMe ? 'outbound' : 'inbound';
-          const createdAt = new Date(msg.momment * 1000).toISOString();
+          const createdAt = messageDate.toISOString();
 
           // Inserir mensagem
           const { error: insertError } = await supabase
             .from('messages')
             .insert({
-              conversation_id: conv.id,
+              conversation_id: conversationId,
               body: messageText,
               direction,
               external_message_id: msg.messageId,
@@ -201,11 +320,29 @@ serve(async (req) => {
         }
 
         // Pequena pausa para não sobrecarregar a API
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 300));
 
-      } catch (convError) {
-        console.error(`❌ Erro ao processar conversa ${conv.id}:`, convError);
-        stats.errors.push(`Conv ${conv.id}: ${convError}`);
+      } catch (chatError) {
+        console.error(`❌ Erro ao processar chat ${phone}:`, chatError);
+        stats.errors.push(`Chat ${phone}: ${chatError}`);
+      }
+    }
+
+    // Atualizar contadores de auditoria nas conversas processadas
+    if (stats.messages_synced > 0) {
+      console.log('🔄 [FETCH-ZAPI-HISTORY] Atualizando contadores de auditoria...');
+      
+      try {
+        // Recalcular contadores para conversas que tiveram mensagens sincronizadas
+        const { error: auditError } = await supabase.rpc('update_conversation_audit_counts');
+        
+        if (auditError) {
+          console.warn(`⚠️ Erro ao atualizar auditoria: ${auditError.message}`);
+        } else {
+          console.log('✅ [FETCH-ZAPI-HISTORY] Contadores de auditoria atualizados');
+        }
+      } catch (e) {
+        console.warn('⚠️ Função update_conversation_audit_counts não encontrada');
       }
     }
 
