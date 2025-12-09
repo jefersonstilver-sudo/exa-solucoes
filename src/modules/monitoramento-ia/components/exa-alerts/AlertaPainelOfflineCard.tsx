@@ -894,6 +894,81 @@ export const AlertaPainelOfflineCard = () => {
                       )}
                     </CollapsibleContent>
                   </Collapsible>
+
+                  {/* CONFIRMATIONS SECTION - Who clicked the buttons */}
+                  <Collapsible open={isConfirmationsOpen} onOpenChange={setIsConfirmationsOpen}>
+                    <CollapsibleTrigger 
+                      className="flex items-center justify-between w-full p-4 bg-green-500/10 hover:bg-green-500/20 rounded-lg transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="font-semibold text-sm">Confirmações Recebidas</span>
+                        <Badge variant="secondary" className="text-xs bg-green-500/20">
+                          {confirmations.length}
+                        </Badge>
+                      </div>
+                      {isConfirmationsOpen ? (
+                        <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent className="mt-4">
+                      {confirmations.length > 0 ? (
+                        <div className="rounded-lg border overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-muted/30">
+                                <TableHead className="text-xs font-medium">Painel</TableHead>
+                                <TableHead className="text-xs font-medium">Quem Respondeu</TableHead>
+                                <TableHead className="text-xs font-medium">Botão</TableHead>
+                                <TableHead className="text-xs font-medium">Quando</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {confirmations.map((conf) => (
+                                <TableRow key={conf.id} className="hover:bg-muted/20">
+                                  <TableCell className="text-sm font-medium">
+                                    <div className="flex items-center gap-2">
+                                      <Monitor className="h-4 w-4 text-muted-foreground" />
+                                      {conf.device_name || 'N/A'}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-sm">
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{conf.recipient_name || 'Desconhecido'}</span>
+                                      <span className="text-xs text-muted-foreground">{formatPhoneDisplay(conf.recipient_phone)}</span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline" className="text-xs bg-green-500/10 text-green-700 border-green-500/30">
+                                      {conf.button_label}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-xs text-muted-foreground">
+                                    {new Date(conf.confirmed_at).toLocaleString('pt-BR', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 text-muted-foreground">
+                          <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">Nenhuma confirmação recebida ainda</p>
+                          <p className="text-xs mt-1">Quando alguém clicar em um botão no WhatsApp, aparecerá aqui</p>
+                        </div>
+                      )}
+                    </CollapsibleContent>
+                  </Collapsible>
                 </CardContent>
               </motion.div>
             )}
