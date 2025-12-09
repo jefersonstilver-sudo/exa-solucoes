@@ -29,10 +29,17 @@ import NovoContratoPage from '@/pages/admin/contracts/NovoContratoPage';
 import NovoContratoSindicoPage from '@/pages/admin/contracts/NovoContratoSindicoPage';
 import ContratoDetalhesPage from '@/pages/admin/contracts/ContratoDetalhesPage';
 import SyncNotionPage from '@/pages/admin/SyncNotionPage';
+import UsersPage from '@/pages/admin/UsersPage';
+import TiposContaPage from '@/pages/admin/TiposContaPage';
+import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
+import SecurityPage from '@/pages/admin/SecurityPage';
 import AcessoNegadoPage from '@/pages/admin/AcessoNegadoPage';
 import ProtectedModuleRoute from '@/components/admin/ProtectedModuleRoute';
 import { MODULE_KEYS } from '@/hooks/useDynamicModulePermissions';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
+
+// Lazy load editor video control page
+const EditorVideoControlePage = lazy(() => import('@/pages/video-editor/VideoEditorAccessControl'));
 
 // Lazy imports para páginas do monitoramento-ia (agora integradas)
 const CRMUnificado = lazy(() => import('@/modules/monitoramento-ia/pages/CRMUnificado'));
@@ -246,6 +253,16 @@ const AdminRoutes = () => {
       } />
       
       {/* ============ SISTEMA ============ */}
+      <Route path="usuarios" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.usuarios}>
+          <UsersPage />
+        </ProtectedModuleRoute>
+      } />
+      <Route path="tipos-conta" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.usuarios}>
+          <TiposContaPage />
+        </ProtectedModuleRoute>
+      } />
       <Route path="notificacoes" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.notificacoes}>
           <NotificationsPage />
@@ -256,6 +273,24 @@ const AdminRoutes = () => {
           <FinancialReports />
         </ProtectedModuleRoute>
       } />
+      <Route path="seguranca" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.seguranca}>
+          <SecurityPage />
+        </ProtectedModuleRoute>
+      } />
+      <Route path="configuracoes" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.configuracoes}>
+          <ConfiguracoesPage />
+        </ProtectedModuleRoute>
+      } />
+      <Route path="editor-video-controle" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.editor_videos}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Editor..." />}>
+            <EditorVideoControlePage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      
       
       {/* ============ REDIRECTS (rotas antigas) ============ */}
       <Route path="monitoramento-ia" element={<Navigate to="/admin/paineis-exa" replace />} />
