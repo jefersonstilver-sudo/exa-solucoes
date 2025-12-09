@@ -206,32 +206,56 @@ serve(async (req) => {
           .eq('anydesk_client_id', anydeskId)
           .maybeSingle();
         
-        // Determinar status com anti-flutuação:
-        // 1. Validar online-time como fallback (se > 0, está online)
-        // 2. Debounce: só marca offline após 2 detecções consecutivas
+        // ============ IMPROVED DEBOUNCE LOGIC ============
+        // Goal: Prevent flipflop by requiring multiple confirmations before status change
+        
         const onlineTime = client['online-time'] || -1;
-        const isReallyOnline = client.online === true || onlineTime > 0;
+        const isCurrentlyOnline = client.online === true || onlineTime > 0;
+        const previousStatus = existingDevice?.status || 'online';
+        const currentOfflineCount = existingDevice?.consecutive_offline_count || 0;
         
-        let status: string;
-        let newOfflineCount = 0;
+        let finalStatus: string;
+        let newOfflineCount: number;
+        let shouldRecordStatusChange = false;
         
-        if (!isReallyOnline) {
-          // Incrementar contador de detecções offline
-          const currentCount = existingDevice?.consecutive_offline_count || 0;
-          newOfflineCount = currentCount + 1;
+        if (isCurrentlyOnline) {
+          // Device is currently ONLINE according to AnyDesk
+          newOfflineCount = 0; // Reset counter
           
-          // Só marca como offline após 2 confirmações consecutivas (≈30s)
-          if (newOfflineCount >= 2) {
-            status = 'offline';
-            newOfflineCount = 0; // Reset após confirmar offline
+          if (previousStatus === 'offline') {
+            // Transition: offline -> online (immediate, no debounce needed)
+            finalStatus = 'online';
+            shouldRecordStatusChange = true;
+            console.log(`[SYNC-ANYDESK] 🟢 Device ${anydeskId}: CONFIRMED online (was offline)`);
           } else {
-            // Mantém status anterior na primeira detecção
-            status = existingDevice?.status || 'online';
+            // Already online, no change
+            finalStatus = 'online';
+            shouldRecordStatusChange = false;
           }
         } else {
-          // Online confirmado - reset contador e marca como online imediatamente
-          status = 'online';
-          newOfflineCount = 0;
+          // Device is currently OFFLINE according to AnyDesk
+          newOfflineCount = currentOfflineCount + 1;
+          
+          if (previousStatus === 'online') {
+            // Device was online, now showing offline
+            // Require 2 consecutive offline detections before confirming (≈30 seconds)
+            if (newOfflineCount >= 2) {
+              finalStatus = 'offline';
+              shouldRecordStatusChange = true;
+              newOfflineCount = 0; // Reset after confirming
+              console.log(`[SYNC-ANYDESK] 🔴 Device ${anydeskId}: CONFIRMED offline after ${currentOfflineCount + 1} checks`);
+            } else {
+              // Not yet confirmed - keep as online
+              finalStatus = 'online';
+              shouldRecordStatusChange = false;
+              console.log(`[SYNC-ANYDESK] ⏳ Device ${anydeskId}: Offline detection ${newOfflineCount}/2 (waiting for confirmation)`);
+            }
+          } else {
+            // Already offline, still offline - no change needed
+            finalStatus = 'offline';
+            shouldRecordStatusChange = false;
+            newOfflineCount = 0; // Keep counter at 0 since we're already confirmed offline
+          }
         }
         
         // Get tags from AnyDesk API (array of strings)
@@ -240,29 +264,22 @@ serve(async (req) => {
         // Parse comments inteligentemente
         const parsed = parseComments(comment, rawTags);
         
-        console.log(`[SYNC-ANYDESK] 📊 Device ${anydeskId} processed:`, {
+        console.log(`[SYNC-ANYDESK] 📊 Device ${anydeskId}:`, {
           alias,
-          originalComments: comment,
-          rawTags,
-          onlineStatus: client.online,
-          onlineTime: onlineTime,
-          isReallyOnline: isReallyOnline,
-          determinedStatus: status,
+          anydeskOnline: client.online,
+          onlineTime,
+          previousStatus,
+          finalStatus,
           offlineCount: newOfflineCount,
-          parsed: {
-            buildingName: parsed.buildingName,
-            provider: parsed.provider,
-            address: parsed.address,
-            method: parsed.parseMethod,
-          }
+          willRecordChange: shouldRecordStatusChange,
         });
 
         const deviceData = {
           anydesk_client_id: anydeskId,
           name: parsed.buildingName,
-          status: status,
+          status: finalStatus,
           consecutive_offline_count: newOfflineCount,
-          last_online_at: isReallyOnline ? new Date().toISOString() : existingDevice?.last_online_at,
+          last_online_at: isCurrentlyOnline ? new Date().toISOString() : existingDevice?.last_online_at,
           condominio_name: parsed.buildingName,
           tags: rawTags,
           comments: comment,
@@ -285,7 +302,6 @@ serve(async (req) => {
         };
 
         if (existingDevice) {
-          const statusChanged = existingDevice.status !== status;
           const providerChanged = existingDevice.provider !== parsed.provider && parsed.provider !== 'Sem provedor';
 
           const { error: updateError } = await supabase
@@ -310,24 +326,26 @@ serve(async (req) => {
             });
           }
 
-          if (statusChanged) {
+          // Only record status change if confirmed by debounce logic
+          if (shouldRecordStatusChange) {
             statusChanges++;
             
             await supabase.from('devices').update({
               total_events: (existingDevice.total_events || 0) + 1,
-              offline_count: status === 'offline' ? (existingDevice.offline_count || 0) + 1 : existingDevice.offline_count,
+              offline_count: finalStatus === 'offline' ? (existingDevice.offline_count || 0) + 1 : existingDevice.offline_count,
             }).eq('id', existingDevice.id);
 
             await supabase.from('events_log').insert({
               computer_id: existingDevice.id,
               event_type: 'status_change',
-              old_status: existingDevice.status,
-              new_status: status,
-              description: `Status changed from ${existingDevice.status} to ${status}`,
+              old_status: previousStatus,
+              new_status: finalStatus,
+              description: `Status changed from ${previousStatus} to ${finalStatus}`,
               metadata: { timestamp: new Date().toISOString(), provider: parsed.provider, address: parsed.address },
             });
 
-            if (status === 'offline') {
+            if (finalStatus === 'offline') {
+              // Device went offline - close any open online session and create offline record
               const { data: lastOnline } = await supabase
                 .from('connection_history')
                 .select('*')
@@ -345,11 +363,14 @@ serve(async (req) => {
                   .eq('id', lastOnline.id);
               }
 
+              // Create the offline event record (this is what we track as "quedas")
               await supabase.from('connection_history').insert({
                 computer_id: existingDevice.id,
                 event_type: 'offline',
                 started_at: new Date().toISOString(),
               });
+              
+              console.log(`[SYNC-ANYDESK] 📝 Created connection_history OFFLINE record for ${anydeskId}`);
             } else {
               // Device came back online - close any open offline session
               const { data: lastOffline } = await supabase
@@ -367,6 +388,8 @@ serve(async (req) => {
                 await supabase.from('connection_history')
                   .update({ ended_at: new Date().toISOString(), duration_seconds: duration })
                   .eq('id', lastOffline.id);
+                  
+                console.log(`[SYNC-ANYDESK] 📝 Closed OFFLINE record for ${anydeskId}, duration: ${duration}s`);
               }
               
               // NOTE: Do NOT create new "online" record here - 
@@ -390,15 +413,18 @@ serve(async (req) => {
           await supabase.from('events_log').insert({
             computer_id: newDevice.id,
             event_type: 'first_sync',
-            new_status: status,
-            description: `Device first synced with status: ${status}`,
+            new_status: finalStatus,
+            description: `Device first synced with status: ${finalStatus}`,
           });
 
-          await supabase.from('connection_history').insert({
-            computer_id: newDevice.id,
-            event_type: status,
-            started_at: new Date().toISOString(),
-          });
+          // Only create initial offline record if device is offline on first sync
+          if (finalStatus === 'offline') {
+            await supabase.from('connection_history').insert({
+              computer_id: newDevice.id,
+              event_type: 'offline',
+              started_at: new Date().toISOString(),
+            });
+          }
 
           if (parsed.provider !== 'Sem provedor') {
             providerDetections++;
