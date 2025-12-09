@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Users, Shield, Plus, RefreshCw, Search, UserCheck, UserPlus, UserCog, Settings } from 'lucide-react';
+import { Crown, Users, Shield, Plus, RefreshCw, Search, UserCheck, UserCog, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import IndexaTeamSection from '@/components/admin/users/IndexaTeamSection';
-import ClientsSection from '@/components/admin/users/ClientsSection';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useUserStats } from '@/hooks/useUserStats';
 import UserStatsCards from '@/components/admin/users/UserStatsCards';
@@ -15,6 +12,7 @@ import CreateUserDialog from '@/components/admin/users/CreateUserDialog';
 import { UserDetailsDialogComplete } from '@/components/admin/users/UserDetailsDialogComplete';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useNavigate } from 'react-router-dom';
 
 interface User {
   id: string;
@@ -36,6 +34,7 @@ interface User {
 }
 
 const UsersPage = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('team');
@@ -50,24 +49,12 @@ const UsersPage = () => {
     try {
       setLoading(true);
       
-      console.log('📊 [USERS_PAGE] Buscando usuários da função otimizada...');
-      
-      // Usar função get_users_with_last_access que usa SECURITY DEFINER
       const { data, error, status } = await supabase
         .rpc('get_users_with_last_access');
 
-      console.log('📊 [USERS_PAGE] Resposta da query:', {
-        status,
-        error,
-        userCount: data?.length
-      });
-
       if (error) {
-        console.error('❌ [USERS_PAGE] Erro ao buscar usuários:', error);
-        
-        // Mensagem específica baseada no erro
         if (error.code === 'PGRST301' || error.message.includes('permission denied')) {
-          toast.error('Sem permissão para visualizar usuários. Verifique suas credenciais.');
+          toast.error('Sem permissão para visualizar usuários.');
         } else {
           toast.error('Erro ao carregar usuários: ' + error.message);
         }
@@ -75,20 +62,13 @@ const UsersPage = () => {
       }
 
       if (!data || data.length === 0) {
-        console.warn('⚠️ [USERS_PAGE] Nenhum usuário encontrado');
-        toast.warning('Nenhum usuário encontrado no sistema');
+        toast.warning('Nenhum usuário encontrado');
       } else {
-        console.log('✅ [USERS_PAGE] Usuários carregados com sucesso:', {
-          total: data.length,
-          admins: data.filter((u) => u.role !== 'client').length,
-          clients: data.filter((u) => u.role === 'client').length,
-        });
         toast.success(`${data.length} usuários carregados`);
       }
 
       setUsers(data || []);
     } catch (error: any) {
-      console.error('💥 [USERS_PAGE] Erro crítico:', error);
       toast.error('Erro crítico ao carregar usuários');
     } finally {
       setLoading(false);
@@ -109,31 +89,23 @@ const UsersPage = () => {
       setSyncingOrphans(true);
       toast.loading('Sincronizando usuários órfãos...', { id: 'sync-orphans' });
 
-      console.log('🔄 [SYNC] Iniciando sincronização de usuários órfãos...');
-
       const { data, error } = await supabase.functions.invoke('sync-users', {
         method: 'POST'
       });
 
-      if (error) {
-        throw error;
-      }
-
-      console.log('✅ [SYNC] Resultado:', data);
+      if (error) throw error;
 
       toast.success(data.message || `${data.syncedCount} usuários sincronizados!`, { 
         id: 'sync-orphans',
         duration: 5000 
       });
 
-      // Recarregar lista de usuários
       if (data.syncedCount > 0) {
         await fetchUsers();
         await refetchStats();
       }
     } catch (error: any) {
-      console.error('❌ [SYNC] Erro ao sincronizar:', error);
-      toast.error(error.message || 'Erro ao sincronizar usuários órfãos', { id: 'sync-orphans' });
+      toast.error(error.message || 'Erro ao sincronizar', { id: 'sync-orphans' });
     } finally {
       setSyncingOrphans(false);
     }
@@ -161,7 +133,7 @@ const UsersPage = () => {
       (u.nome || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Mobile View - Apple/Nubank Style
+  // Mobile View - Apple-style Glassmorphism
   if (isMobile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
@@ -170,8 +142,8 @@ const UsersPage = () => {
           <div className="px-4 py-3 safe-area-top">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-[#9C1E1E]/10 rounded-xl">
-                  <Users className="h-5 w-5 text-[#9C1E1E]" />
+                <div className="p-2 bg-[hsl(var(--exa-red))]/10 rounded-xl">
+                  <Users className="h-5 w-5 text-[hsl(var(--exa-red))]" />
                 </div>
                 <div>
                   <h1 className="text-lg font-semibold text-foreground">Usuários</h1>
@@ -191,7 +163,7 @@ const UsersPage = () => {
                 <Button
                   onClick={() => setIsCreateDialogOpen(true)}
                   size="sm"
-                  className="h-8 bg-[#9C1E1E] hover:bg-[#7D1818] px-3"
+                  className="h-8 bg-[hsl(var(--exa-red))] hover:bg-[hsl(var(--exa-red))]/90 px-3"
                 >
                   <Plus className="w-4 h-4" />
                 </Button>
@@ -205,13 +177,13 @@ const UsersPage = () => {
           <UserStatsCards stats={stats} loading={loadingStats} />
         </div>
 
-        {/* Botões de Ação */}
+        {/* Botões de Ação - Padronizados */}
         <div className="px-3 pb-2 flex gap-2">
           <Button
-            onClick={() => window.location.href = '/super_admin/tipos-conta'}
+            onClick={() => navigate('/super_admin/tipos-conta')}
             size="sm"
             variant="outline"
-            className="flex-1 h-8 text-xs border-[#9C1E1E]/20 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
+            className="flex-1 h-9 text-xs border-[hsl(var(--exa-red))]/20 text-[hsl(var(--exa-red))] hover:bg-[hsl(var(--exa-red))]/5"
           >
             <Settings className="w-3.5 h-3.5 mr-1.5" />
             Tipos de Conta
@@ -221,7 +193,7 @@ const UsersPage = () => {
             disabled={syncingOrphans}
             size="sm"
             variant="outline"
-            className="flex-1 h-8 text-xs border-amber-200 text-amber-700 hover:bg-amber-50"
+            className="flex-1 h-9 text-xs border-[hsl(var(--exa-red))]/20 text-[hsl(var(--exa-red))] hover:bg-[hsl(var(--exa-red))]/5"
           >
             <UserCog className={`w-3.5 h-3.5 mr-1.5 ${syncingOrphans ? 'animate-spin' : ''}`} />
             Sincronizar
@@ -235,7 +207,7 @@ const UsersPage = () => {
               onClick={() => setActiveTab('team')}
               className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all flex items-center gap-1 ${
                 activeTab === 'team'
-                  ? 'bg-[#9C1E1E] text-white'
+                  ? 'bg-[hsl(var(--exa-red))] text-white'
                   : 'bg-white/80 text-gray-600 border border-gray-200'
               }`}
             >
@@ -249,7 +221,7 @@ const UsersPage = () => {
               onClick={() => setActiveTab('clients')}
               className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all flex items-center gap-1 ${
                 activeTab === 'clients'
-                  ? 'bg-[#9C1E1E] text-white'
+                  ? 'bg-[hsl(var(--exa-red))] text-white'
                   : 'bg-white/80 text-gray-600 border border-gray-200'
               }`}
             >
@@ -360,22 +332,27 @@ const UsersPage = () => {
     );
   }
 
-  // Desktop View - Professional & Elegant
+  // Desktop View - Apple-style Glassmorphism
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Gestão de Usuários</h1>
-          <p className="text-muted-foreground">
-            Administre contas e permissões do sistema
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 p-6">
+      {/* Header Compacto */}
+      <div className="flex items-start justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-[hsl(var(--exa-red))]/10 rounded-2xl">
+            <Users className="h-6 w-6 text-[hsl(var(--exa-red))]" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Gestão de Usuários</h1>
+            <p className="text-sm text-muted-foreground">{users.length} usuários no sistema</p>
+          </div>
         </div>
-        <div className="flex gap-2">
+        
+        <div className="flex items-center gap-2">
           <Button 
-            onClick={() => window.location.href = '/super_admin/tipos-conta'}
+            onClick={() => navigate('/super_admin/tipos-conta')}
             variant="outline"
-            className="border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
+            size="sm"
+            className="h-9 border-[hsl(var(--exa-red))]/20 text-[hsl(var(--exa-red))] hover:bg-[hsl(var(--exa-red))]/5"
           >
             <Settings className="h-4 w-4 mr-2" />
             Tipos de Conta
@@ -383,88 +360,150 @@ const UsersPage = () => {
           <Button 
             onClick={handleSyncOrphanUsers}
             variant="outline"
+            size="sm"
             disabled={syncingOrphans}
-            className="border-amber-500/30 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-500/10"
+            className="h-9 border-[hsl(var(--exa-red))]/20 text-[hsl(var(--exa-red))] hover:bg-[hsl(var(--exa-red))]/5"
           >
             <UserCog className={`h-4 w-4 mr-2 ${syncingOrphans ? 'animate-spin' : ''}`} />
-            Sincronizar Órfãos
+            Sincronizar
           </Button>
           <Button 
             onClick={handleRefresh}
             variant="outline"
+            size="sm"
             disabled={loading}
+            className="h-9"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Atualizar
           </Button>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Nova Conta
+          <Button 
+            onClick={() => setIsCreateDialogOpen(true)}
+            size="sm"
+            className="h-9 bg-[hsl(var(--exa-red))] hover:bg-[hsl(var(--exa-red))]/90"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Usuário
           </Button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <UserStatsCards stats={stats} loading={loadingStats} />
+      <div className="mb-6">
+        <UserStatsCards stats={stats} loading={loadingStats} />
+      </div>
 
-      {/* Main Content */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Usuários do Sistema</CardTitle>
-            <div className="flex items-center gap-4">
-              <div className="relative w-72">
-                <Input
-                  type="text"
-                  placeholder="Buscar por email ou nome..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              </div>
-            </div>
+      {/* Tabs e Busca */}
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-md overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('team')}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                activeTab === 'team'
+                  ? 'bg-[hsl(var(--exa-red))] text-white shadow-md'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Crown className="h-4 w-4" />
+              Equipe EXA
+              <Badge variant="secondary" className={`text-[10px] ${activeTab === 'team' ? 'bg-white/20 text-white' : ''}`}>
+                {filteredTeam.length}
+              </Badge>
+            </button>
+            <button
+              onClick={() => setActiveTab('clients')}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                activeTab === 'clients'
+                  ? 'bg-[hsl(var(--exa-red))] text-white shadow-md'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <UserCheck className="h-4 w-4" />
+              Clientes
+              <Badge variant="secondary" className={`text-[10px] ${activeTab === 'clients' ? 'bg-white/20 text-white' : ''}`}>
+                {filteredClients.length}
+              </Badge>
+            </button>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="team">
-                <Crown className="h-4 w-4 mr-2" />
-                Equipe ({filteredTeam.length})
-              </TabsTrigger>
-              <TabsTrigger value="clients">
-                <UserCheck className="h-4 w-4 mr-2" />
-                Clientes ({filteredClients.length})
-              </TabsTrigger>
-            </TabsList>
+          
+          <div className="relative w-64">
+            <Input
+              type="text"
+              placeholder="Buscar usuário..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-9 pl-9 text-sm bg-white"
+            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          </div>
+        </div>
 
-            <TabsContent value="team" className="mt-4">
+        {/* Lista de Usuários Desktop */}
+        <div className="p-4">
+          {activeTab === 'team' && (
+            <>
               {loading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-16 bg-muted rounded animate-pulse" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="bg-gray-100 rounded-xl p-4 animate-pulse">
+                      <div className="h-16 bg-gray-200 rounded" />
+                    </div>
                   ))}
                 </div>
-              ) : (
-                <IndexaTeamSection users={filteredTeam} loading={loading} onRefresh={handleRefresh} />
-              )}
-            </TabsContent>
-
-            <TabsContent value="clients" className="mt-4">
-              {loading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-16 bg-muted rounded animate-pulse" />
-                  ))}
+              ) : filteredTeam.length === 0 ? (
+                <div className="text-center py-12">
+                  <Shield className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                  <p className="text-muted-foreground">
+                    {searchTerm ? 'Nenhum membro encontrado' : 'Nenhum membro cadastrado'}
+                  </p>
                 </div>
               ) : (
-                <ClientsSection users={filteredClients} loading={loading} onRefresh={handleRefresh} />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredTeam.map((user) => (
+                    <EnhancedUserMobileCard
+                      key={user.id}
+                      user={user}
+                      onViewDetails={handleViewDetails}
+                    />
+                  ))}
+                </div>
               )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+            </>
+          )}
+
+          {activeTab === 'clients' && (
+            <>
+              {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="bg-gray-100 rounded-xl p-4 animate-pulse">
+                      <div className="h-16 bg-gray-200 rounded" />
+                    </div>
+                  ))}
+                </div>
+              ) : filteredClients.length === 0 ? (
+                <div className="text-center py-12">
+                  <UserCheck className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                  <p className="text-muted-foreground">
+                    {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredClients.map((user) => (
+                    <EnhancedUserMobileCard
+                      key={user.id}
+                      user={user}
+                      onViewDetails={handleViewDetails}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Dialogs */}
       <CreateUserDialog
