@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Circle } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { formatCurrency } from '@/utils/priceUtils';
 import { Panel } from '@/types/panel';
 import { logPriceCalculation } from '@/utils/auditLogger';
 import { getPlanWithDynamicPricing } from '@/utils/checkoutUtils';
+import { calculateBuildingsPrice, type PlanDuration } from '@/utils/buildingPriceUtils';
 
 interface CartItem {
   panel: Panel;
@@ -32,6 +33,20 @@ const PlanCard: React.FC<PlanCardProps> = ({
 }) => {
   const [dynamicPricing, setDynamicPricing] = useState<any>(null);
   
+  // Calculate real discount based on building prices
+  const realDiscount = useMemo(() => {
+    if (cartItems.length === 0 || planKey === 1) return 0;
+    
+    // Extract buildings from cart items
+    const buildings = cartItems.map(item => item.panel.buildings).filter(Boolean);
+    if (buildings.length === 0) return plan.discount;
+    
+    const validPlanKey = [1, 3, 6, 12].includes(planKey) ? planKey as PlanDuration : 1;
+    const result = calculateBuildingsPrice(buildings, validPlanKey);
+    
+    return result.averageDiscountPercent;
+  }, [cartItems, planKey, plan.discount]);
+  
   useEffect(() => {
     if (cartItems.length > 0) {
       const dynamicPlan = getPlanWithDynamicPricing(planKey, cartItems);
@@ -42,13 +57,14 @@ const PlanCard: React.FC<PlanCardProps> = ({
         logPriceCalculation(`PlanCard-${planKey}`, {
           planKey,
           cartItemsCount: cartItems.length,
-          dynamicPricing: dynamicPlan
+          dynamicPricing: dynamicPlan,
+          realDiscount
         });
       }
     } else {
       setDynamicPricing(null);
     }
-  }, [planKey, cartItems]);
+  }, [planKey, cartItems, realDiscount]);
 
   if (!cartItems.length) {
     return (
@@ -126,12 +142,12 @@ const PlanCard: React.FC<PlanCardProps> = ({
           </Badge>
         )}
 
-        {/* Discount Badge */}
-        {plan.discount > 0 && (
+        {/* Discount Badge - Uses real calculated discount */}
+        {realDiscount > 0 && (
           <Badge 
             className={`absolute ${plan.months === 12 ? 'top-8' : 'top-2'} left-2 bg-[#9C1E1E] text-white text-[9px] px-1.5 py-0.5 shadow-sm z-10 font-medium whitespace-nowrap`}
           >
-            -{plan.discount}%
+            -{Math.round(realDiscount)}%
           </Badge>
         )}
 

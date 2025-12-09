@@ -216,13 +216,13 @@ const NovoContratoPage = () => {
     enabled: step === 'vinculo' && fillMode === 'extract'
   });
 
-  // Buscar prédios ativos
+  // Buscar prédios ativos (incluindo preços por plano)
   const { data: predios } = useQuery({
     queryKey: ['predios-ativos'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('buildings')
-        .select('*')
+        .select('*, preco_trimestral, preco_semestral, preco_anual')
         .eq('status', 'ativo')
         .order('nome');
 
