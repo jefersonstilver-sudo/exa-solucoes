@@ -58,7 +58,7 @@ export const BuildingMobileList: React.FC<BuildingMobileListProps> = ({
         <BuildingMobileCard
           key={building.id}
           building={building}
-          videoCount={videoCounts[building.id]}
+          videoCount={videoCounts[building.id] ?? 0}
           panelsStatus={panelsStatusMap?.[building.id]}
           panelsStatusLoading={panelsStatusLoading}
           onView={onView}

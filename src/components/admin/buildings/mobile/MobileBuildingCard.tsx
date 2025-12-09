@@ -159,11 +159,9 @@ const MobileBuildingCard: React.FC<MobileBuildingCardProps> = ({
                 <span className="text-muted-foreground">
                   <span className="font-medium text-foreground">{formatViews(building.visualizacoes_mes)}</span> views
                 </span>
-                {videoCount > 0 && (
-                  <span className="text-green-600 font-medium">
-                    {videoCount} ao vivo
-                  </span>
-                )}
+                <span className={videoCount > 0 ? "text-green-600 font-medium" : "text-muted-foreground"}>
+                  {videoCount > 0 ? `${videoCount} ao vivo` : '0 vídeos'}
+                </span>
                 <ChevronDown className={cn(
                   "h-4 w-4 text-muted-foreground ml-auto transition-transform duration-200",
                   expanded && "rotate-180"
