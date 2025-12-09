@@ -6,9 +6,14 @@ import BuildingStoreLayout from '@/components/building-store/BuildingStoreLayout
 import BuildingStoreHeader from '@/components/building-store/BuildingStoreHeader';
 import useBuildingStore from '@/hooks/useBuildingStore';
 import FloatingCTA from '@/components/exa/FloatingCTA';
+import { useDynamicPermissions } from '@/hooks/useDynamicPermissions';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 const BuildingStore = () => {
   console.log('🏢 [BUILDING STORE] Página da loja carregada');
+  const navigate = useNavigate();
+  const { isAdminAccount, isLoading: permissionsLoading } = useDynamicPermissions();
 
   const buildings = useBuildingStore(state => state.buildings);
   const isLoading = useBuildingStore(state => state.isLoading);
@@ -30,6 +35,16 @@ const BuildingStore = () => {
     console.log('🚀 [BUILDING STORE] Inicializando store');
     initializeStore();
   }, [initializeStore]);
+
+  // Bloquear admins de adicionar ao carrinho - notificar uma vez
+  React.useEffect(() => {
+    if (!permissionsLoading && isAdminAccount) {
+      toast.warning(
+        'Você está logado como administrador. Contas administrativas não podem realizar compras.',
+        { duration: 5000, id: 'admin-block-warning' }
+      );
+    }
+  }, [isAdminAccount, permissionsLoading]);
 
   // Log do estado atual
   React.useEffect(() => {
