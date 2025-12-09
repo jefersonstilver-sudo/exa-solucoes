@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import ModernSuperAdminLayout from '@/components/admin/layout/ModernSuperAdminLayout';
+// Layout is provided by parent route - no need to import here
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -222,7 +222,7 @@ export default function TiposContaPage() {
   // Mobile Layout
   if (isMobile) {
     return (
-      <ModernSuperAdminLayout>
+      <>
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
           {/* Header */}
           <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100">
@@ -491,13 +491,13 @@ export default function TiposContaPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </ModernSuperAdminLayout>
+      </>
     );
   }
 
   // Desktop Layout
   return (
-    <ModernSuperAdminLayout>
+    <>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 p-6">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
@@ -758,6 +758,6 @@ export default function TiposContaPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </ModernSuperAdminLayout>
+    </>
   );
 }
