@@ -89,10 +89,17 @@ Deno.serve(async (req) => {
 
     const zapiConfig = agent.zapi_config as { instance_id: string; token: string; client_token?: string };
 
-    // 4. Get all active devices
+    // 4. Get all active devices with building data for address/provider
     const { data: devices, error: devicesError } = await supabase
       .from('devices')
-      .select('*')
+      .select(`
+        *,
+        buildings:building_id (
+          endereco,
+          bairro,
+          notion_internet
+        )
+      `)
       .eq('is_active', true);
 
     if (devicesError) {
@@ -237,13 +244,26 @@ Deno.serve(async (req) => {
           // First time this rule is triggered
           shouldSendAlert = true;
           console.log(`🔔 [MONITOR] Primeira vez que regra "${applicableRule.nome}" é acionada para ${device.name}`);
-        } else if (applicableRule.repetir_ate_resolver && lastAlertAt) {
-          // Check if enough time passed for repeat
-          const timeSinceLastAlert = now.getTime() - lastAlertAt.getTime();
-          if (timeSinceLastAlert >= applicableRule.intervalo_repeticao_segundos * 1000) {
+        } else if (applicableRule.repetir_ate_resolver) {
+          // Check if enough time passed for repeat using last_offline_alert_at
+          if (lastAlertAt) {
+            const timeSinceLastAlert = now.getTime() - lastAlertAt.getTime();
+            const intervaloMs = applicableRule.intervalo_repeticao_segundos * 1000;
+            
+            console.log(`⏱️ [MONITOR] Device ${device.name}: tempo desde último alerta = ${Math.round(timeSinceLastAlert/1000)}s, intervalo configurado = ${applicableRule.intervalo_repeticao_segundos}s`);
+            
+            if (timeSinceLastAlert >= intervaloMs) {
+              shouldSendAlert = true;
+              isRepeatAlert = true;
+              console.log(`🔔 [MONITOR] Repetindo alerta da regra "${applicableRule.nome}" para ${device.name} (passou ${Math.round(timeSinceLastAlert/1000)}s >= ${applicableRule.intervalo_repeticao_segundos}s)`);
+            } else {
+              console.log(`⏸️ [MONITOR] Aguardando intervalo para repetir alerta: faltam ${Math.round((intervaloMs - timeSinceLastAlert)/1000)}s`);
+            }
+          } else {
+            // No last alert recorded but rule already triggered - send alert
             shouldSendAlert = true;
             isRepeatAlert = true;
-            console.log(`🔔 [MONITOR] Repetindo alerta da regra "${applicableRule.nome}" para ${device.name}`);
+            console.log(`🔔 [MONITOR] Repetindo alerta (sem last_offline_alert_at registrado)`);
           }
         }
 
@@ -251,13 +271,29 @@ Deno.serve(async (req) => {
           const alertCount = (metadata.offline_alert_count || 0) + 1;
           const offlineDisplay = formatOfflineDuration(timeSinceLastOnline);
 
-          // Build message with rule info
+          // Build message with rule info including address and provider
           const emoji = applicableRule.tempo_offline_segundos >= 1800 ? '🚨' : 
                         applicableRule.tempo_offline_segundos >= 300 ? '⚠️' : '🔴';
           
+          // Get address and provider from device or building
+          const buildingData = (device as any).buildings;
+          const endereco = device.address || buildingData?.endereco || '';
+          const bairro = buildingData?.bairro || '';
+          const provedor = device.provider || buildingData?.notion_internet || '';
+          
+          // Build address line
+          const enderecoLine = endereco 
+            ? `🏠 Endereço: ${endereco}${bairro ? `, ${bairro}` : ''}\n` 
+            : '';
+          const provedorLine = provedor 
+            ? `🌐 Provedor: ${provedor}\n` 
+            : '';
+          
           const message = `${emoji} *${applicableRule.nome.toUpperCase()}*\n\n` +
             `📍 Local: ${device.condominio_name || device.name}\n` +
+            enderecoLine +
             `🖥️ Painel: ${device.name}\n` +
+            provedorLine +
             `⏱️ Offline há: ${offlineDisplay}\n` +
             `📅 Detectado às: ${now.toLocaleTimeString('pt-BR')}\n` +
             (isRepeatAlert ? `\n🔄 Este é o ${alertCount}º aviso` : '');

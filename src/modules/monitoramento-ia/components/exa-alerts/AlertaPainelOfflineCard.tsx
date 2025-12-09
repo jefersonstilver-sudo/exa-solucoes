@@ -157,6 +157,12 @@ export const AlertaPainelOfflineCard = () => {
     repetir_ate_resolver: false,
     notificar_quando_online: true
   });
+  
+  // Campos separados para minutos e segundos (UI)
+  const [tempoMinutos, setTempoMinutos] = useState(1);
+  const [tempoSegundos, setTempoSegundos] = useState(0);
+  const [intervaloMinutos, setIntervaloMinutos] = useState(5);
+  const [intervaloSegundos, setIntervaloSegundos] = useState(0);
 
   useEffect(() => {
     loadData();
@@ -268,6 +274,11 @@ export const AlertaPainelOfflineCard = () => {
       repetir_ate_resolver: false,
       notificar_quando_online: true
     });
+    // Reset campos de minutos/segundos
+    setTempoMinutos(1);
+    setTempoSegundos(0);
+    setIntervaloMinutos(5);
+    setIntervaloSegundos(0);
     setShowRuleDialog(true);
   };
 
@@ -281,12 +292,31 @@ export const AlertaPainelOfflineCard = () => {
       repetir_ate_resolver: rule.repetir_ate_resolver,
       notificar_quando_online: rule.notificar_quando_online
     });
+    // Converter segundos para minutos + segundos
+    setTempoMinutos(Math.floor(rule.tempo_offline_segundos / 60));
+    setTempoSegundos(rule.tempo_offline_segundos % 60);
+    setIntervaloMinutos(Math.floor(rule.intervalo_repeticao_segundos / 60));
+    setIntervaloSegundos(rule.intervalo_repeticao_segundos % 60);
     setShowRuleDialog(true);
   };
 
   const saveRule = async () => {
     if (!ruleForm.nome.trim()) {
       toast.error('Nome da regra é obrigatório');
+      return;
+    }
+
+    // Calcular tempo total em segundos a partir de minutos + segundos
+    const tempoTotalSegundos = (tempoMinutos * 60) + tempoSegundos;
+    const intervaloTotalSegundos = (intervaloMinutos * 60) + intervaloSegundos;
+
+    if (tempoTotalSegundos < 10) {
+      toast.error('Tempo mínimo é 10 segundos');
+      return;
+    }
+
+    if (ruleForm.repetir_ate_resolver && intervaloTotalSegundos < 30) {
+      toast.error('Intervalo mínimo de repetição é 30 segundos');
       return;
     }
 
@@ -298,8 +328,8 @@ export const AlertaPainelOfflineCard = () => {
           .update({
             nome: ruleForm.nome.trim(),
             descricao: ruleForm.descricao.trim() || null,
-            tempo_offline_segundos: ruleForm.tempo_offline_segundos,
-            intervalo_repeticao_segundos: ruleForm.intervalo_repeticao_segundos,
+            tempo_offline_segundos: tempoTotalSegundos,
+            intervalo_repeticao_segundos: intervaloTotalSegundos,
             repetir_ate_resolver: ruleForm.repetir_ate_resolver,
             notificar_quando_online: ruleForm.notificar_quando_online
           })
@@ -313,8 +343,8 @@ export const AlertaPainelOfflineCard = () => {
           .insert({
             nome: ruleForm.nome.trim(),
             descricao: ruleForm.descricao.trim() || null,
-            tempo_offline_segundos: ruleForm.tempo_offline_segundos,
-            intervalo_repeticao_segundos: ruleForm.intervalo_repeticao_segundos,
+            tempo_offline_segundos: tempoTotalSegundos,
+            intervalo_repeticao_segundos: intervaloTotalSegundos,
             repetir_ate_resolver: ruleForm.repetir_ate_resolver,
             notificar_quando_online: ruleForm.notificar_quando_online,
             ativo: true,
@@ -855,41 +885,96 @@ export const AlertaPainelOfflineCard = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  Alertar após (segundos)
-                </Label>
-                <Input
-                  type="number"
-                  min={10}
-                  max={86400}
-                  value={ruleForm.tempo_offline_segundos}
-                  onChange={(e) => setRuleForm(f => ({ ...f, tempo_offline_segundos: parseInt(e.target.value) || 60 }))}
-                />
-                <p className="text-[10px] text-muted-foreground">
-                  = {formatSecondsToDisplay(ruleForm.tempo_offline_segundos)}
-                </p>
+            {/* Alertar após - Minutos + Segundos */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Alertar após
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={1440}
+                      value={tempoMinutos}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setTempoMinutos(val === '' ? 0 : parseInt(val) || 0);
+                      }}
+                      className="text-center"
+                    />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">min</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={59}
+                      value={tempoSegundos}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setTempoSegundos(val === '' ? 0 : Math.min(59, parseInt(val) || 0));
+                      }}
+                      className="text-center"
+                    />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">seg</span>
+                  </div>
+                </div>
               </div>
+              <p className="text-[10px] text-muted-foreground">
+                = {formatSecondsToDisplay((tempoMinutos * 60) + tempoSegundos)}
+              </p>
+            </div>
 
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1">
-                  <RefreshCw className="h-3 w-3" />
-                  Repetir a cada (seg)
-                </Label>
-                <Input
-                  type="number"
-                  min={30}
-                  max={86400}
-                  value={ruleForm.intervalo_repeticao_segundos}
-                  onChange={(e) => setRuleForm(f => ({ ...f, intervalo_repeticao_segundos: parseInt(e.target.value) || 300 }))}
-                  disabled={!ruleForm.repetir_ate_resolver}
-                />
-                <p className="text-[10px] text-muted-foreground">
-                  = {formatSecondsToDisplay(ruleForm.intervalo_repeticao_segundos)}
-                </p>
+            {/* Repetir a cada - Minutos + Segundos */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                <RefreshCw className="h-3 w-3" />
+                Repetir a cada
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={1440}
+                      value={intervaloMinutos}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setIntervaloMinutos(val === '' ? 0 : parseInt(val) || 0);
+                      }}
+                      disabled={!ruleForm.repetir_ate_resolver}
+                      className="text-center"
+                    />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">min</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={59}
+                      value={intervaloSegundos}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setIntervaloSegundos(val === '' ? 0 : Math.min(59, parseInt(val) || 0));
+                      }}
+                      disabled={!ruleForm.repetir_ate_resolver}
+                      className="text-center"
+                    />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">seg</span>
+                  </div>
+                </div>
               </div>
+              <p className="text-[10px] text-muted-foreground">
+                = {formatSecondsToDisplay((intervaloMinutos * 60) + intervaloSegundos)}
+              </p>
             </div>
 
             <div className="space-y-3 pt-2">
