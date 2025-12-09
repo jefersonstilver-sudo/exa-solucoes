@@ -295,6 +295,9 @@ serve(async (req) => {
           willRecordChange: shouldRecordStatusChange,
         });
 
+        // CRITICAL: Preserve existing metadata (especially alert-related fields) while updating AnyDesk data
+        const existingMetadata = existingDevice?.metadata || {};
+        
         const deviceData = {
           anydesk_client_id: anydeskId,
           name: parsed.buildingName,
@@ -307,6 +310,9 @@ serve(async (req) => {
           provider: parsed.provider,
           address: parsed.address,
           metadata: { 
+            // Preserve existing alert-related fields (DO NOT OVERWRITE!)
+            ...existingMetadata,
+            // Update AnyDesk-specific fields
             alias, 
             label, 
             online_time: client['online-time'],
