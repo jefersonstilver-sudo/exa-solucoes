@@ -3461,6 +3461,7 @@ export type Database = {
         Row: {
           address: string | null
           anydesk_client_id: string
+          building_id: string | null
           comments: string | null
           condominio_name: string
           consecutive_offline_count: number
@@ -3479,6 +3480,7 @@ export type Database = {
         Insert: {
           address?: string | null
           anydesk_client_id: string
+          building_id?: string | null
           comments?: string | null
           condominio_name: string
           consecutive_offline_count?: number
@@ -3497,6 +3499,7 @@ export type Database = {
         Update: {
           address?: string | null
           anydesk_client_id?: string
+          building_id?: string | null
           comments?: string | null
           condominio_name?: string
           consecutive_offline_count?: number
@@ -3512,7 +3515,15 @@ export type Database = {
           tags?: Json | null
           total_events?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "devices_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       directors: {
         Row: {
