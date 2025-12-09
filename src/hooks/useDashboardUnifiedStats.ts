@@ -216,7 +216,7 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
           conversation_id,
           direction,
           agent_key,
-          conversations!inner(contact_type)
+          conversations!inner(contact_type, agent_key)
         `)
         .gte('created_at', start)
         .lte('created_at', end);
@@ -233,7 +233,8 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
 
       mensagensData?.forEach(msg => {
         const contactType = (msg.conversations as any)?.contact_type || 'Sem tipo';
-        const agentKey = msg.agent_key;
+        // Usar agent_key da CONVERSA (preferência) ou da mensagem (fallback)
+        const agentKey = (msg.conversations as any)?.agent_key || msg.agent_key;
         const agentName = agentKey === 'eduardo' ? 'Eduardo' : 
                           agentKey === 'sofia' ? 'Sofia' : 'Outro';
         
