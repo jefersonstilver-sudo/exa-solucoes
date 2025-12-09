@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { MonitorPlay, ArrowRight, AlertTriangle, CheckCircle, Wifi, WifiOff, TrendingDown } from 'lucide-react';
 import { DashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { useNavigate } from 'react-router-dom';
+import { FullUptimeBadge } from '@/components/admin/uptime/FullUptimeBadge';
 
 interface PanelsStatusCardProps {
   metrics: DashboardMetrics;
@@ -20,24 +21,29 @@ const PanelsStatusCard = ({ metrics, quedasPeriodo = 0 }: PanelsStatusCardProps)
   return (
     <Card className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.005] transition-all duration-300 ease-out">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm md:text-base flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MonitorPlay className="h-4 w-4 text-blue-500" />
-            Dispositivos
+        <CardTitle className="text-sm md:text-base flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MonitorPlay className="h-4 w-4 text-blue-500" />
+              Dispositivos
+            </div>
+            <div className="flex items-center gap-1.5">
+              {metrics.isRealtimeConnected ? (
+                <div className="flex items-center gap-1 text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
+                  <Wifi className="h-3 w-3 animate-pulse" />
+                  <span>Ao vivo</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">
+                  <WifiOff className="h-3 w-3" />
+                  <span>Offline</span>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            {metrics.isRealtimeConnected ? (
-              <div className="flex items-center gap-1 text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
-                <Wifi className="h-3 w-3 animate-pulse" />
-                <span>Ao vivo</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">
-                <WifiOff className="h-3 w-3" />
-                <span>Offline</span>
-              </div>
-            )}
-          </div>
+          
+          {/* Full Uptime Badge */}
+          <FullUptimeBadge compact />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

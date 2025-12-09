@@ -7361,6 +7361,47 @@ export type Database = {
         }
         Relationships: []
       }
+      uptime_records: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          ended_by_device_id: string | null
+          ended_by_device_name: string | null
+          id: string
+          is_current: boolean | null
+          started_at: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          ended_by_device_id?: string | null
+          ended_by_device_name?: string | null
+          id?: string
+          is_current?: boolean | null
+          started_at?: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          ended_by_device_id?: string | null
+          ended_by_device_name?: string | null
+          id?: string
+          is_current?: boolean | null
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uptime_records_ended_by_device_id_fkey"
+            columns: ["ended_by_device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_activity_logs: {
         Row: {
           action_description: string | null
