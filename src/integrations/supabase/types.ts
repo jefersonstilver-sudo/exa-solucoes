@@ -1041,7 +1041,10 @@ export type Database = {
           peak_hours: string | null
           position_validated: boolean | null
           position_validation_date: string | null
+          preco_anual: number | null
           preco_base: number | null
+          preco_semestral: number | null
+          preco_trimestral: number | null
           publico_estimado: number | null
           quantidade_telas: number | null
           status: string
@@ -1105,7 +1108,10 @@ export type Database = {
           peak_hours?: string | null
           position_validated?: boolean | null
           position_validation_date?: string | null
+          preco_anual?: number | null
           preco_base?: number | null
+          preco_semestral?: number | null
+          preco_trimestral?: number | null
           publico_estimado?: number | null
           quantidade_telas?: number | null
           status?: string
@@ -1169,7 +1175,10 @@ export type Database = {
           peak_hours?: string | null
           position_validated?: boolean | null
           position_validation_date?: string | null
+          preco_anual?: number | null
           preco_base?: number | null
+          preco_semestral?: number | null
+          preco_trimestral?: number | null
           publico_estimado?: number | null
           quantidade_telas?: number | null
           status?: string

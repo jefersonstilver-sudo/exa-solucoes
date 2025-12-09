@@ -56,29 +56,60 @@ export const calculatePrice = (
     };
   }
 
-  // CORREÇÃO CRÍTICA: Calcular valor total considerando meses do plano
-  let subtotalMensal = 0;
+  // CORREÇÃO: Usar preços manuais se disponíveis
+  let subtotal = 0;
   
-  // Somar o preço base mensal de cada painel
   cartItems.forEach(item => {
-    const precoBaseMensal = item.panel?.buildings?.preco_base || PLAN_PRICES[selectedPlan];
-    subtotalMensal += precoBaseMensal;
+    const building = item.panel?.buildings;
+    let itemPrice: number;
+    let usedManualPrice = false;
+    
+    switch (selectedPlan) {
+      case 3:
+        if (building?.preco_trimestral && building.preco_trimestral > 0) {
+          itemPrice = building.preco_trimestral;
+          usedManualPrice = true;
+        } else {
+          itemPrice = (building?.preco_base || PLAN_PRICES[1]) * 3 * 0.80;
+        }
+        break;
+      case 6:
+        if (building?.preco_semestral && building.preco_semestral > 0) {
+          itemPrice = building.preco_semestral;
+          usedManualPrice = true;
+        } else {
+          itemPrice = (building?.preco_base || PLAN_PRICES[1]) * 6 * 0.70;
+        }
+        break;
+      case 12:
+        if (building?.preco_anual && building.preco_anual > 0) {
+          itemPrice = building.preco_anual;
+          usedManualPrice = true;
+        } else {
+          itemPrice = (building?.preco_base || PLAN_PRICES[1]) * 12 * 0.625;
+        }
+        break;
+      case 1:
+      default:
+        itemPrice = building?.preco_base || PLAN_PRICES[1];
+        break;
+    }
+    
+    subtotal += itemPrice;
+    
+    console.log('💰 [PriceCalculator] ITEM:', {
+      panelId: item.panel.id,
+      buildingName: building?.nome,
+      selectedPlan,
+      itemPrice,
+      usedManualPrice
+    });
   });
   
-  // CORREÇÃO: Multiplicar pelo número de meses do plano
-  const subtotal = subtotalMensal * selectedPlan;
-  
-  console.log('💰 [PriceCalculator] CÁLCULO CORRIGIDO COM MESES:', {
+  console.log('💰 [PriceCalculator] SUBTOTAL TOTAL:', {
     selectedPlan,
     panelCount: cartItems.length,
-    subtotalMensal,
-    mesesPlano: selectedPlan,
-    subtotalTotal: subtotal,
-    cartItems: cartItems.map(item => ({
-      panelId: item.panel.id,
-      precoBaseMensal: item.panel?.buildings?.preco_base || 'usando padrão',
-      buildingName: item.panel?.buildings?.nome
-    }))
+    subtotal
   });
   
   // Aplicar desconto de cupom se houver
@@ -129,9 +160,8 @@ export const calculatePrice = (
   
   const calculation = `${cartItems.length} painéis × ${selectedPlan} meses (R$ ${subtotal.toFixed(2)})${couponDiscountPercent > 0 ? ` - ${couponDiscountPercent}% cupom` : ''}${applyPixDiscount ? ` - 5% PIX` : ''} = R$ ${finalPrice.toFixed(2)}`;
   
-  console.log('💰 [PriceCalculator] RESULTADO FINAL COM MESES:', {
-    subtotalMensal,
-    mesesPlano: selectedPlan,
+  console.log('💰 [PriceCalculator] RESULTADO FINAL:', {
+    selectedPlan,
     subtotal,
     couponDiscountPercent,
     afterCoupon,
