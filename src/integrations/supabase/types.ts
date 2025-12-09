@@ -5484,6 +5484,36 @@ export type Database = {
         }
         Relationships: []
       }
+      panel_offline_alert_buttons: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          emoji: string | null
+          id: string
+          label: string
+          ordem: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          emoji?: string | null
+          id?: string
+          label: string
+          ordem?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          emoji?: string | null
+          id?: string
+          label?: string
+          ordem?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       panel_offline_alert_config: {
         Row: {
           ativo: boolean | null
@@ -5522,6 +5552,76 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      panel_offline_alert_confirmations: {
+        Row: {
+          alert_history_id: string | null
+          button_id: string | null
+          button_label: string
+          confirmed_at: string | null
+          created_at: string | null
+          device_id: string | null
+          device_name: string | null
+          id: string
+          message_id: string | null
+          raw_webhook: Json | null
+          recipient_name: string | null
+          recipient_phone: string
+          reference_message_id: string | null
+        }
+        Insert: {
+          alert_history_id?: string | null
+          button_id?: string | null
+          button_label: string
+          confirmed_at?: string | null
+          created_at?: string | null
+          device_id?: string | null
+          device_name?: string | null
+          id?: string
+          message_id?: string | null
+          raw_webhook?: Json | null
+          recipient_name?: string | null
+          recipient_phone: string
+          reference_message_id?: string | null
+        }
+        Update: {
+          alert_history_id?: string | null
+          button_id?: string | null
+          button_label?: string
+          confirmed_at?: string | null
+          created_at?: string | null
+          device_id?: string | null
+          device_name?: string | null
+          id?: string
+          message_id?: string | null
+          raw_webhook?: Json | null
+          recipient_name?: string | null
+          recipient_phone?: string
+          reference_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panel_offline_alert_confirmations_alert_history_id_fkey"
+            columns: ["alert_history_id"]
+            isOneToOne: false
+            referencedRelation: "panel_offline_alerts_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "panel_offline_alert_confirmations_button_id_fkey"
+            columns: ["button_id"]
+            isOneToOne: false
+            referencedRelation: "panel_offline_alert_buttons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "panel_offline_alert_confirmations_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       panel_offline_alert_recipients: {
         Row: {

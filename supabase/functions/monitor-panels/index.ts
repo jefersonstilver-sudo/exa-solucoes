@@ -107,8 +107,17 @@ Deno.serve(async (req) => {
     let backOnlineDetected = 0;
     let alertsSent = 0;
 
-    // Helper to send WhatsApp message
-    const sendWhatsApp = async (phone: string, message: string): Promise<boolean> => {
+    // Get confirmation buttons
+    const { data: confirmButtons } = await supabase
+      .from('panel_offline_alert_buttons')
+      .select('*')
+      .eq('ativo', true)
+      .order('ordem', { ascending: true });
+
+    console.log(`📋 [MONITOR] ${confirmButtons?.length || 0} botões de confirmação ativos`);
+
+    // Helper to send WhatsApp message with optional buttons
+    const sendWhatsApp = async (phone: string, message: string, withButtons: boolean = false, deviceInfo?: { id: string; name: string }): Promise<{ success: boolean; messageId?: string }> => {
       try {
         // Ensure phone has country code
         let formattedPhone = phone.replace(/\D/g, '');
@@ -129,6 +138,39 @@ Deno.serve(async (req) => {
           headers['Client-Token'] = zapiConfig.client_token;
         }
 
+        // If buttons are enabled and we have buttons, use button-actions endpoint
+        if (withButtons && confirmButtons && confirmButtons.length > 0) {
+          const buttonActions = confirmButtons.map((btn) => ({
+            id: btn.id,
+            type: 'REPLY',
+            label: `${btn.emoji || '✅'} ${btn.label}`
+          }));
+
+          const response = await fetch(
+            `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-button-actions`,
+            {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ 
+                phone: formattedPhone, 
+                message,
+                buttonActions,
+                footer: 'Clique para confirmar'
+              })
+            }
+          );
+
+          const result = await response.json();
+          console.log(`📱 [MONITOR] Z-API button response:`, result);
+
+          if (result.error) {
+            console.error(`❌ [MONITOR] Z-API error:`, result.error);
+            return { success: false };
+          }
+          return { success: true, messageId: result.messageId };
+        }
+
+        // Regular text message (fallback or online notifications)
         const response = await fetch(
           `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`,
           {
@@ -143,12 +185,12 @@ Deno.serve(async (req) => {
 
         if (result.error) {
           console.error(`❌ [MONITOR] Z-API error:`, result.error);
-          return false;
+          return { success: false };
         }
-        return true;
+        return { success: true, messageId: result.messageId };
       } catch (err) {
         console.error('❌ [MONITOR] Erro ao enviar WhatsApp:', err);
-        return false;
+        return { success: false };
       }
     };
 
@@ -220,10 +262,18 @@ Deno.serve(async (req) => {
             `📅 Detectado às: ${now.toLocaleTimeString('pt-BR')}\n` +
             (isRepeatAlert ? `\n🔄 Este é o ${alertCount}º aviso` : '');
 
-          // Send to all recipients
+          // Send to all recipients with buttons
+          const sentRecipients: Array<{ phone: string; name: string; messageId?: string }> = [];
           for (const recipient of recipients) {
-            const sent = await sendWhatsApp(recipient.telefone, message);
-            if (sent) alertsSent++;
+            const result = await sendWhatsApp(recipient.telefone, message, true, { id: device.id, name: device.name });
+            if (result.success) {
+              alertsSent++;
+              sentRecipients.push({
+                phone: recipient.telefone,
+                name: recipient.nome,
+                messageId: result.messageId
+              });
+            }
           }
 
           // Update device metadata
@@ -248,13 +298,15 @@ Deno.serve(async (req) => {
             })
             .eq('id', device.id);
 
-          // Log alert
+          // Log alert with recipients info for confirmation tracking
           await supabase.from('panel_offline_alerts_history').insert({
             painel_id: device.id,
+            device_name: device.name,
             tipo: 'offline',
             mensagem: `Device ${device.name} offline há ${offlineDisplay} (regra: ${applicableRule.nome})`,
             tempo_offline_minutos: Math.round(timeSinceLastOnline / 60000),
             destinatarios_notificados: recipients.map(r => r.telefone),
+            recipients: sentRecipients,
             regra_id: applicableRule.id,
             regra_nome: applicableRule.nome
           });
@@ -306,7 +358,7 @@ Deno.serve(async (req) => {
             `📊 Último alerta: ${lastRuleName}`;
 
           for (const recipient of recipients) {
-            await sendWhatsApp(recipient.telefone, message);
+            await sendWhatsApp(recipient.telefone, message, false);
           }
 
           // Log online event

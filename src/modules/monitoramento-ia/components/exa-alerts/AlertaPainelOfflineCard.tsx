@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -23,7 +24,10 @@ import {
   Users,
   Edit2,
   AlertTriangle,
-  Zap
+  Zap,
+  MessageSquare,
+  CheckCircle,
+  Smile
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -55,6 +59,23 @@ interface AdminUser {
   telefone: string;
   email: string;
   role: string;
+}
+
+interface ConfirmButton {
+  id: string;
+  label: string;
+  emoji: string;
+  ordem: number;
+  ativo: boolean;
+}
+
+interface Confirmation {
+  id: string;
+  device_name: string;
+  recipient_phone: string;
+  recipient_name: string | null;
+  button_label: string;
+  confirmed_at: string;
 }
 
 // Format phone for display
@@ -105,9 +126,13 @@ export const AlertaPainelOfflineCard = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isRecipientsOpen, setIsRecipientsOpen] = useState(true);
   const [isRulesOpen, setIsRulesOpen] = useState(true);
+  const [isButtonsOpen, setIsButtonsOpen] = useState(false);
+  const [isConfirmationsOpen, setIsConfirmationsOpen] = useState(false);
   const [rules, setRules] = useState<AlertRule[]>([]);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [confirmButtons, setConfirmButtons] = useState<ConfirmButton[]>([]);
+  const [confirmations, setConfirmations] = useState<Confirmation[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
@@ -115,6 +140,11 @@ export const AlertaPainelOfflineCard = () => {
   const [newRecipientName, setNewRecipientName] = useState('');
   const [newRecipientPhone, setNewRecipientPhone] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
+
+  // Button dialog
+  const [showButtonDialog, setShowButtonDialog] = useState(false);
+  const [editingButton, setEditingButton] = useState<ConfirmButton | null>(null);
+  const [buttonForm, setButtonForm] = useState({ label: '', emoji: '✅' });
 
   // Rule dialog
   const [showRuleDialog, setShowRuleDialog] = useState(false);
@@ -161,12 +191,70 @@ export const AlertaPainelOfflineCard = () => {
 
       if (usersError) throw usersError;
       setAdminUsers(usersData || []);
+
+      // Load confirmation buttons
+      const { data: buttonsData } = await supabase
+        .from('panel_offline_alert_buttons')
+        .select('*')
+        .order('ordem', { ascending: true });
+      setConfirmButtons(buttonsData || []);
+
+      // Load recent confirmations
+      const { data: confirmData } = await supabase
+        .from('panel_offline_alert_confirmations')
+        .select('*')
+        .order('confirmed_at', { ascending: false })
+        .limit(20);
+      setConfirmations(confirmData || []);
     } catch (error) {
       console.error('Error loading offline alert data:', error);
       toast.error('Erro ao carregar configurações');
     } finally {
       setLoading(false);
     }
+  };
+
+  // ========== BUTTON MANAGEMENT ==========
+  const saveButton = async () => {
+    if (!buttonForm.label.trim()) {
+      toast.error('Label é obrigatório');
+      return;
+    }
+    setSaving(true);
+    try {
+      if (editingButton) {
+        await supabase.from('panel_offline_alert_buttons').update({
+          label: buttonForm.label.trim(),
+          emoji: buttonForm.emoji || '✅'
+        }).eq('id', editingButton.id);
+      } else {
+        await supabase.from('panel_offline_alert_buttons').insert({
+          label: buttonForm.label.trim(),
+          emoji: buttonForm.emoji || '✅',
+          ordem: confirmButtons.length + 1,
+          ativo: true
+        });
+      }
+      setShowButtonDialog(false);
+      loadData();
+      toast.success(editingButton ? 'Botão atualizado' : 'Botão criado');
+    } catch (error) {
+      toast.error('Erro ao salvar botão');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleButton = async (btn: ConfirmButton) => {
+    await supabase.from('panel_offline_alert_buttons').update({ ativo: !btn.ativo }).eq('id', btn.id);
+    loadData();
+  };
+
+  const deleteButton = async (id: string) => {
+    if (!confirm('Excluir este botão?')) return;
+    await supabase.from('panel_offline_alert_buttons').delete().eq('id', id);
+    loadData();
+    toast.success('Botão excluído');
   };
 
   // ========== RULE MANAGEMENT ==========
