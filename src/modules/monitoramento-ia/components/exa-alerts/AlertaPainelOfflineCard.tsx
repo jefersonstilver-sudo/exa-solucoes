@@ -27,7 +27,9 @@ import {
   Zap,
   MessageSquare,
   CheckCircle,
-  Smile
+  Smile,
+  Send,
+  Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -145,6 +147,9 @@ export const AlertaPainelOfflineCard = () => {
   const [showButtonDialog, setShowButtonDialog] = useState(false);
   const [editingButton, setEditingButton] = useState<ConfirmButton | null>(null);
   const [buttonForm, setButtonForm] = useState({ label: '', emoji: '✅' });
+  
+  // Sending test alert
+  const [sendingTestRuleId, setSendingTestRuleId] = useState<string | null>(null);
 
   // Rule dialog
   const [showRuleDialog, setShowRuleDialog] = useState(false);
@@ -399,6 +404,29 @@ export const AlertaPainelOfflineCard = () => {
     }
   };
 
+  // ========== SEND TEST ALERT ==========
+  const sendTestAlert = async (rule: AlertRule) => {
+    setSendingTestRuleId(rule.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('monitor-panels', {
+        body: { testMode: true, ruleId: rule.id }
+      });
+
+      if (error) throw error;
+
+      if (data?.alerts_sent > 0) {
+        toast.success(`Alerta de teste enviado! (${data.alerts_sent} mensagem${data.alerts_sent > 1 ? 's' : ''})`);
+      } else {
+        toast.warning('Nenhum painel offline encontrado para enviar o teste');
+      }
+    } catch (error) {
+      console.error('Error sending test alert:', error);
+      toast.error('Erro ao enviar alerta de teste');
+    } finally {
+      setSendingTestRuleId(null);
+    }
+  };
+
   // ========== RECIPIENT MANAGEMENT ==========
   const isUserAlreadyRecipient = (userId: string): boolean => {
     const user = adminUsers.find(u => u.id === userId);
@@ -632,7 +660,7 @@ export const AlertaPainelOfflineCard = () => {
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
                               <Switch
                                 checked={rule.ativo}
                                 onCheckedChange={() => toggleRule(rule)}
@@ -643,14 +671,30 @@ export const AlertaPainelOfflineCard = () => {
                                 size="icon"
                                 className="h-8 w-8"
                                 onClick={() => openEditRuleDialog(rule)}
+                                title="Editar regra"
                               >
                                 <Edit2 className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-500/10"
+                                onClick={() => sendTestAlert(rule)}
+                                disabled={sendingTestRuleId === rule.id}
+                                title="Enviar alerta de teste agora"
+                              >
+                                {sendingTestRuleId === rule.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Send className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 className="h-8 w-8 text-destructive hover:text-destructive"
                                 onClick={() => deleteRule(rule)}
+                                title="Excluir regra"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>

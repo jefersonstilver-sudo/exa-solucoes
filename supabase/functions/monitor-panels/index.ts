@@ -29,7 +29,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('🤖 [MONITOR] Iniciando verificação de painéis (devices)...');
+    // Check for test mode (force send)
+    const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+    const testMode = body.testMode === true;
+    const testRuleId = body.ruleId;
+    
+    console.log(`🤖 [MONITOR] Iniciando verificação ${testMode ? '(MODO TESTE)' : ''}...`);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -221,14 +226,22 @@ Deno.serve(async (req) => {
       const metadata = (device.metadata || {}) as DeviceMetadata;
 
       // Find which rule applies based on offline duration
-      const applicableRule = alertRules
-        .filter(r => offlineSeconds >= r.tempo_offline_segundos)
-        .sort((a, b) => b.tempo_offline_segundos - a.tempo_offline_segundos)[0];
+      let applicableRule: AlertRule | undefined;
+      
+      if (testMode && testRuleId) {
+        // In test mode, use the specified rule
+        applicableRule = alertRules.find(r => r.id === testRuleId);
+      } else {
+        // Normal mode: find rule based on offline duration
+        applicableRule = alertRules
+          .filter(r => offlineSeconds >= r.tempo_offline_segundos)
+          .sort((a, b) => b.tempo_offline_segundos - a.tempo_offline_segundos)[0];
+      }
 
-      const isOffline = applicableRule !== undefined;
+      const isOffline = applicableRule !== undefined || testMode;
 
       // ========== DETECT: DEVICE WENT OFFLINE ==========
-      if (isOffline) {
+      if (isOffline && applicableRule) {
         console.log(`🔴 [MONITOR] Device ${device.name}: offline há ${formatOfflineDuration(timeSinceLastOnline)}, regra aplicável: ${applicableRule?.nome || 'nenhuma'}`);
         offlineDetected++;
 
@@ -240,30 +253,28 @@ Deno.serve(async (req) => {
         let shouldSendAlert = false;
         let isRepeatAlert = false;
 
-        if (!alreadyTriggeredThisRule) {
+        if (testMode) {
+          // Test mode: always send
+          shouldSendAlert = true;
+          console.log(`🧪 [MONITOR] MODO TESTE: Forçando envio do alerta`);
+        } else if (!alreadyTriggeredThisRule) {
           // First time this rule is triggered
           shouldSendAlert = true;
           console.log(`🔔 [MONITOR] Primeira vez que regra "${applicableRule.nome}" é acionada para ${device.name}`);
-        } else if (applicableRule.repetir_ate_resolver) {
-          // Check if enough time passed for repeat using last_offline_alert_at
-          if (lastAlertAt) {
-            const timeSinceLastAlert = now.getTime() - lastAlertAt.getTime();
-            const intervaloMs = applicableRule.intervalo_repeticao_segundos * 1000;
-            
-            console.log(`⏱️ [MONITOR] Device ${device.name}: tempo desde último alerta = ${Math.round(timeSinceLastAlert/1000)}s, intervalo configurado = ${applicableRule.intervalo_repeticao_segundos}s`);
-            
-            if (timeSinceLastAlert >= intervaloMs) {
-              shouldSendAlert = true;
-              isRepeatAlert = true;
-              console.log(`🔔 [MONITOR] Repetindo alerta da regra "${applicableRule.nome}" para ${device.name} (passou ${Math.round(timeSinceLastAlert/1000)}s >= ${applicableRule.intervalo_repeticao_segundos}s)`);
-            } else {
-              console.log(`⏸️ [MONITOR] Aguardando intervalo para repetir alerta: faltam ${Math.round((intervaloMs - timeSinceLastAlert)/1000)}s`);
-            }
-          } else {
-            // No last alert recorded but rule already triggered - send alert
+        } else if (applicableRule.repetir_ate_resolver && lastAlertAt) {
+          // Check if enough time passed for repeat
+          const timeSinceLastAlert = now.getTime() - lastAlertAt.getTime();
+          const intervaloMs = applicableRule.intervalo_repeticao_segundos * 1000;
+          
+          console.log(`⏱️ [MONITOR] Device ${device.name}: tempo desde último alerta = ${Math.round(timeSinceLastAlert/1000)}s, intervalo configurado = ${applicableRule.intervalo_repeticao_segundos}s`);
+          
+          if (timeSinceLastAlert >= intervaloMs) {
             shouldSendAlert = true;
             isRepeatAlert = true;
-            console.log(`🔔 [MONITOR] Repetindo alerta (sem last_offline_alert_at registrado)`);
+            console.log(`🔔 [MONITOR] Repetindo alerta da regra "${applicableRule.nome}" para ${device.name} (passou ${Math.round(timeSinceLastAlert/1000)}s >= ${applicableRule.intervalo_repeticao_segundos}s)`);
+          } else {
+            const remaining = Math.round((intervaloMs - timeSinceLastAlert) / 1000);
+            console.log(`⏸️ [MONITOR] Aguardando intervalo para repetir alerta: faltam ${remaining}s`);
           }
         }
 
@@ -272,24 +283,30 @@ Deno.serve(async (req) => {
           const offlineDisplay = formatOfflineDuration(timeSinceLastOnline);
 
           // Build message with rule info including address and provider
-          const emoji = applicableRule.tempo_offline_segundos >= 1800 ? '🚨' : 
+          const emoji = testMode ? '🧪' :
+                        applicableRule.tempo_offline_segundos >= 1800 ? '🚨' : 
                         applicableRule.tempo_offline_segundos >= 300 ? '⚠️' : '🔴';
           
-          // Get address and provider from device or building
+          // Get address and provider DIRECTLY from device fields
           const buildingData = (device as any).buildings;
           const endereco = device.address || buildingData?.endereco || '';
           const bairro = buildingData?.bairro || '';
           const provedor = device.provider || buildingData?.notion_internet || '';
           
-          // Build address line
-          const enderecoLine = endereco 
-            ? `🏠 Endereço: ${endereco}${bairro ? `, ${bairro}` : ''}\n` 
-            : '';
-          const provedorLine = provedor 
-            ? `🌐 Provedor: ${provedor}\n` 
-            : '';
+          console.log(`📍 [MONITOR] Device ${device.name} - Endereço: "${endereco}", Bairro: "${bairro}", Provedor: "${provedor}"`);
           
-          const message = `${emoji} *${applicableRule.nome.toUpperCase()}*\n\n` +
+          // Build address line
+          let enderecoLine = '';
+          if (endereco) {
+            enderecoLine = bairro 
+              ? `🏠 Endereço: ${endereco}, ${bairro}\n` 
+              : `🏠 Endereço: ${endereco}\n`;
+          }
+          
+          const provedorLine = provedor ? `🌐 Provedor: ${provedor}\n` : '';
+          
+          const testLabel = testMode ? ' (TESTE)' : '';
+          const message = `${emoji} *${applicableRule.nome.toUpperCase()}${testLabel}*\n\n` +
             `📍 Local: ${device.condominio_name || device.name}\n` +
             enderecoLine +
             `🖥️ Painel: ${device.name}\n` +
@@ -312,41 +329,63 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Update device metadata
-          const newTriggeredRules = [...triggeredRules];
-          if (!newTriggeredRules.includes(applicableRule.id)) {
-            newTriggeredRules.push(applicableRule.id);
+          // Update device metadata using RPC for safe JSONB merge
+          if (!testMode) {
+            const newTriggeredRules = [...triggeredRules];
+            if (!newTriggeredRules.includes(applicableRule.id)) {
+              newTriggeredRules.push(applicableRule.id);
+            }
+
+            // Use RPC function for safe metadata update
+            const { error: rpcError } = await supabase.rpc('update_device_alert_metadata', {
+              p_device_id: device.id,
+              p_last_offline_alert_at: now.toISOString(),
+              p_offline_alert_count: alertCount,
+              p_triggered_rules: newTriggeredRules,
+              p_last_rule_id: applicableRule.id
+            });
+
+            if (rpcError) {
+              console.error(`❌ [MONITOR] Erro ao atualizar metadata via RPC:`, rpcError);
+              // Fallback to direct update if RPC fails
+              const newMetadata: DeviceMetadata = {
+                ...metadata,
+                last_offline_alert_at: now.toISOString(),
+                offline_alert_count: alertCount,
+                triggered_rules: newTriggeredRules,
+                last_rule_id: applicableRule.id
+              };
+              await supabase
+                .from('devices')
+                .update({ status: 'offline', metadata: newMetadata })
+                .eq('id', device.id);
+            } else {
+              // Just update status
+              await supabase
+                .from('devices')
+                .update({ status: 'offline' })
+                .eq('id', device.id);
+            }
           }
-
-          const newMetadata: DeviceMetadata = {
-            ...metadata,
-            last_offline_alert_at: now.toISOString(),
-            offline_alert_count: alertCount,
-            triggered_rules: newTriggeredRules,
-            last_rule_id: applicableRule.id
-          };
-
-          await supabase
-            .from('devices')
-            .update({ 
-              status: 'offline',
-              metadata: newMetadata
-            })
-            .eq('id', device.id);
 
           // Log alert with recipients info for confirmation tracking
           await supabase.from('panel_offline_alerts_history').insert({
             painel_id: device.id,
             device_name: device.name,
-            tipo: 'offline',
-            mensagem: `Device ${device.name} offline há ${offlineDisplay} (regra: ${applicableRule.nome})`,
+            tipo: testMode ? 'teste' : 'offline',
+            mensagem: `Device ${device.name} offline há ${offlineDisplay} (regra: ${applicableRule.nome})${testMode ? ' [TESTE]' : ''}`,
             tempo_offline_minutos: Math.round(timeSinceLastOnline / 60000),
             destinatarios_notificados: recipients.map(r => r.telefone),
             recipients: sentRecipients,
             regra_id: applicableRule.id,
             regra_nome: applicableRule.nome
           });
-        } else if (currentStatus !== 'offline') {
+          
+          // In test mode, only send for the first offline device found
+          if (testMode) {
+            break;
+          }
+        } else if (currentStatus !== 'offline' && !testMode) {
           // Just update status without sending alert
           await supabase
             .from('devices')
@@ -356,7 +395,7 @@ Deno.serve(async (req) => {
       }
 
       // ========== DETECT: DEVICE CAME BACK ONLINE ==========
-      if (currentStatus === 'offline' && !isOffline && lastOnline) {
+      if (!testMode && currentStatus === 'offline' && !isOffline && lastOnline) {
         console.log(`🟢 [MONITOR] Device VOLTOU ONLINE: ${device.name}`);
         backOnlineDetected++;
 
@@ -364,21 +403,22 @@ Deno.serve(async (req) => {
         const notifyOnlineRules = alertRules.filter(r => r.notificar_quando_online);
         const wasAlerted = metadata.triggered_rules && metadata.triggered_rules.length > 0;
 
-        // Reset metadata
-        const newMetadata: DeviceMetadata = {
-          ...metadata,
-          last_offline_alert_at: undefined,
-          offline_alert_count: 0,
-          triggered_rules: [],
-          last_rule_id: undefined
-        };
+        // Reset metadata using RPC
+        const { error: rpcError } = await supabase.rpc('update_device_alert_metadata', {
+          p_device_id: device.id,
+          p_last_offline_alert_at: null,
+          p_offline_alert_count: 0,
+          p_triggered_rules: [],
+          p_last_rule_id: null
+        });
+
+        if (rpcError) {
+          console.error(`❌ [MONITOR] Erro ao resetar metadata via RPC:`, rpcError);
+        }
 
         await supabase
           .from('devices')
-          .update({ 
-            status: 'online',
-            metadata: newMetadata
-          })
+          .update({ status: 'online' })
           .eq('id', device.id);
 
         // Send online notification if was previously alerted
@@ -417,6 +457,7 @@ Deno.serve(async (req) => {
       back_online_detected: backOnlineDetected,
       alerts_sent: alertsSent,
       monitoring_active: true,
+      test_mode: testMode
     };
 
     console.log('✅ [MONITOR] Verificação concluída:', summary);
