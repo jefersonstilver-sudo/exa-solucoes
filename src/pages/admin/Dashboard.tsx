@@ -4,6 +4,7 @@ import { useDashboardUnifiedStats } from '@/hooks/useDashboardUnifiedStats';
 import { useDashboardPreferences } from '@/hooks/useDashboardPreferences';
 import DashboardCharts from '@/components/admin/charts/DashboardCharts';
 import DashboardHeader from '@/components/admin/dashboard/DashboardHeader';
+import DashboardGreeting from '@/components/admin/dashboard/DashboardGreeting';
 import DashboardFinancialSummary from '@/components/admin/dashboard/DashboardFinancialSummary';
 import DashboardErrorState from '@/components/admin/dashboard/DashboardErrorState';
 import DashboardLoadingState from '@/components/admin/dashboard/DashboardLoadingState';
@@ -101,6 +102,8 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-white p-2 md:p-4 lg:p-6">
       <div className="max-w-[2000px] mx-auto space-y-4 md:space-y-6">
+        {/* Personalized Greeting */}
+        <DashboardGreeting />
         {/* Header Compacto */}
         <DashboardHeader 
           periodFilter={periodFilter}

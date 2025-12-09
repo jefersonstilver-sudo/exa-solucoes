@@ -37,6 +37,7 @@ import {
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { useDynamicModulePermissions, MODULE_KEYS } from '@/hooks/useDynamicModulePermissions';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -111,7 +112,10 @@ export function ModernAdminSidebar() {
     }
   };
 
-  // 7 SEÇÕES REORGANIZADAS conforme especificação
+  // Dynamic module permissions hook
+  const { hasModuleAccess, isMasterAccount, isLoading: permissionsLoading } = useDynamicModulePermissions();
+
+  // 7 SEÇÕES REORGANIZADAS conforme especificação - com moduleKey para permissões dinâmicas
   const navigationGroups = [
     {
       label: 'Gestão Principal',
@@ -120,13 +124,13 @@ export function ModernAdminSidebar() {
           title: 'Dashboard',
           href: basePath,
           icon: LayoutDashboard,
-          permission: 'canViewDashboard'
+          moduleKey: MODULE_KEYS.dashboard
         },
         {
           title: 'Sync Notion',
           href: buildPath('sync-notion'),
           icon: Building2,
-          permission: 'canManageBuildings',
+          moduleKey: MODULE_KEYS.sync_notion,
           badge: '🔄',
           badgeColor: 'bg-blue-500'
         },
@@ -134,43 +138,43 @@ export function ModernAdminSidebar() {
           title: 'Pedidos',
           href: buildPath('pedidos'),
           icon: ShoppingBag,
-          permission: 'canViewOrders'
+          moduleKey: MODULE_KEYS.pedidos
         },
         {
           title: 'Propostas',
           href: buildPath('propostas'),
           icon: FileText,
-          permission: 'canViewOrders'
+          moduleKey: MODULE_KEYS.propostas
         },
         {
           title: 'Jurídico',
           href: buildPath('juridico'),
           icon: Scale,
-          permission: 'canViewOrders'
+          moduleKey: MODULE_KEYS.juridico
         },
         {
           title: 'Assinaturas',
           href: buildPath('assinaturas'),
           icon: CreditCard,
-          permission: 'canViewOrders'
+          moduleKey: MODULE_KEYS.assinaturas
         },
         {
           title: 'Aprovações',
           href: buildPath('aprovacoes'),
           icon: CheckSquare,
-          permission: 'canViewApprovals'
+          moduleKey: MODULE_KEYS.aprovacoes
         },
         {
           title: 'Cupons',
           href: buildPath('cupons'),
           icon: Ticket,
-          permission: 'canManageCoupons'
+          moduleKey: MODULE_KEYS.cupons
         },
         {
           title: 'Benefícios Prestadores',
           href: buildPath('beneficio-prestadores'),
           icon: Gift,
-          permission: 'canManageProviderBenefits'
+          moduleKey: MODULE_KEYS.beneficios
         }
       ]
     },
@@ -181,13 +185,13 @@ export function ModernAdminSidebar() {
           title: 'CRM Site',
           href: buildPath('crm'),
           icon: UsersRound,
-          permission: 'canViewCRM'
+          moduleKey: MODULE_KEYS.crm_site
         },
         {
           title: 'CRM Chat',
           href: buildPath('crm-chat'),
           icon: MessageSquare,
-          permission: 'canViewCRM',
+          moduleKey: MODULE_KEYS.crm_chat,
           badge: unreadCount > 0 ? unreadCount : undefined,
           badgeColor: 'bg-green-500'
         },
@@ -195,7 +199,7 @@ export function ModernAdminSidebar() {
           title: 'Escalações',
           href: buildPath('escalacoes'),
           icon: AlertTriangle,
-          permission: 'canViewCRM',
+          moduleKey: MODULE_KEYS.escalacoes,
           badge: escalacoesPendentes > 0 ? escalacoesPendentes : undefined,
           badgeColor: 'bg-orange-500'
         }
@@ -208,15 +212,13 @@ export function ModernAdminSidebar() {
           title: 'Agentes Sofia',
           href: buildPath('agentes-sofia'),
           icon: Bot,
-          permission: 'canManageSystemSettings',
-          requireSuperAdmin: true
+          moduleKey: MODULE_KEYS.agentes_sofia
         },
         {
           title: 'EXA Alerts',
           href: buildPath('exa-alerts'),
           icon: Brain,
-          permission: 'canManageSystemSettings',
-          requireSuperAdmin: true
+          moduleKey: MODULE_KEYS.exa_alerts
         }
       ]
     },
@@ -227,13 +229,13 @@ export function ModernAdminSidebar() {
           title: 'Prédios',
           href: buildPath('predios'),
           icon: Building2,
-          permission: 'canManageBuildings'
+          moduleKey: MODULE_KEYS.predios
         },
         {
           title: 'Painéis EXA',
           href: buildPath('paineis-exa'),
           icon: Tv,
-          permission: 'canManagePanels',
+          moduleKey: MODULE_KEYS.paineis,
           badge: offlineCount > 0 ? offlineCount : undefined,
           badgeColor: 'bg-red-500'
         }
@@ -246,13 +248,13 @@ export function ModernAdminSidebar() {
           title: 'Síndicos Interessados',
           href: buildPath('sindicos-interessados'),
           icon: UserCheck,
-          permission: 'canViewSindicosInteressados'
+          moduleKey: MODULE_KEYS.sindicos
         },
         {
           title: 'Leads EXA',
           href: buildPath('leads-exa'),
           icon: Zap,
-          permission: 'canViewLeadsExa'
+          moduleKey: MODULE_KEYS.leads
         }
       ]
     },
@@ -263,26 +265,25 @@ export function ModernAdminSidebar() {
           title: 'Vídeos Anunciantes',
           href: buildPath('videos'),
           icon: Video,
-          permission: 'canManageVideos'
+          moduleKey: MODULE_KEYS.videos_anunciantes
         },
         {
           title: 'Vídeos Site EXA',
           href: buildPath('videos-site'),
           icon: Film,
-          permission: 'canManagePortfolio'
+          moduleKey: MODULE_KEYS.videos_site
         },
         {
           title: 'Ticker',
           href: buildPath('ticker'),
           icon: Images,
-          permission: 'canManageHomepageConfig'
+          moduleKey: MODULE_KEYS.ticker
         },
         {
           title: 'Editor de Vídeos',
           href: buildPath('editor-video-controle'),
           icon: Clapperboard,
-          permission: 'canManageSystemSettings',
-          requireSuperAdmin: true,
+          moduleKey: MODULE_KEYS.editor_videos,
           badge: 'BETA',
           badgeColor: 'bg-purple-500'
         },
@@ -290,7 +291,7 @@ export function ModernAdminSidebar() {
           title: 'Emails',
           href: buildPath('comunicacoes'),
           icon: Mail,
-          permission: 'canManageEmails'
+          moduleKey: MODULE_KEYS.emails
         }
       ]
     },
@@ -301,45 +302,45 @@ export function ModernAdminSidebar() {
           title: 'Usuários',
           href: buildPath('usuarios'),
           icon: Users,
-          permission: 'canManageUsers',
-          requireSuperAdmin: true
+          moduleKey: MODULE_KEYS.usuarios
         },
         {
           title: 'Notificações',
           href: buildPath('notificacoes'),
           icon: Bell,
-          permission: 'canManageNotifications'
+          moduleKey: MODULE_KEYS.notificacoes
         },
         {
           title: 'Relatórios Financeiros',
           href: buildPath('relatorios-financeiros'),
           icon: FileBarChart,
-          permission: 'canViewFinancialReports'
+          moduleKey: MODULE_KEYS.relatorios
         },
         {
           title: 'Segurança',
           href: buildPath('seguranca'),
           icon: Shield,
-          permission: 'canManageSystemSettings',
-          requireSuperAdmin: true
+          moduleKey: MODULE_KEYS.seguranca
         },
         {
           title: 'Configurações',
           href: buildPath('configuracoes'),
           icon: Settings,
-          permission: 'canManageSystemSettings',
-          requireSuperAdmin: true
+          moduleKey: MODULE_KEYS.configuracoes
         }
       ]
     }
   ];
 
-  // Filter items based on permissions
+  // Filter items based on DYNAMIC MODULE PERMISSIONS from database
   const filteredGroups = navigationGroups.map(group => ({
     ...group,
     items: group.items.filter(item => {
-      const hasPermission = !item.permission || permissions[item.permission as keyof typeof permissions];
-      return hasPermission;
+      // Master account always has access
+      if (isMasterAccount) return true;
+      
+      // Check dynamic permission from database
+      return hasModuleAccess(item.moduleKey);
     })
   })).filter(group => group.items.length > 0);
 
