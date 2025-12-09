@@ -5,12 +5,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface AlertConfig {
-  ativo: boolean;
-  tempo_offline_minutos: number; // Stored as seconds
+interface AlertRule {
+  id: string;
+  nome: string;
+  tempo_offline_segundos: number;
+  intervalo_repeticao_segundos: number;
   repetir_ate_resolver: boolean;
-  intervalo_repeticao_minutos: number; // Stored as seconds
   notificar_quando_online: boolean;
+  ativo: boolean;
+  prioridade: number;
+}
+
+interface DeviceMetadata {
+  last_offline_alert_at?: string;
+  offline_alert_count?: number;
+  triggered_rules?: string[];
+  last_rule_id?: string;
 }
 
 Deno.serve(async (req) => {
@@ -23,22 +33,30 @@ Deno.serve(async (req) => {
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 1. Get offline alert config
-    const { data: alertConfig } = await supabase
-      .from('panel_offline_alert_config')
+    // 1. Get all active alert rules ordered by threshold
+    const { data: alertRules, error: rulesError } = await supabase
+      .from('panel_offline_alert_rules')
       .select('*')
-      .limit(1)
-      .single();
+      .eq('ativo', true)
+      .order('tempo_offline_segundos', { ascending: true });
 
-    if (!alertConfig?.ativo) {
-      console.log('⏸️ [MONITOR] Alertas de offline desativados');
-      return new Response(JSON.stringify({ message: 'Alertas desativados' }), {
+    if (rulesError) {
+      console.error('❌ [MONITOR] Erro ao buscar regras:', rulesError);
+      throw rulesError;
+    }
+
+    if (!alertRules || alertRules.length === 0) {
+      console.log('⏸️ [MONITOR] Nenhuma regra de alerta ativa');
+      return new Response(JSON.stringify({ message: 'Sem regras ativas' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
       });
     }
+
+    console.log(`📋 [MONITOR] ${alertRules.length} regra(s) de alerta ativa(s)`);
 
     // 2. Get recipients
     const { data: recipients } = await supabase
@@ -46,7 +64,32 @@ Deno.serve(async (req) => {
       .select('*')
       .eq('ativo', true);
 
-    // 3. Get all active devices (the actual panels with AnyDesk)
+    if (!recipients || recipients.length === 0) {
+      console.log('⏸️ [MONITOR] Nenhum destinatário configurado');
+      return new Response(JSON.stringify({ message: 'Sem destinatários' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      });
+    }
+
+    // 3. Get Z-API config
+    const { data: agent } = await supabase
+      .from('agents')
+      .select('zapi_config')
+      .eq('key', 'exa_alert')
+      .single();
+
+    if (!agent?.zapi_config) {
+      console.error('❌ [MONITOR] Z-API config não encontrada para exa_alert');
+      return new Response(JSON.stringify({ error: 'Z-API não configurado' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      });
+    }
+
+    const zapiConfig = agent.zapi_config as { instance_id: string; token: string; client_token?: string };
+
+    // 4. Get all active devices
     const { data: devices, error: devicesError } = await supabase
       .from('devices')
       .select('*')
@@ -60,89 +103,143 @@ Deno.serve(async (req) => {
     console.log(`📊 [MONITOR] Analisando ${devices?.length || 0} devices ativos...`);
 
     const now = new Date();
-    // Values are in seconds
-    const offlineThresholdMs = (alertConfig.tempo_offline_minutos || 60) * 1000;
-    const repeatIntervalMs = (alertConfig.intervalo_repeticao_minutos || 300) * 1000;
-    
     let offlineDetected = 0;
     let backOnlineDetected = 0;
     let alertsSent = 0;
 
+    // Helper to send WhatsApp message
+    const sendWhatsApp = async (phone: string, message: string): Promise<boolean> => {
+      try {
+        // Ensure phone has country code
+        let formattedPhone = phone.replace(/\D/g, '');
+        if (!formattedPhone.startsWith('55') && formattedPhone.length === 11) {
+          formattedPhone = '55' + formattedPhone;
+        }
+
+        console.log(`📱 [MONITOR] Enviando para ${formattedPhone}...`);
+
+        const headers: Record<string, string> = { 
+          'Content-Type': 'application/json'
+        };
+
+        // Add Client-Token if available (CRITICAL for Z-API auth!)
+        if (zapiClientToken) {
+          headers['Client-Token'] = zapiClientToken;
+        } else if (zapiConfig.client_token) {
+          headers['Client-Token'] = zapiConfig.client_token;
+        }
+
+        const response = await fetch(
+          `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`,
+          {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ phone: formattedPhone, message })
+          }
+        );
+
+        const result = await response.json();
+        console.log(`📱 [MONITOR] Z-API response:`, result);
+
+        if (result.error) {
+          console.error(`❌ [MONITOR] Z-API error:`, result.error);
+          return false;
+        }
+        return true;
+      } catch (err) {
+        console.error('❌ [MONITOR] Erro ao enviar WhatsApp:', err);
+        return false;
+      }
+    };
+
+    // Helper to format offline duration
+    const formatOfflineDuration = (ms: number): string => {
+      const seconds = Math.round(ms / 1000);
+      if (seconds < 60) return `${seconds}s`;
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      if (minutes < 60) return `${minutes}min ${remainingSeconds}s`;
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+      return `${hours}h ${remainingMinutes}min`;
+    };
+
     for (const device of devices || []) {
       const lastOnline = device.last_online_at ? new Date(device.last_online_at) : null;
       const timeSinceLastOnline = lastOnline ? now.getTime() - lastOnline.getTime() : Infinity;
-      const isOffline = timeSinceLastOnline > offlineThresholdMs;
+      const offlineSeconds = Math.round(timeSinceLastOnline / 1000);
       const currentStatus = device.status;
+      const metadata = (device.metadata || {}) as DeviceMetadata;
 
-      // Detect: online → offline
-      if (currentStatus !== 'offline' && isOffline) {
-        console.warn(`🔴 [MONITOR] Device OFFLINE detectado: ${device.name}`);
+      // Find which rule applies based on offline duration
+      const applicableRule = alertRules
+        .filter(r => offlineSeconds >= r.tempo_offline_segundos)
+        .sort((a, b) => b.tempo_offline_segundos - a.tempo_offline_segundos)[0];
+
+      const isOffline = applicableRule !== undefined;
+
+      // ========== DETECT: DEVICE WENT OFFLINE ==========
+      if (isOffline) {
+        console.log(`🔴 [MONITOR] Device ${device.name}: offline há ${formatOfflineDuration(timeSinceLastOnline)}, regra aplicável: ${applicableRule?.nome || 'nenhuma'}`);
         offlineDetected++;
 
-        // Get metadata for alert tracking
-        const metadata = (device.metadata || {}) as { last_offline_alert_at?: string; offline_alert_count?: number };
+        const triggeredRules = metadata.triggered_rules || [];
+        const alreadyTriggeredThisRule = triggeredRules.includes(applicableRule.id);
         const lastAlertAt = metadata.last_offline_alert_at ? new Date(metadata.last_offline_alert_at) : null;
-        const shouldSendAlert = !lastAlertAt || 
-          (alertConfig.repetir_ate_resolver && (now.getTime() - lastAlertAt.getTime() > repeatIntervalMs));
 
-        if (shouldSendAlert && recipients && recipients.length > 0) {
-          const offlineSeconds = Math.round(timeSinceLastOnline / 1000);
-          const offlineDisplay = offlineSeconds >= 60 
-            ? `${Math.floor(offlineSeconds / 60)}min ${offlineSeconds % 60}s`
-            : `${offlineSeconds}s`;
+        // Determine if we should send alert
+        let shouldSendAlert = false;
+        let isRepeatAlert = false;
+
+        if (!alreadyTriggeredThisRule) {
+          // First time this rule is triggered
+          shouldSendAlert = true;
+          console.log(`🔔 [MONITOR] Primeira vez que regra "${applicableRule.nome}" é acionada para ${device.name}`);
+        } else if (applicableRule.repetir_ate_resolver && lastAlertAt) {
+          // Check if enough time passed for repeat
+          const timeSinceLastAlert = now.getTime() - lastAlertAt.getTime();
+          if (timeSinceLastAlert >= applicableRule.intervalo_repeticao_segundos * 1000) {
+            shouldSendAlert = true;
+            isRepeatAlert = true;
+            console.log(`🔔 [MONITOR] Repetindo alerta da regra "${applicableRule.nome}" para ${device.name}`);
+          }
+        }
+
+        if (shouldSendAlert) {
           const alertCount = (metadata.offline_alert_count || 0) + 1;
+          const offlineDisplay = formatOfflineDuration(timeSinceLastOnline);
+
+          // Build message with rule info
+          const emoji = applicableRule.tempo_offline_segundos >= 1800 ? '🚨' : 
+                        applicableRule.tempo_offline_segundos >= 300 ? '⚠️' : '🔴';
           
-          // Send WhatsApp alert via Z-API
-          try {
-            const { data: agent } = await supabase
-              .from('agents')
-              .select('zapi_config')
-              .eq('key', 'exa_alert')
-              .single();
+          const message = `${emoji} *${applicableRule.nome.toUpperCase()}*\n\n` +
+            `📍 Local: ${device.condominio_name || device.name}\n` +
+            `🖥️ Painel: ${device.name}\n` +
+            `⏱️ Offline há: ${offlineDisplay}\n` +
+            `📅 Detectado às: ${now.toLocaleTimeString('pt-BR')}\n` +
+            (isRepeatAlert ? `\n🔄 Este é o ${alertCount}º aviso` : '');
 
-            if (agent?.zapi_config) {
-              const zapiConfig = agent.zapi_config as { instance_id: string; token: string };
-              
-              for (const recipient of recipients) {
-                // Ensure phone has country code
-                let phone = recipient.telefone.replace(/\D/g, '');
-                if (!phone.startsWith('55') && phone.length === 11) {
-                  phone = '55' + phone;
-                }
-                
-                const message = `🔴 *PAINEL OFFLINE*\n\n` +
-                  `📍 Local: ${device.condominio_name || device.name}\n` +
-                  `🖥️ Painel: ${device.name}\n` +
-                  `⏱️ Offline há: ${offlineDisplay}\n` +
-                  `📅 Detectado às: ${now.toLocaleTimeString('pt-BR')}\n` +
-                  (alertCount > 1 ? `\n⚠️ Este é o ${alertCount}º aviso` : '');
-
-                console.log(`📱 [MONITOR] Enviando alerta para ${phone}...`);
-                
-                const zapiResponse = await fetch(`https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ phone, message })
-                });
-                
-                const zapiResult = await zapiResponse.json();
-                console.log(`📱 [MONITOR] Z-API response:`, zapiResult);
-              }
-              alertsSent++;
-            } else {
-              console.error('❌ [MONITOR] Z-API config não encontrada para exa_alert');
-            }
-          } catch (err) {
-            console.error('❌ [MONITOR] Erro ao enviar alerta:', err);
+          // Send to all recipients
+          for (const recipient of recipients) {
+            const sent = await sendWhatsApp(recipient.telefone, message);
+            if (sent) alertsSent++;
           }
 
-          // Update device metadata for alert tracking
-          const newMetadata = {
-            ...device.metadata,
+          // Update device metadata
+          const newTriggeredRules = [...triggeredRules];
+          if (!newTriggeredRules.includes(applicableRule.id)) {
+            newTriggeredRules.push(applicableRule.id);
+          }
+
+          const newMetadata: DeviceMetadata = {
+            ...metadata,
             last_offline_alert_at: now.toISOString(),
-            offline_alert_count: alertCount
+            offline_alert_count: alertCount,
+            triggered_rules: newTriggeredRules,
+            last_rule_id: applicableRule.id
           };
-          
+
           await supabase
             .from('devices')
             .update({ 
@@ -155,11 +252,13 @@ Deno.serve(async (req) => {
           await supabase.from('panel_offline_alerts_history').insert({
             painel_id: device.id,
             tipo: 'offline',
-            mensagem: `Device ${device.name} offline há ${offlineDisplay}`,
+            mensagem: `Device ${device.name} offline há ${offlineDisplay} (regra: ${applicableRule.nome})`,
             tempo_offline_minutos: Math.round(timeSinceLastOnline / 60000),
-            destinatarios_notificados: recipients.map(r => r.telefone)
+            destinatarios_notificados: recipients.map(r => r.telefone),
+            regra_id: applicableRule.id,
+            regra_nome: applicableRule.nome
           });
-        } else {
+        } else if (currentStatus !== 'offline') {
           // Just update status without sending alert
           await supabase
             .from('devices')
@@ -168,20 +267,24 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Detect: offline → online
-      if (currentStatus === 'offline' && !isOffline) {
+      // ========== DETECT: DEVICE CAME BACK ONLINE ==========
+      if (currentStatus === 'offline' && !isOffline && lastOnline) {
         console.log(`🟢 [MONITOR] Device VOLTOU ONLINE: ${device.name}`);
         backOnlineDetected++;
 
-        const metadata = (device.metadata || {}) as { last_offline_alert_at?: string; offline_alert_count?: number };
+        // Find any rule that wants online notification
+        const notifyOnlineRules = alertRules.filter(r => r.notificar_quando_online);
+        const wasAlerted = metadata.triggered_rules && metadata.triggered_rules.length > 0;
 
-        // Reset alert tracking in metadata
-        const newMetadata = {
-          ...device.metadata,
-          last_offline_alert_at: null,
-          offline_alert_count: 0
+        // Reset metadata
+        const newMetadata: DeviceMetadata = {
+          ...metadata,
+          last_offline_alert_at: undefined,
+          offline_alert_count: 0,
+          triggered_rules: [],
+          last_rule_id: undefined
         };
-        
+
         await supabase
           .from('devices')
           .update({ 
@@ -190,53 +293,28 @@ Deno.serve(async (req) => {
           })
           .eq('id', device.id);
 
-        // Send online notification
-        if (alertConfig.notificar_quando_online && recipients && recipients.length > 0) {
-          const offlineSeconds = metadata.last_offline_alert_at ? 
-            Math.round((now.getTime() - new Date(metadata.last_offline_alert_at).getTime()) / 1000) : 0;
-          const offlineDisplay = offlineSeconds >= 60 
-            ? `${Math.floor(offlineSeconds / 60)}min ${offlineSeconds % 60}s`
-            : `${offlineSeconds}s`;
+        // Send online notification if was previously alerted
+        if (wasAlerted && notifyOnlineRules.length > 0) {
+          const lastRuleName = metadata.last_rule_id 
+            ? alertRules.find(r => r.id === metadata.last_rule_id)?.nome || 'Alerta'
+            : 'Alerta';
 
-          try {
-            const { data: agent } = await supabase
-              .from('agents')
-              .select('zapi_config')
-              .eq('key', 'exa_alert')
-              .single();
+          const message = `🟢 *PAINEL ONLINE*\n\n` +
+            `📍 Local: ${device.condominio_name || device.name}\n` +
+            `🖥️ Painel: ${device.name}\n` +
+            `✅ Voltou online às: ${now.toLocaleTimeString('pt-BR')}\n` +
+            `📊 Último alerta: ${lastRuleName}`;
 
-            if (agent?.zapi_config) {
-              const zapiConfig = agent.zapi_config as { instance_id: string; token: string };
-              
-              for (const recipient of recipients) {
-                let phone = recipient.telefone.replace(/\D/g, '');
-                if (!phone.startsWith('55') && phone.length === 11) {
-                  phone = '55' + phone;
-                }
-                
-                const message = `🟢 *PAINEL ONLINE*\n\n` +
-                  `📍 Local: ${device.condominio_name || device.name}\n` +
-                  `🖥️ Painel: ${device.name}\n` +
-                  `✅ Voltou online às: ${now.toLocaleTimeString('pt-BR')}\n` +
-                  (offlineSeconds > 0 ? `⏱️ Ficou offline por: ${offlineDisplay}` : '');
-
-                await fetch(`https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ phone, message })
-                });
-              }
-            }
-          } catch (err) {
-            console.error('❌ [MONITOR] Erro ao enviar notificação online:', err);
+          for (const recipient of recipients) {
+            await sendWhatsApp(recipient.telefone, message);
           }
 
           // Log online event
           await supabase.from('panel_offline_alerts_history').insert({
             painel_id: device.id,
             tipo: 'online',
-            mensagem: `Device ${device.name} voltou online após ${offlineDisplay}`,
-            tempo_offline_minutos: Math.round(offlineSeconds / 60),
+            mensagem: `Device ${device.name} voltou online`,
+            tempo_offline_minutos: 0,
             destinatarios_notificados: recipients.map(r => r.telefone)
           });
         }
@@ -246,6 +324,7 @@ Deno.serve(async (req) => {
     const summary = {
       timestamp: now.toISOString(),
       total_devices: devices?.length || 0,
+      active_rules: alertRules.length,
       offline_detected: offlineDetected,
       back_online_detected: backOnlineDetected,
       alerts_sent: alertsSent,
