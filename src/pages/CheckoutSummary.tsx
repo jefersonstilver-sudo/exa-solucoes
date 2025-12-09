@@ -20,6 +20,7 @@ import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 import CreditCardCheckoutModal from '@/components/checkout/payment/CreditCardCheckoutModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useCheckoutPro } from '@/hooks/payment/useCheckoutPro';
+import AdminCheckoutBlocker from '@/components/checkout/AdminCheckoutBlocker';
 
 const CheckoutSummary = () => {
   const navigate = useNavigate();
@@ -333,6 +334,7 @@ const CheckoutSummary = () => {
   }
 
   return (
+    <AdminCheckoutBlocker>
     <CheckoutLayout currentStep={2} maxWidth="6xl">
       {/* Main Content Grid - Mobile Otimizado */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-3 sm:gap-4 lg:gap-6 mt-6 sm:mt-8">
@@ -449,6 +451,7 @@ const CheckoutSummary = () => {
         onProceedToCheckout={handleCardCheckout}
       />
     </CheckoutLayout>
+    </AdminCheckoutBlocker>
   );
 };
 export default CheckoutSummary;
