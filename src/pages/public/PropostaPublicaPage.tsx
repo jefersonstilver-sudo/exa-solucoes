@@ -278,17 +278,20 @@ const PropostaPublicaPage = () => {
         if (buildingIds.length > 0) {
           const { data: currentBuildingsData } = await supabase
             .from('buildings')
-            .select('id, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base')
+            .select('id, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, preco_trimestral, preco_semestral, preco_anual')
             .in('id', buildingIds);
 
           if (currentBuildingsData) {
-            // Create map of current data with ALL fields
+            // Create map of current data with ALL fields including plan prices
             const buildingsMap = new Map(currentBuildingsData.map(b => [
               b.id,
               {
                 quantidade_telas: b.quantidade_telas || b.numero_elevadores || 1,
                 visualizacoes_mes: b.visualizacoes_mes || 0,
-                preco_base: b.preco_base || 0
+                preco_base: b.preco_base || 0,
+                preco_trimestral: b.preco_trimestral || 0,
+                preco_semestral: b.preco_semestral || 0,
+                preco_anual: b.preco_anual || 0
               }
             ]));
 
@@ -299,7 +302,10 @@ const PropostaPublicaPage = () => {
                 ...b,
                 quantidade_telas: currentData?.quantidade_telas || b.quantidade_telas || 1,
                 visualizacoes_mes: currentData?.visualizacoes_mes || b.visualizacoes_mes || 0,
-                preco_base: currentData?.preco_base || b.preco_base || 0
+                preco_base: currentData?.preco_base || b.preco_base || 0,
+                preco_trimestral: currentData?.preco_trimestral || 0,
+                preco_semestral: currentData?.preco_semestral || 0,
+                preco_anual: currentData?.preco_anual || 0
               };
             });
 

@@ -25,6 +25,7 @@ import { validateCNPJ, formatCompanyDocument, validateCompanyDocument } from '@/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCNPJConsult } from '@/hooks/useCNPJConsult';
 import { ProposalAlertRecipients, type AlertRecipient } from '@/components/admin/proposals/ProposalAlertRecipients';
+import { calculateBuildingsPrice, type PlanDuration } from '@/utils/buildingPriceUtils';
 
 interface Building {
   id: string;
@@ -35,6 +36,9 @@ interface Building {
   numero_elevadores: number | null;
   visualizacoes_mes: number | null;
   preco_base: number | null;
+  preco_trimestral: number | null;
+  preco_semestral: number | null;
+  preco_anual: number | null;
   publico_estimado: number | null;
   imagem_principal: string | null;
   is_manual?: boolean;
@@ -268,13 +272,13 @@ const NovaPropostaPage = () => {
     { value: 168, label: '7 dias', icon: '📅' },
   ];
 
-  // Buscar prédios ativos do banco de dados
+  // Buscar prédios ativos do banco de dados (incluindo preços por plano)
   const { data: buildings = [], isLoading: isLoadingBuildings } = useQuery({
     queryKey: ['buildings-active-for-proposals'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('buildings')
-        .select('id, nome, bairro, endereco, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, publico_estimado, imagem_principal')
+        .select('id, nome, bairro, endereco, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, preco_trimestral, preco_semestral, preco_anual, publico_estimado, imagem_principal')
         .eq('status', 'ativo')
         .order('nome');
       
@@ -392,14 +396,26 @@ const NovaPropostaPage = () => {
     setSelectedBuildings(prev => prev.filter(bid => bid !== id));
   };
 
-  // Valor sugerido baseado nos prédios selecionados
+  // Valor sugerido baseado nos prédios selecionados e plano escolhido
+  // Usa preços manuais (preco_trimestral, preco_semestral, preco_anual) quando disponíveis
   const valorSugeridoMensal = useMemo(() => {
-    return selectedBuildingsData.reduce((sum, b) => {
-      const precoBase = b.preco_base || 0;
-      const telas = b.quantidade_telas || b.numero_elevadores || 1;
-      return sum + (precoBase * telas);
-    }, 0);
-  }, [selectedBuildingsData]);
+    if (selectedBuildingsData.length === 0) return 0;
+    
+    // Converter durationMonths para PlanDuration válido
+    const planDuration = ([1, 3, 6, 12].includes(durationMonths) ? durationMonths : 1) as PlanDuration;
+    
+    const result = calculateBuildingsPrice(selectedBuildingsData, planDuration);
+    
+    console.log("💰 [NovaPropostaPage] Valor sugerido mensal calculado:", {
+      durationMonths,
+      planDuration,
+      pricePerMonth: result.pricePerMonth,
+      totalPrice: result.totalPrice,
+      hasAnyManualPrice: result.hasAnyManualPrice
+    });
+    
+    return result.pricePerMonth;
+  }, [selectedBuildingsData, durationMonths]);
 
   // Cálculos de valores
   const fidelMonthly = parseFloat(fidelValue) || 0;
