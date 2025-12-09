@@ -34,11 +34,12 @@ const AppleLikeMetricCard = ({
       whileHover={{ scale: 1.02 }}
       className={`
         relative group
-        bg-background/60 backdrop-blur-sm
-        border border-border/40
+        bg-white
+        border border-gray-100
         rounded-xl p-2.5
-        transition-all duration-200
-        hover:shadow-lg hover:border-[#9C1E1E]/30
+        shadow-sm
+        transition-all duration-300 ease-out
+        hover:shadow-md hover:scale-[1.01]
         ${onClick ? 'cursor-pointer' : ''}
       `}
       onClick={onClick}

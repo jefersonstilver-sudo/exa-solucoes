@@ -11,7 +11,7 @@ const CRMInboxPreview = () => {
 
   if (loading) {
     return (
-      <Card className="bg-gradient-to-br from-background via-background to-accent/5 rounded-2xl border border-border/40 shadow-lg hover:shadow-xl hover:border-primary/20 transition-all">
+      <Card className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.005] transition-all duration-300 ease-out">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
             <MessageCircle className="h-4 w-4 text-red-500" />
@@ -26,7 +26,7 @@ const CRMInboxPreview = () => {
   }
 
   return (
-    <Card className="bg-gradient-to-br from-background via-background to-accent/5 rounded-2xl border border-border/40 shadow-lg hover:shadow-xl hover:border-primary/20 transition-all">
+    <Card className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.005] transition-all duration-300 ease-out">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm md:text-base flex items-center gap-2">

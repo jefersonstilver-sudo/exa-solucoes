@@ -56,7 +56,7 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
 
   if (loading) {
     return (
-      <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50 shadow-md animate-pulse">
+      <Card className="p-4 bg-white border border-gray-100 shadow-sm animate-pulse">
         <div className="h-6 bg-gray-200 rounded w-1/3 mb-4" />
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
@@ -69,7 +69,7 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
 
   if (vendedores.length === 0) {
     return (
-      <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50 shadow-md">
+      <Card className="p-4 bg-white border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.005] transition-all duration-300 ease-out">
         <div className="flex items-center gap-2 mb-4">
           <Trophy className="h-5 w-5 text-amber-500" />
           <h3 className="font-semibold text-sm">Ranking de Vendedores</h3>
@@ -82,7 +82,7 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
   }
 
   return (
-    <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50 shadow-md hover:shadow-lg transition-all duration-300">
+    <Card className="p-4 bg-white border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.005] transition-all duration-300 ease-out">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Trophy className="h-5 w-5 text-amber-500" />
