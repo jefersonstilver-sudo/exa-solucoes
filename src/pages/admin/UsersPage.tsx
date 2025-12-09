@@ -208,14 +208,14 @@ const UsersPage = () => {
               onClick={() => setActiveTab('team')}
               className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === 'team'
-                  ? 'bg-[hsl(var(--exa-red))] text-white shadow-md'
-                  : 'bg-white text-gray-700 border-2 border-gray-300 shadow-sm'
+                  ? 'bg-[#9C1E1E] text-white shadow-lg shadow-red-500/25'
+                  : 'bg-white text-gray-800 border border-gray-200 shadow-sm hover:shadow-md'
               }`}
             >
               <Crown className="h-3.5 w-3.5" />
               Equipe
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                activeTab === 'team' ? 'bg-white/20' : 'bg-gray-200 text-gray-600'
+                activeTab === 'team' ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-600'
               }`}>
                 {filteredTeam.length}
               </span>
@@ -224,14 +224,14 @@ const UsersPage = () => {
               onClick={() => setActiveTab('clients')}
               className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === 'clients'
-                  ? 'bg-[hsl(var(--exa-red))] text-white shadow-md'
-                  : 'bg-white text-gray-700 border-2 border-gray-300 shadow-sm'
+                  ? 'bg-[#9C1E1E] text-white shadow-lg shadow-red-500/25'
+                  : 'bg-white text-gray-800 border border-gray-200 shadow-sm hover:shadow-md'
               }`}
             >
               <UserCheck className="h-3.5 w-3.5" />
               Clientes
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                activeTab === 'clients' ? 'bg-white/20' : 'bg-gray-200 text-gray-600'
+                activeTab === 'clients' ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-600'
               }`}>
                 {filteredClients.length}
               </span>
