@@ -62,6 +62,9 @@ const BuildingFormLayout: React.FC<BuildingFormLayoutProps> = ({
             numero_blocos: formData.numero_blocos,
             publico_estimado: formData.publico_estimado,
             preco_base: formData.preco_base,
+            preco_trimestral: formData.preco_trimestral,
+            preco_semestral: formData.preco_semestral,
+            preco_anual: formData.preco_anual,
             status: formData.status
           }}
           onUpdate={onFormUpdate}

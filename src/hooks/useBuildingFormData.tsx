@@ -13,6 +13,9 @@ interface BuildingFormData {
   numero_blocos: number;
   publico_estimado: number;
   preco_base: number;
+  preco_trimestral: number | null;
+  preco_semestral: number | null;
+  preco_anual: number | null;
   padrao_publico: 'alto' | 'medio' | 'normal';
   status: string;
   venue_type: string;
@@ -39,6 +42,9 @@ const initialFormData: BuildingFormData = {
   numero_blocos: 1,
   publico_estimado: 0,
   preco_base: 0,
+  preco_trimestral: null,
+  preco_semestral: null,
+  preco_anual: null,
   padrao_publico: 'normal',
   status: 'ativo',
   venue_type: 'Residencial',
@@ -71,6 +77,9 @@ export const useBuildingFormData = (building: any, open: boolean) => {
         numero_blocos: building.numero_blocos || 1,
         publico_estimado: building.publico_estimado || (building.numero_unidades * 3.5) || 0,
         preco_base: building.preco_base || 0,
+        preco_trimestral: building.preco_trimestral || null,
+        preco_semestral: building.preco_semestral || null,
+        preco_anual: building.preco_anual || null,
         padrao_publico: building.padrao_publico || 'normal',
         status: building.status || 'ativo',
         venue_type: (building.venue_type === 'Residencial' || building.venue_type === 'Comercial') 

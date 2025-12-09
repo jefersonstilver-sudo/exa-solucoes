@@ -12,7 +12,10 @@ export interface Building {
   codigo_predio?: string; // ADICIONADO: Código único de 3 dígitos
   imageUrl?: string;
   basePrice?: number;
-  preco_base?: number; // Add this property for database compatibility
+  preco_base?: number; // Preço mensal (1 mês)
+  preco_trimestral?: number; // Preço total pacote 3 meses
+  preco_semestral?: number; // Preço total pacote 6 meses
+  preco_anual?: number; // Preço total pacote 12 meses
   venue_type: string; // Campo correto usado no banco
   caracteristicas?: string[]; // ADICIONADO
   imagens?: string[]; // ADICIONADO

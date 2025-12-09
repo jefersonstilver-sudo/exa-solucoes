@@ -19,6 +19,9 @@ interface CommercialDataFormProps {
     numero_blocos: number;
     publico_estimado: number;
     preco_base: number;
+    preco_trimestral: number | null;
+    preco_semestral: number | null;
+    preco_anual: number | null;
     status: string;
   };
   onUpdate: (updates: Partial<CommercialDataFormProps['formData']>) => void;
@@ -107,17 +110,80 @@ const CommercialDataForm: React.FC<CommercialDataFormProps> = ({ formData, onUpd
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="preco_base">Preço Base (R$)</Label>
-          <Input
-            id="preco_base"
-            type="number"
-            step="0.01"
-            value={formData.preco_base}
-            onChange={(e) => onUpdate({ preco_base: parseFloat(e.target.value) || 0 })}
-            min="0"
-            placeholder="Ex: 1500.00 (opcional)"
-          />
+        {/* Seção de Precificação por Plano */}
+        <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+          <h4 className="font-medium text-sm text-foreground">Precificação por Plano</h4>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="preco_base">Mensal (1 mês) - R$/mês</Label>
+              <Input
+                id="preco_base"
+                type="number"
+                step="0.01"
+                value={formData.preco_base}
+                onChange={(e) => onUpdate({ preco_base: parseFloat(e.target.value) || 0 })}
+                min="0"
+                placeholder="Ex: 200.00"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="preco_trimestral">Trimestral (3 meses) - Total</Label>
+              <Input
+                id="preco_trimestral"
+                type="number"
+                step="0.01"
+                value={formData.preco_trimestral || ''}
+                onChange={(e) => onUpdate({ preco_trimestral: e.target.value ? parseFloat(e.target.value) : null })}
+                min="0"
+                placeholder="Ex: 480.00"
+              />
+              {formData.preco_trimestral && formData.preco_trimestral > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  = R$ {(formData.preco_trimestral / 3).toFixed(2)}/mês
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="preco_semestral">Semestral (6 meses) - Total</Label>
+              <Input
+                id="preco_semestral"
+                type="number"
+                step="0.01"
+                value={formData.preco_semestral || ''}
+                onChange={(e) => onUpdate({ preco_semestral: e.target.value ? parseFloat(e.target.value) : null })}
+                min="0"
+                placeholder="Ex: 840.00"
+              />
+              {formData.preco_semestral && formData.preco_semestral > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  = R$ {(formData.preco_semestral / 6).toFixed(2)}/mês
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="preco_anual">Anual (12 meses) - Total</Label>
+              <Input
+                id="preco_anual"
+                type="number"
+                step="0.01"
+                value={formData.preco_anual || ''}
+                onChange={(e) => onUpdate({ preco_anual: e.target.value ? parseFloat(e.target.value) : null })}
+                min="0"
+                placeholder="Ex: 1500.00"
+              />
+              {formData.preco_anual && formData.preco_anual > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  = R$ {(formData.preco_anual / 12).toFixed(2)}/mês
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="space-y-2">

@@ -78,32 +78,64 @@ export const calculateTotalPrice = (
     timestamp: new Date().toISOString()
   });
 
-  const planDiscount = PLAN_DISCOUNTS[selectedPlan] || 0;
-  
-  // CORREÇÃO: Calcular preço total baseado nos preços individuais dos prédios
+  // CORREÇÃO: Usar preços manuais se disponíveis, senão calcular com desconto
   let totalWithPlan = 0;
   
   cartItems.forEach(item => {
-    const basePricePerMonth = item.panel.buildings?.preco_base || 200;
-    const priceWithDiscount = basePricePerMonth * (1 - planDiscount);
-    const itemTotal = priceWithDiscount * selectedPlan; // multiplicar pelos meses do plano
+    const building = item.panel.buildings;
+    let itemTotal: number;
+    let usedManualPrice = false;
+    
+    // Verificar se existe preço manual para o plano selecionado
+    switch (selectedPlan) {
+      case 3:
+        if (building?.preco_trimestral && building.preco_trimestral > 0) {
+          itemTotal = building.preco_trimestral;
+          usedManualPrice = true;
+        } else {
+          itemTotal = (building?.preco_base || 200) * 3 * (1 - PLAN_DISCOUNTS[3]);
+        }
+        break;
+      case 6:
+        if (building?.preco_semestral && building.preco_semestral > 0) {
+          itemTotal = building.preco_semestral;
+          usedManualPrice = true;
+        } else {
+          itemTotal = (building?.preco_base || 200) * 6 * (1 - PLAN_DISCOUNTS[6]);
+        }
+        break;
+      case 12:
+        if (building?.preco_anual && building.preco_anual > 0) {
+          itemTotal = building.preco_anual;
+          usedManualPrice = true;
+        } else {
+          itemTotal = (building?.preco_base || 200) * 12 * (1 - PLAN_DISCOUNTS[12]);
+        }
+        break;
+      case 1:
+      default:
+        itemTotal = building?.preco_base || 200;
+        break;
+    }
+    
     totalWithPlan += itemTotal;
     
     console.log("💰 [CheckoutUtils] ITEM CALCULADO:", {
-      buildingName: item.panel.buildings?.nome,
-      basePricePerMonth,
-      planDiscount: `${planDiscount * 100}%`,
-      priceWithDiscount,
-      planMonths: selectedPlan,
+      buildingName: building?.nome,
+      selectedPlan,
+      preco_base: building?.preco_base,
+      preco_manual: usedManualPrice ? itemTotal : null,
       itemTotal,
-      calculation: `R$ ${basePricePerMonth} × (1 - ${planDiscount}) × ${selectedPlan} meses = R$ ${itemTotal}`
+      usedManualPrice,
+      calculation: usedManualPrice 
+        ? `Preço manual do prédio = R$ ${itemTotal}`
+        : `Preço calculado com desconto = R$ ${itemTotal}`
     });
   });
   
   console.log("💰 [CheckoutUtils] TOTAL COM PLANO:", {
     selectedPlan,
-    totalWithPlan,
-    planDiscount: `${planDiscount * 100}%`
+    totalWithPlan
   });
 
   // Aplicar desconto se válido
@@ -138,24 +170,65 @@ export const calculateTotalPrice = (
   return finalPrice;
 };
 
+// FUNÇÃO AUXILIAR: Obter preço do prédio para um plano específico
+const getBuildingPriceForPlan = (building: any, planKey: PlanKey): number => {
+  // Usar preço manual se definido, senão calcular com desconto automático
+  switch (planKey) {
+    case 3:
+      if (building?.preco_trimestral && building.preco_trimestral > 0) {
+        return building.preco_trimestral;
+      }
+      // Fallback: preco_base * 3 meses * (1 - 20% desconto)
+      return (building?.preco_base || 200) * 3 * 0.80;
+    case 6:
+      if (building?.preco_semestral && building.preco_semestral > 0) {
+        return building.preco_semestral;
+      }
+      // Fallback: preco_base * 6 meses * (1 - 30% desconto)
+      return (building?.preco_base || 200) * 6 * 0.70;
+    case 12:
+      if (building?.preco_anual && building.preco_anual > 0) {
+        return building.preco_anual;
+      }
+      // Fallback: preco_base * 12 meses * (1 - 37.5% desconto)
+      return (building?.preco_base || 200) * 12 * 0.625;
+    case 1:
+    default:
+      // Mensal: sempre usa preco_base
+      return building?.preco_base || 200;
+  }
+};
+
 // NOVA FUNÇÃO: Calcular preços dinâmicos para exibição nos cartões de plano
 export const getPlanWithDynamicPricing = (planKey: PlanKey, cartItems: CartItem[]): any => {
   if (!cartItems || cartItems.length === 0) {
     return null;
   }
 
-  const planDiscount = PLAN_DISCOUNTS[planKey] || 0;
-  
-  // Calcular total baseado nos preços individuais dos prédios
+  // Calcular total baseado nos preços manuais ou automáticos dos prédios
   let totalPrice = 0;
-  let pricePerMonthTotal = 0;
   
   cartItems.forEach(item => {
-    const basePricePerMonth = item.panel.buildings?.preco_base || 200;
-    const priceWithDiscount = basePricePerMonth * (1 - planDiscount);
-    totalPrice += priceWithDiscount * planKey; // total para o período
-    pricePerMonthTotal += priceWithDiscount; // total mensal
+    const building = item.panel.buildings;
+    const buildingTotal = getBuildingPriceForPlan(building, planKey);
+    totalPrice += buildingTotal;
+    
+    console.log("💰 [getPlanWithDynamicPricing] ITEM:", {
+      buildingName: building?.nome,
+      planKey,
+      preco_base: building?.preco_base,
+      preco_trimestral: building?.preco_trimestral,
+      preco_semestral: building?.preco_semestral,
+      preco_anual: building?.preco_anual,
+      buildingTotal,
+      usedManualPrice: planKey === 3 ? !!building?.preco_trimestral :
+                       planKey === 6 ? !!building?.preco_semestral :
+                       planKey === 12 ? !!building?.preco_anual : false
+    });
   });
+  
+  // Calcular preço por mês
+  const pricePerMonthTotal = totalPrice / planKey;
   
   // Calcular economia comparado ao plano mensal
   const monthlyPlanTotal = cartItems.reduce((sum, item) => {
@@ -163,10 +236,9 @@ export const getPlanWithDynamicPricing = (planKey: PlanKey, cartItems: CartItem[
   }, 0);
   const savings = planKey > 1 ? monthlyPlanTotal - totalPrice : 0;
 
-  console.log("💰 [getPlanWithDynamicPricing] CÁLCULO BASEADO NOS PRÉDIOS:", {
+  console.log("💰 [getPlanWithDynamicPricing] RESULTADO FINAL:", {
     planKey,
     totalPanels: cartItems.length,
-    planDiscount: `${planDiscount * 100}%`,
     totalPrice,
     pricePerMonthTotal,
     savings
