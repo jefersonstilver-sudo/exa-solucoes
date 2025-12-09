@@ -8,7 +8,7 @@ export interface Building {
   endereco: string;
   bairro: string;
   status: string;
-  venue_type: string; // Campo correto no banco
+  venue_type: string;
   monthly_traffic: number;
   latitude: number;
   longitude: number;
@@ -18,6 +18,9 @@ export interface Building {
   numero_blocos: number;
   publico_estimado: number;
   preco_base: number;
+  preco_trimestral: number;
+  preco_semestral: number;
+  preco_anual: number;
   image_urls: string[];
   amenities: string[];
   padrao_publico: 'alto' | 'medio' | 'normal';
@@ -29,7 +32,7 @@ export interface Building {
   imagem_4: string;
   caracteristicas: string[];
   created_at: string;
-  codigo_predio: string; // Código único do prédio para URLs públicas
+  codigo_predio: string;
   vendas_mes_atual: number;
   nome_sindico: string;
   contato_sindico: string;
@@ -37,6 +40,10 @@ export interface Building {
   contato_vice_sindico: string;
   nome_contato_predio: string;
   numero_contato_predio: string;
+  // Device status fields
+  device_id?: string | null;
+  device_status?: 'online' | 'offline' | 'not_connected';
+  device_last_online_at?: string | null;
 }
 
 export const buildImageUrlsArray = (building: any) => {
