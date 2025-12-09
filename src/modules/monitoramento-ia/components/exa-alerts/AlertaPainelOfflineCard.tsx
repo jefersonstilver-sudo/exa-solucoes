@@ -173,6 +173,37 @@ export const AlertaPainelOfflineCard = () => {
     loadData();
   }, []);
 
+  // ========== REALTIME SUBSCRIPTION FOR CONFIRMATIONS ==========
+  useEffect(() => {
+    const channel = supabase
+      .channel('panel-confirmations-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'panel_offline_alert_confirmations'
+        },
+        (payload) => {
+          console.log('🔔 [REALTIME] New confirmation received:', payload.new);
+          const newConfirmation = payload.new as Confirmation;
+          setConfirmations(prev => [newConfirmation, ...prev]);
+          toast.success(`✅ ${newConfirmation.recipient_name} confirmou: ${newConfirmation.button_label}`, {
+            description: newConfirmation.device_name || 'Painel',
+            duration: 5000
+          });
+        }
+      )
+      .subscribe((status) => {
+        console.log('🔔 [REALTIME] Confirmations subscription:', status);
+      });
+
+    return () => {
+      console.log('🔔 [REALTIME] Unsubscribing from confirmations');
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const loadData = async () => {
     try {
       // Load rules

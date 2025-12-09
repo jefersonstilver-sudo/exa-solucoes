@@ -374,6 +374,113 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
+      
+      // ========== PROCESSAR BOTÕES DE ALERTA DE PAINEL OFFLINE ==========
+      // Se não é escalação, pode ser botão de confirmação de alerta de painel
+      if (!buttonId?.startsWith('escalacao_')) {
+        console.log('[ZAPI-WEBHOOK] 🔔 Panel alert button detected:', {
+          buttonId,
+          phone,
+          message: buttonReply.message
+        });
+        
+        const senderNameBtn = payload.senderName || payload.chatName || payload.pushName || 'Desconhecido';
+        
+        // Buscar alertas recentes para vincular a confirmação
+        const { data: recentAlerts } = await supabase
+          .from('panel_offline_alerts_history')
+          .select('*, devices(id, name)')
+          .order('sent_at', { ascending: false })
+          .limit(20);
+        
+        let matchedAlert = null;
+        let deviceInfo = null;
+        
+        if (recentAlerts) {
+          const phoneClean = phone?.replace(/\D/g, '');
+          for (const alert of recentAlerts) {
+            const recipients = alert.recipients || [];
+            for (const recipient of recipients) {
+              const recipientClean = recipient.phone?.replace(/\D/g, '');
+              if (recipientClean && phoneClean && 
+                  (recipientClean.includes(phoneClean.slice(-8)) || phoneClean.includes(recipientClean.slice(-8)))) {
+                matchedAlert = alert;
+                deviceInfo = alert.devices;
+                break;
+              }
+            }
+            if (matchedAlert) break;
+          }
+        }
+        
+        console.log('[ZAPI-WEBHOOK] 🔍 Matched alert:', matchedAlert ? matchedAlert.id : 'none');
+        
+        // Inserir confirmação
+        const { data: confirmation, error: confirmError } = await supabase
+          .from('panel_offline_alert_confirmations')
+          .insert({
+            alert_history_id: matchedAlert?.id || null,
+            device_id: deviceInfo?.id || matchedAlert?.device_id || null,
+            device_name: deviceInfo?.name || matchedAlert?.device_name || 'Painel desconhecido',
+            recipient_phone: phone,
+            recipient_name: senderNameBtn,
+            button_id: buttonId,
+            button_label: buttonReply.message || 'Confirmação',
+            reference_message_id: buttonReply.referenceMessageId || payload.referenceMessageId,
+            raw_webhook: payload
+          })
+          .select()
+          .single();
+        
+        if (confirmError) {
+          console.error('[ZAPI-WEBHOOK] ❌ Error inserting panel confirmation:', confirmError);
+        } else {
+          console.log('[ZAPI-WEBHOOK] ✅ Panel alert confirmation recorded:', confirmation.id);
+        }
+        
+        // Enviar mensagem de acknowledgment via EXA Alerts
+        const { data: alertAgent } = await supabase
+          .from('agents')
+          .select('zapi_config')
+          .eq('key', 'exa_alert')
+          .single();
+        
+        if (alertAgent?.zapi_config) {
+          const zapiConfig = alertAgent.zapi_config as { instance_id: string; token: string };
+          const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+          
+          const ackMsg = `✅ *Confirmação registrada!*\n\n` +
+            `👤 ${senderNameBtn}\n` +
+            `📍 ${deviceInfo?.name || matchedAlert?.device_name || 'Painel'}\n` +
+            `🔘 ${buttonReply.message || 'Confirmação'}\n` +
+            `⏰ ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`;
+          
+          try {
+            await fetch(
+              `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`,
+              {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Client-Token': zapiClientToken || ''
+                },
+                body: JSON.stringify({ phone, message: ackMsg })
+              }
+            );
+            console.log('[ZAPI-WEBHOOK] ✅ Panel alert ack sent to:', phone);
+          } catch (ackErr) {
+            console.error('[ZAPI-WEBHOOK] ⚠️ Error sending panel ack:', ackErr);
+          }
+        }
+        
+        return new Response(JSON.stringify({ 
+          success: true,
+          processed: 'panel_alert_button_response',
+          confirmation_id: confirmation?.id
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
     }
     
     // ========== PROCESSAR RESPOSTAS DE TEXTO COMO FALLBACK (EXPANDIDO) ==========
