@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Crown, Shield, UserCheck, Loader2, DollarSign, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Crown, Shield, UserCheck, Loader2, DollarSign, AlertCircle, CheckCircle2, Briefcase, Megaphone, Wallet, Settings, Monitor, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -28,6 +28,18 @@ import { useEmailCheck } from '@/hooks/useEmailCheck';
 import ExistingUserAlert from './ExistingUserAlert';
 import EmailConfigWarning from './EmailConfigWarning';
 import { useIsMobile } from '@/hooks/use-mobile';
+
+// Interface for role types from database
+interface RoleType {
+  id: string;
+  key: string;
+  display_name: string;
+  description: string;
+  icon: string;
+  color: string;
+  is_active: boolean;
+  is_system: boolean;
+}
 
 // Schema de validação
 const createUserSchema = z.object({
@@ -74,6 +86,72 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
   const [cpf, setCpf] = useState('');
   const [role, setRole] = useState('admin');
   const [documentoObrigatorio, setDocumentoObrigatorio] = useState(false);
+  const [roleTypes, setRoleTypes] = useState<RoleType[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(true);
+
+  // Fetch role types from database
+  useEffect(() => {
+    const fetchRoleTypes = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('role_types')
+          .select('*')
+          .eq('is_active', true)
+          .neq('key', 'client') // Exclude client role for admin creation
+          .neq('key', 'painel') // Exclude painel role
+          .order('display_name');
+
+        if (error) throw error;
+        setRoleTypes(data || []);
+        
+        // Set default role to first admin type
+        if (data && data.length > 0) {
+          const adminRole = data.find(r => r.key === 'admin');
+          if (adminRole) {
+            setRole(adminRole.key);
+          } else {
+            setRole(data[0].key);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching role types:', error);
+        toast.error('Erro ao carregar tipos de conta');
+      } finally {
+        setLoadingRoles(false);
+      }
+    };
+
+    if (open) {
+      fetchRoleTypes();
+    }
+  }, [open]);
+
+  // Helper function to get icon component based on icon name
+  const getRoleIcon = (iconName: string, color: string) => {
+    const iconClass = `h-4 w-4`;
+    const style = { color };
+    
+    switch (iconName) {
+      case 'shield':
+        return <Shield className={iconClass} style={style} />;
+      case 'crown':
+        return <Crown className={iconClass} style={style} />;
+      case 'settings':
+        return <Settings className={iconClass} style={style} />;
+      case 'megaphone':
+        return <Megaphone className={iconClass} style={style} />;
+      case 'wallet':
+        return <Wallet className={iconClass} style={style} />;
+      case 'briefcase':
+        return <Briefcase className={iconClass} style={style} />;
+      case 'monitor':
+        return <Monitor className={iconClass} style={style} />;
+      case 'user':
+        return <User className={iconClass} style={style} />;
+      default:
+        return <UserCheck className={iconClass} style={style} />;
+    }
+  };
   const [creating, setCreating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showExistingAlert, setShowExistingAlert] = useState(false);
@@ -421,35 +499,26 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         <Label htmlFor="role" className="text-foreground text-sm">
           Tipo de Conta <span className="text-destructive">*</span>
         </Label>
-        <Select value={role} onValueChange={setRole}>
+        <Select value={role} onValueChange={setRole} disabled={loadingRoles}>
           <SelectTrigger className={`bg-background border-input text-foreground ${isMobile ? 'h-11' : ''}`}>
-            <SelectValue />
+            {loadingRoles ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Carregando...</span>
+              </div>
+            ) : (
+              <SelectValue />
+            )}
           </SelectTrigger>
           <SelectContent className="bg-background border-input">
-            <SelectItem value="admin">
-              <div className="flex items-center space-x-2">
-                <Shield className="h-4 w-4 text-blue-500" />
-                <span>Administrador Geral</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="admin_marketing">
-              <div className="flex items-center space-x-2">
-                <UserCheck className="h-4 w-4 text-purple-500" />
-                <span>Admin Marketing</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="admin_financeiro">
-              <div className="flex items-center space-x-2">
-                <DollarSign className="h-4 w-4 text-green-500" />
-                <span>Admin Financeiro</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="super_admin">
-              <div className="flex items-center space-x-2">
-                <Crown className="h-4 w-4 text-yellow-500" />
-                <span>Super Administrador</span>
-              </div>
-            </SelectItem>
+            {roleTypes.map((roleType) => (
+              <SelectItem key={roleType.id} value={roleType.key}>
+                <div className="flex items-center space-x-2">
+                  {getRoleIcon(roleType.icon, roleType.color)}
+                  <span>{roleType.display_name}</span>
+                </div>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
