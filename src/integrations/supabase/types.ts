@@ -994,6 +994,7 @@ export type Database = {
           contato_sindico_telefone: string | null
           contato_vice_sindico: string | null
           created_at: string | null
+          device_id: string | null
           endereco: string
           horario_funcionamento_padrao: Json | null
           id: string
@@ -1061,6 +1062,7 @@ export type Database = {
           contato_sindico_telefone?: string | null
           contato_vice_sindico?: string | null
           created_at?: string | null
+          device_id?: string | null
           endereco: string
           horario_funcionamento_padrao?: Json | null
           id?: string
@@ -1128,6 +1130,7 @@ export type Database = {
           contato_sindico_telefone?: string | null
           contato_vice_sindico?: string | null
           created_at?: string | null
+          device_id?: string | null
           endereco?: string
           horario_funcionamento_padrao?: Json | null
           id?: string
@@ -1185,7 +1188,15 @@ export type Database = {
           venue_type?: string | null
           visualizacoes_mes?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "buildings_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       campaign_schedule_rules: {
         Row: {

@@ -33,6 +33,9 @@ export const processAdminBuildingsData = (buildingsData: any[]): AdminBuilding[]
         numero_blocos: building.numero_blocos || 1,
         publico_estimado: building.publico_estimado || 0,
         preco_base: building.preco_base || 0,
+        preco_trimestral: building.preco_trimestral || 0,
+        preco_semestral: building.preco_semestral || 0,
+        preco_anual: building.preco_anual || 0,
         image_urls: Array.isArray(building.image_urls) ? building.image_urls : [],
         amenities: Array.isArray(building.amenities) ? building.amenities : [],
         padrao_publico: building.padrao_publico || 'normal',
@@ -44,7 +47,7 @@ export const processAdminBuildingsData = (buildingsData: any[]): AdminBuilding[]
         imagem_4: building.imagem_4 || '',
         caracteristicas: Array.isArray(building.caracteristicas) ? building.caracteristicas : [],
         created_at: building.created_at || new Date().toISOString(),
-        codigo_predio: building.codigo_predio || '000', // Código do prédio ou fallback
+        codigo_predio: building.codigo_predio || '000',
         nome_sindico: building.nome_sindico || '',
         contato_sindico: building.contato_sindico || '',
         nome_vice_sindico: building.nome_vice_sindico || '',
@@ -52,7 +55,11 @@ export const processAdminBuildingsData = (buildingsData: any[]): AdminBuilding[]
         nome_contato_predio: building.nome_contato_predio || '',
         numero_contato_predio: building.numero_contato_predio || '',
         paineis_ativos: building.paineis_ativos || 0,
-        vendas_mes_atual: building.vendas_mes_atual || 0
+        vendas_mes_atual: building.vendas_mes_atual || 0,
+        // Device status fields
+        device_id: building.device_id || null,
+        device_status: building.device_status || 'not_connected',
+        device_last_online_at: building.device_last_online_at || null
       };
     });
 

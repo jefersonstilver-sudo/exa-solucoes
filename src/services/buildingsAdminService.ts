@@ -19,6 +19,9 @@ export interface AdminBuilding {
   numero_blocos: number;
   publico_estimado: number;
   preco_base: number;
+  preco_trimestral: number;
+  preco_semestral: number;
+  preco_anual: number;
   image_urls: string[];
   amenities: string[];
   padrao_publico: 'alto' | 'medio' | 'normal';
@@ -30,7 +33,7 @@ export interface AdminBuilding {
   imagem_4: string;
   caracteristicas: string[];
   created_at: string;
-  codigo_predio: string; // CÓDIGO ÚNICO DO PRÉDIO PARA URLs PÚBLICAS
+  codigo_predio: string;
   nome_sindico: string;
   contato_sindico: string;
   nome_vice_sindico: string;
@@ -39,14 +42,29 @@ export interface AdminBuilding {
   numero_contato_predio: string;
   paineis_ativos: number;
   vendas_mes_atual: number;
+  // Device status fields
+  device_id: string | null;
+  device_status: 'online' | 'offline' | 'not_connected';
+  device_last_online_at: string | null;
 }
 
 export const fetchAllBuildingsForAdmin = async () => {
   try {
     console.log('🏢 [ADMIN BUILDINGS SERVICE] Iniciando busca de TODOS os prédios para administração...');
     
-    // Use secure function that excludes sensitive contact information by default
-    const buildingsPromise = supabase.rpc('get_admin_buildings_safe');
+    // Buscar prédios com JOIN em devices para status do painel
+    const buildingsPromise = supabase
+      .from('buildings')
+      .select(`
+        *,
+        device:devices!device_id (
+          id,
+          status,
+          last_online_at,
+          condominio_name
+        )
+      `)
+      .order('nome');
 
     // Buscar painéis ativos por prédio
     const panelsPromise = supabase
@@ -102,12 +120,19 @@ export const fetchAllBuildingsForAdmin = async () => {
       return acc;
     }, {});
 
-    // Enriquecer dados dos prédios com as novas métricas
-    const enrichedBuildings = (buildingsData || []).map((building: any) => ({
-      ...building,
-      paineis_ativos: activePanelsByBuilding[building.id] || 0,
-      vendas_mes_atual: salesByBuilding[building.id] || 0
-    }));
+    // Enriquecer dados dos prédios com métricas e status do device
+    const enrichedBuildings = (buildingsData || []).map((building: any) => {
+      const device = building.device;
+      return {
+        ...building,
+        paineis_ativos: activePanelsByBuilding[building.id] || 0,
+        vendas_mes_atual: salesByBuilding[building.id] || 0,
+        // Device status
+        device_id: building.device_id || null,
+        device_status: device?.status || 'not_connected',
+        device_last_online_at: device?.last_online_at || null
+      };
+    });
 
     console.log('✅ [ADMIN BUILDINGS SERVICE] Prédios carregados para administração:', {
       total: enrichedBuildings.length,
