@@ -140,25 +140,28 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
 
   const expandedContent = (
     <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
-      {/* Prices Grid */}
-      <div className="bg-muted/30 rounded-lg p-3">
-        <p className="text-xs font-medium text-muted-foreground mb-2">Preços por Painel</p>
+      {/* Prices Grid - Green Section */}
+      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+        <div className="flex items-center gap-1.5 mb-2">
+          <span className="text-green-600 font-bold">$</span>
+          <p className="text-sm font-semibold text-green-700">Preços por Mês</p>
+        </div>
         <div className="grid grid-cols-4 gap-2 text-center">
           <div>
-            <p className="text-[10px] text-muted-foreground">Base</p>
-            <p className="font-semibold text-xs">{formatPrice(building.preco_base)}</p>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase">Base</p>
+            <p className="font-bold text-sm text-[#9C1E1E]">{formatPrice(building.preco_base)}</p>
           </div>
           <div>
-            <p className="text-[10px] text-muted-foreground">Trim.</p>
-            <p className="font-semibold text-xs">{formatPrice(building.preco_trimestral)}</p>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase">3 Meses</p>
+            <p className="font-bold text-sm text-[#9C1E1E]">{formatPrice(building.preco_trimestral)}</p>
           </div>
           <div>
-            <p className="text-[10px] text-muted-foreground">Sem.</p>
-            <p className="font-semibold text-xs">{formatPrice(building.preco_semestral)}</p>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase">6 Meses</p>
+            <p className="font-bold text-sm text-[#9C1E1E]">{formatPrice(building.preco_semestral)}</p>
           </div>
           <div>
-            <p className="text-[10px] text-muted-foreground">Anual</p>
-            <p className="font-semibold text-xs">{formatPrice(building.preco_anual)}</p>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase">12 Meses</p>
+            <p className="font-bold text-sm text-[#9C1E1E]">{formatPrice(building.preco_anual)}</p>
           </div>
         </div>
       </div>
