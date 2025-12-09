@@ -145,8 +145,19 @@ export const PanelsListView = ({
                   <TableCell className="text-sm text-muted-foreground">
                     {humanizeDate(device.last_online_at)}
                   </TableCell>
-                  <TableCell className="text-center font-mono text-xs text-muted-foreground">
-                    {device.anydesk_client_id}
+                  <TableCell className="text-center font-mono text-xs">
+                    {device.anydesk_client_id ? (
+                      <a 
+                        href={`anydesk:${device.anydesk_client_id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-primary hover:text-primary/80 hover:underline transition-colors"
+                        title="Clique para conectar via AnyDesk"
+                      >
+                        {device.anydesk_client_id}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
                   </TableCell>
                 </TableRow>
               );
@@ -215,9 +226,18 @@ export const PanelsListView = ({
                 </div>
                 <div>
                   <p className="text-muted-foreground">AnyDesk</p>
-                  <p className="font-mono text-foreground truncate">
-                    {device.anydesk_client_id}
-                  </p>
+                  {device.anydesk_client_id ? (
+                    <a 
+                      href={`anydesk:${device.anydesk_client_id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-mono text-primary hover:underline truncate block"
+                      title="Conectar via AnyDesk"
+                    >
+                      {device.anydesk_client_id}
+                    </a>
+                  ) : (
+                    <span className="font-mono text-muted-foreground">-</span>
+                  )}
                 </div>
               </div>
             </div>
