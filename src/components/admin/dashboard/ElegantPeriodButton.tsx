@@ -6,12 +6,15 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-export type ElegantPeriodType = 'today' | 'yesterday' | '3days' | '7days' | '30days' | 'custom';
+
+export type ElegantPeriodType = 'today' | 'yesterday' | '3days' | '7days' | 'current_month' | '30days' | 'custom';
 
 export const getElegantPeriodDates = (
   period: ElegantPeriodType,
@@ -44,6 +47,10 @@ export const getElegantPeriodDates = (
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       return { start: sevenDaysAgo, end: endOfToday };
     }
+    case 'current_month': {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      return { start: startOfMonth, end: endOfToday };
+    }
     case '30days': {
       const thirtyDaysAgo = new Date(today);
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -70,6 +77,8 @@ interface ElegantPeriodButtonProps {
   customStartDate?: Date;
   customEndDate?: Date;
   onCustomDateChange: (start: Date | undefined, end: Date | undefined) => void;
+  savePeriodEnabled?: boolean;
+  onSavePeriodChange?: (enabled: boolean) => void;
 }
 
 const periodLabels: Record<ElegantPeriodType, string> = {
@@ -77,6 +86,7 @@ const periodLabels: Record<ElegantPeriodType, string> = {
   yesterday: 'Ontem',
   '3days': 'Últimos 3 dias',
   '7days': 'Últimos 7 dias',
+  current_month: 'Este mês',
   '30days': 'Últimos 30 dias',
   custom: 'Período Personalizado'
 };
@@ -86,7 +96,9 @@ const ElegantPeriodButton = ({
   onChange,
   customStartDate,
   customEndDate,
-  onCustomDateChange
+  onCustomDateChange,
+  savePeriodEnabled = false,
+  onSavePeriodChange
 }: ElegantPeriodButtonProps) => {
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
@@ -150,7 +162,7 @@ const ElegantPeriodButton = ({
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            className="h-10 px-4 bg-gradient-to-br from-background via-background to-accent/10 backdrop-blur-sm border-border/50 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 transition-all shadow-sm group"
+            className="h-10 px-4 bg-white backdrop-blur-sm border-gray-200 hover:border-primary/30 hover:shadow-md transition-all shadow-sm group"
           >
             <CalendarDays className="h-4 w-4 mr-2 text-primary group-hover:scale-110 transition-transform" />
             <span className="font-medium">{displayLabel}</span>
@@ -170,12 +182,43 @@ const ElegantPeriodButton = ({
           <DropdownMenuItem onClick={() => onChange('7days')}>
             Últimos 7 dias
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('current_month')}>
+            Este mês
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange('30days')}>
             Últimos 30 dias
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange('custom')}>
             Período Personalizado
           </DropdownMenuItem>
+          
+          {onSavePeriodChange && (
+            <>
+              <DropdownMenuSeparator />
+              <div 
+                className="px-2 py-2 flex items-center gap-2 hover:bg-accent rounded-sm cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onSavePeriodChange(!savePeriodEnabled);
+                }}
+              >
+                <Checkbox 
+                  id="save-period" 
+                  checked={savePeriodEnabled}
+                  onCheckedChange={(checked) => onSavePeriodChange(checked === true)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <label 
+                  htmlFor="save-period" 
+                  className="text-sm text-muted-foreground cursor-pointer flex-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Lembrar minha escolha
+                </label>
+              </div>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
