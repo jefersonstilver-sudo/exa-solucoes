@@ -1,16 +1,11 @@
-
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
-  LayoutDashboard,
   ShoppingBag,
   Video,
   User,
-  Settings,
-  HelpCircle,
   LogOut,
-  BarChart3,
   Crown,
   Receipt
 } from 'lucide-react';
@@ -27,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import NotificationCenter from '@/components/notifications/NotificationCenter';
+import NotificationCenter from '@/components/admin/layout/NotificationCenter';
 import exaLogo from '@/assets/exa-logo.png';
 
 interface AdvertiserSidebarContentProps {
@@ -52,7 +47,6 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
   };
 
   const sidebarItems = [
-    // GESTÃO PRINCIPAL - Dashboard desativado temporariamente
     {
       title: 'Meus Pedidos',
       href: '/anunciante/pedidos',
@@ -65,16 +59,12 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
       icon: Receipt,
       section: 'main'
     },
-    
-    // CONTEÚDO
     {
       title: 'Meus Vídeos',
       href: '/anunciante/videos',
       icon: Video,
       section: 'content'
     },
-    
-    // CONFIGURAÇÕES
     {
       title: 'Perfil',
       href: '/anunciante/perfil',
@@ -95,10 +85,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
     return acc;
   }, {} as Record<string, typeof sidebarItems>);
 
-  const isActive = (href: string, exact?: boolean) => {
-    if (exact) {
-      return location.pathname === href;
-    }
+  const isActive = (href: string) => {
     return location.pathname.startsWith(href);
   };
 
@@ -127,7 +114,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
           />
         </div>
         
-        {/* Informações do Usuário */}
+        {/* Informações do Usuário - apenas quando expandido */}
         {!isCollapsed && (
           <div className="flex items-center justify-between animate-in fade-in slide-in-from-left-5 duration-300">
             <div className="flex-1 min-w-0">
@@ -142,13 +129,13 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
               </div>
             </div>
             
-            {/* Notificações e Menu */}
+            {/* Notificações e Menu - UMA única instância */}
             <div className="flex items-center space-x-2 ml-2">
               <NotificationCenter />
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20 transition-colors">
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20 transition-colors">
                     <Avatar className="h-8 w-8 ring-2 ring-white/20">
                       <AvatarFallback className="bg-white text-exa-red font-semibold text-xs">
                         {user?.email?.charAt(0).toUpperCase() || 'A'}
@@ -156,7 +143,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-xl rounded-xl" align="end" forceMount>
+                <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-xl rounded-xl" align="end" forceMount>
                   <div className="flex flex-col space-y-1 p-2">
                     <p className="text-sm font-medium leading-none text-gray-900">
                       {user?.email || 'Anunciante'}
@@ -179,9 +166,10 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
           </div>
         )}
         
-        {/* Avatar compacto quando colapsado */}
+        {/* Avatar compacto quando colapsado - SEM NotificationCenter duplicado */}
         {isCollapsed && (
           <div className="flex flex-col items-center space-y-2">
+            <NotificationCenter />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20 transition-colors">
@@ -211,9 +199,6 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <div className="h-8 flex items-center">
-              <NotificationCenter />
-            </div>
           </div>
         )}
       </div>
@@ -223,9 +208,9 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
         {Object.entries(groupedItems).map(([sectionKey, items]) => (
           <div key={sectionKey}>
             {!isCollapsed && (
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">
-              {sections[sectionKey as keyof typeof sections]}
-            </h3>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">
+                {sections[sectionKey as keyof typeof sections]}
+              </h3>
             )}
             <div className={cn(isCollapsed ? "space-y-1" : "space-y-1")}>
               {items.map((item) => (
@@ -233,10 +218,10 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                   key={item.href}
                   to={item.href}
                   onClick={onItemClick}
-                   className={cn(
+                  className={cn(
                     'flex items-center rounded-xl text-sm font-medium transition-all duration-200 group',
                     isCollapsed ? "p-2 justify-center" : "space-x-3 px-4 py-3",
-                   isActive(item.href)
+                    isActive(item.href)
                       ? 'bg-white text-gray-900 shadow-lg font-semibold'
                       : 'text-white hover:text-white hover:bg-white/10 hover:translate-x-1'
                   )}
@@ -245,7 +230,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                   <item.icon className={cn(
                     "transition-transform duration-200 group-hover:scale-110",
                     isActive(item.href) ? "text-red-600" : "text-white",
-                    isCollapsed ? "h-5 w-5" : "h-5 w-5"
+                    "h-5 w-5"
                   )} />
                   {!isCollapsed && <span>{item.title}</span>}
                 </Link>

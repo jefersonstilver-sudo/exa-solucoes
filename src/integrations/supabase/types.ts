@@ -8242,11 +8242,11 @@ export type Database = {
       }
       admin_update_user_role_secure:
         | {
-            Args: { p_admin_id?: string; p_new_role: string; p_user_id: string }
+            Args: { p_admin_id: string; p_new_role: string; p_user_id: string }
             Returns: Json
           }
         | {
-            Args: { p_admin_id: string; p_new_role: string; p_user_id: string }
+            Args: { p_admin_id?: string; p_new_role: string; p_user_id: string }
             Returns: Json
           }
       admin_update_user_secure: {
@@ -8941,7 +8941,6 @@ export type Database = {
         Returns: boolean
       }
       has_role:
-        | { Args: { _role: string; _user_id: string }; Returns: boolean }
         | {
             Args: {
               _role: Database["public"]["Enums"]["app_role"]
@@ -8949,6 +8948,7 @@ export type Database = {
             }
             Returns: boolean
           }
+        | { Args: { _role: string; _user_id: string }; Returns: boolean }
       increment_conversation_analytics: {
         Args: {
           p_agent_key: string
