@@ -1,0 +1,391 @@
+
+/* ============================================
+   UNIFIED ANIMATIONS - EXA Mídia
+   Sistema de animações otimizado e unificado
+   ============================================ */
+
+/* ----------------------------------------
+   PERFORMANCE FUNDAMENTALS
+   ---------------------------------------- */
+
+/* GPU acceleration for smooth animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ----------------------------------------
+   CORE LOADING ANIMATIONS
+   ---------------------------------------- */
+
+/* Primary spinner - pure CSS, no Framer Motion */
+.loading-spinner {
+  animation: spin 0.8s linear infinite;
+  will-change: transform;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Pulsing animation for loading states */
+.loading-pulse {
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ----------------------------------------
+   FADE ANIMATIONS
+   ---------------------------------------- */
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+
+.animate-fade-out {
+  animation: fade-out 0.2s ease-out forwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ----------------------------------------
+   SCALE ANIMATIONS
+   ---------------------------------------- */
+
+.animate-scale-in {
+  animation: scale-in 0.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+.animate-scale-out {
+  animation: scale-out 0.15s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes scale-out {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+/* ----------------------------------------
+   SLIDE ANIMATIONS
+   ---------------------------------------- */
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+.animate-slide-out-right {
+  animation: slide-out-right 0.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slide-out-right {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+/* ----------------------------------------
+   INTERACTIVE HOVER EFFECTS
+   ---------------------------------------- */
+
+/* Apple-style smooth hover scale */
+.hover-scale {
+  transition: transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.hover-scale:active {
+  transform: scale(0.98);
+}
+
+/* Button hover with press feedback */
+.button-hover {
+  transition: all 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.button-hover:hover {
+  transform: scale(1.02);
+}
+
+.button-hover:active {
+  transform: scale(0.97);
+}
+
+/* Card lift effect on hover */
+.card-hover-lift {
+  transition: transform 0.25s cubic-bezier(0.25, 0.1, 0.25, 1),
+              box-shadow 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* ----------------------------------------
+   UI FEEDBACK ANIMATIONS
+   ---------------------------------------- */
+
+/* Cart pulse animation */
+.cart-pulse {
+  animation: cart-pulse 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+@keyframes cart-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Gentle bounce for attention */
+.animate-bounce-gentle {
+  animation: bounce-gentle 2s ease-in-out infinite;
+}
+
+@keyframes bounce-gentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* ----------------------------------------
+   SKELETON / SHIMMER LOADING
+   ---------------------------------------- */
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ----------------------------------------
+   GLOW EFFECTS
+   ---------------------------------------- */
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(156, 30, 30, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(156, 30, 30, 0.4);
+  }
+}
+
+/* ----------------------------------------
+   FLOAT ANIMATION (Hero sections)
+   ---------------------------------------- */
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+/* ----------------------------------------
+   TICKER / SCROLL ANIMATIONS
+   ---------------------------------------- */
+
+.animate-scroll-ticker {
+  animation: scroll-ticker 60s linear infinite;
+}
+
+@keyframes scroll-ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@media (min-width: 768px) {
+  .animate-scroll-ticker:hover {
+    animation-play-state: paused;
+  }
+}
+
+/* ----------------------------------------
+   LOADING BAR
+   ---------------------------------------- */
+
+.animate-loading-bar {
+  animation: loading-bar 1.2s ease-in-out infinite;
+}
+
+@keyframes loading-bar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+/* ----------------------------------------
+   STATUS INDICATORS
+   ---------------------------------------- */
+
+.video-status-active {
+  animation: pulse-green 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-green {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0);
+  }
+}
+
+/* ----------------------------------------
+   ACCORDION ANIMATIONS
+   ---------------------------------------- */
+
+.animate-accordion-down {
+  animation: accordion-down 0.2s ease-out;
+}
+
+.animate-accordion-up {
+  animation: accordion-up 0.2s ease-out;
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+/* ----------------------------------------
+   APPLE-STYLE TRANSITIONS (Global)
+   ---------------------------------------- */
+
+/* Apply smooth transitions to common interactive elements */
+a, button, [role="button"] {
+  transition: opacity 0.15s cubic-bezier(0.25, 0.1, 0.25, 1),
+              transform 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Smooth color/background transitions */
+.transition-colors-smooth {
+  transition: color 0.2s cubic-bezier(0.25, 0.1, 0.25, 1),
+              background-color 0.2s cubic-bezier(0.25, 0.1, 0.25, 1),
+              border-color 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* All properties smooth transition */
+.transition-all-smooth {
+  transition: all 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* ----------------------------------------
+   UNDERLINE LINK ANIMATION
+   ---------------------------------------- */
+
+.story-link * {
+  position: relative;
+  display: inline-block;
+}
+
+.story-link *::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  transform: scaleX(0);
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  background-color: hsl(var(--primary));
+  transform-origin: bottom right;
+  transition: transform 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.story-link:hover *::after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}
