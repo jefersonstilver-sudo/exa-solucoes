@@ -10,6 +10,8 @@ import { PaineisTable } from "@/components/admin/paineis-exa/PaineisTable";
 import { GerarPainelDialog } from "@/components/admin/paineis-exa/GerarPainelDialog";
 import { GerarCodigoDialog } from "@/components/admin/paineis-exa/GerarCodigoDialog";
 import { ConfigHorarioDialog } from "@/components/admin/paineis-exa/ConfigHorarioDialog";
+import { ScheduledShutdownBadge } from "@/components/admin/uptime/ScheduledShutdownBadge";
+import { FullUptimeBadge } from "@/components/admin/uptime/FullUptimeBadge";
 import { Plus, Link2, Clock } from "lucide-react";
 import { toast } from "sonner";
 
@@ -97,15 +99,19 @@ const PaineisExa = () => {
         <title>Painéis EXA - Indexa Mídia</title>
       </Helmet>
 
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="container mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4 md:mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Painéis EXA</h1>
-            <p className="text-muted-foreground mt-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl md:text-3xl font-bold">Painéis EXA</h1>
+              <ScheduledShutdownBadge compact />
+              <FullUptimeBadge compact />
+            </div>
+            <p className="text-muted-foreground mt-1 text-sm md:text-base">
               Gerencie e monitore todos os painéis digitais - Sistema Beta
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
