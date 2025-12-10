@@ -19,11 +19,14 @@ export const FullUptimeBadge: React.FC<FullUptimeBadgeProps> = ({
   className,
   compact = false 
 }) => {
-  const { isFullUptime, currentDuration, record, loading } = useFullUptimeMode();
+  const { isFullUptime, currentDuration, record, loading, isPausedDuringShutdown, allDevicesReallyOnline } = useFullUptimeMode();
   const [modalOpen, setModalOpen] = useState(false);
 
   if (loading) return null;
-  if (!isFullUptime) return null;
+  
+  // CRITICAL: Only show green badge when ALL devices are REALLY online
+  // If we're in shutdown period with offline devices, DON'T show the green badge
+  if (!isFullUptime || !allDevicesReallyOnline) return null;
 
   return (
     <>
