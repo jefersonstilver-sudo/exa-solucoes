@@ -23,6 +23,18 @@ interface DeviceMetadata {
   last_rule_id?: string;
 }
 
+// Helper to check if we're in scheduled shutdown period (1:00 - 4:00 BRT)
+const isScheduledShutdownPeriod = (): boolean => {
+  const brazilTime = new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
+  const hour = new Date(brazilTime).getHours();
+  return hour >= 1 && hour < 4;
+};
+
+// Helper to get Brazil time string
+const getBrazilTimeString = (): string => {
+  return new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -34,7 +46,11 @@ Deno.serve(async (req) => {
     const testMode = body.testMode === true;
     const testRuleId = body.ruleId;
     
-    console.log(`🤖 [MONITOR] Iniciando verificação ${testMode ? '(MODO TESTE)' : ''}...`);
+    // Check if we're in scheduled shutdown period
+    const isShutdownPeriod = isScheduledShutdownPeriod();
+    const brazilTime = getBrazilTimeString();
+    
+    console.log(`🤖 [MONITOR] Iniciando verificação ${testMode ? '(MODO TESTE)' : ''} - Horário BRT: ${brazilTime}${isShutdownPeriod ? ' [PERÍODO PROGRAMADO 1h-4h]' : ''}...`);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -242,8 +258,27 @@ Deno.serve(async (req) => {
 
       // ========== DETECT: DEVICE WENT OFFLINE ==========
       if (isOffline && applicableRule) {
-        console.log(`🔴 [MONITOR] Device ${device.name}: offline há ${formatOfflineDuration(timeSinceLastOnline)}, regra aplicável: ${applicableRule?.nome || 'nenhuma'}`);
+        console.log(`🔴 [MONITOR] Device ${device.name}: offline há ${formatOfflineDuration(timeSinceLastOnline)}, regra aplicável: ${applicableRule?.nome || 'nenhuma'}${isShutdownPeriod ? ' [PERÍODO PROGRAMADO - IGNORANDO]' : ''}`);
         offlineDetected++;
+
+        // CRITICAL: During scheduled shutdown period (1h-4h), log but DO NOT send alerts
+        if (isShutdownPeriod && !testMode) {
+          console.log(`🌙 [MONITOR] Device ${device.name}: Período de desligamento programado (1h-4h). Registrando em log, sem envio de alerta.`);
+          
+          // Log the event for audit purposes
+          await supabase.from('panel_offline_alerts_history').insert({
+            painel_id: device.id,
+            device_name: device.name,
+            tipo: 'programado',
+            mensagem: `Device ${device.name} offline durante período programado (1h-4h) - alerta ignorado`,
+            tempo_offline_minutos: Math.round(timeSinceLastOnline / 60000),
+            destinatarios_notificados: [],
+            regra_id: applicableRule.id,
+            regra_nome: applicableRule.nome
+          });
+          
+          continue; // Skip to next device
+        }
 
         const triggeredRules = metadata.triggered_rules || [];
         const alreadyTriggeredThisRule = triggeredRules.includes(applicableRule.id);
@@ -312,7 +347,7 @@ Deno.serve(async (req) => {
             `🖥️ Painel: ${device.name}\n` +
             provedorLine +
             `⏱️ Offline há: ${offlineDisplay}\n` +
-            `📅 Detectado às: ${now.toLocaleTimeString('pt-BR')}\n` +
+            `📅 Detectado às: ${brazilTime}\n` +
             (isRepeatAlert ? `\n🔄 Este é o ${alertCount}º aviso` : '');
 
           // Send to all recipients with buttons
@@ -396,8 +431,14 @@ Deno.serve(async (req) => {
 
       // ========== DETECT: DEVICE CAME BACK ONLINE ==========
       if (!testMode && currentStatus === 'offline' && !isOffline && lastOnline) {
-        console.log(`🟢 [MONITOR] Device VOLTOU ONLINE: ${device.name}`);
+        console.log(`🟢 [MONITOR] Device VOLTOU ONLINE: ${device.name}${isShutdownPeriod ? ' [PERÍODO PROGRAMADO]' : ''}`);
         backOnlineDetected++;
+
+        // During scheduled shutdown, don't send online notifications
+        if (isShutdownPeriod) {
+          console.log(`🌙 [MONITOR] Device ${device.name}: Ignorando notificação online durante período programado`);
+          continue;
+        }
 
         // Find any rule that wants online notification
         const notifyOnlineRules = alertRules.filter(r => r.notificar_quando_online);
@@ -430,7 +471,7 @@ Deno.serve(async (req) => {
           const message = `🟢 *PAINEL ONLINE*\n\n` +
             `📍 Local: ${device.condominio_name || device.name}\n` +
             `🖥️ Painel: ${device.name}\n` +
-            `✅ Voltou online às: ${now.toLocaleTimeString('pt-BR')}\n` +
+            `✅ Voltou online às: ${brazilTime}\n` +
             `📊 Último alerta: ${lastRuleName}`;
 
           for (const recipient of recipients) {
