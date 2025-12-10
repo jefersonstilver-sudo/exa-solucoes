@@ -5556,6 +5556,7 @@ export type Database = {
       panel_offline_alert_confirmations: {
         Row: {
           alert_history_id: string | null
+          alert_number: number | null
           button_id: string | null
           button_label: string
           confirmed_at: string | null
@@ -5563,6 +5564,8 @@ export type Database = {
           device_id: string | null
           device_name: string | null
           id: string
+          incident_id: string | null
+          incident_number: number | null
           message_id: string | null
           raw_webhook: Json | null
           recipient_name: string | null
@@ -5571,6 +5574,7 @@ export type Database = {
         }
         Insert: {
           alert_history_id?: string | null
+          alert_number?: number | null
           button_id?: string | null
           button_label: string
           confirmed_at?: string | null
@@ -5578,6 +5582,8 @@ export type Database = {
           device_id?: string | null
           device_name?: string | null
           id?: string
+          incident_id?: string | null
+          incident_number?: number | null
           message_id?: string | null
           raw_webhook?: Json | null
           recipient_name?: string | null
@@ -5586,6 +5592,7 @@ export type Database = {
         }
         Update: {
           alert_history_id?: string | null
+          alert_number?: number | null
           button_id?: string | null
           button_label?: string
           confirmed_at?: string | null
@@ -5593,6 +5600,8 @@ export type Database = {
           device_id?: string | null
           device_name?: string | null
           id?: string
+          incident_id?: string | null
+          incident_number?: number | null
           message_id?: string | null
           raw_webhook?: Json | null
           recipient_name?: string | null
@@ -5694,9 +5703,12 @@ export type Database = {
       }
       panel_offline_alerts_history: {
         Row: {
+          alert_number: number | null
           created_at: string | null
           destinatarios_notificados: Json | null
           id: string
+          incident_id: string | null
+          incident_number: number | null
           mensagem: string | null
           painel_id: string | null
           regra_id: string | null
@@ -5705,9 +5717,12 @@ export type Database = {
           tipo: string
         }
         Insert: {
+          alert_number?: number | null
           created_at?: string | null
           destinatarios_notificados?: Json | null
           id?: string
+          incident_id?: string | null
+          incident_number?: number | null
           mensagem?: string | null
           painel_id?: string | null
           regra_id?: string | null
@@ -5716,9 +5731,12 @@ export type Database = {
           tipo: string
         }
         Update: {
+          alert_number?: number | null
           created_at?: string | null
           destinatarios_notificados?: Json | null
           id?: string
+          incident_id?: string | null
+          incident_number?: number | null
           mensagem?: string | null
           painel_id?: string | null
           regra_id?: string | null
@@ -9295,6 +9313,10 @@ export type Database = {
           p_rejection_reason: string
         }
         Returns: boolean
+      }
+      reset_device_alert_metadata_for_rule: {
+        Args: { p_rule_id: string }
+        Returns: undefined
       }
       resolve_email_conflicts: { Args: never; Returns: Json }
       revert_suspicious_payment: {
