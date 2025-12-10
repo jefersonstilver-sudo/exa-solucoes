@@ -19,9 +19,17 @@ export interface FullUptimeData {
   loading: boolean;
   totalDevices: number;
   onlineDevices: number;
+  isScheduledShutdown: boolean; // NEW: indicates if we're in shutdown period
 }
 
 const SIGNIFICANT_OUTAGE_MINUTES = 10;
+
+// Helper to check if we're in scheduled shutdown period (1:00 - 4:00 BRT)
+export const isScheduledShutdownPeriod = (): boolean => {
+  const brazilTime = new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
+  const hour = new Date(brazilTime).getHours();
+  return hour >= 1 && hour < 4;
+};
 
 export const useFullUptimeMode = () => {
   const [data, setData] = useState<FullUptimeData>({
@@ -32,11 +40,14 @@ export const useFullUptimeMode = () => {
     history: [],
     loading: true,
     totalDevices: 0,
-    onlineDevices: 0
+    onlineDevices: 0,
+    isScheduledShutdown: false
   });
 
   const checkUptimeStatus = useCallback(async () => {
     try {
+      const isShutdownPeriod = isScheduledShutdownPeriod();
+      
       // Get device status
       const { data: devices, error: devicesError } = await supabase
         .from('devices')
@@ -47,18 +58,12 @@ export const useFullUptimeMode = () => {
 
       const totalDevices = devices?.length || 0;
       const onlineDevices = devices?.filter(d => d.status === 'online').length || 0;
-      const allOnline = totalDevices > 0 && onlineDevices === totalDevices;
-
-      // Check for significant outages (≥10 min) in connection_history
-      const tenMinutesAgo = new Date(Date.now() - SIGNIFICANT_OUTAGE_MINUTES * 60 * 1000).toISOString();
       
-      const { data: recentOutages } = await supabase
-        .from('connection_history')
-        .select('*')
-        .eq('event_type', 'offline')
-        .gte('duration_seconds', SIGNIFICANT_OUTAGE_MINUTES * 60)
-        .order('ended_at', { ascending: false })
-        .limit(1);
+      // During scheduled shutdown (1h-4h), consider all devices as "virtually online"
+      // This prevents the 100% active mode from being broken by programmed shutdowns
+      const effectivelyAllOnline = isShutdownPeriod 
+        ? true  // During shutdown, don't break uptime
+        : (totalDevices > 0 && onlineDevices === totalDevices);
 
       // Get current uptime record
       const { data: currentRecord } = await supabase
@@ -86,11 +91,11 @@ export const useFullUptimeMode = () => {
       let currentStartedAt: Date | null = null;
       let isFullUptime = false;
 
-      if (currentRecord && allOnline) {
+      if (currentRecord && effectivelyAllOnline) {
         currentStartedAt = new Date(currentRecord.started_at);
         currentDuration = Math.floor((Date.now() - currentStartedAt.getTime()) / 1000);
         isFullUptime = true;
-      } else if (allOnline && !currentRecord) {
+      } else if (effectivelyAllOnline && !currentRecord) {
         // All online but no record yet - create one
         const { data: newRecord } = await supabase
           .from('uptime_records')
@@ -105,8 +110,9 @@ export const useFullUptimeMode = () => {
         }
       }
 
-      // If not all online but we have a current record, close it
-      if (!allOnline && currentRecord) {
+      // CRITICAL: During scheduled shutdown, do NOT close the uptime record
+      // Only close if we're OUTSIDE shutdown period and not all devices are online
+      if (!effectivelyAllOnline && currentRecord && !isShutdownPeriod) {
         const offlineDevice = devices?.find(d => d.status === 'offline');
         await supabase
           .from('uptime_records')
@@ -127,7 +133,8 @@ export const useFullUptimeMode = () => {
         history: history || [],
         loading: false,
         totalDevices,
-        onlineDevices
+        onlineDevices,
+        isScheduledShutdown: isShutdownPeriod
       });
     } catch (error) {
       console.error('[useFullUptimeMode] Error:', error);

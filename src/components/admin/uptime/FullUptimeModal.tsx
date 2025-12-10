@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Clock, Calendar, AlertTriangle, CheckCircle2, X } from 'lucide-react';
+import { Trophy, Clock, Calendar, AlertTriangle, CheckCircle, Moon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -28,7 +28,8 @@ export const FullUptimeModal: React.FC<FullUptimeModalProps> = ({
     record, 
     history, 
     totalDevices,
-    onlineDevices 
+    onlineDevices,
+    isScheduledShutdown
   } = useFullUptimeMode();
 
   return (
@@ -37,13 +38,27 @@ export const FullUptimeModal: React.FC<FullUptimeModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              <CheckCircle className="h-4 w-4 text-emerald-600" />
             </div>
             Modo 100% Ativo
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Scheduled Shutdown Warning */}
+          {isScheduledShutdown && (
+            <div className="rounded-xl p-4 bg-amber-50 border border-amber-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Moon className="h-5 w-5 text-amber-600 animate-pulse" />
+                <span className="font-semibold text-amber-800">Período de Desligamento Programado</span>
+              </div>
+              <p className="text-sm text-amber-700">
+                Os painéis estão programados para desligar entre 1:00 e 4:00. 
+                Durante este período, o modo 100% ativo <strong>não é interrompido</strong> e alertas são ignorados.
+              </p>
+            </div>
+          )}
+
           {/* Current Status */}
           <div className={`rounded-xl p-4 ${isFullUptime ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 border border-gray-200'}`}>
             <div className="flex items-center justify-between mb-3">
@@ -52,6 +67,9 @@ export const FullUptimeModal: React.FC<FullUptimeModalProps> = ({
                 <span className="font-medium text-sm">
                   {isFullUptime ? 'Ativo agora' : 'Não ativo'}
                 </span>
+                {isScheduledShutdown && isFullUptime && (
+                  <Badge className="bg-amber-500 text-[10px]">🌙 Pausado</Badge>
+                )}
               </div>
               <Badge variant={isFullUptime ? 'default' : 'secondary'} className={isFullUptime ? 'bg-emerald-500' : ''}>
                 {onlineDevices}/{totalDevices} online
@@ -171,13 +189,25 @@ export const FullUptimeModal: React.FC<FullUptimeModalProps> = ({
           </div>
 
           {/* Info */}
-          <div className="rounded-lg bg-blue-50 p-3 border border-blue-200">
-            <div className="flex gap-2 text-xs text-blue-700">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-              <p>
-                <strong>Regra:</strong> Quedas menores que 10 minutos não interrompem o modo 100% ativo.
-                Apenas quedas ≥10 minutos são consideradas significativas.
-              </p>
+          <div className="space-y-2">
+            <div className="rounded-lg bg-blue-50 p-3 border border-blue-200">
+              <div className="flex gap-2 text-xs text-blue-700">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <p>
+                  <strong>Regra:</strong> Quedas menores que 10 minutos não interrompem o modo 100% ativo.
+                  Apenas quedas ≥10 minutos são consideradas significativas.
+                </p>
+              </div>
+            </div>
+            
+            <div className="rounded-lg bg-amber-50 p-3 border border-amber-200">
+              <div className="flex gap-2 text-xs text-amber-700">
+                <Moon className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <p>
+                  <strong>Horário programado (1h-4h):</strong> Quedas durante este período são ignoradas 
+                  e não afetam o modo 100% ativo, pois os painéis desligam automaticamente.
+                </p>
+              </div>
             </div>
           </div>
         </div>

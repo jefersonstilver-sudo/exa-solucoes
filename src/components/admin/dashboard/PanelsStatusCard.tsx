@@ -5,6 +5,7 @@ import { MonitorPlay, ArrowRight, AlertTriangle, CheckCircle, Wifi, WifiOff, Tre
 import { DashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { useNavigate } from 'react-router-dom';
 import { FullUptimeBadge } from '@/components/admin/uptime/FullUptimeBadge';
+import { ScheduledShutdownBadge } from '@/components/admin/uptime/ScheduledShutdownBadge';
 
 interface PanelsStatusCardProps {
   metrics: DashboardMetrics;
@@ -41,6 +42,9 @@ const PanelsStatusCard = ({ metrics, quedasPeriodo = 0 }: PanelsStatusCardProps)
               )}
             </div>
           </div>
+          
+          {/* Scheduled Shutdown Badge - Shows during 1h-4h */}
+          <ScheduledShutdownBadge compact />
           
           {/* Full Uptime Badge */}
           <FullUptimeBadge compact />
