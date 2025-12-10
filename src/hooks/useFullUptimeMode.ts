@@ -19,7 +19,9 @@ export interface FullUptimeData {
   loading: boolean;
   totalDevices: number;
   onlineDevices: number;
-  isScheduledShutdown: boolean; // NEW: indicates if we're in shutdown period
+  isScheduledShutdown: boolean;
+  isPausedDuringShutdown: boolean; // TRUE when in shutdown period with offline devices
+  allDevicesReallyOnline: boolean; // TRUE only when ALL devices are genuinely online
 }
 
 const SIGNIFICANT_OUTAGE_MINUTES = 10;
@@ -41,7 +43,9 @@ export const useFullUptimeMode = () => {
     loading: true,
     totalDevices: 0,
     onlineDevices: 0,
-    isScheduledShutdown: false
+    isScheduledShutdown: false,
+    isPausedDuringShutdown: false,
+    allDevicesReallyOnline: false
   });
 
   const checkUptimeStatus = useCallback(async () => {
@@ -59,11 +63,17 @@ export const useFullUptimeMode = () => {
       const totalDevices = devices?.length || 0;
       const onlineDevices = devices?.filter(d => d.status === 'online').length || 0;
       
-      // During scheduled shutdown (1h-4h), consider all devices as "virtually online"
-      // This prevents the 100% active mode from being broken by programmed shutdowns
-      const effectivelyAllOnline = isShutdownPeriod 
-        ? true  // During shutdown, don't break uptime
-        : (totalDevices > 0 && onlineDevices === totalDevices);
+      // Check if ALL devices are REALLY online (no shortcuts)
+      const allDevicesReallyOnline = totalDevices > 0 && onlineDevices === totalDevices;
+      
+      // During scheduled shutdown (1h-4h) with offline devices:
+      // - Don't close the uptime record (pause it)
+      // - But DON'T show as "100% active" since devices are offline
+      const isPausedDuringShutdown = isShutdownPeriod && !allDevicesReallyOnline;
+      
+      // effectivelyAllOnline is ONLY true when ALL devices are genuinely online
+      // OR when we're in shutdown period (to prevent closing the record)
+      const shouldKeepRecordOpen = allDevicesReallyOnline || isShutdownPeriod;
 
       // Get current uptime record
       const { data: currentRecord } = await supabase
@@ -91,12 +101,19 @@ export const useFullUptimeMode = () => {
       let currentStartedAt: Date | null = null;
       let isFullUptime = false;
 
-      if (currentRecord && effectivelyAllOnline) {
+      // isFullUptime should ONLY be true when ALL devices are REALLY online
+      // NOT during shutdown with offline devices
+      if (currentRecord && allDevicesReallyOnline) {
         currentStartedAt = new Date(currentRecord.started_at);
         currentDuration = Math.floor((Date.now() - currentStartedAt.getTime()) / 1000);
         isFullUptime = true;
-      } else if (effectivelyAllOnline && !currentRecord) {
-        // All online but no record yet - create one
+      } else if (currentRecord && isPausedDuringShutdown) {
+        // During shutdown with offline devices: keep the record but DON'T show as 100%
+        currentStartedAt = new Date(currentRecord.started_at);
+        currentDuration = Math.floor((Date.now() - currentStartedAt.getTime()) / 1000);
+        isFullUptime = false; // CRITICAL: Don't show green badge
+      } else if (allDevicesReallyOnline && !currentRecord) {
+        // All REALLY online but no record yet - create one
         const { data: newRecord } = await supabase
           .from('uptime_records')
           .insert({ started_at: new Date().toISOString(), is_current: true })
@@ -110,9 +127,9 @@ export const useFullUptimeMode = () => {
         }
       }
 
-      // CRITICAL: During scheduled shutdown, do NOT close the uptime record
+      // CRITICAL: During scheduled shutdown (1h-4h), do NOT close the uptime record
       // Only close if we're OUTSIDE shutdown period and not all devices are online
-      if (!effectivelyAllOnline && currentRecord && !isShutdownPeriod) {
+      if (!allDevicesReallyOnline && currentRecord && !isShutdownPeriod) {
         const offlineDevice = devices?.find(d => d.status === 'offline');
         await supabase
           .from('uptime_records')
@@ -134,7 +151,9 @@ export const useFullUptimeMode = () => {
         loading: false,
         totalDevices,
         onlineDevices,
-        isScheduledShutdown: isShutdownPeriod
+        isScheduledShutdown: isShutdownPeriod,
+        isPausedDuringShutdown,
+        allDevicesReallyOnline
       });
     } catch (error) {
       console.error('[useFullUptimeMode] Error:', error);
