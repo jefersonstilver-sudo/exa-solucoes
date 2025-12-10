@@ -19,13 +19,9 @@ serve(async (req) => {
     const payload = await req.json();
     console.log('📨 [BUTTON-WEBHOOK] Received:', JSON.stringify(payload, null, 2));
 
-    // Z-API sends button responses in TWO different formats:
-    // 1. buttonsResponseMessage (older format)
-    // 2. buttonReply (newer format)
     const buttonData = payload.buttonsResponseMessage || payload.buttonReply;
     
     if (!buttonData) {
-      console.log('ℹ️ [BUTTON-WEBHOOK] Not a button response, ignoring');
       return new Response(
         JSON.stringify({ success: true, message: 'Not a button response' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -36,16 +32,11 @@ serve(async (req) => {
     const phone = payload.phone || payload.from;
     const senderName = payload.senderName || payload.chatName || payload.pushName || 'Desconhecido';
     const referenceMessageId = buttonData.referenceMessageId || payload.referenceMessageId || payload.messageId;
+    const buttonLabel = message || '';
 
-    console.log('🔘 [BUTTON-WEBHOOK] Button click detected:', { 
-      buttonId, 
-      message, 
-      phone, 
-      senderName,
-      referenceMessageId 
-    });
+    console.log('🔘 [BUTTON-WEBHOOK] Button click:', { buttonId, buttonLabel, phone, senderName });
 
-    // Try to find the button in our database
+    // Find button record
     let buttonRecord = null;
     if (buttonId) {
       const { data: btn } = await supabase
@@ -54,43 +45,29 @@ serve(async (req) => {
         .eq('id', buttonId)
         .single();
       buttonRecord = btn;
-      console.log('🔍 [BUTTON-WEBHOOK] Button record found:', buttonRecord ? 'yes' : 'no');
     }
 
-    // Find recent alert for this phone to link confirmation
-    const { data: recentAlerts, error: alertsError } = await supabase
+    // Find recent alert for this phone
+    const { data: recentAlerts } = await supabase
       .from('panel_offline_alerts_history')
-      .select('*, devices(id, name)')
+      .select('*, devices(id, name, metadata)')
       .order('sent_at', { ascending: false })
       .limit(20);
 
-    if (alertsError) {
-      console.error('❌ [BUTTON-WEBHOOK] Error fetching alerts:', alertsError);
-    }
-
-    console.log('📋 [BUTTON-WEBHOOK] Recent alerts found:', recentAlerts?.length || 0);
-
-    // Try to match by recipient phone
     let matchedAlert = null;
     let deviceInfo = null;
 
     if (recentAlerts) {
       for (const alert of recentAlerts) {
-        // Check if this phone was a recipient
         const recipients = alert.recipients || [];
         const phoneClean = phone?.replace(/\D/g, '');
         
         for (const recipient of recipients) {
           const recipientClean = recipient.phone?.replace(/\D/g, '');
-          // Match last 8 digits of phone
           if (recipientClean && phoneClean && 
               (recipientClean.includes(phoneClean.slice(-8)) || phoneClean.includes(recipientClean.slice(-8)))) {
             matchedAlert = alert;
             deviceInfo = alert.devices;
-            console.log('✅ [BUTTON-WEBHOOK] Matched alert:', { 
-              alertId: alert.id, 
-              deviceName: deviceInfo?.name 
-            });
             break;
           }
         }
@@ -98,24 +75,61 @@ serve(async (req) => {
       }
     }
 
-    if (!matchedAlert) {
-      console.log('⚠️ [BUTTON-WEBHOOK] No matching alert found for phone:', phone);
+    const deviceId = deviceInfo?.id || matchedAlert?.painel_id;
+    const metadata = deviceInfo?.metadata || {};
+
+    // DETERMINE ACTION BASED ON BUTTON LABEL
+    let actionType = 'confirmation';
+    let pauseDuration = null;
+
+    if (buttonLabel.toLowerCase().includes('visualizei') || buttonLabel.toLowerCase().includes('👁️')) {
+      // "Já Visualizei" - Pause for 3 hours
+      actionType = 'pause_3h';
+      pauseDuration = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
+      console.log('⏸️ [BUTTON-WEBHOOK] Pausando notificações por 3 horas');
+    } else if (buttonLabel.toLowerCase().includes('interromper') || buttonLabel.toLowerCase().includes('🛑')) {
+      // "Interromper Notificações" - Pause indefinitely until online
+      actionType = 'pause_indefinite';
+      pauseDuration = 'indefinite';
+      console.log('🛑 [BUTTON-WEBHOOK] Interrompendo notificações até voltar online');
     }
 
-    // Insert confirmation record
+    // Update device metadata if we have a device and an action to pause
+    if (deviceId && pauseDuration) {
+      const newMetadata = {
+        ...metadata,
+        notifications_paused_until: pauseDuration,
+        paused_by: phone,
+        paused_at: new Date().toISOString()
+      };
+
+      const { error: updateError } = await supabase
+        .from('devices')
+        .update({ metadata: newMetadata })
+        .eq('id', deviceId);
+
+      if (updateError) {
+        console.error('❌ [BUTTON-WEBHOOK] Error updating device metadata:', updateError);
+      } else {
+        console.log('✅ [BUTTON-WEBHOOK] Device metadata updated with pause:', pauseDuration);
+      }
+    }
+
+    // Insert confirmation record with incident info
     const confirmationData = {
       alert_history_id: matchedAlert?.id || null,
-      device_id: deviceInfo?.id || matchedAlert?.device_id || null,
+      device_id: deviceId || null,
       device_name: deviceInfo?.name || matchedAlert?.device_name || 'Painel desconhecido',
       recipient_phone: phone,
       recipient_name: senderName,
       button_id: buttonRecord?.id || buttonId,
-      button_label: message || buttonRecord?.label || 'Confirmação',
+      button_label: buttonLabel || buttonRecord?.label || 'Confirmação',
       reference_message_id: referenceMessageId,
-      raw_webhook: payload
+      raw_webhook: payload,
+      alert_number: matchedAlert?.alert_number || null,
+      incident_id: matchedAlert?.incident_id || null,
+      incident_number: matchedAlert?.incident_number || null
     };
-
-    console.log('💾 [BUTTON-WEBHOOK] Inserting confirmation:', confirmationData);
 
     const { data: confirmation, error: insertError } = await supabase
       .from('panel_offline_alert_confirmations')
@@ -133,7 +147,7 @@ serve(async (req) => {
     
     console.log('✅ [BUTTON-WEBHOOK] Confirmation recorded:', confirmation.id);
 
-    // Send acknowledgment message back
+    // Send acknowledgment message
     const { data: agent } = await supabase
       .from('agents')
       .select('zapi_config')
@@ -144,18 +158,31 @@ serve(async (req) => {
       const zapiConfig = agent.zapi_config as { instance_id: string; token: string; client_token?: string };
       const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
 
-      const ackMessage = `✅ *Confirmação registrada!*\n\n` +
-        `👤 ${senderName}\n` +
-        `📍 ${deviceInfo?.name || matchedAlert?.device_name || 'Painel'}\n` +
-        `🔘 ${message || 'Confirmação'}\n` +
-        `⏰ ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`;
+      let ackMessage = '';
+      if (actionType === 'pause_3h') {
+        ackMessage = `✅ *Confirmação registrada!*\n\n` +
+          `👤 ${senderName}\n` +
+          `📍 ${deviceInfo?.name || matchedAlert?.device_name || 'Painel'}\n` +
+          `⏸️ Notificações pausadas por *3 horas*\n` +
+          `⏰ ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`;
+      } else if (actionType === 'pause_indefinite') {
+        ackMessage = `🛑 *Notificações interrompidas*\n\n` +
+          `👤 ${senderName}\n` +
+          `📍 ${deviceInfo?.name || matchedAlert?.device_name || 'Painel'}\n` +
+          `⚠️ Você não receberá mais alertas deste painel\n` +
+          `✅ Notificações voltarão quando o painel ficar online\n` +
+          `⏰ ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`;
+      } else {
+        ackMessage = `✅ *Confirmação registrada!*\n\n` +
+          `👤 ${senderName}\n` +
+          `📍 ${deviceInfo?.name || matchedAlert?.device_name || 'Painel'}\n` +
+          `🔘 ${buttonLabel}\n` +
+          `⏰ ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`;
+      }
 
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (zapiClientToken) {
-        headers['Client-Token'] = zapiClientToken;
-      } else if (zapiConfig.client_token) {
-        headers['Client-Token'] = zapiConfig.client_token;
-      }
+      if (zapiClientToken) headers['Client-Token'] = zapiClientToken;
+      else if (zapiConfig.client_token) headers['Client-Token'] = zapiConfig.client_token;
 
       try {
         await fetch(
@@ -163,20 +190,17 @@ serve(async (req) => {
           {
             method: 'POST',
             headers,
-            body: JSON.stringify({
-              phone: phone,
-              message: ackMessage
-            })
+            body: JSON.stringify({ phone, message: ackMessage })
           }
         );
-        console.log('📤 [BUTTON-WEBHOOK] Acknowledgment sent to:', phone);
+        console.log('📤 [BUTTON-WEBHOOK] Acknowledgment sent');
       } catch (ackError) {
         console.error('⚠️ [BUTTON-WEBHOOK] Error sending ack:', ackError);
       }
     }
 
     return new Response(
-      JSON.stringify({ success: true, confirmation_id: confirmation?.id }),
+      JSON.stringify({ success: true, confirmation_id: confirmation?.id, action: actionType }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
