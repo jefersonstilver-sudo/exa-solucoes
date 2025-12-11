@@ -11,9 +11,14 @@ serve(async (req) => {
   }
 
   try {
-    const { cliente_id, cliente_name } = await req.json()
+    const body = await req.json()
+    console.log('[EDGE FUNCTION] Body recebido:', JSON.stringify(body))
+    
+    const cliente_id = body?.cliente_id
+    const cliente_name = body?.cliente_name
 
     if (!cliente_id || !cliente_name) {
+      console.error('[EDGE FUNCTION] Campos faltando:', { cliente_id, cliente_name })
       throw new Error('Missing required fields: cliente_id or cliente_name')
     }
 
