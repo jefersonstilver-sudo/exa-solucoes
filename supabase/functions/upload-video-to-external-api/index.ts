@@ -87,17 +87,21 @@ serve(async (req) => {
     });
 
     // 2. REGRA CONSOLIDADA: clientId = primeiros 4 dígitos do UUID do prédio (sem hífens)
+    // CRÍTICO: Enviar para TODOS os prédios do pedido, não apenas o primeiro!
     const listaPredios = pedidoVideo.pedidos.lista_predios;
     if (!listaPredios || !Array.isArray(listaPredios) || listaPredios.length === 0) {
       throw new Error('Nenhum prédio selecionado no pedido (campo lista_predios vazio)');
     }
     
-    const buildingId = listaPredios[0]; // Primeiro prédio da lista
-    const clientId = buildingId.replace(/-/g, '').substring(0, 4);
+    // Mapear TODOS os prédios para seus clientIds
+    const buildingClients = listaPredios.map((uuid: string) => ({
+      buildingId: uuid,
+      clientId: uuid.replace(/-/g, '').substring(0, 4)
+    }));
     
-    console.log('🏢 [UPLOAD_EXTERNAL_API] Client ID extraído:', { 
-      buildingId, 
-      clientId,
+    console.log('🏢 [UPLOAD_EXTERNAL_API] Client IDs extraídos (TODOS os prédios):', { 
+      totalPredios: buildingClients.length,
+      clientIds: buildingClients.map(b => b.clientId),
       regra: 'primeiros_4_digitos_uuid_sem_hifens'
     });
 
@@ -230,65 +234,89 @@ serve(async (req) => {
       metadataKeys: Object.keys(metadataJson)
     });
 
-    console.log('📤 [UPLOAD_EXTERNAL_API] Enviando para API externa:', {
-      url: `http://15.228.8.3:8000/propagandas/upload-propagandas/${clientId}`,
-      fileName: storageFileName,
-      fileSize: videoFile.size,
-      clientId
-    });
-
-    // 7. Enviar para API externa com timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
-
-    try {
-      const externalApiResponse = await fetch(
-        `http://15.228.8.3:8000/propagandas/upload-propagandas/${clientId}`,
-        {
-          method: 'POST',
-          body: formData,
-          signal: controller.signal
-        }
-      );
-
-      clearTimeout(timeoutId);
-
-      const responseText = await externalApiResponse.text();
-      console.log('📥 [UPLOAD_EXTERNAL_API] Resposta da API externa:', {
-        status: externalApiResponse.status,
-        body: responseText
-      });
-
-      if (!externalApiResponse.ok) {
-        throw new Error(`API externa retornou erro ${externalApiResponse.status}: ${responseText}`);
-      }
-
-      console.log('✅ [UPLOAD_EXTERNAL_API] Upload para API externa concluído com sucesso');
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: 'Vídeo enviado para API externa com sucesso',
-          clientId,
-          videoFileName: storageFileName
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200
-        }
-      );
-
-    } catch (fetchError: any) {
-      clearTimeout(timeoutId);
+    // 7. Enviar para TODOS os prédios do pedido
+    console.log('📤 [UPLOAD_EXTERNAL_API] Iniciando envio para', buildingClients.length, 'prédios');
+    
+    const uploadResults: Array<{ clientId: string; success: boolean; status?: number; error?: string }> = [];
+    
+    for (const { clientId, buildingId } of buildingClients) {
+      console.log(`📤 [UPLOAD_EXTERNAL_API] Enviando para prédio ${clientId} (${buildingId})...`);
       
-      if (fetchError.name === 'AbortError') {
-        console.error('⏱️ [UPLOAD_EXTERNAL_API] Timeout ao enviar para API externa');
-        throw new Error('Timeout ao enviar vídeo para sistema externo');
-      }
+      // Recriar FormData para cada envio (FormData não pode ser reutilizado)
+      const formDataForBuilding = new FormData();
+      formDataForBuilding.append('files', videoFile, finalFileName);
+      formDataForBuilding.append('metadados', JSON.stringify(metadataJson));
       
-      console.error('❌ [UPLOAD_EXTERNAL_API] Erro ao enviar para API externa:', fetchError);
-      throw fetchError;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
+      
+      try {
+        const externalApiResponse = await fetch(
+          `http://15.228.8.3:8000/propagandas/upload-propagandas/${clientId}`,
+          {
+            method: 'POST',
+            body: formDataForBuilding,
+            signal: controller.signal
+          }
+        );
+        
+        clearTimeout(timeoutId);
+        
+        const responseText = await externalApiResponse.text();
+        console.log(`📥 [UPLOAD_EXTERNAL_API] Resposta para ${clientId}:`, {
+          status: externalApiResponse.status,
+          body: responseText.substring(0, 200)
+        });
+        
+        if (externalApiResponse.ok) {
+          console.log(`✅ [UPLOAD_EXTERNAL_API] Upload para ${clientId} concluído com sucesso`);
+          uploadResults.push({ clientId, success: true, status: externalApiResponse.status });
+        } else {
+          console.error(`❌ [UPLOAD_EXTERNAL_API] Erro no upload para ${clientId}:`, responseText);
+          uploadResults.push({ clientId, success: false, status: externalApiResponse.status, error: responseText });
+        }
+        
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError.name === 'AbortError') {
+          console.error(`⏱️ [UPLOAD_EXTERNAL_API] Timeout para ${clientId}`);
+          uploadResults.push({ clientId, success: false, error: 'Timeout' });
+        } else {
+          console.error(`❌ [UPLOAD_EXTERNAL_API] Erro para ${clientId}:`, fetchError.message);
+          uploadResults.push({ clientId, success: false, error: fetchError.message });
+        }
+      }
     }
+    
+    // Verificar resultados
+    const successCount = uploadResults.filter(r => r.success).length;
+    const failedCount = uploadResults.filter(r => !r.success).length;
+    
+    console.log('📋 [UPLOAD_EXTERNAL_API] Resultado final:', {
+      total: uploadResults.length,
+      sucesso: successCount,
+      falha: failedCount,
+      detalhes: uploadResults
+    });
+    
+    // Se todos falharam, retornar erro
+    if (successCount === 0) {
+      throw new Error(`Falha ao enviar vídeo para todos os ${failedCount} prédios`);
+    }
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: `Vídeo enviado para ${successCount}/${uploadResults.length} prédios`,
+        results: uploadResults,
+        videoFileName: storageFileName
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    );
 
   } catch (error: any) {
     console.error('💥 [UPLOAD_EXTERNAL_API] Erro crítico:', error);
