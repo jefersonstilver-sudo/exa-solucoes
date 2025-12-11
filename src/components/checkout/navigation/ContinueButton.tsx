@@ -17,7 +17,7 @@ const ContinueButton = ({
     <Button
       onClick={onClick}
       disabled={isDisabled || isLoading}
-      className="bg-indexa-purple hover:bg-indigo-800 text-white px-6 py-2.5 rounded-md"
+      className="bg-[#9C1E1E] hover:bg-[#7A1818] text-white px-6 py-2.5 rounded-md shadow-md hover:shadow-lg transition-all"
     >
       {isLoading ? (
         <>
