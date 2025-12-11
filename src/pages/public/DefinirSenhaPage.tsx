@@ -165,9 +165,9 @@ const DefinirSenhaPage = () => {
       setIsSuccess(true);
       toast.success('Senha definida com sucesso!');
       
-      // Redirect to dashboard after 2 seconds
+      // Redirect to orders page after 2 seconds
       setTimeout(() => {
-        navigate('/anunciante');
+        navigate('/anunciante/pedidos');
       }, 2000);
 
     } catch (err: any) {
