@@ -251,6 +251,10 @@ const BuildingCard3: React.FC<BuildingCard3Props> = ({
                     <List className="h-3.5 w-3.5 mr-2" />
                     Ver playlist
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.open(`/predio/${building.id}`, '_blank')}>
+                    <Link2 className="h-3.5 w-3.5 mr-2" />
+                    Link Público
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={() => onDelete(building)}
