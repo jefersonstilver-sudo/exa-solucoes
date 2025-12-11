@@ -151,7 +151,15 @@ const BuildingCard3: React.FC<BuildingCard3Props> = ({
                   showOutageHistory={true}
                 />
                 {hasAWSConnection && (
-                  <Badge variant="outline" className="text-[9px] bg-blue-50 text-blue-600 border-blue-200 px-1 py-0 h-4">
+                  <Badge 
+                    variant="outline" 
+                    className="text-[9px] bg-blue-50 text-blue-600 border-blue-200 px-1 py-0 h-4 cursor-pointer hover:bg-blue-100 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(`/predio/${building.id}`, '_blank');
+                    }}
+                    title="Abrir página pública do prédio"
+                  >
                     <Link2 className="h-2 w-2" />
                   </Badge>
                 )}
