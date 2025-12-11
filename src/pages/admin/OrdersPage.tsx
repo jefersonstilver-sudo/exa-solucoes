@@ -33,6 +33,28 @@ const OrdersPage = () => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [quickFilter, setQuickFilter] = useState<'all' | 'pagos' | 'aguardando' | 'ativos'>('all');
   
+  // Estado para pedidos com vídeos ativos (campanhas em exibição)
+  const [activeOrdersCount, setActiveOrdersCount] = React.useState(0);
+  const [activePedidoIds, setActivePedidoIds] = React.useState<Set<string>>(new Set());
+  
+  // Buscar pedidos com vídeos ativos
+  React.useEffect(() => {
+    const fetchActiveOrdersData = async () => {
+      const { data, error } = await supabase
+        .from('pedido_videos')
+        .select('pedido_id')
+        .eq('is_active', true);
+      
+      if (!error && data) {
+        const uniquePedidoIds = new Set(data.map(pv => pv.pedido_id).filter(Boolean) as string[]);
+        setActivePedidoIds(uniquePedidoIds);
+        setActiveOrdersCount(uniquePedidoIds.size);
+      }
+    };
+    
+    fetchActiveOrdersData();
+  }, [ordersAndAttempts]);
+  
   // 🔒 CRITICAL: Wait for permissions to load before checking
   if (isLoadingCustom) {
     return (
@@ -60,9 +82,29 @@ const OrdersPage = () => {
         (item.type === 'order' ? item.client_email?.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
         (item.type === 'attempt' && item.client_email?.toLowerCase().includes(searchTerm.toLowerCase()));
       
-      const matchesStatus = statusFilter === 'all' || 
-        (item.type === 'order' && item.status === statusFilter) ||
-        (item.type === 'attempt' && statusFilter === 'tentativa');
+      // Status inteligentes que não são status diretos do banco
+      let matchesStatus = false;
+      if (statusFilter === 'all') {
+        matchesStatus = true;
+      } else if (statusFilter === 'em_exibicao') {
+        // Pedidos com vídeos ativos na tabela pedido_videos
+        matchesStatus = item.type === 'order' && activePedidoIds.has(item.id);
+      } else if (statusFilter === 'aguardando_video') {
+        // Pedidos pagos aguardando envio de vídeo
+        matchesStatus = item.type === 'order' && ['pago', 'pago_pendente_video'].includes(item.status);
+      } else if (statusFilter === 'aguardando_aprovacao') {
+        // Pedidos com vídeo enviado aguardando aprovação
+        matchesStatus = item.type === 'order' && item.status === 'video_enviado';
+      } else if (statusFilter === 'aguardando_pagamento') {
+        // Pedidos pendentes de pagamento
+        matchesStatus = item.type === 'order' && item.status === 'pendente';
+      } else if (statusFilter === 'tentativa') {
+        // Tentativas de compra abandonadas
+        matchesStatus = item.type === 'attempt';
+      } else {
+        // Status diretos do banco
+        matchesStatus = item.type === 'order' && item.status === statusFilter;
+      }
       
       const matchesType = typeFilter === 'all' || item.type === typeFilter;
 
@@ -77,7 +119,7 @@ const OrdersPage = () => {
       
       return matchesSearch && matchesStatus && matchesType && matchesCoupon && matchesPaymentType;
     });
-  }, [periodFilteredItems, searchTerm, statusFilter, typeFilter, couponFilter, paymentTypeFilter]);
+  }, [periodFilteredItems, searchTerm, statusFilter, typeFilter, couponFilter, paymentTypeFilter, activePedidoIds]);
 
   // Recalcular stats baseado nos itens filtrados
   const filteredStats = useMemo(() => {
@@ -85,26 +127,6 @@ const OrdersPage = () => {
     const attempts = filteredItems.filter(item => item.type === 'attempt');
     return calculateStats(orders, attempts);
   }, [filteredItems]);
-
-  // Calcular pedidos com vídeos ativos (campanhas ativas)
-  const [activeOrdersCount, setActiveOrdersCount] = React.useState(0);
-  
-  React.useEffect(() => {
-    const fetchActiveOrdersCount = async () => {
-      const { data, error } = await supabase
-        .from('pedido_videos')
-        .select('pedido_id', { count: 'exact', head: false })
-        .eq('is_active', true);
-      
-      if (!error && data) {
-        // Contar pedidos únicos com vídeos ativos
-        const uniquePedidos = new Set(data.map(pv => pv.pedido_id));
-        setActiveOrdersCount(uniquePedidos.size);
-      }
-    };
-    
-    fetchActiveOrdersCount();
-  }, [ordersAndAttempts]);
 
   // Contadores para filtros
   const countByStatus = (status: string) => 
