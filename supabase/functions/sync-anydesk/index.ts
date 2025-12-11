@@ -256,26 +256,9 @@ serve(async (req) => {
             shouldRecordStatusChange = false;
             newOfflineCount = 0; // Keep counter at 0 since we're already confirmed offline
             
-            // SAFETY CHECK: Ensure offline devices have an open connection_history record
-            // This fixes cases where device is offline but no record exists
-            if (existingDevice) {
-              const { data: existingOfflineRecord } = await supabase
-                .from('connection_history')
-                .select('id')
-                .eq('computer_id', existingDevice.id)
-                .eq('event_type', 'offline')
-                .is('ended_at', null)
-                .maybeSingle();
-              
-              if (!existingOfflineRecord) {
-                console.log(`[SYNC-ANYDESK] ⚠️ SAFETY: Device ${anydeskId} is offline but missing connection_history record - creating now`);
-                await supabase.from('connection_history').insert({
-                  computer_id: existingDevice.id,
-                  event_type: 'offline',
-                  started_at: existingDevice.last_online_at || new Date().toISOString(),
-                });
-              }
-            }
+            // NOTE: Removed SAFETY CHECK that was causing duplicate connection_history records
+            // The proper offline record should be created only during actual status transitions
+            console.log(`[SYNC-ANYDESK] ℹ️ Device ${anydeskId}: Still offline, no action needed`);
           }
         }
         
