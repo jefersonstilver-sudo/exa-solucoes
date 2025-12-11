@@ -746,7 +746,7 @@ export const CompanyBrandSection: React.FC = () => {
         </div>
 
         <div className="flex justify-center pt-6">
-          <Button onClick={handleSave} disabled={loading} size="lg" className="bg-exa-red hover:bg-exa-red/90 text-white px-12 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all">
+          <Button onClick={handleSave} disabled={loading} size="lg" className="bg-[#9C1E1E] hover:bg-[#7A1818] text-white px-12 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all">
             {loading ? "Salvando..." : "EU CONFIRMO"}
           </Button>
         </div>
