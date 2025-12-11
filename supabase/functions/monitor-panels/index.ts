@@ -27,11 +27,11 @@ interface DeviceMetadata {
   paused_by?: string;
 }
 
-// Helper to check if we're in scheduled shutdown period (1:00 - 4:00 BRT)
+// Helper to check if we're in scheduled shutdown period (1:00 - 6:00 BRT)
 const isScheduledShutdownPeriod = (): boolean => {
   const brazilTime = new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
   const hour = new Date(brazilTime).getHours();
-  return hour >= 1 && hour < 4;
+  return hour >= 1 && hour < 6;
 };
 
 // Helper to get Brazil time string
