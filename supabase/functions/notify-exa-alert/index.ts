@@ -49,6 +49,16 @@ serve(async (req) => {
       message += `\n⚠️ MOTIVO:\n${lead.reason_for_risk}\n`;
       message += `\n🎯 AÇÃO: Eduardo entrará em contato com condição especial.\n`;
       message += `\nEste lead requer atenção IMEDIATA da diretoria.`;
+    } else if (type === 'cortesia_aceita') {
+      message = `🎁 *CORTESIA ACEITA!*\n\n`;
+      message += `📋 Proposta: #${data.proposal_number}\n`;
+      message += `👤 Cliente: ${data.client_name}\n`;
+      message += `📧 Email: ${data.client_email}\n`;
+      message += `🏢 Prédios: ${data.buildings_count}\n`;
+      message += `📅 Duração: ${data.duration_months} ${data.duration_months === 1 ? 'mês' : 'meses'}\n`;
+      message += `📦 Pedido: ${data.pedido_id?.slice(0, 8)}...\n`;
+      message += `👔 Vendedor: ${data.vendedor}\n`;
+      message += `${data.is_new_user ? '🆕 Nova conta criada!' : '👤 Usuário existente'}`;
     } else {
       message = `🔔 Notificação EXA Alert\n\n${JSON.stringify(data || lead, null, 2)}`;
     }

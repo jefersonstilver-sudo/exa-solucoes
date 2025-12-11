@@ -111,11 +111,12 @@ serve(async (req) => {
       });
 
       // Gerar link de redefinição de senha
+      const SITE_URL = Deno.env.get('SITE_URL') || 'https://examidia.com.br';
       const { data: resetData, error: resetError } = await supabase.auth.admin.generateLink({
         type: 'recovery',
         email: clientEmail,
         options: {
-          redirectTo: `${supabaseUrl.replace('.supabase.co', '.lovableproject.com')}/definir-senha`
+          redirectTo: `${SITE_URL}/definir-senha`
         }
       });
 
@@ -241,7 +242,39 @@ serve(async (req) => {
       console.error('[accept-cortesia-proposal] Erro ao enviar email:', emailErr);
     }
 
-    // 8. Log do evento
+    // 8. Enviar EXA Alert para diretores/vendedores
+    try {
+      let vendedorNome = 'Sistema';
+      if (proposal.created_by) {
+        const { data: vendedor } = await supabase
+          .from('users')
+          .select('nome')
+          .eq('id', proposal.created_by)
+          .single();
+        if (vendedor) vendedorNome = vendedor.nome;
+      }
+
+      await supabase.functions.invoke('notify-exa-alert', {
+        body: {
+          type: 'cortesia_aceita',
+          data: {
+            proposal_number: proposal.number,
+            client_name: clientName,
+            client_email: clientEmail,
+            buildings_count: buildings.length,
+            duration_months: proposal.duration_months,
+            pedido_id: pedido.id,
+            vendedor: vendedorNome,
+            is_new_user: isNewUser
+          }
+        }
+      });
+      console.log('[accept-cortesia-proposal] EXA Alert enviado');
+    } catch (alertErr) {
+      console.error('[accept-cortesia-proposal] Erro ao enviar EXA Alert:', alertErr);
+    }
+
+    // 9. Log do evento
     await supabase.from('log_eventos_sistema').insert({
       tipo_evento: 'CORTESIA_ACCEPTED',
       descricao: `Cortesia ${proposal.number} aceita por ${clientName}. Pedido ${pedido.id} criado.`
