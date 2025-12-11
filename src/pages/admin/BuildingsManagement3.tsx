@@ -108,13 +108,12 @@ const BuildingsManagement3 = () => {
             />
           )}
 
-          {/* Image Manager Dialog */}
           {selectedBuilding && (
             <BuildingImageManager
               building={selectedBuilding}
               open={isImageManagerOpen}
               onOpenChange={setIsImageManagerOpen}
-            />
+              onImagesUpdate={refetch}
             />
           )}
         </div>
