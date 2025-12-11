@@ -6,15 +6,12 @@ import './styles/responsive-optimizations.css'
 import './modules/monitoramento-ia/styles/theme.css'
 import { ThemeProvider } from './components/ui/theme-provider'
 import './utils/debugHelpers'
-import { APP_VERSION, setStoredVersion, clearVersionedCaches } from './config/version'
+import { APP_VERSION } from './config/version'
 
 console.log(`🚀 Starting application v${APP_VERSION}...`);
 
-// Limpar caches antigos na inicialização
-clearVersionedCaches().then(() => {
-  setStoredVersion();
-  console.log('✅ Cache cleanup completed');
-});
+// Cache clearing now handled by useForceCacheClear hook inside App
+// This ensures React is mounted before any reload happens
 
 try {
   const rootElement = document.getElementById('root');

@@ -21,6 +21,7 @@ import { FloatingDebugButton } from '@/components/debug/FloatingDebugButton';
 import { useActiveSession } from '@/hooks/useActiveSession';
 import { GlobalNotificationProvider } from '@/providers/GlobalNotificationProvider';
 import { ZAPIDisconnectAlert } from '@/components/notifications/ZAPIDisconnectAlert';
+import { useForceCacheClear } from '@/hooks/useForceCacheClear';
 
 // Importações diretas para páginas críticas
 import BuildingStore from './pages/BuildingStore';
@@ -97,11 +98,12 @@ console.log('⚙️ Initializing QueryClient...');
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 10 * 60 * 1000, // 10 minutes cache
-      gcTime: 30 * 60 * 1000, // 30 minutes garbage collection
-      retry: 1, // Quick retry for better UX
-      refetchOnWindowFocus: false,
+      staleTime: 1 * 60 * 1000, // 1 minute cache only (reduced from 10)
+      gcTime: 5 * 60 * 1000, // 5 minutes garbage collection (reduced from 30)
+      retry: 1,
+      refetchOnWindowFocus: true, // Refresh when window focuses
       refetchOnReconnect: true,
+      refetchOnMount: true, // Always check on mount
     },
   },
 });
@@ -111,6 +113,10 @@ console.log('✅ QueryClient initialized');
 const AppContent = () => {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(MAINTENANCE_MODE && !hasLaunchTimePassed());
   const isDevSession = typeof window !== 'undefined' && sessionStorage.getItem('exa_dev_session') === 'true';
+  
+  // 🔄 Force cache clear on version change
+  const { version } = useForceCacheClear();
+  console.log(`📦 Running version: ${version}`);
   
   // ✅ CORREÇÃO CRÍTICA: Detectar se é rota de painel/display público
   const currentPath = window.location.pathname;
