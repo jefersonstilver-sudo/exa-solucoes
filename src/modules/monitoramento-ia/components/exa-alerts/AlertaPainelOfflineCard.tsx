@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   ChevronDown, 
@@ -29,7 +30,8 @@ import {
   CheckCircle,
   Smile,
   Send,
-  Loader2
+  Loader2,
+  StopCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -78,6 +80,8 @@ interface Confirmation {
   recipient_name: string | null;
   button_label: string;
   confirmed_at: string;
+  alert_number?: number;
+  incident_number?: number;
 }
 
 // Format phone for display
@@ -403,12 +407,29 @@ export const AlertaPainelOfflineCard = () => {
 
   const toggleRule = async (rule: AlertRule) => {
     try {
+      const newStatus = !rule.ativo;
+      
       const { error } = await supabase
         .from('panel_offline_alert_rules')
-        .update({ ativo: !rule.ativo })
+        .update({ ativo: newStatus })
         .eq('id', rule.id);
 
       if (error) throw error;
+
+      // If deactivating rule, reset metadata for all devices that had this rule triggered
+      if (!newStatus) {
+        console.log('🔄 Resetting device metadata for deactivated rule:', rule.id);
+        const { error: rpcError } = await supabase.rpc('reset_device_alert_metadata_for_rule', {
+          p_rule_id: rule.id
+        });
+        
+        if (rpcError) {
+          console.error('Error resetting device metadata:', rpcError);
+        } else {
+          console.log('✅ Device metadata reset successfully');
+        }
+      }
+
       loadData();
       toast.success(rule.ativo ? 'Regra desativada' : 'Regra ativada');
     } catch (error) {
@@ -953,6 +974,7 @@ export const AlertaPainelOfflineCard = () => {
                             <TableHeader>
                               <TableRow className="bg-muted/30">
                                 <TableHead className="text-xs font-medium">Painel</TableHead>
+                                <TableHead className="text-xs font-medium">Aviso</TableHead>
                                 <TableHead className="text-xs font-medium">Quem Respondeu</TableHead>
                                 <TableHead className="text-xs font-medium">Botão</TableHead>
                                 <TableHead className="text-xs font-medium">Quando</TableHead>
@@ -962,10 +984,26 @@ export const AlertaPainelOfflineCard = () => {
                               {confirmations.map((conf) => (
                                 <TableRow key={conf.id} className="hover:bg-muted/20">
                                   <TableCell className="text-sm font-medium">
-                                    <div className="flex items-center gap-2">
-                                      <Monitor className="h-4 w-4 text-muted-foreground" />
-                                      {conf.device_name || 'N/A'}
+                                    <div className="flex flex-col gap-0.5">
+                                      <div className="flex items-center gap-2">
+                                        <Monitor className="h-4 w-4 text-muted-foreground" />
+                                        {conf.device_name || 'N/A'}
+                                      </div>
+                                      {conf.incident_number && (
+                                        <span className="text-[10px] text-muted-foreground">
+                                          Ocorrência #{conf.incident_number}
+                                        </span>
+                                      )}
                                     </div>
+                                  </TableCell>
+                                  <TableCell className="text-sm">
+                                    {conf.alert_number ? (
+                                      <Badge variant="outline" className="text-xs">
+                                        {conf.alert_number}º aviso
+                                      </Badge>
+                                    ) : (
+                                      <span className="text-muted-foreground">-</span>
+                                    )}
                                   </TableCell>
                                   <TableCell className="text-sm">
                                     <div className="flex flex-col">
@@ -974,7 +1012,13 @@ export const AlertaPainelOfflineCard = () => {
                                     </div>
                                   </TableCell>
                                   <TableCell>
-                                    <Badge variant="outline" className="text-xs bg-green-500/10 text-green-700 border-green-500/30">
+                                    <Badge variant="outline" className={`text-xs ${
+                                      conf.button_label.toLowerCase().includes('interromper') 
+                                        ? 'bg-red-500/10 text-red-700 border-red-500/30'
+                                        : conf.button_label.toLowerCase().includes('visualizei')
+                                        ? 'bg-amber-500/10 text-amber-700 border-amber-500/30'
+                                        : 'bg-green-500/10 text-green-700 border-green-500/30'
+                                    }`}>
                                       {conf.button_label}
                                     </Badge>
                                   </TableCell>

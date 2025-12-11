@@ -134,8 +134,8 @@ Deno.serve(async (req) => {
       .eq('ativo', true)
       .order('ordem', { ascending: true });
 
-    // Helper to send WhatsApp
-    const sendWhatsApp = async (phone: string, message: string, withButtons: boolean = false): Promise<{ success: boolean; messageId?: string }> => {
+    // Helper to send WhatsApp - now includes deviceId in button actions for tracking
+    const sendWhatsApp = async (phone: string, message: string, withButtons: boolean = false, deviceId?: string): Promise<{ success: boolean; messageId?: string }> => {
       try {
         let formattedPhone = phone.replace(/\D/g, '');
         if (!formattedPhone.startsWith('55') && formattedPhone.length === 11) {
@@ -147,8 +147,9 @@ Deno.serve(async (req) => {
         else if (zapiConfig.client_token) headers['Client-Token'] = zapiConfig.client_token;
 
         if (withButtons && confirmButtons && confirmButtons.length > 0) {
+          // Include deviceId in button ID for tracking: "buttonId:deviceId"
           const buttonActions = confirmButtons.map((btn) => ({
-            id: btn.id,
+            id: deviceId ? `${btn.id}:${deviceId}` : btn.id,
             type: 'REPLY',
             label: `${btn.emoji || '✅'} ${btn.label}`
           }));
@@ -163,7 +164,10 @@ Deno.serve(async (req) => {
           );
 
           const result = await response.json();
-          if (result.error) return { success: false };
+          if (result.error) {
+            console.error('❌ [MONITOR] Z-API button error:', result.error);
+            return { success: false };
+          }
           return { success: true, messageId: result.messageId };
         }
 
@@ -310,7 +314,8 @@ Deno.serve(async (req) => {
 
           const sentRecipients: Array<{ phone: string; name: string; messageId?: string }> = [];
           for (const recipient of recipients) {
-            const result = await sendWhatsApp(recipient.telefone, message, true);
+            // Pass device.id to include in button actions for tracking
+            const result = await sendWhatsApp(recipient.telefone, message, true, device.id);
             if (result.success) {
               alertsSent++;
               sentRecipients.push({ phone: recipient.telefone, name: recipient.nome, messageId: result.messageId });
