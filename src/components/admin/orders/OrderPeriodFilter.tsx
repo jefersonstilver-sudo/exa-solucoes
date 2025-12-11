@@ -39,18 +39,25 @@ export const filterByPeriod = (items: any[], period: PeriodFilter): any[] => {
   if (period === 'all') return items;
 
   const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const startOf3DaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-  const startOf7DaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-  const startOf3MonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-  const startOf6MonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  
+  // Usar início do dia em timezone local
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const startOf3DaysAgo = new Date(startOfToday.getTime() - 2 * 24 * 60 * 60 * 1000);
+  const startOf7DaysAgo = new Date(startOfToday.getTime() - 6 * 24 * 60 * 60 * 1000);
+  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+  const startOf3MonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1, 0, 0, 0, 0);
+  const startOf6MonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1, 0, 0, 0, 0);
+  const startOfYear = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
 
   return items.filter(item => {
+    if (!item.created_at) return false;
+    
     const createdAt = new Date(item.created_at);
+    
+    // Verificar se a data é válida
+    if (isNaN(createdAt.getTime())) return false;
     
     switch (period) {
       case 'today':
