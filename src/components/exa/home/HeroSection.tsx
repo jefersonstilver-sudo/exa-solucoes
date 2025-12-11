@@ -130,9 +130,9 @@ const HeroSection = () => {
       <div ref={ref} className={`relative z-10 w-full max-w-7xl mx-auto px-6 md:px-8 lg:px-12 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         {/* Vídeo Vertical - Lado Esquerdo - SEM cortes */}
         <div className="relative mx-auto max-w-[320px] lg:max-w-[380px]">
-          {/* Container do vídeo - INTEIRO sem clip-path */}
-          <div className="relative bg-black shadow-2xl rounded-lg overflow-hidden">
-            <div className="aspect-[9/16]">
+          {/* Container do vídeo - INTEIRO sem clip-path - com padding inferior para botões */}
+          <div className="relative bg-black shadow-2xl rounded-lg overflow-visible pb-14">
+            <div className="aspect-[9/16] rounded-lg overflow-hidden">
               {!loading && <video ref={videoRef} autoPlay loop muted playsInline className="w-full h-full object-cover">
                 <source src={institutionalVideoUrl} type="video/mp4" />
               </video>}
@@ -141,9 +141,9 @@ const HeroSection = () => {
               </div>}
             </div>
             
-            {/* Botões de controle - na parte inferior do vídeo */}
+            {/* Botões de controle - FORA do vídeo, abaixo com z-index máximo */}
             {!loading && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 z-40">
+              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-3 z-[9999]">
                 {/* Botão Som com Tooltip */}
                 <div className="relative">
                   {showSoundTooltip && (
@@ -192,10 +192,10 @@ const HeroSection = () => {
         </div>
       </div>
       
-      {/* Camada de cobertura BASE - cobre borda inferior do vídeo */}
-      <div className="absolute bottom-0 left-0 right-0 h-[120px] lg:h-[160px] 
-                   bg-gradient-to-t from-[#180A0A] via-[#180A0A]/80 to-transparent 
-                   z-30 pointer-events-none" />
+      {/* Camada de cobertura BASE - altura reduzida para não cobrir botões */}
+      <div className="absolute bottom-0 left-0 right-0 h-[60px] lg:h-[80px] 
+                   bg-gradient-to-t from-[#180A0A] via-[#180A0A]/60 to-transparent 
+                   z-10 pointer-events-none" />
     </section>;
 };
 export default HeroSection;
