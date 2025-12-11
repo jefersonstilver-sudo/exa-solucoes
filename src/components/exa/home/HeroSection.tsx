@@ -129,7 +129,7 @@ const HeroSection = () => {
       
       <div ref={ref} className={`relative z-10 w-full max-w-7xl mx-auto px-6 md:px-8 lg:px-12 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         {/* Vídeo Vertical - Lado Esquerdo - SEM cortes */}
-        <div className="relative mx-auto max-w-[320px] lg:max-w-[380px]">
+        <div className="relative mx-auto max-w-[320px] lg:max-w-[380px] z-[40]">
           {/* Container do vídeo - sem padding extra */}
           <div className="relative bg-black shadow-2xl rounded-lg overflow-hidden">
             <div className="aspect-[9/16]">
@@ -143,7 +143,7 @@ const HeroSection = () => {
             
             {/* Botões de controle - dentro do vídeo, acima do ticker */}
             {!loading && (
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 z-[50]">
+              <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-3 z-[50]">
                 {/* Botão Som com Tooltip */}
                 <div className="relative">
                   {showSoundTooltip && (
