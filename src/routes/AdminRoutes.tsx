@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from '@/pages/admin/Dashboard';
-import BuildingsManagement from '@/pages/admin/BuildingsManagement';
+import BuildingsManagement3 from '@/pages/admin/BuildingsManagement3';
 import OrdersPage from '@/pages/admin/OrdersPage';
 import OrderDetails from '@/pages/admin/OrderDetails';
 import ApprovalsPage from '@/pages/admin/ApprovalsPage';
@@ -192,7 +192,7 @@ const AdminRoutes = () => {
       {/* ============ ATIVOS ============ */}
       <Route path="predios" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.predios}>
-          <BuildingsManagement />
+          <BuildingsManagement3 />
         </ProtectedModuleRoute>
       } />
       <Route path="paineis-exa" element={
