@@ -99,29 +99,13 @@ serve(async (req) => {
     const buildingIds = pedidoData.lista_predios as string[];
     console.log(`✅ [AWS_SYNC] Encontrados ${buildingIds.length} prédios`);
 
-    // 4. Buscar codigo_predio de cada prédio do banco de dados
-    const { data: buildingsData, error: buildingsError } = await supabase
-      .from('buildings')
-      .select('id, codigo_predio')
-      .in('id', buildingIds);
+    // 4. REGRA CONSOLIDADA: clientId = primeiros 4 dígitos do UUID do prédio (sem hífens)
+    const buildingClients = buildingIds.map(uuid => ({
+      buildingId: uuid,
+      clientId: uuid.replace(/-/g, '').substring(0, 4)
+    }));
 
-    if (buildingsError) {
-      console.error('❌ [AWS_SYNC] Erro ao buscar codigo_predio dos prédios:', buildingsError);
-      throw new Error(`Erro ao buscar prédios: ${JSON.stringify(buildingsError)}`);
-    }
-
-    const buildingClients = buildingsData
-      ?.filter(b => b.codigo_predio)
-      .map(b => ({
-        buildingId: b.id,
-        clientId: b.codigo_predio
-      })) || [];
-
-    if (buildingClients.length === 0) {
-      throw new Error('Nenhum prédio possui codigo_predio configurado');
-    }
-
-    console.log('📋 [AWS_SYNC] Client IDs (codigo_predio):', buildingClients.map(b => b.clientId));
+    console.log('📋 [AWS_SYNC] Client IDs (4 primeiros dígitos UUID):', buildingClients.map(b => b.clientId));
 
     // 5. Helper para extrair título do vídeo
     const extractTitulo = (videoUrl?: string | null): string | null => {

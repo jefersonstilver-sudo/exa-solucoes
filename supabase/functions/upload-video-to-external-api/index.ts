@@ -86,34 +86,19 @@ serve(async (req) => {
       lista_predios: pedidoVideo.pedidos.lista_predios
     });
 
-    // 2. ⚠️ IMPORTANTE: Usar codigo_predio do building (NÃO primeiros 4 dígitos do UUID)
-    // Campo correto: lista_predios contém UUIDs dos prédios
+    // 2. REGRA CONSOLIDADA: clientId = primeiros 4 dígitos do UUID do prédio (sem hífens)
     const listaPredios = pedidoVideo.pedidos.lista_predios;
     if (!listaPredios || !Array.isArray(listaPredios) || listaPredios.length === 0) {
       throw new Error('Nenhum prédio selecionado no pedido (campo lista_predios vazio)');
     }
     
     const buildingId = listaPredios[0]; // Primeiro prédio da lista
+    const clientId = buildingId.replace(/-/g, '').substring(0, 4);
     
-    // Buscar codigo_predio do building
-    const { data: buildingData, error: buildingError } = await supabase
-      .from('buildings')
-      .select('id, codigo_predio')
-      .eq('id', buildingId)
-      .single();
-    
-    if (buildingError || !buildingData?.codigo_predio) {
-      console.error('❌ [UPLOAD_EXTERNAL_API] Erro ao buscar codigo_predio do building:', buildingError);
-      throw new Error(`Building ${buildingId} não possui codigo_predio configurado`);
-    }
-    
-    const clientId = buildingData.codigo_predio;
-    
-    console.log('🏢 [UPLOAD_EXTERNAL_API] Building ID extraído:', { 
+    console.log('🏢 [UPLOAD_EXTERNAL_API] Client ID extraído:', { 
       buildingId, 
       clientId,
-      codigo_predio: clientId,
-      campo_usado: 'buildings.codigo_predio'
+      regra: 'primeiros_4_digitos_uuid_sem_hifens'
     });
 
     // 3. Buscar programação do vídeo
