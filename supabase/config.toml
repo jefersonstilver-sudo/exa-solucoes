@@ -450,3 +450,9 @@ schedule = "* * * * *"
 [[cron]]
 function_name = "check-zoho-emails"
 schedule = "*/2 * * * *"
+
+[functions.create-client-account]
+verify_jwt = false
+
+[functions.admin-update-user]
+verify_jwt = false
