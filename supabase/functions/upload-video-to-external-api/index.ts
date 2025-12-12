@@ -148,7 +148,7 @@ serve(async (req) => {
       .from('pedido_videos')
       .select('*', { count: 'exact', head: true })
       .eq('pedido_id', pedidoVideo.pedido_id)
-      .eq('status', 'approved')
+      .eq('approval_status', 'approved')
       .neq('id', pedido_video_id);
 
     const isFirstApproved = (approvedCount ?? 0) === 0;
