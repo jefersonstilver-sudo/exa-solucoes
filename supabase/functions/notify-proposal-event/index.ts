@@ -39,10 +39,10 @@ serve(async (req) => {
       });
     }
 
-    // Fetch proposal details
+    // Fetch proposal details with custom installments
     const { data: proposal, error: proposalError } = await supabase
       .from('proposals')
-      .select('id, number, client_name, client_company_name, cash_total_value, fidel_monthly_value, duration_months, seller_name, created_by')
+      .select('id, number, client_name, client_first_name, client_last_name, client_company_name, cash_total_value, fidel_monthly_value, fidel_total_value, duration_months, seller_name, created_by, payment_type, custom_installments, total_panels')
       .eq('id', proposalId)
       .single();
 
@@ -72,15 +72,43 @@ serve(async (req) => {
       });
     }
 
-    // Build message based on event type
-    const clientDisplayName = proposal.client_company_name || proposal.client_name;
+    // Build client display name - prioritize personal name
+    const clientDisplayName = proposal.client_first_name && proposal.client_last_name 
+      ? `${proposal.client_first_name} ${proposal.client_last_name}`
+      : proposal.client_name || proposal.client_company_name || 'Cliente';
+    
     let message = '';
     let emoji = '';
+
+    // Helper to format currency
+    const formatCurrency = (value: number) => `R$ ${value?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+
+    // Build payment details string
+    const buildPaymentDetails = () => {
+      if (proposal.payment_type === 'custom' && Array.isArray(proposal.custom_installments) && proposal.custom_installments.length > 0) {
+        const installments = proposal.custom_installments as Array<{ due_date: string; amount: number }>;
+        const total = installments.reduce((sum, inst) => sum + (inst.amount || 0), 0);
+        let details = `Tipo: *Personalizado*\nTotal: *${formatCurrency(total)}*\nParcelas: *${installments.length}x*\n`;
+        installments.forEach((inst, idx) => {
+          const date = new Date(inst.due_date).toLocaleDateString('pt-BR');
+          details += `  ${idx + 1}ª: ${formatCurrency(inst.amount)} (${date})\n`;
+        });
+        return details;
+      } else {
+        return `Valor à Vista: *${formatCurrency(proposal.cash_total_value || 0)}*\nFidelidade: *${formatCurrency(proposal.fidel_monthly_value || 0)}/mês*\nTotal Fidelidade: *${formatCurrency(proposal.fidel_total_value || 0)}*`;
+      }
+    };
 
     switch (eventType) {
       case 'proposal_sent':
         emoji = '📤';
-        message = `${emoji} Proposta *${proposal.number}* enviada para *${clientDisplayName}*!\n\nVendedor: ${proposal.seller_name || 'N/A'}\nValor: R$ ${proposal.fidel_monthly_value?.toLocaleString('pt-BR')}/mês`;
+        message = `${emoji} Proposta *${proposal.number}* enviada!\n\n` +
+          `👤 Cliente: *${clientDisplayName}*\n` +
+          (proposal.client_company_name ? `🏢 Empresa: ${proposal.client_company_name}\n` : '') +
+          `🏗️ Painéis: ${proposal.total_panels || 0}\n` +
+          `📅 Período: ${proposal.duration_months} meses\n\n` +
+          `💰 *VALORES:*\n${buildPaymentDetails()}\n\n` +
+          `👨‍💼 Vendedor: ${proposal.seller_name || 'N/A'}`;
         break;
       case 'proposal_viewing':
         emoji = '👁️';
@@ -94,21 +122,31 @@ serve(async (req) => {
       case 'proposal_accepted':
         emoji = '✅';
         const planText = metadata?.selectedPlan === 'avista' ? 'À Vista' : 'Fidelidade';
-        message = `${emoji} *PROPOSTA ACEITA!*\n\nCliente: ${clientDisplayName}\nProposta: ${proposal.number}\nPlano: ${planText}\nValor: R$ ${proposal.fidel_monthly_value?.toLocaleString('pt-BR')}/mês`;
+        message = `${emoji} *PROPOSTA ACEITA!*\n\n` +
+          `👤 Cliente: *${clientDisplayName}*\n` +
+          (proposal.client_company_name ? `🏢 Empresa: ${proposal.client_company_name}\n` : '') +
+          `📋 Proposta: ${proposal.number}\n` +
+          `📅 Período: ${proposal.duration_months} meses\n` +
+          `💳 Plano: ${planText}\n\n` +
+          `💰 *VALORES:*\n${buildPaymentDetails()}`;
         break;
       case 'proposal_rejected':
         emoji = '❌';
-        message = `${emoji} Proposta *${proposal.number}* foi *RECUSADA* pelo cliente ${clientDisplayName}`;
+        message = `${emoji} Proposta *${proposal.number}* foi *RECUSADA* pelo cliente *${clientDisplayName}*`;
         break;
       case 'proposal_paid':
         emoji = '💳';
         const paymentMethod = metadata?.paymentMethod || 'N/A';
         const amount = metadata?.paymentAmount?.toLocaleString('pt-BR') || proposal.fidel_monthly_value?.toLocaleString('pt-BR');
-        message = `${emoji} *PAGAMENTO CONFIRMADO!*\n\nCliente: ${clientDisplayName}\nProposta: ${proposal.number}\nValor: R$ ${amount}\nMétodo: ${paymentMethod}`;
+        message = `${emoji} *PAGAMENTO CONFIRMADO!*\n\n` +
+          `👤 Cliente: *${clientDisplayName}*\n` +
+          `📋 Proposta: ${proposal.number}\n` +
+          `💵 Valor: R$ ${amount}\n` +
+          `💳 Método: ${paymentMethod}`;
         break;
       case 'proposal_expired':
         emoji = '⏰';
-        message = `${emoji} Proposta *${proposal.number}* para ${clientDisplayName} EXPIROU`;
+        message = `${emoji} Proposta *${proposal.number}* para *${clientDisplayName}* EXPIROU`;
         break;
       default:
         message = `📋 Atualização na proposta ${proposal.number}`;

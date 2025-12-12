@@ -11,6 +11,7 @@ import { PanelsListView } from '../components/PanelsListView';
 import { FullscreenMonitor } from '../components/FullscreenMonitor';
 import { ViewToggle } from '../components/ViewToggle';
 import { OfflineAlert } from '../components/OfflineAlert';
+import { ProviderStatsCards } from '../components/ProviderStatsCards';
 import { useOfflineAlerts } from '../hooks/useOfflineAlerts';
 import { AnimatePresence } from 'framer-motion';
 import { useDevices } from '../hooks/useDevices';
@@ -98,7 +99,7 @@ export const PaineisPage = () => {
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
 
   // Hook to get events count per device for the selected period
-  const { eventsMap: periodEventsMap, loading: eventsLoading } = usePeriodDeviceEvents(
+  const { eventsMap: periodEventsMap, offlineTimeMap, providerStats, loading: eventsLoading } = usePeriodDeviceEvents(
     period,
     customStartDate,
     customEndDate
@@ -354,6 +355,12 @@ export const PaineisPage = () => {
         </div>
       </Collapsible>
 
+      {/* Indicadores de Operadora */}
+      <ProviderStatsCards 
+        providerStats={providerStats} 
+        periodLabel={getPeriodLabel(period)} 
+      />
+
       {/* Barra de ações - Mobile otimizado */}
       <div className="flex flex-col gap-3 lg:gap-4">
         <div className="w-full">
@@ -415,6 +422,7 @@ export const PaineisPage = () => {
                 setIsDetailModalOpen(true);
               }}
               periodEventsMap={periodEventsMap}
+              offlineTimeMap={offlineTimeMap}
               periodLabel={getPeriodLabel(period)}
             />
           )}

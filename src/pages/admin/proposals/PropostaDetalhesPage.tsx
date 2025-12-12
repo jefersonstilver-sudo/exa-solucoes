@@ -361,7 +361,7 @@ const PropostaDetalhesPage = () => {
                         {proposal.custom_installments.length} parcelas
                       </p>
                       <p className="text-lg font-bold mt-0.5">
-                        1ª: {formatCurrency((proposal.custom_installments[0] as { amount: number }).amount)}
+                        {formatCurrency((proposal.custom_installments as { amount: number }[]).reduce((sum, inst) => sum + (inst.amount || 0), 0))}
                       </p>
                     </>
                   ) : (
@@ -379,6 +379,47 @@ const PropostaDetalhesPage = () => {
             </div>
           </Card>
         </motion.div>
+
+        {/* Detalhamento de Parcelas Personalizadas */}
+        {proposal.payment_type === 'custom' && Array.isArray(proposal.custom_installments) && proposal.custom_installments.length > 0 && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.15 }}
+          >
+            <Card className="p-4 bg-amber-50/80 backdrop-blur-sm border-amber-200/50 shadow-md">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
+                  <span className="text-white text-[10px] font-bold">{proposal.custom_installments.length}x</span>
+                </div>
+                <h3 className="font-semibold text-sm text-amber-800">Detalhamento das Parcelas</h3>
+              </div>
+              
+              <div className="space-y-2">
+                {(proposal.custom_installments as { due_date: string; amount: number }[]).map((inst, idx) => (
+                  <div key={idx} className="flex items-center justify-between py-1.5 border-b border-amber-200/50 last:border-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-amber-700 w-6">{idx + 1}ª</span>
+                      <span className="text-xs text-amber-600">
+                        {new Date(inst.due_date).toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                    <span className="text-sm font-bold text-amber-800">
+                      {formatCurrency(inst.amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-3 pt-2 border-t border-amber-300/50 flex justify-between">
+                <span className="text-xs font-medium text-amber-700">Total</span>
+                <span className="text-sm font-bold text-amber-900">
+                  {formatCurrency((proposal.custom_installments as { amount: number }[]).reduce((sum, inst) => sum + (inst.amount || 0), 0))}
+                </span>
+              </div>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Apple Activity Style Metrics */}
         <motion.div

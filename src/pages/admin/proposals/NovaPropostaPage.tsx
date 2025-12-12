@@ -1607,16 +1607,48 @@ const NovaPropostaPage = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Período:</span>
-                <span className="font-medium">{durationMonths} {durationMonths === 1 ? 'mês' : 'meses'}</span>
+                <span className="font-medium">{isCustomPayment ? customDurationMonths : durationMonths} {(isCustomPayment ? customDurationMonths : durationMonths) === 1 ? 'mês' : 'meses'}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Valor à Vista:</span>
-                <span className="font-medium text-primary">{formatCurrency(cashTotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Valor Fidelidade:</span>
-                <span className="font-medium">{formatCurrency(fidelMonthly)}/mês (total: {formatCurrency(fidelTotal)})</span>
-              </div>
+              
+              {isCustomPayment ? (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tipo:</span>
+                    <span className="font-medium text-amber-600">Pagamento Personalizado</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total:</span>
+                    <span className="font-medium text-primary">{formatCurrency(customTotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Parcelas:</span>
+                    <span className="font-medium">{customInstallments.length}x</span>
+                  </div>
+                  {customInstallments.slice(0, 3).map((inst, idx) => (
+                    <div key={inst.id} className="flex justify-between pl-3 text-[10px]">
+                      <span className="text-muted-foreground">{idx + 1}ª parcela:</span>
+                      <span className="font-medium">{formatCurrency(parseFloat(inst.amount.replace(/\D/g, '') || '0') / 100)}</span>
+                    </div>
+                  ))}
+                  {customInstallments.length > 3 && (
+                    <div className="text-[10px] text-muted-foreground pl-3">
+                      ... e mais {customInstallments.length - 3} parcelas
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Valor à Vista:</span>
+                    <span className="font-medium text-primary">{formatCurrency(cashTotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Valor Fidelidade:</span>
+                    <span className="font-medium">{formatCurrency(fidelMonthly)}/mês (total: {formatCurrency(fidelTotal)})</span>
+                  </div>
+                </>
+              )}
+              
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Validade:</span>
                 <span className="font-medium">24 horas</span>
