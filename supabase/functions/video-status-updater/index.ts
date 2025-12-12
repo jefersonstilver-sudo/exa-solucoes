@@ -126,9 +126,9 @@ serve(async (req) => {
       const pedidoId = rule.campaign_video_schedules.campaigns_advanced.pedido_id;
       affectedPedidos.add(pedidoId);
 
-      console.log(`🎬 [VIDEO_STATUS] Ativando vídeo agendado ${videoId} (Pedido: ${pedidoId})`);
+      console.log(`🎬 [VIDEO_STATUS] Verificando vídeo agendado ${videoId} (Pedido: ${pedidoId})`);
 
-      // 0. BUSCAR O VÍDEO ANTERIOR (antes da troca)
+      // 0. BUSCAR O VÍDEO ATUALMENTE ATIVO
       const { data: previousVideo } = await supabase
         .from('pedido_videos')
         .select('video_id')
@@ -138,10 +138,16 @@ serve(async (req) => {
         .maybeSingle();
 
       const previousVideoId = previousVideo?.video_id || null;
-      console.log(`📋 [VIDEO_STATUS] Vídeo anterior: ${previousVideoId || 'nenhum'}`);
+      
+      // ⚡ OTIMIZAÇÃO: Se o vídeo agendado já está ativo, não fazer nada
+      if (previousVideoId === videoId) {
+        console.log(`✅ [VIDEO_STATUS] Vídeo ${videoId} já está ativo, pulando`);
+        continue;
+      }
 
-      // 1. Usar RPC select_video_for_display que gerencia tudo corretamente
-      // Primeiro, buscar o pedido_video_id do vídeo agendado
+      console.log(`🔄 [VIDEO_STATUS] Transição detectada: ${previousVideoId || 'nenhum'} → ${videoId}`);
+
+      // 1. Buscar o pedido_video_id do vídeo agendado
       const { data: pedidoVideo, error: fetchError } = await supabase
         .from('pedido_videos')
         .select('id')
@@ -170,16 +176,15 @@ serve(async (req) => {
       activatedCount++;
       console.log(`✅ [VIDEO_STATUS] Vídeo agendado ${videoId} ativado para exibição (Pedido: ${pedidoId})`);
       
-      // 🔔 SINCRONIZAR COM AWS IMEDIATAMENTE
-      console.log(`🔔 [VIDEO_STATUS] Sincronizando com AWS: pedido ${pedidoId}, vídeo ${videoId}, anterior ${previousVideoId || 'nenhum'}`);
+      // 🔔 SINCRONIZAR COM AWS - APENAS em transição real
+      console.log(`🔔 [VIDEO_STATUS] Sincronizando com AWS (transição real): pedido ${pedidoId}`);
       try {
         const { data: awsResult, error: awsError } = await supabase.functions.invoke(
           'sync-video-status-to-aws',
           {
             body: { 
               pedidoId,
-              activeVideoId: videoId,
-              previousVideoId
+              activeVideoId: videoId
             }
           }
         );
@@ -202,10 +207,10 @@ serve(async (req) => {
       const pedidoId = rule.campaign_video_schedules.campaigns_advanced.pedido_id;
       affectedPedidos.add(pedidoId);
 
-      console.log(`⏹️ [VIDEO_STATUS] Desativando vídeo agendado ${videoId} (Pedido: ${pedidoId})`);
+      console.log(`⏹️ [VIDEO_STATUS] Verificando desativação de vídeo agendado ${videoId} (Pedido: ${pedidoId})`);
 
-      // 0. BUSCAR O VÍDEO ANTERIOR (antes da troca) - será o agendado
-      const { data: previousVideo } = await supabase
+      // 0. BUSCAR O VÍDEO ATUALMENTE ATIVO
+      const { data: currentActiveVideo } = await supabase
         .from('pedido_videos')
         .select('video_id')
         .eq('pedido_id', pedidoId)
@@ -213,8 +218,7 @@ serve(async (req) => {
         .not('video_id', 'is', null)
         .maybeSingle();
 
-      const previousVideoId = previousVideo?.video_id || null;
-      console.log(`📋 [VIDEO_STATUS] Vídeo anterior (agendado): ${previousVideoId || 'nenhum'}`);
+      const currentActiveVideoId = currentActiveVideo?.video_id || null;
 
       // 1. Buscar o vídeo base para reativar
       const { data: baseVideo, error: baseError } = await supabase
@@ -230,9 +234,15 @@ serve(async (req) => {
         continue;
       }
 
-      console.log(`📋 [VIDEO_STATUS] Vídeo base para reativar: ${baseVideo.video_id}`);
+      // ⚡ OTIMIZAÇÃO: Se o vídeo base já está ativo, não fazer nada
+      if (currentActiveVideoId === baseVideo.video_id) {
+        console.log(`✅ [VIDEO_STATUS] Vídeo base ${baseVideo.video_id} já está ativo, pulando`);
+        continue;
+      }
 
-      // 2. Usar RPC para reativar vídeo base (gerencia tudo corretamente)
+      console.log(`🔄 [VIDEO_STATUS] Transição detectada: ${currentActiveVideoId || 'nenhum'} → ${baseVideo.video_id} (base)`);
+
+      // 2. Usar RPC para reativar vídeo base
       const { error: rpcError } = await supabase
         .rpc('select_video_for_display', {
           p_pedido_video_id: baseVideo.id
@@ -244,16 +254,15 @@ serve(async (req) => {
         deactivatedCount++;
         console.log(`✅ [VIDEO_STATUS] Vídeo base reativado para pedido ${pedidoId}`);
         
-        // 🔔 SINCRONIZAR COM AWS ao reativar vídeo base
-        console.log(`🔔 [VIDEO_STATUS] Sincronizando com AWS após reativar base: pedido ${pedidoId}, vídeo base ${baseVideo.video_id}, anterior ${previousVideoId || 'nenhum'}`);
+        // 🔔 SINCRONIZAR COM AWS - APENAS em transição real
+        console.log(`🔔 [VIDEO_STATUS] Sincronizando com AWS (transição real): pedido ${pedidoId}`);
         try {
           const { data: awsResult, error: awsError } = await supabase.functions.invoke(
             'sync-video-status-to-aws',
             {
               body: { 
                 pedidoId,
-                activeVideoId: baseVideo.video_id,
-                previousVideoId
+                activeVideoId: baseVideo.video_id
               }
             }
           );
