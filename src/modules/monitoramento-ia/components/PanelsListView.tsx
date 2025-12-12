@@ -1,5 +1,4 @@
 import { Device } from '../utils/devices';
-import { humanizeDate } from '../utils/formatters';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
@@ -11,8 +10,22 @@ interface PanelsListViewProps {
   onSortChange: (sort: DevicesSort) => void;
   onDeviceClick: (device: Device) => void;
   periodEventsMap?: Map<string, number>;
+  offlineTimeMap?: Map<string, number>;
   periodLabel?: string;
 }
+
+// Format seconds to human readable
+const formatOfflineTime = (seconds: number): string => {
+  if (seconds === 0) return '0min';
+  
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}min`;
+  }
+  return `${minutes}min`;
+};
 
 export const PanelsListView = ({ 
   devices, 
@@ -20,6 +33,7 @@ export const PanelsListView = ({
   onSortChange, 
   onDeviceClick,
   periodEventsMap,
+  offlineTimeMap,
   periodLabel = 'hoje'
 }: PanelsListViewProps) => {
   const handleSort = (field: DevicesSort['field']) => {
@@ -56,6 +70,11 @@ export const PanelsListView = ({
   // Get period events count for a device
   const getPeriodEventsCount = (deviceId: string) => {
     return periodEventsMap?.get(deviceId) || 0;
+  };
+
+  // Get period offline time for a device
+  const getPeriodOfflineTime = (deviceId: string) => {
+    return offlineTimeMap?.get(deviceId) || 0;
   };
 
   return (
@@ -98,7 +117,7 @@ export const PanelsListView = ({
                 className="cursor-pointer hover:bg-muted/70 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  Último Online
+                  Tempo Offline {periodLabel}
                   <SortIcon field="last_online_at" />
                 </div>
               </TableHead>
@@ -110,6 +129,7 @@ export const PanelsListView = ({
               const displayName = (device.comments || device.name).split(' - ')[0].trim();
               const provider = device.provider || 'Sem provedor';
               const periodEvents = getPeriodEventsCount(device.id);
+              const offlineSeconds = getPeriodOfflineTime(device.id);
               
               return (
                 <TableRow 
@@ -142,8 +162,10 @@ export const PanelsListView = ({
                       {periodEvents}
                     </span>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {humanizeDate(device.last_online_at)}
+                  <TableCell className="text-sm">
+                    <span className={offlineSeconds > 0 ? 'text-destructive font-medium' : 'text-muted-foreground'}>
+                      {formatOfflineTime(offlineSeconds)}
+                    </span>
                   </TableCell>
                   <TableCell className="text-center font-mono text-xs">
                     {device.anydesk_client_id ? (
@@ -172,6 +194,7 @@ export const PanelsListView = ({
           const displayName = (device.comments || device.name).split(' - ')[0].trim();
           const provider = device.provider || 'Sem provedor';
           const periodEvents = getPeriodEventsCount(device.id);
+          const offlineSeconds = getPeriodOfflineTime(device.id);
           const statusConfig = (() => {
             const variants: Record<string, { variant: 'default' | 'destructive' | 'secondary'; label: string }> = {
               online: { variant: 'default', label: 'Online' },
@@ -219,9 +242,9 @@ export const PanelsListView = ({
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Último Online</p>
-                  <p className="text-foreground truncate">
-                    {humanizeDate(device.last_online_at)}
+                  <p className="text-muted-foreground">Tempo Offline</p>
+                  <p className={offlineSeconds > 0 ? 'text-destructive font-medium' : 'text-muted-foreground'}>
+                    {formatOfflineTime(offlineSeconds)}
                   </p>
                 </div>
                 <div>
