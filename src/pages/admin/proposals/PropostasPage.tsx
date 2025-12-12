@@ -670,21 +670,28 @@ const PropostasPage = () => {
                           {getStatusBadge(proposal.status, proposal)}
                         </div>
                         <h3 className="font-medium text-sm truncate">{proposal.client_name}</h3>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap text-xs text-muted-foreground">
+                          <span>{proposal.duration_months}M</span>
+                          <span>•</span>
+                          <span>{proposal.selected_buildings?.length || 0} prédio{(proposal.selected_buildings?.length || 0) !== 1 ? 's' : ''}</span>
+                          <span>•</span>
+                          <span className="font-semibold text-foreground">
+                            {proposal.payment_type === 'custom' && proposal.custom_installments?.length 
+                              ? formatCurrency(proposal.custom_installments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0))
+                              : formatCurrency((proposal.fidel_monthly_value || 0) * (proposal.duration_months || 1))
+                            }
+                          </span>
+                        </div>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
                           <span className="text-xs text-muted-foreground">
                             {format(new Date(proposal.created_at), "dd/MM", { locale: ptBR })}
                           </span>
                           {proposal.payment_type === 'custom' && proposal.custom_installments?.length ? (
-                            <div className="flex items-center gap-1">
-                              <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1 py-0 border-0">
-                                Personalizado
-                              </Badge>
-                              <span className="text-xs text-muted-foreground">
-                                {proposal.custom_installments.length}x • 1ª: {formatCurrency(proposal.custom_installments[0].amount)}
-                              </span>
-                            </div>
+                            <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1 py-0 border-0">
+                              {proposal.custom_installments.length}x parcelas
+                            </Badge>
                           ) : (
-                            <span className="text-sm font-semibold">
+                            <span className="text-xs text-muted-foreground">
                               {formatCurrency(proposal.fidel_monthly_value)}/mês
                             </span>
                           )}
