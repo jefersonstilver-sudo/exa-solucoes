@@ -459,3 +459,6 @@ verify_jwt = false
 
 [functions.create-contract-from-proposal]
 verify_jwt = false
+
+[functions.global-toggle-ativo]
+verify_jwt = false
