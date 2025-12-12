@@ -143,7 +143,23 @@ serve(async (req) => {
       console.log('⏰ [UPLOAD_EXTERNAL_API] Sem campanha - usando programação padrão 24/7');
     }
 
-    // 4. Preparar metadados
+    // 4. Verificar se é o primeiro vídeo aprovado deste pedido
+    const { count: approvedCount } = await supabase
+      .from('pedido_videos')
+      .select('*', { count: 'exact', head: true })
+      .eq('pedido_id', pedidoVideo.pedido_id)
+      .eq('status', 'approved')
+      .neq('id', pedido_video_id);
+
+    const isFirstApproved = (approvedCount ?? 0) === 0;
+    console.log('🎯 [UPLOAD_EXTERNAL_API] Verificação primeiro aprovado:', {
+      pedido_id: pedidoVideo.pedido_id,
+      outros_aprovados: approvedCount,
+      isFirstApproved,
+      ativo: isFirstApproved
+    });
+
+    // 5. Preparar metadados
     // IMPORTANTE: Extrair nome do arquivo do Storage URL (não o nome dado pelo usuário)
     const storageUrl = pedidoVideo.videos.url;
     const storageFileName = storageUrl.split('/').pop() || pedidoVideo.videos.nome;
@@ -163,7 +179,11 @@ serve(async (req) => {
     };
 
     const metadataJson = {
-      [storageFileName]: metadata
+      [storageFileName]: {
+        ...metadata,
+        ativo: isFirstApproved,
+        status: 'new'
+      }
     };
 
     console.log('📦 [UPLOAD_EXTERNAL_API] Metadados preparados:', metadataJson);
