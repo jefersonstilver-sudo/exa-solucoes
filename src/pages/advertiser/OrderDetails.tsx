@@ -298,6 +298,58 @@ const OrderDetails = () => {
       });
 
       if (result.success) {
+        // 🔄 Chamar global-toggle-ativo para sincronizar com API externa
+        try {
+          // Encontrar o slot que está sendo definido como principal
+          const mainSlot = videoSlots.find(s => s.id === slotId);
+          const mainVideoTitle = mainSlot?.video_data?.nome?.replace(/\.[^.]+$/, '').trim();
+          
+          // Coletar títulos de todos os outros vídeos aprovados
+          const otherTitles = videoSlots
+            .filter(s => s.id !== slotId && s.video_data && s.approval_status === 'approved')
+            .map(s => s.video_data?.nome?.replace(/\.[^.]+$/, '').trim())
+            .filter(Boolean) as string[];
+          
+          // Obter clientId do primeiro prédio (primeiros 4 caracteres do UUID)
+          const firstBuildingId = orderDetails?.lista_predios?.[0];
+          const clientId = firstBuildingId ? firstBuildingId.replace(/-/g, '').substring(0, 4) : null;
+          
+          console.log('🔄 [GLOBAL_TOGGLE] Preparando chamada:', {
+            mainVideoTitle,
+            otherTitles,
+            clientId,
+            firstBuildingId
+          });
+          
+          if (mainVideoTitle && clientId) {
+            const titulos = [mainVideoTitle, ...otherTitles];
+            
+            console.log('🔄 [GLOBAL_TOGGLE] Chamando global-toggle-ativo:', {
+              clientId,
+              titulos
+            });
+            
+            const toggleResponse = await supabase.functions.invoke(`global-toggle-ativo/${clientId}`, {
+              body: { titulos }
+            });
+            
+            console.log('📥 [GLOBAL_TOGGLE] Resposta:', toggleResponse);
+            
+            if (toggleResponse.error) {
+              console.error('❌ [GLOBAL_TOGGLE] Erro:', toggleResponse.error);
+            } else if (toggleResponse.data?.ok) {
+              console.log('✅ [GLOBAL_TOGGLE] Sucesso:', toggleResponse.data);
+            } else {
+              console.warn('⚠️ [GLOBAL_TOGGLE] Resposta parcial:', toggleResponse.data);
+            }
+          } else {
+            console.warn('⚠️ [GLOBAL_TOGGLE] Dados insuficientes:', { mainVideoTitle, clientId });
+          }
+        } catch (toggleError: any) {
+          console.error('❌ [GLOBAL_TOGGLE] Erro ao chamar global-toggle-ativo:', toggleError);
+          // Não bloquear o sucesso da operação principal
+        }
+        
         toast.success('✅ Vídeo definido como principal!', { 
           id: 'set-base-video',
           description: 'Este vídeo será exibido quando não houver outros agendados.'
