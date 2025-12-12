@@ -300,14 +300,23 @@ const OrderDetails = () => {
       if (result.success) {
         // 🔄 Chamar global-toggle-ativo para sincronizar com API externa
         try {
+          // Helper para extrair título da URL (igual edge functions)
+          const extractTituloFromUrl = (url?: string | null): string | null => {
+            if (!url) return null;
+            const base = String(url).split("/").pop() || "";
+            const noQueryHash = base.split("?")[0].split("#")[0];
+            const cleaned = noQueryHash.replace(/\.[^.]+$/, "").trim();
+            return cleaned || null;
+          };
+          
           // Encontrar o slot que está sendo definido como principal
           const mainSlot = videoSlots.find(s => s.id === slotId);
-          const mainVideoTitle = mainSlot?.video_data?.nome?.replace(/\.[^.]+$/, '').trim();
+          const mainVideoTitle = extractTituloFromUrl(mainSlot?.video_data?.url);
           
           // Coletar títulos de todos os outros vídeos aprovados
           const otherTitles = videoSlots
             .filter(s => s.id !== slotId && s.video_data && s.approval_status === 'approved')
-            .map(s => s.video_data?.nome?.replace(/\.[^.]+$/, '').trim())
+            .map(s => extractTituloFromUrl(s.video_data?.url))
             .filter(Boolean) as string[];
           
           // Obter clientId do primeiro prédio (primeiros 4 caracteres do UUID)
