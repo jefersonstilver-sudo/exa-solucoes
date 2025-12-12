@@ -10,6 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExporter';
 import { validateEmail } from '@/utils/inputValidation';
 import { PaymentSuccessModal } from '@/components/public/PaymentSuccessModal';
+import { ContractDataModal } from '@/components/public/ContractDataModal';
+import { ContractPreview } from '@/components/public/ContractPreview';
 
 interface CustomInstallment {
   installment: number;
@@ -102,6 +104,13 @@ const PropostaPublicaPage = () => {
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [convertedOrderId, setConvertedOrderId] = useState<string | null>(null);
   const [isPollingPayment, setIsPollingPayment] = useState(false);
+  
+  // Contract flow states (NEW)
+  const [showContractDataModal, setShowContractDataModal] = useState(false);
+  const [showContractPreview, setShowContractPreview] = useState(false);
+  const [contractClientData, setContractClientData] = useState<any>(null);
+  const [generatedContract, setGeneratedContract] = useState<any>(null);
+  const [isGeneratingContract, setIsGeneratingContract] = useState(false);
 
   // Track page view time with heartbeat system (works on mobile!)
   const pageLoadTime = React.useRef<number>(Date.now());
