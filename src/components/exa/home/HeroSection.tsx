@@ -143,7 +143,7 @@ const HeroSection = () => {
             
             {/* Botões de controle - dentro do vídeo, acima do ticker */}
             {!loading && (
-              <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-3 z-[50]">
+              <div className="absolute bottom-[12%] lg:bottom-[10%] left-1/2 -translate-x-1/2 flex items-center gap-3 z-[50]">
                 {/* Botão Som com Tooltip */}
                 <div className="relative">
                   {showSoundTooltip && (
