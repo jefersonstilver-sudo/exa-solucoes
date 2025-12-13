@@ -12,7 +12,10 @@ import { validateEmail } from '@/utils/inputValidation';
 import { PaymentSuccessModal } from '@/components/public/PaymentSuccessModal';
 import { ContractDataModal } from '@/components/public/ContractDataModal';
 import { ContractPreview } from '@/components/public/ContractPreview';
+import { ContractLoadingScreen } from '@/components/public/ContractLoadingScreen';
 
+// Contract flow type
+type ContractFlowStep = 'idle' | 'loading' | 'collecting' | 'generating' | 'previewing' | 'accepted';
 interface CustomInstallment {
   installment: number;
   due_date: string;
@@ -105,7 +108,9 @@ const PropostaPublicaPage = () => {
   const [convertedOrderId, setConvertedOrderId] = useState<string | null>(null);
   const [isPollingPayment, setIsPollingPayment] = useState(false);
   
-  // Contract flow states (NEW)
+  // Contract flow states
+  const [contractFlow, setContractFlow] = useState<ContractFlowStep>('idle');
+  const [contractLoadingMessage, setContractLoadingMessage] = useState('');
   const [showContractDataModal, setShowContractDataModal] = useState(false);
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [contractClientData, setContractClientData] = useState<any>(null);
@@ -461,6 +466,101 @@ const PropostaPublicaPage = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Handle "Ver Contrato" button - starts contract flow
+  const handleViewContract = async () => {
+    if (!proposal) return;
+    
+    setContractFlow('loading');
+    setContractLoadingMessage('Analisando seus dados...');
+    
+    // Simulate analysis delay for UX
+    await new Promise(r => setTimeout(r, 1200));
+    
+    // Extract existing data from proposal
+    const nameParts = (proposal.client_name || '').split(' ');
+    const existingData = {
+      primeiro_nome: nameParts[0] || '',
+      sobrenome: nameParts.slice(1).join(' ') || '',
+      email: proposal.client_email || '',
+      telefone: proposal.client_phone || '',
+      cpf: '', // Always need to collect for ClickSign
+      data_nascimento: '' // Always need to collect for ClickSign
+    };
+    
+    setContractLoadingMessage('Precisamos de algumas informações...');
+    await new Promise(r => setTimeout(r, 600));
+    
+    // Always collect CPF and birth date (required for ClickSign)
+    setContractClientData(existingData);
+    setContractFlow('collecting');
+    setShowContractDataModal(true);
+  };
+
+  // Handle contract data collection complete
+  const handleContractDataComplete = async (data: any) => {
+    if (!proposal) return;
+    
+    setShowContractDataModal(false);
+    setContractFlow('generating');
+    setContractLoadingMessage('Gerando seu contrato...');
+    
+    try {
+      // Use proposal values directly
+      const totalValue = selectedPlan === 'avista' 
+        ? proposal.cash_total_value 
+        : proposal.fidel_monthly_value * proposal.duration_months;
+      
+      const monthlyValue = selectedPlan === 'fidelidade' 
+        ? proposal.fidel_monthly_value 
+        : totalValue / (proposal.duration_months || 1);
+      
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + (proposal.duration_months || 1));
+      
+      // Build contract data for preview
+      const contractPreviewData = {
+        cliente_nome: `${data.primeiro_nome} ${data.sobrenome}`,
+        cliente_empresa: proposal.client_company_name || '',
+        cliente_cnpj: proposal.client_cnpj || '',
+        cliente_cpf: data.cpf,
+        cliente_email: data.email,
+        valor_total: totalValue,
+        valor_mensal: monthlyValue,
+        plano_meses: proposal.duration_months || 1,
+        data_inicio: startDate,
+        data_fim: endDate,
+        lista_predios: enrichedBuildings.map(b => ({
+          building_id: b.building_id,
+          building_name: b.building_name || b.nome,
+          quantidade_telas: b.quantidade_telas || 1
+        })),
+        metodo_pagamento: selectedPlan === 'avista' ? 'PIX à Vista' : 'Fidelidade',
+        parcelas: proposal.custom_installments || []
+      };
+      
+      setContractLoadingMessage('Contrato pronto!');
+      await new Promise(r => setTimeout(r, 500));
+      
+      setGeneratedContract(contractPreviewData);
+      setContractClientData(data);
+      setContractFlow('previewing');
+      setShowContractPreview(true);
+      
+    } catch (err) {
+      console.error('Erro ao gerar contrato:', err);
+      toast.error('Erro ao gerar contrato');
+      setContractFlow('idle');
+    }
+  };
+
+  // Handle contract acceptance from preview
+  const handleContractAccepted = () => {
+    setShowContractPreview(false);
+    setContractFlow('accepted');
+    toast.success('Contrato visualizado! Agora você pode prosseguir com o pagamento.');
   };
 
   // Aceitar cortesia (cria conta + pedido)
@@ -1300,6 +1400,45 @@ const PropostaPublicaPage = () => {
     : '0';
 
   return (
+    <>
+      {/* Contract Flow: Loading Screen */}
+      {contractFlow === 'loading' && (
+        <ContractLoadingScreen message={contractLoadingMessage} />
+      )}
+
+      {/* Contract Flow: Data Collection Modal */}
+      {contractFlow === 'collecting' && (
+        <ContractDataModal
+          isOpen={showContractDataModal}
+          onClose={() => {
+            setShowContractDataModal(false);
+            setContractFlow('idle');
+          }}
+          onComplete={handleContractDataComplete}
+          initialData={contractClientData}
+          isLoading={false}
+        />
+      )}
+
+      {/* Contract Flow: Generating */}
+      {contractFlow === 'generating' && (
+        <ContractLoadingScreen message={contractLoadingMessage} step={1} />
+      )}
+
+      {/* Contract Flow: Preview */}
+      {contractFlow === 'previewing' && generatedContract && (
+        <ContractPreview
+          isOpen={showContractPreview}
+          onClose={() => {
+            setShowContractPreview(false);
+            setContractFlow('idle');
+          }}
+          onConfirm={handleContractAccepted}
+          isLoading={false}
+          contractData={generatedContract}
+        />
+      )}
+
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
       {/* Header - Always EXA Red */}
       <header className="bg-gradient-to-r from-[#4a0f0f] to-[#7D1818] text-white p-4">
@@ -1724,23 +1863,47 @@ const PropostaPublicaPage = () => {
               </>
             ) : (
               <>
-                {/* Botões normais para proposta comercial */}
+                {/* Badge de contrato aceito */}
+                {contractFlow === 'accepted' && (
+                  <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl mb-2">
+                    <Check className="h-5 w-5 text-emerald-600" />
+                    <span className="text-sm text-emerald-700 font-medium">
+                      ✅ Contrato visualizado e aceito
+                    </span>
+                  </div>
+                )}
+                
+                {/* Botão principal: Aceitar e Pagar */}
                 <Button
-                  className="w-full h-14 text-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white"
                   onClick={handleAccept}
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
                     <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                   ) : (
-                    <Check className="h-5 w-5 mr-2" />
+                    <Check className="h-4 w-4 mr-2" />
                   )}
-                  Aceitar Proposta ({selectedPlan === 'avista' ? 'À Vista' : 'Fidelidade'})
+                  Aceitar e Pagar ({selectedPlan === 'avista' ? 'À Vista' : 'Fidelidade'})
                 </Button>
 
+                {/* Botão secundário: Ver Contrato antes */}
+                {contractFlow !== 'accepted' && (
+                  <Button
+                    variant="outline"
+                    className="w-full h-10 text-sm border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
+                    onClick={handleViewContract}
+                    disabled={isSubmitting}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Prefiro ver o contrato antes
+                  </Button>
+                )}
+
+                {/* Recusar */}
                 <Button
-                  variant="outline"
-                  className="w-full h-12"
+                  variant="ghost"
+                  className="w-full h-10 text-sm text-muted-foreground hover:text-destructive"
                   onClick={handleReject}
                   disabled={isSubmitting}
                 >
@@ -1789,6 +1952,7 @@ const PropostaPublicaPage = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
