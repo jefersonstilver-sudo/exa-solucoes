@@ -3,7 +3,7 @@ import ExaSection from '../base/ExaSection';
 import ExaCTA from '../base/ExaCTA';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useHomepageVideo } from '@/hooks/useHomepageVideo';
-import { useIsMobile } from '@/hooks/use-mobile';
+
 import { Volume2, VolumeX, RotateCcw, Maximize, Minimize } from 'lucide-react';
 // Mobile Hero Layout Component
 const HeroMobileLayout = () => {
@@ -80,7 +80,7 @@ const HeroMobileLayout = () => {
     </section>;
 };
 const HeroSection = () => {
-  const isMobile = useIsMobile();
+  const [isTabletOrMobile, setIsTabletOrMobile] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(true);
   const [showSoundTooltip, setShowSoundTooltip] = useState(true);
@@ -92,6 +92,16 @@ const HeroSection = () => {
     videoUrl,
     loading
   } = useHomepageVideo();
+
+  // Detectar tablet/mobile (até 1023px)
+  useEffect(() => {
+    const checkSize = () => {
+      setIsTabletOrMobile(window.innerWidth < 1024);
+    };
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
 
   // Esconder tooltip após 5 segundos
   useEffect(() => {
@@ -114,8 +124,8 @@ const HeroSection = () => {
     }
   };
 
-  // Se for mobile, renderiza o novo layout imersivo
-  if (isMobile) {
+  // Se for mobile OU tablet (até 1023px), renderiza layout com vídeo horizontal
+  if (isTabletOrMobile) {
     return <HeroMobileLayout />;
   }
 
