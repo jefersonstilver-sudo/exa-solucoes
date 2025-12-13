@@ -22,7 +22,7 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
   const isAnyAdmin = isSuperAdmin || isAdmin || isAdminFinanceiro || isAdminMarketing;
 
   return (
-    <div className="fixed inset-0 z-50 md:hidden">
+    <div className="fixed inset-0 z-50 lg:hidden">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="fixed top-0 right-0 h-full w-72 bg-indexa-purple shadow-xl overflow-y-auto">
         <div className="flex justify-end p-4">
