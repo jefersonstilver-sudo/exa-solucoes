@@ -11,7 +11,7 @@ import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExp
 import { validateEmail } from '@/utils/inputValidation';
 import { PaymentSuccessModal } from '@/components/public/PaymentSuccessModal';
 import { ContractDataModal } from '@/components/public/ContractDataModal';
-import { ContractPreview } from '@/components/public/ContractPreview';
+import { ContractFullPreview } from '@/components/public/ContractFullPreview';
 import { ContractLoadingScreen } from '@/components/public/ContractLoadingScreen';
 
 // Contract flow type
@@ -115,6 +115,7 @@ const PropostaPublicaPage = () => {
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [contractClientData, setContractClientData] = useState<any>(null);
   const [generatedContract, setGeneratedContract] = useState<any>(null);
+  const [generatedContractHtml, setGeneratedContractHtml] = useState<string>('');
   const [isGeneratingContract, setIsGeneratingContract] = useState(false);
 
   // Track page view time with heartbeat system (works on mobile!)
@@ -536,27 +537,14 @@ const PropostaPublicaPage = () => {
       
       console.log('✅ Contrato criado no Supabase:', contractResponse.contrato);
       
-      // Usar dados do contrato criado para preview
-      const contractPreviewData = {
-        cliente_nome: `${data.primeiro_nome} ${data.sobrenome}`,
-        cliente_empresa: proposal.client_company_name || '',
-        cliente_cnpj: proposal.client_cnpj || '',
-        cliente_cpf: data.cpf,
-        cliente_email: data.email,
-        valor_total: contractResponse.contrato.valor_total,
-        valor_mensal: proposal.fidel_monthly_value || (contractResponse.contrato.valor_total / (proposal.duration_months || 1)),
-        plano_meses: proposal.duration_months || 1,
-        data_inicio: new Date(contractResponse.contrato.data_inicio),
-        data_fim: new Date(contractResponse.contrato.data_fim),
-        lista_predios: contractResponse.contrato.lista_predios,
-        metodo_pagamento: selectedPlan === 'avista' ? 'PIX à Vista' : 'Fidelidade',
-        parcelas: proposal.custom_installments || []
-      };
+      // Armazenar o HTML completo do contrato gerado pela edge function
+      const contractHtmlContent = contractResponse.contractHtml || '';
       
       setContractLoadingMessage('Contrato pronto!');
       await new Promise(r => setTimeout(r, 500));
       
-      setGeneratedContract(contractPreviewData);
+      setGeneratedContractHtml(contractHtmlContent);
+      setGeneratedContract(contractResponse.contrato);
       setContractClientData(data);
       setContractFlow('previewing');
       setShowContractPreview(true);
@@ -1438,8 +1426,8 @@ const PropostaPublicaPage = () => {
       )}
 
       {/* Contract Flow: Preview */}
-      {contractFlow === 'previewing' && generatedContract && (
-        <ContractPreview
+      {contractFlow === 'previewing' && generatedContractHtml && (
+        <ContractFullPreview
           isOpen={showContractPreview}
           onClose={() => {
             setShowContractPreview(false);
@@ -1447,7 +1435,7 @@ const PropostaPublicaPage = () => {
           }}
           onConfirm={handleContractAccepted}
           isLoading={false}
-          contractData={generatedContract}
+          contractHtml={generatedContractHtml}
         />
       )}
 
@@ -1856,7 +1844,7 @@ const PropostaPublicaPage = () => {
                     disabled={isSubmitting}
                   >
                     <FileText className="h-4 w-4 mr-2" />
-                    Prefiro ver o contrato antes
+                    Ver Contrato
                   </Button>
                 )}
 
@@ -1905,7 +1893,7 @@ const PropostaPublicaPage = () => {
                     disabled={isSubmitting}
                   >
                     <FileText className="h-4 w-4 mr-2" />
-                    Prefiro ver o contrato antes
+                    Ver Contrato
                   </Button>
                 )}
 
@@ -1954,7 +1942,7 @@ const PropostaPublicaPage = () => {
                     disabled={isSubmitting}
                   >
                     <FileText className="h-4 w-4 mr-2" />
-                    Prefiro ver o contrato antes
+                    Ver Contrato
                   </Button>
                 )}
 
