@@ -120,7 +120,16 @@ Deno.serve(async (req) => {
 
     if (devicesError) throw devicesError;
 
-    console.log(`📊 [MONITOR] Analisando ${devices?.length || 0} devices...`);
+    // 4.1 Get device alert configs to check alerts_enabled per device
+    const { data: alertConfigs } = await supabase
+      .from('device_alert_configs')
+      .select('device_id, alerts_enabled');
+
+    const alertConfigsMap = new Map<string, boolean>(
+      (alertConfigs || []).map((c: any) => [c.device_id, c.alerts_enabled])
+    );
+
+    console.log(`📊 [MONITOR] Analisando ${devices?.length || 0} devices (${alertConfigs?.length || 0} com config de alertas)...`);
 
     const now = new Date();
     let offlineDetected = 0;
@@ -203,6 +212,13 @@ Deno.serve(async (req) => {
       const offlineSeconds = Math.round(timeSinceLastOnline / 1000);
       const currentStatus = device.status;
       const metadata = (device.metadata || {}) as DeviceMetadata;
+
+      // CHECK: Device has alerts disabled in device_alert_configs table
+      const alertsEnabledForDevice = alertConfigsMap.get(device.id);
+      if (alertsEnabledForDevice === false && !testMode) {
+        console.log(`⏸️ [MONITOR] Device ${device.name}: alertas desativados via configuração admin`);
+        continue;
+      }
 
       // Find applicable rule
       let applicableRule: AlertRule | undefined;

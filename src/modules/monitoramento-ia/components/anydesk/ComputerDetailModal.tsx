@@ -85,6 +85,35 @@ export const ComputerDetailModal = ({
         });
 
       if (error) throw error;
+
+      // SYNC: Also update device metadata.notifications_paused_until
+      // This ensures monitor-panels respects BOTH device_alert_configs AND metadata
+      const currentMetadata = computer.metadata || {};
+      let newMetadata: Record<string, any>;
+
+      if (!alertConfig.alerts_enabled) {
+        // Alerts disabled - set notifications_paused_until to 'indefinite'
+        newMetadata = {
+          ...currentMetadata,
+          notifications_paused_until: 'indefinite',
+          paused_by: 'admin_interface',
+          paused_at: new Date().toISOString()
+        };
+      } else {
+        // Alerts enabled - clear pause
+        newMetadata = {
+          ...currentMetadata,
+          notifications_paused_until: null,
+          paused_by: null,
+          paused_at: null
+        };
+      }
+
+      await supabase
+        .from('devices')
+        .update({ metadata: newMetadata })
+        .eq('id', computer.id);
+
       toast.success('Configurações de alertas salvas com sucesso!');
     } catch (error) {
       console.error('Error saving alert config:', error);
