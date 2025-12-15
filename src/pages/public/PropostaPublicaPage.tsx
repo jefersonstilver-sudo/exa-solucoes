@@ -507,36 +507,48 @@ const PropostaPublicaPage = () => {
     setContractLoadingMessage('Gerando seu contrato...');
     
     try {
-      // Use proposal values directly
-      const totalValue = selectedPlan === 'avista' 
-        ? proposal.cash_total_value 
-        : proposal.fidel_monthly_value * proposal.duration_months;
+      // Chamar edge function para criar contrato no Supabase
+      const { data: contractResponse, error: contractError } = await supabase.functions.invoke(
+        'create-contract-from-proposal',
+        {
+          body: {
+            proposalId: proposal.id,
+            clientData: {
+              primeiro_nome: data.primeiro_nome,
+              sobrenome: data.sobrenome,
+              data_nascimento: data.data_nascimento,
+              cpf: data.cpf,
+              email: data.email,
+              telefone: data.telefone
+            }
+          }
+        }
+      );
       
-      const monthlyValue = selectedPlan === 'fidelidade' 
-        ? proposal.fidel_monthly_value 
-        : totalValue / (proposal.duration_months || 1);
+      if (contractError) {
+        console.error('Erro ao criar contrato:', contractError);
+        throw new Error('Erro ao gerar contrato no servidor');
+      }
       
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + (proposal.duration_months || 1));
+      if (!contractResponse?.success) {
+        throw new Error(contractResponse?.error || 'Erro desconhecido ao criar contrato');
+      }
       
-      // Build contract data for preview
+      console.log('✅ Contrato criado no Supabase:', contractResponse.contrato);
+      
+      // Usar dados do contrato criado para preview
       const contractPreviewData = {
         cliente_nome: `${data.primeiro_nome} ${data.sobrenome}`,
         cliente_empresa: proposal.client_company_name || '',
         cliente_cnpj: proposal.client_cnpj || '',
         cliente_cpf: data.cpf,
         cliente_email: data.email,
-        valor_total: totalValue,
-        valor_mensal: monthlyValue,
+        valor_total: contractResponse.contrato.valor_total,
+        valor_mensal: proposal.fidel_monthly_value || (contractResponse.contrato.valor_total / (proposal.duration_months || 1)),
         plano_meses: proposal.duration_months || 1,
-        data_inicio: startDate,
-        data_fim: endDate,
-        lista_predios: enrichedBuildings.map(b => ({
-          building_id: b.building_id,
-          building_name: b.building_name || b.nome,
-          quantidade_telas: b.quantidade_telas || 1
-        })),
+        data_inicio: new Date(contractResponse.contrato.data_inicio),
+        data_fim: new Date(contractResponse.contrato.data_fim),
+        lista_predios: contractResponse.contrato.lista_predios,
         metodo_pagamento: selectedPlan === 'avista' ? 'PIX à Vista' : 'Fidelidade',
         parcelas: proposal.custom_installments || []
       };
@@ -549,9 +561,9 @@ const PropostaPublicaPage = () => {
       setContractFlow('previewing');
       setShowContractPreview(true);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao gerar contrato:', err);
-      toast.error('Erro ao gerar contrato');
+      toast.error(err.message || 'Erro ao gerar contrato');
       setContractFlow('idle');
     }
   };
