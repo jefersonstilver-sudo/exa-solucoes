@@ -94,18 +94,18 @@ serve(async (req) => {
     
     const contratoData = {
       numero_contrato: contratoNumber,
-      proposal_id: proposalId,
+      proposta_id: proposalId,
+      tipo_contrato: 'anunciante',
       status: 'rascunho',
       
       // Dados do cliente
       cliente_nome: `${clientData.primeiro_nome} ${clientData.sobrenome}`.trim(),
-      cliente_primeiro_nome: clientData.primeiro_nome,
       cliente_sobrenome: clientData.sobrenome,
       cliente_email: clientData.email || proposal.client_email,
       cliente_telefone: clientData.telefone || proposal.client_phone,
       cliente_cpf: clientData.cpf.replace(/\D/g, ''),
       cliente_data_nascimento: clientData.data_nascimento,
-      cliente_empresa: proposal.client_company_name,
+      cliente_razao_social: proposal.client_company_name,
       cliente_cnpj: proposal.client_cnpj,
       
       // Dados comerciais
@@ -117,21 +117,15 @@ serve(async (req) => {
       
       // Prédios e painéis
       lista_predios: listaPredios,
-      total_telas: selectedBuildings.reduce((sum: number, b: any) => sum + (b.quantidade_telas || 1), 0),
+      total_paineis: selectedBuildings.reduce((sum: number, b: any) => sum + (b.quantidade_telas || 1), 0),
       
       // Pagamento
       metodo_pagamento: isCustomPayment ? 'personalizado' : 'pix',
       parcelas: isCustomPayment ? customInstallments : null,
       
       // Produto
-      tipo_produto: 'horizontal', // Default
-      
-      // Metadata
-      metadata: {
-        created_from_proposal: true,
-        proposal_number: proposal.number,
-        created_at: new Date().toISOString()
-      }
+      tipo_produto: 'horizontal',
+      objeto: 'Contratação de espaço publicitário em painéis digitais de elevadores'
     };
 
     const { data: contrato, error: contratoError } = await supabase
