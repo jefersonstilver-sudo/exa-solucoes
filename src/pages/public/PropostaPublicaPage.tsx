@@ -1811,6 +1811,16 @@ const PropostaPublicaPage = () => {
           <div className="space-y-3 pt-4">
             {isCortesia ? (
               <>
+                {/* Badge de contrato aceito - Cortesia */}
+                {contractFlow === 'accepted' && (
+                  <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl mb-2">
+                    <Check className="h-5 w-5 text-emerald-600" />
+                    <span className="text-sm text-emerald-700 font-medium">
+                      ✅ Contrato visualizado e aceito
+                    </span>
+                  </div>
+                )}
+
                 {/* Botões especiais para Cortesia - EXA Red Theme */}
                 <Button
                   className="w-full h-14 text-lg bg-gradient-to-r from-[#9C1E1E] to-[#7D1818] hover:from-[#7D1818] hover:to-[#5a1212] text-white shadow-lg"
@@ -1825,6 +1835,19 @@ const PropostaPublicaPage = () => {
                   🎁 Aceitar Meu Presente
                 </Button>
 
+                {/* Botão Ver Contrato - Cortesia */}
+                {contractFlow !== 'accepted' && (
+                  <Button
+                    variant="outline"
+                    className="w-full h-10 text-sm border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
+                    onClick={handleViewContract}
+                    disabled={isSubmitting}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Prefiro ver o contrato antes
+                  </Button>
+                )}
+
                 <Button
                   variant="outline"
                   className="w-full h-12 border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
@@ -1837,6 +1860,16 @@ const PropostaPublicaPage = () => {
               </>
             ) : proposal.payment_type === 'custom' && Array.isArray(proposal.custom_installments) && proposal.custom_installments.length > 0 ? (
               <>
+                {/* Badge de contrato aceito - Pagamento Personalizado */}
+                {contractFlow === 'accepted' && (
+                  <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl mb-2">
+                    <Check className="h-5 w-5 text-emerald-600" />
+                    <span className="text-sm text-emerald-700 font-medium">
+                      ✅ Contrato visualizado e aceito
+                    </span>
+                  </div>
+                )}
+
                 {/* Botões especiais para Pagamento Personalizado */}
                 <Button
                   className="w-full h-14 text-lg bg-gradient-to-r from-[#9C1E1E] to-[#7D1818] hover:from-[#7D1818] hover:to-[#5a1212] text-white shadow-lg"
@@ -1850,6 +1883,19 @@ const PropostaPublicaPage = () => {
                   )}
                   ✅ Aceitar e Pagar Primeira Parcela ({Number(proposal.custom_installments[0].amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})
                 </Button>
+
+                {/* Botão Ver Contrato - Pagamento Personalizado */}
+                {contractFlow !== 'accepted' && (
+                  <Button
+                    variant="outline"
+                    className="w-full h-10 text-sm border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
+                    onClick={handleViewContract}
+                    disabled={isSubmitting}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Prefiro ver o contrato antes
+                  </Button>
+                )}
 
                 <Button
                   variant="outline"
