@@ -1965,6 +1965,8 @@ export type Database = {
           dias_mes: number
           horas_operacao_dia: number
           id: string
+          ultima_alteracao_em: string | null
+          ultima_alteracao_por: string | null
           updated_at: string | null
           updated_by: string | null
         }
@@ -1972,6 +1974,8 @@ export type Database = {
           dias_mes?: number
           horas_operacao_dia?: number
           id?: string
+          ultima_alteracao_em?: string | null
+          ultima_alteracao_por?: string | null
           updated_at?: string | null
           updated_by?: string | null
         }
@@ -1979,6 +1983,8 @@ export type Database = {
           dias_mes?: number
           horas_operacao_dia?: number
           id?: string
+          ultima_alteracao_em?: string | null
+          ultima_alteracao_por?: string | null
           updated_at?: string | null
           updated_by?: string | null
         }
@@ -6401,6 +6407,8 @@ export type Database = {
           resolucao: string | null
           telefone_vendedor: string | null
           tipo_exibicao: string | null
+          ultima_alteracao_em: string | null
+          ultima_alteracao_por: string | null
           updated_at: string | null
           vendedor_responsavel: string | null
           vendido_no_site: boolean | null
@@ -6422,6 +6430,8 @@ export type Database = {
           resolucao?: string | null
           telefone_vendedor?: string | null
           tipo_exibicao?: string | null
+          ultima_alteracao_em?: string | null
+          ultima_alteracao_por?: string | null
           updated_at?: string | null
           vendedor_responsavel?: string | null
           vendido_no_site?: boolean | null
@@ -6443,6 +6453,8 @@ export type Database = {
           resolucao?: string | null
           telefone_vendedor?: string | null
           tipo_exibicao?: string | null
+          ultima_alteracao_em?: string | null
+          ultima_alteracao_por?: string | null
           updated_at?: string | null
           vendedor_responsavel?: string | null
           vendido_no_site?: boolean | null

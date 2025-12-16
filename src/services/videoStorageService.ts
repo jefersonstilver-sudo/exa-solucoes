@@ -75,8 +75,11 @@ export const validateVideoFile = (file: File): Promise<VideoValidationResult> =>
       console.log('📊 Metadados do vídeo:', { duration, width, height, orientation });
       
       // Validações estritas somente quando há metadados
-      if (duration > 15) {
-        errors.push('Vídeo deve ter no máximo 15 segundos');
+      // Duração máxima dinâmica - buscar do banco ou usar default seguro
+      // Default: 10s horizontal (mais restritivo para segurança)
+      const maxDuration = 15; // Será validado novamente no upload com valor do banco
+      if (duration > maxDuration) {
+        errors.push(`Vídeo deve ter no máximo ${maxDuration} segundos`);
       }
       
       if (orientation !== 'horizontal') {

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AssetType } from '@/types/videoEditor';
+import { fetchMaxVideoDuration } from '@/hooks/useVideoSpecifications';
 
 interface UploadProgress {
   fileName: string;
@@ -11,7 +12,14 @@ interface UploadProgress {
   error?: string;
 }
 
-const MAX_DURATION = 15; // seconds
+// Duração máxima dinâmica - será buscada do banco
+let cachedMaxDuration = 15; // Default seguro
+
+// Buscar duração máxima do banco ao carregar
+fetchMaxVideoDuration('horizontal').then(duration => {
+  cachedMaxDuration = duration;
+});
+
 const MAX_FILE_SIZE = {
   video: 100 * 1024 * 1024, // 100MB
   image: 10 * 1024 * 1024,  // 10MB
@@ -39,13 +47,15 @@ export const useVideoUpload = () => {
       };
     }
 
-    // For video files, check duration
+    // For video files, check duration using dynamic value from database
     if (type === 'video') {
       const duration = await getVideoDuration(file);
-      if (duration > MAX_DURATION) {
+      // Buscar valor atualizado do banco
+      const maxDuration = await fetchMaxVideoDuration('horizontal');
+      if (duration > maxDuration) {
         return {
           valid: false,
-          error: `Vídeo muito longo. Máximo: ${MAX_DURATION} segundos (seu vídeo: ${duration.toFixed(1)}s)`
+          error: `Vídeo muito longo. Máximo: ${maxDuration} segundos (seu vídeo: ${duration.toFixed(1)}s)`
         };
       }
     }
