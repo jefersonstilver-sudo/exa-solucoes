@@ -2,20 +2,25 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Calendar, Clock, CreditCard, Tag } from 'lucide-react';
+import { MapPin, Calendar, Clock, CreditCard, Tag, Info } from 'lucide-react';
 import { useCheckout } from '@/hooks/useCheckout';
 import { formatCurrency } from '@/utils/priceUtils';
 import { PLANS } from '@/constants/checkoutConstants';
 import { calculateCartSubtotal, calculateTotalPrice, getPlanDiscount } from '@/utils/checkoutUtils';
 import { PlanKey } from '@/types/checkout';
+import { useExibicoesConfig } from '@/hooks/useExibicoesConfig';
 
 const ReviewStep = () => {
   const { 
     cartItems, 
     selectedPlan, 
     couponValid,
-    couponDiscount // CORREÇÃO: Agora disponível no useCheckout
+    couponDiscount
   } = useCheckout();
+  
+  // Hook centralizado - FONTE ÚNICA DE VERDADE
+  const { getEspecificacoesContrato, calculos } = useExibicoesConfig();
+  const specs = getEspecificacoesContrato('horizontal');
 
   const formatPanelInfo = (panel: any) => {
     const info = [];
@@ -109,7 +114,7 @@ const ReviewStep = () => {
                     {formatCurrency(item.panel.buildings?.preco_base || 0)}/mês
                   </p>
                   <Badge variant="outline" className="text-xs mt-1">
-                    {item.panel.resolucao || 'Resolução não informada'}
+                    ~{specs.exibicoesMesFormatado} exib/mês
                   </Badge>
                 </div>
               </div>

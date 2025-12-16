@@ -6397,8 +6397,10 @@ export type Database = {
           max_videos_por_pedido: number | null
           nome: string
           ordem_exibicao: number | null
+          proporcao: string | null
           resolucao: string | null
           telefone_vendedor: string | null
+          tipo_exibicao: string | null
           updated_at: string | null
           vendedor_responsavel: string | null
           vendido_no_site: boolean | null
@@ -6416,8 +6418,10 @@ export type Database = {
           max_videos_por_pedido?: number | null
           nome: string
           ordem_exibicao?: number | null
+          proporcao?: string | null
           resolucao?: string | null
           telefone_vendedor?: string | null
+          tipo_exibicao?: string | null
           updated_at?: string | null
           vendedor_responsavel?: string | null
           vendido_no_site?: boolean | null
@@ -6435,8 +6439,10 @@ export type Database = {
           max_videos_por_pedido?: number | null
           nome?: string
           ordem_exibicao?: number | null
+          proporcao?: string | null
           resolucao?: string | null
           telefone_vendedor?: string | null
+          tipo_exibicao?: string | null
           updated_at?: string | null
           vendedor_responsavel?: string | null
           vendido_no_site?: boolean | null

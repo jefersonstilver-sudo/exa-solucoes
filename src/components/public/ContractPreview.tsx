@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useExibicoesConfig } from '@/hooks/useExibicoesConfig';
 
 interface ContractPreviewProps {
   isOpen: boolean;
@@ -48,6 +49,10 @@ export const ContractPreview: React.FC<ContractPreviewProps> = ({
 }) => {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>('resumo');
+  
+  // Hook centralizado - FONTE ÚNICA DE VERDADE
+  const { getEspecificacoesContrato, getTextoEspecificacoes } = useExibicoesConfig();
+  const specs = getEspecificacoesContrato('horizontal');
 
   if (!isOpen) return null;
 
@@ -251,11 +256,11 @@ export const ContractPreview: React.FC<ContractPreviewProps> = ({
               <div className="px-4 pb-4 space-y-3 text-sm text-gray-700">
                 <div className="p-3 bg-white rounded-xl border border-gray-100">
                   <p className="font-medium text-gray-900 mb-1">1. Objeto do Contrato</p>
-                  <p className="text-gray-600">Contratação de espaço publicitário em painéis digitais de elevadores, com veiculação de vídeo de até 10 segundos.</p>
+                  <p className="text-gray-600">Contratação de espaço publicitário em painéis digitais de elevadores, com veiculação de vídeo de até {specs.duracao} segundos.</p>
                 </div>
                 <div className="p-3 bg-white rounded-xl border border-gray-100">
                   <p className="font-medium text-gray-900 mb-1">2. Especificações Técnicas</p>
-                  <p className="text-gray-600">Vídeo horizontal 1920x1080 (Full HD), duração máxima de 10 segundos, sem áudio. O vídeo será exibido 792 vezes por dia em cada tela contratada.</p>
+                  <p className="text-gray-600">{getTextoEspecificacoes('horizontal')}</p>
                 </div>
                 <div className="p-3 bg-white rounded-xl border border-gray-100">
                   <p className="font-medium text-gray-900 mb-1">3. Direitos de Imagem</p>

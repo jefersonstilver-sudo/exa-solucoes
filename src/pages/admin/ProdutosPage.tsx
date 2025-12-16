@@ -51,7 +51,9 @@ const ProdutosPage = () => {
         vendido_no_site: produtoHorizontal.vendido_no_site,
         contratacao_parcial: produtoHorizontal.contratacao_parcial,
         formato: produtoHorizontal.formato || 'horizontal',
-        resolucao: produtoHorizontal.resolucao || '1920×1080',
+        resolucao: produtoHorizontal.resolucao || '1440×1080',
+        proporcao: (produtoHorizontal as any).proporcao || '4:3',
+        tipo_exibicao: (produtoHorizontal as any).tipo_exibicao || 'Convencional',
         ativo: produtoHorizontal.ativo
       });
     }
@@ -68,6 +70,8 @@ const ProdutosPage = () => {
         telefone_vendedor: produtoVertical.telefone_vendedor,
         formato: produtoVertical.formato || 'vertical',
         resolucao: produtoVertical.resolucao || '1080×1920',
+        proporcao: (produtoVertical as any).proporcao || '9:16',
+        tipo_exibicao: (produtoVertical as any).tipo_exibicao || 'Tela Cheia',
         ativo: produtoVertical.ativo
       });
     }
@@ -200,8 +204,42 @@ const ProdutosPage = () => {
                       value={editHorizontal.resolucao || ''}
                       onChange={(e) => setEditHorizontal(prev => ({ ...prev, resolucao: e.target.value }))}
                       className="h-8 text-sm"
-                      placeholder="1920×1080"
+                      placeholder="1440×1080"
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Proporção</Label>
+                    <Select 
+                      value={(editHorizontal as any).proporcao || '4:3'}
+                      onValueChange={(v) => setEditHorizontal(prev => ({ ...prev, proporcao: v }))}
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="4:3">4:3</SelectItem>
+                        <SelectItem value="16:9">16:9</SelectItem>
+                        <SelectItem value="9:16">9:16</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Tipo Exibição</Label>
+                    <Select 
+                      value={(editHorizontal as any).tipo_exibicao || 'Convencional'}
+                      onValueChange={(v) => setEditHorizontal(prev => ({ ...prev, tipo_exibicao: v }))}
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Convencional">Convencional</SelectItem>
+                        <SelectItem value="Tela Cheia">Tela Cheia</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
@@ -329,6 +367,40 @@ const ProdutosPage = () => {
                       className="h-8 text-sm"
                       placeholder="1080×1920"
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Proporção</Label>
+                    <Select 
+                      value={(editVertical as any).proporcao || '9:16'}
+                      onValueChange={(v) => setEditVertical(prev => ({ ...prev, proporcao: v }))}
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="4:3">4:3</SelectItem>
+                        <SelectItem value="16:9">16:9</SelectItem>
+                        <SelectItem value="9:16">9:16</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Tipo Exibição</Label>
+                    <Select 
+                      value={(editVertical as any).tipo_exibicao || 'Tela Cheia'}
+                      onValueChange={(v) => setEditVertical(prev => ({ ...prev, tipo_exibicao: v }))}
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Convencional">Convencional</SelectItem>
+                        <SelectItem value="Tela Cheia">Tela Cheia</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 

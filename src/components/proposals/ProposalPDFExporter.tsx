@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { FileDown, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useExibicoesConfig } from '@/hooks/useExibicoesConfig';
 
 interface Building {
   building_id: string;
@@ -42,6 +43,10 @@ export const ProposalPDFExporter: React.FC<ProposalPDFExporterProps> = ({
 }) => {
   const isCortesia = proposal.metadata?.type === 'cortesia';
   const buildings = Array.isArray(proposal.selected_buildings) ? proposal.selected_buildings : [];
+  
+  // Hook centralizado - FONTE ÚNICA DE VERDADE
+  const { especificacoes, calculos } = useExibicoesConfig();
+  const specs = especificacoes.horizontal;
   
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -322,8 +327,9 @@ export const ProposalPDFExporter: React.FC<ProposalPDFExporterProps> = ({
         <div class="conditions">
           <h4>Condições Gerais</h4>
           <ul>
-            <li>Vídeo institucional de até 15 segundos no formato horizontal (16:9)</li>
-            <li>Exibição em loop contínuo nos elevadores dos prédios selecionados</li>
+            <li>Vídeo institucional de até ${specs.duracao} segundos no formato ${specs.formato.toLowerCase()} (${specs.proporcao})</li>
+            <li>Resolução: ${specs.resolucao}</li>
+            <li>Exibição em loop contínuo: aproximadamente ${calculos.exibicoesPorDia.toLocaleString('pt-BR')} vezes/dia por tela</li>
             <li>Aprovação do conteúdo em até 48 horas úteis</li>
             <li>Substituição de vídeo permitida uma vez por mês sem custo adicional</li>
             <li>Relatório mensal de exibições disponível no painel do cliente</li>
