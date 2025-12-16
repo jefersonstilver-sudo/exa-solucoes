@@ -10,7 +10,7 @@ const FAQSection = () => {
   const faqs = [
     {
       question: "Como funciona a publicidade nos elevadores?",
-      answer: "Seus vídeos de 15 segundos são exibidos intercalados com conteúdo útil como clima, cotações e notícias. O público assiste enquanto aguarda o elevador ou durante o trajeto, garantindo total atenção à sua marca."
+      answer: "Seus vídeos de até 10 segundos são exibidos intercalados com conteúdo útil como clima, cotações e notícias. O público assiste enquanto aguarda o elevador ou durante o trajeto, garantindo total atenção à sua marca."
     },
     {
       question: "Quantas pessoas vão ver meu anúncio?",

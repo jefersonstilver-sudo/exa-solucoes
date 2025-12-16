@@ -45,9 +45,9 @@ const AboutPanelsSection = () => {
     },
     {
       icon: Play,
-      title: 'Publicidade 15s',
+      title: 'Publicidade 10s',
       front: 'Sua marca em destaque',
-      back: 'Vídeos comerciais de 15 segundos intercalados com o conteúdo informativo',
+      back: 'Vídeos comerciais de 10 segundos intercalados com o conteúdo informativo',
       color: 'from-indexa-purple to-indexa-mint'
     }
   ];

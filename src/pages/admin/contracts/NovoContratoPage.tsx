@@ -348,8 +348,8 @@ const NovoContratoPage = () => {
   // Gerar objeto do contrato (para descrição)
   const gerarObjetoContrato = (data: ContratoData) => {
     const tipoProdutoTexto = data.tipo_produto === 'vertical_premium' 
-      ? 'Vertical Premium (tela cheia a cada 50s)' 
-      : 'Horizontal Padrão (até 15 segundos)';
+      ? 'Vertical Premium (tela cheia a cada ~195s)' 
+      : 'Horizontal Padrão (até 10 segundos)';
     
     if (data.tipo_contrato === 'sindico') {
       return `Cessão de espaço para instalação de painéis digitais no(s) elevador(es) do condomínio.`;
@@ -1127,7 +1127,7 @@ const NovoContratoPage = () => {
                       <Monitor className="h-6 w-6 text-primary" />
                       <div className="text-left">
                         <p className="font-semibold">Horizontal (Padrão)</p>
-                        <p className="text-xs text-muted-foreground">Vídeo 15s • 1920x1080 • Loop contínuo</p>
+                        <p className="text-xs text-muted-foreground">Vídeo 10s • 1440×1080 (4:3) • Loop contínuo</p>
                       </div>
                     </button>
 
@@ -1142,7 +1142,7 @@ const NovoContratoPage = () => {
                       <Tv className="h-6 w-6 text-purple-600" />
                       <div className="text-left">
                         <p className="font-semibold text-purple-700">Vertical Premium</p>
-                        <p className="text-xs text-muted-foreground">Vídeo 10s • 1080x1920 • Tela cheia a cada 50s</p>
+                        <p className="text-xs text-muted-foreground">Vídeo 15s • 1080×1920 (9:16) • Tela cheia a cada ~195s</p>
                         <p className="text-[10px] text-purple-600 font-medium mt-1">⚡ Inclui TODOS os prédios</p>
                       </div>
                     </button>

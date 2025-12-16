@@ -168,7 +168,7 @@ const RealPaidOrdersSection: React.FC<RealPaidOrdersSectionProps> = ({ loading, 
             Pedidos Pagos Aguardando Vídeo
           </CardTitle>
           <CardDescription>
-            Clientes que já pagaram mas ainda não enviaram o vídeo de 15 segundos
+            Clientes que já pagaram mas ainda não enviaram o vídeo
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6">

@@ -65,7 +65,7 @@ const VideoEditorDashboard = () => {
               <Badge variant="secondary" className="text-xs">Beta</Badge>
             </div>
             <p className="text-muted-foreground mt-2">
-              Crie vídeos incríveis de até 15 segundos
+              Crie vídeos incríveis de até 10 segundos
             </p>
           </div>
           <Button

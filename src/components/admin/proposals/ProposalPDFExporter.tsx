@@ -554,11 +554,11 @@ export class ProposalPDFExporter {
     this.drawSectionTitle('CONDIÇÕES GERAIS');
     
     const conditions = [
-      '• Vídeo publicitário de até 15 segundos, formato horizontal (16:9)',
+      '• Vídeo publicitário de até 10 segundos, formato horizontal 4:3 (1440×1080)',
       '• Aprovação do conteúdo em até 48 horas úteis',
       '• Relatório mensal de impressões disponível na plataforma',
       '• Possibilidade de troca de vídeo durante a campanha',
-      '• Exibição em rotação com outros anunciantes',
+      '• Exibição em rotação com outros anunciantes (~195s por ciclo)',
       '• Suporte técnico via WhatsApp em horário comercial'
     ];
     

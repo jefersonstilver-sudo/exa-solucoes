@@ -507,11 +507,26 @@ serve(async (req) => {
       }
 
       // ✅ NOVA: Enviar WhatsApp ao cliente com confirmação e link de acesso
+      // Buscar especificações dinâmicas do produto
+      let videoSpecs = '10 segundos, horizontal 4:3';
+      try {
+        const { data: produtoData } = await supabase
+          .from('produtos_exa')
+          .select('duracao_video_segundos, proporcao')
+          .eq('codigo', 'horizontal')
+          .single();
+        if (produtoData) {
+          videoSpecs = `${produtoData.duracao_video_segundos} segundos, horizontal ${produtoData.proporcao || '4:3'}`;
+        }
+      } catch (e) {
+        console.warn('⚠️ Erro ao buscar specs do produto, usando default');
+      }
+
       try {
         await supabase.functions.invoke('zapi-send-message', {
           body: {
             phone: proposal.client_phone?.replace(/\D/g, ''),
-            message: `🎉 *Pagamento Confirmado!*\n\nOlá ${proposal.client_name?.split(' ')[0] || 'Cliente'}!\n\nSeu pagamento foi aprovado com sucesso! 🎊\n\n📦 *Pedido:* #${newOrder.id.slice(0, 8).toUpperCase()}\n💰 *Valor:* R$ ${valorTotal?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n\n${needsPasswordSetup ? `🔐 *Próximo passo:* Defina sua senha para acessar a plataforma:\n${passwordResetLink}\n\n` : ''}📹 Após acessar, envie seu vídeo publicitário (15 segundos, horizontal).\n\nObrigado pela confiança!\n_Equipe EXA Mídia_`
+            message: `🎉 *Pagamento Confirmado!*\n\nOlá ${proposal.client_name?.split(' ')[0] || 'Cliente'}!\n\nSeu pagamento foi aprovado com sucesso! 🎊\n\n📦 *Pedido:* #${newOrder.id.slice(0, 8).toUpperCase()}\n💰 *Valor:* R$ ${valorTotal?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n\n${needsPasswordSetup ? `🔐 *Próximo passo:* Defina sua senha para acessar a plataforma:\n${passwordResetLink}\n\n` : ''}📹 Após acessar, envie seu vídeo publicitário (${videoSpecs}).\n\nObrigado pela confiança!\n_Equipe EXA Mídia_`
           }
         });
         console.log('✅ WhatsApp de confirmação enviado');
