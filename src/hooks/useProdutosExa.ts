@@ -16,6 +16,8 @@ export interface ProdutoExa {
   telefone_vendedor: string | null;
   formato: string;
   resolucao: string | null;
+  proporcao: string | null;
+  tipo_exibicao: string | null;
   ativo: boolean;
   ordem_exibicao: number;
   created_at: string;
