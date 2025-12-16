@@ -117,8 +117,8 @@ serve(async (req) => {
                   <div>
                     <div style="color: #1d1d1f; font-weight: 600; font-size: 14px; margin-bottom: 4px;">Envie seu vídeo</div>
                     <div style="color: #6e6e73; font-size: 13px;">
-                      • Até <strong>15 segundos</strong><br>
-                      • Formato <strong>horizontal</strong> (16:9)<br>
+                      • Até <strong>10 segundos</strong><br>
+                      • Formato <strong>horizontal</strong> (4:3, resolução 1440×1080)<br>
                       • <strong>Sem som</strong> (os elevadores são silenciosos)
                     </div>
                   </div>

@@ -174,12 +174,12 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, on
             <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 1ª — DO OBJETO</h3>
             <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
               <strong>1.1.</strong> O presente contrato tem por objeto a prestação de serviços de veiculação de publicidade 
-              {isVerticalPremium ? ' em formato vertical premium (1080×1920 pixels)' : ' em formato horizontal (1920×1080 pixels)'} em 
+              {isVerticalPremium ? ' em formato vertical premium (1080×1920 pixels, proporção 9:16)' : ' em formato horizontal (1440×1080 pixels, proporção 4:3)'} em 
               painéis digitais instalados em elevadores dos edifícios relacionados no <strong>Anexo I</strong>.
             </p>
             <p style={{ margin: 0, textAlign: 'justify' }}>
-              <strong>1.2.</strong> A CONTRATADA disponibilizará espaço publicitário de {isVerticalPremium ? '10 (dez)' : '15 (quinze)'} segundos, 
-              exibido em ciclos de {isVerticalPremium ? '50 (cinquenta)' : '60 (sessenta)'} segundos, conforme especificações técnicas acordadas.
+              <strong>1.2.</strong> A CONTRATADA disponibilizará espaço publicitário de {isVerticalPremium ? '15 (quinze)' : '10 (dez)'} segundos, 
+              exibido em ciclos de aproximadamente 195 (cento e noventa e cinco) segundos, conforme especificações técnicas acordadas.
             </p>
           </div>
 
@@ -225,7 +225,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, on
           <div className="contract-section" style={{ marginBottom: '16px' }}>
             <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 5ª — DAS OBRIGAÇÕES DA CONTRATANTE</h3>
             <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>5.1.</strong> Efetuar os pagamentos nas datas acordadas;</p>
-            <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>5.2.</strong> Fornecer o material publicitário em formato compatível ({isVerticalPremium ? '1080×1920 pixels, 10 segundos' : '1920×1080 pixels, 15 segundos'});</p>
+            <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>5.2.</strong> Fornecer o material publicitário em formato compatível ({isVerticalPremium ? '1080×1920 pixels (9:16), 15 segundos' : '1440×1080 pixels (4:3), 10 segundos'});</p>
             <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>5.3.</strong> Garantir que o conteúdo não viole legislação vigente;</p>
             <p style={{ margin: 0, textAlign: 'justify' }}><strong>5.4.</strong> Comunicar alterações no conteúdo com antecedência mínima de 48 horas.</p>
           </div>
@@ -234,8 +234,8 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, on
           <div className="contract-section" style={{ marginBottom: '16px' }}>
             <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 6ª — DO CONTEÚDO PUBLICITÁRIO</h3>
             <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
-              <strong>6.1.</strong> O conteúdo publicitário deverá ser fornecido em formato {isVerticalPremium ? 'vertical (1080×1920 pixels)' : 'horizontal (1920×1080 pixels)'}, 
-              com duração máxima de {isVerticalPremium ? '10' : '15'} segundos, sem áudio.
+              <strong>6.1.</strong> O conteúdo publicitário deverá ser fornecido em formato {isVerticalPremium ? 'vertical (1080×1920 pixels, proporção 9:16)' : 'horizontal (1440×1080 pixels, proporção 4:3)'}, 
+              com duração máxima de {isVerticalPremium ? '15' : '10'} segundos, sem áudio.
             </p>
             <p style={{ margin: 0, textAlign: 'justify' }}>
               <strong>6.2.</strong> A CONTRATADA reserva-se o direito de recusar conteúdo que viole a legislação ou os bons costumes, comunicando a CONTRATANTE para substituição.
