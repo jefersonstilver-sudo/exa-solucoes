@@ -185,8 +185,19 @@ serve(async (req) => {
         });
     }
 
-    // 8. Gerar HTML do contrato para preview
-    const contractHtml = generateContractHtml(contrato, exaSignatario);
+  // 8. Buscar especificações técnicas da página de Produtos
+    console.log("📋 Buscando especificações técnicas de produtos_exa...");
+    const { data: produtosExa } = await supabase
+      .from("produtos_exa")
+      .select("*");
+    
+    const { data: configExibicao } = await supabase
+      .from("configuracoes_exibicao")
+      .select("*")
+      .single();
+
+    // 9. Gerar HTML do contrato para preview
+    const contractHtml = generateContractHtml(contrato, exaSignatario, produtosExa || [], configExibicao);
 
     // 9. Atualizar proposta com referência ao contrato
     await supabase
@@ -250,8 +261,8 @@ serve(async (req) => {
   }
 });
 
-// Generate FULL professional contract HTML for preview and printing
-function generateContractHtml(contrato: any, exaSignatario: any): string {
+// Generate FULL professional contract HTML for preview and printing - Manual Técnico v3.0
+function generateContractHtml(contrato: any, exaSignatario: any, produtosExa: any[] = [], configExibicao: any = null): string {
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
@@ -293,61 +304,114 @@ function generateContractHtml(contrato: any, exaSignatario: any): string {
   // Lista de prédios formatada
   const predios = contrato.lista_predios || [];
   const totalTelas = predios.reduce((sum: number, p: any) => sum + (p.quantidade_telas || 1), 0);
-  
-  const prediosListHtml = predios.map((p: any, idx: number) => `
-    <tr>
-      <td style="padding: 8px; border: 1px solid #ddd;">${idx + 1}</td>
-      <td style="padding: 8px; border: 1px solid #ddd;">${p.building_name || 'Não informado'}</td>
-      <td style="padding: 8px; border: 1px solid #ddd;">${p.endereco || 'Não informado'}</td>
-      <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${p.quantidade_telas || 1}</td>
-    </tr>
-  `).join('');
 
-  // Parcelas formatadas (se houver)
+  // ========== ESPECIFICAÇÕES TÉCNICAS DO MANUAL v3.0 ==========
+  // Buscar dinamicamente da tabela produtos_exa
+  const isVerticalPremium = contrato.tipo_produto === 'vertical_premium';
+  
+  // Configurações de exibição (padrão Manual v3.0)
+  const horasOperacao = configExibicao?.horas_operacao_dia || 21;
+  const diasMes = configExibicao?.dias_mes || 30;
+  const segundosDia = horasOperacao * 3600; // 75.600 segundos
+
+  // Buscar produto específico ou usar defaults do Manual v3.0
+  const produtoHorizontal = produtosExa?.find((p: any) => p.tipo === 'horizontal') || {
+    duracao_segundos: 10,
+    resolucao: '1440x1080',
+    proporcao: '4:3',
+    max_clientes_painel: 15
+  };
+  
+  const produtoVertical = produtosExa?.find((p: any) => p.tipo === 'vertical_premium') || {
+    duracao_segundos: 15,
+    resolucao: '1080x1920',
+    proporcao: '9:16',
+    max_clientes_painel: 3
+  };
+
+  // Cálculo do ciclo (Manual v3.0: 45s vertical + 150s horizontal = 195s)
+  const tempoVerticalCiclo = (produtoVertical.max_clientes_painel || 3) * (produtoVertical.duracao_segundos || 15); // 45s
+  const tempoHorizontalCiclo = (produtoHorizontal.max_clientes_painel || 15) * (produtoHorizontal.duracao_segundos || 10); // 150s
+  const tempoCicloTotal = tempoVerticalCiclo + tempoHorizontalCiclo; // 195s
+  
+  // Ciclos por dia = 75.600 / 195 ≈ 387
+  const ciclosPorDia = Math.floor(segundosDia / tempoCicloTotal);
+  const exibicoesPorMes = ciclosPorDia * diasMes; // 387 × 30 = 11.610
+
+  // Especificações baseadas no tipo de produto
+  const especificacoesTecnicas = isVerticalPremium ? {
+    formato: `Vídeo vertical (${produtoVertical.resolucao || '1080x1920'} pixels)`,
+    proporcao: produtoVertical.proporcao || '9:16',
+    duracao: `${produtoVertical.duracao_segundos || 15} segundos`,
+    exibicoesDia: ciclosPorDia,
+    exibicoesMes: exibicoesPorMes,
+    descricao: 'Vertical Premium - Exibição em tela cheia',
+    tipoExibicao: 'Tela Cheia (Full Screen)'
+  } : {
+    formato: `Vídeo horizontal (${produtoHorizontal.resolucao || '1440x1080'} pixels)`,
+    proporcao: produtoHorizontal.proporcao || '4:3',
+    duracao: `${produtoHorizontal.duracao_segundos || 10} segundos`,
+    exibicoesDia: ciclosPorDia,
+    exibicoesMes: exibicoesPorMes,
+    descricao: 'Horizontal Tradicional - Carrossel',
+    tipoExibicao: 'Carrossel Compartilhado'
+  };
+
+  // ANEXO I - Tabela de prédios com cálculos de exibição
+  const prediosListHtml = predios.map((p: any, idx: number) => {
+    const telas = p.quantidade_telas || 1;
+    const exibDia = ciclosPorDia * telas;
+    const exibMes = exibicoesPorMes * telas;
+    return `
+    <tr>
+      <td style="padding: 10px; border: 1px solid #e5e7eb;">${idx + 1}</td>
+      <td style="padding: 10px; border: 1px solid #e5e7eb;">${p.building_name || p.nome || 'Não informado'}</td>
+      <td style="padding: 10px; border: 1px solid #e5e7eb;">${p.endereco || '-'}</td>
+      <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center;">${telas}</td>
+      <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center;">≈${exibDia.toLocaleString('pt-BR')}</td>
+      <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center;">≈${exibMes.toLocaleString('pt-BR')}</td>
+    </tr>
+  `;
+  }).join('');
+
+  // Totais gerais
+  const totalExibDia = ciclosPorDia * totalTelas;
+  const totalExibMes = exibicoesPorMes * totalTelas;
+
+  // Parcelas formatadas (ANEXO II)
   const parcelas = contrato.parcelas || [];
   const isCustomPayment = parcelas.length > 0;
   
   let parcelasHtml = '';
   if (isCustomPayment && parcelas.length > 0) {
     parcelasHtml = `
-      <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
-        <thead>
-          <tr style="background: #f5f5f5;">
-            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Parcela</th>
-            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Vencimento</th>
-            <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Valor</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${parcelas.map((p: any, idx: number) => `
-            <tr>
-              <td style="padding: 8px; border: 1px solid #ddd;">${idx + 1}ª parcela</td>
-              <td style="padding: 8px; border: 1px solid #ddd;">${formatDateShort(p.due_date)}</td>
-              <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${formatCurrency(p.amount)}</td>
+      <div class="section no-break">
+        <div class="section-title">ANEXO II — CRONOGRAMA DE PAGAMENTOS</div>
+        <table>
+          <thead>
+            <tr style="background: #f8f9fa;">
+              <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: center; width: 80px;">Parcela</th>
+              <th style="padding: 12px; border: 1px solid #e5e7eb;">Vencimento</th>
+              <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: right;">Valor</th>
             </tr>
-          `).join('')}
-          <tr style="background: #f9f9f9; font-weight: bold;">
-            <td colspan="2" style="padding: 10px; border: 1px solid #ddd;">TOTAL</td>
-            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${formatCurrency(contrato.valor_total)}</td>
-          </tr>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${parcelas.map((p: any, idx: number) => `
+              <tr>
+                <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; font-weight: 600;">${idx + 1}ª</td>
+                <td style="padding: 10px; border: 1px solid #e5e7eb;">${formatDateShort(p.due_date)}</td>
+                <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: right; font-weight: 500;">${formatCurrency(p.amount)}</td>
+              </tr>
+            `).join('')}
+            <tr style="background: #f3f4f6;">
+              <td colspan="2" style="padding: 12px; border: 1px solid #e5e7eb; font-weight: 700;">TOTAL DO CONTRATO</td>
+              <td style="padding: 12px; border: 1px solid #e5e7eb; text-align: right; font-weight: 700; color: #8B1A1A;">${formatCurrency(contrato.valor_total)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     `;
   }
-
-  // Especificações técnicas baseadas no tipo de produto
-  const isVerticalPremium = contrato.tipo_produto === 'vertical_premium';
-  const especificacoesTecnicas = isVerticalPremium ? {
-    formato: 'Vídeo vertical (1080x1920 pixels)',
-    duracao: '10 segundos',
-    exibicoes: 'A cada 50 segundos em tela cheia',
-    descricao: 'Vertical Premium - Exibição em tela cheia do painel'
-  } : {
-    formato: 'Vídeo horizontal (1920x1080 pixels - Full HD)',
-    duracao: '15 segundos',
-    exibicoes: '792 vezes por dia por tela (média)',
-    descricao: 'Anúncio horizontal em carrossel'
-  };
 
   // Calcular valor mensal
   const valorMensal = contrato.valor_mensal || (contrato.valor_total / (contrato.plano_meses || 1));
@@ -789,25 +853,31 @@ function generateContractHtml(contrato: any, exaSignatario: any): string {
           
           <table>
             <thead>
-              <tr>
-                <th style="width: 40px;">#</th>
-                <th>Edifício</th>
-                <th>Endereço</th>
-                <th style="width: 80px; text-align: center;">Telas</th>
+              <tr style="background: #f8f9fa;">
+                <th style="width: 40px; padding: 10px; border: 1px solid #e5e7eb;">#</th>
+                <th style="padding: 10px; border: 1px solid #e5e7eb;">Edifício</th>
+                <th style="padding: 10px; border: 1px solid #e5e7eb;">Endereço</th>
+                <th style="width: 60px; padding: 10px; border: 1px solid #e5e7eb; text-align: center;">Telas</th>
+                <th style="width: 100px; padding: 10px; border: 1px solid #e5e7eb; text-align: center;">Exib./Dia</th>
+                <th style="width: 100px; padding: 10px; border: 1px solid #e5e7eb; text-align: center;">Exib./Mês</th>
               </tr>
             </thead>
             <tbody>
-              ${prediosListHtml || '<tr><td colspan="4" style="text-align: center; padding: 15px;">Nenhum local especificado</td></tr>'}
+              ${prediosListHtml || '<tr><td colspan="6" style="text-align: center; padding: 15px; border: 1px solid #e5e7eb;">Nenhum local especificado</td></tr>'}
             </tbody>
             <tfoot>
-              <tr style="background: #f5f5f5; font-weight: bold;">
-                <td colspan="3" style="padding: 10px; border: 1px solid #ddd;">TOTAL DE LOCAIS: ${predios.length}</td>
-                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${totalTelas} tela${totalTelas > 1 ? 's' : ''}</td>
+              <tr style="background: #f3f4f6; font-weight: 700;">
+                <td colspan="3" style="padding: 12px; border: 1px solid #e5e7eb;">TOTAIS (${predios.length} local${predios.length > 1 ? 'is' : ''})</td>
+                <td style="padding: 12px; border: 1px solid #e5e7eb; text-align: center;">${totalTelas}</td>
+                <td style="padding: 12px; border: 1px solid #e5e7eb; text-align: center; color: #8B1A1A;">≈${totalExibDia.toLocaleString('pt-BR')}</td>
+                <td style="padding: 12px; border: 1px solid #e5e7eb; text-align: center; color: #8B1A1A;">≈${totalExibMes.toLocaleString('pt-BR')}</td>
               </tr>
             </tfoot>
           </table>
 
           <p><span class="clause-title">3.2.</span> A CONTRATADA reserva-se o direito de substituir temporariamente algum local por outro de características similares, em caso de manutenção ou impossibilidade técnica, comunicando previamente o CONTRATANTE.</p>
+          
+          <p><span class="clause-title">3.3.</span> Os valores de exibição são calculados por cliente, baseados no ciclo completo de ${tempoCicloTotal} segundos, operação de ${horasOperacao} horas/dia e ${diasMes} dias/mês.</p>
         </div>
       </div>
 
@@ -853,12 +923,15 @@ function generateContractHtml(contrato: any, exaSignatario: any): string {
         <div class="section-title">CLÁUSULA 6ª - DAS ESPECIFICAÇÕES TÉCNICAS</div>
         <div class="clause">
           <div class="tech-specs">
-            <div class="tech-specs-title">📺 Especificações do Material Publicitário - ${especificacoesTecnicas.descricao}</div>
+            <div class="tech-specs-title">📺 Especificações do Material Publicitário — ${especificacoesTecnicas.descricao}</div>
             <ul style="margin: 10px 0; padding-left: 20px;">
-              <li><strong>Formato:</strong> ${especificacoesTecnicas.formato}</li>
+              <li><strong>Resolução:</strong> ${especificacoesTecnicas.formato}</li>
+              <li><strong>Proporção:</strong> ${especificacoesTecnicas.proporcao}</li>
               <li><strong>Duração máxima:</strong> ${especificacoesTecnicas.duracao}</li>
+              <li><strong>Tipo de exibição:</strong> ${especificacoesTecnicas.tipoExibicao}</li>
               <li><strong>Áudio:</strong> Não permitido (exibição sem som)</li>
-              <li><strong>Frequência de exibição:</strong> ${especificacoesTecnicas.exibicoes}</li>
+              <li><strong>Exibições por tela/dia:</strong> ≈${especificacoesTecnicas.exibicoesDia.toLocaleString('pt-BR')} vezes</li>
+              <li><strong>Exibições por tela/mês:</strong> ≈${especificacoesTecnicas.exibicoesMes.toLocaleString('pt-BR')} vezes</li>
               <li><strong>Formato de arquivo:</strong> MP4, MOV ou AVI</li>
               <li><strong>Codec recomendado:</strong> H.264</li>
               <li><strong>Taxa de bits:</strong> Mínimo 5 Mbps</li>
@@ -870,6 +943,8 @@ function generateContractHtml(contrato: any, exaSignatario: any): string {
           <p><span class="clause-title">6.2.</span> Materiais que não atendam às especificações técnicas serão devolvidos para adequação, podendo acarretar atraso no início da veiculação.</p>
           
           <p><span class="clause-title">6.3.</span> A CONTRATADA poderá recusar a veiculação de materiais que contenham conteúdo ilícito, ofensivo, discriminatório, político-partidário ou que viole direitos de terceiros.</p>
+          
+          <p><span class="clause-title">6.4.</span> Os valores de exibições são estimados com base em ${horasOperacao} horas de operação diária e ${diasMes} dias por mês, conforme Manual Técnico v3.0 da EXA Mídia.</p>
         </div>
       </div>
 
