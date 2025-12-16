@@ -11,6 +11,7 @@ export const MODULE_KEYS = {
   dashboard: 'dashboard',
   sync_notion: 'sync_notion',
   pedidos: 'pedidos',
+  produtos: 'produtos',
   propostas: 'propostas',
   juridico: 'juridico',
   assinaturas: 'assinaturas',
