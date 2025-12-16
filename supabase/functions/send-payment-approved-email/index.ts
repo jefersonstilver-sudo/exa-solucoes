@@ -188,7 +188,7 @@ serve(async (req) => {
                 </h3>
                 <ol style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 2;">
                   ${needsAccessLink ? '<li>Clique no botão acima e defina sua senha</li>' : '<li>Acesse sua conta na plataforma EXA</li>'}
-                  <li>Envie seu vídeo publicitário (15 segundos, formato horizontal)</li>
+                  <li>Envie seu vídeo publicitário (até 10 segundos, formato horizontal 4:3)</li>
                   <li>Aguarde a aprovação (em até 24h úteis)</li>
                   <li>Seu anúncio começará a rodar automaticamente!</li>
                 </ol>
