@@ -141,6 +141,12 @@ export function ModernAdminSidebar() {
           moduleKey: MODULE_KEYS.pedidos
         },
         {
+          title: 'Produtos',
+          href: buildPath('produtos'),
+          icon: MonitorPlay,
+          moduleKey: MODULE_KEYS.produtos
+        },
+        {
           title: 'Propostas',
           href: buildPath('propostas'),
           icon: FileText,

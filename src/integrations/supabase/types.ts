@@ -1960,6 +1960,30 @@ export type Database = {
         }
         Relationships: []
       }
+      configuracoes_exibicao: {
+        Row: {
+          dias_mes: number
+          horas_operacao_dia: number
+          id: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          dias_mes?: number
+          horas_operacao_dia?: number
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          dias_mes?: number
+          horas_operacao_dia?: number
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       configuracoes_sindico: {
         Row: {
           condominio_ticker_names: string[] | null
@@ -6359,6 +6383,66 @@ export type Database = {
         }
         Relationships: []
       }
+      produtos_exa: {
+        Row: {
+          ativo: boolean | null
+          codigo: string
+          contratacao_parcial: boolean | null
+          created_at: string | null
+          descricao: string | null
+          duracao_video_segundos: number
+          formato: string
+          id: string
+          max_clientes_por_painel: number
+          max_videos_por_pedido: number | null
+          nome: string
+          ordem_exibicao: number | null
+          resolucao: string | null
+          telefone_vendedor: string | null
+          updated_at: string | null
+          vendedor_responsavel: string | null
+          vendido_no_site: boolean | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          codigo: string
+          contratacao_parcial?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          duracao_video_segundos?: number
+          formato?: string
+          id?: string
+          max_clientes_por_painel?: number
+          max_videos_por_pedido?: number | null
+          nome: string
+          ordem_exibicao?: number | null
+          resolucao?: string | null
+          telefone_vendedor?: string | null
+          updated_at?: string | null
+          vendedor_responsavel?: string | null
+          vendido_no_site?: boolean | null
+        }
+        Update: {
+          ativo?: boolean | null
+          codigo?: string
+          contratacao_parcial?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          duracao_video_segundos?: number
+          formato?: string
+          id?: string
+          max_clientes_por_painel?: number
+          max_videos_por_pedido?: number | null
+          nome?: string
+          ordem_exibicao?: number | null
+          resolucao?: string | null
+          telefone_vendedor?: string | null
+          updated_at?: string | null
+          vendedor_responsavel?: string | null
+          vendido_no_site?: boolean | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -9350,6 +9434,7 @@ export type Database = {
           pedido_id: string
         }[]
       }
+      sincronizar_exibicoes_buildings: { Args: never; Returns: Json }
       submit_lead_produtora: {
         Args: {
           p_agendar_cafe?: boolean

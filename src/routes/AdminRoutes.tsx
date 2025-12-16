@@ -21,6 +21,7 @@ import BenefitManagement from '@/pages/admin/BenefitManagement';
 import FinancialReports from '@/pages/admin/FinancialReports';
 import EmailLogs from '@/pages/admin/EmailLogs';
 import AssinaturasPage from '@/pages/admin/AssinaturasPage';
+import ProdutosPage from '@/pages/admin/ProdutosPage';
 import PropostasPage from '@/pages/admin/proposals/PropostasPage';
 import NovaPropostaPage from '@/pages/admin/proposals/NovaPropostaPage';
 import PropostaDetalhesPage from '@/pages/admin/proposals/PropostaDetalhesPage';
@@ -75,6 +76,11 @@ const AdminRoutes = () => {
       <Route path="pedidos/:id" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.pedidos}>
           <OrderDetails />
+        </ProtectedModuleRoute>
+      } />
+      <Route path="produtos" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.produtos}>
+          <ProdutosPage />
         </ProtectedModuleRoute>
       } />
       <Route path="propostas" element={
