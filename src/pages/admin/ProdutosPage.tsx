@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useProdutosExa, ProdutoExa, ConfiguracaoExibicao } from '@/hooks/useProdutosExa';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -97,15 +98,25 @@ const ProdutosPage = () => {
   const ciclosDia = tempoCicloTotal > 0 ? Math.floor(segundosDia / tempoCicloTotal) : 0;
   const exibicoesMes = ciclosDia * diasMes;
 
-  const handleSalvarHorizontal = () => {
+  const handleSalvarHorizontal = async () => {
     if (produtoHorizontal) {
-      atualizarProduto({ id: produtoHorizontal.id, dados: editHorizontal });
+      const { data: user } = await supabase.auth.getUser();
+      const userName = user.user?.user_metadata?.name || user.user?.email || 'Admin';
+      atualizarProduto({ 
+        id: produtoHorizontal.id, 
+        dados: { ...editHorizontal, ultima_alteracao_por: userName } 
+      });
     }
   };
 
-  const handleSalvarVertical = () => {
+  const handleSalvarVertical = async () => {
     if (produtoVertical) {
-      atualizarProduto({ id: produtoVertical.id, dados: editVertical });
+      const { data: user } = await supabase.auth.getUser();
+      const userName = user.user?.user_metadata?.name || user.user?.email || 'Admin';
+      atualizarProduto({ 
+        id: produtoVertical.id, 
+        dados: { ...editVertical, ultima_alteracao_por: userName } 
+      });
     }
   };
 
@@ -156,6 +167,15 @@ const ProdutosPage = () => {
                   onCheckedChange={(v) => setEditHorizontal(prev => ({ ...prev, ativo: v }))}
                 />
               </div>
+
+              {/* Última Alteração */}
+              {produtoHorizontal?.ultima_alteracao_em && (
+                <div className="text-[9px] text-muted-foreground bg-muted/30 rounded-lg px-2 py-1">
+                  <Clock className="inline h-3 w-3 mr-1" />
+                  Última alteração: {new Date(produtoHorizontal.ultima_alteracao_em).toLocaleString('pt-BR')}
+                  {produtoHorizontal.ultima_alteracao_por && ` por ${produtoHorizontal.ultima_alteracao_por}`}
+                </div>
+              )}
 
               {/* Especificações Técnicas */}
               <div className="space-y-3">
@@ -317,6 +337,15 @@ const ProdutosPage = () => {
                   onCheckedChange={(v) => setEditVertical(prev => ({ ...prev, ativo: v }))}
                 />
               </div>
+
+              {/* Última Alteração */}
+              {produtoVertical?.ultima_alteracao_em && (
+                <div className="text-[9px] text-muted-foreground bg-muted/30 rounded-lg px-2 py-1">
+                  <Clock className="inline h-3 w-3 mr-1" />
+                  Última alteração: {new Date(produtoVertical.ultima_alteracao_em).toLocaleString('pt-BR')}
+                  {produtoVertical.ultima_alteracao_por && ` por ${produtoVertical.ultima_alteracao_por}`}
+                </div>
+              )}
 
               {/* Especificações Técnicas */}
               <div className="space-y-3">

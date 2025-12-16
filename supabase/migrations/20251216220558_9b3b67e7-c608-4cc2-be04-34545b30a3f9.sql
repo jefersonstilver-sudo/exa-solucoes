@@ -1,0 +1,2 @@
+INSERT INTO agent_knowledge_items (agent_id, title, content, content_type, active, display_order, keywords)
+VALUES ('sofia', 'Especificações Técnicas dos Produtos', 'REGRA: SEMPRE executar consultar_especificacoes_produtos() antes de falar sobre duração, resolução ou exibições. NUNCA usar valores fixos como 15 segundos ou 1920x1080. A fonte única de verdade é a página de Produtos EXA.', 'text', true, 18, ARRAY['especificacoes', 'video', 'duracao']);

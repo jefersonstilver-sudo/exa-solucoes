@@ -22,6 +22,8 @@ export interface ProdutoExa {
   ordem_exibicao: number;
   created_at: string;
   updated_at: string;
+  ultima_alteracao_em: string | null;
+  ultima_alteracao_por: string | null;
 }
 
 export interface ConfiguracaoExibicao {
