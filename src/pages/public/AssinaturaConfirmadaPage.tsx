@@ -179,7 +179,7 @@ const AssinaturaConfirmadaPage = () => {
           {/* Info Box */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left mb-6">
             <p className="text-amber-800 text-sm">
-              <strong>💡 Próximo passo:</strong> Acesse sua área do anunciante para enviar seu vídeo publicitário (15 segundos, horizontal, sem áudio).
+              <strong>💡 Próximo passo:</strong> Acesse sua área do anunciante para enviar seu vídeo publicitário (até 10 segundos, horizontal 4:3).
             </p>
           </div>
 

@@ -93,7 +93,7 @@ export const RealOrderVideosCard: React.FC<RealOrderVideosCardProps> = ({ videos
             <Video className="h-12 w-12 mx-auto text-gray-400 mb-4" />
             <p className="text-gray-600">Nenhum vídeo foi enviado ainda</p>
             <p className="text-sm text-gray-500 mt-1">
-              O cliente precisa enviar um vídeo de até 15 segundos
+              O cliente precisa enviar um vídeo de até 10 segundos
             </p>
           </div>
         ) : (

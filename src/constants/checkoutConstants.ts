@@ -41,12 +41,12 @@ export const PLANS = {
     extras: [
       'Economize 20% (R$ 40/mês)',
       'Maior visibilidade',
-      '🎥 1 vídeo horizontal lettering de 15s por mês',
+      '🎥 1 vídeo horizontal lettering de 10s por mês',
       'Melhor custo-benefício'
     ],
     productionIncluded: true,
     videosPerMonth: 1,
-    videoType: 'Vídeo horizontal lettering de 15 segundos',
+    videoType: 'Vídeo horizontal lettering de 10 segundos',
     color: 'green',
     tag: '🔥 Mais Popular'
   },
