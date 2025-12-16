@@ -175,8 +175,19 @@ serve(async (req) => {
       }
     }
 
-    // ========== 3. Gerar HTML do Contrato ==========
-    const contractHtml = generateContractHtml(contrato, signatariosExa || []);
+    // ========== 3. Buscar especificações técnicas de produtos_exa ==========
+    console.log("📋 [CLICKSIGN] Buscando especificações técnicas...");
+    const { data: produtosExa } = await supabase
+      .from("produtos_exa")
+      .select("*");
+    
+    const { data: configExibicao } = await supabase
+      .from("configuracoes_exibicao")
+      .select("*")
+      .single();
+
+    // ========== 4. Gerar HTML do Contrato ==========
+    const contractHtml = generateContractHtml(contrato, signatariosExa || [], produtosExa || [], configExibicao);
     console.log("📄 [CLICKSIGN] HTML gerado, tamanho:", contractHtml.length, "chars");
 
     // ========== 4. Usar PDF do Frontend ou Gerar ==========
@@ -727,8 +738,8 @@ serve(async (req) => {
   }
 });
 
-// Função para gerar HTML do contrato com template profissional
-function generateContractHtml(contrato: any, signatariosExa: any[]): string {
+// Função para gerar HTML do contrato com template profissional - Manual Técnico v3.0
+function generateContractHtml(contrato: any, signatariosExa: any[], produtosExa: any[] = [], configExibicao: any = null): string {
   console.log("🖨️ [CLICKSIGN] Gerando HTML do contrato PROFISSIONAL com 12 cláusulas...");
   
   const formatCurrency = (value: number) => {
@@ -766,13 +777,76 @@ function generateContractHtml(contrato: any, signatariosExa: any[]): string {
     year: 'numeric' 
   });
 
-  const prediosHtml = listaPredios.map((p: any) => `
+  // ========== ESPECIFICAÇÕES TÉCNICAS DO MANUAL v3.0 ==========
+  const isVerticalPremium = contrato.tipo_produto === 'vertical_premium';
+  
+  // Configurações de exibição (padrão Manual v3.0)
+  const horasOperacao = configExibicao?.horas_operacao_dia || 21;
+  const diasMes = configExibicao?.dias_mes || 30;
+  const segundosDia = horasOperacao * 3600; // 75.600 segundos
+
+  // Buscar produto específico ou usar defaults do Manual v3.0
+  const produtoHorizontal = produtosExa?.find((p: any) => p.tipo === 'horizontal') || {
+    duracao_segundos: 10,
+    resolucao: '1440x1080',
+    proporcao: '4:3',
+    max_clientes_painel: 15
+  };
+  
+  const produtoVertical = produtosExa?.find((p: any) => p.tipo === 'vertical_premium') || {
+    duracao_segundos: 15,
+    resolucao: '1080x1920',
+    proporcao: '9:16',
+    max_clientes_painel: 3
+  };
+
+  // Cálculo do ciclo (Manual v3.0: 45s vertical + 150s horizontal = 195s)
+  const tempoVerticalCiclo = (produtoVertical.max_clientes_painel || 3) * (produtoVertical.duracao_segundos || 15);
+  const tempoHorizontalCiclo = (produtoHorizontal.max_clientes_painel || 15) * (produtoHorizontal.duracao_segundos || 10);
+  const tempoCicloTotal = tempoVerticalCiclo + tempoHorizontalCiclo;
+  
+  // Ciclos por dia = 75.600 / 195 ≈ 387
+  const ciclosPorDia = Math.floor(segundosDia / tempoCicloTotal);
+  const exibicoesPorMes = ciclosPorDia * diasMes;
+
+  // Especificações baseadas no tipo de produto
+  const especificacoesTecnicas = isVerticalPremium ? {
+    formato: `Vídeo vertical (${produtoVertical.resolucao || '1080x1920'} pixels)`,
+    proporcao: produtoVertical.proporcao || '9:16',
+    duracao: `${produtoVertical.duracao_segundos || 15} segundos`,
+    exibicoesDia: ciclosPorDia,
+    exibicoesMes: exibicoesPorMes,
+    descricao: 'Vertical Premium - Tela Cheia',
+    tipoExibicao: 'Tela Cheia (Full Screen)'
+  } : {
+    formato: `Vídeo horizontal (${produtoHorizontal.resolucao || '1440x1080'} pixels)`,
+    proporcao: produtoHorizontal.proporcao || '4:3',
+    duracao: `${produtoHorizontal.duracao_segundos || 10} segundos`,
+    exibicoesDia: ciclosPorDia,
+    exibicoesMes: exibicoesPorMes,
+    descricao: 'Horizontal Tradicional - Carrossel',
+    tipoExibicao: 'Carrossel Compartilhado'
+  };
+
+  // ANEXO I - Tabela de prédios com cálculos de exibição
+  const prediosHtml = listaPredios.map((p: any) => {
+    const telas = p.quantidade_telas || 1;
+    const exibDia = ciclosPorDia * telas;
+    const exibMes = exibicoesPorMes * telas;
+    return `
     <tr>
       <td style="border: 1px solid #e5e7eb; padding: 10px; font-size: 11px;">${p.nome || p.building_name}</td>
-      <td style="border: 1px solid #e5e7eb; padding: 10px; font-size: 11px;">${p.bairro || '-'}</td>
-      <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; font-size: 11px;">${p.quantidade_telas || 1}</td>
+      <td style="border: 1px solid #e5e7eb; padding: 10px; font-size: 11px;">${p.bairro || p.endereco || '-'}</td>
+      <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; font-size: 11px;">${telas}</td>
+      <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; font-size: 11px;">≈${exibDia.toLocaleString('pt-BR')}</td>
+      <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; font-size: 11px;">≈${exibMes.toLocaleString('pt-BR')}</td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
+
+  // Totais gerais
+  const totalExibDia = ciclosPorDia * totalPaineis;
+  const totalExibMes = exibicoesPorMes * totalPaineis;
 
   const metodoPagamentoNome = (metodo: string) => {
     switch (metodo) {
@@ -1186,12 +1260,14 @@ function generateContractHtml(contrato: any, signatariosExa: any[]): string {
           </div>
         </div>
         
-        <!-- CLÁUSULA 4 — DO CONTEÚDO -->
+        <!-- CLÁUSULA 4 — DO CONTEÚDO E ESPECIFICAÇÕES TÉCNICAS -->
         <div class="clause">
-          <div class="clause-title">CLÁUSULA 4 — DO CONTEÚDO</div>
+          <div class="clause-title">CLÁUSULA 4 — DO CONTEÚDO E ESPECIFICAÇÕES TÉCNICAS</div>
           <div class="clause-content">
-            <div class="clause-item">4.1. Materiais devem observar especificações técnicas da EXA (resolução 1920x1080, formato MP4, máximo 15 segundos). Prazo de aprovação do moderador: até 1 (uma) hora em dias úteis; após aprovação, inserção na playlist conforme cronograma.</div>
-            <div class="clause-item">4.2. Conteúdos proibidos: político/eleitoral, pornográfico, ilegal, discriminatório ou que viole direitos. Conteúdo inadequado será removido sem prejuízo do faturamento.</div>
+            <div class="clause-item">4.1. <strong>Tipo de Produto:</strong> ${especificacoesTecnicas.descricao}</div>
+            <div class="clause-item">4.2. <strong>Especificações técnicas:</strong> Resolução ${especificacoesTecnicas.formato}, proporção ${especificacoesTecnicas.proporcao}, duração máxima de ${especificacoesTecnicas.duracao}, formato MP4. Tipo de exibição: ${especificacoesTecnicas.tipoExibicao}.</div>
+            <div class="clause-item">4.3. Prazo de aprovação do moderador: até 1 (uma) hora em dias úteis; após aprovação, inserção na playlist conforme cronograma.</div>
+            <div class="clause-item">4.4. Conteúdos proibidos: político/eleitoral, pornográfico, ilegal, discriminatório ou que viole direitos. Conteúdo inadequado será removido sem prejuízo do faturamento.</div>
           </div>
         </div>
         
@@ -1199,8 +1275,9 @@ function generateContractHtml(contrato: any, signatariosExa: any[]): string {
         <div class="clause">
           <div class="clause-title">CLÁUSULA 5 — ENTREGA, FREQUÊNCIA E SLA</div>
           <div class="clause-content">
-            <div class="clause-item">5.1. Exibições estimadas: 245 exibições por painel/dia (média). Relatório mensal será gerado e disponibilizado no painel administrativo.</div>
-            <div class="clause-item">5.2. SLA operacional: disponibilidade média mínima de 90% da rede. Falhas técnicas imputáveis à EXA serão tratadas em até 72 horas úteis.</div>
+            <div class="clause-item">5.1. <strong>Exibições estimadas:</strong> ≈${especificacoesTecnicas.exibicoesDia.toLocaleString('pt-BR')} exibições por painel/dia e ≈${especificacoesTecnicas.exibicoesMes.toLocaleString('pt-BR')} exibições por painel/mês (baseado em ${horasOperacao}h de operação diária e ciclo de ${tempoCicloTotal}s — Manual Técnico v3.0).</div>
+            <div class="clause-item">5.2. Relatório mensal será gerado e disponibilizado no painel administrativo.</div>
+            <div class="clause-item">5.3. SLA operacional: disponibilidade média mínima de 90% da rede. Falhas técnicas imputáveis à EXA serão tratadas em até 72 horas úteis.</div>
           </div>
         </div>
         
@@ -1288,15 +1365,25 @@ function generateContractHtml(contrato: any, signatariosExa: any[]): string {
             <thead>
               <tr>
                 <th>Edifício</th>
-                <th>Bairro</th>
+                <th>Bairro/Endereço</th>
                 <th style="text-align: center;">Telas</th>
+                <th style="text-align: center;">Exib./Dia</th>
+                <th style="text-align: center;">Exib./Mês</th>
               </tr>
             </thead>
             <tbody>
               ${prediosHtml}
             </tbody>
+            <tfoot>
+              <tr style="background: #f3f4f6; font-weight: 600;">
+                <td colspan="2" style="border: 1px solid #e5e7eb; padding: 10px;">TOTAIS (${listaPredios.length} local${listaPredios.length > 1 ? 'is' : ''})</td>
+                <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: center;">${totalPaineis}</td>
+                <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; color: #8B1A1A;">≈${totalExibDia.toLocaleString('pt-BR')}</td>
+                <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; color: #8B1A1A;">≈${totalExibMes.toLocaleString('pt-BR')}</td>
+              </tr>
+            </tfoot>
           </table>
-          <p style="font-size: 10px; color: #6b7280; margin-top: 8px;">Total: ${totalPaineis} tela(s) em ${listaPredios.length} edifício(s)</p>
+          <p style="font-size: 10px; color: #6b7280; margin-top: 8px;">Valores calculados conforme Manual Técnico v3.0 — ${horasOperacao}h operação/dia, ciclo ${tempoCicloTotal}s.</p>
         </div>
         ` : ''}
         
