@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Check, Sparkles, ArrowRight } from 'lucide-react';
+import { Check, Sparkles, ArrowRight, Mail, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +9,9 @@ interface PaymentSuccessModalProps {
   onClose?: () => void;
   orderId?: string;
   clientName?: string;
+  clientEmail?: string;
   autoRedirectSeconds?: number;
+  needsPasswordSetup?: boolean;
 }
 
 export const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
@@ -17,13 +19,16 @@ export const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
   onClose,
   orderId,
   clientName,
-  autoRedirectSeconds = 5
+  clientEmail,
+  autoRedirectSeconds = 5,
+  needsPasswordSetup = false
 }) => {
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState(autoRedirectSeconds);
 
   useEffect(() => {
-    if (!isOpen) return;
+    // Se precisa configurar senha, NÃO fazer auto-redirect
+    if (!isOpen || needsPasswordSetup) return;
     
     const timer = setInterval(() => {
       setCountdown((prev) => {
@@ -37,11 +42,20 @@ export const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isOpen, navigate]);
+  }, [isOpen, navigate, needsPasswordSetup]);
 
   const handleGoToOrders = () => {
     navigate('/anunciante/pedidos');
   };
+
+  const handleClose = () => {
+    onClose?.();
+  };
+
+  // Mascarar email para exibição
+  const maskedEmail = clientEmail 
+    ? clientEmail.replace(/(.{2})(.*)(@.*)/, '$1***$3')
+    : 'seu email';
 
   return (
     <AnimatePresence>
@@ -58,7 +72,7 @@ export const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-black/40 backdrop-blur-md"
-            onClick={onClose}
+            onClick={needsPasswordSetup ? handleClose : onClose}
           />
 
           {/* Modal */}
@@ -153,46 +167,122 @@ export const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
                 </motion.div>
               )}
 
-              {/* Next steps */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 }}
-                className="bg-emerald-50 rounded-xl p-4 mb-6 text-left text-sm space-y-2"
-              >
-                <p className="flex items-start gap-2">
-                  <span className="text-emerald-600 mt-0.5">📹</span>
-                  <span className="text-gray-700">Envie seu vídeo (15s horizontal)</span>
-                </p>
-                <p className="flex items-start gap-2">
-                  <span className="text-emerald-600 mt-0.5">✅</span>
-                  <span className="text-gray-700">Aguarde aprovação da equipe</span>
-                </p>
-                <p className="flex items-start gap-2">
-                  <span className="text-emerald-600 mt-0.5">🚀</span>
-                  <span className="text-gray-700">Seu anúncio entrará no ar!</span>
-                </p>
-              </motion.div>
+              {/* CONDICIONAL: Se precisa de senha OU se já tem acesso */}
+              {needsPasswordSetup ? (
+                <>
+                  {/* Email notification box */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                    className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-left"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <Mail className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-blue-900 mb-1">
+                          📧 Verifique seu email!
+                        </h3>
+                        <p className="text-sm text-blue-700 leading-relaxed">
+                          Enviamos um email para <strong>{maskedEmail}</strong> com o link para você definir sua senha e acessar sua conta.
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
 
-              {/* CTA Button */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-              >
-                <Button
-                  onClick={handleGoToOrders}
-                  className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-300"
-                >
-                  <span>Acessar Meus Pedidos</span>
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
+                  {/* Next steps for new users */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                    className="bg-gray-50 rounded-xl p-4 mb-6 text-left text-sm space-y-2"
+                  >
+                    <p className="font-medium text-gray-700 mb-2">Próximos passos:</p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-blue-600 mt-0.5 font-bold">1.</span>
+                      <span className="text-gray-700">Abra seu email e clique no link</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-blue-600 mt-0.5 font-bold">2.</span>
+                      <span className="text-gray-700">Defina sua senha de acesso</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-blue-600 mt-0.5 font-bold">3.</span>
+                      <span className="text-gray-700">Acesse e envie seu vídeo publicitário</span>
+                    </p>
+                  </motion.div>
 
-                {/* Countdown */}
-                <p className="text-xs text-gray-400 mt-3">
-                  Redirecionando em {countdown}s...
-                </p>
-              </motion.div>
+                  {/* Close button - no auto redirect */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.9 }}
+                  >
+                    <Button
+                      onClick={handleClose}
+                      className="w-full h-12 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/20 transition-all duration-300"
+                    >
+                      <span>Entendi, vou verificar meu email</span>
+                    </Button>
+
+                    {/* Link to login (optional) */}
+                    <p className="text-xs text-gray-400 mt-3">
+                      Já definiu sua senha?{' '}
+                      <button 
+                        onClick={handleGoToOrders}
+                        className="text-blue-500 hover:underline font-medium"
+                      >
+                        Acessar agora
+                      </button>
+                    </p>
+                  </motion.div>
+                </>
+              ) : (
+                <>
+                  {/* Next steps for existing users */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                    className="bg-emerald-50 rounded-xl p-4 mb-6 text-left text-sm space-y-2"
+                  >
+                    <p className="flex items-start gap-2">
+                      <span className="text-emerald-600 mt-0.5">📹</span>
+                      <span className="text-gray-700">Envie seu vídeo (15s horizontal)</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-emerald-600 mt-0.5">✅</span>
+                      <span className="text-gray-700">Aguarde aprovação da equipe</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-emerald-600 mt-0.5">🚀</span>
+                      <span className="text-gray-700">Seu anúncio entrará no ar!</span>
+                    </p>
+                  </motion.div>
+
+                  {/* CTA Button with countdown */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                  >
+                    <Button
+                      onClick={handleGoToOrders}
+                      className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-300"
+                    >
+                      <span>Acessar Meus Pedidos</span>
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+
+                    {/* Countdown */}
+                    <p className="text-xs text-gray-400 mt-3">
+                      Redirecionando em {countdown}s...
+                    </p>
+                  </motion.div>
+                </>
+              )}
             </div>
           </motion.div>
         </motion.div>

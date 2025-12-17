@@ -108,6 +108,7 @@ const PropostaPublicaPage = () => {
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [convertedOrderId, setConvertedOrderId] = useState<string | null>(null);
   const [isPollingPayment, setIsPollingPayment] = useState(false);
+  const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
   
   // Contract flow states
   const [contractFlow, setContractFlow] = useState<ContractFlowStep>('idle');
@@ -227,8 +228,25 @@ const PropostaPublicaPage = () => {
         
         if (proposalData?.status === 'convertida' && proposalData.converted_order_id) {
           console.log('🎉 PAGAMENTO APROVADO! Order ID:', proposalData.converted_order_id);
+          
+          // ✅ VERIFICAR SE PRECISA DE CONFIGURAÇÃO DE SENHA
+          // Buscar do proposal_logs se needs_password_setup é true
+          const { data: logData } = await supabase
+            .from('proposal_logs')
+            .select('details')
+            .eq('proposal_id', proposal.id)
+            .eq('action', 'convertida_em_pedido')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          
+          const logDetails = logData?.details as Record<string, any> | null;
+          const needsPassword = logDetails?.needs_password_setup === true;
+          console.log('🔐 Precisa configurar senha:', needsPassword);
+          
           setIsPollingPayment(false);
           setConvertedOrderId(proposalData.converted_order_id);
+          setNeedsPasswordSetup(needsPassword);
           setShowPaymentSuccess(true);
         }
       } catch (err) {
@@ -1263,6 +1281,9 @@ const PropostaPublicaPage = () => {
                 isOpen={showPaymentSuccess}
                 orderId={convertedOrderId || undefined}
                 clientName={proposal?.client_name}
+                clientEmail={proposal?.client_email || undefined}
+                needsPasswordSetup={needsPasswordSetup}
+                onClose={() => setShowPaymentSuccess(false)}
               />
             </div>
           )}

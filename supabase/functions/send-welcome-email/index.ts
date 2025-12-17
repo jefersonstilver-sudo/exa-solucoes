@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,10 +14,15 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
   try {
-    const { clientEmail, clientName, passwordResetLink, orderId } = await req.json();
+    const { clientEmail, clientName, passwordResetLink, orderId, isNewUser } = await req.json();
 
     console.log('📧 [WELCOME-EMAIL] Enviando para:', clientEmail);
+    console.log('📧 [WELCOME-EMAIL] isNewUser:', isNewUser);
 
     if (!clientEmail || !passwordResetLink) {
       throw new Error('clientEmail e passwordResetLink são obrigatórios');
@@ -117,7 +123,7 @@ serve(async (req) => {
                           </td>
                           <td style="padding-left: 12px;">
                             <p style="margin: 0; font-size: 14px; color: #1a1a1a; font-weight: 500;">Envie seu vídeo</p>
-                            <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">Formato vertical (9:16), até 30 segundos</p>
+                            <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">Formato horizontal (4:3), até 10 segundos</p>
                           </td>
                         </tr>
                       </table>
@@ -186,10 +192,41 @@ serve(async (req) => {
 
     if (emailError) {
       console.error('❌ Erro ao enviar email:', emailError);
+      
+      // Registrar FALHA na auditoria
+      await supabase.from('email_audit_log').insert({
+        email_type: 'welcome',
+        recipient_email: clientEmail,
+        recipient_name: clientName,
+        status: 'failed',
+        error_message: emailError.message || String(emailError),
+        related_entity_type: orderId ? 'order' : null,
+        related_entity_id: orderId || null,
+        metadata: {
+          is_new_user: isNewUser,
+          has_password_link: true
+        }
+      });
+      
       throw emailError;
     }
 
     console.log('✅ Email de boas-vindas enviado:', emailResult);
+
+    // ✅ AUDITORIA: Registrar email enviado com sucesso
+    await supabase.from('email_audit_log').insert({
+      email_type: 'welcome',
+      recipient_email: clientEmail,
+      recipient_name: clientName,
+      resend_email_id: emailResult?.id,
+      status: 'sent',
+      related_entity_type: orderId ? 'order' : null,
+      related_entity_id: orderId || null,
+      metadata: {
+        is_new_user: isNewUser,
+        has_password_link: true
+      }
+    });
 
     return new Response(JSON.stringify({ success: true, emailId: emailResult?.id }), {
       status: 200,
