@@ -151,7 +151,7 @@ const NovaPropostaPage = () => {
     nome: '',
     endereco: '',
     quantidade_telas: 1,
-    visualizacoes_mes: 7200,
+    visualizacoes_mes: 11610, // Manual v3.0: 387 ciclos × 30 dias = 11.610/mês por tela
     publico_estimado: 100
   });
   
@@ -376,7 +376,7 @@ const NovaPropostaPage = () => {
       endereco: newManualBuilding.endereco.trim(),
       quantidade_telas: newManualBuilding.quantidade_telas || 1,
       numero_elevadores: newManualBuilding.quantidade_telas || 1,
-      visualizacoes_mes: newManualBuilding.visualizacoes_mes || 7200,
+      visualizacoes_mes: newManualBuilding.visualizacoes_mes || 11610, // Manual v3.0
       preco_base: 0,
       publico_estimado: newManualBuilding.publico_estimado || 100,
       imagem_principal: null,
@@ -386,7 +386,7 @@ const NovaPropostaPage = () => {
     setManualBuildings(prev => [...prev, newBuilding]);
     setSelectedBuildings(prev => [...prev, newBuilding.id]);
     setAddBuildingDialogOpen(false);
-    setNewManualBuilding({ nome: '', endereco: '', quantidade_telas: 1, visualizacoes_mes: 7200, publico_estimado: 100 });
+    setNewManualBuilding({ nome: '', endereco: '', quantidade_telas: 1, visualizacoes_mes: 11610, publico_estimado: 100 });
     toast.success('Prédio manual adicionado com *');
   };
 
@@ -1025,7 +1025,7 @@ const NovaPropostaPage = () => {
               </div>
               {tipoProduto === 'vertical_premium' && (
                 <div className="mt-2 text-[10px] text-purple-600 bg-purple-100/50 rounded p-2">
-                  ✓ Vídeo vertical 10s • ✓ Tela cheia • ✓ {buildings.length} prédios incluídos • ✓ Sem portal
+                  ✓ Vídeo vertical 15s • ✓ Tela cheia 9:16 • ✓ {buildings.length} prédios incluídos • ✓ Sem portal
                 </div>
               )}
             </button>

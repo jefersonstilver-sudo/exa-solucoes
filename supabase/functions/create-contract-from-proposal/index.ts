@@ -123,8 +123,8 @@ serve(async (req) => {
       metodo_pagamento: isCustomPayment ? 'personalizado' : 'pix',
       parcelas: isCustomPayment ? customInstallments : null,
       
-      // Produto
-      tipo_produto: 'horizontal',
+      // Produto - USA O TIPO DA PROPOSTA
+      tipo_produto: proposal.tipo_produto || 'horizontal',
       objeto: 'Contratação de espaço publicitário em painéis digitais de elevadores'
     };
 
@@ -429,19 +429,25 @@ function generateContractHtml(contrato: any, exaSignatario: any, produtosExa: an
       <style>
         @page {
           size: A4;
-          margin: 15mm;
+          margin: 12mm 15mm;
         }
         
         @media print {
-          body { 
+          html, body {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            color-adjust: exact !important;
+            background: white !important;
           }
           .page-break { 
             page-break-before: always; 
           }
           .no-break { 
             page-break-inside: avoid; 
+          }
+          /* Remove URL/data do rodapé de impressão */
+          @page { 
+            margin: 12mm 15mm;
           }
         }
         
@@ -450,34 +456,35 @@ function generateContractHtml(contrato: any, exaSignatario: any, produtosExa: an
         }
         
         body { 
-          font-family: 'Segoe UI', Arial, sans-serif; 
-          line-height: 1.7; 
+          font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; 
+          line-height: 1.65; 
           color: #1a1a1a; 
           max-width: 210mm;
           margin: 0 auto; 
-          padding: 20px;
-          font-size: 11pt;
+          padding: 15px 20px;
+          font-size: 10.5pt;
           background: #fff;
         }
         
         .header {
           background: linear-gradient(135deg, #8B1A1A 0%, #A52020 50%, #8B1A1A 100%);
           color: white;
-          padding: 25px 30px;
-          margin: -20px -20px 30px -20px;
+          padding: 20px 25px;
+          margin: -15px -20px 25px -20px;
           text-align: center;
-          border-radius: 0 0 8px 8px;
+          border-radius: 0 0 6px 6px;
+          border-bottom: 3px solid #5a0f0f;
         }
         
         .header-logo {
-          font-size: 32px;
+          font-size: 28px;
           font-weight: bold;
           letter-spacing: 4px;
-          margin-bottom: 5px;
+          margin-bottom: 3px;
         }
         
         .header-subtitle {
-          font-size: 11px;
+          font-size: 10px;
           letter-spacing: 2px;
           text-transform: uppercase;
           opacity: 0.9;
@@ -967,6 +974,18 @@ function generateContractHtml(contrato: any, exaSignatario: any, produtosExa: an
           <p><span class="clause-title">7.2.</span> O CONTRATANTE assume integral responsabilidade por quaisquer reclamações, ações judiciais ou administrativas relacionadas a direitos autorais, marcas, patentes ou direitos de imagem do conteúdo veiculado, isentando a CONTRATADA de qualquer responsabilidade.</p>
           
           <p><span class="clause-title">7.3.</span> Em caso de demanda judicial ou extrajudicial envolvendo o conteúdo veiculado, o CONTRATANTE deverá assumir a defesa e arcar com todos os custos, honorários e eventuais condenações.</p>
+          
+          <p><span class="clause-title">7.4.</span> O CONTRATANTE <strong>autoriza expressamente</strong> a CONTRATADA a utilizar o material publicitário veiculado para fins de divulgação institucional, incluindo, mas não se limitando a:
+            <ul>
+              <li>Materiais internos de apresentação comercial e portfólio;</li>
+              <li>Cases de sucesso e exemplos de trabalhos realizados;</li>
+              <li>Publicações em redes sociais (Instagram, Facebook, LinkedIn, YouTube, TikTok e outras);</li>
+              <li>Website institucional da EXA Mídia;</li>
+              <li>Apresentações comerciais a potenciais anunciantes e parceiros.</li>
+            </ul>
+          </p>
+          
+          <p><span class="clause-title">7.5.</span> A utilização do material pela CONTRATADA será sempre de forma profissional e institucional, podendo incluir a identificação do CONTRATANTE como cliente, salvo solicitação expressa em contrário formalizada por escrito.</p>
         </div>
       </div>
 
@@ -977,7 +996,7 @@ function generateContractHtml(contrato: any, exaSignatario: any, produtosExa: an
           <p><span class="clause-title">8.1.</span> São obrigações da CONTRATADA:</p>
           <ul>
             <li><strong>a)</strong> Disponibilizar os painéis digitais nos locais especificados neste contrato em perfeito estado de funcionamento;</li>
-            <li><strong>b)</strong> Garantir o funcionamento dos equipamentos durante o horário de operação (6h às 23h, de segunda a domingo);</li>
+            <li><strong>b)</strong> Garantir o funcionamento dos equipamentos durante as <strong>${horasOperacao} horas diárias</strong> de operação, conforme configuração estabelecida para cada local;</li>
             <li><strong>c)</strong> Realizar manutenção preventiva e corretiva dos equipamentos, no prazo máximo de 72 (setenta e duas) horas úteis após identificação de falhas;</li>
             <li><strong>d)</strong> Disponibilizar plataforma online para upload, gestão e agendamento do conteúdo publicitário;</li>
             <li><strong>e)</strong> Fornecer suporte técnico para dúvidas relacionadas ao uso da plataforma;</li>
@@ -1058,21 +1077,51 @@ function generateContractHtml(contrato: any, exaSignatario: any, produtosExa: an
         </div>
       </div>
 
-      <!-- CLÁUSULA 12: DO FORO E DISPOSIÇÕES GERAIS -->
+      <!-- CLÁUSULA 12: DA CONFIDENCIALIDADE -->
       <div class="section no-break">
-        <div class="section-title">CLÁUSULA 12ª - DO FORO E DISPOSIÇÕES GERAIS</div>
+        <div class="section-title">CLÁUSULA 12ª - DA CONFIDENCIALIDADE</div>
         <div class="clause">
-          <p><span class="clause-title">12.1.</span> As partes elegem o <strong>Foro da Comarca de Foz do Iguaçu, Estado do Paraná</strong>, para dirimir quaisquer questões oriundas deste contrato, com exclusão de qualquer outro, por mais privilegiado que seja.</p>
+          <p><span class="clause-title">12.1.</span> As partes comprometem-se a manter em <strong>absoluto sigilo</strong> todas as informações comerciais, valores, condições e acordos estabelecidos neste contrato, não podendo divulgá-los a terceiros sem prévia autorização por escrito.</p>
           
-          <p><span class="clause-title">12.2.</span> O presente contrato é firmado em caráter irrevogável e irretratável, obrigando as partes e seus sucessores a qualquer título.</p>
+          <p><span class="clause-title">12.2.</span> São consideradas informações confidenciais:
+            <ul>
+              <li>Valores, descontos e condições comerciais acordadas;</li>
+              <li>Estratégias comerciais, de marketing e operacionais;</li>
+              <li>Dados estatísticos de performance e métricas de exibição;</li>
+              <li>Informações técnicas e operacionais dos sistemas;</li>
+              <li>Quaisquer informações não públicas compartilhadas entre as partes.</li>
+            </ul>
+          </p>
           
-          <p><span class="clause-title">12.3.</span> A tolerância de qualquer das partes quanto ao descumprimento de cláusulas deste contrato não constituirá renúncia nem criará precedente invocável.</p>
+          <p><span class="clause-title">12.3.</span> O dever de confidencialidade <strong>permanecerá em vigor por prazo indeterminado</strong>, mesmo após o término ou rescisão deste contrato.</p>
           
-          <p><span class="clause-title">12.4.</span> Qualquer alteração neste contrato somente terá validade se formalizada por escrito e assinada por ambas as partes.</p>
+          <p><span class="clause-title">12.4.</span> A parte que violar o dever de confidencialidade responderá pelos danos causados à outra parte, sem prejuízo das sanções legais cabíveis.</p>
           
-          <p><span class="clause-title">12.5.</span> Os dados pessoais fornecidos pelas partes serão tratados em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 - LGPD).</p>
+          <p><span class="clause-title">12.5.</span> Não será considerada violação de confidencialidade:
+            <ul>
+              <li>Informações que se tornarem públicas por meios lícitos;</li>
+              <li>Divulgações exigidas por ordem judicial ou determinação de autoridade competente;</li>
+              <li>Informações previamente autorizadas por escrito pela outra parte.</li>
+            </ul>
+          </p>
+        </div>
+      </div>
+
+      <!-- CLÁUSULA 13: DO FORO E DISPOSIÇÕES GERAIS -->
+      <div class="section no-break">
+        <div class="section-title">CLÁUSULA 13ª - DO FORO E DISPOSIÇÕES GERAIS</div>
+        <div class="clause">
+          <p><span class="clause-title">13.1.</span> As partes elegem o <strong>Foro da Comarca de Foz do Iguaçu, Estado do Paraná</strong>, para dirimir quaisquer questões oriundas deste contrato, com exclusão de qualquer outro, por mais privilegiado que seja.</p>
           
-          <p><span class="clause-title">12.6.</span> Este contrato representa o acordo integral entre as partes, substituindo quaisquer entendimentos anteriores, verbais ou escritos.</p>
+          <p><span class="clause-title">13.2.</span> O presente contrato é firmado em caráter irrevogável e irretratável, obrigando as partes e seus sucessores a qualquer título.</p>
+          
+          <p><span class="clause-title">13.3.</span> A tolerância de qualquer das partes quanto ao descumprimento de cláusulas deste contrato não constituirá renúncia nem criará precedente invocável.</p>
+          
+          <p><span class="clause-title">13.4.</span> Qualquer alteração neste contrato somente terá validade se formalizada por escrito e assinada por ambas as partes.</p>
+          
+          <p><span class="clause-title">13.5.</span> Os dados pessoais fornecidos pelas partes serão tratados em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 - LGPD).</p>
+          
+          <p><span class="clause-title">13.6.</span> Este contrato representa o acordo integral entre as partes, substituindo quaisquer entendimentos anteriores, verbais ou escritos.</p>
         </div>
       </div>
 
