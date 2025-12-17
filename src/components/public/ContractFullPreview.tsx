@@ -83,8 +83,8 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[95vh] overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 md:p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[98vh] md:h-[95vh] overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-[#9C1E1E] to-[#B52525] px-6 py-4 text-white flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -120,10 +120,10 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
           ref={contractRef}
           className="flex-1 overflow-y-auto bg-gray-50"
         >
-          <div className="max-w-3xl mx-auto p-6 md:p-8">
+          <div className="max-w-3xl mx-auto p-3 md:p-6 lg:p-8">
             {/* Paper effect */}
             <div 
-              className="bg-white rounded-lg shadow-lg p-6 md:p-10 border border-gray-200"
+              className="bg-white rounded-lg shadow-lg p-3 md:p-6 lg:p-10 border border-gray-200"
               style={{
                 minHeight: '100%',
                 fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
@@ -194,7 +194,7 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
         </div>
       </div>
 
-      {/* Custom CSS for contract HTML */}
+      {/* Custom CSS for contract HTML - Responsivo Mobile */}
       <style>{`
         .contract-content h1 {
           font-size: 18px;
@@ -255,6 +255,52 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
         }
         .contract-content li {
           margin-bottom: 8px;
+        }
+        
+        /* RESPONSIVO MOBILE */
+        @media (max-width: 768px) {
+          .contract-content {
+            font-size: 9pt !important;
+          }
+          .contract-content h1 {
+            font-size: 14px;
+          }
+          .contract-content h2 {
+            font-size: 12px;
+          }
+          .contract-content .info-grid {
+            display: block !important;
+          }
+          .contract-content .info-card {
+            margin-bottom: 12px;
+          }
+          .contract-content .signatures-grid,
+          .contract-content .witnesses-grid {
+            display: block !important;
+          }
+          .contract-content .signature-box,
+          .contract-content .witness-box {
+            margin-bottom: 30px;
+          }
+          .contract-content table {
+            display: block;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            font-size: 8pt;
+          }
+          .contract-content table th,
+          .contract-content table td {
+            padding: 6px 8px;
+            white-space: nowrap;
+            min-width: 60px;
+          }
+          .contract-content ul, .contract-content ol {
+            padding-left: 16px;
+          }
+          .contract-content .section-title {
+            font-size: 10pt !important;
+            padding: 8px 10px !important;
+          }
         }
       `}</style>
     </div>

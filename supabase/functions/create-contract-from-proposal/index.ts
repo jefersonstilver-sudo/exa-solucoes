@@ -745,6 +745,134 @@ function generateContractHtml(contrato: any, exaSignatario: any, produtosExa: an
           padding: 15px;
           margin: 15px 0;
         }
+        
+        /* ========== CSS RESPONSIVO MOBILE ========== */
+        @media (max-width: 768px) {
+          body {
+            padding: 10px 12px;
+            font-size: 9pt;
+          }
+          
+          .header {
+            margin: -10px -12px 20px -12px;
+            padding: 15px 12px;
+          }
+          
+          .header-logo {
+            font-size: 22px;
+            letter-spacing: 2px;
+          }
+          
+          .header-subtitle {
+            font-size: 9px;
+          }
+          
+          .contract-title h1 {
+            font-size: 14pt;
+          }
+          
+          .contract-number {
+            font-size: 10pt;
+          }
+          
+          .section-title {
+            font-size: 10pt;
+            padding: 8px 10px;
+          }
+          
+          .info-grid {
+            display: block !important;
+          }
+          
+          .info-card {
+            margin-bottom: 12px;
+            padding: 10px;
+          }
+          
+          .info-card-title {
+            font-size: 10pt;
+          }
+          
+          .info-row {
+            flex-direction: column;
+            gap: 2px;
+          }
+          
+          .info-label, .info-value {
+            font-size: 9pt;
+            text-align: left;
+          }
+          
+          .clause {
+            line-height: 1.6;
+          }
+          
+          .clause ul {
+            margin-left: 10px;
+          }
+          
+          table {
+            display: block;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            font-size: 8pt;
+          }
+          
+          th, td {
+            padding: 6px 8px;
+            white-space: nowrap;
+            min-width: 50px;
+          }
+          
+          .signatures-grid,
+          .witnesses-grid {
+            display: block !important;
+          }
+          
+          .signature-box,
+          .witness-box {
+            margin-bottom: 25px;
+          }
+          
+          .signature-line {
+            margin-top: 50px;
+          }
+          
+          .highlight-box,
+          .tech-specs,
+          .penalty-box {
+            padding: 10px;
+          }
+          
+          .footer {
+            font-size: 8pt;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          body {
+            padding: 8px;
+            font-size: 8pt;
+          }
+          
+          .header-logo {
+            font-size: 18px;
+          }
+          
+          .contract-title h1 {
+            font-size: 12pt;
+          }
+          
+          .section-title {
+            font-size: 9pt;
+            padding: 6px 8px;
+          }
+          
+          th, td {
+            padding: 4px 6px;
+            font-size: 7pt;
+          }
+        }
       </style>
     </head>
     <body>
