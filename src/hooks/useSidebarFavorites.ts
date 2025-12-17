@@ -5,27 +5,33 @@ const MAX_FAVORITES = 8;
 
 export const useSidebarFavorites = () => {
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        setFavorites(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setFavorites(parsed);
+        }
       }
     } catch (e) {
       console.error('Failed to load favorites:', e);
     }
+    setIsInitialized(true);
   }, []);
 
-  // Save to localStorage when favorites change
+  // Save to localStorage ONLY after initialization
   useEffect(() => {
+    if (!isInitialized) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites));
     } catch (e) {
       console.error('Failed to save favorites:', e);
     }
-  }, [favorites]);
+  }, [favorites, isInitialized]);
 
   const addFavorite = useCallback((href: string) => {
     setFavorites(prev => {
