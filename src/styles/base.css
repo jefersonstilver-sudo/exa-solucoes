@@ -71,24 +71,12 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
-    
-    /* EXA Brand Colors */
     --exa-red: 355 68% 37%;           /* #9C1E1E - EXA Red Primary */
     --exa-red-dark: 355 50% 25%;       /* #5C1A1A - Burgundy elegante para sidebar */
     --exa-dark: 0 41% 7%;              /* #180A0A - EXA Dark Background */
     --exa-graphite: 0 25% 20%;         /* #3B1E1E - EXA Graphite Secondary */
     --exa-highlight-red: 355 67% 54%;  /* #D72638 - EXA Highlight Red */
     --exa-mint: 160 72% 59%;           /* Mantém mint */
-    
-    /* Sidebar Theme Variables - EXA Red Gradient */
-    --sidebar-background: 0 41% 7%;           /* #180A0A - Dark red background */
-    --sidebar-foreground: 0 0% 96%;           /* Near white text */
-    --sidebar-primary: 355 68% 37%;           /* EXA Red */
-    --sidebar-primary-foreground: 0 0% 100%;  /* White */
-    --sidebar-accent: 355 68% 25%;            /* Dark red hover */
-    --sidebar-accent-foreground: 0 0% 100%;   /* White */
-    --sidebar-border: 355 30% 20%;            /* Subtle red border */
-    --sidebar-ring: 355 68% 37%;              /* EXA Red ring */
     
     /* Variáveis LINKAÊ - Cores originais rosa/magenta e laranja */
     --linkae-primary: 340 81% 44%;     /* #C2185B - Rosa escuro */
@@ -139,15 +127,5 @@
     --exa-dark: 0 0% 15%;              /* Cinza neutro escuro */
     --exa-graphite: 0 0% 25%;          /* Cinza médio */
     --exa-highlight-red: 355 67% 60%; /* Vermelho mais brilhante para contraste */
-    
-    /* Sidebar Theme Variables - Dark Mode */
-    --sidebar-background: 0 41% 7%;           /* Same dark in both modes */
-    --sidebar-foreground: 0 0% 96%;
-    --sidebar-primary: 355 68% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 355 68% 30%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 355 30% 25%;
-    --sidebar-ring: 355 68% 45%;
   }
 }

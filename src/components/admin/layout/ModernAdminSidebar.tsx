@@ -83,8 +83,6 @@ import { useSidebarFavorites } from '@/hooks/useSidebarFavorites';
 import { SidebarFavoritesStar } from './SidebarFavoritesStar';
 import { useTheme } from '@/components/ui/theme-provider';
 import { ThemeToggle } from './ThemeToggle';
-import { useSidebarResize } from '@/hooks/useSidebarResize';
-import { SidebarResizeHandle } from './SidebarResizeHandle';
 
 export function ModernAdminSidebar() {
   const { state, open, setOpen, setOpenMobile, isMobile: isSidebarMobile } = useSidebar();
@@ -102,14 +100,6 @@ export function ModernAdminSidebar() {
   
   // Favorites system
   const { favorites, toggleFavorite, isFavorite } = useSidebarFavorites();
-
-  // Resize system (desktop only)
-  const { 
-    width: sidebarWidth, 
-    isDragging, 
-    handleMouseDown, 
-    handleTouchStart 
-  } = useSidebarResize();
 
   const handleSignOut = async () => {
     try {
@@ -390,30 +380,17 @@ export function ModernAdminSidebar() {
 
   const collapsed = isMobile ? false : state === "collapsed";
 
-  // Show resize only on desktop when sidebar is expanded
-  const showResizeHandle = !isMobile && !isTablet && state !== "collapsed";
-
   return (
     <Sidebar 
-      className="h-screen border-r border-red-900/20 shadow-2xl overscroll-contain relative"
+      className="h-screen bg-gradient-to-b from-[#1A0A0A] via-[#2D1515] to-[#3D1F1F] border-r border-red-900/20 shadow-2xl overscroll-contain"
       collapsible={isMobile ? "offcanvas" : "icon"}
-      variant="sidebar"
+      variant={isMobile ? "sidebar" : isTablet ? "sidebar" : "sidebar"}
       style={{ 
-        '--sidebar-width': showResizeHandle ? `${sidebarWidth}px` : undefined,
+        backgroundColor: '#1A0A0A',
         height: '100dvh',
-        paddingTop: 'env(safe-area-inset-top)',
-        background: 'linear-gradient(180deg, #1A0A0A 0%, #2D1515 50%, #3D1F1F 100%)',
-        transition: isDragging ? 'none' : 'all 250ms cubic-bezier(0.25, 0.1, 0.25, 1)',
-      } as React.CSSProperties}
+        paddingTop: 'env(safe-area-inset-top)'
+      }}
     >
-      {/* Resize Handle - Desktop Only */}
-      {showResizeHandle && (
-        <SidebarResizeHandle
-          onMouseDown={handleMouseDown}
-          onTouchStart={handleTouchStart}
-          isDragging={isDragging}
-        />
-      )}
       <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-red-900/30 bg-[#1A0A0A]/95 backdrop-blur-sm`}>
         <div className="flex items-center justify-center mb-3">
           <UnifiedLogo 
