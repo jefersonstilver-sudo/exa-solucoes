@@ -143,7 +143,81 @@ Deno.serve(async (req) => {
       console.error('💥 [DELETE-USER] Erro crítico na auditoria:', auditError);
     }
 
-    // 3. DELETAR DADOS RELACIONADOS (exceto user_activity_logs que não deletamos)
+    // 3. TRATAR PEDIDOS E PROPOSALS (foreign key constraint)
+    console.log('📦 [DELETE-USER] Tratando pedidos e proposals...');
+    
+    // 3a. Buscar pedidos do usuário
+    const { data: userPedidos } = await supabaseAdmin
+      .from('pedidos')
+      .select('id')
+      .eq('client_id', userId);
+    
+    if (userPedidos && userPedidos.length > 0) {
+      const pedidoIds = userPedidos.map(p => p.id);
+      console.log(`📦 [DELETE-USER] Encontrados ${pedidoIds.length} pedidos para tratar`);
+      
+      // 3b. Limpar referências em proposals (set converted_order_id = null)
+      const { error: proposalsUpdateError } = await supabaseAdmin
+        .from('proposals')
+        .update({ converted_order_id: null })
+        .in('converted_order_id', pedidoIds);
+      
+      if (proposalsUpdateError) {
+        console.warn('⚠️ [DELETE-USER] Erro ao limpar proposals:', proposalsUpdateError.message);
+      } else {
+        console.log('✅ [DELETE-USER] Referências de proposals limpas');
+      }
+      
+      // 3c. Deletar contratos relacionados aos pedidos
+      const { error: contratosError } = await supabaseAdmin
+        .from('contratos')
+        .delete()
+        .in('pedido_id', pedidoIds);
+      
+      if (contratosError) {
+        console.warn('⚠️ [DELETE-USER] Erro ao deletar contratos:', contratosError.message);
+      } else {
+        console.log('✅ [DELETE-USER] Contratos deletados');
+      }
+      
+      // 3d. Deletar parcelas relacionadas aos pedidos
+      const { error: parcelasError } = await supabaseAdmin
+        .from('parcelas')
+        .delete()
+        .in('pedido_id', pedidoIds);
+      
+      if (parcelasError) {
+        console.warn('⚠️ [DELETE-USER] Erro ao deletar parcelas:', parcelasError.message);
+      } else {
+        console.log('✅ [DELETE-USER] Parcelas deletadas');
+      }
+      
+      // 3e. Deletar os pedidos
+      const { error: pedidosError } = await supabaseAdmin
+        .from('pedidos')
+        .delete()
+        .eq('client_id', userId);
+      
+      if (pedidosError) {
+        console.warn('⚠️ [DELETE-USER] Erro ao deletar pedidos:', pedidosError.message);
+      } else {
+        console.log('✅ [DELETE-USER] Pedidos deletados');
+      }
+    }
+    
+    // 3f. Deletar proposals criadas pelo usuário
+    const { error: userProposalsError } = await supabaseAdmin
+      .from('proposals')
+      .delete()
+      .eq('created_by', userId);
+    
+    if (userProposalsError) {
+      console.warn('⚠️ [DELETE-USER] Erro ao deletar proposals do usuário:', userProposalsError.message);
+    } else {
+      console.log('✅ [DELETE-USER] Proposals do usuário deletadas');
+    }
+
+    // 4. DELETAR DADOS RELACIONADOS (exceto user_activity_logs que não deletamos)
     console.log('🧹 [DELETE-USER] Deletando dados relacionados...');
     
     const relatedTables = [
@@ -166,7 +240,14 @@ Deno.serve(async (req) => {
       'notifications',
       'panel_access_logs',
       'system_activity_feed',
-      'transaction_sessions'
+      'transaction_sessions',
+      'campanhas',
+      'videos',
+      'contratos_legais',
+      'cobranca_logs',
+      'client_crm_notes',
+      'auth_detailed_logs',
+      'active_sessions_monitor'
     ];
 
     let deletedCount = 0;
@@ -178,7 +259,18 @@ Deno.serve(async (req) => {
           .eq('user_id', userId);
         
         if (deleteError) {
-          console.warn(`⚠️ [DELETE-USER] Erro ao deletar de ${table}:`, deleteError.message);
+          // Tentar com client_id se user_id falhar
+          const { error: clientIdError } = await supabaseAdmin
+            .from(table)
+            .delete()
+            .eq('client_id', userId);
+          
+          if (clientIdError) {
+            console.warn(`⚠️ [DELETE-USER] Erro ao deletar de ${table}:`, deleteError.message);
+          } else {
+            deletedCount++;
+            console.log(`✅ [DELETE-USER] Deletado de ${table} (via client_id)`);
+          }
         } else {
           deletedCount++;
           console.log(`✅ [DELETE-USER] Deletado de ${table}`);
@@ -190,7 +282,7 @@ Deno.serve(async (req) => {
 
     console.log(`✅ [DELETE-USER] Deletados dados de ${deletedCount}/${relatedTables.length} tabelas`);
 
-    // 4. Deletar da tabela users primeiro
+    // 5. Deletar da tabela users primeiro
     console.log('🗑️ [DELETE-USER] Deletando da tabela users...');
     await supabaseAdmin.from('users').delete().eq('id', userId);
     console.log('✅ [DELETE-USER] Tabela users limpa');
