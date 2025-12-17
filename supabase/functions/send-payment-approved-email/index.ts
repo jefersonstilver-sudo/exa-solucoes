@@ -238,12 +238,49 @@ serve(async (req) => {
 
     if (emailError) {
       console.error('❌ Erro ao enviar email:', emailError);
+      
+      // ✅ AUDITORIA: Registrar falha
+      await supabase.from('email_audit_log').insert({
+        email_type: 'payment_approved',
+        recipient_email: clientEmail,
+        recipient_name: clientName,
+        status: 'failed',
+        error_message: emailError.message || String(emailError),
+        related_entity_type: 'proposal',
+        related_entity_id: proposalId,
+        metadata: {
+          order_id: orderId,
+          proposal_number: proposalNumber,
+          value_paid: value,
+          is_custom_payment: isCustomPayment,
+          has_password_link: needsAccessLink
+        }
+      });
+      
       throw emailError;
     }
 
     console.log('✅ Email de pagamento aprovado enviado:', emailResult);
 
-    // Log no banco
+    // ✅ AUDITORIA: Registrar sucesso
+    await supabase.from('email_audit_log').insert({
+      email_type: 'payment_approved',
+      recipient_email: clientEmail,
+      recipient_name: clientName,
+      resend_email_id: emailResult?.id,
+      status: 'sent',
+      related_entity_type: 'proposal',
+      related_entity_id: proposalId,
+      metadata: {
+        order_id: orderId,
+        proposal_number: proposalNumber,
+        value_paid: value,
+        is_custom_payment: isCustomPayment,
+        has_password_link: needsAccessLink
+      }
+    });
+
+    // Log no banco (proposal_logs - mantido para compatibilidade)
     if (proposalId) {
       await supabase.from('proposal_logs').insert({
         proposal_id: proposalId,
