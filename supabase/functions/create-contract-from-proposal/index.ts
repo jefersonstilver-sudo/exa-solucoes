@@ -160,29 +160,35 @@ serve(async (req) => {
       console.warn("⚠️ Erro ao criar signatário (não crítico):", signatarioError);
     }
 
-    // 7. Buscar signatário EXA padrão
-    const { data: exaSignatario } = await supabase
+    // 7. Buscar TODOS signatários EXA ativos (Jeferson E Natália)
+    const { data: exaSignatarios } = await supabase
       .from("signatarios_exa")
       .select("*")
       .eq("is_active", true)
-      .eq("is_default", true)
-      .single();
+      .order('is_default', { ascending: false }); // Default primeiro
 
-    if (exaSignatario) {
-      console.log("🏢 Adicionando signatário EXA:", exaSignatario.nome);
-      await supabase
-        .from("contrato_signatarios")
-        .insert({
-          contrato_id: contrato.id,
-          tipo: 'exa',
-          nome: exaSignatario.nome.split(' ')[0],
-          sobrenome: exaSignatario.nome.split(' ').slice(1).join(' '),
-          email: exaSignatario.email,
-          cpf: exaSignatario.cpf,
-          data_nascimento: exaSignatario.data_nascimento,
-          cargo: exaSignatario.cargo,
-          ordem: 2
-        });
+    if (exaSignatarios && exaSignatarios.length > 0) {
+      console.log(`🏢 Adicionando ${exaSignatarios.length} signatários EXA`);
+      
+      for (let i = 0; i < exaSignatarios.length; i++) {
+        const sig = exaSignatarios[i];
+        console.log(`  → Signatário ${i + 1}: ${sig.nome} (${sig.cargo})`);
+        await supabase
+          .from("contrato_signatarios")
+          .insert({
+            contrato_id: contrato.id,
+            tipo: 'exa',
+            nome: sig.primeiro_nome || sig.nome.split(' ')[0],
+            sobrenome: sig.sobrenome || sig.nome.split(' ').slice(1).join(' '),
+            email: sig.email,
+            cpf: sig.cpf,
+            data_nascimento: sig.data_nascimento,
+            cargo: sig.cargo,
+            ordem: 2 + i  // Cliente é ordem 1, EXAs começam em 2
+          });
+      }
+    } else {
+      console.warn("⚠️ Nenhum signatário EXA ativo encontrado");
     }
 
   // 8. Buscar especificações técnicas da página de Produtos
@@ -196,8 +202,8 @@ serve(async (req) => {
       .select("*")
       .single();
 
-    // 9. Gerar HTML do contrato para preview
-    const contractHtml = generateContractHtml(contrato, exaSignatario, produtosExa || [], configExibicao);
+    // 9. Gerar HTML do contrato para preview (com TODOS signatários EXA)
+    const contractHtml = generateContractHtml(contrato, exaSignatarios || [], produtosExa || [], configExibicao);
 
     // 9. Atualizar proposta com referência ao contrato
     await supabase
@@ -262,7 +268,7 @@ serve(async (req) => {
 });
 
 // Generate FULL professional contract HTML for preview and printing - Manual Técnico v3.0
-function generateContractHtml(contrato: any, exaSignatario: any, produtosExa: any[] = [], configExibicao: any = null): string {
+function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produtosExa: any[] = [], configExibicao: any = null): string {
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
@@ -917,10 +923,12 @@ function generateContractHtml(contrato: any, exaSignatario: any, produtosExa: an
               <span class="info-label">CEP:</span>
               <span class="info-value">${exaData.cep}</span>
             </div>
-            ${exaSignatario ? `
+            ${exaSignatarios && exaSignatarios.length > 0 ? `
             <div class="info-row">
-              <span class="info-label">Representante:</span>
-              <span class="info-value">${exaSignatario.nome} - ${exaSignatario.cargo || 'Diretor'}</span>
+              <span class="info-label">Representantes Legais:</span>
+              <span class="info-value">
+                ${exaSignatarios.map(s => `${s.nome} - ${s.cargo || 'Sócio(a)'}`).join('<br>')}
+              </span>
             </div>
             ` : ''}
           </div>
@@ -1263,16 +1271,29 @@ function generateContractHtml(contrato: any, exaSignatario: any, produtosExa: an
           <strong>Foz do Iguaçu - PR, ${formatDate(new Date().toISOString())}</strong>
         </p>
 
-        <div class="signatures-grid">
-          <div class="signature-box">
-            <div class="signature-line">
-              <div class="signature-name">${exaSignatario?.nome || 'Representante Legal'}</div>
-              <div class="signature-role">${exaSignatario?.cargo || 'Diretor'} - EXA Soluções Digitais LTDA</div>
-              <div class="signature-doc">CNPJ: ${exaData.cnpj}</div>
-              <div style="margin-top: 5px; font-weight: 600; color: #8B1A1A;">CONTRATADA</div>
+        <div class="signatures-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 25px;">
+          <!-- SIGNATÁRIOS EXA (Jeferson E Natália) -->
+          ${exaSignatarios && exaSignatarios.length > 0 ? exaSignatarios.map(sig => `
+            <div class="signature-box">
+              <div class="signature-line">
+                <div class="signature-name">${sig.nome}</div>
+                <div class="signature-role">${sig.cargo || 'Sócio(a)'} - EXA Soluções Digitais LTDA</div>
+                <div class="signature-doc">CPF: ${formatCPF(sig.cpf)}</div>
+                <div style="margin-top: 5px; font-weight: 600; color: #8B1A1A;">CONTRATADA</div>
+              </div>
             </div>
-          </div>
+          `).join('') : `
+            <div class="signature-box">
+              <div class="signature-line">
+                <div class="signature-name">Representante Legal</div>
+                <div class="signature-role">EXA Soluções Digitais LTDA</div>
+                <div class="signature-doc">CNPJ: ${exaData.cnpj}</div>
+                <div style="margin-top: 5px; font-weight: 600; color: #8B1A1A;">CONTRATADA</div>
+              </div>
+            </div>
+          `}
           
+          <!-- CONTRATANTE (cliente) -->
           <div class="signature-box">
             <div class="signature-line">
               <div class="signature-name">${contrato.cliente_nome}</div>
