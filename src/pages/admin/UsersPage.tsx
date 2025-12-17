@@ -419,7 +419,7 @@ const UsersPage = () => {
               onClick={() => setActiveTab('team')}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
                 activeTab === 'team'
-                  ? 'bg-exa-red text-white shadow-md'
+                  ? 'bg-[#9C1E1E] text-white shadow-md'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
@@ -433,7 +433,7 @@ const UsersPage = () => {
               onClick={() => setActiveTab('clients')}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
                 activeTab === 'clients'
-                  ? 'bg-exa-red text-white shadow-md'
+                  ? 'bg-[#9C1E1E] text-white shadow-md'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
