@@ -47,6 +47,7 @@ interface Proposal {
   created_by: string | null;
   payment_type?: string;
   custom_installments?: any;
+  tipo_produto?: 'horizontal' | 'vertical_premium';
   metadata?: {
     type?: string;
     cortesia_code_id?: string;
@@ -1452,14 +1453,20 @@ const PropostaPublicaPage = () => {
               />
             </div>
             <div className="flex-1">
-              {isCortesia ? (
+            {isCortesia ? (
                 <div className="flex items-center gap-2">
                   <Gift className="h-5 w-5" />
                   <h1 className="text-lg font-bold">Presente Cortesia • EXA Mídia</h1>
                   <PartyPopper className="h-5 w-5" />
                 </div>
               ) : (
-                <h1 className="text-lg font-bold">Proposta Comercial • EXA Mídia</h1>
+                <div>
+                  <h1 className="text-lg font-bold">Proposta Comercial EXA Mídia</h1>
+                  <span className="inline-flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded text-xs mt-1">
+                    <Video className="h-3 w-3" />
+                    {proposal.tipo_produto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal Tradicional'}
+                  </span>
+                </div>
               )}
               <div className="flex flex-wrap gap-2 mt-2">
                 <span className="bg-white/10 px-3 py-1 rounded-full text-xs font-medium">
@@ -1596,20 +1603,27 @@ const PropostaPublicaPage = () => {
             <h2 className="font-semibold">Prédios Incluídos</h2>
           </div>
           <div className="space-y-2 max-h-48 overflow-y-auto">
-            {buildings.map((building: any, index: number) => (
-              <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
-                <div>
-                  <div className="font-medium text-sm">{building.building_name || building.nome}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {building.bairro} • {building.quantidade_telas || 1} tela(s)
+            {buildings.map((building: any, index: number) => {
+              // Cálculo dinâmico: 11.610 exibições por tela/mês (Manual v3.0)
+              const exibicoesPorTela = 11610;
+              const telas = building.quantidade_telas || 1;
+              const exibicoesCalculadas = telas * exibicoesPorTela;
+              
+              return (
+                <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+                  <div>
+                    <div className="font-medium text-sm">{building.building_name || building.nome}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {building.bairro} • {telas} tela(s)
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium">{exibicoesCalculadas.toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground">exib/mês</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium">{((building.visualizacoes_mes || 0)).toLocaleString()}</div>
-                  <div className="text-xs text-muted-foreground">imp/mês</div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
 
