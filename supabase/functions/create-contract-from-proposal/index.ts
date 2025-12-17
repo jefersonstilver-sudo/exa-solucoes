@@ -291,14 +291,14 @@ function generateContractHtml(contrato: any, exaSignatario: any, produtosExa: an
     return clean.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
   };
 
-  // Dados da EXA
+  // Dados da EXA - Conforme página "Quem Somos"
   const exaData = {
-    razaoSocial: 'EXA MÍDIA LTDA',
-    cnpj: '56.181.645/0001-05',
-    endereco: 'Rua Carlos de Carvalho, 1164, Sala 84',
+    razaoSocial: 'EXA Soluções Digitais LTDA',
+    cnpj: '62.878.193/0001-35',
+    endereco: 'Avenida Paraná, 974 – Sala 301, Centro',
     cidade: 'Foz do Iguaçu',
-    estado: 'Paraná',
-    cep: '85851-170'
+    estado: 'PR',
+    cep: '85852-000'
   };
 
   // Lista de prédios formatada
@@ -1267,7 +1267,7 @@ function generateContractHtml(contrato: any, exaSignatario: any, produtosExa: an
           <div class="signature-box">
             <div class="signature-line">
               <div class="signature-name">${exaSignatario?.nome || 'Representante Legal'}</div>
-              <div class="signature-role">${exaSignatario?.cargo || 'Diretor'} - EXA MÍDIA LTDA</div>
+              <div class="signature-role">${exaSignatario?.cargo || 'Diretor'} - EXA Soluções Digitais LTDA</div>
               <div class="signature-doc">CNPJ: ${exaData.cnpj}</div>
               <div style="margin-top: 5px; font-weight: 600; color: #8B1A1A;">CONTRATADA</div>
             </div>
@@ -1307,7 +1307,7 @@ function generateContractHtml(contrato: any, exaSignatario: any, produtosExa: an
 
       <!-- RODAPÉ -->
       <div class="footer">
-        <div class="footer-company">EXA MÍDIA LTDA</div>
+        <div class="footer-company">EXA Soluções Digitais LTDA</div>
         <div class="footer-info">
           CNPJ: ${exaData.cnpj}<br>
           ${exaData.endereco} - ${exaData.cidade}/${exaData.estado} - CEP: ${exaData.cep}<br>
