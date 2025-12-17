@@ -38,10 +38,10 @@
   --apple-gray-800: 240 4% 16%;
   --apple-gray-900: 220 13% 9%;
   
-  /* EXA Brand */
-  --exa-red: 0 80% 45%;
-  --exa-red-light: 0 72% 51%;
-  --exa-red-dark: 0 83% 39%;
+  /* EXA Brand - Definições principais em base.css */
+  /* --exa-red: definido em base.css como 355 68% 37% */
+  --exa-red-light: 355 68% 50%;
+  --exa-red-dark: 355 68% 30%;
   
   /* === SHADOWS (Diffuse Apple-like) === */
   --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.03);
