@@ -6775,6 +6775,30 @@ export type Database = {
           },
         ]
       }
+      proposals_archived: {
+        Row: {
+          archived_at: string
+          archived_by: string | null
+          id: string
+          original_data: Json
+          reason: string | null
+        }
+        Insert: {
+          archived_at?: string
+          archived_by?: string | null
+          id: string
+          original_data: Json
+          reason?: string | null
+        }
+        Update: {
+          archived_at?: string
+          archived_by?: string | null
+          id?: string
+          original_data?: Json
+          reason?: string | null
+        }
+        Relationships: []
+      }
       provider_alerts: {
         Row: {
           computer_id: string
@@ -8587,6 +8611,7 @@ export type Database = {
         Args: { p_approved_by: string; p_pedido_video_id: string }
         Returns: boolean
       }
+      archive_expired_proposals: { Args: never; Returns: number }
       audit_unauthorized_uploads: { Args: never; Returns: Json }
       auto_cancel_expired_orders: { Args: never; Returns: number }
       auto_cancel_orders_5h: { Args: never; Returns: number }
