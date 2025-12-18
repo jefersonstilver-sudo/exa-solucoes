@@ -11,10 +11,12 @@ import CouponFormDialog from '@/components/admin/coupons/CouponFormDialog';
 import { Coupon } from '@/types/coupon';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
+import { useAuth } from '@/hooks/useAuth';
 
 const CouponsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { isMobile } = useAdvancedResponsive();
+  const { isSuperAdmin } = useAuth();
   
   const {
     coupons,
@@ -197,6 +199,7 @@ const CouponsPage: React.FC = () => {
             onDelete={deleteCoupon}
             onToggleStatus={handleToggleStatus}
             onViewUsage={getCouponUsageDetails}
+            isSuperAdmin={isSuperAdmin}
           />
         </div>
 
@@ -270,6 +273,7 @@ const CouponsPage: React.FC = () => {
               onDelete={deleteCoupon}
               onToggleStatus={handleToggleStatus}
               onViewUsage={getCouponUsageDetails}
+              isSuperAdmin={isSuperAdmin}
             />
           </div>
         </CardContent>

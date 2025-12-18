@@ -34,9 +34,10 @@ import BenefitDetailsDialog from '@/components/admin/benefits/BenefitDetailsDial
 
 const ProviderBenefits = () => {
   console.log('🎁 ProviderBenefits component rendering...');
-  const { canManageProviderBenefits, isLoadingCustom } = useUserPermissions();
+  const { canManageProviderBenefits, isLoadingCustom, userInfo } = useUserPermissions();
   const { buildPath } = useAdminBasePath();
   const navigate = useNavigate();
+  const isSuperAdmin = userInfo.isSuperAdmin;
   const { isMobile } = useAdvancedResponsive();
   
   // Hook para carregar opções de benefícios do banco de dados
@@ -722,6 +723,7 @@ const ProviderBenefits = () => {
         onResendEmail={(benefitId) => resendInvitation(benefitId)}
         onInsertCode={(benefitId, code) => insertGiftCode(benefitId, code, 'code', '')}
         onCancelBenefit={(benefitId) => cancelBenefit(benefitId)}
+        isSuperAdmin={isSuperAdmin}
       />
 
       {/* Insert Code Modal */}

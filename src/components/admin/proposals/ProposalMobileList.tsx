@@ -29,6 +29,7 @@ interface ProposalMobileListProps {
   loading?: boolean;
   onViewDetails: (proposalId: string) => void;
   onBulkDelete?: (proposalIds: string[]) => Promise<void>;
+  isSuperAdmin?: boolean;
 }
 
 export const ProposalMobileList: React.FC<ProposalMobileListProps> = ({
@@ -36,6 +37,7 @@ export const ProposalMobileList: React.FC<ProposalMobileListProps> = ({
   loading = false,
   onViewDetails,
   onBulkDelete,
+  isSuperAdmin = false,
 }) => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -51,11 +53,14 @@ export const ProposalMobileList: React.FC<ProposalMobileListProps> = ({
   } = useBulkSelection(proposalIds);
 
   const handleLongPress = useCallback((proposalId: string) => {
+    // Só permite seleção se for super admin
+    if (!isSuperAdmin) return;
+    
     if (!isSelectionMode) {
       setIsSelectionMode(true);
       toggleSelectItem(proposalId);
     }
-  }, [isSelectionMode, toggleSelectItem]);
+  }, [isSelectionMode, toggleSelectItem, isSuperAdmin]);
 
   const handleClearSelection = useCallback(() => {
     clearSelection();
@@ -112,15 +117,17 @@ export const ProposalMobileList: React.FC<ProposalMobileListProps> = ({
         ))}
       </div>
 
-      <ProposalSelectionToolbar
-        selectedCount={selectedCount}
-        totalCount={proposals.length}
-        onSelectAll={toggleSelectAll}
-        onClearSelection={handleClearSelection}
-        onDelete={handleDelete}
-        isAllSelected={isAllSelected}
-        isDeleting={isDeleting}
-      />
+      {isSuperAdmin && (
+        <ProposalSelectionToolbar
+          selectedCount={selectedCount}
+          totalCount={proposals.length}
+          onSelectAll={toggleSelectAll}
+          onClearSelection={handleClearSelection}
+          onDelete={handleDelete}
+          isAllSelected={isAllSelected}
+          isDeleting={isDeleting}
+        />
+      )}
     </>
   );
 };
