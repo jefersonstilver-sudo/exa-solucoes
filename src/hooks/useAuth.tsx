@@ -92,18 +92,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // 🚨 SECURITY FIX: SEMPRE buscar role de user_roles (JWT não confiável sem hook)
     const fetchUserProfile = async (userId: string, accessToken?: string) => {
       try {
-        // ⚠️ CRÍTICO: SEMPRE buscar do banco user_roles (JWT pode estar desatualizado)
-        console.log('🔍 Buscando role do usuário:', userId);
-        const { data: roleData, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', userId)
-          .single();
+        // ⚠️ CRÍTICO: Usar RPC get_user_highest_role para buscar role de maior prioridade
+        // Isso evita bug de duplicatas onde admin logava como client
+        console.log('🔍 Buscando role prioritário do usuário:', userId);
+        const { data: highestRole, error: roleError } = await supabase
+          .rpc('get_user_highest_role', { p_user_id: userId });
         
         let role: UserRole = 'client'; // Fallback seguro
         
         if (roleError) {
-          console.error('❌ Erro ao buscar role da tabela user_roles:', roleError);
+          console.error('❌ Erro ao buscar role via RPC:', roleError);
           // Fallback: tentar buscar da tabela users
           const { data: userRoleData } = await supabase
             .from('users')
@@ -116,8 +114,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.log('✅ Role obtido da tabela users (fallback):', role);
           }
         } else {
-          role = (roleData?.role || 'client') as UserRole;
-          console.log('✅ Role obtido da tabela user_roles:', role);
+          role = (highestRole || 'client') as UserRole;
+          console.log('✅ Role prioritário obtido via RPC:', role);
         }
         
         // Buscar dados completos do usuário

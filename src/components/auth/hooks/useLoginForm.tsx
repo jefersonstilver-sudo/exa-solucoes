@@ -136,30 +136,24 @@ export const useLoginForm = (redirectPath: string = '/') => {
         }
       }
 
-      // Buscar role do usuário no banco
+      // Buscar role prioritário do usuário via RPC (evita bug de duplicatas)
       let userRole = userData?.role || null;
       
       try {
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', data.user.id)
-          .single();
+        const { data: highestRole, error: roleError } = await supabase
+          .rpc('get_user_highest_role', { p_user_id: data.user.id });
         
-        userRole = roleData?.role || null;
-        console.log('✅ Role obtido do banco user_roles:', userRole);
+        if (roleError) {
+          console.warn('⚠️ Erro ao buscar role via RPC:', roleError);
+          // Fallback: usar role da tabela users
+          userRole = userData?.role || null;
+        } else {
+          userRole = highestRole || null;
+          console.log('✅ Role prioritário obtido via RPC:', userRole);
+        }
       } catch (roleError) {
-        console.warn('⚠️ Erro ao buscar role de user_roles, tentando users table:', roleError);
-        
-        // Fallback: tentar buscar da tabela users
-        const { data: userData } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
-        
+        console.warn('⚠️ Exceção ao buscar role via RPC, usando fallback:', roleError);
         userRole = userData?.role || null;
-        console.log('✅ Role obtido da tabela users:', userRole);
       }
 
       // Determinar caminho de redirecionamento
