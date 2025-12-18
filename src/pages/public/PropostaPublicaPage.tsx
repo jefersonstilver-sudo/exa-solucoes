@@ -1627,7 +1627,7 @@ const PropostaPublicaPage = () => {
             {buildings.map((building: any, index: number) => {
               // Cálculo dinâmico: 11.610 exibições por tela/mês (Manual v3.0)
               const exibicoesPorTela = 11610;
-              const telas = building.quantidade_telas || 1;
+              const telas = building.quantidade_telas > 0 ? building.quantidade_telas : 1;
               const exibicoesCalculadas = telas * exibicoesPorTela;
               
               return (

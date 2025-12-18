@@ -73,13 +73,13 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, on
   };
 
   const listaPredios = Array.isArray(data.lista_predios) ? data.lista_predios : [];
-  const totalPaineis = data.total_paineis || listaPredios.reduce((acc, p) => acc + (p.quantidade_telas || 1), 0);
+  const totalPaineis = data.total_paineis || listaPredios.reduce((acc, p) => acc + (p.quantidade_telas > 0 ? p.quantidade_telas : 1), 0);
   const isVerticalPremium = data.tipo_produto === 'vertical_premium';
   const isSindico = data.tipo_contrato === 'sindico' || data.tipo_contrato === 'comodato';
   const clienteNomeCompleto = data.cliente_sobrenome ? `${data.cliente_nome} ${data.cliente_sobrenome}` : data.cliente_nome;
 
   const totalImpMes = listaPredios.reduce((acc, p) => {
-    const impMes = p.visualizacoes_mes || (p.quantidade_telas || 1) * 93000;
+    const impMes = p.visualizacoes_mes || (p.quantidade_telas > 0 ? p.quantidade_telas : 1) * 93000;
     return acc + impMes;
   }, 0);
 
