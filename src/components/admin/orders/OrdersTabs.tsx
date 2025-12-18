@@ -139,6 +139,12 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
   };
 
   const handleBulkDelete = async () => {
+    // SEGURANÇA: Somente Super Admin pode excluir
+    if (!isSuperAdmin) {
+      toast.error('Apenas Super Administradores podem excluir pedidos');
+      return;
+    }
+    
     if (selectedItems.length === 0) {
       toast.error('Selecione pelo menos um item para excluir');
       return;
@@ -386,7 +392,7 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
 
   const renderTab = (items: any[], title: string, description: string) => (
     <div className="space-y-4">
-      {items.length > 0 && (
+      {items.length > 0 && isSuperAdmin && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Checkbox

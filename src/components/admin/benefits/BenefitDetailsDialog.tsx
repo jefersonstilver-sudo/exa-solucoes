@@ -39,6 +39,7 @@ interface BenefitDetailsDialogProps {
   onResendEmail: (benefitId: string) => void;
   onInsertCode: (benefitId: string, code: string) => void;
   onCancelBenefit: (benefitId: string) => void;
+  isSuperAdmin?: boolean;
 }
 
 export const BenefitDetailsDialog: React.FC<BenefitDetailsDialogProps> = ({
@@ -50,6 +51,7 @@ export const BenefitDetailsDialog: React.FC<BenefitDetailsDialogProps> = ({
   onResendEmail,
   onInsertCode,
   onCancelBenefit,
+  isSuperAdmin = false,
 }) => {
   const [showInsertCodeModal, setShowInsertCodeModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -317,7 +319,7 @@ export const BenefitDetailsDialog: React.FC<BenefitDetailsDialogProps> = ({
                 </Button>
               )}
 
-              {benefit.status !== 'cancelled' && (
+              {benefit.status !== 'cancelled' && isSuperAdmin && (
                 <Button
                   onClick={() => setShowDeleteDialog(true)}
                   variant="destructive"

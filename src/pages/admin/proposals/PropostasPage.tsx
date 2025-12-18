@@ -587,7 +587,7 @@ const PropostasPage = () => {
             proposals={filteredProposals}
             loading={isLoading}
             onViewDetails={(id) => navigate(buildPath(`propostas/${id}`))}
-            onBulkDelete={async (ids) => {
+            onBulkDelete={isSuperAdmin ? async (ids) => {
               setIsDeleting(true);
               try {
                 await supabase.from('pedidos').update({ proposal_id: null }).in('proposal_id', ids);
@@ -603,13 +603,14 @@ const PropostasPage = () => {
               } finally {
                 setIsDeleting(false);
               }
-            }}
+            } : undefined}
+            isSuperAdmin={isSuperAdmin}
           />
         ) : (
           /* Desktop: Keep existing list */
           <>
-            {/* Bulk Actions */}
-            {selectedCount > 0 && (
+            {/* Bulk Actions - Somente Super Admin */}
+            {selectedCount > 0 && isSuperAdmin && (
               <Card className="p-2 bg-[#9C1E1E]/10 border-[#9C1E1E]/20 flex items-center justify-between">
                 <span className="text-xs font-medium text-[#9C1E1E]">{selectedCount} selecionada(s)</span>
                 <div className="flex gap-2">
@@ -653,13 +654,15 @@ const PropostasPage = () => {
                     onClick={() => navigate(buildPath(`propostas/${proposal.id}`))}
                   >
                     <div className="flex items-start gap-3">
-                      {/* Checkbox */}
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <CustomCheckbox
-                          checked={isSelected(proposal.id)}
-                          onCheckedChange={() => toggleSelectItem(proposal.id)}
-                        />
-                      </div>
+                      {/* Checkbox - Somente Super Admin */}
+                      {isSuperAdmin && (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <CustomCheckbox
+                            checked={isSelected(proposal.id)}
+                            onCheckedChange={() => toggleSelectItem(proposal.id)}
+                          />
+                        </div>
+                      )}
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">

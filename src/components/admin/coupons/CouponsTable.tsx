@@ -20,6 +20,7 @@ interface CouponsTableProps {
   onDelete: (id: string) => void;
   onToggleStatus: (id: string, newStatus: boolean) => void;
   onViewUsage: (couponId: string) => Promise<CouponUsageDetail[]>;
+  isSuperAdmin?: boolean;
 }
 
 const CouponsTable: React.FC<CouponsTableProps> = ({
@@ -28,7 +29,8 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
   onEdit,
   onDelete,
   onToggleStatus,
-  onViewUsage
+  onViewUsage,
+  isSuperAdmin = false
 }) => {
   const { isMobile } = useAdvancedResponsive();
   const [usageDetailsOpen, setUsageDetailsOpen] = useState(false);
@@ -209,10 +211,12 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
                           </>
                         )}
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onDelete(coupon.id)} className="text-destructive">
-                        <Trash className="mr-2 h-4 w-4" />
-                        Deletar
-                      </DropdownMenuItem>
+                      {isSuperAdmin && (
+                        <DropdownMenuItem onClick={() => onDelete(coupon.id)} className="text-destructive">
+                          <Trash className="mr-2 h-4 w-4" />
+                          Deletar
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -415,13 +419,15 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
                             </>
                           )}
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => onDelete(coupon.id)}
-                          className="text-destructive"
-                        >
-                          <Trash className="mr-2 h-4 w-4" />
-                          Deletar
-                        </DropdownMenuItem>
+                        {isSuperAdmin && (
+                          <DropdownMenuItem 
+                            onClick={() => onDelete(coupon.id)}
+                            className="text-destructive"
+                          >
+                            <Trash className="mr-2 h-4 w-4" />
+                            Deletar
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
