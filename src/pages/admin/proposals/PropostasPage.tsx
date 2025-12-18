@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp } from 'lucide-react';
+import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -95,6 +95,9 @@ const PropostasPage = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange>(getDefaultPeriod());
   const [showSellerStats, setShowSellerStats] = useState(false);
   const [previewProposal, setPreviewProposal] = useState<Proposal | null>(null);
+  const [showPhoneDialog, setShowPhoneDialog] = useState(false);
+  const [customPhone, setCustomPhone] = useState('');
+  const [proposalForResend, setProposalForResend] = useState<Proposal | null>(null);
 
   const { data: proposals = [], isLoading, refetch } = useQuery({
     queryKey: ['proposals'],
@@ -433,6 +436,34 @@ const PropostasPage = () => {
     }
   };
 
+  const handleResendToOtherNumber = (proposal: Proposal) => {
+    setProposalForResend(proposal);
+    setCustomPhone('');
+    setShowPhoneDialog(true);
+  };
+
+  const handleConfirmResendToOtherNumber = async () => {
+    if (!proposalForResend || !customPhone.trim()) {
+      toast.error('Informe um número de telefone');
+      return;
+    }
+    
+    try {
+      await supabase.functions.invoke('send-proposal-whatsapp', {
+        body: { 
+          proposalId: proposalForResend.id,
+          customPhone: customPhone.trim()
+        }
+      });
+      toast.success('WhatsApp enviado para o número informado!');
+      setShowPhoneDialog(false);
+      setProposalForResend(null);
+      refetch();
+    } catch (error) {
+      toast.error('Erro ao enviar WhatsApp');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 relative">
       {/* Live View Notifications */}
@@ -737,6 +768,10 @@ const PropostasPage = () => {
                             <MessageSquare className="h-4 w-4 mr-2" />
                             Reenviar WhatsApp
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleResendToOtherNumber(proposal)}>
+                            <Phone className="h-4 w-4 mr-2" />
+                            Reenviar para outro número
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleResend(proposal, 'email')}>
                             <Mail className="h-4 w-4 mr-2" />
                             Reenviar Email
@@ -785,6 +820,37 @@ const PropostasPage = () => {
           sellerEmail={previewProposal.seller_email || undefined}
         />
       )}
+
+      {/* Dialog para Reenviar para Outro Número */}
+      <AlertDialog open={showPhoneDialog} onOpenChange={setShowPhoneDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reenviar WhatsApp para outro número</AlertDialogTitle>
+            <AlertDialogDescription>
+              Digite o número de telefone para enviar a proposta{' '}
+              <strong>{proposalForResend?.number}</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Input
+              type="tel"
+              placeholder="(11) 99999-9999"
+              value={customPhone}
+              onChange={(e) => setCustomPhone(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setProposalForResend(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmResendToOtherNumber}>
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Enviar WhatsApp
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

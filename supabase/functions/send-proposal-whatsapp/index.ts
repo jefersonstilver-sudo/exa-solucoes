@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { proposalId } = await req.json();
+    const { proposalId, customPhone } = await req.json();
 
     if (!proposalId) {
       return new Response(
@@ -42,15 +42,18 @@ serve(async (req) => {
       );
     }
 
-    if (!proposal.client_phone) {
+    // Use customPhone if provided, otherwise use proposal.client_phone
+    const phoneToUse = customPhone || proposal.client_phone;
+    
+    if (!phoneToUse) {
       return new Response(
-        JSON.stringify({ error: 'Cliente não possui telefone cadastrado' }),
+        JSON.stringify({ error: 'Telefone não informado' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Clean phone number and handle international codes
-    const cleanPhone = proposal.client_phone.replace(/\D/g, '');
+    const cleanPhone = phoneToUse.replace(/\D/g, '');
     
     // Valid country codes for supported countries
     const validCountryCodes = ['55', '595', '54', '598', '56', '1'];
@@ -59,7 +62,7 @@ serve(async (req) => {
     // Only add Brazil code (55) if no valid country code detected
     const formattedPhone = hasValidCountryCode ? cleanPhone : `55${cleanPhone}`;
     
-    console.log(`[SEND-PROPOSAL-WHATSAPP] Telefone: original=${proposal.client_phone}, limpo=${cleanPhone}, formatado=${formattedPhone}`);
+    console.log(`[SEND-PROPOSAL-WHATSAPP] Telefone: original=${phoneToUse}, limpo=${cleanPhone}, formatado=${formattedPhone}, customPhone=${!!customPhone}`);
 
     // Get buildings count
     const buildingsCount = Array.isArray(proposal.selected_buildings) 
