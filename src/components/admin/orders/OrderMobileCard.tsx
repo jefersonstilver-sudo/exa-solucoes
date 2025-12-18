@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, DollarSign, Calendar, Building2, Phone, Mail, Check, Clock, CreditCard } from 'lucide-react';
+import { User, DollarSign, Calendar, Building2, Phone, Mail, Check, Clock, CreditCard, FileText, AlertCircle } from 'lucide-react';
 import { CollapsibleCard } from '@/components/admin/shared/CollapsibleCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -103,16 +103,58 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
   const nextInstallment = pendingInstallments[0];
   const lastPaid = paidInstallments.sort((a, b) => b.installment - a.installment)[0];
 
+  // Get contract badge config
+  const getContractBadge = () => {
+    if (!order.contrato_status || order.contrato_status === 'nao_aplicavel') {
+      return null;
+    }
+    
+    if (order.contrato_assinado_em || order.contrato_status === 'assinado') {
+      return {
+        label: 'Contrato ✓',
+        className: 'bg-emerald-100 text-emerald-700',
+        icon: Check
+      };
+    }
+    
+    if (order.contrato_status === 'enviado') {
+      return {
+        label: 'Aguardando Assinatura',
+        className: 'bg-amber-100 text-amber-700',
+        icon: Clock
+      };
+    }
+    
+    if (order.contrato_status === 'pendente') {
+      return {
+        label: 'Contrato Pendente',
+        className: 'bg-orange-100 text-orange-700',
+        icon: AlertCircle
+      };
+    }
+    
+    return null;
+  };
+
+  const contractBadge = getContractBadge();
+
   const preview = (
     <>
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs text-muted-foreground">#{order.id.substring(0, 8)}</span>
           <CouponBadge couponCode={order.coupon_code} couponCategory={order.coupon_category} size="sm" />
           {isCustomPayment && (
             <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0 border-0">
               <CreditCard className="h-2.5 w-2.5 mr-0.5" />
               {installments.length}x
+            </Badge>
+          )}
+          {/* Contract status badge */}
+          {contractBadge && (
+            <Badge className={cn("text-[10px] px-1.5 py-0 border-0", contractBadge.className)}>
+              <contractBadge.icon className="h-2.5 w-2.5 mr-0.5" />
+              {contractBadge.label}
             </Badge>
           )}
         </div>
