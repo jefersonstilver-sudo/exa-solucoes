@@ -29,6 +29,8 @@ export interface OrderOrAttempt {
   is_fidelidade?: boolean;
   metodo_pagamento?: string;
   total_parcelas?: number;
+  contrato_status?: string;
+  contrato_assinado_em?: string;
 }
 
 export interface OrdersStats {

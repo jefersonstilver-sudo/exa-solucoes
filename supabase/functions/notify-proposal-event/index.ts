@@ -42,7 +42,7 @@ serve(async (req) => {
     // Fetch proposal details with custom installments
     const { data: proposal, error: proposalError } = await supabase
       .from('proposals')
-      .select('id, number, client_name, client_first_name, client_last_name, client_company_name, cash_total_value, fidel_monthly_value, fidel_total_value, duration_months, seller_name, created_by, payment_type, custom_installments, total_panels')
+      .select('id, number, client_name, client_first_name, client_last_name, client_company_name, cash_total_value, fidel_monthly_value, duration_months, seller_name, created_by, payment_type, custom_installments, total_panels')
       .eq('id', proposalId)
       .single();
 
@@ -83,7 +83,9 @@ serve(async (req) => {
     // Helper to format currency
     const formatCurrency = (value: number) => `R$ ${value?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
-    // Build payment details string
+    // Build payment details string - Calculate total from monthly * months since fidel_total_value doesn't exist
+    const fidelTotalCalculated = (proposal.fidel_monthly_value || 0) * (proposal.duration_months || 1);
+    
     const buildPaymentDetails = () => {
       if (proposal.payment_type === 'custom' && Array.isArray(proposal.custom_installments) && proposal.custom_installments.length > 0) {
         const installments = proposal.custom_installments as Array<{ due_date: string; amount: number }>;
@@ -95,7 +97,7 @@ serve(async (req) => {
         });
         return details;
       } else {
-        return `Valor à Vista: *${formatCurrency(proposal.cash_total_value || 0)}*\nFidelidade: *${formatCurrency(proposal.fidel_monthly_value || 0)}/mês*\nTotal Fidelidade: *${formatCurrency(proposal.fidel_total_value || 0)}*`;
+        return `Valor à Vista: *${formatCurrency(proposal.cash_total_value || 0)}*\nFidelidade: *${formatCurrency(proposal.fidel_monthly_value || 0)}/mês*\nTotal Fidelidade: *${formatCurrency(fidelTotalCalculated)}*`;
       }
     };
 
