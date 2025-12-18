@@ -9199,6 +9199,7 @@ export type Database = {
           total_sessions: number
         }[]
       }
+      get_user_highest_role: { Args: { p_user_id: string }; Returns: string }
       get_user_role:
         | { Args: never; Returns: string }
         | {
