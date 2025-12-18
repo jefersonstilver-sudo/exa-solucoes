@@ -23,14 +23,18 @@ serve(async (req) => {
 
     const MANYCHAT_API_KEY = Deno.env.get('MANYCHAT_API_KEY');
 
-    // Buscar destinatários (diretores autorizados)
+    // Buscar destinatários (diretores do EXA Alerts)
     const { data: directors } = await supabase
-      .from('diretores_autorizados')
-      .select('whatsapp_number, nome')
-      .eq('is_active', true)
-      .in('nivel_acesso', ['pleno', 'total']);
+      .from('exa_alerts_directors')
+      .select('telefone, nome')
+      .eq('ativo', true);
 
-    const recipients = directors || [];
+    console.log(`[NOTIFY-EXA-ALERT] Found ${directors?.length || 0} directors`);
+
+    const recipients = (directors || []).map(d => ({
+      whatsapp_number: d.telefone,
+      nome: d.nome
+    }));
 
     // Montar mensagem baseada no tipo
     let message = '';
