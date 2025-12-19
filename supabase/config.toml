@@ -487,3 +487,6 @@ verify_jwt = false
 
 [functions.configure-sofia-agent]
 verify_jwt = true
+
+[functions.sofia-health-check]
+verify_jwt = false
