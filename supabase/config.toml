@@ -490,3 +490,12 @@ verify_jwt = true
 
 [functions.sofia-health-check]
 verify_jwt = false
+
+[functions.configure-sofia-client-agent]
+verify_jwt = true
+
+[functions.sofia-client-token]
+verify_jwt = false
+
+[functions.sofia-client]
+verify_jwt = false
