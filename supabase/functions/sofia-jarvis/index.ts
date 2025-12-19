@@ -167,38 +167,70 @@ async function handleBuildingDetails(params: any): Promise<{ text: string; data:
   return { text, data: b };
 }
 
-// Panel Status - Status dos painéis
+// Panel Status - Status dos painéis (CORRIGIDO COM CAMPOS CORRETOS)
 async function handlePanelStatus(params: any): Promise<{ text: string; data: any }> {
   console.log('[Sofia JARVIS] Getting panel status...');
 
   const { data: panels, error } = await supabase
     .from('painels')
     .select(`
-      id, nome_referencia, status, last_heartbeat, ip_address,
-      buildings!painels_predio_id_fkey(nome, bairro)
+      id, code, status, ultima_sync, ip_interno, building_id,
+      buildings(nome, bairro)
     `)
-    .order('last_heartbeat', { ascending: false, nullsFirst: false })
-    .limit(20);
+    .order('ultima_sync', { ascending: false, nullsFirst: false })
+    .limit(50);
 
-  if (error || !panels?.length) {
+  if (error) {
+    console.error('[Sofia JARVIS] Panel query error:', error);
+    return { text: `Erro ao buscar painéis: ${error.message}`, data: [] };
+  }
+
+  if (!panels?.length) {
     return { text: 'Não encontrei informações de painéis.', data: [] };
   }
 
   const now = new Date();
   const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
 
-  const online = panels.filter(p => p.last_heartbeat && new Date(p.last_heartbeat) > fiveMinutesAgo);
-  const offline = panels.filter(p => !p.last_heartbeat || new Date(p.last_heartbeat) <= fiveMinutesAgo);
+  const online = panels.filter(p => p.ultima_sync && new Date(p.ultima_sync) > fiveMinutesAgo);
+  const offline = panels.filter(p => !p.ultima_sync || new Date(p.ultima_sync) <= fiveMinutesAgo);
+  const waitingCode = panels.filter(p => !p.code || p.code === '');
 
-  let text = `Temos ${panels.length} painéis. ${online.length} online e ${offline.length} offline. `;
+  let text = `Temos ${panels.length} painéis. ${online.length} online, ${offline.length} offline. `;
   
+  if (waitingCode.length > 0) {
+    text += `${waitingCode.length} aguardando código. `;
+  }
+
   if (offline.length > 0 && offline.length <= 5) {
-    text += `Painéis offline: ${offline.map(p => p.nome_referencia || 'Sem nome').join(', ')}. `;
+    const offlineList = offline.map(p => {
+      const building = (p.buildings as any);
+      return `${p.code || 'sem-código'} (${building?.nome || 'sem prédio'})`;
+    }).join(', ');
+    text += `Offline: ${offlineList}. `;
   } else if (offline.length > 5) {
     text += `Há ${offline.length} painéis offline. `;
   }
 
-  return { text, data: { total: panels.length, online: online.length, offline: offline.length, panels } };
+  // Lista dos online para contexto
+  if (online.length > 0 && online.length <= 10) {
+    const onlineList = online.slice(0, 5).map(p => {
+      const building = (p.buildings as any);
+      return `${p.code || 'sem-código'} (${building?.nome || 'N/A'})`;
+    }).join(', ');
+    text += `Online: ${onlineList}${online.length > 5 ? '...' : ''}. `;
+  }
+
+  return { 
+    text, 
+    data: { 
+      total: panels.length, 
+      online: online.length, 
+      offline: offline.length, 
+      waitingCode: waitingCode.length,
+      panels 
+    } 
+  };
 }
 
 // Sales Metrics - Métricas de vendas
@@ -1913,6 +1945,341 @@ async function handleGetCortesias(): Promise<{ text: string; data: any }> {
   return { text, data: { total: cortesias.length, active, used, cortesias } };
 }
 
+// ==================== NOVOS INTENTS - CONTEXTO E APRENDIZADO ====================
+
+// Get User Context - Rastrear onde o usuário está
+async function handleGetUserContext(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting user context...', params);
+  
+  const email = params?.email;
+  const userId = params?.user_id;
+  
+  if (!email && !userId) {
+    return { text: 'Preciso do email ou ID do usuário para rastrear.', data: null };
+  }
+
+  // Buscar usuário
+  let targetUser: any = null;
+  if (email) {
+    const { data: user } = await supabase
+      .from('users')
+      .select('id, nome, email, role')
+      .eq('email', email)
+      .single();
+    targetUser = user;
+  } else if (userId) {
+    const { data: user } = await supabase
+      .from('users')
+      .select('id, nome, email, role')
+      .eq('id', userId)
+      .single();
+    targetUser = user;
+  }
+
+  if (!targetUser) {
+    return { text: `Usuário ${email || userId} não encontrado.`, data: null };
+  }
+
+  // Buscar última atividade/comportamento
+  const { data: activity } = await supabase
+    .from('user_behavior_tracking')
+    .select('page_url, page_title, event_type, time_spent_seconds, created_at, metadata')
+    .eq('user_id', targetUser.id)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  // Buscar sessão ativa
+  const { data: session } = await supabase
+    .from('active_sessions_monitor')
+    .select('*')
+    .eq('user_id', targetUser.id)
+    .eq('is_active', true)
+    .order('last_activity', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  // Buscar ações recentes
+  const { data: recentActions } = await supabase
+    .from('system_activity_feed')
+    .select('activity_type, action, entity_type, details, created_at')
+    .eq('user_id', targetUser.id)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  const currentPage = activity?.[0];
+  const isOnline = session?.is_active && session?.last_activity && 
+    (new Date().getTime() - new Date(session.last_activity).getTime()) < 15 * 60 * 1000; // 15 min
+
+  let text = `Contexto de ${targetUser.nome || targetUser.email}: `;
+  
+  if (isOnline) {
+    text += `ONLINE agora. `;
+    if (currentPage) {
+      text += `Está na página "${currentPage.page_title || currentPage.page_url}". `;
+      text += `Tempo na página: ${currentPage.time_spent_seconds || 0} segundos. `;
+    }
+  } else {
+    text += `OFFLINE. `;
+    if (activity?.length) {
+      text += `Última atividade em ${timeAgo(activity[0].created_at)}: ${activity[0].page_title || activity[0].page_url}. `;
+    } else {
+      text += `Sem atividade registrada recente. `;
+    }
+  }
+
+  // Resumo de ações recentes
+  if (recentActions?.length) {
+    const actionsList = recentActions.slice(0, 3).map(a => a.action || a.activity_type).join(', ');
+    text += `Ações recentes: ${actionsList}. `;
+  }
+
+  // Resumo das páginas mais visitadas
+  if (activity?.length) {
+    const pagesVisited = [...new Set(activity.map(a => a.page_title || a.page_url?.split('/').pop()))].slice(0, 3);
+    text += `Páginas visitadas: ${pagesVisited.join(', ')}.`;
+  }
+
+  return { 
+    text, 
+    data: { 
+      user: targetUser,
+      isOnline,
+      currentPage, 
+      recentActivity: activity, 
+      session,
+      recentActions
+    } 
+  };
+}
+
+// Sofia Learn - Registrar aprendizado
+async function handleSofiaLearn(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Learning...', params);
+  
+  const { category, topic, content, user_id, confidence, source } = params;
+  
+  if (!category || !topic || !content) {
+    return { text: 'Preciso de categoria, tópico e conteúdo para aprender.', data: null };
+  }
+
+  const { data: learning, error } = await supabase
+    .from('sofia_learning')
+    .insert({
+      user_id: user_id || null,
+      category,
+      topic,
+      content,
+      confidence: confidence || 0.7,
+      source: source || 'conversation',
+      metadata: params.metadata || {},
+      learned_from_user_id: params.learned_from || null
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[Sofia JARVIS] Learning error:', error);
+    return { text: `Não consegui salvar esse aprendizado: ${error.message}`, data: null };
+  }
+
+  return { 
+    text: `Guardei esse conhecimento sobre "${topic}" (categoria: ${category}). Confiança: ${(confidence || 0.7) * 100}%. Vou lembrar disso!`, 
+    data: learning 
+  };
+}
+
+// Get Sofia Knowledge - Buscar conhecimento acumulado
+async function handleGetSofiaKnowledge(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting knowledge...', params);
+  
+  const { topic, category, user_id, search } = params;
+
+  let query = supabase
+    .from('sofia_learning')
+    .select('*')
+    .eq('is_active', true)
+    .order('confidence', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (topic) query = query.ilike('topic', `%${topic}%`);
+  if (category) query = query.eq('category', category);
+  if (user_id) query = query.eq('user_id', user_id);
+  if (search) query = query.or(`topic.ilike.%${search}%,content.ilike.%${search}%`);
+
+  const { data: knowledge, error } = await query;
+
+  if (error) {
+    return { text: `Erro ao buscar conhecimento: ${error.message}`, data: [] };
+  }
+
+  if (!knowledge?.length) {
+    return { text: 'Ainda não tenho conhecimento guardado sobre isso.', data: [] };
+  }
+
+  // Agrupar por categoria
+  const byCategory: Record<string, any[]> = {};
+  knowledge.forEach(k => {
+    if (!byCategory[k.category]) byCategory[k.category] = [];
+    byCategory[k.category].push(k);
+  });
+
+  const categorySummary = Object.entries(byCategory)
+    .map(([cat, items]) => `${cat}: ${items.length}`)
+    .join(', ');
+
+  const items = knowledge.slice(0, 5).map(k => 
+    `• ${k.topic}: ${k.content.substring(0, 60)}... (${Math.round(k.confidence * 100)}% confiança)`
+  ).join('\n');
+
+  const text = `Encontrei ${knowledge.length} conhecimentos${topic ? ` sobre "${topic}"` : ''}. Por categoria: ${categorySummary}. Top 5:\n${items}`;
+
+  return { text, data: { total: knowledge.length, byCategory, knowledge } };
+}
+
+// Get Admin Session - Contexto do admin atual
+async function handleGetAdminSession(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting admin session context...');
+
+  // Buscar sessões ativas de admins
+  const { data: sessions } = await supabase
+    .from('active_sessions_monitor')
+    .select('*, users(nome, email, role)')
+    .eq('is_active', true)
+    .order('last_activity', { ascending: false })
+    .limit(10);
+
+  if (!sessions?.length) {
+    return { text: 'Nenhum admin online no momento.', data: null };
+  }
+
+  const now = new Date();
+  const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000);
+
+  const activeAdmins = sessions.filter(s => {
+    const user = s.users as any;
+    const isAdmin = ['admin', 'super_admin'].includes(user?.role);
+    const isRecent = s.last_activity && new Date(s.last_activity) > fifteenMinutesAgo;
+    return isAdmin && isRecent;
+  });
+
+  if (!activeAdmins.length) {
+    return { text: 'Nenhum admin ativo nos últimos 15 minutos.', data: { sessions } };
+  }
+
+  // Para cada admin ativo, buscar a página atual
+  const adminsWithContext = await Promise.all(activeAdmins.slice(0, 5).map(async (session) => {
+    const user = session.users as any;
+    
+    // Buscar última atividade
+    const { data: activity } = await supabase
+      .from('user_behavior_tracking')
+      .select('page_url, page_title, time_spent_seconds')
+      .eq('user_id', session.user_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Buscar ações recentes
+    const { data: actions } = await supabase
+      .from('system_activity_feed')
+      .select('action, entity_type, created_at')
+      .eq('user_id', session.user_id)
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    return {
+      ...session,
+      userName: user?.nome || user?.email,
+      userEmail: user?.email,
+      userRole: user?.role,
+      currentPage: activity?.page_title || activity?.page_url || 'desconhecida',
+      recentActions: actions
+    };
+  }));
+
+  const adminList = adminsWithContext.map(a => 
+    `${a.userName} (${a.userRole}): página "${a.currentPage}", ações: ${a.recentActions?.map(r => r.action).join(', ') || 'nenhuma'}`
+  ).join('. ');
+
+  const text = `${activeAdmins.length} admin(s) online agora. ${adminList}`;
+
+  return { 
+    text, 
+    data: { 
+      activeAdmins: adminsWithContext.length,
+      admins: adminsWithContext,
+      allSessions: sessions
+    } 
+  };
+}
+
+// Get Today's Eduardo Conversations - Conversas do Eduardo HOJE especificamente
+async function handleEduardoToday(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting Eduardo conversations for TODAY...');
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayISO = today.toISOString();
+
+  // Buscar conversas do Eduardo hoje
+  const { data: conversations, error } = await supabase
+    .from('conversations')
+    .select(`
+      id, contact_name, contact_phone, status, last_message_at, awaiting_response, agent_key,
+      messages(id, direction, created_at)
+    `)
+    .eq('agent_key', 'eduardo')
+    .gte('last_message_at', todayISO)
+    .order('last_message_at', { ascending: false });
+
+  if (error) {
+    return { text: `Erro ao buscar conversas: ${error.message}`, data: [] };
+  }
+
+  if (!conversations?.length) {
+    // Verificar se Eduardo tem conversas em geral
+    const { data: allConversations } = await supabase
+      .from('conversations')
+      .select('id, last_message_at')
+      .eq('agent_key', 'eduardo')
+      .order('last_message_at', { ascending: false })
+      .limit(5);
+
+    if (allConversations?.length) {
+      const lastConv = allConversations[0];
+      return { 
+        text: `Eduardo não teve conversas HOJE (${formatDate(todayISO)}). A última conversa foi ${timeAgo(lastConv.last_message_at)}. Total de conversas recentes: ${allConversations.length}.`, 
+        data: { todayCount: 0, recentConversations: allConversations } 
+      };
+    }
+
+    return { text: `Eduardo não tem conversas registradas hoje (${formatDate(todayISO)}).`, data: [] };
+  }
+
+  const awaitingResponse = conversations.filter(c => c.awaiting_response).length;
+  const totalMessages = conversations.reduce((sum, c) => sum + ((c.messages as any[])?.length || 0), 0);
+
+  const convList = conversations.slice(0, 5).map(c => {
+    const msgs = c.messages as any[];
+    return `${c.contact_name} (${msgs?.length || 0} msgs) - ${c.awaiting_response ? '⏳ aguardando' : '✓'} - ${timeAgo(c.last_message_at)}`;
+  }).join('. ');
+
+  const text = `Eduardo teve ${conversations.length} conversas HOJE (${formatDate(todayISO)}). ` +
+    `${totalMessages} mensagens no total. ${awaitingResponse} aguardando resposta. ` +
+    `Conversas: ${convList}`;
+
+  return { 
+    text, 
+    data: { 
+      todayCount: conversations.length, 
+      totalMessages,
+      awaitingResponse, 
+      conversations 
+    } 
+  };
+}
+
 // ==================== MAIN HANDLER ====================
 
 serve(async (req) => {
@@ -2120,6 +2487,40 @@ serve(async (req) => {
       case 'get_cortesias':
         result = await handleGetCortesias();
         break;
+      // ========== NOVOS INTENTS - CONTEXTO E APRENDIZADO ==========
+      case 'get_user_context':
+      case 'user_context':
+      case 'where_is_user':
+      case 'rastrear_usuario':
+      case 'track_user':
+        result = await handleGetUserContext(params);
+        break;
+      case 'sofia_learn':
+      case 'learn':
+      case 'remember':
+      case 'aprender':
+      case 'lembrar':
+        result = await handleSofiaLearn(params);
+        break;
+      case 'get_sofia_knowledge':
+      case 'knowledge':
+      case 'what_do_you_know':
+      case 'conhecimento':
+      case 'o_que_sabe':
+        result = await handleGetSofiaKnowledge(params);
+        break;
+      case 'get_admin_session':
+      case 'admin_context':
+      case 'current_admin':
+      case 'admins_online':
+      case 'quem_esta_online':
+        result = await handleGetAdminSession(params);
+        break;
+      case 'eduardo_today':
+      case 'eduardo_hoje':
+      case 'conversas_eduardo_hoje':
+        result = await handleEduardoToday();
+        break;
       // ========== ALIASES / SYNONYMS ==========
       case 'building_info':
       case 'buildings':
@@ -2153,8 +2554,13 @@ serve(async (req) => {
       case 'financial':
         result = await handleFinancialSummary(params);
         break;
+      case 'paineis':
+      case 'panels':
+      case 'paineis_status':
+        result = await handlePanelStatus(params);
+        break;
       default:
-        result = { text: `Não entendi a consulta "${intent}". Posso ajudar com: visão geral (overview), prédios, painéis, vendas, conversas, contratos, financeiro, leads, clientes, cupons, alertas, propostas, vídeos, emails, benefícios, prestadores, campanhas, produtos, usuários, síndicos, logos, configurações, notificações, parcelas, assinaturas, analytics, segurança, templates, relatórios, escalação, QR codes, respostas rápidas, estatísticas de exibição, portfolio, agentes IA, cortesias, e informações da empresa.`, data: null };
+        result = { text: `Não entendi a consulta "${intent}". Posso ajudar com: visão geral (overview), prédios, painéis, vendas, conversas, contratos, financeiro, leads, clientes, cupons, alertas, propostas, vídeos, emails, benefícios, prestadores, campanhas, produtos, usuários, síndicos, logos, configurações, notificações, parcelas, assinaturas, analytics, segurança, templates, relatórios, escalação, QR codes, respostas rápidas, estatísticas de exibição, portfolio, agentes IA, cortesias, informações da empresa, rastrear usuário, aprendizado da Sofia, conhecimento acumulado, e contexto do admin.`, data: null };
     }
 
     console.log(`[Sofia JARVIS] Response:`, result.text.substring(0, 100) + '...');
