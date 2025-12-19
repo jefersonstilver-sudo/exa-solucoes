@@ -26,6 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useCNPJConsult } from '@/hooks/useCNPJConsult';
 import { ProposalAlertRecipients, type AlertRecipient } from '@/components/admin/proposals/ProposalAlertRecipients';
 import { calculateBuildingsPrice, type PlanDuration } from '@/utils/buildingPriceUtils';
+import { CCEmailsInput } from '@/components/ui/cc-emails-input';
 
 interface Building {
   id: string;
@@ -157,6 +158,9 @@ const NovaPropostaPage = () => {
   
   // Estados para destinatários de notificações EXA Alerts
   const [alertRecipients, setAlertRecipients] = useState<AlertRecipient[]>([]);
+  
+  // Estados para e-mails de cópia (CC)
+  const [ccEmails, setCcEmails] = useState<string[]>([]);
   
   // Estado para preview da proposta
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -535,7 +539,8 @@ const NovaPropostaPage = () => {
           data_inicio_cobranca: null,
           exigir_contrato: exigirContrato,
           custom_days: isCustomDays ? customDays : null,
-          is_custom_days: isCustomDays
+          is_custom_days: isCustomDays,
+          cc_emails: ccEmails.length > 0 ? ccEmails : null
         }])
         .select()
         .single();
@@ -986,6 +991,17 @@ const NovaPropostaPage = () => {
                   }));
                 }}
                 className="mt-1 h-12 text-base"
+              />
+            </div>
+            
+            {/* Campo de E-mails de Cópia (CC) */}
+            <div className="md:col-span-2">
+              <CCEmailsInput
+                value={ccEmails}
+                onChange={setCcEmails}
+                label="E-mails de Cópia (CC)"
+                placeholder="email@empresa.com"
+                maxEmails={5}
               />
             </div>
             

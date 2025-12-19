@@ -82,13 +82,16 @@ serve(async (req) => {
     // Fetch proposal
     const { data: proposal, error: proposalError } = await supabase
       .from('proposals')
-      .select('*')
+      .select('*, cc_emails')
       .eq('id', proposalId)
       .single();
 
     if (proposalError || !proposal) {
       throw new Error(`Proposta não encontrada: ${proposalError?.message}`);
     }
+    
+    // Get CC emails
+    const ccEmails: string[] = proposal.cc_emails || [];
 
     console.log('✅ Proposta encontrada:', proposal.number);
     console.log('📊 Dados da proposta:', {
@@ -266,10 +269,12 @@ serve(async (req) => {
 
     // Send email
     console.log('📤 Enviando e-mail para:', emailToSend);
+    console.log('📤 CC emails:', ccEmails.length > 0 ? ccEmails : 'Nenhum');
     
     const { data: emailResponse, error: emailError } = await resend.emails.send({
       from: 'EXA Mídia <comercial@examidia.com.br>',
       to: [emailToSend],
+      cc: ccEmails.length > 0 ? ccEmails : undefined,
       subject: `🎉 Proposta ${proposal.number} Aceita - EXA Mídia`,
       html: emailHtml,
     });

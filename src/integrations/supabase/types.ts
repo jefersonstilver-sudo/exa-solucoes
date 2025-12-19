@@ -6130,6 +6130,7 @@ export type Database = {
           blocked_at: string | null
           blocked_by: string | null
           blocked_reason: string | null
+          cc_emails: string[] | null
           checkout_session_id: string | null
           client_first_name: string | null
           client_id: string
@@ -6186,6 +6187,7 @@ export type Database = {
           blocked_at?: string | null
           blocked_by?: string | null
           blocked_reason?: string | null
+          cc_emails?: string[] | null
           checkout_session_id?: string | null
           client_first_name?: string | null
           client_id: string
@@ -6242,6 +6244,7 @@ export type Database = {
           blocked_at?: string | null
           blocked_by?: string | null
           blocked_reason?: string | null
+          cc_emails?: string[] | null
           checkout_session_id?: string | null
           client_first_name?: string | null
           client_id?: string
@@ -6748,6 +6751,7 @@ export type Database = {
         Row: {
           access_token: string
           cash_total_value: number
+          cc_emails: string[] | null
           chosen_plan: string | null
           client_address: string | null
           client_cnpj: string | null
@@ -6801,6 +6805,7 @@ export type Database = {
         Insert: {
           access_token?: string
           cash_total_value: number
+          cc_emails?: string[] | null
           chosen_plan?: string | null
           client_address?: string | null
           client_cnpj?: string | null
@@ -6854,6 +6859,7 @@ export type Database = {
         Update: {
           access_token?: string
           cash_total_value?: number
+          cc_emails?: string[] | null
           chosen_plan?: string | null
           client_address?: string | null
           client_cnpj?: string | null
@@ -8048,6 +8054,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           can_use_video_editor: boolean | null
+          cc_emails: string[] | null
           cpf: string | null
           dashboard_preferences: Json | null
           data_criacao: string | null
@@ -8084,6 +8091,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           can_use_video_editor?: boolean | null
+          cc_emails?: string[] | null
           cpf?: string | null
           dashboard_preferences?: Json | null
           data_criacao?: string | null
@@ -8120,6 +8128,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           can_use_video_editor?: boolean | null
+          cc_emails?: string[] | null
           cpf?: string | null
           dashboard_preferences?: Json | null
           data_criacao?: string | null
