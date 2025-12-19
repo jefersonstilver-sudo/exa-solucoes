@@ -300,17 +300,63 @@ async function logAdminQuery(sessionId: string, queryType: string, params: any, 
 // ==================== MAIN HANDLER ====================
 
 serve(async (req) => {
-  console.log(`[SOFIA-ADMIN-AUTH] ${req.method} request at ${new Date().toISOString()}`);
+  const requestId = crypto.randomUUID().slice(0, 8);
+  const timestamp = new Date().toISOString();
+  
+  console.log(`\n========================================`);
+  console.log(`[SOFIA-ADMIN-AUTH] REQUEST ${requestId}`);
+  console.log(`[SOFIA-ADMIN-AUTH] Method: ${req.method}`);
+  console.log(`[SOFIA-ADMIN-AUTH] Time: ${timestamp}`);
+  console.log(`[SOFIA-ADMIN-AUTH] URL: ${req.url}`);
+  console.log(`========================================`);
+  
+  // Log all headers for debugging
+  const headers: Record<string, string> = {};
+  req.headers.forEach((value, key) => {
+    headers[key] = key.toLowerCase().includes('auth') ? '[REDACTED]' : value;
+  });
+  console.log(`[SOFIA-ADMIN-AUTH] Headers:`, JSON.stringify(headers, null, 2));
   
   if (req.method === 'OPTIONS') {
+    console.log(`[SOFIA-ADMIN-AUTH] ${requestId} - CORS preflight handled`);
     return new Response(null, { headers: corsHeaders });
   }
   
   if (req.method === 'GET') {
+    console.log(`[SOFIA-ADMIN-AUTH] ${requestId} - Health check request`);
+    
+    // Extended health check - verify Z-API config
+    let zapiStatus = 'unknown';
+    try {
+      const { data: agent } = await supabase
+        .from('agents')
+        .select('zapi_config')
+        .eq('key', 'exa_alert')
+        .single();
+      
+      zapiStatus = agent?.zapi_config ? 'configured' : 'not_configured';
+    } catch (e) {
+      zapiStatus = 'error_checking';
+    }
+    
+    const { data: directors } = await supabase
+      .from('exa_alerts_directors')
+      .select('nome, telefone')
+      .eq('ativo', true)
+      .limit(1);
+    
     return new Response(JSON.stringify({
       status: 'ok',
       message: 'Sofia Admin Auth service is running',
-      version: '1.0'
+      version: '2.0',
+      request_id: requestId,
+      timestamp,
+      diagnostics: {
+        zapi_status: zapiStatus,
+        has_zapi_client_token: !!Deno.env.get('ZAPI_CLIENT_TOKEN'),
+        active_director: directors?.[0]?.nome || 'none',
+        director_phone_configured: !!directors?.[0]?.telefone
+      }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

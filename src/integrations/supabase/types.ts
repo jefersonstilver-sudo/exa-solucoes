@@ -6781,8 +6781,11 @@ export type Database = {
           is_custom_days: boolean | null
           is_viewing: boolean | null
           last_heartbeat_at: string | null
+          last_modified_at: string | null
           last_viewed_at: string | null
           metadata: Json | null
+          modified_by: string | null
+          needs_reacceptance: boolean | null
           number: string
           payment_type: string | null
           pdf_url: string | null
@@ -6835,8 +6838,11 @@ export type Database = {
           is_custom_days?: boolean | null
           is_viewing?: boolean | null
           last_heartbeat_at?: string | null
+          last_modified_at?: string | null
           last_viewed_at?: string | null
           metadata?: Json | null
+          modified_by?: string | null
+          needs_reacceptance?: boolean | null
           number: string
           payment_type?: string | null
           pdf_url?: string | null
@@ -6889,8 +6895,11 @@ export type Database = {
           is_custom_days?: boolean | null
           is_viewing?: boolean | null
           last_heartbeat_at?: string | null
+          last_modified_at?: string | null
           last_viewed_at?: string | null
           metadata?: Json | null
+          modified_by?: string | null
+          needs_reacceptance?: boolean | null
           number?: string
           payment_type?: string | null
           pdf_url?: string | null
