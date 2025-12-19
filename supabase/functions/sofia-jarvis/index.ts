@@ -943,7 +943,7 @@ async function handleGetProposals(params: any): Promise<{ text: string; data: an
     .from('proposals')
     .select(`
       id, number, client_name, client_email, client_phone, status, 
-      cash_total_value, fidel_monthly_value, fidel_total_value,
+      cash_total_value, fidel_monthly_value, duration_months,
       seller_name, sent_at, created_at, proposal_type,
       first_viewed_at, last_viewed_at, view_count, total_time_spent_seconds,
       is_viewing, converted_order_id, rejection_reason, responded_at,
@@ -995,7 +995,8 @@ async function handleGetProposals(params: any): Promise<{ text: string; data: an
     const tempo = formatSeconds(p.total_time_spent_seconds || 0);
     const views = p.view_count || 0;
     const converteu = p.converted_order_id ? ' ✅PEDIDO' : '';
-    const valor = p.cash_total_value || p.fidel_total_value || 0;
+    // Calcular valor corretamente usando campos que existem
+    const valor = p.cash_total_value || (p.fidel_monthly_value ? p.fidel_monthly_value * (p.duration_months || 12) : 0);
     
     return `${emoji} ${p.number || p.id.substring(0, 8)} - ${p.client_name}: ${p.status} | ${views}x | ${tempo}${converteu} | ${formatCurrency(valor)}`;
   }).join('\n');

@@ -91,7 +91,17 @@ Sofia: [apresenta resultados de forma executiva]
 3. Seja concisa mas completa nas respostas
 4. Se algo der erro, seja honesta e sugira alternativas
 5. Mantenha o contexto da conversa
-6. Ao final de consultas administrativas, pergunte se precisa de mais algo`;
+6. Ao final de consultas administrativas, pergunte se precisa de mais algo
+
+## DISTINÇÃO CRÍTICA - PROPOSTA vs CONTRATO
+PROPOSTA (intent: proposals ou propostas): Oferta comercial enviada ao cliente ANTES do pagamento. Tabela: proposals. Status: enviada, visualizando, aceita, rejeitada.
+CONTRATO LEGAL (intent: get_contracts ou contratos): Documento JURÍDICO para assinatura APÓS o cliente pagar. Tabela: contratos_legais. Status: rascunho, enviado, assinado.
+PEDIDO (intent: pedidos ou order_details): Venda confirmada após cliente aceitar proposta. Tabela: pedidos.
+
+FLUXO: PROPOSTA → PEDIDO (pagamento) → CONTRATO LEGAL (assinatura)
+
+Quando perguntarem sobre PROPOSTAS comerciais, use intent="proposals" ou "propostas".
+Quando perguntarem sobre CONTRATOS de assinatura/documentos legais, use intent="get_contracts" ou "contratos".`;
 
 // Tool definitions for ElevenLabs
 const SOFIA_TOOLS = [
@@ -111,7 +121,7 @@ const SOFIA_TOOLS = [
       properties: {
         intent: {
           type: "string",
-          description: "Tipo de consulta: overview, query_buildings, building_details, panel_status, sales_metrics, read_conversation, agent_conversations, search_conversations, get_contracts, financial_summary, overdue_payments, get_leads, search_client, client_details, crm_notes, get_proposals, order_details, daily_metrics, conversation_heat_analysis, leads_at_risk, abandoned_leads, agent_performance, full_financial_report, contract_status_full"
+          description: "Tipo de consulta. IMPORTANTE: Para PROPOSTAS comerciais use 'proposals' ou 'propostas'. Para CONTRATOS LEGAIS/documentos de assinatura use 'get_contracts' ou 'contratos'. Outros: overview, query_buildings, building_details, panel_status, sales_metrics, read_conversation, agent_conversations, search_conversations, financial_summary, overdue_payments, get_leads, search_client, client_details, crm_notes, pedidos, order_details, daily_metrics, conversation_heat_analysis, leads_at_risk, abandoned_leads, agent_performance, full_financial_report, contract_status_full, explicar_fluxo, videos, usuarios, dashboard"
         },
         params_json: {
           type: "string",
