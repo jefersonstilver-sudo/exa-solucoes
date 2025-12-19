@@ -5,7 +5,7 @@ import ModernAdminSidebar from './ModernAdminSidebar';
 import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
-
+import { SofiaVoiceButton } from '@/components/admin/sofia';
 const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) => {
   const { isMobile, isTablet } = useAdvancedResponsive();
   
@@ -36,6 +36,9 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
               {children || <Outlet />}
             </main>
           </SidebarInset>
+          
+          {/* Sofia Voice AI Button - Super Admin Only */}
+          <SofiaVoiceButton />
         </div>
       </SidebarProvider>
   );

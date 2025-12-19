@@ -6,7 +6,7 @@ import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useRealtimePanelAlerts } from '@/hooks/useRealtimePanelAlerts';
-
+import { SofiaVoiceButton } from '@/components/admin/sofia';
 interface ModernAdminLayoutProps {
   children?: React.ReactNode;
 }
@@ -51,6 +51,9 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
           </main>
           {isMobile && <MobileBottomNav />}
         </SidebarInset>
+        
+        {/* Sofia Voice AI Button - Admin Only */}
+        <SofiaVoiceButton />
       </div>
     </SidebarProvider>
   );
