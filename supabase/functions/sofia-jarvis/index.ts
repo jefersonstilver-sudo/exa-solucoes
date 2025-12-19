@@ -46,6 +46,28 @@ const formatSeconds = (totalSeconds: number): string => {
   return `${seconds}s`;
 };
 
+// ==================== VOICE TRUNCATION ====================
+const MAX_VOICE_RESPONSE_LENGTH = 3500;
+
+// Truncar resposta para voz (evitar corte do ElevenLabs)
+function truncateForVoice(text: string): string {
+  if (text.length <= MAX_VOICE_RESPONSE_LENGTH) return text;
+  
+  const truncated = text.substring(0, MAX_VOICE_RESPONSE_LENGTH);
+  const lastBreak = Math.max(
+    truncated.lastIndexOf('\n'),
+    truncated.lastIndexOf('. '),
+    truncated.lastIndexOf('! '),
+    truncated.lastIndexOf('? ')
+  );
+  
+  if (lastBreak > MAX_VOICE_RESPONSE_LENGTH * 0.7) {
+    return truncated.substring(0, lastBreak + 1) + ' Quer mais detalhes?';
+  }
+  
+  return truncated + '... Quer que eu continue?';
+}
+
 // Get emoji for proposal status
 const getProposalStatusEmoji = (proposal: any): string => {
   if (proposal.is_viewing) return '🔴';
@@ -487,18 +509,20 @@ async function handleSearchConversations(params: any): Promise<{ text: string; d
   return { text: `Encontrei ${conversations.length} conversas para "${searchTerm}". ${list}`, data: conversations };
 }
 
-// Get Contracts - Listar contratos
+// Get Contracts - Listar CONTRATOS LEGAIS (documentos de assinatura)
+// IMPORTANTE: Contrato ≠ Proposta. Contrato é gerado APÓS pagamento do pedido.
 async function handleGetContracts(params: any): Promise<{ text: string; data: any }> {
-  console.log('[Sofia JARVIS] Getting contracts...', params);
+  console.log('[Sofia JARVIS] Getting legal contracts (contratos_legais)...', params);
 
   let query = supabase
     .from('contratos_legais')
     .select(`
-      id, status, nome_empresa, valor_total, created_at,
-      assinado_em, cancelado_em
+      id, numero_contrato, status, cliente_nome, cliente_email, 
+      valor_total, proposta_id, pedido_id,
+      enviado_em, visualizado_em, assinado_em, cancelado_em, created_at
     `)
     .order('created_at', { ascending: false })
-    .limit(10);
+    .limit(15);
 
   if (params?.status) {
     query = query.eq('status', params.status);
@@ -506,20 +530,139 @@ async function handleGetContracts(params: any): Promise<{ text: string; data: an
 
   const { data: contracts, error } = await query;
 
-  if (error || !contracts?.length) {
-    return { text: 'Não encontrei contratos.', data: [] };
+  if (error) {
+    console.error('[Sofia JARVIS] Contract query error:', error);
+    return { text: `Erro ao buscar contratos: ${error.message}`, data: [] };
   }
 
-  const pending = contracts.filter(c => c.status === 'pendente').length;
-  const signed = contracts.filter(c => c.status === 'assinado').length;
+  if (!contracts?.length) {
+    return { text: 'Não há contratos legais cadastrados. Contratos são gerados após pagamento de pedidos.', data: [] };
+  }
 
-  const list = contracts.slice(0, 5).map(c => 
-    `${c.nome_empresa}: ${c.status}, ${formatCurrency(c.valor_total || 0)}`
-  ).join('. ');
+  // Estatísticas por status
+  const stats = {
+    total: contracts.length,
+    pendente: contracts.filter(c => c.status === 'pendente' || c.status === 'rascunho').length,
+    enviado: contracts.filter(c => c.status === 'enviado').length,
+    visualizado: contracts.filter(c => c.status === 'visualizado' || c.visualizado_em).length,
+    assinado: contracts.filter(c => c.status === 'assinado' || c.assinado_em).length,
+    cancelado: contracts.filter(c => c.status === 'cancelado' || c.cancelado_em).length,
+    comProposta: contracts.filter(c => c.proposta_id).length,
+    comPedido: contracts.filter(c => c.pedido_id).length
+  };
 
-  const text = `${contracts.length} contratos. ${pending} pendentes, ${signed} assinados. ${list}`;
+  const list = contracts.slice(0, 5).map(c => {
+    const emoji = c.assinado_em ? '✅' : c.visualizado_em ? '👁️' : c.enviado_em ? '📤' : '📝';
+    return `${emoji} ${c.numero_contrato || c.id.substring(0,8)}: ${c.cliente_nome || 'N/A'} - ${c.status} - ${formatCurrency(c.valor_total || 0)}`;
+  }).join('. ');
 
-  return { text, data: { total: contracts.length, pending, signed, contracts } };
+  const text = `📄 CONTRATOS LEGAIS (documentos de assinatura):
+Total: ${stats.total} | Pendentes: ${stats.pendente} | Enviados: ${stats.enviado}
+✅ Assinados: ${stats.assinado} | ❌ Cancelados: ${stats.cancelado}
+🔗 ${stats.comProposta} vieram de proposta, ${stats.comPedido} de pedido.
+
+Últimos: ${list}
+
+⚠️ IMPORTANTE: Contrato Legal é diferente de Proposta. Proposta vira Pedido (pagamento), Pedido gera Contrato para assinatura.`;
+
+  return { text, data: { stats, contracts } };
+}
+
+// ==================== NOVO: Explicar Fluxo Proposta → Pedido → Contrato ====================
+async function handleExplicarFluxo(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Explaining proposal → order → contract flow...');
+  
+  // Contar cada entidade em paralelo
+  const [proposalsResult, pedidosResult, contratosResult] = await Promise.all([
+    supabase.from('proposals').select('id, status, converted_order_id, is_viewing, view_count').limit(500),
+    supabase.from('pedidos').select('id, status, valor_total').limit(500),
+    supabase.from('contratos_legais').select('id, status, proposta_id, pedido_id, assinado_em').limit(500)
+  ]);
+
+  const propostas = proposalsResult.data || [];
+  const pedidos = pedidosResult.data || [];
+  const contratos = contratosResult.data || [];
+
+  const stats = {
+    propostas: {
+      total: propostas.length,
+      naoAbertas: propostas.filter(p => (p.view_count || 0) === 0).length,
+      visualizandoAgora: propostas.filter(p => p.is_viewing).length,
+      convertidas: propostas.filter(p => p.converted_order_id).length
+    },
+    pedidos: {
+      total: pedidos.length,
+      pagos: pedidos.filter(p => ['pago', 'ativo', 'video_aprovado'].includes(p.status)).length,
+      pendentes: pedidos.filter(p => p.status === 'pendente').length,
+      valorTotal: pedidos.reduce((sum, p) => sum + (p.valor_total || 0), 0)
+    },
+    contratos: {
+      total: contratos.length,
+      assinados: contratos.filter(c => c.status === 'assinado' || c.assinado_em).length,
+      deProposta: contratos.filter(c => c.proposta_id).length,
+      dePedido: contratos.filter(c => c.pedido_id).length
+    }
+  };
+
+  const text = `📊 FLUXO DO SISTEMA EXA:
+
+1️⃣ PROPOSTA → É uma OFERTA enviada ao cliente. Ele pode visualizar, mas NÃO é venda!
+   📋 Você tem ${stats.propostas.total} propostas
+   📭 ${stats.propostas.naoAbertas} nunca foram abertas
+   🔴 ${stats.propostas.visualizandoAgora} sendo vistas AGORA
+   ✅ ${stats.propostas.convertidas} converteram em pedido
+
+2️⃣ PEDIDO → Quando o cliente PAGA a proposta, ela vira PEDIDO. É uma VENDA confirmada!
+   🛒 Você tem ${stats.pedidos.total} pedidos
+   ✅ ${stats.pedidos.pagos} pagos/ativos
+   ⏳ ${stats.pedidos.pendentes} aguardando pagamento
+   💰 Valor total: ${formatCurrency(stats.pedidos.valorTotal)}
+
+3️⃣ CONTRATO LEGAL → Documento formal gerado para ASSINATURA após o pagamento.
+   📄 Você tem ${stats.contratos.total} contratos
+   ✅ ${stats.contratos.assinados} assinados
+   🔗 ${stats.contratos.deProposta} vieram de proposta
+
+⚠️ RESUMO: Proposta visualizada NÃO é venda! Só conta como venda quando vira PEDIDO PAGO.`;
+
+  return { text, data: stats };
+}
+
+// ==================== NOVO: Propostas que geraram Contrato ====================
+async function handlePropostaComContrato(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting proposals with contracts...');
+  
+  // Buscar contratos que têm proposta vinculada
+  const { data: contratos, error } = await supabase
+    .from('contratos_legais')
+    .select(`
+      id, numero_contrato, status, cliente_nome, proposta_id,
+      valor_total, assinado_em, enviado_em, created_at
+    `)
+    .not('proposta_id', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (error) {
+    return { text: `Erro ao buscar contratos: ${error.message}`, data: [] };
+  }
+
+  if (!contratos?.length) {
+    return { text: 'Nenhuma proposta gerou contrato ainda. Contratos são criados após pagamento do pedido.', data: [] };
+  }
+
+  const assinados = contratos.filter(c => c.status === 'assinado' || c.assinado_em).length;
+  const enviados = contratos.filter(c => c.status === 'enviado').length;
+  const pendentes = contratos.filter(c => c.status === 'pendente' || c.status === 'rascunho').length;
+
+  const list = contratos.slice(0, 5).map(c => {
+    const emoji = c.assinado_em ? '✅' : c.enviado_em ? '📤' : '📝';
+    return `${emoji} ${c.cliente_nome}: ${c.status}`;
+  }).join('. ');
+
+  const text = `${contratos.length} propostas geraram contrato. ${assinados} assinados, ${enviados} aguardando assinatura, ${pendentes} pendentes. ${list}`;
+
+  return { text, data: { total: contratos.length, assinados, enviados, pendentes, contratos } };
 }
 
 // Financial Summary - Resumo financeiro
@@ -3002,15 +3145,39 @@ serve(async (req) => {
       case 'preferencias':
         result = await handleCompanyInfo();
         break;
+      // ========== FLUXO PROPOSTA → PEDIDO → CONTRATO ==========
+      case 'explicar_fluxo':
+      case 'fluxo':
+      case 'fluxo_proposta':
+      case 'fluxo_sistema':
+      case 'como_funciona':
+      case 'proposta_vs_pedido':
+      case 'proposta_vs_contrato':
+      case 'pedido_vs_contrato':
+      case 'diferenca_proposta_pedido':
+      case 'diferenca_proposta_contrato':
+      case 'o_que_e_proposta':
+      case 'o_que_e_pedido':
+      case 'o_que_e_contrato':
+        result = await handleExplicarFluxo();
+        break;
+      case 'proposta_com_contrato':
+      case 'propostas_convertidas_contrato':
+      case 'propostas_que_viraram_contrato':
+        result = await handlePropostaComContrato();
+        break;
       default:
-        result = { text: `Não entendi a consulta "${intent}". Posso ajudar com: visão geral (overview), prédios, painéis, vendas, conversas, contratos, financeiro, leads, clientes, cupons, alertas, PROPOSTAS (detalhes, timeline, quem está vendo, diferença proposta vs pedido), vídeos, emails, benefícios, prestadores, campanhas, produtos, usuários, síndicos, logos, configurações, notificações, parcelas, assinaturas, analytics, segurança, templates, relatórios, escalação, QR codes, respostas rápidas, estatísticas de exibição, portfolio, agentes IA, cortesias, informações da empresa, rastrear usuário, aprendizado da Sofia, conhecimento acumulado, e contexto do admin.`, data: null };
+        result = { text: `Não entendi a consulta "${intent}". Posso ajudar com: visão geral (overview), prédios, painéis, vendas, conversas, contratos, financeiro, leads, clientes, cupons, alertas, PROPOSTAS (detalhes, timeline, quem está vendo), FLUXO (diferença proposta vs pedido vs contrato), vídeos, emails, benefícios, prestadores, campanhas, produtos, usuários, síndicos, logos, configurações, notificações, parcelas, assinaturas, analytics, segurança, templates, relatórios, escalação, QR codes, respostas rápidas, estatísticas de exibição, portfolio, agentes IA, cortesias, informações da empresa, rastrear usuário, aprendizado da Sofia, conhecimento acumulado, e contexto do admin.`, data: null };
     }
 
     console.log(`[Sofia JARVIS] Response:`, result.text.substring(0, 100) + '...');
 
+    // Aplicar truncamento para evitar cortes no ElevenLabs
+    const responseText = truncateForVoice(result.text);
+
     return new Response(JSON.stringify({
       success: true,
-      response_text: result.text,
+      response_text: responseText,
       data: result.data
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
