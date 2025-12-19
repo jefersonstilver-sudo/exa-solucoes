@@ -1208,6 +1208,685 @@ async function handleAbandonedLeads(): Promise<{ text: string; data: any }> {
   };
 }
 
+// ==================== NEW INTENTS - COMPLETE SYSTEM ACCESS ====================
+
+// Company Info - Informações oficiais da EXA Mídia
+async function handleCompanyInfo(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting company info...');
+  
+  const companyData = {
+    razaoSocial: 'EXA Soluções Digitais LTDA',
+    cnpj: '62.878.193/0001-35',
+    endereco: 'Avenida Paraná, 974 – Sala 301, Centro, Foz do Iguaçu – PR',
+    cep: '85852-000',
+    cidade: 'Foz do Iguaçu',
+    estado: 'Paraná',
+    whatsapp: '(45) 9 9141-5856',
+    instagram: '@exa.publicidade',
+    email: 'contato@examidia.com.br',
+    site: 'www.examidia.com.br',
+    horarioFuncionamento: 'Segunda a Sexta, 09h às 18h',
+    certificacao: 'Modelo validado pelo Secovi Paraná',
+    segmento: 'Publicidade inteligente em elevadores',
+    missao: 'Conectar administradores, síndicos e moradores com comunicação não invasiva'
+  };
+  
+  const text = `A EXA Soluções Digitais é uma empresa de publicidade inteligente em elevadores, sediada em Foz do Iguaçu, Paraná. ` +
+    `CNPJ ${companyData.cnpj}. Endereço: ${companyData.endereco}. ` +
+    `WhatsApp: ${companyData.whatsapp}. Email: ${companyData.email}. ` +
+    `Site: ${companyData.site}. Horário: ${companyData.horarioFuncionamento}. ` +
+    `Certificação: ${companyData.certificacao}. ` +
+    `Nossa missão: ${companyData.missao}.`;
+  
+  return { text, data: companyData };
+}
+
+// Get Benefits - Benefícios do portal para síndicos
+async function handleGetBenefits(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting benefits...');
+  
+  const { data: benefits, error } = await supabase
+    .from('available_benefits')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true });
+
+  if (error || !benefits?.length) {
+    return { text: 'Nenhum benefício cadastrado no momento.', data: [] };
+  }
+
+  const byCategory: Record<string, any[]> = {};
+  benefits.forEach(b => {
+    if (!byCategory[b.category]) byCategory[b.category] = [];
+    byCategory[b.category].push(b);
+  });
+
+  const categorySummary = Object.entries(byCategory)
+    .map(([cat, items]) => `${cat}: ${items.length} benefícios`)
+    .join(', ');
+
+  const list = benefits.slice(0, 5).map(b => `${b.name} (${b.category})`).join(', ');
+
+  const text = `${benefits.length} benefícios ativos para síndicos. Por categoria: ${categorySummary}. Destaques: ${list}`;
+
+  return { text, data: { total: benefits.length, byCategory, benefits } };
+}
+
+// Get Providers - Prestadores de serviço
+async function handleGetProviders(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting providers...');
+  
+  const { data: providers, error } = await supabase
+    .from('provider_benefits')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !providers?.length) {
+    return { text: 'Nenhum prestador cadastrado no momento.', data: [] };
+  }
+
+  const active = providers.filter(p => p.is_active !== false).length;
+  const list = providers.slice(0, 5).map(p => `${p.provider_name || 'Prestador'}: ${p.benefit_title || 'Serviço'}`).join(', ');
+
+  const text = `${providers.length} prestadores cadastrados (${active} ativos). Principais: ${list}`;
+
+  return { text, data: { total: providers.length, active, providers } };
+}
+
+// Get Campaigns - Campanhas de mídia
+async function handleGetCampaigns(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting campaigns...', params);
+  
+  let query = supabase
+    .from('campanhas')
+    .select(`
+      id, status, data_inicio, data_fim, obs, created_at,
+      users!campanhas_client_id_fkey(nome, email),
+      painels!campanhas_painel_id_fkey(nome_referencia),
+      videos!campanhas_video_id_fkey(nome)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (params?.status) {
+    query = query.eq('status', params.status);
+  }
+
+  const { data: campaigns, error } = await query;
+
+  if (error || !campaigns?.length) {
+    return { text: 'Nenhuma campanha encontrada.', data: [] };
+  }
+
+  const statusCounts: Record<string, number> = {};
+  campaigns.forEach(c => {
+    statusCounts[c.status] = (statusCounts[c.status] || 0) + 1;
+  });
+
+  const statusSummary = Object.entries(statusCounts)
+    .map(([s, count]) => `${s}: ${count}`)
+    .join(', ');
+
+  const list = campaigns.slice(0, 5).map(c => {
+    const client = (c.users as any)?.nome || 'Cliente';
+    return `${client}: ${c.status}, ${formatDate(c.data_inicio)} a ${formatDate(c.data_fim)}`;
+  }).join('. ');
+
+  const text = `${campaigns.length} campanhas. Por status: ${statusSummary}. Recentes: ${list}`;
+
+  return { text, data: { total: campaigns.length, statusCounts, campaigns } };
+}
+
+// Campaign Details - Detalhes de uma campanha específica
+async function handleCampaignDetails(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting campaign details...', params);
+  
+  if (!params?.campaign_id) {
+    return { text: 'Preciso do ID da campanha.', data: null };
+  }
+
+  const { data: campaign, error } = await supabase
+    .from('campanhas')
+    .select(`
+      *,
+      users!campanhas_client_id_fkey(nome, email, telefone),
+      painels!campanhas_painel_id_fkey(nome_referencia, status),
+      videos!campanhas_video_id_fkey(nome, url, approval_status)
+    `)
+    .eq('id', params.campaign_id)
+    .single();
+
+  if (error || !campaign) {
+    return { text: 'Campanha não encontrada.', data: null };
+  }
+
+  const client = (campaign as any).users;
+  const painel = (campaign as any).painels;
+  const video = (campaign as any).videos;
+
+  const text = `Campanha ${campaign.id.substring(0, 8)}... ` +
+    `Cliente: ${client?.nome || 'N/A'} (${client?.email}). ` +
+    `Status: ${campaign.status}. ` +
+    `Período: ${formatDate(campaign.data_inicio)} a ${formatDate(campaign.data_fim)}. ` +
+    `Painel: ${painel?.nome_referencia || 'N/A'}. ` +
+    `Vídeo: ${video?.nome || 'N/A'} (${video?.approval_status || 'N/A'}).`;
+
+  return { text, data: campaign };
+}
+
+// Get Products - Produtos EXA
+async function handleGetProducts(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting products...');
+  
+  const { data: products, error } = await supabase
+    .from('products')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !products?.length) {
+    return { text: 'Nenhum produto cadastrado.', data: [] };
+  }
+
+  const active = products.filter(p => p.is_active !== false).length;
+  const list = products.map(p => `${p.name}: ${formatCurrency(p.price || 0)}`).join(', ');
+
+  const text = `${products.length} produtos cadastrados (${active} ativos). Produtos: ${list}`;
+
+  return { text, data: { total: products.length, active, products } };
+}
+
+// Get Users - Lista de usuários do sistema
+async function handleGetUsers(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting users...', params);
+  
+  let query = supabase
+    .from('users')
+    .select('id, nome, email, telefone, role, created_at')
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (params?.role) {
+    query = query.eq('role', params.role);
+  }
+
+  const { data: users, error } = await query;
+
+  if (error || !users?.length) {
+    return { text: 'Nenhum usuário encontrado.', data: [] };
+  }
+
+  const roleCounts: Record<string, number> = {};
+  users.forEach(u => {
+    roleCounts[u.role || 'sem_role'] = (roleCounts[u.role || 'sem_role'] || 0) + 1;
+  });
+
+  const roleSummary = Object.entries(roleCounts)
+    .map(([role, count]) => `${role}: ${count}`)
+    .join(', ');
+
+  const text = `${users.length} usuários. Por tipo: ${roleSummary}`;
+
+  return { text, data: { total: users.length, roleCounts, users } };
+}
+
+// User Details - Detalhes completos de um usuário
+async function handleUserDetails(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting user details...', params);
+  
+  let userId = params?.user_id;
+
+  if (!userId && params?.email) {
+    const { data: users } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', params.email)
+      .limit(1);
+    if (users?.length) userId = users[0].id;
+  }
+
+  if (!userId) {
+    return { text: 'Preciso do ID ou email do usuário.', data: null };
+  }
+
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  if (error || !user) {
+    return { text: 'Usuário não encontrado.', data: null };
+  }
+
+  const text = `Usuário ${user.nome || 'Sem nome'}. ` +
+    `Email: ${user.email}. Telefone: ${user.telefone || 'não informado'}. ` +
+    `Role: ${user.role}. Cadastrado em ${formatDate(user.created_at)}.`;
+
+  return { text, data: user };
+}
+
+// Get Sindicos Interessados
+async function handleGetSindicos(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting sindicos...');
+  
+  const { data: sindicos, error } = await supabase
+    .from('configuracoes_sindico')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !sindicos?.length) {
+    return { text: 'Nenhuma configuração de síndico encontrada.', data: [] };
+  }
+
+  const text = `${sindicos.length} configurações de síndico cadastradas.`;
+
+  return { text, data: { total: sindicos.length, sindicos } };
+}
+
+// Get Logos - Logos de clientes
+async function handleGetLogos(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting logos...');
+  
+  const { data: logos, error } = await supabase
+    .from('client_logos')
+    .select('*')
+    .order('order_position', { ascending: true });
+
+  if (error || !logos?.length) {
+    return { text: 'Nenhum logo cadastrado.', data: [] };
+  }
+
+  const active = logos.filter(l => l.is_active).length;
+  const list = logos.slice(0, 5).map(l => l.name).join(', ');
+
+  const text = `${logos.length} logos cadastrados (${active} ativos). Clientes: ${list}`;
+
+  return { text, data: { total: logos.length, active, logos } };
+}
+
+// Get Homepage Config
+async function handleGetHomepageConfig(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting homepage config...');
+  
+  const { data: config, error } = await supabase
+    .from('homepage_config')
+    .select('*')
+    .limit(1)
+    .single();
+
+  if (error || !config) {
+    return { text: 'Configuração da homepage não encontrada.', data: null };
+  }
+
+  const text = `Configuração da homepage carregada. ` +
+    `Título hero: ${config.hero_title || 'N/A'}. ` +
+    `Subtítulo: ${config.hero_subtitle || 'N/A'}. ` +
+    `Vídeo principal: ${config.video_url ? 'configurado' : 'não configurado'}.`;
+
+  return { text, data: config };
+}
+
+// Get Notifications
+async function handleGetNotifications(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting notifications...', params);
+  
+  let query = supabase
+    .from('notifications')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  if (params?.unread_only) {
+    query = query.eq('read', false);
+  }
+
+  const { data: notifications, error } = await query;
+
+  if (error || !notifications?.length) {
+    return { text: 'Nenhuma notificação encontrada.', data: [] };
+  }
+
+  const unread = notifications.filter(n => !n.read).length;
+  const list = notifications.slice(0, 5).map(n => 
+    `${n.title || 'Notificação'}: ${n.message?.substring(0, 40) || 'N/A'}...`
+  ).join('. ');
+
+  const text = `${notifications.length} notificações (${unread} não lidas). Recentes: ${list}`;
+
+  return { text, data: { total: notifications.length, unread, notifications } };
+}
+
+// Get Parcelas - Todas as parcelas
+async function handleGetParcelas(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting all parcelas...', params);
+  
+  const today = new Date().toISOString().split('T')[0];
+
+  let query = supabase
+    .from('parcelas')
+    .select(`
+      id, valor, status, data_vencimento, numero_parcela,
+      pedidos!inner(id, client_id)
+    `)
+    .order('data_vencimento', { ascending: false })
+    .limit(50);
+
+  if (params?.status) {
+    query = query.eq('status', params.status);
+  }
+
+  const { data: parcelas, error } = await query;
+
+  if (error || !parcelas?.length) {
+    return { text: 'Nenhuma parcela encontrada.', data: [] };
+  }
+
+  const pending = parcelas.filter(p => p.status === 'pendente');
+  const overdue = pending.filter(p => p.data_vencimento < today);
+  const totalPending = pending.reduce((sum, p) => sum + (p.valor || 0), 0);
+  const totalOverdue = overdue.reduce((sum, p) => sum + (p.valor || 0), 0);
+
+  const text = `${parcelas.length} parcelas no total. ` +
+    `${pending.length} pendentes (${formatCurrency(totalPending)}). ` +
+    `${overdue.length} em atraso (${formatCurrency(totalOverdue)}).`;
+
+  return { text, data: { total: parcelas.length, pending: pending.length, overdue: overdue.length, totalPending, totalOverdue, parcelas } };
+}
+
+// Get Assinaturas - Contratos recorrentes/ativos
+async function handleGetAssinaturas(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting assinaturas...');
+  
+  const { data: contracts, error } = await supabase
+    .from('contratos_legais')
+    .select('*')
+    .in('status', ['ativo', 'assinado'])
+    .order('created_at', { ascending: false });
+
+  if (error || !contracts?.length) {
+    return { text: 'Nenhuma assinatura/contrato ativo.', data: [] };
+  }
+
+  const totalValue = contracts.reduce((sum, c) => sum + (c.valor_total || 0), 0);
+
+  const text = `${contracts.length} contratos ativos totalizando ${formatCurrency(totalValue)}.`;
+
+  return { text, data: { total: contracts.length, totalValue, contracts } };
+}
+
+// Get Conversation Analytics
+async function handleGetConversationAnalytics(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting conversation analytics...');
+  
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const [conversationsResult, messagesResult] = await Promise.all([
+    supabase.from('conversations').select('id, agent_key, status, awaiting_response').gte('last_message_at', weekAgo),
+    supabase.from('messages').select('id, direction, created_at').gte('created_at', weekAgo)
+  ]);
+
+  const conversations = conversationsResult.data || [];
+  const messages = messagesResult.data || [];
+
+  const inbound = messages.filter(m => m.direction === 'inbound').length;
+  const outbound = messages.filter(m => m.direction === 'outbound').length;
+  const awaiting = conversations.filter(c => c.awaiting_response).length;
+
+  const agentCounts: Record<string, number> = {};
+  conversations.forEach(c => {
+    agentCounts[c.agent_key || 'desconhecido'] = (agentCounts[c.agent_key || 'desconhecido'] || 0) + 1;
+  });
+
+  const text = `Analytics de conversas (última semana): ` +
+    `${conversations.length} conversas, ${messages.length} mensagens (${inbound} recebidas, ${outbound} enviadas). ` +
+    `${awaiting} aguardando resposta.`;
+
+  return { text, data: { conversations: conversations.length, messages: messages.length, inbound, outbound, awaiting, agentCounts } };
+}
+
+// Get Security Logs
+async function handleGetSecurityLogs(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting security logs...');
+  
+  const [authLogsResult, apiLogsResult] = await Promise.all([
+    supabase.from('auth_detailed_logs').select('id, event_type, email, success, created_at').order('created_at', { ascending: false }).limit(20),
+    supabase.from('api_logs').select('id, api_name, endpoint, success, created_at').order('created_at', { ascending: false }).limit(20)
+  ]);
+
+  const authLogs = authLogsResult.data || [];
+  const apiLogs = apiLogsResult.data || [];
+
+  const failedAuth = authLogs.filter(l => !l.success).length;
+  const failedApi = apiLogs.filter(l => !l.success).length;
+
+  const text = `Logs de segurança: ${authLogs.length} eventos de autenticação (${failedAuth} falhas), ` +
+    `${apiLogs.length} chamadas de API (${failedApi} falhas).`;
+
+  return { text, data: { authLogs, apiLogs, failedAuth, failedApi } };
+}
+
+// Get Email Templates
+async function handleGetEmailTemplates(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting email templates...');
+  
+  const { data: templates, error } = await supabase
+    .from('email_templates_cache')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !templates?.length) {
+    return { text: 'Nenhum template de email encontrado.', data: [] };
+  }
+
+  const list = templates.map(t => t.template_name || t.id).join(', ');
+
+  const text = `${templates.length} templates de email: ${list}`;
+
+  return { text, data: { total: templates.length, templates } };
+}
+
+// Get Generated Reports
+async function handleGetGeneratedReports(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting generated reports...');
+  
+  const { data: reports, error } = await supabase
+    .from('generated_reports')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (error || !reports?.length) {
+    return { text: 'Nenhum relatório gerado encontrado.', data: [] };
+  }
+
+  const list = reports.slice(0, 5).map(r => 
+    `${r.report_type || 'Relatório'}: ${formatDate(r.created_at)}`
+  ).join(', ');
+
+  const text = `${reports.length} relatórios gerados. Recentes: ${list}`;
+
+  return { text, data: { total: reports.length, reports } };
+}
+
+// Get Escalacao Vendedores
+async function handleGetEscalacao(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting escalacao...');
+  
+  const { data: escalacao, error } = await supabase
+    .from('escalacao_vendedores')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !escalacao?.length) {
+    return { text: 'Nenhuma escalação de vendedor configurada.', data: [] };
+  }
+
+  const active = escalacao.filter(e => e.ativo !== false).length;
+
+  const text = `${escalacao.length} vendedores na escalação (${active} ativos).`;
+
+  return { text, data: { total: escalacao.length, active, escalacao } };
+}
+
+// Get QR Codes
+async function handleGetQrCodes(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting QR codes...');
+  
+  const { data: qrCodes, error } = await supabase
+    .from('qr_codes')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error || !qrCodes?.length) {
+    return { text: 'Nenhum QR code cadastrado.', data: [] };
+  }
+
+  const text = `${qrCodes.length} QR codes cadastrados.`;
+
+  return { text, data: { total: qrCodes.length, qrCodes } };
+}
+
+// Get Quick Replies
+async function handleGetQuickReplies(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting quick replies...');
+  
+  const { data: replies, error } = await supabase
+    .from('quick_replies')
+    .select('*')
+    .order('usage_count', { ascending: false });
+
+  if (error || !replies?.length) {
+    return { text: 'Nenhuma resposta rápida configurada.', data: [] };
+  }
+
+  const active = replies.filter(r => r.active !== false).length;
+  const list = replies.slice(0, 5).map(r => r.title || r.shortcut || 'N/A').join(', ');
+
+  const text = `${replies.length} respostas rápidas (${active} ativas). Mais usadas: ${list}`;
+
+  return { text, data: { total: replies.length, active, replies } };
+}
+
+// Get Display Stats - ESTATÍSTICAS DE EXIBIÇÃO (VÍDEOS/VISUALIZAÇÕES)
+async function handleGetDisplayStats(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting display stats...');
+  
+  const { data: buildings, error } = await supabase
+    .from('buildings')
+    .select('id, nome, visualizacoes_mes, publico_estimado, quantidade_telas')
+    .not('visualizacoes_mes', 'is', null)
+    .order('visualizacoes_mes', { ascending: false });
+
+  const { data: panels } = await supabase
+    .from('painels')
+    .select('id, status, last_heartbeat')
+    .eq('status', 'ativo');
+
+  const buildingsData = buildings || [];
+  const panelsData = panels || [];
+
+  const totalViews = buildingsData.reduce((sum, b) => sum + (b.visualizacoes_mes || 0), 0);
+  const totalAudience = buildingsData.reduce((sum, b) => sum + (b.publico_estimado || 0), 0);
+  const totalScreens = buildingsData.reduce((sum, b) => sum + (b.quantidade_telas || 0), 0);
+
+  const now = new Date();
+  const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+  const onlinePanels = panelsData.filter(p => p.last_heartbeat && new Date(p.last_heartbeat) > fiveMinutesAgo).length;
+
+  const topBuildings = buildingsData.slice(0, 5).map(b => 
+    `${b.nome}: ${(b.visualizacoes_mes || 0).toLocaleString('pt-BR')} views`
+  ).join(', ');
+
+  const text = `ESTATÍSTICAS DE EXIBIÇÃO: ` +
+    `${totalViews.toLocaleString('pt-BR')} visualizações este mês. ` +
+    `Público estimado: ${totalAudience.toLocaleString('pt-BR')} pessoas. ` +
+    `${totalScreens} telas ativas em ${buildingsData.length} prédios. ` +
+    `${onlinePanels} painéis online agora. ` +
+    `Top prédios: ${topBuildings || 'N/A'}`;
+
+  return { 
+    text, 
+    data: { 
+      totalViews, 
+      totalAudience, 
+      totalScreens, 
+      buildingsWithData: buildingsData.length,
+      onlinePanels,
+      buildings: buildingsData.slice(0, 10) 
+    } 
+  };
+}
+
+// Get Portfolio
+async function handleGetPortfolio(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting portfolio...');
+  
+  const { data: portfolio, error } = await supabase
+    .from('campanhas_portfolio')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !portfolio?.length) {
+    return { text: 'Nenhum item de portfolio encontrado.', data: [] };
+  }
+
+  const categories: Record<string, number> = {};
+  portfolio.forEach(p => {
+    categories[p.categoria || 'outros'] = (categories[p.categoria || 'outros'] || 0) + 1;
+  });
+
+  const categorySummary = Object.entries(categories)
+    .map(([cat, count]) => `${cat}: ${count}`)
+    .join(', ');
+
+  const text = `${portfolio.length} itens no portfolio. Por categoria: ${categorySummary}`;
+
+  return { text, data: { total: portfolio.length, categories, portfolio } };
+}
+
+// Get Agents Config
+async function handleGetAgentsConfig(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting agents config...');
+  
+  const { data: agents, error } = await supabase
+    .from('agents')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !agents?.length) {
+    return { text: 'Nenhum agente IA configurado.', data: [] };
+  }
+
+  const active = agents.filter(a => a.is_active).length;
+  const list = agents.map(a => `${a.display_name || a.key}: ${a.is_active ? 'ativo' : 'inativo'}`).join(', ');
+
+  const text = `${agents.length} agentes IA configurados (${active} ativos). Agentes: ${list}`;
+
+  return { text, data: { total: agents.length, active, agents } };
+}
+
+// Get Cortesias
+async function handleGetCortesias(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting cortesias...');
+  
+  const { data: cortesias, error } = await supabase
+    .from('cortesia_codes')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !cortesias?.length) {
+    return { text: 'Nenhum código de cortesia encontrado.', data: [] };
+  }
+
+  const active = cortesias.filter(c => c.is_active !== false).length;
+  const used = cortesias.filter(c => c.used_at).length;
+
+  const text = `${cortesias.length} códigos de cortesia (${active} ativos, ${used} usados).`;
+
+  return { text, data: { total: cortesias.length, active, used, cortesias } };
+}
+
 // ==================== MAIN HANDLER ====================
 
 serve(async (req) => {
@@ -1339,8 +2018,84 @@ serve(async (req) => {
       case 'contract_status_full':
         result = await handleContractStatusFull();
         break;
+      // ========== NEW INTENTS - COMPLETE SYSTEM ACCESS ==========
+      case 'company_info':
+        result = await handleCompanyInfo();
+        break;
+      case 'get_benefits':
+        result = await handleGetBenefits();
+        break;
+      case 'get_providers':
+        result = await handleGetProviders();
+        break;
+      case 'get_campaigns':
+        result = await handleGetCampaigns(params);
+        break;
+      case 'campaign_details':
+        result = await handleCampaignDetails(params);
+        break;
+      case 'get_products':
+        result = await handleGetProducts();
+        break;
+      case 'get_users':
+        result = await handleGetUsers(params);
+        break;
+      case 'user_details':
+        result = await handleUserDetails(params);
+        break;
+      case 'get_sindicos':
+        result = await handleGetSindicos();
+        break;
+      case 'get_logos':
+        result = await handleGetLogos();
+        break;
+      case 'get_homepage_config':
+        result = await handleGetHomepageConfig();
+        break;
+      case 'get_notifications':
+        result = await handleGetNotifications(params);
+        break;
+      case 'get_parcelas':
+        result = await handleGetParcelas(params);
+        break;
+      case 'get_assinaturas':
+        result = await handleGetAssinaturas();
+        break;
+      case 'get_conversation_analytics':
+        result = await handleGetConversationAnalytics();
+        break;
+      case 'get_security_logs':
+        result = await handleGetSecurityLogs();
+        break;
+      case 'get_email_templates':
+        result = await handleGetEmailTemplates();
+        break;
+      case 'get_generated_reports':
+        result = await handleGetGeneratedReports();
+        break;
+      case 'get_escalacao':
+        result = await handleGetEscalacao();
+        break;
+      case 'get_qr_codes':
+        result = await handleGetQrCodes();
+        break;
+      case 'get_quick_replies':
+        result = await handleGetQuickReplies();
+        break;
+      case 'get_display_stats':
+        result = await handleGetDisplayStats();
+        break;
+      case 'get_portfolio':
+        result = await handleGetPortfolio();
+        break;
+      case 'get_agents_config':
+        result = await handleGetAgentsConfig();
+        break;
+      case 'get_cortesias':
+        result = await handleGetCortesias();
+        break;
       default:
-        result = { text: `Não entendi a consulta "${intent}". Posso ajudar com: visão geral, prédios, painéis, vendas, conversas, contratos, financeiro, leads, clientes, cupons, alertas, propostas, vídeos, emails, análise de calor, leads em risco, relatório financeiro executivo, performance de agentes.`, data: null };
+        result = { text: `Não entendi a consulta "${intent}". Posso ajudar com: visão geral (overview), prédios, painéis, vendas, conversas, contratos, financeiro, leads, clientes, cupons, alertas, propostas, vídeos, emails, benefícios, prestadores, campanhas, produtos, usuários, síndicos, logos, configurações, notificações, parcelas, assinaturas, analytics, segurança, templates, relatórios, escalação, QR codes, respostas rápidas, estatísticas de exibição, portfolio, agentes IA, cortesias, e informações da empresa.`, data: null };
     }
 
     console.log(`[Sofia JARVIS] Response:`, result.text.substring(0, 100) + '...');
