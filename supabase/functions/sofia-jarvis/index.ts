@@ -829,7 +829,19 @@ serve(async (req) => {
   }
 
   try {
-    const { intent, params } = await req.json();
+    const body = await req.json();
+    const intent = body.intent;
+    
+    // Support both params (object) and params_json (string from ElevenLabs)
+    let params = body.params || {};
+    if (body.params_json && typeof body.params_json === 'string') {
+      try {
+        params = JSON.parse(body.params_json);
+      } catch (e) {
+        console.log('[Sofia JARVIS] Failed to parse params_json, using empty params');
+        params = {};
+      }
+    }
     
     console.log(`[Sofia JARVIS] Intent: ${intent}`, params);
 
