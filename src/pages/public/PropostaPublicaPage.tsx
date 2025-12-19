@@ -40,6 +40,8 @@ interface Proposal {
   cash_total_value: number;
   discount_percent: number;
   duration_months: number;
+  is_custom_days?: boolean | null;
+  custom_days?: number | null;
   status: string;
   created_at: string;
   sent_at: string | null;
@@ -1552,7 +1554,7 @@ const PropostaPublicaPage = () => {
               <PartyPopper className="h-6 w-6 text-[#9C1E1E]" />
             </div>
             <p className="text-sm text-[#7D1818]">
-              A EXA Mídia está oferecendo <strong>{proposal.duration_months} {proposal.duration_months === 1 ? 'mês' : 'meses'}</strong> de publicidade gratuita para você!
+              A EXA Mídia está oferecendo <strong>{proposal.is_custom_days ? `${proposal.custom_days} ${proposal.custom_days === 1 ? 'dia' : 'dias'}` : `${proposal.duration_months} ${proposal.duration_months === 1 ? 'mês' : 'meses'}`}</strong> de publicidade gratuita para você!
             </p>
           </Card>
         )}
@@ -1612,8 +1614,12 @@ const PropostaPublicaPage = () => {
             <div className="text-xs text-muted-foreground">Exibições/mês</div>
           </Card>
           <Card className="p-3 text-center bg-white/80 backdrop-blur-sm">
-            <div className="text-2xl font-bold text-[#9C1E1E]">{proposal.duration_months}</div>
-            <div className="text-xs text-muted-foreground">Meses</div>
+            <div className="text-2xl font-bold text-[#9C1E1E]">
+              {proposal.is_custom_days ? proposal.custom_days : proposal.duration_months}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {proposal.is_custom_days ? 'Dias' : 'Meses'}
+            </div>
           </Card>
         </div>
 
@@ -1665,7 +1671,9 @@ const PropostaPublicaPage = () => {
                   {baseTotalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  ({proposal.duration_months} {proposal.duration_months === 1 ? 'mês' : 'meses'} × {baseMonthlyTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês)
+                  ({proposal.is_custom_days 
+                    ? `${proposal.custom_days} ${proposal.custom_days === 1 ? 'dia' : 'dias'}` 
+                    : `${proposal.duration_months} ${proposal.duration_months === 1 ? 'mês' : 'meses'} × ${baseMonthlyTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês`})
                 </p>
               </div>
               
@@ -1741,7 +1749,9 @@ const PropostaPublicaPage = () => {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Período: {proposal.duration_months} {proposal.duration_months === 1 ? 'mês' : 'meses'}
+                      Período: {proposal.is_custom_days 
+                        ? `${proposal.custom_days} ${proposal.custom_days === 1 ? 'dia' : 'dias'}` 
+                        : `${proposal.duration_months} ${proposal.duration_months === 1 ? 'mês' : 'meses'}`}
                     </p>
                   </div>
                 </div>
@@ -1771,9 +1781,11 @@ const PropostaPublicaPage = () => {
                       <div className="text-2xl font-bold text-[#9C1E1E]">
                         {proposal.cash_total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        (equivale {(proposal.cash_total_value / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês)
-                      </p>
+                      {!proposal.is_custom_days && proposal.duration_months > 0 && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          (equivale {(proposal.cash_total_value / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês)
+                        </p>
+                      )}
                       <div className="mt-1">
                         <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
                           💰 Economia de 10%
@@ -1783,31 +1795,33 @@ const PropostaPublicaPage = () => {
                   </div>
                 </Card>
 
-                {/* Plano Fidelidade - Valor mensal + total */}
-                <Card 
-                  className={`p-4 cursor-pointer transition-all ${
-                    selectedPlan === 'fidelidade' 
-                      ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
-                      : 'border hover:border-gray-300'
-                  }`}
-                  onClick={() => setSelectedPlan('fidelidade')}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="font-bold mb-1">Plano Fidelidade</div>
-                      <p className="text-xs text-muted-foreground">Pagamento mensal • {proposal.duration_months} meses</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold">
-                        {proposal.fidel_monthly_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        <span className="text-sm font-normal text-muted-foreground">/mês</span>
+                {/* Plano Fidelidade - Valor mensal + total - NÃO APARECE para período em dias */}
+                {!proposal.is_custom_days && (
+                  <Card 
+                    className={`p-4 cursor-pointer transition-all ${
+                      selectedPlan === 'fidelidade' 
+                        ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
+                        : 'border hover:border-gray-300'
+                    }`}
+                    onClick={() => setSelectedPlan('fidelidade')}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-bold mb-1">Plano Fidelidade</div>
+                        <p className="text-xs text-muted-foreground">Pagamento mensal • {proposal.duration_months} meses</p>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Total: {(proposal.fidel_monthly_value * proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </p>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold">
+                          {proposal.fidel_monthly_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          <span className="text-sm font-normal text-muted-foreground">/mês</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Total: {(proposal.fidel_monthly_value * proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </Card>
+                  </Card>
+                )}
               </>
             )}
           </div>
