@@ -56,12 +56,17 @@ serve(async (req) => {
 
       if (getAgentResp.ok) {
         const agent = await getAgentResp.json();
-        const existingTools: string[] = agent?.platform_settings?.tools?.map((t: any) => t?.name).filter(Boolean) || [];
+        const existingToolObjs: any[] = agent?.platform_settings?.tools || [];
+        const existingTools: string[] = existingToolObjs.map((t: any) => t?.name).filter(Boolean) || [];
         const hasConsultarSistema = existingTools.includes('consultar_sistema');
         const hasAdminAuth = existingTools.includes('admin_auth');
 
-        if (!hasConsultarSistema || !hasAdminAuth) {
-          console.log('[elevenlabs-conversation-token] Agent missing tools, patching...');
+        const adminAuthTool = existingToolObjs.find((t: any) => t?.name === 'admin_auth');
+        const adminAuthRequired: string[] = adminAuthTool?.parameters?.required || [];
+        const needsAdminAuthSchemaFix = adminAuthRequired.includes('user_phone');
+
+        if (!hasConsultarSistema || !hasAdminAuth || needsAdminAuthSchemaFix) {
+          console.log('[elevenlabs-conversation-token] Agent tools/schema need patch, patching...');
 
           const tools = [
             {
@@ -117,7 +122,7 @@ serve(async (req) => {
                     description: 'Código de 6 dígitos (apenas verify_code)',
                   },
                 },
-                required: ['action', 'user_phone'],
+                required: ['action'],
               },
             },
           ];

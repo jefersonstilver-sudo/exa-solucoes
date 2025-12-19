@@ -152,7 +152,7 @@ const SOFIA_TOOLS = [
           description: "Código de 6 dígitos para verificação (apenas para verify_code)"
         }
       },
-      required: ["action", "user_phone"]
+      required: ["action"]
     }
   }
 ];
