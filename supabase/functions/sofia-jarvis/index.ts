@@ -297,40 +297,50 @@ async function handleReadConversation(params: any): Promise<{ text: string; data
 async function handleAgentConversations(params: any): Promise<{ text: string; data: any }> {
   console.log('[Sofia JARVIS] Getting agent conversations...', params);
 
-  const agentKey = params?.agent_key || 'eduardo';
-  const today = new Date().toISOString().split('T')[0];
+  const agentKey = params?.agent_key || params?.agent || 'eduardo';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayISO = today.toISOString();
 
+  // First get conversations without inner join to avoid filtering issues
   let query = supabase
     .from('conversations')
     .select(`
-      id, contact_name, phone, status, last_message_at, awaiting_response,
-      messages!inner(content, direction, created_at)
+      id, contact_name, contact_phone, status, last_message_at, awaiting_response, agent_key
     `)
     .eq('agent_key', agentKey)
     .order('last_message_at', { ascending: false })
-    .limit(10);
+    .limit(20);
 
-  if (params?.period === 'today') {
-    query = query.gte('last_message_at', today);
+  // Filter by today if requested
+  if (params?.period === 'today' || params?.today) {
+    query = query.gte('last_message_at', todayISO);
   }
 
   const { data: conversations, error } = await query;
 
-  if (error || !conversations?.length) {
-    return { text: `Sem conversas recentes do ${agentKey}.`, data: [] };
+  console.log('[Sofia JARVIS] Agent conversations result:', { 
+    agentKey, 
+    count: conversations?.length || 0, 
+    error: error?.message 
+  });
+
+  if (error) {
+    return { text: `Erro ao buscar conversas: ${error.message}`, data: [] };
+  }
+
+  if (!conversations?.length) {
+    return { text: `${agentKey} não tem conversas ${params?.period === 'today' ? 'hoje' : 'recentes'}.`, data: [] };
   }
 
   const awaitingResponse = conversations.filter(c => c.awaiting_response).length;
   
   const convList = conversations.slice(0, 5).map(c => {
-    const lastMsg = Array.isArray(c.messages) && c.messages.length > 0 
-      ? c.messages[0]?.content?.substring(0, 50) 
-      : 'Sem mensagens';
-    return `${c.contact_name}: "${lastMsg}..."`;
-  }).join(' | ');
+    return `${c.contact_name} (${c.contact_phone || 'sem telefone'}) - ${timeAgo(c.last_message_at)}`;
+  }).join('. ');
 
-  const text = `${agentKey} tem ${conversations.length} conversas recentes. ${awaitingResponse} aguardando resposta. ` +
-    `Conversas: ${convList}`;
+  const text = `${agentKey} tem ${conversations.length} conversas${params?.period === 'today' ? ' hoje' : ''}. ` +
+    `${awaitingResponse} aguardando resposta. Últimas: ${convList}`;
 
   return { text, data: { total: conversations.length, awaitingResponse, conversations } };
 }
@@ -339,26 +349,30 @@ async function handleAgentConversations(params: any): Promise<{ text: string; da
 async function handleSearchConversations(params: any): Promise<{ text: string; data: any }> {
   console.log('[Sofia JARVIS] Searching conversations...', params);
 
-  if (!params?.query) {
+  const searchTerm = params?.query || params?.name || params?.search;
+  
+  if (!searchTerm) {
     return { text: 'Informe o termo de busca (nome ou telefone).', data: [] };
   }
 
-  const { data: conversations } = await supabase
+  const { data: conversations, error } = await supabase
     .from('conversations')
-    .select('id, contact_name, phone, agent_key, status, last_message_at')
-    .or(`contact_name.ilike.%${params.query}%,phone.ilike.%${params.query}%`)
+    .select('id, contact_name, contact_phone, agent_key, status, last_message_at, awaiting_response')
+    .or(`contact_name.ilike.%${searchTerm}%,contact_phone.ilike.%${searchTerm}%`)
     .order('last_message_at', { ascending: false })
     .limit(10);
 
+  console.log('[Sofia JARVIS] Search result:', { searchTerm, count: conversations?.length || 0, error: error?.message });
+
   if (!conversations?.length) {
-    return { text: `Não encontrei conversas com "${params.query}".`, data: [] };
+    return { text: `Não encontrei conversas com "${searchTerm}".`, data: [] };
   }
 
   const list = conversations.map(c => 
-    `${c.contact_name} (${c.phone}) - agente ${c.agent_key}, ${timeAgo(c.last_message_at)}`
+    `${c.contact_name} (${c.contact_phone || 'sem tel'}) - ${c.agent_key}, ${c.awaiting_response ? 'aguardando' : c.status}, ${timeAgo(c.last_message_at)}`
   ).join('. ');
 
-  return { text: `Encontrei ${conversations.length} conversas. ${list}`, data: conversations };
+  return { text: `Encontrei ${conversations.length} conversas para "${searchTerm}". ${list}`, data: conversations };
 }
 
 // Get Contracts - Listar contratos
@@ -672,7 +686,11 @@ async function handleGetProposals(params: any): Promise<{ text: string; data: an
 
   let query = supabase
     .from('proposals')
-    .select('id, nome_cliente, email_cliente, status, valor_total, created_at')
+    .select(`
+      id, client_name, client_email, client_phone, status, 
+      cash_total_value, fidel_monthly_value, fidel_total_value,
+      seller_name, sent_at, viewed_at, created_at, proposal_type
+    `)
     .order('created_at', { ascending: false })
     .limit(20);
 
@@ -680,20 +698,28 @@ async function handleGetProposals(params: any): Promise<{ text: string; data: an
     query = query.eq('status', params.status);
   }
 
-  const { data: proposals } = await query;
+  const { data: proposals, error } = await query;
+
+  console.log('[Sofia JARVIS] Proposals result:', { count: proposals?.length || 0, error: error?.message });
 
   if (!proposals?.length) {
     return { text: 'Sem propostas encontradas.', data: [] };
   }
 
-  const pending = proposals.filter(p => p.status === 'enviada').length;
-  const accepted = proposals.filter(p => p.status === 'aceita').length;
+  const pending = proposals.filter(p => p.status === 'enviada' || p.status === 'pending').length;
+  const viewed = proposals.filter(p => p.viewed_at).length;
+  const accepted = proposals.filter(p => p.status === 'aceita' || p.status === 'accepted').length;
 
-  const list = proposals.slice(0, 5).map(p => 
-    `${p.nome_cliente}: ${p.status}, ${formatCurrency(p.valor_total || 0)}`
-  ).join('. ');
+  const list = proposals.slice(0, 5).map(p => {
+    const valor = p.cash_total_value || p.fidel_total_value || 0;
+    const viewedStatus = p.viewed_at ? '✓ visualizada' : 'não visualizada';
+    return `${p.client_name}: ${p.status} (${viewedStatus}), ${formatCurrency(valor)}, vendedor: ${p.seller_name || 'N/A'}`;
+  }).join('. ');
 
-  return { text: `${proposals.length} propostas. ${pending} pendentes, ${accepted} aceitas. ${list}`, data: proposals };
+  return { 
+    text: `${proposals.length} propostas. ${pending} pendentes, ${viewed} visualizadas, ${accepted} aceitas. ${list}`, 
+    data: proposals 
+  };
 }
 
 // Order Details - Detalhes de um pedido
@@ -2093,6 +2119,39 @@ serve(async (req) => {
         break;
       case 'get_cortesias':
         result = await handleGetCortesias();
+        break;
+      // ========== ALIASES / SYNONYMS ==========
+      case 'building_info':
+      case 'buildings':
+      case 'predios':
+        result = await handleQueryBuildings(params);
+        break;
+      case 'contract_details':
+      case 'contracts':
+      case 'contratos':
+        result = await handleGetContracts(params);
+        break;
+      case 'recent_conversations':
+      case 'conversations':
+      case 'conversas':
+        result = await handleAgentConversations(params);
+        break;
+      case 'leads_summary':
+      case 'leads':
+        result = await handleGetLeads(params);
+        break;
+      case 'system_health':
+      case 'health':
+      case 'status':
+        result = await handleOverview();
+        break;
+      case 'proposals':
+      case 'propostas':
+        result = await handleGetProposals(params);
+        break;
+      case 'financeiro':
+      case 'financial':
+        result = await handleFinancialSummary(params);
         break;
       default:
         result = { text: `Não entendi a consulta "${intent}". Posso ajudar com: visão geral (overview), prédios, painéis, vendas, conversas, contratos, financeiro, leads, clientes, cupons, alertas, propostas, vídeos, emails, benefícios, prestadores, campanhas, produtos, usuários, síndicos, logos, configurações, notificações, parcelas, assinaturas, analytics, segurança, templates, relatórios, escalação, QR codes, respostas rápidas, estatísticas de exibição, portfolio, agentes IA, cortesias, e informações da empresa.`, data: null };
