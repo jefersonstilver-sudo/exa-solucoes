@@ -820,6 +820,394 @@ async function handleDailyMetrics(): Promise<{ text: string; data: any }> {
   return { text, data: { orders: orders.length, revenue, leads: leads.length, conversations: conversations.length, messages: messages.length } };
 }
 
+// ==================== ADMIN MASTER INTENTS ====================
+
+// Conversation Heat Analysis - Análise de calor das conversas
+async function handleConversationHeatAnalysis(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS ADMIN] Analyzing conversation heat...');
+
+  // Get conversations with recent activity
+  const { data: conversations } = await supabase
+    .from('conversations')
+    .select(`
+      id, contact_name, phone, agent_key, status, last_message_at, awaiting_response,
+      messages(content, direction, created_at)
+    `)
+    .gte('last_message_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+    .order('last_message_at', { ascending: false })
+    .limit(50);
+
+  if (!conversations?.length) {
+    return { text: 'Não há conversas recentes para analisar.', data: [] };
+  }
+
+  // Calculate heat scores
+  const analyzedConversations = conversations.map(conv => {
+    const messages = Array.isArray(conv.messages) ? conv.messages : [];
+    const inboundCount = messages.filter((m: any) => m.direction === 'inbound').length;
+    const outboundCount = messages.filter((m: any) => m.direction === 'outbound').length;
+    const lastMessageTime = new Date(conv.last_message_at).getTime();
+    const hoursSinceLastMessage = (Date.now() - lastMessageTime) / (1000 * 60 * 60);
+    
+    // Calculate heat score (0-100)
+    let heatScore = 50;
+    heatScore += Math.min(inboundCount * 5, 25); // More inbound = hotter
+    heatScore += conv.awaiting_response ? 15 : 0; // Awaiting response = hotter
+    heatScore -= Math.min(hoursSinceLastMessage * 2, 30); // Older = colder
+    heatScore = Math.max(0, Math.min(100, heatScore));
+    
+    // Risk factors
+    const riskFactors: string[] = [];
+    if (hoursSinceLastMessage > 24) riskFactors.push('sem_resposta_24h');
+    if (hoursSinceLastMessage > 48) riskFactors.push('abandono_risco');
+    if (conv.awaiting_response) riskFactors.push('aguardando_resposta');
+    if (inboundCount > outboundCount * 2) riskFactors.push('cliente_insistente');
+    
+    return {
+      ...conv,
+      heatScore,
+      riskFactors,
+      hoursSinceLastMessage: Math.round(hoursSinceLastMessage),
+      messageCount: messages.length
+    };
+  });
+
+  // Sort by heat score descending
+  analyzedConversations.sort((a, b) => b.heatScore - a.heatScore);
+
+  const hotConversations = analyzedConversations.filter(c => c.heatScore >= 70);
+  const atRisk = analyzedConversations.filter(c => c.riskFactors.includes('abandono_risco'));
+  const awaitingResponse = analyzedConversations.filter(c => c.awaiting_response);
+
+  const hotList = hotConversations.slice(0, 5).map(c => 
+    `${c.contact_name} (${c.agent_key}): score ${c.heatScore}, ${c.hoursSinceLastMessage}h atrás`
+  ).join('. ');
+
+  const text = `Análise de calor: ${conversations.length} conversas analisadas. ` +
+    `${hotConversations.length} conversas quentes (score 70+), ${atRisk.length} em risco de abandono, ` +
+    `${awaitingResponse.length} aguardando resposta. ` +
+    `Mais quentes: ${hotList || 'nenhuma acima de 70'}`;
+
+  return { 
+    text, 
+    data: { 
+      total: conversations.length, 
+      hot: hotConversations.length, 
+      atRisk: atRisk.length,
+      awaitingResponse: awaitingResponse.length,
+      conversations: analyzedConversations.slice(0, 20)
+    } 
+  };
+}
+
+// Leads at Risk - Leads em risco de abandono
+async function handleLeadsAtRisk(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS ADMIN] Getting leads at risk...');
+
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Leads without follow-up
+  const { data: leads } = await supabase
+    .from('leads_exa')
+    .select(`
+      id, nome, telefone, status, score, created_at, ultimo_contato, conversation_id,
+      conversations(last_message_at, awaiting_response)
+    `)
+    .in('status', ['novo', 'em_andamento', 'qualificado'])
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (!leads?.length) {
+    return { text: 'Não há leads ativos no momento.', data: [] };
+  }
+
+  const riskLeads = leads.map(lead => {
+    const conv = lead.conversations as any;
+    const lastContact = lead.ultimo_contato || lead.created_at;
+    const daysSinceContact = Math.floor((Date.now() - new Date(lastContact).getTime()) / (1000 * 60 * 60 * 24));
+    
+    let riskLevel = 'baixo';
+    const riskFactors: string[] = [];
+    
+    if (daysSinceContact >= 7) {
+      riskLevel = 'critico';
+      riskFactors.push('sem_contato_7dias');
+    } else if (daysSinceContact >= 3) {
+      riskLevel = 'alto';
+      riskFactors.push('sem_contato_3dias');
+    }
+    
+    if (conv?.awaiting_response) {
+      riskFactors.push('aguardando_resposta');
+      if (riskLevel === 'baixo') riskLevel = 'medio';
+    }
+    
+    if ((lead.score || 0) >= 80 && daysSinceContact >= 2) {
+      riskFactors.push('lead_quente_esfriando');
+      riskLevel = 'alto';
+    }
+
+    return {
+      ...lead,
+      daysSinceContact,
+      riskLevel,
+      riskFactors
+    };
+  }).filter(l => l.riskFactors.length > 0);
+
+  riskLeads.sort((a, b) => {
+    const riskOrder = { critico: 0, alto: 1, medio: 2, baixo: 3 };
+    return riskOrder[a.riskLevel as keyof typeof riskOrder] - riskOrder[b.riskLevel as keyof typeof riskOrder];
+  });
+
+  const critical = riskLeads.filter(l => l.riskLevel === 'critico');
+  const high = riskLeads.filter(l => l.riskLevel === 'alto');
+
+  const criticalList = critical.slice(0, 5).map(l => 
+    `${l.nome}: ${l.daysSinceContact} dias sem contato, score ${l.score || 0}`
+  ).join('. ');
+
+  const text = `Leads em risco: ${riskLeads.length} leads precisam de atenção. ` +
+    `${critical.length} críticos (7+ dias), ${high.length} alto risco (3+ dias). ` +
+    `Críticos: ${criticalList || 'nenhum'}`;
+
+  return { 
+    text, 
+    data: { 
+      total: riskLeads.length, 
+      critical: critical.length, 
+      high: high.length,
+      leads: riskLeads 
+    } 
+  };
+}
+
+// Full Financial Report - Relatório financeiro completo
+async function handleFullFinancialReport(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS ADMIN] Generating full financial report...');
+
+  const now = new Date();
+  const thisMonth = now.toISOString().slice(0, 7);
+  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 7);
+  const today = now.toISOString().split('T')[0];
+
+  const [
+    thisMonthOrders,
+    lastMonthOrders,
+    overdueResult,
+    upcomingResult,
+    contractsResult
+  ] = await Promise.all([
+    supabase.from('pedidos').select('id, status, valor_total').gte('created_at', `${thisMonth}-01`),
+    supabase.from('pedidos').select('id, status, valor_total').gte('created_at', `${lastMonth}-01`).lt('created_at', `${thisMonth}-01`),
+    supabase.from('parcelas').select('id, valor, data_vencimento').eq('status', 'pendente').lt('data_vencimento', today),
+    supabase.from('parcelas').select('id, valor, data_vencimento').eq('status', 'pendente').gte('data_vencimento', today).lte('data_vencimento', new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]),
+    supabase.from('contratos_legais').select('id, status, valor_total').in('status', ['ativo', 'assinado'])
+  ]);
+
+  const thisMonthData = thisMonthOrders.data || [];
+  const lastMonthData = lastMonthOrders.data || [];
+  const overdue = overdueResult.data || [];
+  const upcoming = upcomingResult.data || [];
+  const contracts = contractsResult.data || [];
+
+  const paidStatuses = ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'];
+  
+  const thisMonthRevenue = thisMonthData.filter(o => paidStatuses.includes(o.status)).reduce((sum, o) => sum + (o.valor_total || 0), 0);
+  const lastMonthRevenue = lastMonthData.filter(o => paidStatuses.includes(o.status)).reduce((sum, o) => sum + (o.valor_total || 0), 0);
+  const pendingRevenue = thisMonthData.filter(o => o.status === 'pendente').reduce((sum, o) => sum + (o.valor_total || 0), 0);
+  const overdueAmount = overdue.reduce((sum, p) => sum + (p.valor || 0), 0);
+  const upcomingAmount = upcoming.reduce((sum, p) => sum + (p.valor || 0), 0);
+  const activeContractsValue = contracts.reduce((sum, c) => sum + (c.valor_total || 0), 0);
+
+  const growthPercent = lastMonthRevenue > 0 
+    ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 100).toFixed(1)
+    : 'N/A';
+
+  const text = `RELATÓRIO FINANCEIRO EXECUTIVO. ` +
+    `Este mês: ${formatCurrency(thisMonthRevenue)} confirmados, ${formatCurrency(pendingRevenue)} pendentes. ` +
+    `Mês anterior: ${formatCurrency(lastMonthRevenue)} (${growthPercent}% variação). ` +
+    `Inadimplência: ${overdue.length} parcelas em atraso (${formatCurrency(overdueAmount)}). ` +
+    `Próximos 7 dias: ${formatCurrency(upcomingAmount)} a receber. ` +
+    `Contratos ativos: ${contracts.length} totalizando ${formatCurrency(activeContractsValue)}.`;
+
+  return { 
+    text, 
+    data: { 
+      thisMonth: { revenue: thisMonthRevenue, pending: pendingRevenue, orders: thisMonthData.length },
+      lastMonth: { revenue: lastMonthRevenue, orders: lastMonthData.length },
+      growthPercent,
+      overdue: { count: overdue.length, amount: overdueAmount },
+      upcoming: { count: upcoming.length, amount: upcomingAmount },
+      contracts: { count: contracts.length, value: activeContractsValue }
+    } 
+  };
+}
+
+// Agent Performance - Performance dos agentes
+async function handleAgentPerformance(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS ADMIN] Getting agent performance...');
+
+  const today = new Date().toISOString().split('T')[0];
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: conversations } = await supabase
+    .from('conversations')
+    .select('agent_key, status, awaiting_response, last_message_at')
+    .gte('last_message_at', weekAgo);
+
+  const { data: messages } = await supabase
+    .from('messages')
+    .select('conversation_id, direction, created_at')
+    .gte('created_at', weekAgo);
+
+  if (!conversations?.length) {
+    return { text: 'Não há dados de performance recentes.', data: {} };
+  }
+
+  // Group by agent
+  const agentStats: Record<string, any> = {};
+  
+  conversations.forEach(conv => {
+    const agent = conv.agent_key || 'desconhecido';
+    if (!agentStats[agent]) {
+      agentStats[agent] = {
+        conversations: 0,
+        awaitingResponse: 0,
+        messagesIn: 0,
+        messagesOut: 0
+      };
+    }
+    agentStats[agent].conversations++;
+    if (conv.awaiting_response) agentStats[agent].awaitingResponse++;
+  });
+
+  // Count messages per agent (simplified - would need conversation-agent mapping for accuracy)
+  const totalMessages = messages?.length || 0;
+  const inboundMessages = messages?.filter(m => m.direction === 'inbound').length || 0;
+  const outboundMessages = messages?.filter(m => m.direction === 'outbound').length || 0;
+
+  const agentList = Object.entries(agentStats)
+    .map(([agent, stats]) => `${agent}: ${stats.conversations} conversas, ${stats.awaitingResponse} aguardando`)
+    .join('. ');
+
+  const text = `PERFORMANCE DOS AGENTES (última semana). ` +
+    `Total: ${conversations.length} conversas, ${totalMessages} mensagens (${inboundMessages} recebidas, ${outboundMessages} enviadas). ` +
+    `Por agente: ${agentList}`;
+
+  return { 
+    text, 
+    data: { 
+      totalConversations: conversations.length,
+      totalMessages,
+      inboundMessages,
+      outboundMessages,
+      agentStats 
+    } 
+  };
+}
+
+// Contract Status Full - Status completo de contratos
+async function handleContractStatusFull(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS ADMIN] Getting full contract status...');
+
+  const { data: contracts } = await supabase
+    .from('contratos_legais')
+    .select('id, numero_contrato, cliente_nome, status, valor_total, data_inicio, data_fim, assinado_em, created_at')
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (!contracts?.length) {
+    return { text: 'Não há contratos cadastrados.', data: [] };
+  }
+
+  const statusCounts: Record<string, number> = {};
+  const statusValues: Record<string, number> = {};
+  
+  contracts.forEach(c => {
+    const status = c.status || 'desconhecido';
+    statusCounts[status] = (statusCounts[status] || 0) + 1;
+    statusValues[status] = (statusValues[status] || 0) + (c.valor_total || 0);
+  });
+
+  const pendingSignature = contracts.filter(c => c.status === 'enviado');
+  const expiringSoon = contracts.filter(c => {
+    if (!c.data_fim || c.status !== 'ativo') return false;
+    const daysUntilExpiry = Math.floor((new Date(c.data_fim).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+  });
+
+  const statusSummary = Object.entries(statusCounts)
+    .map(([status, count]) => `${status}: ${count} (${formatCurrency(statusValues[status] || 0)})`)
+    .join(', ');
+
+  const pendingList = pendingSignature.slice(0, 3).map(c => 
+    `${c.cliente_nome}: ${formatCurrency(c.valor_total || 0)}`
+  ).join(', ');
+
+  const expiringList = expiringSoon.slice(0, 3).map(c => {
+    const daysLeft = Math.floor((new Date(c.data_fim).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return `${c.cliente_nome}: ${daysLeft} dias`;
+  }).join(', ');
+
+  const text = `STATUS DE CONTRATOS. Total: ${contracts.length}. ` +
+    `Por status: ${statusSummary}. ` +
+    `Aguardando assinatura: ${pendingSignature.length} (${pendingList || 'nenhum'}). ` +
+    `Expirando em 30 dias: ${expiringSoon.length} (${expiringList || 'nenhum'}).`;
+
+  return { 
+    text, 
+    data: { 
+      total: contracts.length,
+      statusCounts,
+      statusValues,
+      pendingSignature: pendingSignature.length,
+      expiringSoon: expiringSoon.length,
+      contracts: contracts.slice(0, 20)
+    } 
+  };
+}
+
+// Abandoned Leads - Leads abandonados
+async function handleAbandonedLeads(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS ADMIN] Getting abandoned leads...');
+
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: leads } = await supabase
+    .from('leads_exa')
+    .select('id, nome, telefone, status, score, created_at, ultimo_contato')
+    .in('status', ['novo', 'em_andamento'])
+    .lt('ultimo_contato', sevenDaysAgo)
+    .order('ultimo_contato', { ascending: true })
+    .limit(30);
+
+  if (!leads?.length) {
+    return { text: 'Nenhum lead abandonado encontrado. Ótimo trabalho!', data: [] };
+  }
+
+  const leadsList = leads.slice(0, 10).map(l => {
+    const daysAgo = Math.floor((Date.now() - new Date(l.ultimo_contato || l.created_at).getTime()) / (1000 * 60 * 60 * 24));
+    return `${l.nome}: ${daysAgo} dias sem contato, score ${l.score || 0}`;
+  }).join('. ');
+
+  const highScoreAbandoned = leads.filter(l => (l.score || 0) >= 70).length;
+
+  const text = `LEADS ABANDONADOS (7+ dias sem contato): ${leads.length} leads. ` +
+    `${highScoreAbandoned} são de alto valor (score 70+). ` +
+    `Lista: ${leadsList}`;
+
+  return { 
+    text, 
+    data: { 
+      total: leads.length, 
+      highValue: highScoreAbandoned,
+      leads 
+    } 
+  };
+}
+
 // ==================== MAIN HANDLER ====================
 
 serve(async (req) => {
@@ -932,8 +1320,27 @@ serve(async (req) => {
       case 'daily_metrics':
         result = await handleDailyMetrics();
         break;
+      // ========== ADMIN MASTER INTENTS ==========
+      case 'conversation_heat_analysis':
+        result = await handleConversationHeatAnalysis();
+        break;
+      case 'leads_at_risk':
+        result = await handleLeadsAtRisk();
+        break;
+      case 'abandoned_leads':
+        result = await handleAbandonedLeads();
+        break;
+      case 'full_financial_report':
+        result = await handleFullFinancialReport();
+        break;
+      case 'agent_performance':
+        result = await handleAgentPerformance();
+        break;
+      case 'contract_status_full':
+        result = await handleContractStatusFull();
+        break;
       default:
-        result = { text: `Não entendi a consulta "${intent}". Posso ajudar com: visão geral, prédios, painéis, vendas, conversas, contratos, financeiro, leads, clientes, cupons, alertas, propostas, vídeos ou emails.`, data: null };
+        result = { text: `Não entendi a consulta "${intent}". Posso ajudar com: visão geral, prédios, painéis, vendas, conversas, contratos, financeiro, leads, clientes, cupons, alertas, propostas, vídeos, emails, análise de calor, leads em risco, relatório financeiro executivo, performance de agentes.`, data: null };
     }
 
     console.log(`[Sofia JARVIS] Response:`, result.text.substring(0, 100) + '...');

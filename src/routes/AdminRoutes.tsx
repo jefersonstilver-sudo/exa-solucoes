@@ -42,6 +42,9 @@ import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
 // Lazy load editor video control page
 const EditorVideoControlePage = lazy(() => import('@/pages/video-editor/VideoEditorAccessControl'));
 
+// Sofia Executive Dashboard
+const SofiaExecutive = lazy(() => import('@/pages/admin/SofiaExecutive'));
+
 // Lazy imports para páginas do monitoramento-ia (agora integradas)
 const CRMUnificado = lazy(() => import('@/modules/monitoramento-ia/pages/CRMUnificado'));
 const EscalacoesComerciais = lazy(() => import('@/modules/monitoramento-ia/pages/EscalacoesComerciais'));
@@ -191,6 +194,13 @@ const AdminRoutes = () => {
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.exa_alerts}>
           <Suspense fallback={<GlobalLoadingPage message="Carregando EXA Alerts..." />}>
             <AlertasPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="sofia-executive" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.agentes_sofia}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Sofia Executive..." />}>
+            <SofiaExecutive />
           </Suspense>
         </ProtectedModuleRoute>
       } />
