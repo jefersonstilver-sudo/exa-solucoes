@@ -92,39 +92,69 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
       }
     },
     onMessage: (message: any) => {
-      console.log('[Sofia] 📨 Message received:', message?.type, message);
-      
-      if (message?.type === 'user_transcript') {
-        const text = message?.user_transcription_event?.user_transcript || '';
-        console.log('[Sofia] 🎤 User transcript:', text);
-        setUserTranscript(text);
-      }
-      
-      if (message?.type === 'agent_response') {
-        const text = message?.agent_response_event?.agent_response || '';
-        console.log('[Sofia] 🤖 Agent response:', text);
-        setTranscript(text);
-      }
+      try {
+        console.log('[Sofia] 📨 Message received:', JSON.stringify(message, null, 2));
+        
+        // Handle error messages safely
+        if (message?.type === 'error' || message?.type === 'tool_error') {
+          console.error('[Sofia] ⚠️ Agent error message:', message);
+          // Don't throw, just log - let the conversation continue
+          return;
+        }
+        
+        if (message?.type === 'user_transcript') {
+          const text = message?.user_transcription_event?.user_transcript || '';
+          console.log('[Sofia] 🎤 User transcript:', text);
+          setUserTranscript(text);
+        }
+        
+        if (message?.type === 'agent_response') {
+          const text = message?.agent_response_event?.agent_response || '';
+          console.log('[Sofia] 🤖 Agent response:', text);
+          setTranscript(text);
+        }
 
-      // Log tool calls for debugging
-      if (message?.type === 'tool_call') {
-        console.log('[Sofia] 🔧 Tool call:', message?.tool_call);
-      }
+        // Log tool calls for debugging
+        if (message?.type === 'tool_call' || message?.type === 'client_tool_call') {
+          console.log('[Sofia] 🔧 Tool call:', message?.tool_call || message?.client_tool_call);
+        }
 
-      if (message?.type === 'tool_result') {
-        console.log('[Sofia] 🔧 Tool result:', message?.tool_result);
+        if (message?.type === 'tool_result' || message?.type === 'agent_tool_response') {
+          console.log('[Sofia] 🔧 Tool result:', message?.tool_result || message?.agent_tool_response);
+        }
+      } catch (e) {
+        console.error('[Sofia] Failed to process message safely:', e, 'Original message:', message);
+        // Don't rethrow - let the conversation continue
       }
     },
     onError: (err: any) => {
-      console.error('[Sofia] ❌ Error:', err);
-      const errorMessage = typeof err === 'string' ? err : (err?.message || 'Erro na conexão');
-      const errorCode = err?.code || err?.reason || 'unknown';
+      // Safe error extraction - handle undefined/null errors
+      console.error('[Sofia] ❌ Raw error object:', err);
       
-      console.error('[Sofia] Error code:', errorCode);
-      console.error('[Sofia] Error details:', JSON.stringify(err, null, 2));
+      let errorMessage = 'Erro na conexão';
+      let errorCode = 'unknown';
+      
+      try {
+        if (typeof err === 'string') {
+          errorMessage = err;
+        } else if (err) {
+          // Safely access error properties
+          errorMessage = err.message || err.toString?.() || 'Erro desconhecido';
+          errorCode = err.code || err.reason || err.error_type || 'unknown';
+        }
+      } catch (e) {
+        console.error('[Sofia] Error while extracting error details:', e);
+      }
+      
+      console.error('[Sofia] Processed error - message:', errorMessage, 'code:', errorCode);
       
       // Handle specific WebRTC/WebSocket errors
-      if (errorCode === 1006 || errorMessage.includes('1006') || errorMessage.includes('websocket')) {
+      const is1006Error = String(errorCode) === '1006' || 
+                          String(errorMessage).includes('1006') || 
+                          String(errorMessage).toLowerCase().includes('websocket') ||
+                          String(errorMessage).toLowerCase().includes('abnormally');
+      
+      if (is1006Error) {
         console.log('[Sofia] WebSocket error 1006 detected - connection closed abnormally');
         
         if (reconnectAttempt < MAX_RECONNECT_ATTEMPTS && !isReconnectingRef.current) {

@@ -823,13 +823,31 @@ async function handleDailyMetrics(): Promise<{ text: string; data: any }> {
 // ==================== MAIN HANDLER ====================
 
 serve(async (req) => {
+  console.log(`[Sofia JARVIS] ${req.method} request received at ${new Date().toISOString()}`);
+  
   // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // GET endpoint for testing
+  if (req.method === 'GET') {
+    console.log('[Sofia JARVIS] Health check request');
+    return new Response(JSON.stringify({
+      status: 'ok',
+      message: 'Sofia JARVIS is running',
+      timestamp: new Date().toISOString(),
+      version: '2.0'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
-    const body = await req.json();
+    const bodyText = await req.text();
+    console.log('[Sofia JARVIS] Raw body received:', bodyText);
+    
+    const body = JSON.parse(bodyText);
     const intent = body.intent;
     
     // Support both params (object) and params_json (string from ElevenLabs)

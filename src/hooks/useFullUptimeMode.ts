@@ -96,21 +96,48 @@ export const useFullUptimeMode = () => {
         .order('started_at', { ascending: false })
         .limit(10);
 
-      // Calculate current duration
+      // Calculate current duration EXCLUDING 1h-4h shutdown periods
       let currentDuration = 0;
       let currentStartedAt: Date | null = null;
       let isFullUptime = false;
+
+      // Helper function to calculate duration excluding 1h-4h periods
+      const calculateDurationExcludingShutdown = (startDate: Date): number => {
+        const now = new Date();
+        const totalSeconds = Math.floor((now.getTime() - startDate.getTime()) / 1000);
+        
+        // Calculate how many complete days have passed
+        const msPerDay = 24 * 60 * 60 * 1000;
+        const daysPassed = Math.floor((now.getTime() - startDate.getTime()) / msPerDay);
+        
+        // Each day has 3 hours of shutdown (1h-4h) = 10800 seconds
+        const shutdownSecondsPerDay = 3 * 60 * 60;
+        let shutdownSecondsToSubtract = daysPassed * shutdownSecondsPerDay;
+        
+        // Check if we're currently in shutdown period - if so, subtract partial time
+        const brazilTime = new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
+        const currentHour = new Date(brazilTime).getHours();
+        const currentMinutes = new Date(brazilTime).getMinutes();
+        
+        if (currentHour >= 1 && currentHour < 4) {
+          // We're in shutdown - subtract time since 1 AM today
+          const minutesSince1AM = (currentHour - 1) * 60 + currentMinutes;
+          shutdownSecondsToSubtract += minutesSince1AM * 60;
+        }
+        
+        return Math.max(0, totalSeconds - shutdownSecondsToSubtract);
+      };
 
       // isFullUptime should ONLY be true when ALL devices are REALLY online
       // NOT during shutdown with offline devices
       if (currentRecord && allDevicesReallyOnline) {
         currentStartedAt = new Date(currentRecord.started_at);
-        currentDuration = Math.floor((Date.now() - currentStartedAt.getTime()) / 1000);
+        currentDuration = calculateDurationExcludingShutdown(currentStartedAt);
         isFullUptime = true;
       } else if (currentRecord && isPausedDuringShutdown) {
         // During shutdown with offline devices: keep the record but DON'T show as 100%
         currentStartedAt = new Date(currentRecord.started_at);
-        currentDuration = Math.floor((Date.now() - currentStartedAt.getTime()) / 1000);
+        currentDuration = calculateDurationExcludingShutdown(currentStartedAt);
         isFullUptime = false; // CRITICAL: Don't show green badge
       } else if (allDevicesReallyOnline && !currentRecord) {
         // All REALLY online but no record yet - create one
