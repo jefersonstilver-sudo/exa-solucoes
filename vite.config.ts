@@ -42,7 +42,7 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // Exclude videos from precaching - they're too large
         globIgnores: ['**/*.{mp4,webm}'],
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // Reduced to 10MB
+        maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // 15MB for large chunks
         runtimeCaching: [
           {
             // Google Fonts - Cache First (long-lived)
