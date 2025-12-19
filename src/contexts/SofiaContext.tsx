@@ -41,6 +41,8 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
   
   const pageContext = usePageContext();
   const lastSentContextRef = useRef<string>('');
+  const sofiaConfigCheckedRef = useRef(false);
+  const sofiaConfigInFlightRef = useRef(false);
 
   const conversation = useConversation({
     onConnect: () => {
@@ -120,11 +122,66 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
 
   const isSpeaking = conversation.isSpeaking;
 
+  const ensureSofiaAgentConfigured = useCallback(async () => {
+    if (sofiaConfigCheckedRef.current || sofiaConfigInFlightRef.current) return;
+
+    sofiaConfigInFlightRef.current = true;
+    try {
+      // Only works for authenticated users (verify_jwt=true). If not authorized, skip silently.
+      const { data: statusData, error: statusError } = await supabase.functions.invoke('configure-sofia-agent', {
+        body: { action: 'status' },
+      });
+
+      if (statusError) {
+        // Most common for non-admin views: 401/403
+        console.log('[Sofia] ℹ️ configure-sofia-agent status not available:', statusError.message);
+        return;
+      }
+
+      const tools: string[] = statusData?.tools || [];
+      const hasConsultarSistema = tools.includes('consultar_sistema');
+      const hasAdminAuth = tools.includes('admin_auth');
+
+      if (hasConsultarSistema && hasAdminAuth) {
+        sofiaConfigCheckedRef.current = true;
+        console.log('[Sofia] ✅ ElevenLabs agent already configured');
+        return;
+      }
+
+      console.log('[Sofia] ⚠️ ElevenLabs agent missing tools, configuring now...');
+      toast.info('Preparando a Sofia (configurando ferramentas)...');
+
+      const { data: cfgData, error: cfgError } = await supabase.functions.invoke('configure-sofia-agent', {
+        body: { action: 'configure' },
+      });
+
+      if (cfgError) {
+        console.error('[Sofia] ❌ configure-sofia-agent failed:', cfgError);
+        return;
+      }
+
+      if (cfgData?.success) {
+        sofiaConfigCheckedRef.current = true;
+        console.log('[Sofia] ✅ ElevenLabs agent configured:', cfgData?.details);
+        toast.success('Sofia preparada. Pode falar!');
+      } else {
+        console.error('[Sofia] ❌ configure-sofia-agent returned failure:', cfgData);
+      }
+    } catch (e) {
+      console.error('[Sofia] ❌ ensureSofiaAgentConfigured error:', e);
+    } finally {
+      sofiaConfigInFlightRef.current = false;
+    }
+  }, []);
+
   // Core connection logic
   const performConnection = useCallback(async () => {
     console.log('[Sofia] 🚀 Starting connection...');
     
     try {
+      // Ensure ElevenLabs agent has the correct tools (admin_auth + consultar_sistema)
+      await ensureSofiaAgentConfigured();
+
       console.log('[Sofia] Requesting microphone permission...');
       await navigator.mediaDevices.getUserMedia({ audio: true });
       console.log('[Sofia] ✅ Microphone permission granted');
@@ -157,7 +214,7 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
       console.error('[Sofia] ❌ Connection failed:', err);
       throw err;
     }
-  }, [conversation]);
+  }, [conversation, ensureSofiaAgentConfigured]);
 
   // Send page context when it changes
   useEffect(() => {
