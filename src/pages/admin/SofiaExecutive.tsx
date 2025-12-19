@@ -64,10 +64,46 @@ export default function SofiaExecutive() {
   const [isLoading, setIsLoading] = useState(true);
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [agentStatus, setAgentStatus] = useState<any>(null);
+  const [needsConfiguration, setNeedsConfiguration] = useState(false);
+  const [autoConfigAttempted, setAutoConfigAttempted] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Auto-configure if needed
+  useEffect(() => {
+    if (needsConfiguration && !autoConfigAttempted && !isConfiguring) {
+      setAutoConfigAttempted(true);
+      handleAutoConfiguration();
+    }
+  }, [needsConfiguration, autoConfigAttempted, isConfiguring]);
+
+  const handleAutoConfiguration = async () => {
+    setIsConfiguring(true);
+    toast.info('Configurando Sofia automaticamente...', { duration: 3000 });
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('configure-sofia-agent', {
+        body: { action: 'configure' }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success('Sofia configurada automaticamente!');
+        setAgentStatus(data.details);
+        setNeedsConfiguration(false);
+      } else {
+        toast.error(data?.message || 'Falha na auto-configuração');
+      }
+    } catch (error: any) {
+      console.error('Auto-configure error:', error);
+      toast.error('Erro na auto-configuração. Configure manualmente.');
+    } finally {
+      setIsConfiguring(false);
+    }
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -101,12 +137,32 @@ export default function SofiaExecutive() {
 
       // Check agent status
       try {
-        const { data: statusData } = await supabase.functions.invoke('configure-sofia-agent', {
+        const { data: statusData, error: statusError } = await supabase.functions.invoke('configure-sofia-agent', {
           body: { action: 'status' }
         });
-        setAgentStatus(statusData);
+        
+        if (statusError) {
+          console.error('Status error:', statusError);
+          setNeedsConfiguration(true);
+        } else if (statusData) {
+          setAgentStatus(statusData);
+          
+          // Check if required tools are configured
+          const tools = statusData.tools || [];
+          const hasConsultarSistema = tools.includes('consultar_sistema');
+          const hasAdminAuth = tools.includes('admin_auth');
+          
+          if (!hasConsultarSistema || !hasAdminAuth) {
+            setNeedsConfiguration(true);
+          } else {
+            setNeedsConfiguration(false);
+          }
+        } else {
+          setNeedsConfiguration(true);
+        }
       } catch (e) {
-        console.log('Could not fetch agent status');
+        console.error('Could not fetch agent status:', e);
+        setNeedsConfiguration(true);
       }
 
     } catch (error) {
@@ -126,11 +182,12 @@ export default function SofiaExecutive() {
 
       if (error) throw error;
 
-      if (data.success) {
+      if (data?.success) {
         toast.success('Sofia configurada com sucesso!');
         setAgentStatus(data.details);
+        setNeedsConfiguration(false);
       } else {
-        toast.error(data.message || 'Erro ao configurar');
+        toast.error(data?.message || 'Erro ao configurar');
       }
     } catch (error: any) {
       console.error('Error configuring agent:', error);
@@ -190,6 +247,32 @@ export default function SofiaExecutive() {
           </Button>
         </div>
       </div>
+
+      {/* Configuration Warning Banner */}
+      {needsConfiguration && !isConfiguring && (
+        <Card className="border-orange-500 bg-orange-500/10">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-500/20 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-orange-500" />
+                </div>
+                <div>
+                  <p className="font-medium text-orange-700 dark:text-orange-300">Sofia precisa ser configurada</p>
+                  <p className="text-sm text-muted-foreground">
+                    As ferramentas admin_auth e consultar_sistema não estão configuradas no agente ElevenLabs.
+                    {autoConfigAttempted && ' A auto-configuração falhou. Configure manualmente.'}
+                  </p>
+                </div>
+              </div>
+              <Button onClick={handleConfigureAgent} disabled={isConfiguring} variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-500/20">
+                <Settings className="h-4 w-4 mr-2" />
+                Configurar Agora
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
