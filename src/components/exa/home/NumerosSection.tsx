@@ -1,19 +1,22 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import ExaSection from '../base/ExaSection';
 import ExaCard from '../base/ExaCard';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useCounterAnimation } from '@/hooks/useCounterAnimation';
+import { useHomeMetrics } from '@/hooks/useHomeMetrics';
 import { Building2, Users, Repeat, PlayCircle } from 'lucide-react';
-
-const metrics = [
-  { icon: Building2, value: 50, label: 'Prédios Conectados', suffix: '' },
-  { icon: Users, value: 23000, label: 'Pessoas Alcançadas', suffix: '' },
-  { icon: Repeat, value: 40, label: 'Interações/Semana', suffix: 'x' },
-  { icon: PlayCircle, value: 245, label: 'Exibições/Dia', suffix: '' },
-];
 
 const NumerosSection = () => {
   const { ref, isVisible } = useScrollReveal();
+  const { data: metricsData } = useHomeMetrics();
+
+  // Métricas dinâmicas com fallback
+  const metrics = useMemo(() => [
+    { icon: Building2, value: metricsData?.totalBuildings || 50, label: 'Prédios Conectados', suffix: '' },
+    { icon: Users, value: metricsData?.totalPeople || 23000, label: 'Pessoas Alcançadas', suffix: '' },
+    { icon: Repeat, value: 40, label: 'Interações/Semana', suffix: 'x' },
+    { icon: PlayCircle, value: metricsData?.dailyViews || 245, label: 'Exibições/Dia', suffix: '' },
+  ], [metricsData]);
 
   return (
     <ExaSection background="dark">
@@ -43,7 +46,14 @@ const NumerosSection = () => {
   );
 };
 
-const MetricCard = ({ metric, isVisible }: { metric: typeof metrics[0], isVisible: boolean }) => {
+interface MetricType {
+  icon: React.ComponentType<{ className?: string }>;
+  value: number;
+  label: string;
+  suffix: string;
+}
+
+const MetricCard = ({ metric, isVisible }: { metric: MetricType, isVisible: boolean }) => {
   const count = useCounterAnimation(metric.value, 2000, isVisible);
   
   return (
