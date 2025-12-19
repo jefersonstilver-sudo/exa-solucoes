@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { usePageContext, type PageContext } from '@/hooks/usePageContext';
 
-type SofiaState = 'idle' | 'initializing' | 'connecting' | 'connected' | 'reconnecting' | 'error';
+type SofiaState = 'idle' | 'initializing' | 'connecting' | 'connected' | 'error';
 
 interface SofiaContextValue {
   state: SofiaState;
@@ -13,8 +13,6 @@ interface SofiaContextValue {
   userTranscript: string;
   error: string | null;
   pageContext: PageContext;
-  reconnectAttempt: number;
-  maxReconnectAttempts: number;
   startCall: () => Promise<void>;
   endCall: () => Promise<void>;
   sendContextualUpdate: (text: string) => void;
@@ -35,61 +33,28 @@ interface SofiaProviderProps {
   children: React.ReactNode;
 }
 
-const MAX_RECONNECT_ATTEMPTS = 3;
-const RECONNECT_BASE_DELAY = 2000; // 2 seconds
-
 export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
   const [state, setState] = useState<SofiaState>('idle');
   const [transcript, setTranscript] = useState('');
   const [userTranscript, setUserTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [reconnectAttempt, setReconnectAttempt] = useState(0);
   
   const pageContext = usePageContext();
   const lastSentContextRef = useRef<string>('');
-  const hasConnectedRef = useRef(false);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isReconnectingRef = useRef(false);
-  const sessionActiveRef = useRef(false);
-
-  // Cleanup reconnect timeout
-  const clearReconnectTimeout = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-  }, []);
 
   const conversation = useConversation({
     onConnect: () => {
       console.log('[Sofia] ✅ Connected to ElevenLabs WebRTC');
       setState('connected');
-      hasConnectedRef.current = true;
-      sessionActiveRef.current = true;
-      setReconnectAttempt(0);
       setError(null);
-      isReconnectingRef.current = false;
-      clearReconnectTimeout();
       toast.success('Sofia conectada!');
     },
     onDisconnect: () => {
       console.log('[Sofia] 🔌 Disconnected from ElevenLabs');
-      console.log('[Sofia] Session was active:', sessionActiveRef.current);
-      console.log('[Sofia] Was reconnecting:', isReconnectingRef.current);
-      
-      const wasConnected = sessionActiveRef.current;
-      sessionActiveRef.current = false;
-      
-      // If we were connected and got disconnected unexpectedly, try to reconnect
-      if (wasConnected && !isReconnectingRef.current && reconnectAttempt < MAX_RECONNECT_ATTEMPTS) {
-        console.log(`[Sofia] Unexpected disconnect, attempting reconnect (attempt ${reconnectAttempt + 1}/${MAX_RECONNECT_ATTEMPTS})`);
-        handleAutoReconnect();
-      } else if (!isReconnectingRef.current) {
-        setState('idle');
-        setTranscript('');
-        setUserTranscript('');
-        hasConnectedRef.current = false;
-      }
+      // Simply return to idle state - no automatic reconnection
+      setState('idle');
+      setTranscript('');
+      setUserTranscript('');
     },
     onMessage: (message: any) => {
       try {
@@ -98,7 +63,6 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
         // Handle error messages safely
         if (message?.type === 'error' || message?.type === 'tool_error') {
           console.error('[Sofia] ⚠️ Agent error message:', message);
-          // Don't throw, just log - let the conversation continue
           return;
         }
         
@@ -124,11 +88,9 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
         }
       } catch (e) {
         console.error('[Sofia] Failed to process message safely:', e, 'Original message:', message);
-        // Don't rethrow - let the conversation continue
       }
     },
     onError: (err: any) => {
-      // Safe error extraction - handle undefined/null errors
       console.error('[Sofia] ❌ Raw error object:', err);
       
       let errorMessage = 'Erro na conexão';
@@ -138,7 +100,6 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
         if (typeof err === 'string') {
           errorMessage = err;
         } else if (err) {
-          // Safely access error properties
           errorMessage = err.message || err.toString?.() || 'Erro desconhecido';
           errorCode = err.code || err.reason || err.error_type || 'unknown';
         }
@@ -147,88 +108,29 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
       }
       
       console.error('[Sofia] Processed error - message:', errorMessage, 'code:', errorCode);
-      
-      // Handle specific WebRTC/WebSocket errors
-      const is1006Error = String(errorCode) === '1006' || 
-                          String(errorMessage).includes('1006') || 
-                          String(errorMessage).toLowerCase().includes('websocket') ||
-                          String(errorMessage).toLowerCase().includes('abnormally');
-      
-      if (is1006Error) {
-        console.log('[Sofia] WebSocket error 1006 detected - connection closed abnormally');
-        
-        if (reconnectAttempt < MAX_RECONNECT_ATTEMPTS && !isReconnectingRef.current) {
-          handleAutoReconnect();
-          return;
-        }
-      }
 
       setError(`${errorMessage} (código: ${errorCode})`);
       setState('error');
       
-      if (!isReconnectingRef.current) {
-        toast.error('Erro na conexão com Sofia', {
-          description: `${errorMessage}. Tente novamente.`,
-        });
-      }
+      toast.error('Erro na conexão com Sofia', {
+        description: `${errorMessage}. Tente novamente.`,
+      });
     },
   });
 
   const isSpeaking = conversation.isSpeaking;
-
-  // Auto-reconnect with exponential backoff
-  const handleAutoReconnect = useCallback(() => {
-    if (isReconnectingRef.current || reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
-      console.log('[Sofia] Skipping auto-reconnect:', { 
-        isReconnecting: isReconnectingRef.current, 
-        attempt: reconnectAttempt,
-        maxAttempts: MAX_RECONNECT_ATTEMPTS 
-      });
-      return;
-    }
-
-    isReconnectingRef.current = true;
-    const nextAttempt = reconnectAttempt + 1;
-    setReconnectAttempt(nextAttempt);
-    setState('reconnecting');
-    
-    // Exponential backoff: 2s, 4s, 8s
-    const delay = RECONNECT_BASE_DELAY * Math.pow(2, reconnectAttempt);
-    console.log(`[Sofia] 🔄 Auto-reconnect scheduled in ${delay}ms (attempt ${nextAttempt}/${MAX_RECONNECT_ATTEMPTS})`);
-    
-    toast.info(`Reconectando Sofia... (tentativa ${nextAttempt}/${MAX_RECONNECT_ATTEMPTS})`);
-    
-    reconnectTimeoutRef.current = setTimeout(async () => {
-      try {
-        await performConnection();
-      } catch (err) {
-        console.error('[Sofia] Reconnection failed:', err);
-        isReconnectingRef.current = false;
-        
-        if (nextAttempt >= MAX_RECONNECT_ATTEMPTS) {
-          setState('error');
-          setError('Falha na reconexão após várias tentativas');
-          toast.error('Não foi possível reconectar', {
-            description: 'Por favor, tente iniciar uma nova chamada.',
-          });
-        }
-      }
-    }, delay);
-  }, [reconnectAttempt]);
 
   // Core connection logic
   const performConnection = useCallback(async () => {
     console.log('[Sofia] 🚀 Starting connection...');
     
     try {
-      // Request microphone permission
       console.log('[Sofia] Requesting microphone permission...');
       await navigator.mediaDevices.getUserMedia({ audio: true });
       console.log('[Sofia] ✅ Microphone permission granted');
       
       setState('connecting');
       
-      // Get token from edge function
       console.log('[Sofia] Fetching conversation token...');
       const { data, error: fnError } = await supabase.functions.invoke('elevenlabs-conversation-token');
       
@@ -243,9 +145,7 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
       }
       
       console.log('[Sofia] ✅ Token obtained, starting WebRTC session...');
-      console.log('[Sofia] Token preview:', data.token.substring(0, 50) + '...');
       
-      // Start WebRTC conversation
       await conversation.startSession({
         conversationToken: data.token,
         connectionType: 'webrtc',
@@ -267,13 +167,6 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
     }
   }, [state, pageContext]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      clearReconnectTimeout();
-    };
-  }, [clearReconnectTimeout]);
-
   const startCall = useCallback(async () => {
     if (state !== 'idle' && state !== 'error') {
       console.log('[Sofia] Call already in progress, state:', state);
@@ -282,9 +175,6 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
     
     setState('initializing');
     setError(null);
-    setReconnectAttempt(0);
-    isReconnectingRef.current = false;
-    clearReconnectTimeout();
     
     try {
       await performConnection();
@@ -299,13 +189,10 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
         toast.error(err.message || 'Erro ao conectar com Sofia');
       }
     }
-  }, [state, performConnection, clearReconnectTimeout]);
+  }, [state, performConnection]);
 
   const endCall = useCallback(async () => {
     console.log('[Sofia] 📞 Ending call...');
-    clearReconnectTimeout();
-    isReconnectingRef.current = false;
-    sessionActiveRef.current = false;
     
     try {
       await conversation.endSession();
@@ -316,18 +203,16 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
     setState('idle');
     setTranscript('');
     setUserTranscript('');
-    setReconnectAttempt(0);
     setError(null);
     toast.info('Chamada encerrada');
-  }, [conversation, clearReconnectTimeout]);
+  }, [conversation]);
 
   const retryConnection = useCallback(async () => {
     console.log('[Sofia] 🔄 Manual retry requested');
-    clearReconnectTimeout();
-    isReconnectingRef.current = false;
-    setReconnectAttempt(0);
+    setState('idle');
+    setError(null);
     await startCall();
-  }, [startCall, clearReconnectTimeout]);
+  }, [startCall]);
 
   const sendContextualUpdate = useCallback((text: string) => {
     if (conversation.status === 'connected') {
@@ -349,8 +234,6 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
         userTranscript,
         error,
         pageContext,
-        reconnectAttempt,
-        maxReconnectAttempts: MAX_RECONNECT_ATTEMPTS,
         startCall,
         endCall,
         sendContextualUpdate,
