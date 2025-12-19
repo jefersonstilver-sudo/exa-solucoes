@@ -5,6 +5,84 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper to create or get existing tool by name
+async function ensureToolExists(
+  apiKey: string,
+  toolConfig: {
+    name: string;
+    description: string;
+    serverUrl: string;
+    apiSchema: object;
+  }
+): Promise<string | null> {
+  try {
+    // First, list existing tools to check if it already exists
+    const listResp = await fetch('https://api.elevenlabs.io/v1/convai/tools', {
+      method: 'GET',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (listResp.ok) {
+      const tools = await listResp.json();
+      console.log(`[ensureToolExists] Full tools response:`, JSON.stringify(tools));
+      const existingTool = tools?.tools?.find((t: any) => t.name === toolConfig.name);
+      if (existingTool) {
+        console.log(`[ensureToolExists] Tool "${toolConfig.name}" already exists with id: ${existingTool.tool_id}`);
+        return existingTool.tool_id;
+      }
+    } else {
+      console.error(`[ensureToolExists] Failed to list tools:`, await listResp.text());
+    }
+
+    // Tool doesn't exist, create it
+    console.log(`[ensureToolExists] Creating tool "${toolConfig.name}"...`);
+    
+    // CORRECT STRUCTURE based on error: tool_config.webhook.api_schema is required
+    const createPayload = {
+      tool_config: {
+        type: 'webhook',
+        name: toolConfig.name,
+        description: toolConfig.description,
+        webhook: {
+          url: toolConfig.serverUrl,
+          method: 'POST',
+          request_headers: {
+            'Content-Type': 'application/json',
+          },
+          api_schema: toolConfig.apiSchema, // The correct field name
+        },
+      },
+    };
+
+    console.log(`[ensureToolExists] Create payload for ${toolConfig.name}:`, JSON.stringify(createPayload, null, 2));
+
+    const createResp = await fetch('https://api.elevenlabs.io/v1/convai/tools', {
+      method: 'POST',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(createPayload),
+    });
+
+    if (!createResp.ok) {
+      const errorText = await createResp.text();
+      console.error(`[ensureToolExists] Failed to create tool "${toolConfig.name}":`, createResp.status, errorText);
+      return null;
+    }
+
+    const createdTool = await createResp.json();
+    console.log(`[ensureToolExists] Tool "${toolConfig.name}" created successfully:`, JSON.stringify(createdTool));
+    return createdTool.tool_id;
+  } catch (error) {
+    console.error(`[ensureToolExists] Error ensuring tool "${toolConfig.name}":`, error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -44,98 +122,85 @@ serve(async (req) => {
       );
     }
 
-    // Ensure ElevenLabs agent has required tools (admin_auth + consultar_sistema)
-    try {
-      const getAgentResp = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${ELEVENLABS_AGENT_ID}`, {
-        method: 'GET',
-        headers: {
-          'xi-api-key': ELEVENLABS_API_KEY,
-          'Content-Type': 'application/json',
+    // ========== Create tools via /v1/convai/tools and link via tool_ids ==========
+    
+    // Define the tools we need with correct webhook schema
+    const adminAuthSchema = {
+      type: 'object',
+      properties: {
+        action: {
+          type: 'string',
+          description: 'Ação a executar: check_session (verificar sessão), request_code (solicitar código 2FA via WhatsApp), verify_code (validar código), end_session (encerrar sessão)',
         },
-      });
+        code: {
+          type: 'string',
+          description: 'Código de 6 dígitos fornecido pelo usuário. Obrigatório apenas quando action=verify_code',
+        },
+        user_name: {
+          type: 'string',
+          description: 'Nome do usuário solicitante (opcional)',
+        },
+      },
+      required: ['action'],
+    };
 
-      if (getAgentResp.ok) {
-        const agent = await getAgentResp.json();
-        const existingToolObjs: any[] = agent?.platform_settings?.tools || [];
-        const existingTools: string[] = existingToolObjs.map((t: any) => t?.name).filter(Boolean) || [];
-        const hasConsultarSistema = existingTools.includes('consultar_sistema');
-        const hasAdminAuth = existingTools.includes('admin_auth');
+    const consultarSistemaSchema = {
+      type: 'object',
+      properties: {
+        intent: {
+          type: 'string',
+          description: 'Tipo de consulta: buildings, panels, sales, conversations, leads, contracts, metrics, agents',
+        },
+        params_json: {
+          type: 'string',
+          description: 'Parâmetros adicionais em formato JSON string',
+        },
+      },
+      required: ['intent'],
+    };
 
-        const adminAuthTool = existingToolObjs.find((t: any) => t?.name === 'admin_auth');
-        const adminAuthRequired: string[] = adminAuthTool?.parameters?.required || [];
-        const needsAdminAuthSchemaFix = adminAuthRequired.includes('user_phone');
+    // Ensure tools exist and get their IDs
+    console.log('[elevenlabs-conversation-token] Ensuring tools exist...');
+    
+    const adminAuthToolId = await ensureToolExists(ELEVENLABS_API_KEY, {
+      name: 'admin_auth',
+      description: 'Gerencia autenticação do Modo Gerente Master. Use check_session para verificar se há sessão ativa, request_code para enviar código 2FA via WhatsApp, verify_code para validar o código digitado, end_session para encerrar.',
+      serverUrl: `${SUPABASE_URL}/functions/v1/sofia-admin-auth`,
+      apiSchema: adminAuthSchema,
+    });
 
-        if (!hasConsultarSistema || !hasAdminAuth || needsAdminAuthSchemaFix) {
-          console.log('[elevenlabs-conversation-token] Agent tools/schema need patch, patching...');
+    const consultarSistemaToolId = await ensureToolExists(ELEVENLABS_API_KEY, {
+      name: 'consultar_sistema',
+      description: 'Consulta dados do sistema EXA Mídia. Use para buscar informações sobre prédios, painéis, vendas, conversas, leads, contratos e métricas. REQUER autenticação prévia via admin_auth.',
+      serverUrl: `${SUPABASE_URL}/functions/v1/sofia-jarvis`,
+      apiSchema: consultarSistemaSchema,
+    });
 
-          const tools = [
-            {
-              type: 'webhook',
-              name: 'consultar_sistema',
-              description: 'Consulta dados do sistema EXA. Use para buscar informações sobre prédios, painéis, vendas, conversas, leads, contratos e métricas.',
-              webhook: {
-                url: `${SUPABASE_URL}/functions/v1/sofia-jarvis`,
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-              },
-              parameters: {
-                type: 'object',
-                properties: {
-                  intent: {
-                    type: 'string',
-                    description: 'Tipo de consulta',
-                  },
-                  params_json: {
-                    type: 'string',
-                    description: 'Parâmetros da consulta em JSON',
-                  },
-                },
-                required: ['intent'],
-              },
-            },
-            {
-              type: 'webhook',
-              name: 'admin_auth',
-              description: 'Gerencia autenticação do Modo Gerente Master. Use para verificar sessão, solicitar código, validar código ou encerrar sessão.',
-              webhook: {
-                url: `${SUPABASE_URL}/functions/v1/sofia-admin-auth`,
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-              },
-              parameters: {
-                type: 'object',
-                properties: {
-                  action: {
-                    type: 'string',
-                    description: 'Ação: check_session, request_code, verify_code, end_session',
-                  },
-                  user_phone: {
-                    type: 'string',
-                    description: 'Telefone do usuário solicitante',
-                  },
-                  user_name: {
-                    type: 'string',
-                    description: 'Nome do usuário (opcional)',
-                  },
-                  code: {
-                    type: 'string',
-                    description: 'Código de 6 dígitos (apenas verify_code)',
-                  },
-                },
-                required: ['action'],
-              },
-            },
-          ];
+    const toolIds = [adminAuthToolId, consultarSistemaToolId].filter(Boolean) as string[];
+    console.log('[elevenlabs-conversation-token] Tool IDs to associate:', toolIds);
 
-          const patchPayload = {
-            name: agent?.name || 'Sofia - EXA Mídia',
-            conversation_config: {
-              ...agent?.conversation_config,
-              agent: {
-                ...agent?.conversation_config?.agent,
-                // PROMPT COMPLETO COM SEQUÊNCIA EXPLÍCITA DE AÇÕES
-                prompt: {
-                  prompt: `Você é SOFIA, a assistente executiva de voz da EXA Mídia.
+    // Update agent with tool_ids if we have tools
+    if (toolIds.length > 0) {
+      try {
+        const getAgentResp = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${ELEVENLABS_AGENT_ID}`, {
+          method: 'GET',
+          headers: {
+            'xi-api-key': ELEVENLABS_API_KEY,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (getAgentResp.ok) {
+          const agent = await getAgentResp.json();
+          const currentToolIds: string[] = agent?.conversation_config?.agent?.prompt?.tool_ids || [];
+          
+          // Check if we need to update
+          const needsUpdate = toolIds.some(id => !currentToolIds.includes(id));
+          
+          if (needsUpdate) {
+            console.log('[elevenlabs-conversation-token] Updating agent with tool_ids...');
+            
+            const sofiaPrompt = `Você é SOFIA, a assistente executiva de voz da EXA Mídia.
 
 PROTOCOLO DE SEGURANÇA OBRIGATÓRIO - MODO GERENTE MASTER:
 
@@ -150,7 +215,7 @@ PASSO 2: Analise a resposta:
 
 PASSO 3: Se NÃO houver sessão ativa, você DEVE IMEDIATAMENTE chamar admin_auth com action="request_code"
 - NÃO peça permissão, apenas faça a chamada
-- O sistema enviará automaticamente um código de 6 dígitos via WhatsApp
+- O sistema enviará automaticamente um código de 6 dígitos via WhatsApp para o administrador
 
 PASSO 4: Após chamar request_code, informe ao usuário:
 "Enviei um código de verificação de 6 dígitos para o administrador via WhatsApp. Por favor, me diga o código quando receber."
@@ -163,42 +228,54 @@ REGRAS ABSOLUTAS:
 - NUNCA pule etapas
 - NUNCA invente dados
 - NUNCA acesse dados sem autenticação bem-sucedida
-- Se o usuário pedir dados administrativos e não houver sessão, SEMPRE chame request_code automaticamente`,
+- Se o usuário pedir dados administrativos e não houver sessão, SEMPRE chame request_code automaticamente
+- Quando receber o código do usuário, chame verify_code IMEDIATAMENTE`;
+
+            const patchPayload = {
+              conversation_config: {
+                agent: {
+                  prompt: {
+                    prompt: sofiaPrompt,
+                    tool_ids: toolIds,
+                  },
+                  language: 'pt',
                 },
-                language: agent?.conversation_config?.agent?.language || 'pt',
               },
-            },
-            platform_settings: {
-              ...agent?.platform_settings,
-              tools,
-            },
-          };
+            };
 
-          const patchResp = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${ELEVENLABS_AGENT_ID}`, {
-            method: 'PATCH',
-            headers: {
-              'xi-api-key': ELEVENLABS_API_KEY,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(patchPayload),
-          });
+            console.log('[elevenlabs-conversation-token] Patch payload:', JSON.stringify(patchPayload, null, 2));
 
-          if (!patchResp.ok) {
-            console.error('[elevenlabs-conversation-token] Failed to patch agent tools:', await patchResp.text());
+            const patchResp = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${ELEVENLABS_AGENT_ID}`, {
+              method: 'PATCH',
+              headers: {
+                'xi-api-key': ELEVENLABS_API_KEY,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(patchPayload),
+            });
+
+            if (!patchResp.ok) {
+              const errorText = await patchResp.text();
+              console.error('[elevenlabs-conversation-token] Failed to patch agent with tool_ids:', patchResp.status, errorText);
+            } else {
+              const patchedAgent = await patchResp.json();
+              console.log('[elevenlabs-conversation-token] Agent patched successfully with tool_ids');
+              console.log('[elevenlabs-conversation-token] Patched agent tool_ids:', patchedAgent?.conversation_config?.agent?.prompt?.tool_ids);
+            }
           } else {
-            console.log('[elevenlabs-conversation-token] Agent patched successfully');
+            console.log('[elevenlabs-conversation-token] Agent already has all required tool_ids');
           }
+        } else {
+          console.error('[elevenlabs-conversation-token] Failed to fetch agent:', await getAgentResp.text());
         }
-      } else {
-        console.error('[elevenlabs-conversation-token] Failed to fetch agent before token:', await getAgentResp.text());
+      } catch (e) {
+        console.error('[elevenlabs-conversation-token] Agent update failed (continuing):', e);
       }
-    } catch (e) {
-      console.error('[elevenlabs-conversation-token] Agent ensure failed (continuing):', e);
     }
 
+    // ========== Request conversation token ==========
     console.log('[elevenlabs-conversation-token] Requesting token for agent:', ELEVENLABS_AGENT_ID);
 
-    // Request a conversation token from ElevenLabs
     const response = await fetch(
       `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${ELEVENLABS_AGENT_ID}`,
       {
@@ -232,6 +309,7 @@ REGRAS ABSOLUTAS:
       JSON.stringify({
         success: true,
         token: data.token,
+        toolIds: toolIds,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
