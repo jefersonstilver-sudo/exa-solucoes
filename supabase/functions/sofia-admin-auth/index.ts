@@ -24,8 +24,9 @@ const SESSION_DURATION_MINUTES = 5;
 
 // ==================== ACTION HANDLERS ====================
 
-async function requestVerificationCode(userPhone: string, userName?: string): Promise<{ success: boolean; message: string }> {
-  console.log('[SOFIA-ADMIN-AUTH] Requesting verification code for:', userPhone);
+async function requestVerificationCode(userPhone?: string, userName?: string): Promise<{ success: boolean; message: string }> {
+  const effectiveUserPhone = userPhone?.trim() || (userName ? `voice_${userName}` : 'voice_session');
+  console.log('[SOFIA-ADMIN-AUTH] Requesting verification code for:', effectiveUserPhone);
   
   try {
     // Get admin director info (Jeferson)
@@ -68,14 +69,14 @@ async function requestVerificationCode(userPhone: string, userName?: string): Pr
     await supabase
       .from('sofia_admin_sessions')
       .update({ session_active: false })
-      .eq('user_phone', userPhone)
+      .eq('user_phone', effectiveUserPhone)
       .eq('session_active', true);
 
     // Create new session record
     const { data: session, error: sessionError } = await supabase
       .from('sofia_admin_sessions')
       .insert({
-        user_phone: userPhone,
+        user_phone: effectiveUserPhone,
         user_name: userName || 'Admin',
         verification_code: code,
         code_sent_at: new Date().toISOString(),
@@ -92,7 +93,7 @@ async function requestVerificationCode(userPhone: string, userName?: string): Pr
     // Send code via Z-API (using EXA Alert system)
     const message = `🔐 *CÓDIGO DE VERIFICAÇÃO SOFIA*\n\n` +
       `Código: *${code}*\n\n` +
-      `Solicitado por: ${userName || userPhone}\n` +
+      `Solicitado por: ${userName || effectiveUserPhone}\n` +
       `Válido por: 5 minutos\n\n` +
       `⚠️ Este código libera acesso ao Modo Gerente Master da Sofia.\n` +
       `Não compartilhe com ninguém.`;
@@ -144,7 +145,7 @@ async function requestVerificationCode(userPhone: string, userName?: string): Pr
       event_type: 'admin_code_requested',
       metadata: {
         session_id: session.id,
-        user_phone: userPhone,
+        user_phone: effectiveUserPhone,
         admin_notified: adminName,
         timestamp: new Date().toISOString()
       }
@@ -318,33 +319,40 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const { action, user_phone, user_name, code, session_id, query_type, query_params, query_response, duration_ms } = body;
-    
-    console.log('[SOFIA-ADMIN-AUTH] Action:', action, 'Phone:', user_phone);
-    
+
+    // ElevenLabs pode não conseguir fornecer user_phone; usamos um identificador estável por conversa.
+    const effectiveUserPhone = (typeof user_phone === 'string' && user_phone.trim())
+      ? user_phone.trim()
+      : (typeof user_name === 'string' && user_name.trim())
+        ? `voice_${user_name.trim()}`
+        : 'voice_session';
+
+    console.log('[SOFIA-ADMIN-AUTH] Action:', action, 'Phone:', effectiveUserPhone);
+
     let result: any;
-    
+
     switch (action) {
       case 'request_code':
-        result = await requestVerificationCode(user_phone, user_name);
+        result = await requestVerificationCode(effectiveUserPhone, user_name);
         break;
-        
+
       case 'verify_code':
-        result = await verifyCode(user_phone, code);
+        result = await verifyCode(effectiveUserPhone, code);
         break;
-        
+
       case 'check_session':
-        result = await checkSession(user_phone);
+        result = await checkSession(effectiveUserPhone);
         break;
-        
+
       case 'end_session':
-        result = await endSession(user_phone);
+        result = await endSession(effectiveUserPhone);
         break;
-        
+
       case 'log_query':
         await logAdminQuery(session_id, query_type, query_params, query_response, duration_ms);
         result = { success: true };
         break;
-        
+
       default:
         result = { success: false, message: `Ação desconhecida: ${action}` };
     }
