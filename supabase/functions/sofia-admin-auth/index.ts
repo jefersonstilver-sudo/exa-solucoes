@@ -11,9 +11,6 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Admin phone for verification (Jeferson)
-const ADMIN_PHONE = '5511999999999'; // Will be fetched from exa_alerts_directors
-
 // Generate 6-digit code
 function generateCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -26,53 +23,69 @@ const SESSION_DURATION_MINUTES = 5;
 
 async function requestVerificationCode(userPhone?: string, userName?: string): Promise<{ success: boolean; message: string }> {
   const effectiveUserPhone = userPhone?.trim() || (userName ? `voice_${userName}` : 'voice_session');
-  console.log('[SOFIA-ADMIN-AUTH] Requesting verification code for:', effectiveUserPhone);
+  
+  console.log('\n🔐 ═══════════════════════════════════════════════════════');
+  console.log('🔐 [ADMIN-AUTH] REQUEST_CODE - Iniciando');
+  console.log(`🔐 [ADMIN-AUTH] User Phone: ${effectiveUserPhone}`);
+  console.log(`🔐 [ADMIN-AUTH] User Name: ${userName || 'não informado'}`);
+  console.log('🔐 ═══════════════════════════════════════════════════════\n');
   
   try {
     // Get admin director info (Jeferson)
-    const { data: directors } = await supabase
+    console.log('🔐 [ADMIN-AUTH] Buscando diretores ativos...');
+    const { data: directors, error: dirError } = await supabase
       .from('exa_alerts_directors')
       .select('telefone, nome')
       .eq('ativo', true)
       .limit(1);
     
+    if (dirError) {
+      console.error('🔐 [ADMIN-AUTH] ❌ Erro ao buscar diretores:', dirError);
+    }
+    
     if (!directors || directors.length === 0) {
-      console.error('[SOFIA-ADMIN-AUTH] No active directors found');
+      console.error('🔐 [ADMIN-AUTH] ❌ Nenhum diretor ativo encontrado');
       return { success: false, message: 'Nenhum administrador configurado para receber códigos.' };
     }
     
     const adminPhoneRaw = directors[0].telefone;
     const adminName = directors[0].nome;
+    console.log(`🔐 [ADMIN-AUTH] ✅ Diretor encontrado: ${adminName} (${adminPhoneRaw})`);
 
     const normalizePhoneE164BR = (phone: string) => {
       const digits = (phone || '').replace(/\D/g, '');
       if (!digits) return '';
-      // If already has country code
       if (digits.startsWith('55') && digits.length >= 12) return digits;
-      // If looks like BR mobile/landline (10-11 digits), prefix 55
       if (digits.length === 10 || digits.length === 11) return `55${digits}`;
-      // Fallback: return as-is digits
       return digits;
     };
 
     const adminPhone = normalizePhoneE164BR(adminPhoneRaw);
+    console.log(`🔐 [ADMIN-AUTH] Telefone normalizado: ${adminPhone}`);
 
     if (!adminPhone) {
-      console.error('[SOFIA-ADMIN-AUTH] Invalid admin phone:', adminPhoneRaw);
+      console.error('🔐 [ADMIN-AUTH] ❌ Telefone inválido após normalização');
       return { success: false, message: 'Telefone do administrador inválido. Atualize o cadastro do diretor.' };
     }
 
     // Generate code
     const code = generateCode();
+    console.log(`🔐 [ADMIN-AUTH] 🔢 Código gerado: ${code}`);
 
     // Invalidate any existing active sessions for this phone
-    await supabase
+    console.log('🔐 [ADMIN-AUTH] Invalidando sessões anteriores...');
+    const { error: invalidateError } = await supabase
       .from('sofia_admin_sessions')
       .update({ session_active: false })
       .eq('user_phone', effectiveUserPhone)
       .eq('session_active', true);
+    
+    if (invalidateError) {
+      console.warn('🔐 [ADMIN-AUTH] ⚠️ Erro ao invalidar sessões (continuando):', invalidateError);
+    }
 
     // Create new session record
+    console.log('🔐 [ADMIN-AUTH] Criando nova sessão...');
     const { data: session, error: sessionError } = await supabase
       .from('sofia_admin_sessions')
       .insert({
@@ -86,11 +99,13 @@ async function requestVerificationCode(userPhone?: string, userName?: string): P
       .single();
 
     if (sessionError) {
-      console.error('[SOFIA-ADMIN-AUTH] Error creating session:', sessionError);
+      console.error('🔐 [ADMIN-AUTH] ❌ Erro ao criar sessão:', sessionError);
       return { success: false, message: 'Erro ao criar sessão de verificação.' };
     }
+    
+    console.log(`🔐 [ADMIN-AUTH] ✅ Sessão criada: ${session.id}`);
 
-    // Send code via Z-API (using EXA Alert system)
+    // Send code via Z-API
     const message = `🔐 *CÓDIGO DE VERIFICAÇÃO SOFIA*\n\n` +
       `Código: *${code}*\n\n` +
       `Solicitado por: ${userName || effectiveUserPhone}\n` +
@@ -99,24 +114,35 @@ async function requestVerificationCode(userPhone?: string, userName?: string): P
       `Não compartilhe com ninguém.`;
 
     // Get agent config for EXA Alert
-    const { data: agent } = await supabase
+    console.log('🔐 [ADMIN-AUTH] Buscando configuração Z-API...');
+    const { data: agent, error: agentError } = await supabase
       .from('agents')
       .select('*')
       .eq('key', 'exa_alert')
       .eq('whatsapp_provider', 'zapi')
       .single();
 
+    if (agentError) {
+      console.error('🔐 [ADMIN-AUTH] ❌ Erro ao buscar agente exa_alert:', agentError);
+    }
+
     const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
 
+    console.log('🔐 [ADMIN-AUTH] Verificando configurações Z-API:');
+    console.log(`   - Agent encontrado: ${!!agent}`);
+    console.log(`   - zapi_config presente: ${!!agent?.zapi_config}`);
+    console.log(`   - ZAPI_CLIENT_TOKEN presente: ${!!zapiClientToken}`);
+
     if (!agent?.zapi_config || !zapiClientToken) {
-      console.error('[SOFIA-ADMIN-AUTH] Missing Z-API config/token. zapi_config:', !!agent?.zapi_config, 'hasClientToken:', !!zapiClientToken);
+      console.error('🔐 [ADMIN-AUTH] ❌ Configuração Z-API incompleta');
       return { success: false, message: 'Z-API não configurado para envio do código. Verifique a integração do EXA Alerts.' };
     }
 
-    const zapiConfig = agent.zapi_config;
+    const zapiConfig = agent.zapi_config as { instance_id: string; token: string };
     const sendUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
 
-    console.log('[SOFIA-ADMIN-AUTH] Sending code to admin phone:', adminPhone);
+    console.log(`🔐 [ADMIN-AUTH] 📤 Enviando código via WhatsApp para: ${adminPhone}`);
+    console.log(`🔐 [ADMIN-AUTH] URL Z-API: ${sendUrl.replace(zapiConfig.token, '***')}`);
 
     const response = await fetch(sendUrl, {
       method: 'POST',
@@ -130,14 +156,15 @@ async function requestVerificationCode(userPhone?: string, userName?: string): P
       })
     });
 
+    const respText = await response.text();
+    console.log(`🔐 [ADMIN-AUTH] Resposta Z-API (status ${response.status}): ${respText}`);
+
     if (!response.ok) {
-      const respText = await response.text();
-      console.error('[SOFIA-ADMIN-AUTH] Failed to send WhatsApp:', respText);
+      console.error('🔐 [ADMIN-AUTH] ❌ Falha no envio WhatsApp');
       return { success: false, message: 'Falha ao enviar o código por WhatsApp. Tente novamente em instantes.' };
     }
 
-    console.log('[SOFIA-ADMIN-AUTH] Code sent via WhatsApp to:', adminName);
-
+    console.log(`🔐 [ADMIN-AUTH] ✅ Código enviado com sucesso para ${adminName}!`);
     
     // Log the request
     await supabase.from('agent_logs').insert({
@@ -151,21 +178,32 @@ async function requestVerificationCode(userPhone?: string, userName?: string): P
       }
     });
     
+    console.log('🔐 ═══════════════════════════════════════════════════════');
+    console.log('🔐 [ADMIN-AUTH] REQUEST_CODE - SUCESSO');
+    console.log('🔐 ═══════════════════════════════════════════════════════\n');
+    
     return { 
       success: true, 
       message: `Código de verificação enviado para ${adminName}. Aguarde receber o código e repita-o para mim.`
     };
     
   } catch (error) {
-    console.error('[SOFIA-ADMIN-AUTH] Error:', error);
+    console.error('🔐 [ADMIN-AUTH] ❌ Erro fatal:', error);
     return { success: false, message: 'Erro ao enviar código de verificação.' };
   }
 }
 
 async function verifyCode(userPhone: string, code: string): Promise<{ success: boolean; message: string; session_id?: string }> {
-  console.log('[SOFIA-ADMIN-AUTH] Verifying code for:', userPhone);
+  console.log('\n🔓 ═══════════════════════════════════════════════════════');
+  console.log('🔓 [ADMIN-AUTH] VERIFY_CODE - Iniciando');
+  console.log(`🔓 [ADMIN-AUTH] User Phone: ${userPhone}`);
+  console.log(`🔓 [ADMIN-AUTH] Código informado: ${code}`);
+  console.log('🔓 ═══════════════════════════════════════════════════════\n');
   
   try {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    console.log(`🔓 [ADMIN-AUTH] Buscando sessões desde: ${fiveMinutesAgo}`);
+    
     // Find pending session with this code
     const { data: sessions, error } = await supabase
       .from('sofia_admin_sessions')
@@ -173,21 +211,28 @@ async function verifyCode(userPhone: string, code: string): Promise<{ success: b
       .eq('user_phone', userPhone)
       .eq('verification_code', code)
       .eq('session_active', false)
-      .gte('code_sent_at', new Date(Date.now() - 5 * 60 * 1000).toISOString()) // Code valid for 5 min
+      .gte('code_sent_at', fiveMinutesAgo)
       .order('code_sent_at', { ascending: false })
       .limit(1);
     
-    if (error || !sessions || sessions.length === 0) {
-      console.log('[SOFIA-ADMIN-AUTH] Invalid or expired code');
+    if (error) {
+      console.error('🔓 [ADMIN-AUTH] ❌ Erro na query:', error);
+    }
+    
+    console.log(`🔓 [ADMIN-AUTH] Sessões encontradas: ${sessions?.length || 0}`);
+    
+    if (!sessions || sessions.length === 0) {
+      console.log('🔓 [ADMIN-AUTH] ❌ Código inválido ou expirado');
       return { success: false, message: 'Código inválido ou expirado. Solicite um novo código.' };
     }
     
     const session = sessions[0];
+    console.log(`🔓 [ADMIN-AUTH] ✅ Sessão encontrada: ${session.id}`);
     
     // Activate session
     const expiresAt = new Date(Date.now() + SESSION_DURATION_MINUTES * 60 * 1000);
     
-    await supabase
+    const { error: updateError } = await supabase
       .from('sofia_admin_sessions')
       .update({
         session_active: true,
@@ -195,6 +240,13 @@ async function verifyCode(userPhone: string, code: string): Promise<{ success: b
         session_expires_at: expiresAt.toISOString()
       })
       .eq('id', session.id);
+    
+    if (updateError) {
+      console.error('🔓 [ADMIN-AUTH] ❌ Erro ao ativar sessão:', updateError);
+      return { success: false, message: 'Erro ao ativar sessão.' };
+    }
+    
+    console.log(`🔓 [ADMIN-AUTH] ✅ Sessão ativada! Expira em: ${expiresAt.toISOString()}`);
     
     // Log activation
     await supabase.from('agent_logs').insert({
@@ -208,6 +260,10 @@ async function verifyCode(userPhone: string, code: string): Promise<{ success: b
       }
     });
     
+    console.log('🔓 ═══════════════════════════════════════════════════════');
+    console.log('🔓 [ADMIN-AUTH] VERIFY_CODE - SUCESSO');
+    console.log('🔓 ═══════════════════════════════════════════════════════\n');
+    
     return { 
       success: true, 
       message: `Modo Gerente Master ativado! Você tem ${SESSION_DURATION_MINUTES} minutos de acesso total. O que deseja consultar?`,
@@ -215,53 +271,76 @@ async function verifyCode(userPhone: string, code: string): Promise<{ success: b
     };
     
   } catch (error) {
-    console.error('[SOFIA-ADMIN-AUTH] Verify error:', error);
+    console.error('🔓 [ADMIN-AUTH] ❌ Erro fatal:', error);
     return { success: false, message: 'Erro ao verificar código.' };
   }
 }
 
-async function checkSession(userPhone: string): Promise<{ active: boolean; expires_in_minutes?: number; session_id?: string }> {
-  console.log('[SOFIA-ADMIN-AUTH] Checking session for:', userPhone);
+async function checkSession(userPhone: string): Promise<{ session_active: boolean; expires_in_minutes?: number; session_id?: string }> {
+  console.log('\n🔍 ═══════════════════════════════════════════════════════');
+  console.log('🔍 [ADMIN-AUTH] CHECK_SESSION - Iniciando');
+  console.log(`🔍 [ADMIN-AUTH] User Phone: ${userPhone}`);
+  console.log('🔍 ═══════════════════════════════════════════════════════\n');
   
   try {
-    const { data: sessions } = await supabase
+    const now = new Date().toISOString();
+    
+    const { data: sessions, error } = await supabase
       .from('sofia_admin_sessions')
       .select('*')
       .eq('user_phone', userPhone)
       .eq('session_active', true)
-      .gte('session_expires_at', new Date().toISOString())
+      .gte('session_expires_at', now)
       .order('session_expires_at', { ascending: false })
       .limit(1);
     
+    if (error) {
+      console.error('🔍 [ADMIN-AUTH] ❌ Erro na query:', error);
+    }
+    
+    console.log(`🔍 [ADMIN-AUTH] Sessões ativas encontradas: ${sessions?.length || 0}`);
+    
     if (!sessions || sessions.length === 0) {
-      return { active: false };
+      console.log('🔍 [ADMIN-AUTH] ℹ️ Nenhuma sessão ativa');
+      return { session_active: false };
     }
     
     const session = sessions[0];
     const expiresAt = new Date(session.session_expires_at);
     const minutesRemaining = Math.ceil((expiresAt.getTime() - Date.now()) / 60000);
     
+    console.log(`🔍 [ADMIN-AUTH] ✅ Sessão ativa encontrada!`);
+    console.log(`🔍 [ADMIN-AUTH] - Session ID: ${session.id}`);
+    console.log(`🔍 [ADMIN-AUTH] - Expira em: ${minutesRemaining} minutos`);
+    
     return { 
-      active: true, 
+      session_active: true, 
       expires_in_minutes: minutesRemaining,
       session_id: session.id
     };
     
   } catch (error) {
-    console.error('[SOFIA-ADMIN-AUTH] Check session error:', error);
-    return { active: false };
+    console.error('🔍 [ADMIN-AUTH] ❌ Erro fatal:', error);
+    return { session_active: false };
   }
 }
 
 async function endSession(userPhone: string): Promise<{ success: boolean; message: string }> {
-  console.log('[SOFIA-ADMIN-AUTH] Ending session for:', userPhone);
+  console.log('\n🚪 ═══════════════════════════════════════════════════════');
+  console.log('🚪 [ADMIN-AUTH] END_SESSION - Iniciando');
+  console.log(`🚪 [ADMIN-AUTH] User Phone: ${userPhone}`);
+  console.log('🚪 ═══════════════════════════════════════════════════════\n');
   
   try {
-    await supabase
+    const { error } = await supabase
       .from('sofia_admin_sessions')
       .update({ session_active: false })
       .eq('user_phone', userPhone)
       .eq('session_active', true);
+    
+    if (error) {
+      console.error('🚪 [ADMIN-AUTH] ❌ Erro ao encerrar:', error);
+    }
     
     // Log end
     await supabase.from('agent_logs').insert({
@@ -274,26 +353,13 @@ async function endSession(userPhone: string): Promise<{ success: boolean; messag
       }
     });
     
+    console.log('🚪 [ADMIN-AUTH] ✅ Sessão encerrada com sucesso');
+    
     return { success: true, message: 'Sessão administrativa encerrada. Até a próxima!' };
     
   } catch (error) {
-    console.error('[SOFIA-ADMIN-AUTH] End session error:', error);
+    console.error('🚪 [ADMIN-AUTH] ❌ Erro fatal:', error);
     return { success: false, message: 'Erro ao encerrar sessão.' };
-  }
-}
-
-async function logAdminQuery(sessionId: string, queryType: string, params: any, response: any, durationMs: number): Promise<void> {
-  try {
-    await supabase.from('sofia_admin_access_logs').insert({
-      session_id: sessionId,
-      query_type: queryType,
-      query_params: params,
-      response_summary: typeof response === 'string' ? response.substring(0, 500) : JSON.stringify(response).substring(0, 500),
-      response_data: response,
-      duration_ms: durationMs
-    });
-  } catch (error) {
-    console.error('[SOFIA-ADMIN-AUTH] Log query error:', error);
   }
 }
 
@@ -303,30 +369,24 @@ serve(async (req) => {
   const requestId = crypto.randomUUID().slice(0, 8);
   const timestamp = new Date().toISOString();
   
-  console.log(`\n========================================`);
-  console.log(`[SOFIA-ADMIN-AUTH] REQUEST ${requestId}`);
-  console.log(`[SOFIA-ADMIN-AUTH] Method: ${req.method}`);
-  console.log(`[SOFIA-ADMIN-AUTH] Time: ${timestamp}`);
-  console.log(`[SOFIA-ADMIN-AUTH] URL: ${req.url}`);
-  console.log(`========================================`);
-  
-  // Log all headers for debugging
-  const headers: Record<string, string> = {};
-  req.headers.forEach((value, key) => {
-    headers[key] = key.toLowerCase().includes('auth') ? '[REDACTED]' : value;
-  });
-  console.log(`[SOFIA-ADMIN-AUTH] Headers:`, JSON.stringify(headers, null, 2));
+  console.log('\n════════════════════════════════════════════════════════════════');
+  console.log(`🔐 [SOFIA-ADMIN-AUTH] REQUEST ${requestId}`);
+  console.log(`🔐 [SOFIA-ADMIN-AUTH] Method: ${req.method}`);
+  console.log(`🔐 [SOFIA-ADMIN-AUTH] Time: ${timestamp}`);
+  console.log('════════════════════════════════════════════════════════════════\n');
   
   if (req.method === 'OPTIONS') {
-    console.log(`[SOFIA-ADMIN-AUTH] ${requestId} - CORS preflight handled`);
+    console.log(`🔐 [${requestId}] CORS preflight handled`);
     return new Response(null, { headers: corsHeaders });
   }
   
   if (req.method === 'GET') {
-    console.log(`[SOFIA-ADMIN-AUTH] ${requestId} - Health check request`);
+    console.log(`🔐 [${requestId}] Health check request`);
     
-    // Extended health check - verify Z-API config
+    // Extended health check
     let zapiStatus = 'unknown';
+    let directorInfo = null;
+    
     try {
       const { data: agent } = await supabase
         .from('agents')
@@ -339,41 +399,58 @@ serve(async (req) => {
       zapiStatus = 'error_checking';
     }
     
-    const { data: directors } = await supabase
-      .from('exa_alerts_directors')
-      .select('nome, telefone')
-      .eq('ativo', true)
-      .limit(1);
+    try {
+      const { data: directors } = await supabase
+        .from('exa_alerts_directors')
+        .select('nome, telefone')
+        .eq('ativo', true)
+        .limit(1);
+      
+      directorInfo = directors?.[0] || null;
+    } catch (e) {
+      console.error('Erro ao buscar diretor:', e);
+    }
     
-    return new Response(JSON.stringify({
+    const healthData = {
       status: 'ok',
-      message: 'Sofia Admin Auth service is running',
-      version: '2.0',
+      service: 'Sofia Admin Auth',
+      version: '3.0',
       request_id: requestId,
       timestamp,
       diagnostics: {
         zapi_status: zapiStatus,
         has_zapi_client_token: !!Deno.env.get('ZAPI_CLIENT_TOKEN'),
-        active_director: directors?.[0]?.nome || 'none',
-        director_phone_configured: !!directors?.[0]?.telefone
+        active_director: directorInfo?.nome || 'none',
+        director_phone_configured: !!directorInfo?.telefone,
+        supabase_url: supabaseUrl ? 'configured' : 'missing'
       }
-    }), {
+    };
+    
+    console.log('🔐 Health check response:', JSON.stringify(healthData, null, 2));
+    
+    return new Response(JSON.stringify(healthData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
   
   try {
-    const body = await req.json();
-    const { action, user_phone, user_name, code, session_id, query_type, query_params, query_response, duration_ms } = body;
+    const bodyText = await req.text();
+    console.log(`🔐 [${requestId}] Raw body:`, bodyText);
+    
+    const body = JSON.parse(bodyText);
+    const { action, user_phone, user_name, code } = body;
 
-    // ElevenLabs pode não conseguir fornecer user_phone; usamos um identificador estável por conversa.
+    // ElevenLabs pode não fornecer user_phone; usamos identificador estável
     const effectiveUserPhone = (typeof user_phone === 'string' && user_phone.trim())
       ? user_phone.trim()
       : (typeof user_name === 'string' && user_name.trim())
         ? `voice_${user_name.trim()}`
         : 'voice_session';
 
-    console.log('[SOFIA-ADMIN-AUTH] Action:', action, 'Phone:', effectiveUserPhone);
+    console.log(`🔐 [${requestId}] Action: ${action}`);
+    console.log(`🔐 [${requestId}] Effective Phone: ${effectiveUserPhone}`);
+    console.log(`🔐 [${requestId}] User Name: ${user_name || 'não informado'}`);
+    if (code) console.log(`🔐 [${requestId}] Code: ${code}`);
 
     let result: any;
 
@@ -383,7 +460,11 @@ serve(async (req) => {
         break;
 
       case 'verify_code':
-        result = await verifyCode(effectiveUserPhone, code);
+        if (!code) {
+          result = { success: false, message: 'Código não informado. Diga o código de 6 dígitos.' };
+        } else {
+          result = await verifyCode(effectiveUserPhone, code);
+        }
         break;
 
       case 'check_session':
@@ -394,21 +475,19 @@ serve(async (req) => {
         result = await endSession(effectiveUserPhone);
         break;
 
-      case 'log_query':
-        await logAdminQuery(session_id, query_type, query_params, query_response, duration_ms);
-        result = { success: true };
-        break;
-
       default:
-        result = { success: false, message: `Ação desconhecida: ${action}` };
+        console.log(`🔐 [${requestId}] ⚠️ Ação desconhecida: ${action}`);
+        result = { success: false, message: `Ação desconhecida: ${action}. Use: check_session, request_code, verify_code ou end_session.` };
     }
+    
+    console.log(`🔐 [${requestId}] Response:`, JSON.stringify(result, null, 2));
     
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
     
   } catch (error) {
-    console.error('[SOFIA-ADMIN-AUTH] Error:', error);
+    console.error(`🔐 [${requestId}] ❌ ERRO FATAL:`, error);
     return new Response(JSON.stringify({
       success: false,
       message: 'Erro interno no serviço de autenticação.',

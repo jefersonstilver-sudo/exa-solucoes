@@ -46,54 +46,81 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
 
   const conversation = useConversation({
     onConnect: () => {
-      console.log('[Sofia] ✅ Connected to ElevenLabs WebRTC');
+      console.log('\n═══════════════════════════════════════════════════');
+      console.log('[Sofia] ✅ CONNECTED to ElevenLabs WebRTC');
+      console.log('[Sofia] Session active - Voice ready');
+      console.log('═══════════════════════════════════════════════════\n');
       setState('connected');
       setError(null);
       toast.success('Sofia conectada!');
     },
     onDisconnect: () => {
-      console.log('[Sofia] 🔌 Disconnected from ElevenLabs');
-      // Simply return to idle state - no automatic reconnection
+      console.log('\n═══════════════════════════════════════════════════');
+      console.log('[Sofia] 🔌 DISCONNECTED from ElevenLabs');
+      console.log('═══════════════════════════════════════════════════\n');
       setState('idle');
       setTranscript('');
       setUserTranscript('');
     },
     onMessage: (message: any) => {
       try {
-        console.log('[Sofia] 📨 Message received:', JSON.stringify(message, null, 2));
+        const msgType = message?.type || 'unknown';
         
-        // Handle error messages safely
-        if (message?.type === 'error' || message?.type === 'tool_error') {
-          console.error('[Sofia] ⚠️ Agent error message:', message);
+        // Log all messages with clear formatting
+        console.log(`\n[Sofia] 📨 Message type: ${msgType}`);
+        
+        // Handle error messages
+        if (msgType === 'error' || msgType === 'tool_error') {
+          console.error('[Sofia] ⚠️ Agent error:', JSON.stringify(message, null, 2));
           return;
         }
         
-        if (message?.type === 'user_transcript') {
+        // User transcript
+        if (msgType === 'user_transcript') {
           const text = message?.user_transcription_event?.user_transcript || '';
-          console.log('[Sofia] 🎤 User transcript:', text);
+          console.log(`[Sofia] 🎤 USER: "${text}"`);
           setUserTranscript(text);
         }
         
-        if (message?.type === 'agent_response') {
+        // Agent response
+        if (msgType === 'agent_response') {
           const text = message?.agent_response_event?.agent_response || '';
-          console.log('[Sofia] 🤖 Agent response:', text);
+          console.log(`[Sofia] 🤖 SOFIA: "${text}"`);
           setTranscript(text);
         }
 
-        // Log tool calls for debugging
-        if (message?.type === 'tool_call' || message?.type === 'client_tool_call') {
-          console.log('[Sofia] 🔧 Tool call:', message?.tool_call || message?.client_tool_call);
+        // Tool calls - CRITICAL for debugging admin_auth and consultar_sistema
+        if (msgType === 'tool_call' || msgType === 'client_tool_call') {
+          const toolInfo = message?.tool_call || message?.client_tool_call || {};
+          console.log('\n═══════════════════════════════════════════════════');
+          console.log('[Sofia] 🔧 TOOL CALL');
+          console.log(`[Sofia] Tool name: ${toolInfo?.name || toolInfo?.tool_name || 'unknown'}`);
+          console.log(`[Sofia] Parameters:`, JSON.stringify(toolInfo?.parameters || toolInfo?.arguments || {}, null, 2));
+          console.log('═══════════════════════════════════════════════════\n');
         }
 
-        if (message?.type === 'tool_result' || message?.type === 'agent_tool_response') {
-          console.log('[Sofia] 🔧 Tool result:', message?.tool_result || message?.agent_tool_response);
+        // Tool results
+        if (msgType === 'tool_result' || msgType === 'agent_tool_response') {
+          const resultInfo = message?.tool_result || message?.agent_tool_response || {};
+          console.log('\n═══════════════════════════════════════════════════');
+          console.log('[Sofia] 🔧 TOOL RESULT');
+          console.log(`[Sofia] Result:`, JSON.stringify(resultInfo, null, 2));
+          console.log('═══════════════════════════════════════════════════\n');
         }
+
+        // Conversation init metadata
+        if (msgType === 'conversation_initiation_metadata') {
+          console.log('[Sofia] 📋 Conversation initialized:', JSON.stringify(message, null, 2));
+        }
+
       } catch (e) {
-        console.error('[Sofia] Failed to process message safely:', e, 'Original message:', message);
+        console.error('[Sofia] Failed to process message:', e, 'Original:', message);
       }
     },
     onError: (err: any) => {
-      console.error('[Sofia] ❌ Raw error object:', err);
+      console.error('\n═══════════════════════════════════════════════════');
+      console.error('[Sofia] ❌ ERROR RECEIVED');
+      console.error('[Sofia] Raw error:', err);
       
       let errorMessage = 'Erro na conexão';
       let errorCode = 'unknown';
@@ -106,10 +133,11 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
           errorCode = err.code || err.reason || err.error_type || 'unknown';
         }
       } catch (e) {
-        console.error('[Sofia] Error while extracting error details:', e);
+        console.error('[Sofia] Error extracting details:', e);
       }
       
-      console.error('[Sofia] Processed error - message:', errorMessage, 'code:', errorCode);
+      console.error(`[Sofia] Processed - message: ${errorMessage}, code: ${errorCode}`);
+      console.error('═══════════════════════════════════════════════════\n');
 
       setError(`${errorMessage} (código: ${errorCode})`);
       setState('error');
@@ -176,39 +204,45 @@ export const SofiaProvider: React.FC<SofiaProviderProps> = ({ children }) => {
 
   // Core connection logic
   const performConnection = useCallback(async () => {
-    console.log('[Sofia] 🚀 Starting connection...');
+    console.log('\n═══════════════════════════════════════════════════');
+    console.log('[Sofia] 🚀 STARTING CONNECTION');
+    console.log('═══════════════════════════════════════════════════\n');
     
     try {
-      // Ensure ElevenLabs agent has the correct tools (admin_auth + consultar_sistema)
+      // Ensure ElevenLabs agent has the correct tools
+      console.log('[Sofia] Step 1: Checking agent configuration...');
       await ensureSofiaAgentConfigured();
 
-      console.log('[Sofia] Requesting microphone permission...');
+      console.log('[Sofia] Step 2: Requesting microphone permission...');
       await navigator.mediaDevices.getUserMedia({ audio: true });
       console.log('[Sofia] ✅ Microphone permission granted');
       
       setState('connecting');
       
-      console.log('[Sofia] Fetching conversation token...');
+      console.log('[Sofia] Step 3: Fetching conversation token...');
       const { data, error: fnError } = await supabase.functions.invoke('elevenlabs-conversation-token');
       
+      console.log('[Sofia] Token response:', { success: data?.success, hasToken: !!data?.token, error: fnError?.message });
+      
       if (fnError) {
-        console.error('[Sofia] Token fetch error:', fnError);
+        console.error('[Sofia] ❌ Token fetch error:', fnError);
         throw new Error(fnError.message || 'Erro ao obter token');
       }
       
       if (!data?.token) {
-        console.error('[Sofia] No token in response:', data);
+        console.error('[Sofia] ❌ No token in response:', data);
         throw new Error('Token não recebido do servidor');
       }
       
-      console.log('[Sofia] ✅ Token obtained, starting WebRTC session...');
+      console.log('[Sofia] ✅ Token obtained');
+      console.log('[Sofia] Step 4: Starting WebRTC session...');
       
       await conversation.startSession({
         conversationToken: data.token,
         connectionType: 'webrtc',
       });
       
-      console.log('[Sofia] WebRTC session started, waiting for connection...');
+      console.log('[Sofia] WebRTC session started, waiting for onConnect callback...');
       
     } catch (err: any) {
       console.error('[Sofia] ❌ Connection failed:', err);
