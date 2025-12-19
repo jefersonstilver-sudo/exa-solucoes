@@ -307,24 +307,27 @@ const PropostaDetalhesPage = () => {
 
   const handleResend = async (via: 'whatsapp' | 'email') => {
     if (!proposal) return;
-    
+
     try {
       if (via === 'whatsapp' && proposal.client_phone) {
-        await supabase.functions.invoke('send-proposal-whatsapp', {
+        const { error } = await supabase.functions.invoke('send-proposal-whatsapp', {
           body: { proposalId: proposal.id }
         });
+        if (error) throw error;
         toast.success('WhatsApp enviado!');
       } else if (via === 'email' && proposal.client_email) {
-        await supabase.functions.invoke('send-proposal-email', {
+        const { error } = await supabase.functions.invoke('send-proposal-email', {
           body: { proposalId: proposal.id }
         });
+        if (error) throw error;
         toast.success('E-mail enviado!');
       } else {
         toast.error(`${via === 'whatsapp' ? 'Telefone' : 'E-mail'} não cadastrado`);
       }
       refetch();
-    } catch (error) {
-      toast.error('Erro ao reenviar');
+    } catch (error: any) {
+      console.error('[PropostaDetalhes] Erro ao reenviar:', error);
+      toast.error(error?.message ? `Erro ao reenviar: ${error.message}` : 'Erro ao reenviar');
     }
   };
 
