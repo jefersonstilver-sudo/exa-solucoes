@@ -478,3 +478,6 @@ verify_jwt = false
 
 [functions.sofia-voice-knowledge]
 verify_jwt = false
+
+[functions.sofia-jarvis]
+verify_jwt = false
