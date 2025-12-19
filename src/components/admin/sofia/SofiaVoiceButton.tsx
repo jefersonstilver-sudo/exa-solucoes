@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, PhoneCall, PhoneOff, Sparkles, X, Mic, Volume2 } from 'lucide-react';
+import { Phone, PhoneCall, PhoneOff, Sparkles, X, Mic, Volume2, Minimize2, Maximize2 } from 'lucide-react';
 import { useSofia } from '@/contexts/SofiaContext';
 
 interface SofiaVoiceButtonProps {
@@ -9,6 +9,7 @@ interface SofiaVoiceButtonProps {
 
 export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const { 
     state, 
     isSpeaking, 
@@ -25,9 +26,12 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
 
   const handleButtonClick = async () => {
     if (state === 'idle') {
-      // Start call - show modal immediately with "calling" animation
       setIsModalOpen(true);
+      setIsMinimized(false);
       await startCall();
+    } else if (isMinimized) {
+      setIsMinimized(false);
+      setIsModalOpen(true);
     } else {
       setIsModalOpen(!isModalOpen);
     }
@@ -36,11 +40,83 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
   const handleEndCall = async () => {
     await endCall();
     setIsModalOpen(false);
+    setIsMinimized(false);
   };
 
   const handleCloseModal = () => {
+    if (isConnected) {
+      // Minimize instead of closing when connected
+      setIsMinimized(true);
+      setIsModalOpen(false);
+    } else {
+      setIsModalOpen(false);
+    }
+  };
+
+  const handleMinimize = () => {
+    setIsMinimized(true);
     setIsModalOpen(false);
   };
+
+  const handleMaximize = () => {
+    setIsMinimized(false);
+    setIsModalOpen(true);
+  };
+
+  // Minimized floating indicator during active call
+  if (isMinimized && isConnected) {
+    return (
+      <motion.button
+        onClick={handleMaximize}
+        className={`fixed bottom-24 right-6 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-lg ${className}`}
+        style={{
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          boxShadow: '0 0 30px rgba(16, 185, 129, 0.5)',
+        }}
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        {/* Pulse rings for active call */}
+        {[1, 2, 3].map((ring) => (
+          <motion.div
+            key={ring}
+            className="absolute inset-0 rounded-full"
+            style={{ border: '2px solid rgba(16, 185, 129, 0.4)' }}
+            initial={{ scale: 1, opacity: 0.6 }}
+            animate={{ scale: [1, 1.8 + ring * 0.2], opacity: [0.6, 0] }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              delay: ring * 0.3,
+              ease: 'easeOut',
+            }}
+          />
+        ))}
+        
+        {/* Speaking indicator */}
+        <motion.div
+          animate={isSpeaking ? { scale: [1, 1.1, 1] } : {}}
+          transition={{ duration: 0.5, repeat: isSpeaking ? Infinity : 0 }}
+        >
+          <PhoneCall className="w-6 h-6 text-white" />
+        </motion.div>
+
+        {/* Mini audio visualizer */}
+        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+          {[...Array(5)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="w-1 bg-white rounded-full"
+              animate={{ height: isSpeaking ? [4, 10, 4] : [4, 6, 4] }}
+              transition={{ duration: 0.3, repeat: Infinity, delay: i * 0.1 }}
+            />
+          ))}
+        </div>
+      </motion.button>
+    );
+  }
 
   return (
     <>
@@ -139,13 +215,24 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
                     : 'bg-gradient-to-b from-violet-600/20 to-transparent'
                 }`} />
 
-                {/* Close Button */}
-                <button
-                  onClick={handleCloseModal}
-                  className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-                >
-                  <X className="w-5 h-5 text-white" />
-                </button>
+                {/* Header Buttons */}
+                <div className="absolute top-4 right-4 z-10 flex gap-2">
+                  {isConnected && (
+                    <button
+                      onClick={handleMinimize}
+                      className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                      title="Minimizar"
+                    >
+                      <Minimize2 className="w-5 h-5 text-white" />
+                    </button>
+                  )}
+                  <button
+                    onClick={handleCloseModal}
+                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                  >
+                    <X className="w-5 h-5 text-white" />
+                  </button>
+                </div>
 
                 {/* Content */}
                 <div className="relative px-6 py-8 flex flex-col items-center">
@@ -224,7 +311,7 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
                       ? isSpeaking
                         ? 'Falando...'
                         : 'Ouvindo...'
-                      : 'IA Assistente'}
+                      : 'IA Assistente JARVIS'}
                   </p>
                   
                   {/* Page Context Badge */}
@@ -326,11 +413,18 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
                   {/* Instructions */}
                   <p className="text-xs text-slate-400 mt-6 text-center">
                     {isConnected
-                      ? 'Fale naturalmente. Sofia sabe que você está na seção ' + pageContext.section
+                      ? 'Fale naturalmente. Sofia tem acesso PLENO ao sistema.'
                       : isConnecting
                       ? 'Aguarde enquanto conectamos você à Sofia...'
                       : 'Iniciando chamada...'}
                   </p>
+
+                  {/* Capabilities hint */}
+                  {isConnected && (
+                    <div className="mt-4 text-xs text-slate-500 text-center">
+                      <p>Pergunte sobre: prédios, painéis, vendas, conversas, contratos, leads, clientes...</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
