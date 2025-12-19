@@ -40,19 +40,37 @@ async function requestVerificationCode(userPhone: string, userName?: string): Pr
       return { success: false, message: 'Nenhum administrador configurado para receber códigos.' };
     }
     
-    const adminPhone = directors[0].telefone;
+    const adminPhoneRaw = directors[0].telefone;
     const adminName = directors[0].nome;
-    
+
+    const normalizePhoneE164BR = (phone: string) => {
+      const digits = (phone || '').replace(/\D/g, '');
+      if (!digits) return '';
+      // If already has country code
+      if (digits.startsWith('55') && digits.length >= 12) return digits;
+      // If looks like BR mobile/landline (10-11 digits), prefix 55
+      if (digits.length === 10 || digits.length === 11) return `55${digits}`;
+      // Fallback: return as-is digits
+      return digits;
+    };
+
+    const adminPhone = normalizePhoneE164BR(adminPhoneRaw);
+
+    if (!adminPhone) {
+      console.error('[SOFIA-ADMIN-AUTH] Invalid admin phone:', adminPhoneRaw);
+      return { success: false, message: 'Telefone do administrador inválido. Atualize o cadastro do diretor.' };
+    }
+
     // Generate code
     const code = generateCode();
-    
+
     // Invalidate any existing active sessions for this phone
     await supabase
       .from('sofia_admin_sessions')
       .update({ session_active: false })
       .eq('user_phone', userPhone)
       .eq('session_active', true);
-    
+
     // Create new session record
     const { data: session, error: sessionError } = await supabase
       .from('sofia_admin_sessions')
@@ -65,12 +83,12 @@ async function requestVerificationCode(userPhone: string, userName?: string): Pr
       })
       .select()
       .single();
-    
+
     if (sessionError) {
       console.error('[SOFIA-ADMIN-AUTH] Error creating session:', sessionError);
       return { success: false, message: 'Erro ao criar sessão de verificação.' };
     }
-    
+
     // Send code via Z-API (using EXA Alert system)
     const message = `🔐 *CÓDIGO DE VERIFICAÇÃO SOFIA*\n\n` +
       `Código: *${code}*\n\n` +
@@ -78,7 +96,7 @@ async function requestVerificationCode(userPhone: string, userName?: string): Pr
       `Válido por: 5 minutos\n\n` +
       `⚠️ Este código libera acesso ao Modo Gerente Master da Sofia.\n` +
       `Não compartilhe com ninguém.`;
-    
+
     // Get agent config for EXA Alert
     const { data: agent } = await supabase
       .from('agents')
@@ -86,34 +104,39 @@ async function requestVerificationCode(userPhone: string, userName?: string): Pr
       .eq('key', 'exa_alert')
       .eq('whatsapp_provider', 'zapi')
       .single();
-    
-    if (agent?.zapi_config) {
-      const zapiConfig = agent.zapi_config;
-      const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
-      
-      if (zapiClientToken) {
-        const sendUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
-        
-        const response = await fetch(sendUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Client-Token': zapiClientToken,
-          },
-          body: JSON.stringify({
-            phone: adminPhone.replace(/\D/g, ''),
-            message: message
-          })
-        });
-        
-        if (!response.ok) {
-          console.error('[SOFIA-ADMIN-AUTH] Failed to send WhatsApp:', await response.text());
-          // Continue anyway - code was created
-        } else {
-          console.log('[SOFIA-ADMIN-AUTH] Code sent via WhatsApp to:', adminName);
-        }
-      }
+
+    const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+
+    if (!agent?.zapi_config || !zapiClientToken) {
+      console.error('[SOFIA-ADMIN-AUTH] Missing Z-API config/token. zapi_config:', !!agent?.zapi_config, 'hasClientToken:', !!zapiClientToken);
+      return { success: false, message: 'Z-API não configurado para envio do código. Verifique a integração do EXA Alerts.' };
     }
+
+    const zapiConfig = agent.zapi_config;
+    const sendUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+
+    console.log('[SOFIA-ADMIN-AUTH] Sending code to admin phone:', adminPhone);
+
+    const response = await fetch(sendUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Client-Token': zapiClientToken,
+      },
+      body: JSON.stringify({
+        phone: adminPhone,
+        message: message
+      })
+    });
+
+    if (!response.ok) {
+      const respText = await response.text();
+      console.error('[SOFIA-ADMIN-AUTH] Failed to send WhatsApp:', respText);
+      return { success: false, message: 'Falha ao enviar o código por WhatsApp. Tente novamente em instantes.' };
+    }
+
+    console.log('[SOFIA-ADMIN-AUTH] Code sent via WhatsApp to:', adminName);
+
     
     // Log the request
     await supabase.from('agent_logs').insert({
