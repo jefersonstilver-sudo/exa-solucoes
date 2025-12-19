@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, PhoneCall, PhoneOff, Sparkles, X, Mic, Volume2, Minimize2, Maximize2 } from 'lucide-react';
+import { Phone, PhoneCall, PhoneOff, Sparkles, X, Mic, Volume2, Minimize2, RefreshCw, AlertCircle } from 'lucide-react';
 import { useSofia } from '@/contexts/SofiaContext';
 
 interface SofiaVoiceButtonProps {
@@ -17,15 +17,20 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
     userTranscript, 
     error, 
     pageContext,
+    reconnectAttempt,
+    maxReconnectAttempts,
     startCall, 
-    endCall 
+    endCall,
+    retryConnection
   } = useSofia();
 
   const isConnecting = state === 'initializing' || state === 'connecting';
+  const isReconnecting = state === 'reconnecting';
   const isConnected = state === 'connected';
+  const isError = state === 'error';
 
   const handleButtonClick = async () => {
-    if (state === 'idle') {
+    if (state === 'idle' || isError) {
       setIsModalOpen(true);
       setIsMinimized(false);
       await startCall();
@@ -44,8 +49,8 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
   };
 
   const handleCloseModal = () => {
-    if (isConnected) {
-      // Minimize instead of closing when connected
+    if (isConnected || isReconnecting) {
+      // Minimize instead of closing when connected or reconnecting
       setIsMinimized(true);
       setIsModalOpen(false);
     } else {
@@ -63,15 +68,36 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
     setIsModalOpen(true);
   };
 
-  // Minimized floating indicator during active call
-  if (isMinimized && isConnected) {
+  const handleRetry = async () => {
+    await retryConnection();
+  };
+
+  // Get button color based on state
+  const getButtonGradient = () => {
+    if (isConnected) return 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+    if (isReconnecting) return 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+    if (isConnecting) return 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+    if (isError) return 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+    return 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)';
+  };
+
+  const getButtonShadow = () => {
+    if (isConnected) return '0 0 30px rgba(16, 185, 129, 0.5)';
+    if (isReconnecting) return '0 0 30px rgba(245, 158, 11, 0.5)';
+    if (isConnecting) return '0 0 30px rgba(245, 158, 11, 0.4)';
+    if (isError) return '0 0 30px rgba(239, 68, 68, 0.4)';
+    return '0 0 30px rgba(139, 92, 246, 0.4)';
+  };
+
+  // Minimized floating indicator during active call or reconnecting
+  if (isMinimized && (isConnected || isReconnecting)) {
     return (
       <motion.button
         onClick={handleMaximize}
         className={`fixed bottom-24 right-6 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-lg ${className}`}
         style={{
-          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-          boxShadow: '0 0 30px rgba(16, 185, 129, 0.5)',
+          background: getButtonGradient(),
+          boxShadow: getButtonShadow(),
         }}
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -83,7 +109,7 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
           <motion.div
             key={ring}
             className="absolute inset-0 rounded-full"
-            style={{ border: '2px solid rgba(16, 185, 129, 0.4)' }}
+            style={{ border: `2px solid ${isReconnecting ? 'rgba(245, 158, 11, 0.4)' : 'rgba(16, 185, 129, 0.4)'}` }}
             initial={{ scale: 1, opacity: 0.6 }}
             animate={{ scale: [1, 1.8 + ring * 0.2], opacity: [0.6, 0] }}
             transition={{
@@ -95,25 +121,38 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
           />
         ))}
         
-        {/* Speaking indicator */}
+        {/* Icon indicator */}
         <motion.div
-          animate={isSpeaking ? { scale: [1, 1.1, 1] } : {}}
-          transition={{ duration: 0.5, repeat: isSpeaking ? Infinity : 0 }}
+          animate={isSpeaking || isReconnecting ? { scale: [1, 1.1, 1] } : {}}
+          transition={{ duration: 0.5, repeat: isSpeaking || isReconnecting ? Infinity : 0 }}
         >
-          <PhoneCall className="w-6 h-6 text-white" />
+          {isReconnecting ? (
+            <RefreshCw className="w-6 h-6 text-white animate-spin" />
+          ) : (
+            <PhoneCall className="w-6 h-6 text-white" />
+          )}
         </motion.div>
 
         {/* Mini audio visualizer */}
-        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
-          {[...Array(5)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="w-1 bg-white rounded-full"
-              animate={{ height: isSpeaking ? [4, 10, 4] : [4, 6, 4] }}
-              transition={{ duration: 0.3, repeat: Infinity, delay: i * 0.1 }}
-            />
-          ))}
-        </div>
+        {isConnected && (
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+            {[...Array(5)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="w-1 bg-white rounded-full"
+                animate={{ height: isSpeaking ? [4, 10, 4] : [4, 6, 4] }}
+                transition={{ duration: 0.3, repeat: Infinity, delay: i * 0.1 }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Reconnect attempt indicator */}
+        {isReconnecting && (
+          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 text-white text-xs flex items-center justify-center font-bold">
+            {reconnectAttempt}
+          </div>
+        )}
       </motion.button>
     );
   }
@@ -125,25 +164,17 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
         onClick={handleButtonClick}
         className={`fixed bottom-24 right-6 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${className}`}
         style={{
-          background: isConnected 
-            ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-            : isConnecting
-            ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
-            : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-          boxShadow: isConnected
-            ? '0 0 30px rgba(16, 185, 129, 0.4)'
-            : isConnecting
-            ? '0 0 30px rgba(245, 158, 11, 0.4)'
-            : '0 0 30px rgba(139, 92, 246, 0.4)',
+          background: getButtonGradient(),
+          boxShadow: getButtonShadow(),
         }}
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
       >
-        {/* Pulse rings when connecting or speaking */}
+        {/* Pulse rings when connecting, reconnecting, or speaking */}
         <AnimatePresence>
-          {(isConnecting || isSpeaking) && (
+          {(isConnecting || isReconnecting || isSpeaking) && (
             <>
               {[1, 2, 3].map((ring) => (
                 <motion.div
@@ -171,13 +202,17 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
 
         {/* Icon */}
         <motion.div
-          animate={isConnecting ? { rotate: [0, 10, -10, 0] } : {}}
-          transition={{ duration: 0.5, repeat: isConnecting ? Infinity : 0 }}
+          animate={isConnecting || isReconnecting ? { rotate: [0, 10, -10, 0] } : {}}
+          transition={{ duration: 0.5, repeat: isConnecting || isReconnecting ? Infinity : 0 }}
         >
           {isConnected ? (
             <PhoneCall className="w-6 h-6 text-white" />
+          ) : isReconnecting ? (
+            <RefreshCw className="w-6 h-6 text-white animate-spin" />
           ) : isConnecting ? (
             <Phone className="w-6 h-6 text-white" />
+          ) : isError ? (
+            <AlertCircle className="w-6 h-6 text-white" />
           ) : (
             <Sparkles className="w-6 h-6 text-white" />
           )}
@@ -210,14 +245,18 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
                 <div className={`absolute inset-x-0 top-0 h-32 ${
                   isConnected 
                     ? 'bg-gradient-to-b from-emerald-600/20 to-transparent'
+                    : isReconnecting
+                    ? 'bg-gradient-to-b from-amber-600/20 to-transparent'
                     : isConnecting
                     ? 'bg-gradient-to-b from-amber-600/20 to-transparent'
+                    : isError
+                    ? 'bg-gradient-to-b from-red-600/20 to-transparent'
                     : 'bg-gradient-to-b from-violet-600/20 to-transparent'
                 }`} />
 
                 {/* Header Buttons */}
                 <div className="absolute top-4 right-4 z-10 flex gap-2">
-                  {isConnected && (
+                  {(isConnected || isReconnecting) && (
                     <button
                       onClick={handleMinimize}
                       className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
@@ -240,7 +279,7 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
                   <div className="relative mb-6">
                     {/* Animated rings */}
                     <AnimatePresence>
-                      {(isConnecting || isSpeaking) && (
+                      {(isConnecting || isReconnecting || isSpeaking) && (
                         <>
                           {[1, 2, 3].map((ring) => (
                             <motion.div
@@ -270,18 +309,26 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
                       className={`relative w-28 h-28 rounded-full flex items-center justify-center shadow-lg ${
                         isConnected
                           ? 'bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500 shadow-emerald-500/30'
+                          : isReconnecting
+                          ? 'bg-gradient-to-br from-amber-500 via-orange-500 to-yellow-500 shadow-amber-500/30'
                           : isConnecting
                           ? 'bg-gradient-to-br from-amber-500 via-orange-500 to-yellow-500 shadow-amber-500/30'
+                          : isError
+                          ? 'bg-gradient-to-br from-red-500 via-rose-500 to-pink-500 shadow-red-500/30'
                           : 'bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 shadow-purple-500/30'
                       }`}
                       animate={isSpeaking ? { scale: [1, 1.05, 1] } : {}}
                       transition={{ duration: 0.5, repeat: isSpeaking ? Infinity : 0 }}
                     >
                       <div className="absolute inset-1 rounded-full bg-slate-900 flex items-center justify-center">
-                        {isConnecting ? (
+                        {isReconnecting ? (
+                          <RefreshCw className="w-12 h-12 text-amber-400 animate-spin" />
+                        ) : isConnecting ? (
                           <Phone className="w-12 h-12 text-amber-400" />
                         ) : isConnected ? (
                           <PhoneCall className="w-12 h-12 text-emerald-400" />
+                        ) : isError ? (
+                          <AlertCircle className="w-12 h-12 text-red-400" />
                         ) : (
                           <Sparkles className="w-12 h-12 text-violet-400" />
                         )}
@@ -293,8 +340,10 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
                       className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-slate-900 ${
                         isConnected
                           ? 'bg-green-500'
-                          : isConnecting
+                          : isReconnecting || isConnecting
                           ? 'bg-amber-500 animate-pulse'
+                          : isError
+                          ? 'bg-red-500'
                           : 'bg-gray-500'
                       }`}
                     />
@@ -303,14 +352,18 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
                   {/* Name & Status */}
                   <h2 className="text-2xl font-bold text-white mb-1">Sofia</h2>
                   <p className={`text-sm mb-2 ${
-                    isConnected ? 'text-emerald-300/80' : 'text-violet-300/80'
+                    isConnected ? 'text-emerald-300/80' : isError ? 'text-red-300/80' : 'text-violet-300/80'
                   }`}>
-                    {isConnecting
+                    {isReconnecting
+                      ? `Reconectando... (${reconnectAttempt}/${maxReconnectAttempts})`
+                      : isConnecting
                       ? 'Conectando...'
                       : isConnected
                       ? isSpeaking
                         ? 'Falando...'
                         : 'Ouvindo...'
+                      : isError
+                      ? 'Erro na conexão'
                       : 'IA Assistente JARVIS'}
                   </p>
                   
@@ -349,7 +402,7 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
                   )}
 
                   {/* Connecting Animation */}
-                  {isConnecting && (
+                  {(isConnecting || isReconnecting) && (
                     <div className="w-full mb-6 flex flex-col items-center">
                       <motion.div
                         className="flex gap-2 mb-4"
@@ -369,7 +422,11 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
                           />
                         ))}
                       </motion.div>
-                      <p className="text-sm text-amber-300/80">Estabelecendo conexão...</p>
+                      <p className="text-sm text-amber-300/80">
+                        {isReconnecting 
+                          ? `Tentativa ${reconnectAttempt} de ${maxReconnectAttempts}...`
+                          : 'Estabelecendo conexão...'}
+                      </p>
                     </div>
                   )}
 
@@ -398,24 +455,43 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
                     </div>
                   )}
 
-                  {/* End Call Button */}
-                  {isConnected && (
-                    <motion.button
-                      onClick={handleEndCall}
-                      className="w-16 h-16 rounded-full flex items-center justify-center bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30 transition-all duration-300"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <PhoneOff className="w-7 h-7 text-white" />
-                    </motion.button>
-                  )}
+                  {/* Action Buttons */}
+                  <div className="flex gap-4">
+                    {/* Retry Button for Error State */}
+                    {isError && (
+                      <motion.button
+                        onClick={handleRetry}
+                        className="w-16 h-16 rounded-full flex items-center justify-center bg-violet-500 hover:bg-violet-600 shadow-lg shadow-violet-500/30 transition-all duration-300"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <RefreshCw className="w-7 h-7 text-white" />
+                      </motion.button>
+                    )}
+
+                    {/* End Call Button */}
+                    {(isConnected || isReconnecting) && (
+                      <motion.button
+                        onClick={handleEndCall}
+                        className="w-16 h-16 rounded-full flex items-center justify-center bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30 transition-all duration-300"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <PhoneOff className="w-7 h-7 text-white" />
+                      </motion.button>
+                    )}
+                  </div>
 
                   {/* Instructions */}
                   <p className="text-xs text-slate-400 mt-6 text-center">
                     {isConnected
                       ? 'Fale naturalmente. Sofia tem acesso PLENO ao sistema.'
+                      : isReconnecting
+                      ? 'Aguarde a reconexão automática...'
                       : isConnecting
                       ? 'Aguarde enquanto conectamos você à Sofia...'
+                      : isError
+                      ? 'Clique para tentar novamente'
                       : 'Iniciando chamada...'}
                   </p>
 
