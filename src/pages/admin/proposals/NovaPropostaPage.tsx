@@ -163,7 +163,6 @@ const NovaPropostaPage = () => {
 
   // Estados para novos toggles: Cobrança Futura e Exigir Contrato
   const [cobrancaFutura, setCobrancaFutura] = useState(false);
-  const [dataInicioCobranca, setDataInicioCobranca] = useState('');
   const [exigirContrato, setExigirContrato] = useState(true);
 
   // Opções de período
@@ -200,6 +199,18 @@ const NovaPropostaPage = () => {
     { id: 1, dueDate: new Date(), amount: '' },
     { id: 2, dueDate: new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000), amount: '' }
   ]);
+
+  // Detectar se tem parcela futura no pagamento personalizado
+  const hasFutureInstallment = useMemo(() => {
+    if (!isCustomPayment) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return customInstallments.some(p => {
+      const dueDate = new Date(p.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate > today;
+    });
+  }, [isCustomPayment, customInstallments]);
 
   // Handlers para pagamento personalizado
   const handlePeriodChange = (value: number) => {
@@ -487,7 +498,7 @@ const NovaPropostaPage = () => {
             amount: parseFloat(p.amount) || 0
           })) as Json : null,
           cobranca_futura: cobrancaFutura,
-          data_inicio_cobranca: cobrancaFutura && dataInicioCobranca ? dataInicioCobranca : null,
+          data_inicio_cobranca: null,
           exigir_contrato: exigirContrato
         }])
         .select()
@@ -1472,36 +1483,24 @@ const NovaPropostaPage = () => {
           </div>
 
           <div className="space-y-4">
-            {/* Toggle: Ativar para Cobrança Futura */}
-            <div className="flex items-center justify-between p-4 bg-amber-50/80 rounded-xl border border-amber-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-500 rounded-lg">
-                  <DollarSign className="h-4 w-4 text-white" />
+            {/* Toggle: Ativar Pedido Hoje - SÓ aparece quando pagamento personalizado E tem parcela futura */}
+            {isCustomPayment && hasFutureInstallment && (
+              <div className="flex items-center justify-between p-4 bg-amber-50/80 rounded-xl border border-amber-200">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-500 rounded-lg">
+                    <DollarSign className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Ativar Pedido Hoje</p>
+                    <p className="text-xs text-muted-foreground">
+                      Pedido ativa agora, mesmo com pagamento no futuro
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-sm">Ativar para Cobrança Futura</p>
-                  <p className="text-xs text-muted-foreground">
-                    Pedido ativa hoje, pagamento começa depois
-                  </p>
-                </div>
-              </div>
-              <Switch 
-                checked={cobrancaFutura} 
-                onCheckedChange={setCobrancaFutura}
-                className="data-[state=checked]:bg-amber-500"
-              />
-            </div>
-
-            {/* Seletor de Data - aparece quando toggle está ativo */}
-            {cobrancaFutura && (
-              <div className="ml-4 p-3 border-l-2 border-amber-300 bg-amber-25 rounded-r-lg">
-                <Label className="text-xs font-medium">Data de Início da Cobrança</Label>
-                <Input 
-                  type="date" 
-                  min={new Date().toISOString().split('T')[0]}
-                  value={dataInicioCobranca}
-                  onChange={(e) => setDataInicioCobranca(e.target.value)}
-                  className="mt-1 h-10"
+                <Switch 
+                  checked={cobrancaFutura} 
+                  onCheckedChange={setCobrancaFutura}
+                  className="data-[state=checked]:bg-amber-500"
                 />
               </div>
             )}
