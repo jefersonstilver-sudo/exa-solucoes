@@ -35,6 +35,57 @@ const timeAgo = (date: string): string => {
   return `${diffDays} dias atrás`;
 };
 
+// Format seconds to readable time
+const formatSeconds = (totalSeconds: number): string => {
+  if (!totalSeconds || totalSeconds <= 0) return '0s';
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+};
+
+// Get emoji for proposal status
+const getProposalStatusEmoji = (proposal: any): string => {
+  if (proposal.is_viewing) return '🔴';
+  if (proposal.converted_order_id) return '✅';
+  if (proposal.rejection_reason) return '❌';
+  if (proposal.view_count > 0) return '👁️';
+  if (proposal.status === 'enviada') return '📤';
+  return '📋';
+};
+
+// Get emoji for proposal log action
+const getProposalActionEmoji = (action: string): string => {
+  const emojis: Record<string, string> = {
+    'criada': '📝',
+    'created': '📝',
+    'enviada_whatsapp': '📱',
+    'enviada_email': '📧',
+    'sent_whatsapp': '📱',
+    'sent_email': '📧',
+    'visualizada': '👁️',
+    'viewed': '👁️',
+    'visualizando': '🔴',
+    'viewing': '🔴',
+    'view_started': '🔴',
+    'view_ended': '⚪',
+    'notification_sent': '🔔',
+    'pagamento_alterado': '💳',
+    'payment_changed': '💳',
+    'aceita': '✅',
+    'accepted': '✅',
+    'rejeitada': '❌',
+    'rejected': '❌',
+    'atualizada': '🔄',
+    'updated': '🔄',
+    'expirada': '⏰',
+    'expired': '⏰'
+  };
+  return emojis[action] || '📌';
+};
+
 // ==================== INTENT HANDLERS ====================
 
 // Overview - Visão geral completa do sistema
@@ -712,22 +763,39 @@ async function handleGetAlerts(): Promise<{ text: string; data: any }> {
   return { text, data: { total: alerts.length, critical, warning, alerts } };
 }
 
-// Get Proposals - Listar propostas
+// Get Proposals - Listar propostas COM MÉTRICAS COMPLETAS
 async function handleGetProposals(params: any): Promise<{ text: string; data: any }> {
-  console.log('[Sofia JARVIS] Getting proposals...', params);
+  console.log('[Sofia JARVIS] Getting proposals with full metrics...', params);
 
   let query = supabase
     .from('proposals')
     .select(`
-      id, client_name, client_email, client_phone, status, 
+      id, number, client_name, client_email, client_phone, status, 
       cash_total_value, fidel_monthly_value, fidel_total_value,
-      seller_name, sent_at, viewed_at, created_at, proposal_type
+      seller_name, sent_at, created_at, proposal_type,
+      first_viewed_at, last_viewed_at, view_count, total_time_spent_seconds,
+      is_viewing, converted_order_id, rejection_reason, responded_at,
+      expires_at, chosen_plan
     `)
     .order('created_at', { ascending: false })
-    .limit(20);
+    .limit(30);
 
   if (params?.status) {
     query = query.eq('status', params.status);
+  }
+  if (params?.seller_name) {
+    query = query.ilike('seller_name', `%${params.seller_name}%`);
+  }
+  if (params?.client_name) {
+    query = query.ilike('client_name', `%${params.client_name}%`);
+  }
+  // Filtro para propostas "quentes" (sendo visualizadas agora)
+  if (params?.is_viewing || params?.visualizando || params?.quentes) {
+    query = query.eq('is_viewing', true);
+  }
+  // Filtro para propostas nunca abertas
+  if (params?.never_opened || params?.nao_abriram) {
+    query = query.eq('view_count', 0);
   }
 
   const { data: proposals, error } = await query;
@@ -738,20 +806,255 @@ async function handleGetProposals(params: any): Promise<{ text: string; data: an
     return { text: 'Sem propostas encontradas.', data: [] };
   }
 
-  const pending = proposals.filter(p => p.status === 'enviada' || p.status === 'pending').length;
-  const viewed = proposals.filter(p => p.viewed_at).length;
-  const accepted = proposals.filter(p => p.status === 'aceita' || p.status === 'accepted').length;
-
-  const list = proposals.slice(0, 5).map(p => {
-    const valor = p.cash_total_value || p.fidel_total_value || 0;
-    const viewedStatus = p.viewed_at ? '✓ visualizada' : 'não visualizada';
-    return `${p.client_name}: ${p.status} (${viewedStatus}), ${formatCurrency(valor)}, vendedor: ${p.seller_name || 'N/A'}`;
-  }).join('. ');
-
-  return { 
-    text: `${proposals.length} propostas. ${pending} pendentes, ${viewed} visualizadas, ${accepted} aceitas. ${list}`, 
-    data: proposals 
+  // Estatísticas detalhadas
+  const stats = {
+    total: proposals.length,
+    enviadas: proposals.filter(p => p.status === 'enviada' || p.status === 'pending').length,
+    visualizadas: proposals.filter(p => (p.view_count || 0) > 0).length,
+    visualizando_agora: proposals.filter(p => p.is_viewing).length,
+    convertidas: proposals.filter(p => p.converted_order_id).length,
+    nunca_abriram: proposals.filter(p => (p.view_count || 0) === 0).length,
+    rejeitadas: proposals.filter(p => p.rejection_reason).length,
   };
+
+  // Lista detalhada com métricas
+  const list = proposals.slice(0, 8).map(p => {
+    const emoji = getProposalStatusEmoji(p);
+    const tempo = formatSeconds(p.total_time_spent_seconds || 0);
+    const views = p.view_count || 0;
+    const converteu = p.converted_order_id ? ' ✅PEDIDO' : '';
+    const valor = p.cash_total_value || p.fidel_total_value || 0;
+    
+    return `${emoji} ${p.number || p.id.substring(0, 8)} - ${p.client_name}: ${p.status} | ${views}x | ${tempo}${converteu} | ${formatCurrency(valor)}`;
+  }).join('\n');
+
+  const text = `📊 RESUMO DE PROPOSTAS:
+Total: ${stats.total} | Enviadas: ${stats.enviadas} | Visualizadas: ${stats.visualizadas}
+🔴 Vendo agora: ${stats.visualizando_agora} | ✅ Convertidas: ${stats.convertidas}
+📭 Nunca abriram: ${stats.nunca_abriram} | ❌ Rejeitadas: ${stats.rejeitadas}
+
+📋 ÚLTIMAS PROPOSTAS:
+${list}`;
+
+  return { text, data: { stats, proposals } };
+}
+
+// Proposal Details - Detalhes COMPLETOS de uma proposta específica
+async function handleGetProposalDetails(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting proposal details...', params);
+
+  const { proposal_id, number, client_name } = params;
+  
+  // Buscar proposta
+  let query = supabase.from('proposals').select('*');
+  
+  if (proposal_id) {
+    query = query.eq('id', proposal_id);
+  } else if (number) {
+    query = query.ilike('number', `%${number}%`);
+  } else if (client_name) {
+    query = query.ilike('client_name', `%${client_name}%`);
+  } else {
+    return { text: 'Preciso do número da proposta, ID ou nome do cliente.', data: null };
+  }
+  
+  const { data: proposals, error } = await query.limit(1);
+  
+  if (error || !proposals?.length) {
+    return { text: 'Proposta não encontrada.', data: null };
+  }
+  
+  const proposal = proposals[0];
+  
+  // Buscar logs desta proposta
+  const { data: logs } = await supabase
+    .from('proposal_logs')
+    .select('*')
+    .eq('proposal_id', proposal.id)
+    .order('created_at', { ascending: false })
+    .limit(20);
+  
+  // Verificar se converteu em pedido
+  let pedidoInfo = null;
+  if (proposal.converted_order_id) {
+    const { data: pedido } = await supabase
+      .from('pedidos')
+      .select('id, status, valor_total, created_at, data_inicio, data_fim')
+      .eq('id', proposal.converted_order_id)
+      .single();
+    pedidoInfo = pedido;
+  }
+  
+  const statusEmoji = getProposalStatusEmoji(proposal);
+  const tempoFormatado = formatSeconds(proposal.total_time_spent_seconds || 0);
+  
+  // Formatar timeline de logs
+  const timeline = (logs || []).slice(0, 5).map(log => {
+    const data = new Date(log.created_at).toLocaleString('pt-BR');
+    const emoji = getProposalActionEmoji(log.action);
+    return `${emoji} ${data} - ${log.action}`;
+  }).join('\n');
+
+  const text = `📋 Proposta ${proposal.number || proposal.id.substring(0, 8)}
+👤 Cliente: ${proposal.client_name}
+📧 Email: ${proposal.client_email || 'N/A'}
+📱 Telefone: ${proposal.client_phone || 'N/A'}
+💰 Valor: ${formatCurrency(proposal.cash_total_value || 0)} (à vista) / ${formatCurrency(proposal.fidel_monthly_value || 0)}/mês
+🏢 Vendedor: ${proposal.seller_name || 'N/A'}
+
+${statusEmoji} STATUS: ${proposal.status?.toUpperCase()}
+${proposal.is_viewing ? '🔴 CLIENTE ESTÁ VENDO AGORA!' : ''}
+
+📊 ENGAJAMENTO:
+- Visualizações: ${proposal.view_count || 0}x
+- Tempo total na proposta: ${tempoFormatado}
+- Primeira abertura: ${proposal.first_viewed_at ? formatDate(proposal.first_viewed_at) : 'Nunca abriu'}
+- Última atividade: ${proposal.last_viewed_at ? formatDate(proposal.last_viewed_at) : 'N/A'}
+
+${proposal.converted_order_id ? `✅ CONVERTIDA EM PEDIDO: ${pedidoInfo?.id?.substring(0, 8) || 'N/A'} - Status: ${pedidoInfo?.status || 'N/A'} - Valor: ${formatCurrency(pedidoInfo?.valor_total || 0)}` : '⏳ Ainda não converteu em pedido'}
+${proposal.rejection_reason ? `❌ Motivo rejeição: ${proposal.rejection_reason}` : ''}
+
+📜 HISTÓRICO RECENTE:
+${timeline || 'Nenhum evento registrado.'}`;
+
+  return { text, data: { proposal, logs, pedido: pedidoInfo } };
+}
+
+// Proposal vs Pedido - Explicar a diferença
+async function handleProposalVsPedido(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Explaining proposal vs pedido...');
+
+  // Contar propostas por status
+  const { data: propostas } = await supabase
+    .from('proposals')
+    .select('id, status, converted_order_id, is_viewing, view_count');
+  
+  // Contar pedidos
+  const { data: pedidos } = await supabase
+    .from('pedidos')
+    .select('id, status, valor_total');
+
+  const propostasStats = {
+    total: propostas?.length || 0,
+    nao_abertas: propostas?.filter(p => (p.view_count || 0) === 0).length || 0,
+    visualizando_agora: propostas?.filter(p => p.is_viewing).length || 0,
+    convertidas: propostas?.filter(p => p.converted_order_id).length || 0,
+  };
+
+  const pedidosStats = {
+    total: pedidos?.length || 0,
+    valor_total: pedidos?.reduce((sum, p) => sum + (p.valor_total || 0), 0) || 0,
+    pagos: pedidos?.filter(p => ['pago', 'ativo', 'video_aprovado'].includes(p.status)).length || 0,
+  };
+
+  const taxaConversao = propostasStats.total > 0 
+    ? ((propostasStats.convertidas / propostasStats.total) * 100).toFixed(1) 
+    : '0';
+
+  const text = `📋 PROPOSTA vs 🛒 PEDIDO - Explicação:
+
+📋 PROPOSTA = Oferta enviada ao cliente
+- Status possíveis: enviada → visualizada → visualizando → aceita/rejeitada
+- Ainda NÃO é uma venda
+- Cliente pode estar analisando
+- Você acompanha: visualizações, tempo na página, se está vendo agora
+
+🛒 PEDIDO = Quando o cliente PAGOU a proposta
+- A proposta se transforma em pedido após pagamento
+- Aí sim é uma VENDA concretizada
+- Tem parcelas, contratos, vídeos associados
+
+📊 SITUAÇÃO ATUAL:
+📋 Propostas: ${propostasStats.total}
+  - Nunca abriram: ${propostasStats.nao_abertas}
+  - Vendo agora: ${propostasStats.visualizando_agora}
+  - Converteram em pedido: ${propostasStats.convertidas}
+
+🛒 Pedidos (vendas): ${pedidosStats.total}
+  - Pagos/Ativos: ${pedidosStats.pagos}
+  - Valor total: ${formatCurrency(pedidosStats.valor_total)}
+
+📈 Taxa de conversão: ${taxaConversao}%`;
+
+  return { text, data: { propostas: propostasStats, pedidos: pedidosStats, taxaConversao } };
+}
+
+// Proposal Timeline - Timeline completa de uma proposta
+async function handleProposalTimeline(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting proposal timeline...', params);
+
+  const { proposal_id, number, client_name } = params;
+  
+  // Buscar proposta
+  let proposalQuery = supabase.from('proposals').select('*');
+  if (proposal_id) proposalQuery = proposalQuery.eq('id', proposal_id);
+  else if (number) proposalQuery = proposalQuery.ilike('number', `%${number}%`);
+  else if (client_name) proposalQuery = proposalQuery.ilike('client_name', `%${client_name}%`);
+  else return { text: 'Preciso do número da proposta, ID ou nome do cliente.', data: null };
+  
+  const { data: proposals } = await proposalQuery.limit(1);
+  
+  if (!proposals?.length) {
+    return { text: 'Proposta não encontrada.', data: null };
+  }
+  
+  const proposal = proposals[0];
+  
+  // Buscar TODOS os logs ordenados cronologicamente
+  const { data: logs } = await supabase
+    .from('proposal_logs')
+    .select('*')
+    .eq('proposal_id', proposal.id)
+    .order('created_at', { ascending: true });
+  
+  // Formatar timeline completa
+  const timeline = (logs || []).map(log => {
+    const data = new Date(log.created_at).toLocaleString('pt-BR');
+    const emoji = getProposalActionEmoji(log.action);
+    const details = log.metadata ? ` | ${JSON.stringify(log.metadata).substring(0, 50)}` : '';
+    return `${emoji} ${data} - ${log.action.toUpperCase()}${details}`;
+  }).join('\n\n');
+  
+  const text = `📜 TIMELINE COMPLETA - ${proposal.number || proposal.id.substring(0, 8)}
+👤 Cliente: ${proposal.client_name}
+💰 Valor: ${formatCurrency(proposal.cash_total_value || 0)}
+📊 Status: ${proposal.status} | Views: ${proposal.view_count || 0}x | Tempo: ${formatSeconds(proposal.total_time_spent_seconds || 0)}
+
+📅 EVENTOS (${logs?.length || 0}):
+${timeline || 'Nenhum evento registrado.'}`;
+
+  return { text, data: { proposal, logs } };
+}
+
+// Propostas Quentes - Propostas sendo visualizadas AGORA
+async function handlePropostasQuentes(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting hot proposals (viewing now)...');
+
+  const { data: quentes, error } = await supabase
+    .from('proposals')
+    .select('*')
+    .eq('is_viewing', true)
+    .order('last_viewed_at', { ascending: false });
+  
+  if (error) {
+    return { text: `Erro ao buscar propostas quentes: ${error.message}`, data: [] };
+  }
+  
+  if (!quentes?.length) {
+    return { text: '🟢 Nenhuma proposta sendo visualizada neste momento. Todas as propostas estão "frias".', data: [] };
+  }
+  
+  const list = quentes.map(p => {
+    const tempo = formatSeconds(p.total_time_spent_seconds || 0);
+    return `🔴 ${p.number || p.id.substring(0, 8)} - ${p.client_name}
+   💰 ${formatCurrency(p.cash_total_value || 0)} | ⏱️ ${tempo} na página | 👁️ ${p.view_count || 0}x views
+   📧 ${p.client_email || 'N/A'} | 📱 ${p.client_phone || 'N/A'}
+   🏢 Vendedor: ${p.seller_name || 'N/A'}`;
+  }).join('\n\n');
+  
+  const text = `🔥 ${quentes.length} PROPOSTA(S) SENDO VISUALIZADA(S) AGORA!\n\n${list}`;
+  
+  return { text, data: quentes };
 }
 
 // Order Details - Detalhes de um pedido
@@ -2380,6 +2683,32 @@ serve(async (req) => {
       case 'get_proposals':
         result = await handleGetProposals(params);
         break;
+      // ========== PROPOSAL DETAIL INTENTS ==========
+      case 'proposal_details':
+      case 'detalhes_proposta':
+      case 'proposta_detalhes':
+        result = await handleGetProposalDetails(params);
+        break;
+      case 'proposal_vs_pedido':
+      case 'proposta_pedido':
+      case 'diferenca_proposta_pedido':
+      case 'proposta_vs_pedido':
+      case 'o_que_e_proposta':
+        result = await handleProposalVsPedido(params);
+        break;
+      case 'proposal_timeline':
+      case 'timeline_proposta':
+      case 'historico_proposta':
+      case 'proposta_timeline':
+        result = await handleProposalTimeline(params);
+        break;
+      case 'propostas_quentes':
+      case 'hot_proposals':
+      case 'visualizando_agora':
+      case 'quem_esta_vendo':
+      case 'propostas_ativas':
+        result = await handlePropostasQuentes(params);
+        break;
       case 'order_details':
         result = await handleOrderDetails(params);
         break;
@@ -2548,7 +2877,16 @@ serve(async (req) => {
         break;
       case 'proposals':
       case 'propostas':
+      case 'listar_propostas':
         result = await handleGetProposals(params);
+        break;
+      case 'proposta':
+        // Se tem parâmetro específico, busca detalhes, senão lista
+        if (params?.number || params?.proposal_id || params?.client_name) {
+          result = await handleGetProposalDetails(params);
+        } else {
+          result = await handleGetProposals(params);
+        }
         break;
       case 'financeiro':
       case 'financial':
@@ -2560,7 +2898,7 @@ serve(async (req) => {
         result = await handlePanelStatus(params);
         break;
       default:
-        result = { text: `Não entendi a consulta "${intent}". Posso ajudar com: visão geral (overview), prédios, painéis, vendas, conversas, contratos, financeiro, leads, clientes, cupons, alertas, propostas, vídeos, emails, benefícios, prestadores, campanhas, produtos, usuários, síndicos, logos, configurações, notificações, parcelas, assinaturas, analytics, segurança, templates, relatórios, escalação, QR codes, respostas rápidas, estatísticas de exibição, portfolio, agentes IA, cortesias, informações da empresa, rastrear usuário, aprendizado da Sofia, conhecimento acumulado, e contexto do admin.`, data: null };
+        result = { text: `Não entendi a consulta "${intent}". Posso ajudar com: visão geral (overview), prédios, painéis, vendas, conversas, contratos, financeiro, leads, clientes, cupons, alertas, PROPOSTAS (detalhes, timeline, quem está vendo, diferença proposta vs pedido), vídeos, emails, benefícios, prestadores, campanhas, produtos, usuários, síndicos, logos, configurações, notificações, parcelas, assinaturas, analytics, segurança, templates, relatórios, escalação, QR codes, respostas rápidas, estatísticas de exibição, portfolio, agentes IA, cortesias, informações da empresa, rastrear usuário, aprendizado da Sofia, conhecimento acumulado, e contexto do admin.`, data: null };
     }
 
     console.log(`[Sofia JARVIS] Response:`, result.text.substring(0, 100) + '...');
