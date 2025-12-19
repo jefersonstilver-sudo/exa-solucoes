@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink } from 'lucide-react';
+import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink, Calendar, Globe, Users } from 'lucide-react';
+import { format, addDays, addMonths, differenceInDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -1620,8 +1622,47 @@ const PropostaPublicaPage = () => {
             <div className="text-xs text-muted-foreground">
               {proposal.is_custom_days ? 'Dias' : 'Meses'}
             </div>
-          </Card>
+        </Card>
         </div>
+
+        {/* Módulo de Período da Campanha - NOVO */}
+        {(() => {
+          const startDate = new Date(proposal.created_at);
+          const endDate = proposal.is_custom_days && proposal.custom_days
+            ? addDays(startDate, proposal.custom_days)
+            : addMonths(startDate, proposal.duration_months);
+          const totalDays = proposal.is_custom_days && proposal.custom_days
+            ? proposal.custom_days
+            : differenceInDays(endDate, startDate);
+          
+          return (
+            <Card className="p-4 bg-white/80 backdrop-blur-sm border border-gray-200">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="h-4 w-4 text-[#9C1E1E]" />
+                <h2 className="font-semibold">Período da Campanha</h2>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Início</p>
+                  <p className="font-semibold text-sm text-[#9C1E1E]">
+                    {format(startDate, "dd/MM/yyyy", { locale: ptBR })}
+                  </p>
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Término</p>
+                  <p className="font-semibold text-sm text-[#9C1E1E]">
+                    {format(endDate, "dd/MM/yyyy", { locale: ptBR })}
+                  </p>
+                </div>
+                <div className="text-center p-3 bg-gradient-to-br from-[#9C1E1E] to-[#7D1818] rounded-lg">
+                  <p className="text-xs text-white/80 mb-1">Total</p>
+                  <p className="font-bold text-lg text-white">{totalDays}</p>
+                  <p className="text-xs text-white/80">dias</p>
+                </div>
+              </div>
+            </Card>
+          );
+        })()}
 
         {/* Lista de Prédios */}
         <Card className="p-4 bg-white/80 backdrop-blur-sm">
@@ -1850,6 +1891,24 @@ const PropostaPublicaPage = () => {
             >
               <FileText className="h-4 w-4 mr-2 text-[#9C1E1E]" />
               Ver Mídia Kit
+              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
+              onClick={() => window.open('https://hexamedia.com.br', '_blank')}
+            >
+              <Globe className="h-4 w-4 mr-2 text-[#9C1E1E]" />
+              Visitar Nosso Site
+              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
+              onClick={() => window.open('https://hexamedia.com.br/quem-somos', '_blank')}
+            >
+              <Users className="h-4 w-4 mr-2 text-[#9C1E1E]" />
+              Quem Somos
               <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
             </Button>
           </div>
