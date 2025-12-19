@@ -49,10 +49,9 @@ const Exa = () => {
         <HeroSection />
         
         {/* Logo Ticker - Full Width - posicionado abaixo do vídeo sem sobreposição no mobile */}
-        <div className="w-full relative z-30 -mt-2 md:-mt-20 lg:-mt-28">
+        <div className="relative z-30 -mt-2 md:-mt-20 lg:-mt-28 w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
           <LogoTicker speed={60} pauseOnHover={true} showPortals={false} />
         </div>
-        
         <OQueESection />
         <SolucoesSection />
         <PorQueFuncionaSection />

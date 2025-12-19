@@ -19,34 +19,10 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
   const [isPaused, setIsPaused] = useState(false);
   const [recalcKey, setRecalcKey] = useState(0);
   const [validLogosCount, setValidLogosCount] = useState(0);
-  const [isVisible, setIsVisible] = useState(true); // ⚡ OTIMIZAÇÃO: Track visibility
   const trackRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   // Detectar preferência de movimento reduzido
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // ⚡ OTIMIZAÇÃO: Intersection Observer para pausar quando fora da tela
-  useEffect(() => {
-    if (!containerRef.current || prefersReducedMotion) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          setIsVisible(entry.isIntersecting);
-        });
-      },
-      { threshold: 0.1 } // Trigger when 10% visible
-    );
-
-    observer.observe(containerRef.current);
-
-    return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
-      }
-    };
-  }, [prefersReducedMotion]);
 
   // Controle da animação
   useEffect(() => {
@@ -58,29 +34,28 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
     if (!track) return;
 
     const trackWidth = track.scrollWidth / 2; // Divide by 2 since we duplicate content
+    if (!Number.isFinite(trackWidth) || trackWidth <= 0) {
+      return;
+    }
+
     const duration = trackWidth / speed;
     const animationDirection = direction === 'ltr' ? 'normal' : 'reverse';
-    
-    // Set animation and control with animationPlayState
+
     track.style.animation = `logoTicker ${duration}s linear infinite ${animationDirection}`;
-    // ⚡ OTIMIZAÇÃO: Pausar quando não visível OU hover
-    track.style.animationPlayState = (isPaused || !isVisible) ? 'paused' : 'running';
+    track.style.animationPlayState = isPaused ? 'paused' : 'running';
 
     return () => {
-      if (track) {
-        track.style.animation = 'none';
-      }
+      if (track) track.style.animation = 'none';
     };
-  }, [logos, speed, direction, loading, prefersReducedMotion, recalcKey, isVisible]);
+  }, [logos, speed, direction, loading, prefersReducedMotion, recalcKey, isPaused]);
 
   // Control animation play state separately for smooth pause/resume
   useEffect(() => {
     const track = trackRef.current;
     if (track && track.style.animation !== 'none') {
-      // ⚡ OTIMIZAÇÃO: Pausar quando não visível OU hover
-      track.style.animationPlayState = (isPaused || !isVisible) ? 'paused' : 'running';
+      track.style.animationPlayState = isPaused ? 'paused' : 'running';
     }
-  }, [isPaused, isVisible]);
+  }, [isPaused]);
 
   // Handlers de hover
   const handleMouseEnter = () => {
@@ -171,22 +146,17 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       {/* CSS para animação - injetado apenas uma vez */}
       <style>{`
         @keyframes logoTicker {
-          from {
-            transform: translate3d(0, 0, 0);
-          }
-          to {
-            transform: translate3d(-50%, 0, 0);
-          }
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
         }
       `}</style>
 
       <section 
         id="home-logo-ticker" 
         aria-label="Marcas parceiras"
-        className="relative w-screen left-1/2 -translate-x-1/2 mt-0"
+        className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] mt-0"
       >
         <div 
-          ref={containerRef}
           className="ticker h-16 md:h-18 lg:h-20 relative overflow-hidden bg-[#9C1E1E] rounded-none"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
