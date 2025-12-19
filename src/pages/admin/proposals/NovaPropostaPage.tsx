@@ -170,8 +170,12 @@ const NovaPropostaPage = () => {
     { value: 1, label: '1 mês', discount: 0 },
     { value: 3, label: '3 meses', discount: 20 },
     { value: 6, label: '6 meses', discount: 30 },
+    { value: 9, label: '9 meses', discount: 33 },
     { value: 12, label: '12 meses', discount: 37.5 },
-    { value: -1, label: 'Personalizado', discount: 0, custom: true },
+    { value: 18, label: '18 meses', discount: 40 },
+    { value: 24, label: '24 meses', discount: 45 },
+    { value: -2, label: 'Período em Dias', discount: -10, customDays: true },
+    { value: -1, label: 'Pagamento Personalizado', discount: 0, custom: true },
   ];
 
   // Handler para Vertical Premium
@@ -191,6 +195,10 @@ const NovaPropostaPage = () => {
   // Estados para pagamento personalizado
   const [isCustomPayment, setIsCustomPayment] = useState(false);
   const [customDurationMonths, setCustomDurationMonths] = useState(12);
+  
+  // Estados para período em dias
+  const [isCustomDays, setIsCustomDays] = useState(false);
+  const [customDays, setCustomDays] = useState(15);
   const [customInstallments, setCustomInstallments] = useState<{
     id: number;
     dueDate: Date;
@@ -215,13 +223,23 @@ const NovaPropostaPage = () => {
   // Handlers para pagamento personalizado
   const handlePeriodChange = (value: number) => {
     if (value === -1) {
+      // Pagamento Personalizado (parcelas customizadas)
       setIsCustomPayment(true);
+      setIsCustomDays(false);
       setDurationMonths(customDurationMonths);
-    } else {
+    } else if (value === -2) {
+      // Período em Dias
+      setIsCustomDays(true);
       setIsCustomPayment(false);
+      setDurationMonths(0);
+    } else {
+      // Período normal em meses
+      setIsCustomPayment(false);
+      setIsCustomDays(false);
       setDurationMonths(value);
     }
   };
+
 
   const addCustomInstallment = () => {
     const lastInstallment = customInstallments[customInstallments.length - 1];
@@ -374,6 +392,18 @@ const NovaPropostaPage = () => {
     return selectedBuildingsData.reduce((sum, b) => sum + (b.publico_estimado || 0), 0);
   }, [selectedBuildingsData]);
 
+  // Calcular preço para período em dias (< 30 dias = +10% acréscimo)
+  const calculateDaysPrice = useMemo(() => {
+    if (!isCustomDays || customDays <= 0) return 0;
+    
+    // Soma do preço base de todos os prédios selecionados
+    const totalBasePrice = selectedBuildingsData.reduce((sum, b) => sum + (b.preco_base || 0), 0);
+    
+    // Preço por dia = (Preço mensal / 30) × 1.10 (10% acréscimo)
+    const pricePerDay = (totalBasePrice / 30) * 1.10;
+    return pricePerDay * customDays;
+  }, [isCustomDays, customDays, selectedBuildingsData]);
+
   // Handler para adicionar prédio manual
   const handleAddManualBuilding = () => {
     if (!newManualBuilding.nome.trim()) {
@@ -478,16 +508,20 @@ const NovaPropostaPage = () => {
           selected_buildings: buildingsData as Json,
           total_panels: totalPanels,
           total_impressions_month: totalImpressions,
-          fidel_monthly_value: isCustomPayment ? customTotal / customInstallments.length : fidelMonthly,
-          cash_total_value: isCustomPayment ? customTotal : cashTotal,
-          discount_percent: discountPercent,
-          duration_months: durationMonths,
+          fidel_monthly_value: isCustomDays 
+            ? calculateDaysPrice 
+            : (isCustomPayment ? customTotal / customInstallments.length : fidelMonthly),
+          cash_total_value: isCustomDays 
+            ? calculateDaysPrice 
+            : (isCustomPayment ? customTotal : cashTotal),
+          discount_percent: isCustomDays ? -10 : discountPercent,
+          duration_months: isCustomDays ? 0 : durationMonths,
           status: 'enviada',
           sent_at: new Date().toISOString(),
           expires_at: new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
           created_by: user?.id,
           seller_name: currentUser?.nome || currentUser?.email || 'Vendedor',
-          payment_type: isCustomPayment ? 'custom' : 'standard',
+          payment_type: isCustomDays ? 'days' : (isCustomPayment ? 'custom' : 'standard'),
           tipo_produto: tipoProduto,
           client_address: clientData.address || null,
           client_latitude: clientData.latitude || null,
@@ -499,7 +533,9 @@ const NovaPropostaPage = () => {
           })) as Json : null,
           cobranca_futura: cobrancaFutura,
           data_inicio_cobranca: null,
-          exigir_contrato: exigirContrato
+          exigir_contrato: exigirContrato,
+          custom_days: isCustomDays ? customDays : null,
+          is_custom_days: isCustomDays
         }])
         .select()
         .single();
@@ -1223,7 +1259,9 @@ const NovaPropostaPage = () => {
                   key={option.value}
                   onClick={() => handlePeriodChange(option.value)}
                   className={`p-3 rounded-lg border-2 text-center transition-all ${
-                    (option.value === -1 && isCustomPayment) || (!isCustomPayment && durationMonths === option.value)
+                    (option.value === -1 && isCustomPayment) || 
+                    (option.value === -2 && isCustomDays) ||
+                    (!isCustomPayment && !isCustomDays && durationMonths === option.value)
                       ? 'border-primary bg-primary/5'
                       : 'border-gray-100 hover:border-gray-200'
                   }`}
@@ -1231,7 +1269,12 @@ const NovaPropostaPage = () => {
                   {option.value === -1 ? (
                     <>
                       <div className="font-bold text-sm">⚙️</div>
-                      <div className="text-[10px] text-muted-foreground">Custom</div>
+                      <div className="text-[10px] text-muted-foreground">Parcelas</div>
+                    </>
+                  ) : option.value === -2 ? (
+                    <>
+                      <div className="font-bold text-sm">📅</div>
+                      <div className="text-[10px] text-muted-foreground">Dias</div>
                     </>
                   ) : (
                     <>
@@ -1250,6 +1293,47 @@ const NovaPropostaPage = () => {
               ))}
             </div>
           </div>
+
+          {/* Configuração de Período em Dias */}
+          {isCustomDays && (
+            <div className="mb-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">📅</span>
+                <h3 className="font-semibold text-orange-800">Período em Dias</h3>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <Label className="text-xs">Quantidade de Dias</Label>
+                  <Input 
+                    type="number" 
+                    min={1}
+                    max={29}
+                    value={customDays}
+                    onChange={(e) => setCustomDays(Math.min(29, Math.max(1, parseInt(e.target.value) || 1)))}
+                    className="mt-1 h-12 text-lg font-bold bg-white"
+                  />
+                </div>
+                <div className="text-sm text-muted-foreground pt-5">dias</div>
+              </div>
+
+              <p className="text-xs text-orange-600 bg-orange-100 p-2 rounded mt-3">
+                ⚠️ Períodos menores que 30 dias têm acréscimo de 10% no valor
+              </p>
+
+              {calculateDaysPrice > 0 && (
+                <div className="mt-3 p-3 bg-orange-100 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-orange-800">Valor Total ({customDays} dias):</span>
+                    <span className="text-lg font-bold text-orange-900">{formatCurrency(calculateDaysPrice)}</span>
+                  </div>
+                  <p className="text-xs text-orange-700 mt-1">
+                    Base: {formatCurrency(selectedBuildingsData.reduce((sum, b) => sum + (b.preco_base || 0), 0))}/mês × {customDays}/30 × 1.10
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Configuração de Pagamento Personalizado */}
           {isCustomPayment && (

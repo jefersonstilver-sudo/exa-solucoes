@@ -6649,6 +6649,7 @@ export type Database = {
           converted_order_id: string | null
           created_at: string | null
           created_by: string | null
+          custom_days: number | null
           custom_installments: Json | null
           data_inicio_cobranca: string | null
           discount_percent: number | null
@@ -6658,6 +6659,7 @@ export type Database = {
           fidel_monthly_value: number
           first_viewed_at: string | null
           id: string
+          is_custom_days: boolean | null
           is_viewing: boolean | null
           last_heartbeat_at: string | null
           last_viewed_at: string | null
@@ -6700,6 +6702,7 @@ export type Database = {
           converted_order_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          custom_days?: number | null
           custom_installments?: Json | null
           data_inicio_cobranca?: string | null
           discount_percent?: number | null
@@ -6709,6 +6712,7 @@ export type Database = {
           fidel_monthly_value: number
           first_viewed_at?: string | null
           id?: string
+          is_custom_days?: boolean | null
           is_viewing?: boolean | null
           last_heartbeat_at?: string | null
           last_viewed_at?: string | null
@@ -6751,6 +6755,7 @@ export type Database = {
           converted_order_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          custom_days?: number | null
           custom_installments?: Json | null
           data_inicio_cobranca?: string | null
           discount_percent?: number | null
@@ -6760,6 +6765,7 @@ export type Database = {
           fidel_monthly_value?: number
           first_viewed_at?: string | null
           id?: string
+          is_custom_days?: boolean | null
           is_viewing?: boolean | null
           last_heartbeat_at?: string | null
           last_viewed_at?: string | null
