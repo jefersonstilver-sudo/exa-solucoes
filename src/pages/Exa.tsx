@@ -49,12 +49,9 @@ const Exa = () => {
         <HeroSection />
         
         {/* Logo Ticker - Full Width - sobe para sobrepor base do vídeo */}
-        <div className="w-full relative z-30 -mt-20 lg:-mt-28">
+        <div className="w-full relative z-30 -mt-16 md:-mt-20 lg:-mt-28">
           <LogoTicker speed={60} pauseOnHover={true} showPortals={false} />
         </div>
-        
-        {/* Camada de transição para eliminar tarja preta */}
-        <div className="w-full h-2 bg-white" />
         
         <OQueESection />
         <SolucoesSection />

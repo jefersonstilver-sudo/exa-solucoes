@@ -29,28 +29,28 @@ const PorQueFuncionaSection = () => {
     <ExaSection background="gradient">
       <div 
         ref={ref}
-        className={`space-y-12 transition-all duration-1000 ${
+        className={`space-y-6 md:space-y-12 transition-all duration-1000 ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        <div className="text-center space-y-4">
-          <h2 className="font-montserrat font-extrabold text-4xl lg:text-5xl text-[#9C1E1E]">
+        <div className="text-center space-y-2">
+          <h2 className="font-montserrat font-extrabold text-2xl md:text-4xl lg:text-5xl text-[#9C1E1E]">
             Por Que Funciona?
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
           {reasons.map((reason, index) => (
             <ExaCard 
               key={index} 
               variant="light"
-              className="text-center"
+              className="text-center p-4 md:p-6"
             >
-              <reason.icon className="w-16 h-16 text-[#9C1E1E] mx-auto mb-6" />
-              <h3 className="font-montserrat font-semibold text-2xl text-exa-black mb-3">
+              <reason.icon className="w-8 h-8 md:w-12 md:h-12 lg:w-16 lg:h-16 text-[#9C1E1E] mx-auto mb-3 md:mb-6" />
+              <h3 className="font-montserrat font-semibold text-base md:text-xl lg:text-2xl text-exa-black mb-2 md:mb-3">
                 {reason.title}
               </h3>
-              <p className="font-poppins text-gray-600 text-lg">
+              <p className="font-poppins text-gray-600 text-xs md:text-sm lg:text-lg">
                 {reason.description}
               </p>
             </ExaCard>

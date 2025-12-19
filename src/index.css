@@ -11,6 +11,7 @@
 @import './styles/admin-mobile-optimizations.css';
 @import './styles/crm-mobile.css';
 @import './styles/pwa-native.css';
+@import './styles/apple-mobile.css';
 
 /* Import EXA Glassmorphism System */
 @import './modules/monitoramento-ia/styles/exa-glassmorphism.css';
