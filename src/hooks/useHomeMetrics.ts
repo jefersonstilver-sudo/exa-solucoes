@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface HomeMetrics {
   totalBuildings: number;
   totalPeople: number;
-  dailyViews: number;
+  monthlyViews: number;
 }
 
 export const useHomeMetrics = () => {
@@ -27,14 +27,13 @@ export const useHomeMetrics = () => {
       // Soma do público estimado de todos os prédios ativos
       const totalPeople = buildings?.reduce((sum, b) => sum + (b.publico_estimado || 0), 0) || 0;
       
-      // Soma das visualizações mensais / 30 para ter por dia
+      // Soma das visualizações mensais
       const monthlyViews = buildings?.reduce((sum, b) => sum + (b.visualizacoes_mes || 0), 0) || 0;
-      const dailyViews = Math.round(monthlyViews / 30);
 
       return {
         totalBuildings,
         totalPeople,
-        dailyViews,
+        monthlyViews,
       };
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
