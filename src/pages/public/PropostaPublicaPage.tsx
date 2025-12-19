@@ -1896,7 +1896,7 @@ const PropostaPublicaPage = () => {
             <Button 
               variant="outline" 
               className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
-              onClick={() => window.open('https://hexamedia.com.br', '_blank')}
+              onClick={() => window.open('https://examidia.com.br', '_blank')}
             >
               <Globe className="h-4 w-4 mr-2 text-[#9C1E1E]" />
               Visitar Nosso Site
@@ -1905,7 +1905,7 @@ const PropostaPublicaPage = () => {
             <Button 
               variant="outline" 
               className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
-              onClick={() => window.open('https://hexamedia.com.br/quem-somos', '_blank')}
+              onClick={() => window.open('https://examidia.com.br/quem-somos', '_blank')}
             >
               <Users className="h-4 w-4 mr-2 text-[#9C1E1E]" />
               Quem Somos
