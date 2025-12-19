@@ -24,6 +24,10 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
   // Detectar preferência de movimento reduzido
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // iOS costuma "simular hover" e pode disparar onMouseEnter sem onMouseLeave.
+  // Só pausamos no hover quando o dispositivo realmente suporta hover.
+  const canHover = window.matchMedia('(hover: hover)').matches;
+
   // Controle da animação
   useEffect(() => {
     if (prefersReducedMotion || loading || !logos.length) {
@@ -59,13 +63,13 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
 
   // Handlers de hover
   const handleMouseEnter = () => {
-    if (pauseOnHover) {
+    if (pauseOnHover && canHover) {
       setIsPaused(true);
     }
   };
 
   const handleMouseLeave = () => {
-    if (pauseOnHover) {
+    if (pauseOnHover && canHover) {
       setIsPaused(false);
     }
   };
@@ -154,10 +158,10 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       <section 
         id="home-logo-ticker" 
         aria-label="Marcas parceiras"
-        className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] mt-0"
+        className="relative w-screen left-1/2 -translate-x-1/2 mt-0 overflow-hidden bg-[#9C1E1E]"
       >
         <div 
-          className="ticker h-16 md:h-18 lg:h-20 relative overflow-hidden bg-[#9C1E1E] rounded-none"
+          className="ticker w-full h-16 md:h-18 lg:h-20 relative overflow-hidden bg-[#9C1E1E] rounded-none"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
