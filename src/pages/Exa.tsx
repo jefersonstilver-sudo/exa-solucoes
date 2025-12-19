@@ -45,7 +45,7 @@ const Exa = () => {
           createFAQSchema(homeFAQs)
         ]}
       />
-      <div className="relative overflow-x-hidden w-full -mt-16">
+      <div className="relative overflow-x-hidden w-full -mt-0 md:-mt-16">
         <HeroSection />
         
         {/* Logo Ticker - Full Width - posicionado abaixo do vídeo sem sobreposição no mobile */}
