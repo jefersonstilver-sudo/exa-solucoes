@@ -15,7 +15,7 @@ const NumerosSection = () => {
     { icon: Building2, value: metricsData?.totalBuildings || 50, label: 'Prédios Conectados', suffix: '' },
     { icon: Users, value: metricsData?.totalPeople || 23000, label: 'Pessoas Alcançadas', suffix: '' },
     { icon: Repeat, value: 40, label: 'Interações/Semana', suffix: 'x' },
-    { icon: PlayCircle, value: metricsData?.monthlyViews || 7350, label: 'Exibições/Mês', suffix: '' },
+    { icon: PlayCircle, value: metricsData?.monthlyViews || 7350, label: 'Exibições/Mês por Painel', suffix: '' },
   ], [metricsData]);
 
   return (
