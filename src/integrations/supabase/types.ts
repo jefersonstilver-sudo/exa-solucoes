@@ -6067,6 +6067,7 @@ export type Database = {
           client_id: string
           client_last_name: string | null
           client_name: string | null
+          cobranca_futura: boolean | null
           compliance_data: Json | null
           contrato_assinado_em: string | null
           contrato_enviado_em: string | null
@@ -6076,12 +6077,14 @@ export type Database = {
           cupom_id: string | null
           data_fim: string | null
           data_inicio: string | null
+          data_inicio_cobranca: string | null
           data_suspensao: string | null
           desconto_pix_avista: number | null
           device_info: Json | null
           dia_vencimento: number | null
           dias_atraso: number | null
           email: string | null
+          exigir_contrato: boolean | null
           expires_at: string | null
           id: string
           ip_origem: string | null
@@ -6120,6 +6123,7 @@ export type Database = {
           client_id: string
           client_last_name?: string | null
           client_name?: string | null
+          cobranca_futura?: boolean | null
           compliance_data?: Json | null
           contrato_assinado_em?: string | null
           contrato_enviado_em?: string | null
@@ -6129,12 +6133,14 @@ export type Database = {
           cupom_id?: string | null
           data_fim?: string | null
           data_inicio?: string | null
+          data_inicio_cobranca?: string | null
           data_suspensao?: string | null
           desconto_pix_avista?: number | null
           device_info?: Json | null
           dia_vencimento?: number | null
           dias_atraso?: number | null
           email?: string | null
+          exigir_contrato?: boolean | null
           expires_at?: string | null
           id?: string
           ip_origem?: string | null
@@ -6173,6 +6179,7 @@ export type Database = {
           client_id?: string
           client_last_name?: string | null
           client_name?: string | null
+          cobranca_futura?: boolean | null
           compliance_data?: Json | null
           contrato_assinado_em?: string | null
           contrato_enviado_em?: string | null
@@ -6182,12 +6189,14 @@ export type Database = {
           cupom_id?: string | null
           data_fim?: string | null
           data_inicio?: string | null
+          data_inicio_cobranca?: string | null
           data_suspensao?: string | null
           desconto_pix_avista?: number | null
           device_info?: Json | null
           dia_vencimento?: number | null
           dias_atraso?: number | null
           email?: string | null
+          exigir_contrato?: boolean | null
           expires_at?: string | null
           id?: string
           ip_origem?: string | null
@@ -6636,12 +6645,15 @@ export type Database = {
           client_longitude: number | null
           client_name: string
           client_phone: string | null
+          cobranca_futura: boolean | null
           converted_order_id: string | null
           created_at: string | null
           created_by: string | null
           custom_installments: Json | null
+          data_inicio_cobranca: string | null
           discount_percent: number | null
           duration_months: number | null
+          exigir_contrato: boolean | null
           expires_at: string | null
           fidel_monthly_value: number
           first_viewed_at: string | null
@@ -6684,12 +6696,15 @@ export type Database = {
           client_longitude?: number | null
           client_name: string
           client_phone?: string | null
+          cobranca_futura?: boolean | null
           converted_order_id?: string | null
           created_at?: string | null
           created_by?: string | null
           custom_installments?: Json | null
+          data_inicio_cobranca?: string | null
           discount_percent?: number | null
           duration_months?: number | null
+          exigir_contrato?: boolean | null
           expires_at?: string | null
           fidel_monthly_value: number
           first_viewed_at?: string | null
@@ -6732,12 +6747,15 @@ export type Database = {
           client_longitude?: number | null
           client_name?: string
           client_phone?: string | null
+          cobranca_futura?: boolean | null
           converted_order_id?: string | null
           created_at?: string | null
           created_by?: string | null
           custom_installments?: Json | null
+          data_inicio_cobranca?: string | null
           discount_percent?: number | null
           duration_months?: number | null
+          exigir_contrato?: boolean | null
           expires_at?: string | null
           fidel_monthly_value?: number
           first_viewed_at?: string | null
