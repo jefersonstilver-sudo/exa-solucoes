@@ -2644,6 +2644,74 @@ export type Database = {
           },
         ]
       }
+      conversation_heat_metrics: {
+        Row: {
+          conversation_id: string
+          conversion_probability: number | null
+          created_at: string
+          days_without_response: number | null
+          engagement_score: number | null
+          heat_score: number | null
+          id: string
+          last_agent_response_at: string | null
+          last_calculated_at: string | null
+          last_customer_message_at: string | null
+          message_count: number | null
+          negative_keywords_detected: Json | null
+          potential_value: number | null
+          response_time_avg_minutes: number | null
+          risk_factors: Json | null
+          risk_level: string | null
+          updated_at: string
+        }
+        Insert: {
+          conversation_id: string
+          conversion_probability?: number | null
+          created_at?: string
+          days_without_response?: number | null
+          engagement_score?: number | null
+          heat_score?: number | null
+          id?: string
+          last_agent_response_at?: string | null
+          last_calculated_at?: string | null
+          last_customer_message_at?: string | null
+          message_count?: number | null
+          negative_keywords_detected?: Json | null
+          potential_value?: number | null
+          response_time_avg_minutes?: number | null
+          risk_factors?: Json | null
+          risk_level?: string | null
+          updated_at?: string
+        }
+        Update: {
+          conversation_id?: string
+          conversion_probability?: number | null
+          created_at?: string
+          days_without_response?: number | null
+          engagement_score?: number | null
+          heat_score?: number | null
+          id?: string
+          last_agent_response_at?: string | null
+          last_calculated_at?: string | null
+          last_customer_message_at?: string | null
+          message_count?: number | null
+          negative_keywords_detected?: Json | null
+          potential_value?: number | null
+          response_time_avg_minutes?: number | null
+          risk_factors?: Json | null
+          risk_level?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_heat_metrics_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_notes: {
         Row: {
           agent_key: string
@@ -7352,6 +7420,89 @@ export type Database = {
         }
         Relationships: []
       }
+      sofia_admin_access_logs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          id: string
+          query_params: Json | null
+          query_type: string
+          response_data: Json | null
+          response_summary: string | null
+          session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          query_params?: Json | null
+          query_type: string
+          response_data?: Json | null
+          response_summary?: string | null
+          session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          query_params?: Json | null
+          query_type?: string
+          response_data?: Json | null
+          response_summary?: string | null
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sofia_admin_access_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sofia_admin_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sofia_admin_sessions: {
+        Row: {
+          code_sent_at: string
+          code_verified_at: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          session_active: boolean | null
+          session_expires_at: string | null
+          user_agent: string | null
+          user_name: string | null
+          user_phone: string
+          verification_code: string
+        }
+        Insert: {
+          code_sent_at?: string
+          code_verified_at?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          session_active?: boolean | null
+          session_expires_at?: string | null
+          user_agent?: string | null
+          user_name?: string | null
+          user_phone: string
+          verification_code: string
+        }
+        Update: {
+          code_sent_at?: string
+          code_verified_at?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          session_active?: boolean | null
+          session_expires_at?: string | null
+          user_agent?: string | null
+          user_name?: string | null
+          user_phone?: string
+          verification_code?: string
+        }
+        Relationships: []
+      }
       sync_runs: {
         Row: {
           created_at: string | null
@@ -8715,6 +8866,10 @@ export type Database = {
           valor_total: number
         }[]
       }
+      calculate_conversation_heat: {
+        Args: { conv_id: string }
+        Returns: number
+      }
       calculate_device_stats: {
         Args: { device_id: string; period_end?: string; period_start?: string }
         Returns: Json
@@ -9591,6 +9746,10 @@ export type Database = {
       unblock_order_secure: {
         Args: { p_pedido_id: string; p_reason?: string }
         Returns: Json
+      }
+      update_conversation_heat_metrics: {
+        Args: { conv_id: string }
+        Returns: undefined
       }
       update_device_alert_metadata:
         | {

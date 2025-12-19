@@ -481,3 +481,9 @@ verify_jwt = false
 
 [functions.sofia-jarvis]
 verify_jwt = false
+
+[functions.sofia-admin-auth]
+verify_jwt = false
+
+[functions.configure-sofia-agent]
+verify_jwt = true
