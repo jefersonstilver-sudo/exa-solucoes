@@ -3176,6 +3176,35 @@ serve(async (req) => {
     // Aplicar truncamento para evitar cortes no ElevenLabs
     const responseText = truncateForVoice(result.text);
 
+    // Extensão automática de sessão no modo Gerente Master quando há atividade
+    // Isso mantém a sessão ativa enquanto o usuário está usando o sistema
+    try {
+      const userPhone = body.user_phone || body.user_name ? `voice_${body.user_name}` : 'voice_session';
+      
+      // Chamar sofia-admin-auth para estender a sessão automaticamente
+      const extendResponse = await fetch(`${supabaseUrl}/functions/v1/sofia-admin-auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`
+        },
+        body: JSON.stringify({
+          action: 'extend_session',
+          user_phone: userPhone
+        })
+      });
+      
+      if (extendResponse.ok) {
+        const extendResult = await extendResponse.json();
+        if (extendResult.success) {
+          console.log(`[Sofia JARVIS] ✅ Sessão estendida automaticamente. Expira em: ${extendResult.expires_in_minutes} minutos`);
+        }
+      }
+    } catch (extendError) {
+      // Não falhar a resposta por erro na extensão
+      console.log('[Sofia JARVIS] ⚠️ Erro ao tentar estender sessão (não crítico):', extendError);
+    }
+
     return new Response(JSON.stringify({
       success: true,
       response_text: responseText,

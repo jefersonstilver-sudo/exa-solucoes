@@ -16,8 +16,10 @@ function generateCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Session duration in minutes
-const SESSION_DURATION_MINUTES = 5;
+// Session duration in minutes (increased to 10 minutes for better usability)
+const SESSION_DURATION_MINUTES = 10;
+// Extension duration when activity is detected (in minutes)
+const SESSION_EXTENSION_MINUTES = 5;
 
 // ==================== ACTION HANDLERS ====================
 
@@ -363,6 +365,91 @@ async function endSession(userPhone: string): Promise<{ success: boolean; messag
   }
 }
 
+// Extend session when activity is detected in Gerente Master mode
+async function extendSession(userPhone: string): Promise<{ success: boolean; message: string; extended_until?: string; expires_in_minutes?: number }> {
+  console.log('\n🔄 ═══════════════════════════════════════════════════════');
+  console.log('🔄 [ADMIN-AUTH] EXTEND_SESSION - Iniciando');
+  console.log(`🔄 [ADMIN-AUTH] User Phone: ${userPhone}`);
+  console.log('🔄 ═══════════════════════════════════════════════════════\n');
+  
+  try {
+    const now = new Date().toISOString();
+    
+    // Find active session
+    const { data: sessions, error } = await supabase
+      .from('sofia_admin_sessions')
+      .select('*')
+      .eq('user_phone', userPhone)
+      .eq('session_active', true)
+      .gte('session_expires_at', now)
+      .order('session_expires_at', { ascending: false })
+      .limit(1);
+    
+    if (error) {
+      console.error('🔄 [ADMIN-AUTH] ❌ Erro na query:', error);
+      return { success: false, message: 'Erro ao verificar sessão.' };
+    }
+    
+    if (!sessions || sessions.length === 0) {
+      console.log('🔄 [ADMIN-AUTH] ℹ️ Nenhuma sessão ativa para estender');
+      return { success: false, message: 'Nenhuma sessão ativa encontrada.' };
+    }
+    
+    const session = sessions[0];
+    const currentExpiry = new Date(session.session_expires_at);
+    
+    // Extend by SESSION_EXTENSION_MINUTES from now
+    const newExpiry = new Date(Date.now() + SESSION_EXTENSION_MINUTES * 60 * 1000);
+    
+    // Only extend if new expiry is later than current
+    const finalExpiry = newExpiry > currentExpiry ? newExpiry : currentExpiry;
+    
+    // Update session expiry
+    const { error: updateError } = await supabase
+      .from('sofia_admin_sessions')
+      .update({
+        session_expires_at: finalExpiry.toISOString()
+      })
+      .eq('id', session.id);
+    
+    if (updateError) {
+      console.error('🔄 [ADMIN-AUTH] ❌ Erro ao estender sessão:', updateError);
+      return { success: false, message: 'Erro ao estender sessão.' };
+    }
+    
+    const minutesRemaining = Math.ceil((finalExpiry.getTime() - Date.now()) / 60000);
+    
+    console.log(`🔄 [ADMIN-AUTH] ✅ Sessão estendida!`);
+    console.log(`🔄 [ADMIN-AUTH] - Nova expiração: ${finalExpiry.toISOString()}`);
+    console.log(`🔄 [ADMIN-AUTH] - Minutos restantes: ${minutesRemaining}`);
+    
+    // Log extension
+    await supabase.from('agent_logs').insert({
+      agent_key: 'sofia',
+      event_type: 'admin_session_extended',
+      metadata: {
+        session_id: session.id,
+        user_phone: userPhone,
+        old_expiry: currentExpiry.toISOString(),
+        new_expiry: finalExpiry.toISOString(),
+        extended_by_minutes: SESSION_EXTENSION_MINUTES,
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+    return { 
+      success: true, 
+      message: `Sessão estendida por mais ${SESSION_EXTENSION_MINUTES} minutos.`,
+      extended_until: finalExpiry.toISOString(),
+      expires_in_minutes: minutesRemaining
+    };
+    
+  } catch (error) {
+    console.error('🔄 [ADMIN-AUTH] ❌ Erro fatal:', error);
+    return { success: false, message: 'Erro ao estender sessão.' };
+  }
+}
+
 // ==================== MAIN HANDLER ====================
 
 serve(async (req) => {
@@ -475,9 +562,13 @@ serve(async (req) => {
         result = await endSession(effectiveUserPhone);
         break;
 
+      case 'extend_session':
+        result = await extendSession(effectiveUserPhone);
+        break;
+
       default:
         console.log(`🔐 [${requestId}] ⚠️ Ação desconhecida: ${action}`);
-        result = { success: false, message: `Ação desconhecida: ${action}. Use: check_session, request_code, verify_code ou end_session.` };
+        result = { success: false, message: `Ação desconhecida: ${action}. Use: check_session, request_code, verify_code, extend_session ou end_session.` };
     }
     
     console.log(`🔐 [${requestId}] Response:`, JSON.stringify(result, null, 2));
