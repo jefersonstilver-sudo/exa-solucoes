@@ -52,18 +52,18 @@ const DadosInstitucionaisSection = () => {
   const { ref, isVisible } = useScrollReveal(0.2);
 
   return (
-    <ExaSection background="light" className="py-16 md:py-24">
+    <ExaSection background="light" className="py-10 md:py-16 lg:py-24">
       <div 
         ref={ref}
-        className={`max-w-[1200px] mx-auto transition-all duration-700 ${
+        className={`max-w-[1200px] mx-auto transition-all duration-700 px-4 md:px-6 ${
           isVisible ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#111111] font-montserrat mb-12">
+        <h2 className="text-xl md:text-2xl lg:text-4xl font-bold text-[#111111] font-montserrat mb-6 md:mb-12">
           Informações Corporativas
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
           {dadosEmpresa.map((dado, index) => {
             const IconComponent = dado.icon;
             const iconColors: { [key: string]: string } = {
