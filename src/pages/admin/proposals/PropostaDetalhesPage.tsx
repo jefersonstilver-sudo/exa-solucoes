@@ -4,7 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   ArrowLeft, FileText, Clock, User, Building2, Send, Eye, 
   MessageSquare, Mail, Smartphone, Monitor, Copy, Download, 
-  RefreshCw, Gift, Timer, Check, X, MoreVertical, Phone, ExternalLink
+  RefreshCw, Gift, Timer, Check, X, MoreVertical, Phone, ExternalLink,
+  CreditCard, AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -18,6 +19,8 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExporter';
 import { motion } from 'framer-motion';
+import { EditPaymentDialog } from '@/components/admin/proposals/EditPaymentDialog';
+import { CCEmailsCard } from '@/components/admin/proposals/CCEmailsCard';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +46,11 @@ interface ProposalView {
   viewed_at: string;
 }
 
+interface Installment {
+  due_date: string;
+  amount: number;
+}
+
 const PropostaDetalhesPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -52,6 +60,7 @@ const PropostaDetalhesPage = () => {
 
   const [showExtendDialog, setShowExtendDialog] = useState(false);
   const [showBetterOfferDialog, setShowBetterOfferDialog] = useState(false);
+  const [showEditPaymentDialog, setShowEditPaymentDialog] = useState(false);
   const [extensionHours, setExtensionHours] = useState(24);
   const [extraDiscount, setExtraDiscount] = useState(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -142,6 +151,7 @@ const PropostaDetalhesPage = () => {
       convertida: { label: 'Pedido Criado', className: 'bg-green-600 text-white border-green-600' },
       recusada: { label: 'Recusada', className: 'bg-red-100 text-red-700 border-red-200' },
       expirada: { label: 'Expirada', className: 'bg-gray-100 text-gray-500 border-gray-200' },
+      atualizada: { label: 'Aguardando Re-aceite', className: 'bg-amber-100 text-amber-700 border-amber-200' },
     };
     return configs[status] || configs.pendente;
   };
@@ -155,6 +165,8 @@ const PropostaDetalhesPage = () => {
       proposta_recusada: { icon: <X className="h-3 w-3" />, color: 'bg-red-500' },
       proposta_prorrogada: { icon: <Timer className="h-3 w-3" />, color: 'bg-amber-500' },
       condicao_especial_enviada: { icon: <Gift className="h-3 w-3" />, color: 'bg-pink-500' },
+      proposta_atualizada: { icon: <RefreshCw className="h-3 w-3" />, color: 'bg-orange-500' },
+      pagamento_alterado: { icon: <CreditCard className="h-3 w-3" />, color: 'bg-indigo-500' },
     };
     return icons[action] || { icon: <Clock className="h-3 w-3" />, color: 'bg-gray-400' };
   };
@@ -230,6 +242,66 @@ const PropostaDetalhesPage = () => {
       toast.error('Erro ao enviar condição');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSavePayment = async (paymentType: string, installments: Installment[]) => {
+    if (!proposal) return;
+    setIsSubmitting(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Update proposal with new payment and mark for re-acceptance
+      const updateData: any = {
+        payment_type: paymentType,
+        custom_installments: paymentType === 'custom' ? installments : null,
+        needs_reacceptance: true,
+        last_modified_at: new Date().toISOString(),
+        modified_by: user?.id,
+        status: 'atualizada' // Mark as needing re-acceptance
+      };
+
+      await supabase
+        .from('proposals')
+        .update(updateData)
+        .eq('id', id);
+
+      // Log the change
+      await supabase.from('proposal_logs').insert({
+        proposal_id: id,
+        action: 'pagamento_alterado',
+        details: { 
+          payment_type: paymentType,
+          installments_count: installments.length,
+          modified_by: user?.id
+        }
+      });
+      
+      toast.success('Condição de pagamento atualizada! O cliente precisará aceitar novamente.');
+      setShowEditPaymentDialog(false);
+      refetch();
+    } catch (error) {
+      toast.error('Erro ao salvar condição de pagamento');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSaveCCEmails = async (emails: string[]) => {
+    if (!proposal) return;
+    
+    try {
+      await supabase
+        .from('proposals')
+        .update({ cc_emails: emails })
+        .eq('id', id);
+      
+      toast.success('E-mails de cópia salvos!');
+      refetch();
+    } catch (error) {
+      toast.error('Erro ao salvar e-mails');
+      throw error;
     }
   };
 
@@ -326,6 +398,46 @@ const PropostaDetalhesPage = () => {
       </motion.div>
 
       <div className="p-3 space-y-3">
+        {/* Re-acceptance Warning Banner */}
+        {proposal.needs_reacceptance && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+          >
+            <Card className="p-3 bg-amber-50 border-amber-200 shadow-md">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-amber-800">Proposta atualizada</p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    Esta proposta foi modificada e aguarda novo aceite do cliente.
+                  </p>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs border-amber-300 hover:bg-amber-100"
+                      onClick={() => handleResend('whatsapp')}
+                    >
+                      <MessageSquare className="h-3 w-3 mr-1" />
+                      Reenviar WhatsApp
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs border-amber-300 hover:bg-amber-100"
+                      onClick={() => handleResend('email')}
+                    >
+                      <Mail className="h-3 w-3 mr-1" />
+                      Reenviar E-mail
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+
         {/* Hero Value Card - Apple Style */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
@@ -375,6 +487,19 @@ const PropostaDetalhesPage = () => {
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Período</p>
                   <p className="text-lg font-bold mt-0.5">{proposal.duration_months} meses</p>
                 </div>
+              </div>
+
+              {/* Edit Payment Button */}
+              <div className="mt-4 pt-3 border-t border-gray-100">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full h-9 text-xs"
+                  onClick={() => setShowEditPaymentDialog(true)}
+                >
+                  <CreditCard className="h-3.5 w-3.5 mr-1.5" />
+                  Editar Condição de Pagamento
+                </Button>
               </div>
             </div>
           </Card>
@@ -477,6 +602,12 @@ const PropostaDetalhesPage = () => {
             )}
           </div>
         )}
+
+        {/* CC Emails Card */}
+        <CCEmailsCard 
+          ccEmails={proposal.cc_emails || []}
+          onSave={handleSaveCCEmails}
+        />
 
         {/* Client Card - Elegant */}
         <motion.div
@@ -762,6 +893,17 @@ const PropostaDetalhesPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Payment Dialog */}
+      <EditPaymentDialog
+        open={showEditPaymentDialog}
+        onOpenChange={setShowEditPaymentDialog}
+        currentPaymentType={proposal.payment_type || 'cash'}
+        currentInstallments={(Array.isArray(proposal.custom_installments) ? proposal.custom_installments as unknown as Installment[] : [])}
+        totalValue={proposal.cash_total_value}
+        onSave={handleSavePayment}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 };
