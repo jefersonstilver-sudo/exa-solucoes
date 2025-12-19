@@ -46,7 +46,7 @@ const HeroMobileLayout = () => {
       setIsFullscreen(false);
     }
   };
-  return <section className="bg-gradient-to-b from-[#9C1E1E] via-[#180A0A]/80 to-exa-black pt-16 pb-8">
+  return <section className="bg-gradient-to-b from-[#9C1E1E] via-[#180A0A]/80 to-exa-black pt-12 pb-2">
       {/* Vídeo Hero Imersivo */}
       <div ref={containerRef} className="relative w-full">
         <div className="relative w-full aspect-video bg-black cursor-pointer" onClick={togglePlayPause}>
@@ -54,27 +54,27 @@ const HeroMobileLayout = () => {
         </div>
         
         {/* Botões de Controle - Abaixo do vídeo */}
-        <div className="flex justify-center items-center gap-3 py-3 bg-gradient-to-b from-black/40 to-transparent">
+        <div className="flex justify-center items-center gap-2 py-2 bg-gradient-to-b from-black/40 to-transparent">
           <button onClick={toggleMute} className="video-control-btn" aria-label={isMuted ? "Ativar som" : "Desativar som"}>
-            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+            {isMuted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
           </button>
           <button onClick={restartVideo} className="video-control-btn" aria-label="Reiniciar vídeo">
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3 h-3" />
           </button>
           <button onClick={toggleFullscreen} className="video-control-btn" aria-label="Tela cheia">
-            {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+            {isFullscreen ? <Minimize className="w-3 h-3" /> : <Maximize className="w-3 h-3" />}
           </button>
         </div>
       </div>
       
-      {/* Texto + CTA */}
-      <div className="px-6 py-6 text-center space-y-4">
-        <h1 className="font-montserrat font-extrabold text-3xl text-white leading-tight">
+      {/* Texto + CTA - Compacto */}
+      <div className="px-5 py-3 text-center space-y-2">
+        <h1 className="font-montserrat font-bold text-2xl text-white leading-tight">
           Publicidade que <span className="text-exa-yellow">convive</span>.
         </h1>
         
-        <p className="font-poppins text-sm text-gray-200 leading-relaxed max-w-xl mx-auto">
-          A EXA conecta marcas aos instantes reais da vida urbana — atenção genuína, presença diária e resultados duradouros.
+        <p className="font-poppins text-xs text-gray-200/90 leading-relaxed max-w-sm mx-auto">
+          A EXA conecta marcas aos instantes reais da vida urbana — atenção genuína e resultados duradouros.
         </p>
       </div>
     </section>;

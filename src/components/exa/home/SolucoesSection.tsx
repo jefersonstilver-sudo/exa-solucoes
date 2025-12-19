@@ -54,7 +54,7 @@ const SolucoesSection = () => {
               variant="light"
               className={`transition-all duration-500 delay-${index * 100} p-3 md:p-6`}
             >
-              <solution.icon className="w-6 h-6 md:w-10 md:h-10 lg:w-12 lg:h-12 text-exa-purple mb-2 md:mb-4" />
+              <solution.icon className="w-5 h-5 md:w-8 md:h-8 lg:w-10 lg:h-10 text-exa-purple mb-1.5 md:mb-4" />
               <h3 className="font-montserrat font-semibold text-sm md:text-lg lg:text-xl text-exa-black mb-1 md:mb-2">
                 {solution.title}
               </h3>

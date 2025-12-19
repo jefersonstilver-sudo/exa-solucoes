@@ -48,8 +48,8 @@ const Exa = () => {
       <div className="relative overflow-x-hidden w-full -mt-16">
         <HeroSection />
         
-        {/* Logo Ticker - Full Width - sobe para sobrepor base do vídeo */}
-        <div className="w-full relative z-30 -mt-16 md:-mt-20 lg:-mt-28">
+        {/* Logo Ticker - Full Width - posicionado abaixo do vídeo sem sobreposição no mobile */}
+        <div className="w-full relative z-30 -mt-2 md:-mt-20 lg:-mt-28">
           <LogoTicker speed={60} pauseOnHover={true} showPortals={false} />
         </div>
         

@@ -225,7 +225,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
           <div 
             ref={trackRef}
             id="ticker-track"
-            className="ticker-track absolute inset-0 flex items-center gap-8 md:gap-12 lg:gap-16 px-16 md:px-20 lg:px-24 whitespace-nowrap"
+            className="ticker-track absolute inset-0 flex items-center gap-6 md:gap-12 lg:gap-16 px-4 md:px-20 lg:px-24 whitespace-nowrap"
             style={{ 
               willChange: 'transform',
               width: 'max-content'

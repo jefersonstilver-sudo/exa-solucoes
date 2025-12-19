@@ -46,7 +46,7 @@ const PorQueFuncionaSection = () => {
               variant="light"
               className="text-center p-4 md:p-6"
             >
-              <reason.icon className="w-8 h-8 md:w-12 md:h-12 lg:w-16 lg:h-16 text-[#9C1E1E] mx-auto mb-3 md:mb-6" />
+              <reason.icon className="w-5 h-5 md:w-10 md:h-10 lg:w-12 lg:h-12 text-[#9C1E1E] mx-auto mb-2 md:mb-6" />
               <h3 className="font-montserrat font-semibold text-base md:text-xl lg:text-2xl text-exa-black mb-2 md:mb-3">
                 {reason.title}
               </h3>
