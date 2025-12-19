@@ -36,6 +36,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { UserActivityTimeline } from './UserActivityTimeline';
 import { updateUserRoleInDB } from '@/services/userRoleService';
+import { CCEmailsInput } from '@/components/ui/cc-emails-input';
 
 interface User {
   id: string;
@@ -48,6 +49,7 @@ interface User {
   raw_user_meta_data?: any;
   nome?: string;
   telefone?: string;
+  cc_emails?: string[];
 }
 
 interface UserDetailsDialogCompleteProps {
@@ -70,7 +72,8 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
   const [editData, setEditData] = useState({
     name: '',
     telefone: '',
-    observacoes: ''
+    observacoes: '',
+    ccEmails: [] as string[]
   });
 
   const isSuperAdmin = userProfile?.role === 'super_admin';
@@ -82,7 +85,8 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
       setEditData({
         name: user.nome || user.raw_user_meta_data?.name || '',
         telefone: user.telefone || user.raw_user_meta_data?.telefone || '',
-        observacoes: user.raw_user_meta_data?.observacoes || ''
+        observacoes: user.raw_user_meta_data?.observacoes || '',
+        ccEmails: user.cc_emails || []
       });
       setSelectedRole(user.role);
     }
@@ -264,7 +268,8 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
         .from('users')
         .update({
           nome: editData.name,
-          telefone: editData.telefone || null
+          telefone: editData.telefone || null,
+          cc_emails: editData.ccEmails.length > 0 ? editData.ccEmails : null
         })
         .eq('id', user.id);
 
@@ -537,7 +542,19 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
                         Este telefone aparecerá nas propostas comerciais enviadas
                       </p>
                     </div>
-                    <Button onClick={handleSaveProfile} disabled={loading} size="sm">
+                    
+                    {/* E-mails de Cópia (CC) */}
+                    <div className="mt-4">
+                      <CCEmailsInput
+                        value={editData.ccEmails}
+                        onChange={(emails) => setEditData(prev => ({ ...prev, ccEmails: emails }))}
+                        label="E-mails de Cópia (CC)"
+                        placeholder="email@empresa.com"
+                        maxEmails={5}
+                      />
+                    </div>
+                    
+                    <Button onClick={handleSaveProfile} disabled={loading} size="sm" className="mt-4">
                       <Save className="h-4 w-4 mr-2" />
                       Salvar Alterações
                     </Button>

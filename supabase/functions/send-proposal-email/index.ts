@@ -44,7 +44,7 @@ serve(async (req) => {
     // Fetch proposal data
     const { data: proposal, error: proposalError } = await supabase
       .from('proposals')
-      .select('*')
+      .select('*, cc_emails')
       .eq('id', proposalId)
       .single();
 
@@ -55,6 +55,9 @@ serve(async (req) => {
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    // Get CC emails from proposal or client
+    const ccEmails: string[] = proposal.cc_emails || [];
 
     if (!proposal.client_email) {
       return new Response(
@@ -174,15 +177,17 @@ serve(async (req) => {
 </html>
     `;
 
-    // Send email via Resend
+    // Send email via Resend (with CC if available)
     const emailResponse = await resend.emails.send({
       from: 'EXA Mídia <comercial@examidia.com.br>',
       to: [proposal.client_email],
+      cc: ccEmails.length > 0 ? ccEmails : undefined,
       subject: `Proposta ${proposal.number} - EXA Mídia Digital`,
       html: htmlContent,
     });
-
+    
     console.log('E-mail enviado com sucesso:', emailResponse);
+    console.log('CC emails:', ccEmails.length > 0 ? ccEmails : 'Nenhum');
 
     // Log the action
     await supabase.from('proposal_logs').insert({

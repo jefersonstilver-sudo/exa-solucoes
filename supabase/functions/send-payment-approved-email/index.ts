@@ -33,13 +33,16 @@ serve(async (req) => {
 
     // Buscar dados da proposta
     let proposalData = null;
+    let ccEmails: string[] = [];
+    
     if (proposalId) {
       const { data } = await supabase
         .from('proposals')
-        .select('*')
+        .select('*, cc_emails')
         .eq('id', proposalId)
         .single();
       proposalData = data;
+      ccEmails = data?.cc_emails || [];
     }
 
     const firstName = clientName?.split(' ')[0] || 'Cliente';
@@ -229,9 +232,13 @@ serve(async (req) => {
 </html>
     `;
 
+    console.log('📤 Enviando email para:', clientEmail);
+    console.log('📤 CC emails:', ccEmails.length > 0 ? ccEmails : 'Nenhum');
+    
     const { data: emailResult, error: emailError } = await resend.emails.send({
       from: 'EXA Mídia <noreply@examidia.com.br>',
       to: [clientEmail],
+      cc: ccEmails.length > 0 ? ccEmails : undefined,
       subject: `🎉 Pagamento Aprovado - Proposta #${proposalNumber}`,
       html: htmlContent,
     });
