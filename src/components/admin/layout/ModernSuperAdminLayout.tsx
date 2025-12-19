@@ -6,11 +6,14 @@ import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { SofiaVoiceButton } from '@/components/admin/sofia';
+import { SofiaProvider } from '@/contexts/SofiaContext';
+
 const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) => {
   const { isMobile, isTablet } = useAdvancedResponsive();
   
   return (
-    <SidebarProvider
+    <SofiaProvider>
+      <SidebarProvider
         defaultOpen={!isMobile} 
         style={{
           "--sidebar-width": isTablet ? "240px" : "320px",
@@ -37,10 +40,11 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
             </main>
           </SidebarInset>
           
-          {/* Sofia Voice AI Button - Super Admin Only */}
+          {/* Sofia Voice AI Button */}
           <SofiaVoiceButton />
         </div>
       </SidebarProvider>
+    </SofiaProvider>
   );
 };
 
