@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone } from 'lucide-react';
+import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone, Bell, BellOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -22,6 +22,7 @@ import { ProposalMobileList } from '@/components/admin/proposals/ProposalMobileL
 import { ProposalPreviewModal } from '@/components/admin/proposals/ProposalPreviewModal';
 import { ProposalsPeriodSelector, getDefaultPeriod, type PeriodRange } from '@/components/admin/proposals/ProposalsPeriodSelector';
 import { SellerStatsPanel } from '@/components/admin/proposals/SellerStatsPanel';
+import { ProposalReminderIndicator } from '@/components/admin/proposals/ProposalReminderIndicator';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Proposal {
@@ -702,6 +703,13 @@ const PropostasPage = () => {
                             {proposal.number}
                           </span>
                           {getStatusBadge(proposal.status, proposal)}
+                          {proposal.status === 'expirada' && (
+                            <ProposalReminderIndicator 
+                              proposalId={proposal.id} 
+                              proposalStatus={proposal.status} 
+                              compact 
+                            />
+                          )}
                         </div>
                         <h3 className="font-medium text-sm truncate">{proposal.client_name}</h3>
                         <div className="flex items-center gap-2 mt-1 flex-wrap text-xs text-muted-foreground">

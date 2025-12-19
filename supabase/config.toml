@@ -465,3 +465,10 @@ verify_jwt = false
 
 [functions.global-toggle-ativo]
 verify_jwt = false
+
+[functions.check-expired-proposals]
+verify_jwt = false
+
+[[cron]]
+function_name = "check-expired-proposals"
+schedule = "0 * * * *"

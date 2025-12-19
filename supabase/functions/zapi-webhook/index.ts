@@ -375,6 +375,108 @@ serve(async (req) => {
         });
       }
       
+      // ========== PROCESSAR BOTÕES DE PROPOSTA EXPIRADA ==========
+      // Formato: proposal_mute_UUID_action
+      if (buttonId?.startsWith('proposal_mute_')) {
+        const parts = buttonId.split('_');
+        // proposal_mute_UUID_action
+        const proposalId = parts[2]; // UUID
+        const action = parts[3]; // 'ja_enviei' ou 'descartado'
+        
+        console.log('[ZAPI-WEBHOOK] 📋 Proposal mute button action:', {
+          action,
+          proposalId,
+          phone
+        });
+        
+        if (proposalId) {
+          let muteReason = '';
+          let confirmMsg = '';
+          
+          if (action === 'ja_enviei') {
+            muteReason = 'ja_enviei';
+            confirmMsg = '✅ *Lembretes interrompidos!*\n\nVocê marcou que já enviou uma nova proposta. Os lembretes desta proposta foram silenciados.';
+          } else if (action === 'descartado') {
+            muteReason = 'descartado';
+            confirmMsg = '❌ *Cliente descartado.*\n\nOs lembretes desta proposta foram silenciados permanentemente.';
+          }
+          
+          // Atualizar configurações de notificação
+          const { error: updateError } = await supabase
+            .from('proposal_notification_settings')
+            .upsert({
+              proposal_id: proposalId,
+              expire_reminders_muted: true,
+              expire_reminders_muted_at: new Date().toISOString(),
+              expire_reminders_muted_by: phone,
+              mute_reason: muteReason,
+            }, {
+              onConflict: 'proposal_id'
+            });
+          
+          if (updateError) {
+            console.error('[ZAPI-WEBHOOK] ❌ Error muting proposal reminders:', updateError);
+          } else {
+            console.log('[ZAPI-WEBHOOK] ✅ Proposal reminders muted:', {
+              proposalId,
+              muteReason
+            });
+            
+            // Buscar config Z-API do exa_alert
+            const { data: alertAgent } = await supabase
+              .from('agents')
+              .select('zapi_config')
+              .eq('key', 'exa_alert')
+              .single();
+            
+            if (alertAgent?.zapi_config) {
+              const zapiConfig = alertAgent.zapi_config as { instance_id?: string; token?: string };
+              const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+              
+              if (zapiConfig?.instance_id && zapiConfig?.token && zapiClientToken) {
+                const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+                
+                try {
+                  await fetch(zapiUrl, {
+                    method: 'POST',
+                    headers: { 
+                      'Content-Type': 'application/json',
+                      'Client-Token': zapiClientToken
+                    },
+                    body: JSON.stringify({
+                      phone: phone,
+                      message: confirmMsg
+                    })
+                  });
+                  console.log('[ZAPI-WEBHOOK] ✅ Proposal mute confirmation sent');
+                } catch (confirmError) {
+                  console.error('[ZAPI-WEBHOOK] ⚠️ Error sending proposal mute confirmation:', confirmError);
+                }
+              }
+            }
+          }
+          
+          // Log da ação
+          await supabase.from('proposal_logs').insert({
+            proposal_id: proposalId,
+            action: 'reminder_muted',
+            details: {
+              mute_reason: muteReason,
+              muted_by_phone: phone,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
+        
+        return new Response(JSON.stringify({ 
+          success: true,
+          processed: 'proposal_mute_button_response',
+          action
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
       // ========== PROCESSAR BOTÕES DE ALERTA DE PAINEL OFFLINE ==========
       // Se não é escalação, pode ser botão de confirmação de alerta de painel
       if (!buttonId?.startsWith('escalacao_')) {

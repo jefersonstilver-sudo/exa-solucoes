@@ -8,13 +8,14 @@ const corsHeaders = {
 
 interface ProposalEventPayload {
   proposalId: string;
-  eventType: 'proposal_sent' | 'proposal_viewing' | 'proposal_viewed_again' | 'proposal_accepted' | 'proposal_rejected' | 'proposal_paid' | 'proposal_expired';
+  eventType: 'proposal_sent' | 'proposal_viewing' | 'proposal_viewed_again' | 'proposal_accepted' | 'proposal_rejected' | 'proposal_paid' | 'proposal_expired' | 'proposal_expired_reminder';
   metadata?: {
     viewCount?: number;
     paymentMethod?: string;
     paymentAmount?: number;
     deviceType?: string;
     selectedPlan?: string;
+    reminderCount?: number;
   };
 }
 
@@ -149,6 +150,16 @@ serve(async (req) => {
       case 'proposal_expired':
         emoji = '⏰';
         message = `${emoji} Proposta *${proposal.number}* para *${clientDisplayName}* EXPIROU`;
+        break;
+      case 'proposal_expired_reminder':
+        emoji = '⏰🔔';
+        const reminderCount = metadata?.reminderCount || 1;
+        message = `${emoji} *LEMBRETE ${reminderCount}:* Proposta *${proposal.number}* EXPIRADA!\n\n` +
+          `👤 Cliente: *${clientDisplayName}*\n` +
+          (proposal.client_company_name ? `🏢 Empresa: ${proposal.client_company_name}\n` : '') +
+          `🏗️ Painéis: ${proposal.total_panels || 0}\n\n` +
+          `⚠️ *Ação necessária:* Envie nova proposta ou marque como resolvido!\n\n` +
+          `👨‍💼 Vendedor: ${proposal.seller_name || 'N/A'}`;
         break;
       default:
         message = `📋 Atualização na proposta ${proposal.number}`;

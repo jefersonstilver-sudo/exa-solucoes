@@ -6591,6 +6591,53 @@ export type Database = {
           },
         ]
       }
+      proposal_notification_settings: {
+        Row: {
+          created_at: string | null
+          expire_reminders_muted: boolean | null
+          expire_reminders_muted_at: string | null
+          expire_reminders_muted_by: string | null
+          id: string
+          last_reminder_sent_at: string | null
+          mute_reason: string | null
+          proposal_id: string
+          reminders_sent_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expire_reminders_muted?: boolean | null
+          expire_reminders_muted_at?: string | null
+          expire_reminders_muted_by?: string | null
+          id?: string
+          last_reminder_sent_at?: string | null
+          mute_reason?: string | null
+          proposal_id: string
+          reminders_sent_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expire_reminders_muted?: boolean | null
+          expire_reminders_muted_at?: string | null
+          expire_reminders_muted_by?: string | null
+          id?: string
+          last_reminder_sent_at?: string | null
+          mute_reason?: string | null
+          proposal_id?: string
+          reminders_sent_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_notification_settings_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: true
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proposal_views: {
         Row: {
           created_at: string | null
