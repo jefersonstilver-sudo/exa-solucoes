@@ -197,12 +197,12 @@ export const useEnhancedPaymentOrderCreator = () => {
         throw new Error(`Alguns prédios não estão mais disponíveis: ${missingIds.join(', ')}. Por favor, remova-os do carrinho.`);
       }
       
-      // Verificar se há prédios inativos
+      // ✅ CORREÇÃO: Apenas log de warning para prédios inativos, não bloqueia na loja pública
       const inactiveBuildings = buildingData.filter(b => b.status !== 'ativo');
       if (inactiveBuildings.length > 0) {
         const inactiveNames = inactiveBuildings.map(b => b.nome || b.id).join(', ');
-        console.warn('⚠️ [ENHANCED_ORDER_CREATOR] Prédios inativos encontrados:', inactiveNames);
-        throw new Error(`Os seguintes prédios não estão mais ativos: ${inactiveNames}`);
+        console.warn('⚠️ [ENHANCED_ORDER_CREATOR] Prédios com status não-ativo detectados (permitindo compra):', inactiveNames);
+        // NÃO BLOQUEAR - apenas log. A loja pública deve sempre permitir compras de itens listados.
       }
 
       console.log('✅ [ENHANCED_ORDER_CREATOR] Todos os prédios validados com sucesso');

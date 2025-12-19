@@ -18,6 +18,7 @@ import { useCartValidation } from '@/hooks/useCartValidation';
 import { getValidPanels } from '@/utils/cleanupInvalidData';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 import CreditCardCheckoutModal from '@/components/checkout/payment/CreditCardCheckoutModal';
+import ContractDataCollectionModal from '@/components/checkout/contract/ContractDataCollectionModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useCheckoutPro } from '@/hooks/payment/useCheckoutPro';
 import AdminCheckoutBlocker from '@/components/checkout/AdminCheckoutBlocker';
@@ -41,6 +42,10 @@ const CheckoutSummary = () => {
   
   // Estados para o modal de cartão
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+  
+  // Estados para o modal de contrato pós-pagamento
+  const [isContractModalOpen, setIsContractModalOpen] = useState(false);
+  const [pendingContractOrderId, setPendingContractOrderId] = useState<string | null>(null);
   
   // Hook para checkout direto com Mercado Pago
   const { createCheckoutProSession, isProcessing: isProcessingCheckout } = useCheckoutPro();
@@ -449,6 +454,20 @@ const CheckoutSummary = () => {
         totalAmount={finalTotal}
         itemCount={cartItems?.length || 0}
         onProceedToCheckout={handleCardCheckout}
+      />
+      
+      {/* Modal de Coleta de Dados do Contrato - pós pagamento */}
+      <ContractDataCollectionModal
+        isOpen={isContractModalOpen}
+        onClose={() => setIsContractModalOpen(false)}
+        pedidoId={pendingContractOrderId || ''}
+        userEmail={user?.email || ''}
+        userName={user?.nome || ''}
+        onSuccess={() => {
+          setIsContractModalOpen(false);
+          setPendingContractOrderId(null);
+          navigate(`/anunciante/pedidos?contract_sent=${pendingContractOrderId}`);
+        }}
       />
     </CheckoutLayout>
     </AdminCheckoutBlocker>

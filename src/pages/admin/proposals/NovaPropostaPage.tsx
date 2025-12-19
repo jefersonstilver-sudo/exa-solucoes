@@ -161,6 +161,11 @@ const NovaPropostaPage = () => {
   // Estado para preview da proposta
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
+  // Estados para novos toggles: Cobrança Futura e Exigir Contrato
+  const [cobrancaFutura, setCobrancaFutura] = useState(false);
+  const [dataInicioCobranca, setDataInicioCobranca] = useState('');
+  const [exigirContrato, setExigirContrato] = useState(true);
+
   // Opções de período
   const periodOptions = [
     { value: 1, label: '1 mês', discount: 0 },
@@ -480,7 +485,10 @@ const NovaPropostaPage = () => {
             installment: idx + 1,
             due_date: formatDateForInput(p.dueDate),
             amount: parseFloat(p.amount) || 0
-          })) as Json : null
+          })) as Json : null,
+          cobranca_futura: cobrancaFutura,
+          data_inicio_cobranca: cobrancaFutura && dataInicioCobranca ? dataInicioCobranca : null,
+          exigir_contrato: exigirContrato
         }])
         .select()
         .single();
@@ -1454,6 +1462,70 @@ const NovaPropostaPage = () => {
               </div>
             </div>
           )}
+        </Card>
+
+        {/* Seção: Configurações Avançadas */}
+        <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50">
+          <div className="flex items-center gap-2 mb-4">
+            <Shield className="h-5 w-5 text-primary" />
+            <h2 className="font-semibold">Configurações Avançadas</h2>
+          </div>
+
+          <div className="space-y-4">
+            {/* Toggle: Ativar para Cobrança Futura */}
+            <div className="flex items-center justify-between p-4 bg-amber-50/80 rounded-xl border border-amber-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-500 rounded-lg">
+                  <DollarSign className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Ativar para Cobrança Futura</p>
+                  <p className="text-xs text-muted-foreground">
+                    Pedido ativa hoje, pagamento começa depois
+                  </p>
+                </div>
+              </div>
+              <Switch 
+                checked={cobrancaFutura} 
+                onCheckedChange={setCobrancaFutura}
+                className="data-[state=checked]:bg-amber-500"
+              />
+            </div>
+
+            {/* Seletor de Data - aparece quando toggle está ativo */}
+            {cobrancaFutura && (
+              <div className="ml-4 p-3 border-l-2 border-amber-300 bg-amber-25 rounded-r-lg">
+                <Label className="text-xs font-medium">Data de Início da Cobrança</Label>
+                <Input 
+                  type="date" 
+                  min={new Date().toISOString().split('T')[0]}
+                  value={dataInicioCobranca}
+                  onChange={(e) => setDataInicioCobranca(e.target.value)}
+                  className="mt-1 h-10"
+                />
+              </div>
+            )}
+
+            {/* Toggle: Exigir Assinatura de Contrato */}
+            <div className="flex items-center justify-between p-4 bg-blue-50/80 rounded-xl border border-blue-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500 rounded-lg">
+                  <FileText className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Exigir Assinatura de Contrato</p>
+                  <p className="text-xs text-muted-foreground">
+                    Upload de vídeo só libera após assinar contrato
+                  </p>
+                </div>
+              </div>
+              <Switch 
+                checked={exigirContrato} 
+                onCheckedChange={setExigirContrato}
+                className="data-[state=checked]:bg-blue-500"
+              />
+            </div>
+          </div>
         </Card>
 
         {/* Seção 4: Validade da Proposta */}
