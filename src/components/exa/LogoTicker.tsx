@@ -96,12 +96,9 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
   };
 
   // Controle touch para mobile
+  // Não pausamos no touch para evitar "ticker parado" no iPhone.
   const handleTouchStart = () => {
-    if (pauseOnHover) {
-      setIsPaused(true);
-      // Auto-resume após 2.5s
-      setTimeout(() => setIsPaused(false), 2500);
-    }
+    return;
   };
 
   const handleLogoLoad = useCallback(() => {
@@ -186,14 +183,13 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       <section 
         id="home-logo-ticker" 
         aria-label="Marcas parceiras"
-        className="relative w-full mt-0"
+        className="relative w-screen left-1/2 -translate-x-1/2 mt-0"
       >
         <div 
           ref={containerRef}
           className="ticker h-16 md:h-18 lg:h-20 relative overflow-hidden bg-[#9C1E1E] rounded-none"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          onTouchStart={handleTouchStart}
         >
           {/* Portal Esquerdo - Efeito de saída */}
           {showPortals && (
@@ -225,7 +221,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
           <div 
             ref={trackRef}
             id="ticker-track"
-            className="ticker-track absolute inset-0 flex items-center gap-6 md:gap-12 lg:gap-16 px-2 md:px-0 lg:px-0 whitespace-nowrap"
+            className="ticker-track absolute left-0 top-0 h-full flex items-center gap-6 md:gap-12 lg:gap-16 px-0 whitespace-nowrap"
             style={{ 
               willChange: 'transform',
               width: 'max-content'
