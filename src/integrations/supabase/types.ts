@@ -7518,6 +7518,80 @@ export type Database = {
         }
         Relationships: []
       }
+      sofia_learning: {
+        Row: {
+          category: string
+          confidence: number | null
+          content: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          learned_from_user_id: string | null
+          metadata: Json | null
+          source: string | null
+          topic: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          confidence?: number | null
+          content: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          learned_from_user_id?: string | null
+          metadata?: Json | null
+          source?: string | null
+          topic: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          confidence?: number | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          learned_from_user_id?: string | null
+          metadata?: Json | null
+          source?: string | null
+          topic?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sofia_learning_learned_from_user_id_fkey"
+            columns: ["learned_from_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sofia_learning_learned_from_user_id_fkey"
+            columns: ["learned_from_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sofia_learning_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sofia_learning_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sync_runs: {
         Row: {
           created_at: string | null
