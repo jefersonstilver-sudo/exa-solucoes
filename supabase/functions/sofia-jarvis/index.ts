@@ -95,21 +95,23 @@ async function handleOverview(): Promise<{ text: string; data: any }> {
   const today = new Date().toISOString().split('T')[0];
   const thisMonth = new Date().toISOString().slice(0, 7);
   
-  // Parallel queries for speed
+  // Parallel queries for speed - CORRIGIDO: usa ultima_sync e status dos painéis
   const [
     buildingsResult,
     panelsResult,
     ordersResult,
     leadsResult,
     conversationsResult,
-    alertsResult
+    alertsResult,
+    proposalsResult
   ] = await Promise.all([
     supabase.from('buildings').select('id, status').eq('status', 'ativo'),
-    supabase.from('painels').select('id, status, last_heartbeat'),
+    supabase.from('painels').select('id, status, ultima_sync'),
     supabase.from('pedidos').select('id, status, valor_total, created_at').gte('created_at', `${thisMonth}-01`),
     supabase.from('leads_exa').select('id, status, created_at').gte('created_at', `${thisMonth}-01`),
     supabase.from('conversations').select('id, last_message_at').gte('last_message_at', today),
-    supabase.from('panel_alerts').select('id, severity').eq('resolved', false)
+    supabase.from('panel_alerts').select('id, severity').eq('resolved', false),
+    supabase.from('proposals').select('id, status, is_viewing, view_count, converted_order_id')
   ]);
 
   const buildings = buildingsResult.data || [];
@@ -118,12 +120,17 @@ async function handleOverview(): Promise<{ text: string; data: any }> {
   const leads = leadsResult.data || [];
   const conversations = conversationsResult.data || [];
   const alerts = alertsResult.data || [];
+  const proposals = proposalsResult.data || [];
 
+  // CORRIGIDO: Usar status diretamente OU ultima_sync
   const onlinePanels = panels.filter(p => {
-    if (!p.last_heartbeat) return false;
-    const lastBeat = new Date(p.last_heartbeat);
+    // Primeiro verifica se status já é 'online'
+    if (p.status === 'online') return true;
+    // Depois verifica ultima_sync (não last_heartbeat)
+    if (!p.ultima_sync) return false;
+    const lastSync = new Date(p.ultima_sync);
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    return lastBeat > fiveMinutesAgo;
+    return lastSync > fiveMinutesAgo;
   });
 
   const totalRevenue = orders
@@ -131,6 +138,11 @@ async function handleOverview(): Promise<{ text: string; data: any }> {
     .reduce((sum, o) => sum + (o.valor_total || 0), 0);
 
   const criticalAlerts = alerts.filter(a => a.severity === 'critical').length;
+  
+  // Propostas quentes (sendo visualizadas agora)
+  const hotProposals = proposals.filter(p => p.is_viewing);
+  const pendingProposals = proposals.filter(p => !p.converted_order_id && p.status !== 'rejeitada');
+  const convertedProposals = proposals.filter(p => p.converted_order_id);
 
   const data = {
     buildings: buildings.length,
@@ -139,10 +151,27 @@ async function handleOverview(): Promise<{ text: string; data: any }> {
     monthlyOrders: orders.length,
     monthlyLeads: leads.length,
     todayConversations: conversations.length,
-    criticalAlerts
+    criticalAlerts,
+    proposals: {
+      total: proposals.length,
+      hot: hotProposals.length,
+      pending: pendingProposals.length,
+      converted: convertedProposals.length
+    }
   };
 
-  const text = `Visão geral do sistema: Temos ${buildings.length} prédios ativos, ${onlinePanels.length} de ${panels.length} painéis online. Este mês: faturamento de ${formatCurrency(totalRevenue)}, ${orders.length} pedidos e ${leads.length} leads. Hoje tivemos ${conversations.length} conversas. ${criticalAlerts > 0 ? `Atenção: ${criticalAlerts} alertas críticos ativos.` : 'Sem alertas críticos.'}`;
+  let text = `Visão geral do sistema: Temos ${buildings.length} prédios ativos, ${onlinePanels.length} de ${panels.length} painéis online. Este mês: faturamento de ${formatCurrency(totalRevenue)}, ${orders.length} pedidos e ${leads.length} leads. Hoje tivemos ${conversations.length} conversas.`;
+  
+  // Adicionar info de propostas quentes
+  if (hotProposals.length > 0) {
+    text += ` 🔴 ${hotProposals.length} proposta(s) sendo visualizada(s) AGORA!`;
+  }
+  
+  text += ` Propostas: ${pendingProposals.length} pendentes, ${convertedProposals.length} convertidas em pedido.`;
+  
+  if (criticalAlerts > 0) {
+    text += ` ⚠️ Atenção: ${criticalAlerts} alertas críticos ativos.`;
+  }
 
   return { text, data };
 }
@@ -2875,9 +2904,13 @@ serve(async (req) => {
       case 'status':
         result = await handleOverview();
         break;
+      // ========== PROPOSTAS - TODOS OS ALIASES ==========
       case 'proposals':
       case 'propostas':
       case 'listar_propostas':
+      case 'ver_propostas':
+      case 'minhas_propostas':
+      case 'todas_propostas':
         result = await handleGetProposals(params);
         break;
       case 'proposta':
@@ -2888,14 +2921,86 @@ serve(async (req) => {
           result = await handleGetProposals(params);
         }
         break;
-      case 'financeiro':
-      case 'financial':
-        result = await handleFinancialSummary(params);
-        break;
+      // ========== PAINÉIS - TODOS OS ALIASES ==========
       case 'paineis':
       case 'panels':
       case 'paineis_status':
+      case 'panel_status':
+      case 'status_paineis':
+      case 'dispositivos':
+      case 'devices':
+      case 'telas':
+      case 'monitores':
+      case 'paineis_online':
+      case 'paineis_offline':
         result = await handlePanelStatus(params);
+        break;
+      // ========== FINANCEIRO - TODOS OS ALIASES ==========
+      case 'financeiro':
+      case 'financial':
+      case 'financas':
+      case 'dinheiro':
+      case 'receita':
+      case 'faturamento':
+        result = await handleFinancialSummary(params);
+        break;
+      // ========== PEDIDOS/VENDAS - TODOS OS ALIASES ==========
+      case 'pedidos':
+      case 'orders':
+      case 'vendas':
+      case 'sales':
+      case 'compras':
+      case 'ordens':
+        result = await handleSalesMetrics(params);
+        break;
+      // ========== VÍDEOS - TODOS OS ALIASES ==========
+      case 'videos':
+      case 'video':
+      case 'midias':
+      case 'media':
+      case 'conteudo':
+        result = await handleGetVideos(params);
+        break;
+      // ========== DASHBOARD/OVERVIEW - TODOS OS ALIASES ==========
+      case 'dashboard':
+      case 'inicio':
+      case 'home':
+      case 'resumo':
+      case 'geral':
+      case 'visao_geral':
+        result = await handleOverview();
+        break;
+      // ========== USUÁRIOS - TODOS OS ALIASES ==========
+      case 'usuarios':
+      case 'users':
+      case 'equipe':
+      case 'time':
+      case 'colaboradores':
+      case 'admins':
+        result = await handleGetUsers(params);
+        break;
+      // ========== CLIENTES - TODOS OS ALIASES ==========
+      case 'clientes':
+      case 'clients':
+      case 'cliente':
+      case 'client':
+      case 'anunciantes':
+        result = await handleSearchClient(params);
+        break;
+      // ========== RELATÓRIOS - TODOS OS ALIASES ==========
+      case 'relatorios':
+      case 'reports':
+      case 'analytics':
+      case 'metricas':
+      case 'estatisticas':
+        result = await handleDailyMetrics();
+        break;
+      // ========== CONFIGURAÇÕES - TODOS OS ALIASES ==========
+      case 'configuracoes':
+      case 'settings':
+      case 'config':
+      case 'preferencias':
+        result = await handleCompanyInfo();
         break;
       default:
         result = { text: `Não entendi a consulta "${intent}". Posso ajudar com: visão geral (overview), prédios, painéis, vendas, conversas, contratos, financeiro, leads, clientes, cupons, alertas, PROPOSTAS (detalhes, timeline, quem está vendo, diferença proposta vs pedido), vídeos, emails, benefícios, prestadores, campanhas, produtos, usuários, síndicos, logos, configurações, notificações, parcelas, assinaturas, analytics, segurança, templates, relatórios, escalação, QR codes, respostas rápidas, estatísticas de exibição, portfolio, agentes IA, cortesias, informações da empresa, rastrear usuário, aprendizado da Sofia, conhecimento acumulado, e contexto do admin.`, data: null };
