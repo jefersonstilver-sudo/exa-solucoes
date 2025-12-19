@@ -472,3 +472,9 @@ verify_jwt = false
 [[cron]]
 function_name = "check-expired-proposals"
 schedule = "0 * * * *"
+
+[functions.elevenlabs-conversation-token]
+verify_jwt = true
+
+[functions.sofia-voice-knowledge]
+verify_jwt = true
