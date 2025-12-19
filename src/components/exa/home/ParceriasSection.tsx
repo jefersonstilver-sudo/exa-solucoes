@@ -38,26 +38,26 @@ const ParceriasSection = () => {
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        <div className="text-center space-y-4">
-          <h2 className="font-montserrat font-extrabold text-4xl lg:text-5xl text-white">
+        <div className="text-center space-y-3 md:space-y-4">
+          <h2 className="font-montserrat font-extrabold text-xl md:text-3xl lg:text-4xl xl:text-5xl text-white">
             Um Ecossistema que Cresce Junto
           </h2>
-          <p className="font-poppins text-xl text-white/80 max-w-3xl mx-auto">
+          <p className="font-poppins text-sm md:text-lg lg:text-xl text-white/80 max-w-3xl mx-auto">
             Empresas que confiam e validam nossa solução para transformar a gestão de mídia exterior.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-3 gap-3 md:gap-6 lg:gap-8 max-w-5xl mx-auto">
           {partners.map((partner, index) => (
             <div 
               key={index} 
-              className={`bg-red-800/40 backdrop-blur-sm rounded-xl p-10 flex items-center justify-center hover:bg-red-800/60 transition-all duration-300 min-h-[140px] border border-red-700/30 ${partner.link ? 'cursor-pointer' : ''}`}
+              className={`bg-red-800/40 backdrop-blur-sm rounded-lg md:rounded-xl p-4 md:p-8 lg:p-10 flex items-center justify-center hover:bg-red-800/60 transition-all duration-300 min-h-[80px] md:min-h-[120px] lg:min-h-[140px] border border-red-700/30 ${partner.link ? 'cursor-pointer' : ''}`}
               onClick={() => partner.link && window.open(partner.link, '_blank', 'noopener,noreferrer')}
             >
               <img 
                 src={partner.logo} 
                 alt={partner.name}
-                className="max-h-24 max-w-[220px] w-auto h-auto object-contain"
+                className="max-h-12 md:max-h-20 lg:max-h-24 max-w-[100px] md:max-w-[180px] lg:max-w-[220px] w-auto h-auto object-contain"
                 style={{ transform: `scale(${partner.scale})` }}
               />
             </div>
