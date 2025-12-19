@@ -190,7 +190,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       >
         <div 
           ref={containerRef}
-          className="ticker h-16 md:h-18 lg:h-20 relative overflow-hidden bg-[#9C1E1E]"
+          className="ticker h-16 md:h-18 lg:h-20 relative overflow-hidden bg-[#9C1E1E] rounded-none"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onTouchStart={handleTouchStart}
@@ -225,7 +225,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
           <div 
             ref={trackRef}
             id="ticker-track"
-            className="ticker-track absolute inset-0 flex items-center gap-6 md:gap-12 lg:gap-16 px-4 md:px-20 lg:px-24 whitespace-nowrap"
+            className="ticker-track absolute inset-0 flex items-center gap-6 md:gap-12 lg:gap-16 px-0 md:px-0 lg:px-0 whitespace-nowrap"
             style={{ 
               willChange: 'transform',
               width: 'max-content'

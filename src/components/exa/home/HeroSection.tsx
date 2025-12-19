@@ -46,11 +46,11 @@ const HeroMobileLayout = () => {
       setIsFullscreen(false);
     }
   };
-  return <section className="bg-gradient-to-b from-[#9C1E1E] via-[#180A0A]/80 to-exa-black pt-12 pb-2">
-      {/* Vídeo Hero Imersivo */}
+  return <section className="bg-gradient-to-b from-[#9C1E1E] via-[#180A0A]/80 to-exa-black pt-0 pb-2">
+      {/* Vídeo Hero Imersivo - Full Width sem cortes */}
       <div ref={containerRef} className="relative w-full">
         <div className="relative w-full aspect-video bg-black cursor-pointer" onClick={togglePlayPause}>
-          <video ref={videoRef} src={institutionalVideoUrl} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+          <video ref={videoRef} src={institutionalVideoUrl} autoPlay loop muted playsInline className="w-full h-full object-contain" />
         </div>
         
         {/* Botões de Controle - Abaixo do vídeo */}
