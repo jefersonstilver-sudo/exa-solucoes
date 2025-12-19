@@ -44,7 +44,7 @@ serve(async (req) => {
     // Fetch proposal data
     const { data: proposal, error: proposalError } = await supabase
       .from('proposals')
-      .select('*, cc_emails')
+      .select('*')
       .eq('id', proposalId)
       .single();
 
@@ -56,8 +56,17 @@ serve(async (req) => {
       );
     }
     
-    // Get CC emails from proposal or client
-    const ccEmails: string[] = proposal.cc_emails || [];
+    console.log(`📧 [PROPOSAL-EMAIL] Proposta ${proposal.number}:`, {
+      client_email: proposal.client_email,
+      cc_emails_raw: proposal.cc_emails,
+      cc_emails_type: typeof proposal.cc_emails,
+      cc_emails_is_array: Array.isArray(proposal.cc_emails)
+    });
+    
+    // Get CC emails from proposal (ensure it's an array)
+    const ccEmails: string[] = Array.isArray(proposal.cc_emails) ? proposal.cc_emails : [];
+    
+    console.log(`📧 [PROPOSAL-EMAIL] CC emails processados:`, ccEmails);
 
     if (!proposal.client_email) {
       return new Response(
