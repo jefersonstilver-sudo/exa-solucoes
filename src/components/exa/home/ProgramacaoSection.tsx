@@ -36,7 +36,7 @@ const ProgramacaoSection = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-6">
           {timeBlocks.map((block, index) => (
             <ExaCard key={index} variant="light" className="text-center p-3 md:p-6">
               <div className={`bg-gradient-to-r ${block.color} rounded-full w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 flex items-center justify-center mx-auto mb-2 md:mb-4`}>
@@ -52,7 +52,7 @@ const ProgramacaoSection = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-3 gap-3 md:gap-6 mt-6 md:mt-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-6 mt-6 md:mt-8">
           {benefits.map((benefit, index) => (
             <div key={index} className="flex flex-col md:flex-row items-center md:items-start space-y-2 md:space-y-0 md:space-x-4 text-center md:text-left">
               <benefit.icon className="w-5 h-5 md:w-6 md:h-6 lg:w-8 lg:h-8 text-exa-purple flex-shrink-0" />
