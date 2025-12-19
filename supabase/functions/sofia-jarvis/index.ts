@@ -401,30 +401,109 @@ async function handleReadConversation(params: any): Promise<{ text: string; data
   // Get conversation with messages
   const { data: conversation } = await supabase
     .from('conversations')
-    .select('id, contact_name, phone, agent_key, status, last_message_at')
+    .select('id, contact_name, contact_phone, agent_key, status, last_message_at')
     .eq('id', conversationId)
     .single();
 
   const { data: messages } = await supabase
     .from('messages')
-    .select('id, content, direction, message_type, created_at')
+    .select('id, body, direction, from_role, created_at, has_image, has_audio')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
-    .limit(params?.limit || 10);
+    .limit(params?.limit || 20);
 
   if (!conversation || !messages?.length) {
     return { text: 'Conversa não encontrada ou sem mensagens.', data: null };
   }
 
-  const msgSummary = messages.map(m => 
-    `${m.direction === 'inbound' ? conversation.contact_name : 'Nós'}: ${m.content?.substring(0, 100) || '[mídia]'}`
-  ).reverse().join(' | ');
+  const msgSummary = messages.map(m => {
+    const sender = m.direction === 'inbound' ? conversation.contact_name : 'Nós';
+    let content = m.body?.substring(0, 100) || '';
+    if (m.has_image) content += ' [imagem]';
+    if (m.has_audio) content += ' [áudio]';
+    if (!content.trim()) content = '[mídia]';
+    return `${sender}: ${content}`;
+  }).reverse().join(' | ');
 
-  const text = `Conversa com ${conversation.contact_name} (${conversation.phone}), agente ${conversation.agent_key}. ` +
+  const text = `Conversa com ${conversation.contact_name} (${conversation.contact_phone || 'sem telefone'}), agente ${conversation.agent_key}. ` +
     `Última mensagem: ${timeAgo(conversation.last_message_at)}. ` +
     `Últimas ${messages.length} mensagens: ${msgSummary}`;
 
   return { text, data: { conversation, messages } };
+}
+
+// Full Conversation History - Histórico COMPLETO de uma conversa
+async function handleFullConversationHistory(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting full conversation history...', params);
+
+  const conversationId = params?.conversation_id || params?.conversa_id || params?.id;
+  const contactName = params?.contact_name || params?.nome || params?.name;
+  
+  let targetConversationId = conversationId;
+  
+  // Se não tem ID, buscar por nome
+  if (!targetConversationId && contactName) {
+    const { data: conversations } = await supabase
+      .from('conversations')
+      .select('id, contact_name')
+      .ilike('contact_name', `%${contactName}%`)
+      .limit(1);
+    
+    if (conversations?.length) {
+      targetConversationId = conversations[0].id;
+    }
+  }
+  
+  if (!targetConversationId) {
+    return { text: 'Informe o ID da conversa ou nome do contato para ver o histórico completo.', data: null };
+  }
+
+  // Buscar conversa
+  const { data: conversation } = await supabase
+    .from('conversations')
+    .select('id, contact_name, contact_phone, agent_key, status, last_message_at, created_at')
+    .eq('id', targetConversationId)
+    .single();
+
+  if (!conversation) {
+    return { text: 'Conversa não encontrada.', data: null };
+  }
+
+  // Buscar TODAS as mensagens (até 100)
+  const { data: messages } = await supabase
+    .from('messages')
+    .select('id, body, direction, from_role, created_at, has_image, has_audio, read_at')
+    .eq('conversation_id', targetConversationId)
+    .order('created_at', { ascending: true })
+    .limit(100);
+
+  if (!messages?.length) {
+    return { text: `Conversa com ${conversation.contact_name} não tem mensagens ainda.`, data: { conversation, messages: [] } };
+  }
+
+  // Formatar histórico completo
+  const history = messages.map(m => {
+    const time = new Date(m.created_at).toLocaleString('pt-BR', { 
+      day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' 
+    });
+    const sender = m.direction === 'inbound' ? '👤' : '🤖';
+    let content = m.body || '';
+    if (m.has_image) content += ' [📷 imagem]';
+    if (m.has_audio) content += ' [🎵 áudio]';
+    if (!content.trim()) content = '[mídia sem texto]';
+    return `${sender} [${time}]: ${content}`;
+  }).join('\n');
+
+  const text = `📜 HISTÓRICO COMPLETO - ${conversation.contact_name}
+📱 Tel: ${conversation.contact_phone || 'N/A'}
+🤖 Agente: ${conversation.agent_key}
+📊 Status: ${conversation.status}
+📅 Início: ${new Date(conversation.created_at).toLocaleString('pt-BR')}
+💬 Total: ${messages.length} mensagens
+
+${history}`;
+
+  return { text, data: { conversation, messages, totalMessages: messages.length } };
 }
 
 // Agent Conversations - Conversas de um agente específico
@@ -3038,6 +3117,18 @@ serve(async (req) => {
       case 'conversations':
       case 'conversas':
         result = await handleAgentConversations(params);
+        break;
+      // ========== HISTÓRICO COMPLETO DE CONVERSA ==========
+      case 'historico_conversa':
+      case 'historico_completo':
+      case 'ver_conversa':
+      case 'conversa_completa':
+      case 'full_conversation':
+      case 'conversation_history':
+      case 'ler_conversa':
+      case 'todas_mensagens':
+      case 'mensagens_completas':
+        result = await handleFullConversationHistory(params);
         break;
       case 'leads_summary':
       case 'leads':

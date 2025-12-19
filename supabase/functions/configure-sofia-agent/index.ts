@@ -121,11 +121,23 @@ const SOFIA_TOOLS = [
       properties: {
         intent: {
           type: "string",
-          description: "Tipo de consulta. IMPORTANTE: Para PROPOSTAS comerciais use 'proposals' ou 'propostas'. Para CONTRATOS LEGAIS/documentos de assinatura use 'get_contracts' ou 'contratos'. Outros: overview, query_buildings, building_details, panel_status, sales_metrics, read_conversation, agent_conversations, search_conversations, financial_summary, overdue_payments, get_leads, search_client, client_details, crm_notes, pedidos, order_details, daily_metrics, conversation_heat_analysis, leads_at_risk, abandoned_leads, agent_performance, full_financial_report, contract_status_full, explicar_fluxo, videos, usuarios, dashboard"
+          description: `Tipo de consulta. 
+PROPOSTAS COMERCIAIS: proposals, propostas, listar_propostas, proposal_details
+CONTRATOS LEGAIS: get_contracts, contratos, contract_details
+CONVERSAS: conversations, conversas, read_conversation, agent_conversations, search_conversations, historico_conversa, historico_completo, ver_conversa, conversa_completa, full_conversation, ler_conversa, todas_mensagens
+PEDIDOS: pedidos, order_details, vendas
+OVERVIEW: overview, dashboard, resumo
+PRÉDIOS: query_buildings, building_details, predios
+PAINÉIS: panel_status, paineis
+FINANCEIRO: financial_summary, overdue_payments, financeiro
+LEADS: get_leads, search_client, client_details, leads
+MÉTRICAS: daily_metrics, sales_metrics
+ADMIN MASTER: conversation_heat_analysis, leads_at_risk, abandoned_leads, agent_performance, full_financial_report
+OUTROS: videos, usuarios, get_benefits, get_campaigns`
         },
         params_json: {
           type: "string",
-          description: "Parâmetros da consulta em JSON. Ex: {\"period\":\"month\"} ou {\"contact_name\":\"João\"}"
+          description: "Parâmetros da consulta em JSON. Ex: {\"period\":\"month\"} ou {\"contact_name\":\"João\"} ou {\"conversation_id\":\"abc123\"}"
         }
       },
       required: ["intent"]
