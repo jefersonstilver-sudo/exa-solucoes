@@ -9,7 +9,7 @@ const OQueESection = () => {
   return <ExaSection background="gradient" id="o-que-e" className="!pt-12 md:!pt-16 lg:!pt-20">
       <div ref={ref} className={`max-w-4xl mx-auto space-y-8 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="text-center space-y-4">
-          <h2 className="font-montserrat font-extrabold text-3xl md:text-4xl lg:text-5xl text-exa-purple">
+          <h2 className="font-montserrat font-extrabold text-2xl md:text-4xl lg:text-5xl text-exa-purple">
             O que é a EXA?
           </h2>
           

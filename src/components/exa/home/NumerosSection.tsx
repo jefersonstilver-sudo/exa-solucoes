@@ -48,7 +48,7 @@ const MetricCard = ({ metric, isVisible }: { metric: typeof metrics[0], isVisibl
   
   return (
     <ExaCard variant="gradient" className="text-center p-3 md:p-6">
-      <metric.icon className="w-6 h-6 md:w-10 md:h-10 lg:w-12 lg:h-12 text-exa-yellow mx-auto mb-2 md:mb-4" />
+      <metric.icon className="w-4 h-4 md:w-8 md:h-8 lg:w-10 lg:h-10 text-exa-yellow mx-auto mb-1.5 md:mb-4" />
       <div className="font-montserrat font-extrabold text-2xl md:text-4xl lg:text-5xl text-white mb-1 md:mb-2">
         {metric.value > 1000 ? (count / 1000).toFixed(0) + 'k' : count}{metric.suffix}
       </div>
