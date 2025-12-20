@@ -50,8 +50,8 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // Se sofia_ativa é false, não renderizar o botão
-  if (sofiaAtiva === false) {
+  // Se sofia_ativa não é true (carregando ou desativado), não renderizar o botão
+  if (sofiaAtiva !== true) {
     return null;
   }
 
