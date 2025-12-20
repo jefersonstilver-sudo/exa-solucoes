@@ -499,3 +499,13 @@ verify_jwt = false
 
 [functions.sofia-client-consulta]
 verify_jwt = false
+
+[functions.monitor-delivery-status]
+verify_jwt = false
+
+[functions.replay-message]
+verify_jwt = true
+
+[[cron]]
+function_name = "monitor-delivery-status"
+schedule = "*/5 * * * *"

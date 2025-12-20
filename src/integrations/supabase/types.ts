@@ -3458,6 +3458,39 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_circuit_breaker: {
+        Row: {
+          agent_key: string
+          cooldown_until: string | null
+          failure_count: number | null
+          id: string
+          last_failure_at: string | null
+          opened_at: string | null
+          state: string
+          updated_at: string | null
+        }
+        Insert: {
+          agent_key: string
+          cooldown_until?: string | null
+          failure_count?: number | null
+          id?: string
+          last_failure_at?: string | null
+          opened_at?: string | null
+          state?: string
+          updated_at?: string | null
+        }
+        Update: {
+          agent_key?: string
+          cooldown_until?: string | null
+          failure_count?: number | null
+          id?: string
+          last_failure_at?: string | null
+          opened_at?: string | null
+          state?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       developer_auth_tokens: {
         Row: {
           created_at: string
@@ -5006,6 +5039,10 @@ export type Database = {
           classification: Json | null
           conversation_id: string
           created_at: string | null
+          delivery_checked_at: string | null
+          delivery_last_error: string | null
+          delivery_retry_count: number | null
+          delivery_status: string | null
           detected_mood: number | null
           detected_urgency: number | null
           direction: string | null
@@ -5016,6 +5053,7 @@ export type Database = {
           id: string
           intent: string | null
           is_automated: boolean | null
+          parent_message_id: string | null
           provider: string | null
           raw_payload: Json | null
           response_time: unknown
@@ -5028,6 +5066,10 @@ export type Database = {
           classification?: Json | null
           conversation_id: string
           created_at?: string | null
+          delivery_checked_at?: string | null
+          delivery_last_error?: string | null
+          delivery_retry_count?: number | null
+          delivery_status?: string | null
           detected_mood?: number | null
           detected_urgency?: number | null
           direction?: string | null
@@ -5038,6 +5080,7 @@ export type Database = {
           id?: string
           intent?: string | null
           is_automated?: boolean | null
+          parent_message_id?: string | null
           provider?: string | null
           raw_payload?: Json | null
           response_time?: unknown
@@ -5050,6 +5093,10 @@ export type Database = {
           classification?: Json | null
           conversation_id?: string
           created_at?: string | null
+          delivery_checked_at?: string | null
+          delivery_last_error?: string | null
+          delivery_retry_count?: number | null
+          delivery_status?: string | null
           detected_mood?: number | null
           detected_urgency?: number | null
           direction?: string | null
@@ -5060,6 +5107,7 @@ export type Database = {
           id?: string
           intent?: string | null
           is_automated?: boolean | null
+          parent_message_id?: string | null
           provider?: string | null
           raw_payload?: Json | null
           response_time?: unknown
@@ -5071,6 +5119,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_parent_message_id_fkey"
+            columns: ["parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
         ]
@@ -7134,6 +7189,54 @@ export type Database = {
         }
         Relationships: []
       }
+      replay_audit: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          new_message_id: string | null
+          original_message_id: string | null
+          reason: string | null
+          replayed_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          new_message_id?: string | null
+          original_message_id?: string | null
+          reason?: string | null
+          replayed_by?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          new_message_id?: string | null
+          original_message_id?: string | null
+          reason?: string | null
+          replayed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replay_audit_new_message_id_fkey"
+            columns: ["new_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "replay_audit_original_message_id_fkey"
+            columns: ["original_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_access_tokens: {
         Row: {
           access_granted_at: string | null
@@ -7702,6 +7805,56 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      system_alerts: {
+        Row: {
+          acknowledged: boolean | null
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          created_at: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          related_message_id: string | null
+          severity: string
+          title: string
+          type: string
+        }
+        Insert: {
+          acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          related_message_id?: string | null
+          severity: string
+          title: string
+          type: string
+        }
+        Update: {
+          acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          related_message_id?: string | null
+          severity?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_alerts_related_message_id_fkey"
+            columns: ["related_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tentativas_compra: {
         Row: {
