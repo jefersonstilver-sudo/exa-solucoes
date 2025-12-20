@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, CheckCircle, Clock, XCircle, Pause } from 'lucide-react';
+import { Play, CheckCircle, Clock, XCircle, Pause, Calendar, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -10,9 +10,9 @@ export interface VideoListItemProps {
   duracao: number;
   approvalStatus: string;
   horasExibidas: number;
-  diasAtivos?: number;
-  totalTelas?: number;
   isActive?: boolean;
+  selectedForDisplay?: boolean;
+  scheduleInfo?: string;
 }
 
 export const VideoListItem = ({
@@ -21,17 +21,14 @@ export const VideoListItem = ({
   duracao,
   approvalStatus,
   horasExibidas,
-  diasAtivos = 0,
-  totalTelas = 1,
   isActive = true,
+  selectedForDisplay = true,
+  scheduleInfo = '24/7',
 }: VideoListItemProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [videoError, setVideoError] = useState(false);
   
-  // Calcular horas por dia para o breakdown
-  const horasPorDia = totalTelas > 0 && diasAtivos > 0 
-    ? (totalTelas * 245 * duracao) / 3600 
-    : 0;
+  const isDisplaying = isActive && selectedForDisplay && approvalStatus === 'approved';
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -61,6 +58,33 @@ export const VideoListItem = ({
     }
   };
 
+  const getScheduleBadge = () => {
+    if (!isDisplaying) {
+      return (
+        <Badge className="bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-100 text-[10px]">
+          <Pause className="w-2.5 h-2.5 mr-1" />
+          Não exibindo
+        </Badge>
+      );
+    }
+    
+    if (scheduleInfo === '24/7') {
+      return (
+        <Badge className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100 text-[10px]">
+          <Zap className="w-2.5 h-2.5 mr-1" />
+          24/7
+        </Badge>
+      );
+    }
+    
+    return (
+      <Badge className="bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-100 text-[10px]">
+        <Calendar className="w-2.5 h-2.5 mr-1" />
+        {scheduleInfo.replace('Agendado: ', '')}
+      </Badge>
+    );
+  };
+
   const handleVideoClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     const videoElement = e.currentTarget.querySelector('video') as HTMLVideoElement;
@@ -77,7 +101,7 @@ export const VideoListItem = ({
   return (
     <div className={cn(
       "flex items-center gap-4 p-4 bg-background border-b border-border/40 hover:bg-accent/5 transition-colors group",
-      !isActive && "opacity-60"
+      !isDisplaying && "opacity-60 bg-muted/30"
     )}>
       {/* Thumbnail com play */}
       <div
@@ -116,17 +140,13 @@ export const VideoListItem = ({
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
           <h5 className="font-medium text-sm text-foreground truncate">
             {nome}
           </h5>
-          {!isActive && (
-            <Badge className="bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-100 text-[10px] px-1.5 py-0">
-              Inativo
-            </Badge>
-          )}
+          {getScheduleBadge()}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           {getStatusBadge(approvalStatus)}
           <span className="text-xs text-muted-foreground">
             {duracao}s
@@ -134,20 +154,17 @@ export const VideoListItem = ({
         </div>
       </div>
 
-      {/* Horas exibidas com breakdown */}
+      {/* Horas exibidas */}
       <div className="text-right flex-shrink-0">
-        <p className="text-2xl font-bold text-[#9C1E1E]">
+        <p className={cn(
+          "text-2xl font-bold",
+          isDisplaying ? "text-[#9C1E1E]" : "text-muted-foreground"
+        )}>
           {horasExibidas.toFixed(1)}h
         </p>
-        {diasAtivos > 0 && horasPorDia > 0 ? (
-          <p className="text-xs text-muted-foreground">
-            {horasPorDia.toFixed(2)}h/dia × {diasAtivos} dias
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            total exibido
-          </p>
-        )}
+        <p className="text-xs text-muted-foreground">
+          {isDisplaying ? 'total exibido' : 'sem exibição'}
+        </p>
       </div>
     </div>
   );

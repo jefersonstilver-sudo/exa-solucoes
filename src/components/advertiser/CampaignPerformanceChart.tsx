@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -71,7 +71,7 @@ export const CampaignPerformanceChart = ({ data }: CampaignPerformanceChartProps
                   <span className="text-muted-foreground truncate max-w-[120px]">
                     {video.nome}
                   </span>
-                  <span className="font-semibold text-[#9C1E1E] ml-auto">
+                  <span className="font-semibold ml-auto" style={{ color: video.color }}>
                     {entry.value.toFixed(1)}h
                   </span>
                 </div>
@@ -116,16 +116,7 @@ export const CampaignPerformanceChart = ({ data }: CampaignPerformanceChartProps
 
       <div className="w-full h-[400px]" id="campaign-chart">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-            <defs>
-              {allVideos.map((video, index) => (
-                <linearGradient key={video.id} id={`gradient-${video.id}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={video.color} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={video.color} stopOpacity={0} />
-                </linearGradient>
-              ))}
-            </defs>
-            
+          <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             
             <XAxis
@@ -154,14 +145,14 @@ export const CampaignPerformanceChart = ({ data }: CampaignPerformanceChartProps
             />
             
             {allVideos.map((video) => (
-              <Area
+              <Line
                 key={video.id}
                 type="monotone"
                 dataKey={video.id}
                 stroke={video.color}
                 strokeWidth={2}
-                fill={`url(#gradient-${video.id})`}
-                fillOpacity={1}
+                dot={{ fill: video.color, strokeWidth: 0, r: 3 }}
+                activeDot={{ r: 5, strokeWidth: 0 }}
               />
             ))}
             
@@ -171,7 +162,7 @@ export const CampaignPerformanceChart = ({ data }: CampaignPerformanceChartProps
               stroke="#9C1E1E"
               fill="#FEF2F2"
             />
-          </AreaChart>
+          </LineChart>
         </ResponsiveContainer>
       </div>
     </div>
