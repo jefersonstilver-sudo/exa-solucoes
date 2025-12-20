@@ -73,6 +73,21 @@ serve(async (req) => {
     if (action === 'configure') {
       console.log(`[${requestId}] Configuring Sofia Client Agent...`);
 
+      // IMPORTANT: Check if existing agent ID is valid before deciding to update
+      if (clientAgentId) {
+        console.log(`[${requestId}] Checking if agent ${clientAgentId} exists...`);
+        const checkResp = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${clientAgentId}`, {
+          headers: { 'xi-api-key': ELEVENLABS_API_KEY },
+        });
+        
+        if (!checkResp.ok) {
+          console.log(`[${requestId}] Agent ${clientAgentId} NOT found (${checkResp.status}). Will create new agent.`);
+          clientAgentId = null; // Force creation of new agent
+        } else {
+          console.log(`[${requestId}] Agent ${clientAgentId} exists. Will update.`);
+        }
+      }
+
       // Sofia Client Prompt - focused on client assistance with real-time data
       const clientPrompt = `## SOFIA CLIENTE - Assistente Virtual EXA Mídia
 
