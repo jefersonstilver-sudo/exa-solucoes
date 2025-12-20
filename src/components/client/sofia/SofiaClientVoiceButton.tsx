@@ -32,8 +32,12 @@ export const SofiaClientVoiceButton: React.FC = () => {
     }
   }, [state]);
 
+  // Log para debug - verificar se o componente está sendo renderizado
+  console.log('[SofiaClientVoiceButton] isEnabled:', isEnabled);
+  
   // Don't render if not enabled for this user
   if (!isEnabled) {
+    console.log('[SofiaClientVoiceButton] Botão NÃO será exibido - usuário não habilitado');
     return null;
   }
 

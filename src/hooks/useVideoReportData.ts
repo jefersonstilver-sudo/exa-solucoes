@@ -171,11 +171,15 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
         // Métricas do pedido
         const totalTelas = buildingInfos.reduce((sum, b) => sum + b.quantidadeTelas, 0);
 
-        // Processar vídeos com cálculo de horas
+        // Processar vídeos com cálculo de horas (multiplicando pelos dias ativos)
+        const diasAtivosParaCalculo = Math.max(1, diasAtivos);
         const videoInfos: VideoInfo[] = videosFromPedido.map(pv => {
           const duracaoSegundos = pv.videos?.duracao || 30;
-          const exibicoesEstimadas = totalTelas * 245; // estimativa por dia
-          const horasExibidas = (exibicoesEstimadas * duracaoSegundos) / 3600;
+          // Exibições estimadas = telas × 245 exibições/dia × dias ativos
+          const exibicoesPorDia = totalTelas * 245;
+          const exibicoesTotais = exibicoesPorDia * diasAtivosParaCalculo;
+          // Horas = (exibições totais × duração em segundos) / 3600
+          const horasExibidas = (exibicoesTotais * duracaoSegundos) / 3600;
 
           return {
             id: pv.videos?.id || pv.video_id,

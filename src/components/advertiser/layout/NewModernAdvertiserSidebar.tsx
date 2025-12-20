@@ -84,7 +84,7 @@ export function NewModernAdvertiserSidebar() {
       label: 'Conteúdo',
       items: [
         {
-          title: 'Meus Vídeos',
+          title: 'Relatório',
           href: '/anunciante/videos',
           icon: Video
         },

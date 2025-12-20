@@ -28,7 +28,7 @@ const ModernAdvertiserSidebar = () => {
       icon: ShoppingBag
     },
     {
-      title: 'Meus Vídeos',
+      title: 'Relatório',
       href: '/anunciante/videos',
       icon: Video
     },

@@ -60,7 +60,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
       section: 'main'
     },
     {
-      title: 'Meus Vídeos',
+      title: 'Relatório',
       href: '/anunciante/videos',
       icon: Video,
       section: 'content'
