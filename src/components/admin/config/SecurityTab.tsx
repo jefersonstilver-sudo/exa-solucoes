@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Shield, Save, Lock, Clock, Bot } from 'lucide-react';
+import { Shield, Save, Lock, Clock, Bot, Loader2 } from 'lucide-react';
 import { AdditionalConfiguration } from '@/hooks/useAdditionalConfigurations';
+import { toast } from '@/hooks/use-toast';
 
 interface SecurityTabProps {
   config: AdditionalConfiguration | null;
@@ -15,6 +16,7 @@ interface SecurityTabProps {
 export const SecurityTab: React.FC<SecurityTabProps> = ({ config, updateConfig }) => {
   const [localConfig, setLocalConfig] = useState(config || {} as any);
   const [saving, setSaving] = useState(false);
+  const [savingSofia, setSavingSofia] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (config) setLocalConfig(config);
@@ -22,6 +24,23 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({ config, updateConfig }
 
   const handleChange = (field: string, value: any) => {
     setLocalConfig((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  // Handler específico para toggles da Sofia - salva automaticamente
+  const handleSofiaToggle = async (field: 'sofia_ativa' | 'sofia_2fa_gerente_master', value: boolean) => {
+    setSavingSofia(field);
+    setLocalConfig((prev: any) => ({ ...prev, [field]: value }));
+    
+    const success = await updateConfig({ [field]: value });
+    
+    if (success) {
+      toast({
+        title: field === 'sofia_ativa' ? 'Sofia atualizada' : '2FA atualizado',
+        description: value ? 'Configuração ativada com sucesso' : 'Configuração desativada com sucesso',
+      });
+    }
+    
+    setSavingSofia(null);
   };
 
   const handleSave = async () => {
@@ -134,11 +153,15 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({ config, updateConfig }
                 Se desligado, o ícone da Sofia ficará oculto em todo o site
               </p>
             </div>
-            <Switch
-              id="sofia_ativa"
-              checked={localConfig.sofia_ativa ?? true}
-              onCheckedChange={(checked) => handleChange('sofia_ativa', checked)}
-            />
+            {savingSofia === 'sofia_ativa' ? (
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            ) : (
+              <Switch
+                id="sofia_ativa"
+                checked={localConfig.sofia_ativa ?? true}
+                onCheckedChange={(checked) => handleSofiaToggle('sofia_ativa', checked)}
+              />
+            )}
           </div>
 
           <div className="flex items-center justify-between">
@@ -150,11 +173,15 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({ config, updateConfig }
                 Se desligado, a Sofia inicia diretamente em modo gerente master sem pedir código
               </p>
             </div>
-            <Switch
-              id="sofia_2fa_gerente_master"
-              checked={localConfig.sofia_2fa_gerente_master ?? true}
-              onCheckedChange={(checked) => handleChange('sofia_2fa_gerente_master', checked)}
-            />
+            {savingSofia === 'sofia_2fa_gerente_master' ? (
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            ) : (
+              <Switch
+                id="sofia_2fa_gerente_master"
+                checked={localConfig.sofia_2fa_gerente_master ?? true}
+                onCheckedChange={(checked) => handleSofiaToggle('sofia_2fa_gerente_master', checked)}
+              />
+            )}
           </div>
         </CardContent>
       </Card>
