@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ResponsiveAdvertiserSidebar from './ResponsiveAdvertiserSidebar';
 import UnifiedAdvertiserMobileHeader from './UnifiedAdvertiserMobileHeader';
+import { SofiaClientProvider } from '@/contexts/SofiaClientContext';
+import { SofiaClientVoiceButton, SofiaNavigationPopup, SofiaQRCodePopup } from '@/components/client/sofia';
 
 const CompleteResponsiveLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -40,59 +42,66 @@ const CompleteResponsiveLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex w-full relative">
-      {/* Sidebar */}
-      <ResponsiveAdvertiserSidebar
-        isOpen={sidebarOpen}
-        onClose={handleSidebarClose}
-        isMobile={isMobile}
-        isTablet={isTablet}
-        isCollapsed={sidebarCollapsed}
-      />
+    <SofiaClientProvider>
+      <div className="min-h-screen bg-gray-50 flex w-full relative">
+        {/* Sidebar */}
+        <ResponsiveAdvertiserSidebar
+          isOpen={sidebarOpen}
+          onClose={handleSidebarClose}
+          isMobile={isMobile}
+          isTablet={isTablet}
+          isCollapsed={sidebarCollapsed}
+        />
 
-      {/* Main Content Area */}
-      <main className={cn(
-        "flex-1 w-full min-h-screen transition-all duration-300",
-        !(isMobile || isTablet) && (sidebarCollapsed ? 'ml-16' : 'ml-80')
-      )}>
-        <div className="h-full">
-          {/* Header com botão hambúrguer - APENAS DESKTOP */}
-          {(isDesktop || isXl) && (
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-              <div className="px-4 sm:px-6 py-4">
-                <div className="flex items-center space-x-4">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleSidebarCollapse}
-                    className="flex-shrink-0 text-[#3C1361] hover:bg-[#3C1361]/10 transition-colors"
-                    aria-label="Alternar menu"
-                  >
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                  <h1 className="text-xl sm:text-2xl font-bold text-[#3C1361] truncate">
-                    Meus Pedidos
-                  </h1>
+        {/* Main Content Area */}
+        <main className={cn(
+          "flex-1 w-full min-h-screen transition-all duration-300",
+          !(isMobile || isTablet) && (sidebarCollapsed ? 'ml-16' : 'ml-80')
+        )}>
+          <div className="h-full">
+            {/* Header com botão hambúrguer - APENAS DESKTOP */}
+            {(isDesktop || isXl) && (
+              <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+                <div className="px-4 sm:px-6 py-4">
+                  <div className="flex items-center space-x-4">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleSidebarCollapse}
+                      className="flex-shrink-0 text-[#3C1361] hover:bg-[#3C1361]/10 transition-colors"
+                      aria-label="Alternar menu"
+                    >
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                    <h1 className="text-xl sm:text-2xl font-bold text-[#3C1361] truncate">
+                      Meus Pedidos
+                    </h1>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-          
-          {/* Header Mobile/Tablet com logo EXA unificado */}
-          {(isMobile || isTablet) && (
-            <UnifiedAdvertiserMobileHeader
-              title={getPageTitle()}
-              onMenuClick={handleSidebarOpen}
-            />
-          )}
+            )}
+            
+            {/* Header Mobile/Tablet com logo EXA unificado */}
+            {(isMobile || isTablet) && (
+              <UnifiedAdvertiserMobileHeader
+                title={getPageTitle()}
+                onMenuClick={handleSidebarOpen}
+              />
+            )}
 
-          {/* Conteúdo */}
-          <div className="p-4 sm:p-6">
-            <Outlet />
+            {/* Conteúdo */}
+            <div className="p-4 sm:p-6">
+              <Outlet />
+            </div>
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+
+        {/* Sofia (Anunciante) */}
+        <SofiaClientVoiceButton />
+        <SofiaNavigationPopup />
+        <SofiaQRCodePopup />
+      </div>
+    </SofiaClientProvider>
   );
 };
 
