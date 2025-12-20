@@ -58,7 +58,7 @@ interface SofiaClientProviderProps {
 }
 
 export const SofiaClientProvider: React.FC<SofiaClientProviderProps> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [state, setState] = useState<SofiaClientState>('idle');
   const [transcript, setTranscript] = useState('');
   const [userTranscript, setUserTranscript] = useState('');
@@ -68,19 +68,29 @@ export const SofiaClientProvider: React.FC<SofiaClientProviderProps> = ({ childr
 
   // Verificar se o usuário está na lista beta
   useEffect(() => {
-    if (user?.email) {
-      const isAllowed = SOFIA_CLIENT_BETA_EMAILS.includes(user.email.toLowerCase());
+    // Usar userProfile.email (do banco) OU user.email (do Auth) como fallback
+    const email = userProfile?.email || user?.email;
+    
+    console.log('[Sofia Client] 🔍 Verificando acesso beta:', { 
+      userProfileEmail: userProfile?.email, 
+      authEmail: user?.email,
+      emailUsado: email 
+    });
+    
+    if (email) {
+      const isAllowed = SOFIA_CLIENT_BETA_EMAILS.includes(email.toLowerCase());
       setIsEnabled(isAllowed);
       
       if (isAllowed) {
-        console.log('[Sofia Client] ✅ Beta access enabled for:', user.email);
+        console.log('[Sofia Client] ✅ Beta access enabled for:', email);
       } else {
-        console.log('[Sofia Client] ⛔ User not in beta list:', user.email);
+        console.log('[Sofia Client] ⛔ User not in beta list:', email);
       }
     } else {
+      console.log('[Sofia Client] ⚠️ Nenhum email disponível ainda');
       setIsEnabled(false);
     }
-  }, [user?.email]);
+  }, [userProfile?.email, user?.email]);
 
   const conversation = useConversation({
     onConnect: () => {
