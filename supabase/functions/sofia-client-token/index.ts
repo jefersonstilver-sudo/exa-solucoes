@@ -34,7 +34,7 @@ serve(async (req) => {
       console.error(`[${requestId}] ❌ ELEVENLABS_CLIENT_AGENT_ID not configured`);
       return new Response(JSON.stringify({
         success: false,
-        error: 'Sofia Cliente não configurada. Execute configure-sofia-client-agent primeiro.',
+        error: 'Sofia Cliente não configurada. Configure ELEVENLABS_CLIENT_AGENT_ID.',
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
@@ -84,86 +84,25 @@ serve(async (req) => {
 
     console.log(`[${requestId}] Requesting token for Sofia Client agent: ${AGENT_ID}`);
 
-    // Build dynamic overrides based on user context
-    const dynamicContext = `
-## CONTEXTO DA SESSÃO ATUAL
-- Usuário: ${userName || 'Anunciante'}
-- Email: ${userEmail || 'não identificado'}
-- Página atual: ${pageContext.currentPage || 'desconhecida'}
-- Seção: ${pageContext.section || 'geral'}
-- Tempo na página: ${pageContext.timeOnPage || 0} segundos
-${pageContext.lastActions?.length > 0 ? `- Últimas ações: ${pageContext.lastActions.join(', ')}` : ''}
-
-Ao usar a ferramenta "consultar_sistema_cliente", inclua user_id: "${userId}" e user_email: "${userEmail}" no corpo da requisição.
-`;
-
-    // Request conversation token with overrides
-    const tokenUrl = `https://api.elevenlabs.io/v1/convai/conversation/token`;
+    // Request conversation token using GET (the only supported method)
+    const tokenUrl = `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${AGENT_ID}`;
     
-    const tokenPayload: any = {
-      agent_id: AGENT_ID,
-    };
-
-    // Add conversation overrides if we have user context
-    if (userId) {
-      tokenPayload.conversation_config_override = {
-        agent: {
-          prompt: {
-            prompt: dynamicContext,
-          },
-          first_message: userName 
-            ? `Olá ${userName}! Sou a Sofia, sua assistente virtual. ${pageContext.currentPage ? `Vejo que você está em ${pageContext.currentPage}. ` : ''}Como posso ajudar?`
-            : 'Olá! Sou a Sofia, sua assistente virtual. Como posso ajudar você hoje?',
-        },
-      };
-    }
-
     const response = await fetch(tokenUrl, {
-      method: 'POST',
+      method: 'GET',
       headers: {
         'xi-api-key': ELEVENLABS_API_KEY,
-        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(tokenPayload),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[${requestId}] ❌ ElevenLabs API error:`, response.status, errorText);
-      
-      // Fallback to GET request without overrides
-      console.log(`[${requestId}] Trying fallback without overrides...`);
-      const fallbackResponse = await fetch(
-        `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${AGENT_ID}`,
-        {
-          method: 'GET',
-          headers: { 'xi-api-key': ELEVENLABS_API_KEY },
-        }
-      );
-
-      if (!fallbackResponse.ok) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: `ElevenLabs API error: ${response.status}`,
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: response.status,
-        });
-      }
-
-      const fallbackData = await fallbackResponse.json();
       return new Response(JSON.stringify({
-        success: true,
-        token: fallbackData.token,
-        agent_id: AGENT_ID,
-        user_context: {
-          user_id: userId,
-          email: userEmail,
-          name: userName,
-          page: pageContext.currentPage,
-        },
+        success: false,
+        error: `ElevenLabs API error: ${response.status}`,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: response.status,
       });
     }
 
@@ -180,6 +119,7 @@ Ao usar a ferramenta "consultar_sistema_cliente", inclua user_id: "${userId}" e 
         email: userEmail,
         name: userName,
         page: pageContext.currentPage,
+        section: pageContext.section,
       },
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
