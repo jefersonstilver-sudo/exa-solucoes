@@ -82,6 +82,10 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
     }
   };
 
+  // Contar vídeos ativos vs inativos
+  const videosAtivos = campaign.videos.filter(v => v.isActive && v.selectedForDisplay && v.approvalStatus === 'approved').length;
+  const videosInativos = campaign.videos.length - videosAtivos;
+
   return (
     <Collapsible
       open={isOpen}
@@ -177,15 +181,15 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
               <h4 className="text-base font-semibold text-gray-900">
                 Vídeos da Campanha ({campaign.videos.length})
               </h4>
+              <p className="text-xs text-muted-foreground mt-1">
+                {videosAtivos} em exibição · {videosInativos} inativos
+              </p>
             </div>
             <div className="divide-y divide-gray-100">
               {campaign.videos.map((video) => (
                 <VideoListItem
                   key={video.id}
                   {...video}
-                  diasAtivos={campaign.diasAtivos}
-                  totalTelas={campaign.totalTelas}
-                  isActive={video.approvalStatus === 'approved'}
                 />
               ))}
             </div>

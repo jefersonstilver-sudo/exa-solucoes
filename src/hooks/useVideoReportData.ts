@@ -25,6 +25,9 @@ export interface VideoInfo {
   duracao: number;
   approvalStatus: string;
   horasExibidas: number;
+  isActive: boolean;
+  selectedForDisplay: boolean;
+  scheduleInfo: string; // "24/7", "Agendado: Sex 13:00-13:02", "Inativo"
 }
 
 export interface VideoTimelinePoint {
@@ -63,6 +66,112 @@ export interface CampaignSummary {
   totalExibicoes: number;
   totalPrediosAtivos: number;
 }
+
+interface ScheduleRule {
+  days_of_week: number[];
+  start_time: string;
+  end_time: string;
+  is_all_day: boolean;
+  is_active: boolean;
+}
+
+// Calcular minutos de exibição por semana baseado nas regras de agendamento
+const calculateScheduledMinutesPerWeek = (rules: ScheduleRule[]): number => {
+  if (!rules || rules.length === 0) return 0;
+  
+  let totalMinutesPerWeek = 0;
+  
+  for (const rule of rules) {
+    if (!rule.is_active) continue;
+    
+    if (rule.is_all_day) {
+      // 24 horas * 60 min * dias da semana
+      totalMinutesPerWeek += 24 * 60 * (rule.days_of_week?.length || 0);
+    } else if (rule.start_time && rule.end_time) {
+      // Calcular duração do período
+      const [startH, startM] = rule.start_time.split(':').map(Number);
+      const [endH, endM] = rule.end_time.split(':').map(Number);
+      const durationMinutes = (endH * 60 + endM) - (startH * 60 + startM);
+      
+      if (durationMinutes > 0) {
+        totalMinutesPerWeek += durationMinutes * (rule.days_of_week?.length || 0);
+      }
+    }
+  }
+  
+  return totalMinutesPerWeek;
+};
+
+// Formatar descrição do agendamento
+const formatScheduleInfo = (
+  isActive: boolean, 
+  selectedForDisplay: boolean, 
+  rules: ScheduleRule[]
+): string => {
+  if (!isActive || !selectedForDisplay) {
+    return 'Inativo';
+  }
+  
+  if (!rules || rules.length === 0) {
+    return '24/7';
+  }
+  
+  const activeRules = rules.filter(r => r.is_active);
+  if (activeRules.length === 0) {
+    return '24/7';
+  }
+  
+  // Pegar primeira regra para mostrar
+  const rule = activeRules[0];
+  
+  if (rule.is_all_day) {
+    const days = rule.days_of_week?.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ');
+    return `Agendado: ${days} (dia todo)`;
+  }
+  
+  if (rule.start_time && rule.end_time) {
+    const days = rule.days_of_week?.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ');
+    return `Agendado: ${days} ${rule.start_time.substring(0, 5)}-${rule.end_time.substring(0, 5)}`;
+  }
+  
+  return '24/7';
+};
+
+// Calcular horas de exibição baseado no status e agendamento
+const calculateDisplayHours = (
+  isActive: boolean,
+  selectedForDisplay: boolean,
+  approvalStatus: string,
+  scheduleRules: ScheduleRule[],
+  totalTelas: number,
+  duracaoSegundos: number,
+  diasAtivos: number
+): number => {
+  // Se não está ativo, não foi selecionado para exibição, ou não foi aprovado = 0 horas
+  if (!isActive || !selectedForDisplay || approvalStatus !== 'approved') {
+    return 0;
+  }
+  
+  const scheduledMinutesPerWeek = calculateScheduledMinutesPerWeek(scheduleRules);
+  
+  if (scheduledMinutesPerWeek > 0) {
+    // Vídeo tem agendamento específico
+    // Calcular quantas semanas passaram
+    const semanasAtivas = diasAtivos / 7;
+    // Minutos totais agendados
+    const minutosTotais = scheduledMinutesPerWeek * semanasAtivas;
+    // Converter para horas considerando exibições por minuto
+    // 245 exibições/dia = ~10.2 exibições/hora = ~0.17 exibições/minuto
+    const exibicoesPorMinuto = (245 / 24 / 60) * totalTelas;
+    const exibicoesTotais = exibicoesPorMinuto * minutosTotais;
+    return (exibicoesTotais * duracaoSegundos) / 3600;
+  }
+  
+  // Exibição 24/7 - fórmula padrão
+  const exibicoesPorDia = totalTelas * 245;
+  const exibicoesTotais = exibicoesPorDia * Math.max(1, diasAtivos);
+  return (exibicoesTotais * duracaoSegundos) / 3600;
+};
 
 export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => {
   const [campaigns, setCampaigns] = useState<CampaignReport[]>([]);
@@ -103,7 +212,7 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
 
       const pedidoIds = pedidos.map(p => p.id);
 
-      // Buscar vídeos dos pedidos
+      // Buscar vídeos dos pedidos com status
       const { data: pedidoVideos, error: videosError } = await supabase
         .from('pedido_videos')
         .select(`
@@ -118,6 +227,32 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
         .in('pedido_id', pedidoIds);
 
       if (videosError) throw videosError;
+
+      // Buscar agendamentos de vídeos
+      const videoIds = (pedidoVideos || []).map(pv => pv.video_id).filter(Boolean);
+      
+      const { data: scheduleData } = await supabase
+        .from('campaign_video_schedules')
+        .select(`
+          video_id,
+          campaign_schedule_rules (
+            days_of_week,
+            start_time,
+            end_time,
+            is_all_day,
+            is_active
+          )
+        `)
+        .in('video_id', videoIds);
+
+      // Mapear agendamentos por video_id
+      const schedulesByVideoId = new Map<string, ScheduleRule[]>();
+      (scheduleData || []).forEach(schedule => {
+        const rules = schedule.campaign_schedule_rules as ScheduleRule[] | null;
+        if (rules && rules.length > 0) {
+          schedulesByVideoId.set(schedule.video_id, rules);
+        }
+      });
 
       // Buscar dados do cliente
       const { data: clientData } = await supabase
@@ -171,48 +306,64 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
         // Métricas do pedido
         const totalTelas = buildingInfos.reduce((sum, b) => sum + b.quantidadeTelas, 0);
 
-        // Processar vídeos com cálculo de horas (multiplicando pelos dias ativos)
-        const diasAtivosParaCalculo = Math.max(1, diasAtivos);
+        // Processar vídeos com cálculo REAL de horas
         const videoInfos: VideoInfo[] = videosFromPedido.map(pv => {
           const duracaoSegundos = pv.videos?.duracao || 30;
-          // Exibições estimadas = telas × 245 exibições/dia × dias ativos
-          const exibicoesPorDia = totalTelas * 245;
-          const exibicoesTotais = exibicoesPorDia * diasAtivosParaCalculo;
-          // Horas = (exibições totais × duração em segundos) / 3600
-          const horasExibidas = (exibicoesTotais * duracaoSegundos) / 3600;
+          const isActive = pv.is_active ?? true;
+          const selectedForDisplay = pv.selected_for_display ?? true;
+          const approvalStatus = pv.approval_status || 'pending';
+          const scheduleRules = schedulesByVideoId.get(pv.video_id) || [];
+          
+          const horasExibidas = calculateDisplayHours(
+            isActive,
+            selectedForDisplay,
+            approvalStatus,
+            scheduleRules,
+            totalTelas,
+            duracaoSegundos,
+            Math.max(1, diasAtivos)
+          );
+
+          const scheduleInfo = formatScheduleInfo(isActive, selectedForDisplay, scheduleRules);
 
           return {
             id: pv.videos?.id || pv.video_id,
             nome: pv.videos?.nome || 'Vídeo sem título',
             url: pv.videos?.url || '',
             duracao: duracaoSegundos,
-            approvalStatus: pv.approval_status || 'pending',
-            horasExibidas: horasExibidas,
+            approvalStatus,
+            horasExibidas,
+            isActive,
+            selectedForDisplay,
+            scheduleInfo,
           };
         });
 
-        // Gerar timeline de vídeos com HORAS ACUMULADAS (até hoje ou data_fim)
+        // Gerar timeline de vídeos com HORAS ACUMULADAS baseado em status real
         const videoTimeline: VideoTimelinePoint[] = [];
-        const videoColors = ['#9C1E1E', '#E74C3C', '#C0392B', '#A93226', '#922B21', '#7B241C'];
+        const videoColors = ['#9C1E1E', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
         let colorIndex = 0;
         const videoColorMap = new Map<string, string>();
         
         // Mapa para acumular horas progressivamente por vídeo
         const acumuladoPorVideo = new Map<string, number>();
         
-        // Calcular horas por dia para cada vídeo (baseado na duração)
+        // Calcular horas por dia para cada vídeo baseado no status REAL
         const horasPorDiaPorVideo = new Map<string, number>();
         videoInfos.forEach(video => {
-          // Horas por dia = (telas × 245 exibições × duração em segundos) / 3600
-          const horasDia = (totalTelas * 245 * video.duracao) / 3600;
-          horasPorDiaPorVideo.set(video.id, horasDia);
+          // Se o vídeo não está ativo ou não foi selecionado, 0 horas/dia
+          if (!video.isActive || !video.selectedForDisplay || video.approvalStatus !== 'approved') {
+            horasPorDiaPorVideo.set(video.id, 0);
+          } else {
+            // Horas por dia = horasExibidas totais / diasAtivos
+            const diasParaCalculo = Math.max(1, diasAtivos);
+            horasPorDiaPorVideo.set(video.id, video.horasExibidas / diasParaCalculo);
+          }
           acumuladoPorVideo.set(video.id, 0);
         });
         
-        let diaIndex = 0;
         for (let date = new Date(dataInicio); date <= dataMaxima; date.setDate(date.getDate() + 1)) {
           const dateStr = date.toISOString().split('T')[0];
-          diaIndex++;
           
           const videosAtivos = videoInfos.map(video => {
             if (!videoColorMap.has(video.id)) {
@@ -229,7 +380,7 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
             return {
               id: video.id,
               nome: video.nome,
-              horasExibidas: novoAcumulado, // PROGRESSIVO/ACUMULADO
+              horasExibidas: novoAcumulado,
               color: videoColorMap.get(video.id)!,
             };
           });
@@ -245,7 +396,7 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
 
         buildingInfos.forEach(b => uniqueBuildingsSet.add(b.id));
         totalExhibitions += totalExibicoesEstimadas;
-        totalVideosAtivos += videoInfos.filter(v => v.approvalStatus === 'approved').length;
+        totalVideosAtivos += videoInfos.filter(v => v.isActive && v.selectedForDisplay && v.approvalStatus === 'approved').length;
         totalVideosExibidos += videoInfos.length;
 
         campaignReports.push({
