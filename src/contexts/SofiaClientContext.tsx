@@ -3,6 +3,7 @@ import { useConversation } from '@elevenlabs/react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { useClientPageContext } from '@/hooks/useClientPageContext';
 
 // Lista de emails autorizados para fase de testes da Sofia Cliente
 const SOFIA_CLIENT_BETA_EMAILS = [
@@ -59,6 +60,7 @@ interface SofiaClientProviderProps {
 
 export const SofiaClientProvider: React.FC<SofiaClientProviderProps> = ({ children }) => {
   const { user, userProfile } = useAuth();
+  const pageContext = useClientPageContext();
   const [state, setState] = useState<SofiaClientState>('idle');
   const [transcript, setTranscript] = useState('');
   const [userTranscript, setUserTranscript] = useState('');
@@ -68,7 +70,6 @@ export const SofiaClientProvider: React.FC<SofiaClientProviderProps> = ({ childr
 
   // Verificar se o usuário está na lista beta
   useEffect(() => {
-    // Usar userProfile.email (do banco) OU user.email (do Auth) como fallback
     const email = userProfile?.email || user?.email;
     
     console.log('[Sofia Client] 🔍 Verificando acesso beta:', { 
@@ -140,6 +141,44 @@ export const SofiaClientProvider: React.FC<SofiaClientProviderProps> = ({ childr
           }
         }
 
+        // Handle client tool calls (navigation, QR codes)
+        if (msgType === 'client_tool_call') {
+          const toolCall = message?.client_tool_call || {};
+          console.log('[Sofia Client] 🔧 Client tool call:', toolCall);
+          
+          if (toolCall.tool_name === 'navegar_pagina') {
+            const params = toolCall.parameters || {};
+            const pathMap: Record<string, { path: string; label: string }> = {
+              'meus_pedidos': { path: '/advertiser/meus-pedidos', label: 'Meus Pedidos' },
+              'enviar_video': { path: '/advertiser/enviar-video', label: 'Enviar Vídeo' },
+              'ver_predios': { path: '/advertiser/predios', label: 'Prédios Disponíveis' },
+              'perfil': { path: '/advertiser/profile', label: 'Meu Perfil' },
+              'carrinho': { path: '/advertiser/carrinho', label: 'Carrinho' },
+              'suporte': { path: '/advertiser/suporte', label: 'Suporte' },
+            };
+            
+            const destination = pathMap[params.destino];
+            if (destination) {
+              setCurrentAction({
+                type: 'navigate',
+                page: params.destino,
+                path: destination.path,
+                label: destination.label,
+                pedido_id: params.pedido_id,
+              });
+            }
+          }
+          
+          if (toolCall.tool_name === 'gerar_qrcode') {
+            const params = toolCall.parameters || {};
+            setCurrentAction({
+              type: 'qrcode',
+              pedido_id: params.pedido_id,
+              valor: params.valor || 0,
+            });
+          }
+        }
+
       } catch (e) {
         console.error('[Sofia Client] Error processing message:', e);
       }
@@ -170,8 +209,23 @@ export const SofiaClientProvider: React.FC<SofiaClientProviderProps> = ({ childr
       
       setState('connecting');
 
-      // Get token from client-specific endpoint
-      const { data, error: fnError } = await supabase.functions.invoke('sofia-client-token');
+      // Build page context to send
+      const currentPageContext = {
+        currentPath: pageContext.currentPath,
+        currentPage: pageContext.currentPage,
+        section: pageContext.section,
+        timeOnPage: pageContext.timeOnPage,
+        lastActions: pageContext.lastActions.slice(0, 5),
+      };
+
+      console.log('[Sofia Client] Sending page context:', currentPageContext);
+
+      // Get token from client-specific endpoint with page context
+      const { data, error: fnError } = await supabase.functions.invoke('sofia-client-token', {
+        body: {
+          pageContext: currentPageContext,
+        },
+      });
 
       if (fnError) {
         throw new Error(fnError.message || 'Erro ao obter token');
@@ -182,6 +236,7 @@ export const SofiaClientProvider: React.FC<SofiaClientProviderProps> = ({ childr
       }
 
       console.log('[Sofia Client] Token obtained, starting session...');
+      console.log('[Sofia Client] User context:', data.user_context);
 
       await conversation.startSession({
         conversationToken: data.token,
@@ -199,7 +254,7 @@ export const SofiaClientProvider: React.FC<SofiaClientProviderProps> = ({ childr
         toast.error(err.message || 'Erro ao conectar com Sofia');
       }
     }
-  }, [state, conversation]);
+  }, [state, conversation, pageContext]);
 
   const endCall = useCallback(async () => {
     try {

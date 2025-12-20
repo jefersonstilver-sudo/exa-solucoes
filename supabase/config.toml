@@ -497,5 +497,5 @@ verify_jwt = false
 [functions.sofia-client-token]
 verify_jwt = false
 
-[functions.sofia-client]
+[functions.sofia-client-consulta]
 verify_jwt = false
