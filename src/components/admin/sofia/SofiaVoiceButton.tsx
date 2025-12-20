@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, PhoneCall, PhoneOff, Sparkles, X, Mic, Volume2, Minimize2, AlertCircle } from 'lucide-react';
 import { useSofia } from '@/contexts/SofiaContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SofiaVoiceButtonProps {
   className?: string;
@@ -10,6 +11,7 @@ interface SofiaVoiceButtonProps {
 export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [sofiaAtiva, setSofiaAtiva] = useState<boolean | null>(null);
   const { 
     state, 
     isSpeaking, 
@@ -21,6 +23,37 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
     endCall,
     retryConnection
   } = useSofia();
+
+  // Buscar configuração sofia_ativa
+  useEffect(() => {
+    const fetchConfig = async () => {
+      const { data } = await supabase
+        .from('configuracoes_adicionais')
+        .select('sofia_ativa')
+        .limit(1)
+        .single();
+      
+      setSofiaAtiva(data?.sofia_ativa ?? true);
+    };
+    
+    fetchConfig();
+    
+    // Ouvir mudanças em tempo real
+    const channel = supabase
+      .channel('sofia-config-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'configuracoes_adicionais' }, 
+        () => fetchConfig()
+      )
+      .subscribe();
+    
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  // Se sofia_ativa é false, não renderizar o botão
+  if (sofiaAtiva === false) {
+    return null;
+  }
 
   const isConnecting = state === 'initializing' || state === 'connecting';
   const isConnected = state === 'connected';

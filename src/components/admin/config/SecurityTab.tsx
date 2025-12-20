@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Shield, Save, Lock, Clock } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Shield, Save, Lock, Clock, Bot } from 'lucide-react';
 import { AdditionalConfiguration } from '@/hooks/useAdditionalConfigurations';
 
 interface SecurityTabProps {
@@ -108,6 +109,52 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({ config, updateConfig }
             <p className="text-xs text-muted-foreground">
               Tempo de inatividade até logout automático (padrão: 480 = 8 horas)
             </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Configurações da Sofia */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="w-5 h-5 text-violet-500" />
+            Configurações da Sofia
+          </CardTitle>
+          <CardDescription>
+            Controle a IA assistente Sofia no site
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="sofia_ativa" className="font-medium">
+                Sofia Ativa no Site
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Se desligado, o ícone da Sofia ficará oculto em todo o site
+              </p>
+            </div>
+            <Switch
+              id="sofia_ativa"
+              checked={localConfig.sofia_ativa ?? true}
+              onCheckedChange={(checked) => handleChange('sofia_ativa', checked)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="sofia_2fa_gerente_master" className="font-medium">
+                2FA para Modo Gerente Master
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Se desligado, a Sofia inicia diretamente em modo gerente master sem pedir código
+              </p>
+            </div>
+            <Switch
+              id="sofia_2fa_gerente_master"
+              checked={localConfig.sofia_2fa_gerente_master ?? true}
+              onCheckedChange={(checked) => handleChange('sofia_2fa_gerente_master', checked)}
+            />
           </div>
         </CardContent>
       </Card>

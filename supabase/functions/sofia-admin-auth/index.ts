@@ -23,6 +23,92 @@ const SESSION_EXTENSION_MINUTES = 5;
 
 // ==================== ACTION HANDLERS ====================
 
+// Verificar se 2FA está ativado nas configurações
+async function is2FAEnabled(): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('configuracoes_adicionais')
+      .select('sofia_2fa_gerente_master')
+      .limit(1)
+      .single();
+    
+    if (error) {
+      console.log('🔐 [ADMIN-AUTH] ⚠️ Erro ao buscar config 2FA, usando padrão true:', error.message);
+      return true; // Default to requiring 2FA if can't check
+    }
+    
+    const is2FA = data?.sofia_2fa_gerente_master ?? true;
+    console.log(`🔐 [ADMIN-AUTH] Config sofia_2fa_gerente_master: ${is2FA}`);
+    return is2FA;
+  } catch (error) {
+    console.error('🔐 [ADMIN-AUTH] ❌ Erro fatal ao verificar 2FA:', error);
+    return true; // Default to requiring 2FA on error
+  }
+}
+
+// Ativar sessão diretamente sem 2FA (quando 2FA está desativado)
+async function activateSessionDirectly(userPhone: string, userName?: string): Promise<{ success: boolean; message: string; session_id?: string }> {
+  console.log('\n🔓 ═══════════════════════════════════════════════════════');
+  console.log('🔓 [ADMIN-AUTH] ACTIVATE_DIRECT - 2FA desativado');
+  console.log(`🔓 [ADMIN-AUTH] User Phone: ${userPhone}`);
+  console.log('🔓 ═══════════════════════════════════════════════════════\n');
+  
+  try {
+    const expiresAt = new Date(Date.now() + SESSION_DURATION_MINUTES * 60 * 1000);
+    
+    // Invalidar sessões anteriores
+    await supabase
+      .from('sofia_admin_sessions')
+      .update({ session_active: false })
+      .eq('user_phone', userPhone)
+      .eq('session_active', true);
+    
+    // Criar sessão ativa diretamente
+    const { data: session, error } = await supabase
+      .from('sofia_admin_sessions')
+      .insert({
+        user_phone: userPhone,
+        user_name: userName || 'Admin',
+        verification_code: 'BYPASS_2FA',
+        code_sent_at: new Date().toISOString(),
+        code_verified_at: new Date().toISOString(),
+        session_active: true,
+        session_expires_at: expiresAt.toISOString()
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('🔓 [ADMIN-AUTH] ❌ Erro ao criar sessão:', error);
+      return { success: false, message: 'Erro ao ativar modo gerente master.' };
+    }
+    
+    // Log activation
+    await supabase.from('agent_logs').insert({
+      agent_key: 'sofia',
+      event_type: 'admin_session_activated_no_2fa',
+      metadata: {
+        session_id: session.id,
+        user_phone: userPhone,
+        expires_at: expiresAt.toISOString(),
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+    console.log(`🔓 [ADMIN-AUTH] ✅ Sessão ativada diretamente! Expira em: ${expiresAt.toISOString()}`);
+    
+    return { 
+      success: true, 
+      message: `Modo Gerente Master ativado! A autenticação 2FA está desativada nas configurações. Você tem ${SESSION_DURATION_MINUTES} minutos de acesso total. O que deseja consultar?`,
+      session_id: session.id
+    };
+    
+  } catch (error) {
+    console.error('🔓 [ADMIN-AUTH] ❌ Erro fatal:', error);
+    return { success: false, message: 'Erro ao ativar sessão.' };
+  }
+}
+
 async function requestVerificationCode(userPhone?: string, userName?: string): Promise<{ success: boolean; message: string }> {
   const effectiveUserPhone = userPhone?.trim() || (userName ? `voice_${userName}` : 'voice_session');
   
@@ -543,7 +629,15 @@ serve(async (req) => {
 
     switch (action) {
       case 'request_code':
-        result = await requestVerificationCode(effectiveUserPhone, user_name);
+        // Verificar se 2FA está ativado
+        const is2FA = await is2FAEnabled();
+        if (!is2FA) {
+          // 2FA desativado: ativar sessão diretamente
+          result = await activateSessionDirectly(effectiveUserPhone, user_name);
+        } else {
+          // 2FA ativado: enviar código normalmente
+          result = await requestVerificationCode(effectiveUserPhone, user_name);
+        }
         break;
 
       case 'verify_code':
