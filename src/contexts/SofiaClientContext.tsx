@@ -4,6 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 
+// Lista de emails autorizados para fase de testes da Sofia Cliente
+const SOFIA_CLIENT_BETA_EMAILS = [
+  'jefi92@gmail.com',
+];
+
 type SofiaClientState = 'idle' | 'initializing' | 'connecting' | 'connected' | 'error';
 
 interface NavigationAction {
@@ -59,7 +64,23 @@ export const SofiaClientProvider: React.FC<SofiaClientProviderProps> = ({ childr
   const [userTranscript, setUserTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [currentAction, setCurrentAction] = useState<SofiaAction>(null);
-  const [isEnabled, setIsEnabled] = useState(true); // Always enabled for all users
+  const [isEnabled, setIsEnabled] = useState(false);
+
+  // Verificar se o usuário está na lista beta
+  useEffect(() => {
+    if (user?.email) {
+      const isAllowed = SOFIA_CLIENT_BETA_EMAILS.includes(user.email.toLowerCase());
+      setIsEnabled(isAllowed);
+      
+      if (isAllowed) {
+        console.log('[Sofia Client] ✅ Beta access enabled for:', user.email);
+      } else {
+        console.log('[Sofia Client] ⛔ User not in beta list:', user.email);
+      }
+    } else {
+      setIsEnabled(false);
+    }
+  }, [user?.email]);
 
   const conversation = useConversation({
     onConnect: () => {
