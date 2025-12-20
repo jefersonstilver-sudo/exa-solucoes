@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,7 +26,7 @@ serve(async (req) => {
 
     console.log(`[${requestId}] Action: ${action}`);
 
-    // Get existing client agent ID or create new one
+    // Get existing client agent ID
     let clientAgentId = Deno.env.get('ELEVENLABS_CLIENT_AGENT_ID');
 
     if (action === 'status') {
@@ -35,7 +34,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({
           success: false,
           configured: false,
-          message: 'Sofia Cliente agent not configured yet',
+          message: 'Sofia Cliente agent not configured yet. Add ELEVENLABS_CLIENT_AGENT_ID secret.',
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -74,45 +73,57 @@ serve(async (req) => {
     if (action === 'configure') {
       console.log(`[${requestId}] Configuring Sofia Client Agent...`);
 
-      // Sofia Client Prompt - focused on client assistance
+      // Sofia Client Prompt - focused on client assistance with real-time data
       const clientPrompt = `## SOFIA CLIENTE - Assistente Virtual EXA Mídia
 
-Você é a Sofia, assistente de voz amigável da EXA Mídia. Ajuda clientes (anunciantes e síndicos) a navegar no sistema.
+Você é a Sofia, assistente de voz amigável da EXA Mídia. Ajuda ANUNCIANTES a navegar no sistema e gerenciar suas campanhas.
 
-## SUA PERSONALIDADE
+## SUA IDENTIDADE
+- Nome: Sofia
+- Função: Assistente virtual para ANUNCIANTES
 - Tom: Amigável, prestativa e paciente
 - Linguagem: Português brasileiro simples e claro
-- Postura: Sempre positiva e encorajadora
+- NUNCA se apresente como "assistente executiva" - você é uma assistente virtual para anunciantes
+
+## CONTEXTO DO USUÁRIO
+Você tem acesso a dados em tempo real do usuário logado através da ferramenta "consultar_sistema_cliente".
+Use essas informações para dar respostas personalizadas.
 
 ## O QUE VOCÊ PODE FAZER
 
-### 1. PRODUTOS
-- **Painel Horizontal**: Formato 1440×1080 (4:3), 10 segundos, compartilhado com até 15 anunciantes. Ideal para mensagens rápidas.
-- **Painel Vertical Premium**: Formato 1080×1920 (9:16), 15 segundos, EXCLUSIVO. Maior impacto visual.
+### 1. CONSULTAR DADOS DO ANUNCIANTE
+Use "consultar_sistema_cliente" com tipo:
+- "pedidos": Ver todos os pedidos do anunciante
+- "videos": Status dos vídeos enviados
+- "faturas": Pagamentos e parcelas pendentes
+- "perfil": Dados da conta
 
-### 2. CONSULTAS DO USUÁRIO
-Use a ferramenta "consultar_sistema_cliente" para:
-- Verificar pedidos ativos do usuário
-- Status de vídeos enviados
-- Informações de contratos
-- Dados de pagamentos
+### 2. PRODUTOS DA EXA MÍDIA
+- **Painel Horizontal**: Formato 1440×1080 (4:3), 10 segundos, compartilhado com até 15 anunciantes
+- **Painel Vertical Premium**: Formato 1080×1920 (9:16), 15 segundos, EXCLUSIVO
 
 ### 3. NAVEGAÇÃO
-Quando o usuário quiser ir a algum lugar, use "navegar_pagina" com:
-- meus_pedidos: Ver pedidos ativos
-- enviar_video: Upload de vídeo
-- ver_predios: Ver prédios disponíveis
-- perfil: Dados da conta
-- carrinho: Carrinho de compras
-- suporte: Contato com suporte
+Use "navegar_pagina" para levar o usuário:
+- "meus_pedidos": Ver pedidos ativos
+- "enviar_video": Upload de vídeo
+- "ver_predios": Ver prédios disponíveis
+- "perfil": Dados da conta
+- "carrinho": Carrinho de compras
+- "suporte": Contato com suporte
 
-### 4. QR CODES
-Use "gerar_qrcode" para gerar códigos de pagamento PIX.
+### 4. QR CODES PIX
+Use "gerar_qrcode" para gerar códigos de pagamento.
 
 ### 5. FORMAS DE PAGAMENTO
 - PIX: Desconto de 5%, pagamento instantâneo
 - Cartão de Crédito: Parcelamento em até 12x
 - Boleto: Vencimento em 3 dias úteis
+
+## RASTREAMENTO DE CONTEXTO
+Você sabe em qual página o usuário está. Use isso para dar respostas contextualizadas:
+- Se está em "Meus Pedidos": foque em informações de pedidos
+- Se está em "Prédios": ajude a escolher locais
+- Se está em "Carrinho": ajude a finalizar a compra
 
 ## REGRAS IMPORTANTES
 1. Só acesse dados do PRÓPRIO usuário logado
@@ -120,35 +131,63 @@ Use "gerar_qrcode" para gerar códigos de pagamento PIX.
 3. Confirme antes de ações importantes
 4. Se não souber, ofereça contato com suporte
 5. Seja concisa mas completa
+6. Use os dados reais retornados pelas ferramentas
 
-## EXEMPLOS DE RESPOSTAS
+## EXEMPLOS DE INTERAÇÃO
 
-"Tenho pedido ativo?" → Consulte os pedidos e explique o status de cada um
+Usuário: "Tenho pedido ativo?"
+Sofia: [Consulta pedidos] "Sim! Você tem 2 pedidos ativos. O primeiro está rodando no Edifício Aurora até 15 de março..."
 
-"Quero ver prédios" → "Posso te levar até a página de prédios disponíveis. Quer que eu abra para você?"
+Usuário: "Qual o status do meu vídeo?"
+Sofia: [Consulta vídeos] "Seu vídeo 'Campanha Verão' está aprovado e exibindo. O vídeo 'Promoção Natal' está aguardando aprovação..."
 
-"Como pago com PIX?" → Explique o processo e ofereça gerar um QR code
+Usuário: "Tenho pagamento pendente?"
+Sofia: [Consulta faturas] "Sim, você tem uma parcela de R$ 500,00 vencendo dia 20. Quer que eu gere um PIX para pagamento?"`;
 
-"O que é vertical premium?" → Explique as vantagens do formato exclusivo`;
 
-      // Create agent with minimal config - tools can be added via ElevenLabs dashboard
-      const agentPayload = {
-        name: 'Sofia Cliente - EXA Mídia',
-        conversation_config: {
-          agent: {
-            prompt: {
-              prompt: clientPrompt,
+      // Client tools configuration (client-side tools only - webhook tools need to be configured via ElevenLabs dashboard)
+      const tools = [
+        {
+          type: 'client',
+          name: 'navegar_pagina',
+          description: 'Navega para uma página do sistema',
+          parameters: {
+            type: 'object',
+            properties: {
+              destino: {
+                type: 'string',
+                enum: ['meus_pedidos', 'enviar_video', 'ver_predios', 'perfil', 'carrinho', 'suporte'],
+                description: 'Página de destino',
+              },
+              pedido_id: {
+                type: 'string',
+                description: 'ID do pedido (opcional, para navegação específica)',
+              },
             },
-            first_message: 'Olá! Sou a Sofia, sua assistente virtual. Como posso ajudar você hoje?',
-            language: 'pt',
-          },
-          tts: {
-            voice_id: 'XrExE9yKIg1WjnnlVkGX',
+            required: ['destino'],
           },
         },
-      };
+        {
+          type: 'client',
+          name: 'gerar_qrcode',
+          description: 'Gera QR Code PIX para pagamento',
+          parameters: {
+            type: 'object',
+            properties: {
+              pedido_id: {
+                type: 'string',
+                description: 'ID do pedido para gerar o PIX',
+              },
+              valor: {
+                type: 'number',
+                description: 'Valor do pagamento',
+              },
+            },
+            required: ['pedido_id'],
+          },
+        },
+      ];
 
-      // Create or update agent
       const agentPayload = {
         name: 'Sofia Cliente - EXA Mídia',
         conversation_config: {
@@ -161,7 +200,8 @@ Use "gerar_qrcode" para gerar códigos de pagamento PIX.
             language: 'pt',
           },
           tts: {
-            voice_id: 'XrExE9yKIg1WjnnlVkGX', // Matilda - friendly voice
+            model_id: 'eleven_turbo_v2_5',
+            voice_id: 'XrExE9yKIg1WjnnlVkGX',
           },
         },
       };
@@ -180,7 +220,7 @@ Use "gerar_qrcode" para gerar códigos de pagamento PIX.
           body: JSON.stringify(agentPayload),
         });
       } else {
-        // Create new agent using correct endpoint
+        // Create new agent
         console.log(`[${requestId}] Creating new Sofia Client agent...`);
         agentResponse = await fetch('https://api.elevenlabs.io/v1/convai/agents/create', {
           method: 'POST',
@@ -195,7 +235,7 @@ Use "gerar_qrcode" para gerar códigos de pagamento PIX.
       if (!agentResponse.ok) {
         const errorText = await agentResponse.text();
         console.error(`[${requestId}] ElevenLabs API error:`, errorText);
-        throw new Error(`ElevenLabs API error: ${agentResponse.status}`);
+        throw new Error(`ElevenLabs API error: ${agentResponse.status} - ${errorText}`);
       }
 
       const agentData = await agentResponse.json();
@@ -206,8 +246,10 @@ Use "gerar_qrcode" para gerar códigos de pagamento PIX.
       return new Response(JSON.stringify({
         success: true,
         agent_id: newAgentId,
-        message: clientAgentId ? 'Agent updated' : 'Agent created',
-        note: 'Add ELEVENLABS_CLIENT_AGENT_ID to secrets with value: ' + newAgentId,
+        message: clientAgentId ? 'Agent updated successfully' : 'Agent created successfully',
+        action_required: !clientAgentId ? 
+          `Add ELEVENLABS_CLIENT_AGENT_ID secret with value: ${newAgentId}` : 
+          'No action required',
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -215,7 +257,7 @@ Use "gerar_qrcode" para gerar códigos de pagamento PIX.
 
     return new Response(JSON.stringify({
       success: false,
-      error: 'Invalid action',
+      error: 'Invalid action. Use "status" or "configure"',
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
