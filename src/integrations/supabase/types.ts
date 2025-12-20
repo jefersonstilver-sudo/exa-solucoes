@@ -1839,6 +1839,8 @@ export type Database = {
           social_linkedin: string | null
           social_twitter: string | null
           social_youtube: string | null
+          sofia_2fa_gerente_master: boolean | null
+          sofia_ativa: boolean | null
           suporte_email: string | null
           suporte_horario: string | null
           termos_uso_url: string | null
@@ -1896,6 +1898,8 @@ export type Database = {
           social_linkedin?: string | null
           social_twitter?: string | null
           social_youtube?: string | null
+          sofia_2fa_gerente_master?: boolean | null
+          sofia_ativa?: boolean | null
           suporte_email?: string | null
           suporte_horario?: string | null
           termos_uso_url?: string | null
@@ -1953,6 +1957,8 @@ export type Database = {
           social_linkedin?: string | null
           social_twitter?: string | null
           social_youtube?: string | null
+          sofia_2fa_gerente_master?: boolean | null
+          sofia_ativa?: boolean | null
           suporte_email?: string | null
           suporte_horario?: string | null
           termos_uso_url?: string | null

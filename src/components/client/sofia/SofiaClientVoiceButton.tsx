@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Headphones, X, Phone, PhoneOff, Mic, MicOff, Volume2, Loader2 } from 'lucide-react';
 import { useSofiaClient } from '@/contexts/SofiaClientContext';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 export const SofiaClientVoiceButton: React.FC = () => {
@@ -18,6 +19,33 @@ export const SofiaClientVoiceButton: React.FC = () => {
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [showHint, setShowHint] = useState(true);
+  const [sofiaAtiva, setSofiaAtiva] = useState<boolean | null>(null);
+
+  // Buscar configuração sofia_ativa
+  useEffect(() => {
+    const fetchConfig = async () => {
+      const { data } = await supabase
+        .from('configuracoes_adicionais')
+        .select('sofia_ativa')
+        .limit(1)
+        .single();
+      
+      setSofiaAtiva(data?.sofia_ativa ?? true);
+    };
+    
+    fetchConfig();
+    
+    // Ouvir mudanças em tempo real
+    const channel = supabase
+      .channel('sofia-client-config-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'configuracoes_adicionais' }, 
+        () => fetchConfig()
+      )
+      .subscribe();
+    
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   // Hide hint after 5 seconds
   useEffect(() => {
@@ -33,11 +61,11 @@ export const SofiaClientVoiceButton: React.FC = () => {
   }, [state]);
 
   // Log para debug - verificar se o componente está sendo renderizado
-  console.log('[SofiaClientVoiceButton] isEnabled:', isEnabled);
+  console.log('[SofiaClientVoiceButton] isEnabled:', isEnabled, 'sofiaAtiva:', sofiaAtiva);
   
-  // Don't render if not enabled for this user
-  if (!isEnabled) {
-    console.log('[SofiaClientVoiceButton] Botão NÃO será exibido - usuário não habilitado');
+  // Don't render if sofia_ativa is false OR user is not enabled
+  if (sofiaAtiva === false || !isEnabled) {
+    console.log('[SofiaClientVoiceButton] Botão NÃO será exibido - sofiaAtiva:', sofiaAtiva, 'isEnabled:', isEnabled);
     return null;
   }
 

@@ -83,6 +83,10 @@ export interface AdditionalConfiguration {
   mostrar_precos: boolean;
   permitir_registro_publico: boolean;
   
+  // Sofia
+  sofia_2fa_gerente_master: boolean;
+  sofia_ativa: boolean;
+  
   created_at: string;
   updated_at: string;
 }
