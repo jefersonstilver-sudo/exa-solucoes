@@ -47,11 +47,15 @@ export const CampaignPerformanceChart = ({ data }: CampaignPerformanceChartProps
   });
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
+    if (active && payload && payload.length && label) {
+      // Validar se label é uma data válida
+      const dateValue = new Date(label);
+      if (isNaN(dateValue.getTime())) return null;
+      
       return (
         <div className="bg-white rounded-xl shadow-lg p-4 border border-border/40">
           <p className="font-semibold text-sm mb-2">
-            {format(new Date(label), 'dd \'de\' MMMM', { locale: ptBR })}
+            {format(dateValue, 'dd \'de\' MMMM', { locale: ptBR })}
           </p>
           <div className="space-y-1">
             {payload.map((entry: any, index: number) => {

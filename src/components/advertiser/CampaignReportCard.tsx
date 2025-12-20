@@ -183,6 +183,9 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
                 <VideoListItem
                   key={video.id}
                   {...video}
+                  diasAtivos={campaign.diasAtivos}
+                  totalTelas={campaign.totalTelas}
+                  isActive={video.approvalStatus === 'approved'}
                 />
               ))}
             </div>

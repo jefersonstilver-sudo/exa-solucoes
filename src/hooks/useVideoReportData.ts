@@ -191,14 +191,28 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           };
         });
 
-        // Gerar timeline de vídeos com HORAS (até hoje ou data_fim)
+        // Gerar timeline de vídeos com HORAS ACUMULADAS (até hoje ou data_fim)
         const videoTimeline: VideoTimelinePoint[] = [];
         const videoColors = ['#9C1E1E', '#E74C3C', '#C0392B', '#A93226', '#922B21', '#7B241C'];
         let colorIndex = 0;
         const videoColorMap = new Map<string, string>();
         
+        // Mapa para acumular horas progressivamente por vídeo
+        const acumuladoPorVideo = new Map<string, number>();
+        
+        // Calcular horas por dia para cada vídeo (baseado na duração)
+        const horasPorDiaPorVideo = new Map<string, number>();
+        videoInfos.forEach(video => {
+          // Horas por dia = (telas × 245 exibições × duração em segundos) / 3600
+          const horasDia = (totalTelas * 245 * video.duracao) / 3600;
+          horasPorDiaPorVideo.set(video.id, horasDia);
+          acumuladoPorVideo.set(video.id, 0);
+        });
+        
+        let diaIndex = 0;
         for (let date = new Date(dataInicio); date <= dataMaxima; date.setDate(date.getDate() + 1)) {
           const dateStr = date.toISOString().split('T')[0];
+          diaIndex++;
           
           const videosAtivos = videoInfos.map(video => {
             if (!videoColorMap.has(video.id)) {
@@ -206,10 +220,16 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
               colorIndex++;
             }
             
+            // Acumular horas progressivamente
+            const horasDia = horasPorDiaPorVideo.get(video.id) || 0;
+            const acumuladoAnterior = acumuladoPorVideo.get(video.id) || 0;
+            const novoAcumulado = acumuladoAnterior + horasDia;
+            acumuladoPorVideo.set(video.id, novoAcumulado);
+            
             return {
               id: video.id,
               nome: video.nome,
-              horasExibidas: video.horasExibidas,
+              horasExibidas: novoAcumulado, // PROGRESSIVO/ACUMULADO
               color: videoColorMap.get(video.id)!,
             };
           });
