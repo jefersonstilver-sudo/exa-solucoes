@@ -17,7 +17,7 @@ const AdvertiserLayout = () => {
   const getPageTitle = () => {
     if (location.pathname.includes('/pedido/')) return 'Detalhes do Pedido';
     if (location.pathname.includes('/pedidos')) return 'Meus Pedidos';
-    if (location.pathname.includes('/videos')) return 'Meus Vídeos';
+    if (location.pathname.includes('/videos')) return 'Relatório';
     if (location.pathname.includes('/perfil')) return 'Perfil';
     return 'Portal do Anunciante';
   };

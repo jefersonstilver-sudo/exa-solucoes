@@ -52,7 +52,7 @@ const AdvertiserDesktopSidebar = ({
     },
     {
       id: 'videos',
-      label: 'Meus Vídeos',
+      label: 'Relatório',
       icon: Video,
       path: '/anunciante/videos'
     },

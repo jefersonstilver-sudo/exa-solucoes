@@ -18,7 +18,7 @@ const CompleteResponsiveLayout = () => {
   const getPageTitle = () => {
     if (location.pathname.includes('/pedido/')) return 'Detalhes do Pedido';
     if (location.pathname.includes('/pedidos')) return 'Meus Pedidos';
-    if (location.pathname.includes('/videos')) return 'Meus Vídeos';
+    if (location.pathname.includes('/videos')) return 'Relatório';
     if (location.pathname.includes('/perfil')) return 'Perfil';
     if (location.pathname.includes('/configuracoes')) return 'Configurações';
     return 'Portal do Anunciante';
