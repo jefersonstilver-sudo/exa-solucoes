@@ -131,91 +131,22 @@ Use "gerar_qrcode" para gerar códigos de pagamento PIX.
 
 "O que é vertical premium?" → Explique as vantagens do formato exclusivo`;
 
-      // Tool definitions for client agent
-      const tools = [
-        {
-          type: 'webhook',
-          name: 'consultar_sistema_cliente',
-          description: 'Consulta informações do sistema para o cliente logado: pedidos, vídeos, contratos, pagamentos.',
-          webhook: {
-            url: `${SUPABASE_URL}/functions/v1/sofia-client`,
-            method: 'POST',
-            request_headers: {
-              'Content-Type': 'application/json',
+      // Create agent with minimal config - tools can be added via ElevenLabs dashboard
+      const agentPayload = {
+        name: 'Sofia Cliente - EXA Mídia',
+        conversation_config: {
+          agent: {
+            prompt: {
+              prompt: clientPrompt,
             },
+            first_message: 'Olá! Sou a Sofia, sua assistente virtual. Como posso ajudar você hoje?',
+            language: 'pt',
           },
-          parameters: {
-            type: 'object',
-            properties: {
-              intent: {
-                type: 'string',
-                description: 'Tipo de consulta: meus_pedidos, status_video, meus_contratos, formas_pagamento, explicar_produto, status_pedido',
-              },
-              params: {
-                type: 'object',
-                description: 'Parâmetros adicionais como pedido_id, video_id, produto_tipo (horizontal/vertical)',
-              },
-              user_id: {
-                type: 'string',
-                description: 'ID do usuário logado (será preenchido automaticamente)',
-              },
-            },
-            required: ['intent'],
+          tts: {
+            voice_id: 'XrExE9yKIg1WjnnlVkGX',
           },
         },
-        {
-          type: 'webhook',
-          name: 'navegar_pagina',
-          description: 'Sugere navegação para uma página do sistema. Retorna dados para abrir popup de navegação.',
-          webhook: {
-            url: `${SUPABASE_URL}/functions/v1/sofia-client`,
-            method: 'POST',
-            request_headers: {
-              'Content-Type': 'application/json',
-            },
-          },
-          parameters: {
-            type: 'object',
-            properties: {
-              intent: {
-                type: 'string',
-                enum: ['navegar'],
-              },
-              pagina: {
-                type: 'string',
-                description: 'Destino: meus_pedidos, enviar_video, ver_predios, perfil, carrinho, suporte',
-              },
-            },
-            required: ['intent', 'pagina'],
-          },
-        },
-        {
-          type: 'webhook',
-          name: 'gerar_qrcode',
-          description: 'Gera QR code para pagamento PIX de um pedido ou valor específico.',
-          webhook: {
-            url: `${SUPABASE_URL}/functions/v1/sofia-client`,
-            method: 'POST',
-            request_headers: {
-              'Content-Type': 'application/json',
-            },
-          },
-          parameters: {
-            type: 'object',
-            properties: {
-              intent: {
-                type: 'string',
-                enum: ['gerar_qrcode'],
-              },
-              pedido_id: {
-                type: 'string',
-                description: 'ID do pedido para gerar PIX',
-              },
-            },
-            required: ['intent'],
-          },
-        },
-      ];
+      };
 
       // Create or update agent
       const agentPayload = {
@@ -249,9 +180,9 @@ Use "gerar_qrcode" para gerar códigos de pagamento PIX.
           body: JSON.stringify(agentPayload),
         });
       } else {
-        // Create new agent
+        // Create new agent using correct endpoint
         console.log(`[${requestId}] Creating new Sofia Client agent...`);
-        agentResponse = await fetch('https://api.elevenlabs.io/v1/convai/agents', {
+        agentResponse = await fetch('https://api.elevenlabs.io/v1/convai/agents/create', {
           method: 'POST',
           headers: {
             'xi-api-key': ELEVENLABS_API_KEY,

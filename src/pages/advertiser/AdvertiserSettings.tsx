@@ -210,9 +210,8 @@ const AdvertiserSettings = () => {
   }
   return <div className="space-y-6 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Configurações do Perfil</h1>
-        
+      <div className="text-center mb-6 md:mb-8">
+        <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-foreground">Configurações</h1>
       </div>
 
       {/* Dados Pessoais */}

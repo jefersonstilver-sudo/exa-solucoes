@@ -52,12 +52,6 @@ interface SofiaClientProviderProps {
   children: React.ReactNode;
 }
 
-// Users that have Sofia Client enabled (can be expanded or replaced with feature flag)
-const SOFIA_CLIENT_ENABLED_EMAILS = [
-  'jefi92@gmail.com',
-  // Add more emails here for gradual rollout
-];
-
 export const SofiaClientProvider: React.FC<SofiaClientProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const [state, setState] = useState<SofiaClientState>('idle');
@@ -65,15 +59,7 @@ export const SofiaClientProvider: React.FC<SofiaClientProviderProps> = ({ childr
   const [userTranscript, setUserTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [currentAction, setCurrentAction] = useState<SofiaAction>(null);
-  const [isEnabled, setIsEnabled] = useState(false);
-
-  // Check if user has Sofia Client enabled
-  useEffect(() => {
-    if (user?.email && SOFIA_CLIENT_ENABLED_EMAILS.includes(user.email)) {
-      setIsEnabled(true);
-      console.log('[Sofia Client] Enabled for user:', user.email);
-    }
-  }, [user?.email]);
+  const [isEnabled, setIsEnabled] = useState(true); // Always enabled for all users
 
   const conversation = useConversation({
     onConnect: () => {

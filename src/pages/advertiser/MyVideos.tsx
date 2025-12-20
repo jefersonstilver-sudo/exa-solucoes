@@ -28,13 +28,13 @@ const MyVideos = () => {
   return (
     <div className="space-y-8">
       {/* Header com Filtro */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="flex flex-col space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 md:gap-4">
+        <div className="flex flex-col space-y-1">
+          <h1 className="text-lg md:text-xl lg:text-2xl font-semibold tracking-tight text-foreground">
             Relatório de Campanhas
           </h1>
-          <p className="text-gray-600">
-            Acompanhe o desempenho das suas campanhas com métricas e gráficos em tempo real
+          <p className="text-xs md:text-sm text-muted-foreground">
+            Acompanhe o desempenho das suas campanhas
           </p>
         </div>
         <PeriodFilter onPeriodChange={setDateRange} defaultPeriod="30d" />
