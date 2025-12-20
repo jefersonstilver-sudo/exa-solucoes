@@ -7,8 +7,9 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  const requestId = crypto.randomUUID().slice(0, 8);
-  console.log(`\n[SOFIA-CLIENT-TOKEN] ${requestId} - Request received`);
+const requestId = crypto.randomUUID().slice(0, 8);
+  const deployVersion = "v2.0.1"; // Force redeploy to pick up updated ELEVENLABS_CLIENT_AGENT_ID
+  console.log(`\n[SOFIA-CLIENT-TOKEN] ${requestId} - Request received (${deployVersion})`);
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
