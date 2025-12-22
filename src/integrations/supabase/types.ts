@@ -10150,6 +10150,12 @@ export type Database = {
         | "super_admin"
         | "painel"
         | "admin_financeiro"
+        | "eletricista_"
+        | "comercial"
+        | "sindico"
+        | "porteiro"
+        | "tecnico"
+        | "operacional"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -10284,6 +10290,12 @@ export const Constants = {
         "super_admin",
         "painel",
         "admin_financeiro",
+        "eletricista_",
+        "comercial",
+        "sindico",
+        "porteiro",
+        "tecnico",
+        "operacional",
       ],
     },
   },

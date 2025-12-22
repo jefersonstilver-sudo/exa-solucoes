@@ -82,9 +82,14 @@ serve(async (req) => {
     const instanceId = payload.instanceId;
 
     // ========== CAPTURAR MENSAGENS ENVIADAS PELO PRÓPRIO AGENTE (fromMe=true) ==========
-    const fromMe = payload.fromMe || (payload.isGroupMsg === false && !payload.author);
+    // IMPORTANTE: Só considerar fromMe quando explicitamente true no payload
+    // NÃO usar heurística que pode classificar buttonReply incorretamente
+    const fromMe = payload.fromMe === true;
     
-    if (fromMe) {
+    // Se tem buttonReply, NUNCA é fromMe (é resposta do usuário)
+    const hasButtonReply = !!(payload.buttonReply || payload.buttonsResponseMessage);
+    
+    if (fromMe && !hasButtonReply) {
       console.log('[ZAPI-WEBHOOK] 📤 Processing outbound message (fromMe=true)');
       
       // ✅ Extrair messageId no início do bloco
