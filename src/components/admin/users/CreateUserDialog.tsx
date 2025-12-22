@@ -547,7 +547,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       <Button 
         onClick={handleCreate} 
         disabled={creating || checkingEmail || emailCheckResult?.exists}
-        className={`bg-[hsl(var(--exa-red))] hover:bg-[hsl(var(--exa-red))]/90 text-white ${isMobile ? 'w-full h-11' : ''}`}
+        className={`bg-[#9C1E1E] hover:bg-[#7C1818] text-white ${isMobile ? 'w-full h-11' : ''}`}
       >
         {creating ? (
           <>
