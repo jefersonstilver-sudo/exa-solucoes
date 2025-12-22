@@ -137,11 +137,12 @@ export const useObservabilityData = () => {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', todayISO);
 
-      // Circuit breakers abertos
-      const { count: openCircuitBreakers } = await supabase
-        .from('delivery_circuit_breaker')
+      // Circuit breakers abertos - usando type assertion para evitar erro de inferência profunda
+      const circuitBreakerQuery = supabase
+        .from('delivery_circuit_breaker' as any)
         .select('*', { count: 'exact', head: true })
         .eq('is_open', true);
+      const { count: openCircuitBreakers } = await circuitBreakerQuery;
 
       return {
         totalMessagesToday: totalMessagesToday || 0,
