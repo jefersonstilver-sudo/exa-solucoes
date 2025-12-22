@@ -479,7 +479,7 @@ serve(async (req) => {
       
       // ========== PROCESSAR BOTÕES DE ALERTA DE PAINEL OFFLINE ==========
       // Se não é escalação, pode ser botão de confirmação de alerta de painel
-      if (!buttonId?.startsWith('escalacao_')) {
+      if (!buttonId?.startsWith('escalacao_') && !buttonId?.startsWith('proposal_mute_')) {
         console.log('[ZAPI-WEBHOOK] 🔔 Panel alert button detected:', {
           buttonId,
           phone,
@@ -488,17 +488,53 @@ serve(async (req) => {
         
         const senderNameBtn = payload.senderName || payload.chatName || payload.pushName || 'Desconhecido';
         
+        // Parse buttonId para extrair deviceId (formato: "buttonId:deviceId")
+        let actualButtonId = buttonId;
+        let deviceIdFromButton: string | null = null;
+        
+        if (buttonId?.includes(':')) {
+          const parts = buttonId.split(':');
+          actualButtonId = parts[0];
+          deviceIdFromButton = parts[1] || null;
+          console.log('[ZAPI-WEBHOOK] 📋 Parsed button:', { actualButtonId, deviceIdFromButton });
+        }
+        
+        // ID do botão "Interromper Notificações"
+        const PAUSE_BUTTON_ID = 'd0d4abec-bf0a-44e1-9cde-7a38020b541a';
+        const isPauseButton = actualButtonId === PAUSE_BUTTON_ID || 
+                              buttonReply.message?.toLowerCase()?.includes('interromper');
+        
         // Buscar alertas recentes para vincular a confirmação
         const { data: recentAlerts } = await supabase
           .from('panel_offline_alerts_history')
-          .select('*, devices(id, name)')
+          .select('*, devices(id, name, metadata)')
           .order('sent_at', { ascending: false })
           .limit(20);
         
         let matchedAlert = null;
         let deviceInfo = null;
         
-        if (recentAlerts) {
+        // Tentar encontrar device pelo deviceId do botão primeiro
+        if (deviceIdFromButton) {
+          const { data: deviceFromId } = await supabase
+            .from('devices')
+            .select('id, name, metadata')
+            .eq('id', deviceIdFromButton)
+            .single();
+          
+          if (deviceFromId) {
+            deviceInfo = deviceFromId;
+            console.log('[ZAPI-WEBHOOK] ✅ Device found from button ID:', deviceInfo.name);
+            
+            // Encontrar alert correspondente
+            if (recentAlerts) {
+              matchedAlert = recentAlerts.find(a => a.painel_id === deviceIdFromButton || a.device_id === deviceIdFromButton);
+            }
+          }
+        }
+        
+        // Fallback: buscar por telefone do destinatário
+        if (!deviceInfo && recentAlerts) {
           const phoneClean = phone?.replace(/\D/g, '');
           for (const alert of recentAlerts) {
             const recipients = alert.recipients || [];
@@ -516,17 +552,68 @@ serve(async (req) => {
         }
         
         console.log('[ZAPI-WEBHOOK] 🔍 Matched alert:', matchedAlert ? matchedAlert.id : 'none');
+        console.log('[ZAPI-WEBHOOK] 🔍 Device info:', deviceInfo ? { id: deviceInfo.id, name: deviceInfo.name } : 'none');
+        
+        // Determinar device_id final
+        const finalDeviceId = deviceIdFromButton || deviceInfo?.id || matchedAlert?.painel_id || matchedAlert?.device_id || null;
+        const finalDeviceName = deviceInfo?.name || matchedAlert?.device_name || 'Painel desconhecido';
+        
+        // ========== SE FOR BOTÃO "INTERROMPER NOTIFICAÇÕES" - PAUSAR ALERTAS ==========
+        let pauseApplied = false;
+        if (isPauseButton && finalDeviceId) {
+          console.log('[ZAPI-WEBHOOK] 🛑 PAUSE button clicked! Pausing notifications for device:', finalDeviceId);
+          
+          // Buscar metadata atual do device
+          const { data: currentDevice } = await supabase
+            .from('devices')
+            .select('metadata')
+            .eq('id', finalDeviceId)
+            .single();
+          
+          const currentMetadata = (currentDevice?.metadata || {}) as Record<string, any>;
+          
+          // Atualizar metadata com pause indefinido (até voltar online)
+          const updatedMetadata = {
+            ...currentMetadata,
+            notifications_paused_until: 'indefinite',
+            paused_by: phone,
+            paused_at: new Date().toISOString(),
+            paused_by_name: senderNameBtn
+          };
+          
+          const { error: pauseError } = await supabase
+            .from('devices')
+            .update({ metadata: updatedMetadata })
+            .eq('id', finalDeviceId);
+          
+          if (pauseError) {
+            console.error('[ZAPI-WEBHOOK] ❌ Error pausing device notifications:', pauseError);
+          } else {
+            pauseApplied = true;
+            console.log('[ZAPI-WEBHOOK] ✅ Device notifications PAUSED until online:', finalDeviceId);
+          }
+          
+          // Log na história de alertas
+          await supabase.from('panel_offline_alerts_history').insert({
+            painel_id: finalDeviceId,
+            device_name: finalDeviceName,
+            tipo: 'paused',
+            mensagem: `Notificações pausadas por ${senderNameBtn}`,
+            tempo_offline_minutos: 0,
+            destinatarios_notificados: [phone]
+          });
+        }
         
         // Inserir confirmação
         const { data: confirmation, error: confirmError } = await supabase
           .from('panel_offline_alert_confirmations')
           .insert({
             alert_history_id: matchedAlert?.id || null,
-            device_id: deviceInfo?.id || matchedAlert?.device_id || null,
-            device_name: deviceInfo?.name || matchedAlert?.device_name || 'Painel desconhecido',
+            device_id: finalDeviceId,
+            device_name: finalDeviceName,
             recipient_phone: phone,
             recipient_name: senderNameBtn,
-            button_id: buttonId,
+            button_id: actualButtonId,
             button_label: buttonReply.message || 'Confirmação',
             reference_message_id: buttonReply.referenceMessageId || payload.referenceMessageId,
             raw_webhook: payload
@@ -551,11 +638,22 @@ serve(async (req) => {
           const zapiConfig = alertAgent.zapi_config as { instance_id: string; token: string };
           const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
           
-          const ackMsg = `✅ *Confirmação registrada!*\n\n` +
-            `👤 ${senderNameBtn}\n` +
-            `📍 ${deviceInfo?.name || matchedAlert?.device_name || 'Painel'}\n` +
-            `🔘 ${buttonReply.message || 'Confirmação'}\n` +
-            `⏰ ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`;
+          // Mensagem diferente se foi pause
+          let ackMsg: string;
+          if (isPauseButton && pauseApplied) {
+            ackMsg = `🛑 *Notificações INTERROMPIDAS!*\n\n` +
+              `📍 ${finalDeviceName}\n` +
+              `👤 Pausado por: ${senderNameBtn}\n` +
+              `⏰ ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}\n\n` +
+              `✅ Você não receberá mais alertas deste painel enquanto ele estiver offline.\n` +
+              `🔔 Os alertas voltarão automaticamente quando o painel ficar online novamente.`;
+          } else {
+            ackMsg = `✅ *Confirmação registrada!*\n\n` +
+              `👤 ${senderNameBtn}\n` +
+              `📍 ${finalDeviceName}\n` +
+              `🔘 ${buttonReply.message || 'Confirmação'}\n` +
+              `⏰ ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`;
+          }
           
           try {
             await fetch(
@@ -578,7 +676,9 @@ serve(async (req) => {
         return new Response(JSON.stringify({ 
           success: true,
           processed: 'panel_alert_button_response',
-          confirmation_id: confirmation?.id
+          confirmation_id: confirmation?.id,
+          pause_applied: pauseApplied,
+          device_id: finalDeviceId
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
