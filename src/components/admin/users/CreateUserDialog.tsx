@@ -65,7 +65,7 @@ const createUserSchema = z.object({
       message: 'CPF inválido (digite apenas números ou formato XXX.XXX.XXX-XX)',
     })
     .optional(),
-  role: z.enum(['admin', 'admin_marketing', 'admin_financeiro', 'super_admin']),
+  role: z.string().min(1, { message: 'Selecione um tipo de conta' }),
 });
 
 interface CreateUserDialogProps {
@@ -183,7 +183,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         nome: nome.trim(),
         sobrenome: sobrenome.trim(),
         cpf: cpf.replace(/\D/g, ''), // Remove formatação para validação
-        role: role as 'admin' | 'admin_marketing' | 'admin_financeiro' | 'super_admin',
+        role: role,
       };
 
       // Se documento é obrigatório, adicionar validação extra
@@ -288,12 +288,9 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         throw new Error('Falha ao criar usuário - nenhum dado retornado');
       }
 
-      const roleLabels = {
-        admin: 'Administrador Geral',
-        admin_marketing: 'Administrador Marketing',
-        admin_financeiro: 'Administrador Financeiro',
-        super_admin: 'Super Administrador',
-      };
+      // Buscar label dinâmico do role carregado do banco
+      const selectedRoleType = roleTypes.find(r => r.key === role);
+      const roleLabel = selectedRoleType?.display_name || role;
 
       // Usar senha retornada pela Edge Function
       const senhaRetornada = functionData.password || 'exa2025';
@@ -315,9 +312,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         duration: 6000,
       });
 
-      const credentials = `Nome: ${nomeCompleto}\nEmail: ${email}\nSenha: ${senhaRetornada}\nTipo: ${
-        roleLabels[role as keyof typeof roleLabels]
-      }`;
+      const credentials = `Nome: ${nomeCompleto}\nEmail: ${email}\nSenha: ${senhaRetornada}\nTipo: ${roleLabel}`;
       
       // Tentar copiar para clipboard (pode falhar em ambientes de preview)
       try {
