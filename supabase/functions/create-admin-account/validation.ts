@@ -1,3 +1,4 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 interface ValidationResult {
   data?: { 
@@ -39,18 +40,49 @@ export const validateRequest = async (req: Request): Promise<ValidationResult> =
       };
     }
 
-    // Validar tipo de admin
-    const validRoles = ['admin', 'admin_marketing', 'admin_financeiro', 'super_admin'];
-    if (!validRoles.includes(adminType)) {
-      return {
-        error: { 
-          error: 'Tipo de administrador inválido',
-          code: 'INVALID_ROLE',
-          details: 'Tipos válidos: admin, admin_marketing, admin_financeiro, super_admin'
-        },
-        status: 400
-      };
+    // Buscar roles válidos do banco de dados
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: roleTypes, error: roleError } = await supabase
+      .from('role_types')
+      .select('key')
+      .eq('is_active', true);
+
+    if (roleError) {
+      console.error('❌ [VALIDATION] Erro ao buscar role_types:', roleError);
+      // Fallback para roles padrão se houver erro
+      const fallbackRoles = ['admin', 'admin_marketing', 'admin_financeiro', 'super_admin', 'client', 'painel'];
+      if (!fallbackRoles.includes(adminType)) {
+        return {
+          error: { 
+            error: 'Tipo de conta inválido',
+            code: 'INVALID_ROLE',
+            details: `Tipos válidos: ${fallbackRoles.join(', ')}`
+          },
+          status: 400
+        };
+      }
+    } else {
+      // Validar contra roles do banco
+      const validRoles = roleTypes?.map(r => r.key) || [];
+      console.log('📋 [VALIDATION] Roles válidos do banco:', validRoles);
+      
+      if (!validRoles.includes(adminType)) {
+        return {
+          error: { 
+            error: 'Tipo de conta inválido',
+            code: 'INVALID_ROLE',
+            details: `Tipos válidos: ${validRoles.join(', ')}`
+          },
+          status: 400
+        };
+      }
     }
+
+    console.log('✅ [VALIDATION] Role validado com sucesso:', adminType);
 
     return { 
       data: { 
