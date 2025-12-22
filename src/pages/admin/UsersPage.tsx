@@ -184,7 +184,7 @@ const UsersPage = () => {
             onClick={() => navigate('/super_admin/tipos-conta')}
             size="sm"
             variant="outline"
-            className="flex-1 h-9 text-xs border-[hsl(var(--exa-red))]/20 text-[hsl(var(--exa-red))] hover:bg-[hsl(var(--exa-red))]/5"
+            className="flex-1 h-9 text-xs border-[#9C1E1E]/20 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
           >
             <Settings className="w-3.5 h-3.5 mr-1.5" />
             Tipos de Conta
@@ -194,7 +194,7 @@ const UsersPage = () => {
             disabled={syncingOrphans}
             size="sm"
             variant="outline"
-            className="flex-1 h-9 text-xs border-[hsl(var(--exa-red))]/20 text-[hsl(var(--exa-red))] hover:bg-[hsl(var(--exa-red))]/5"
+            className="flex-1 h-9 text-xs border-[#9C1E1E]/20 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
           >
             <UserCog className={`w-3.5 h-3.5 mr-1.5 ${syncingOrphans ? 'animate-spin' : ''}`} />
             Sincronizar
@@ -370,7 +370,7 @@ const UsersPage = () => {
             onClick={() => navigate('/super_admin/tipos-conta')}
             variant="outline"
             size="sm"
-            className="h-9 border-[hsl(var(--exa-red))]/20 text-[hsl(var(--exa-red))] hover:bg-[hsl(var(--exa-red))]/5"
+            className="h-9 border-[#9C1E1E]/20 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
           >
             <Settings className="h-4 w-4 mr-2" />
             Tipos de Conta
@@ -380,7 +380,7 @@ const UsersPage = () => {
             variant="outline"
             size="sm"
             disabled={syncingOrphans}
-            className="h-9 border-[hsl(var(--exa-red))]/20 text-[hsl(var(--exa-red))] hover:bg-[hsl(var(--exa-red))]/5"
+            className="h-9 border-[#9C1E1E]/20 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
           >
             <UserCog className={`h-4 w-4 mr-2 ${syncingOrphans ? 'animate-spin' : ''}`} />
             Sincronizar
@@ -398,7 +398,7 @@ const UsersPage = () => {
           <Button 
             onClick={() => setIsCreateDialogOpen(true)}
             size="sm"
-            className="h-9 bg-[hsl(var(--exa-red))] hover:bg-[hsl(var(--exa-red))]/90"
+            className="h-9 bg-[#9C1E1E] hover:bg-[#7C1818] text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
             Novo Usuário
