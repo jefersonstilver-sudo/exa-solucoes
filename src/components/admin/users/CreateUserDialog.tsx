@@ -265,7 +265,13 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
 
       if (functionError) {
         console.error('❌ Erro da Edge Function:', functionError);
-        throw new Error(functionError.message || 'Erro ao criar usuário');
+        // Tentar extrair mensagem específica do erro
+        const errorDetails = functionError.message || 'Erro ao criar usuário';
+        toast.error('Erro ao criar conta', {
+          description: errorDetails,
+          duration: 8000,
+        });
+        return;
       }
 
       if (functionData?.error) {
@@ -280,7 +286,21 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
           return;
         }
         
-        throw new Error(functionData.error.error || functionData.error.message || 'Erro ao criar usuário');
+        // Tratamento para role inválido
+        if (functionData.error.code === 'INVALID_ROLE') {
+          toast.error('⚠️ Tipo de conta inválido', {
+            description: functionData.error.details || `Role "${role}" não é válido. Recarregue a página e tente novamente.`,
+            duration: 8000,
+          });
+          return;
+        }
+        
+        // Erro genérico com detalhes se disponível
+        toast.error('Erro ao criar conta', {
+          description: functionData.error.details || functionData.error.error || functionData.error.message || 'Erro desconhecido',
+          duration: 8000,
+        });
+        return;
       }
 
       if (!functionData?.user) {

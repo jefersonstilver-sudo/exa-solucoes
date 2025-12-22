@@ -13,12 +13,14 @@ interface ValidationResult {
 }
 
 export const validateRequest = async (req: Request): Promise<ValidationResult> => {
+  console.log('🔧 [VALIDATION] v4 - Dynamic role_types validation');
   try {
     const { email, adminType, nome, cpf, tipo_documento } = await req.json();
-    console.log('📦 [CREATE-ADMIN] Dados recebidos:', { email, adminType, nome, cpf: cpf ? '***' : undefined });
+    const cleanAdminType = (adminType || '').trim();
+    console.log('📦 [CREATE-ADMIN] Dados recebidos:', { email, adminType: cleanAdminType, nome, cpf: cpf ? '***' : undefined });
 
     // Validações básicas
-    if (!email || !adminType) {
+    if (!email || !cleanAdminType) {
       return {
         error: { 
           error: 'Email e tipo de administrador são obrigatórios',
@@ -53,14 +55,14 @@ export const validateRequest = async (req: Request): Promise<ValidationResult> =
 
     if (roleError) {
       console.error('❌ [VALIDATION] Erro ao buscar role_types:', roleError);
-      // Fallback para roles padrão se houver erro
-      const fallbackRoles = ['admin', 'admin_marketing', 'admin_financeiro', 'super_admin', 'client', 'painel'];
-      if (!fallbackRoles.includes(adminType)) {
+      // Fallback para roles padrão se houver erro - incluindo roles operacionais
+      const fallbackRoles = ['admin', 'admin_marketing', 'admin_financeiro', 'super_admin', 'client', 'painel', 'eletricista_', 'comercial', 'sindico', 'porteiro', 'tecnico', 'operacional'];
+      if (!fallbackRoles.includes(cleanAdminType)) {
         return {
           error: { 
             error: 'Tipo de conta inválido',
             code: 'INVALID_ROLE',
-            details: `Tipos válidos: ${fallbackRoles.join(', ')}`
+            details: `Role recebido: "${cleanAdminType}". Tipos válidos: ${fallbackRoles.join(', ')}`
           },
           status: 400
         };
@@ -69,25 +71,26 @@ export const validateRequest = async (req: Request): Promise<ValidationResult> =
       // Validar contra roles do banco
       const validRoles = roleTypes?.map(r => r.key) || [];
       console.log('📋 [VALIDATION] Roles válidos do banco:', validRoles);
+      console.log('📋 [VALIDATION] Role recebido (limpo):', cleanAdminType);
       
-      if (!validRoles.includes(adminType)) {
+      if (!validRoles.includes(cleanAdminType)) {
         return {
           error: { 
             error: 'Tipo de conta inválido',
             code: 'INVALID_ROLE',
-            details: `Tipos válidos: ${validRoles.join(', ')}`
+            details: `Role recebido: "${cleanAdminType}". Tipos válidos do banco: ${validRoles.join(', ')}`
           },
           status: 400
         };
       }
     }
 
-    console.log('✅ [VALIDATION] Role validado com sucesso:', adminType);
+    console.log('✅ [VALIDATION] Role validado com sucesso:', cleanAdminType);
 
     return { 
       data: { 
-        email, 
-        adminType,
+        email: email.trim(), 
+        adminType: cleanAdminType,
         nome,
         cpf,
         tipo_documento 
