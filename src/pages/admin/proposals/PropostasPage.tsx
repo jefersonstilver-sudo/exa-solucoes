@@ -132,14 +132,14 @@ const PropostasPage = () => {
     }
   });
 
-  // Query para buscar valores recebidos e a receber (agrupado por vendedor)
+  // Query para buscar valores recebidos e a receber (agrupado por vendedor) com filtro de período
   const { data: financialData } = useQuery({
     queryKey: ['proposals-financial', selectedPeriod],
     queryFn: async () => {
       // Buscar pedidos com proposal_id não nulo e dados da proposta associada
       const { data: orders, error: ordersError } = await supabase
         .from('pedidos')
-        .select('id, proposal_id, valor_total, status')
+        .select('id, proposal_id, valor_total, status, created_at')
         .not('proposal_id', 'is', null);
       
       if (ordersError) throw ordersError;
@@ -156,10 +156,12 @@ const PropostasPage = () => {
         if (p.created_by) proposalCreatorMap.set(p.id, p.created_by);
       });
 
-      // Buscar todas as parcelas
+      // Buscar parcelas com filtro de período
       const { data: parcelas, error: parcelasError } = await supabase
         .from('parcelas')
-        .select('pedido_id, valor_final, status, data_pagamento');
+        .select('pedido_id, valor_final, status, data_pagamento, data_vencimento')
+        .gte('data_vencimento', selectedPeriod.startDate.toISOString().split('T')[0])
+        .lte('data_vencimento', selectedPeriod.endDate.toISOString().split('T')[0]);
       
       if (parcelasError) throw parcelasError;
 

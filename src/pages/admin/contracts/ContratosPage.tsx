@@ -86,7 +86,21 @@ const ContratosPage = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+
+      // Buscar nome do vendedor para cada contrato via criado_por
+      const contratosWithSellers = await Promise.all((data || []).map(async (contrato: any) => {
+        if (contrato.criado_por) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('nome')
+            .eq('id', contrato.criado_por)
+            .single();
+          return { ...contrato, seller_name: userData?.nome || null };
+        }
+        return { ...contrato, seller_name: null };
+      }));
+
+      return contratosWithSellers;
     }
   });
 
@@ -424,6 +438,19 @@ const ContratosPage = () => {
                               {formatCurrency(contrato.valor_total)}
                             </span>
                           </div>
+                        </div>
+                        {/* Empresa e Vendedor - lado direito */}
+                        <div className="text-right flex-shrink-0 max-w-[100px]">
+                          {contrato.cliente_razao_social && (
+                            <p className="text-[10px] font-medium text-foreground truncate">
+                              {contrato.cliente_razao_social}
+                            </p>
+                          )}
+                          {contrato.seller_name && (
+                            <p className="text-[9px] text-muted-foreground truncate">
+                              👤 {contrato.seller_name}
+                            </p>
+                          )}
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
