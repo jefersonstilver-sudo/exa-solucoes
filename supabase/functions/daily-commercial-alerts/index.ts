@@ -11,25 +11,6 @@ interface ProposalRecipient {
   name: string;
 }
 
-interface PendingProposal {
-  id: string;
-  number: string;
-  client_name: string;
-  client_company_name: string | null;
-  created_at: string;
-  created_by: string | null;
-  seller_name: string | null;
-  hours_pending: number;
-}
-
-interface PendingContract {
-  id: string;
-  numero_contrato: string;
-  cliente_nome: string;
-  created_at: string;
-  hours_pending: number;
-}
-
 serve(async (req) => {
   console.log("╔══════════════════════════════════════════════════════════════╗");
   console.log("║ 📢 DAILY-COMMERCIAL-ALERTS - INÍCIO                          ║");
@@ -45,6 +26,92 @@ serve(async (req) => {
     const manychatApiKey = Deno.env.get("MANYCHAT_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Parse request body for test mode
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      // No body or invalid JSON - that's okay for normal execution
+    }
+
+    const isTestMode = body.testMode === true;
+    const testPhone = body.testPhone;
+    const templateType = body.templateType || 'propostas';
+
+    // ============ TEST MODE ============
+    if (isTestMode && testPhone) {
+      console.log("🧪 MODO DE TESTE ATIVADO");
+      console.log(`📱 Telefone: ${testPhone}`);
+      console.log(`📝 Template: ${templateType}`);
+
+      if (!manychatApiKey) {
+        console.error("❌ MANYCHAT_API_KEY não configurada");
+        return new Response(
+          JSON.stringify({ success: false, message: "MANYCHAT_API_KEY não configurada" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Buscar template da configuração
+      const { data: config } = await supabase
+        .from("commercial_alerts_config")
+        .select("template_propostas, template_contratos")
+        .single();
+
+      if (!config) {
+        return new Response(
+          JSON.stringify({ success: false, message: "Configuração não encontrada" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Construir mensagem de teste
+      const template = templateType === 'propostas' 
+        ? config.template_propostas 
+        : config.template_contratos;
+
+      const testMessage = `🧪 *TESTE DE ALERTA*\n\n${template || 'Template não configurado'}\n\n---\n✅ Este é um alerta de teste enviado via EXA Alerts`;
+
+      try {
+        await sendManyChatMessage(manychatApiKey, testPhone, testMessage);
+        
+        // Log do teste
+        await supabase.from("agent_logs").insert({
+          agent_key: "daily-commercial-alerts",
+          event_type: "test_alert",
+          metadata: {
+            test_phone: testPhone,
+            template_type: templateType,
+            success: true
+          }
+        });
+
+        console.log("✅ Alerta de teste enviado com sucesso!");
+        return new Response(
+          JSON.stringify({ success: true, message: "Alerta de teste enviado!" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } catch (err: any) {
+        console.error("❌ Erro ao enviar teste:", err);
+        
+        await supabase.from("agent_logs").insert({
+          agent_key: "daily-commercial-alerts",
+          event_type: "test_alert_error",
+          metadata: {
+            test_phone: testPhone,
+            template_type: templateType,
+            error: err.message
+          }
+        });
+
+        return new Response(
+          JSON.stringify({ success: false, message: err.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // ============ NORMAL EXECUTION ============
     // 1. Buscar configurações de alertas comerciais
     const { data: config } = await supabase
       .from("commercial_alerts_config")
@@ -81,7 +148,6 @@ serve(async (req) => {
         for (const proposal of pendingProposals) {
           const hoursPending = Math.floor((Date.now() - new Date(proposal.created_at).getTime()) / (1000 * 60 * 60));
           
-          // Buscar destinatários específicos da proposta
           const recipients = await getProposalRecipients(supabase, proposal);
           
           if (recipients.length === 0) {
@@ -89,7 +155,6 @@ serve(async (req) => {
             continue;
           }
 
-          // Construir mensagem
           const message = config.template_propostas
             ? config.template_propostas
                 .replace("{numero}", proposal.number)
@@ -98,7 +163,6 @@ serve(async (req) => {
                 .replace("{horas}", hoursPending.toString())
             : `🔔 *Lembrete de Proposta*\n\nA proposta *${proposal.number}* para *${proposal.client_name}*${proposal.client_company_name ? ` (${proposal.client_company_name})` : ''} está pendente há ${hoursPending} horas.\n\nAcesse o painel para acompanhar.`;
 
-          // Enviar para cada destinatário
           for (const recipient of recipients) {
             try {
               if (manychatApiKey) {
@@ -133,7 +197,6 @@ serve(async (req) => {
         for (const contract of pendingContracts) {
           const hoursPending = Math.floor((Date.now() - new Date(contract.created_at).getTime()) / (1000 * 60 * 60));
           
-          // Buscar destinatários da proposta original
           let recipients: ProposalRecipient[] = [];
           if (contract.proposta_id) {
             const { data: proposal } = await supabase
@@ -147,7 +210,6 @@ serve(async (req) => {
             }
           }
 
-          // Também notificar signatários do contrato
           const { data: signatarios } = await supabase
             .from("contrato_signatarios")
             .select("nome, email")
@@ -289,7 +351,6 @@ async function getProposalRecipients(supabase: any, proposal: any): Promise<Prop
 
   if (extraRecipients) {
     for (const r of extraRecipients) {
-      // Evitar duplicatas
       if (r.phone && !recipients.some(existing => existing.phone === r.phone)) {
         recipients.push({
           phone: r.phone,
@@ -304,7 +365,6 @@ async function getProposalRecipients(supabase: any, proposal: any): Promise<Prop
 
 // Enviar mensagem via ManyChat
 async function sendManyChatMessage(apiKey: string, phone: string, message: string): Promise<void> {
-  // Normalizar telefone
   let normalizedPhone = phone.replace(/\D/g, "");
   if (!normalizedPhone.startsWith("55")) {
     normalizedPhone = "55" + normalizedPhone;

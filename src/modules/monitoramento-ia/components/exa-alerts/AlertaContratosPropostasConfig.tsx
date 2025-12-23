@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   FileText, 
   Clock, 
@@ -20,11 +21,13 @@ import {
   ChevronUp,
   Loader2,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Send,
+  Phone,
+  MessageSquare
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface AlertConfig {
   id: string;
@@ -60,11 +63,19 @@ const diasSemana = [
 ];
 
 export const AlertaContratosPropostasConfig: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isConfigOpen, setIsConfigOpen] = useState(true);
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+  const [isTestOpen, setIsTestOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [config, setConfig] = useState<AlertConfig | null>(null);
   const [newHorario, setNewHorario] = useState('');
+  
+  // Test module state
+  const [testPhone, setTestPhone] = useState('');
+  const [testTemplateType, setTestTemplateType] = useState<'propostas' | 'contratos'>('propostas');
+  const [isSendingTest, setIsSendingTest] = useState(false);
 
   useEffect(() => {
     loadConfig();
@@ -74,7 +85,6 @@ export const AlertaContratosPropostasConfig: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Buscar configuração existente
       const { data, error } = await supabase
         .from('commercial_alerts_config')
         .select('*')
@@ -99,7 +109,6 @@ export const AlertaContratosPropostasConfig: React.FC = () => {
           template_contratos: data.template_contratos || defaultConfig.template_contratos,
         });
       } else {
-        // Criar configuração padrão
         const { data: newData, error: insertError } = await supabase
           .from('commercial_alerts_config')
           .insert([{
@@ -174,7 +183,6 @@ export const AlertaContratosPropostasConfig: React.FC = () => {
   const addHorario = () => {
     if (!newHorario || !config) return;
     
-    // Validar formato HH:MM
     const timeRegex = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/;
     if (!timeRegex.test(newHorario)) {
       toast.error('Formato inválido. Use HH:MM');
@@ -220,11 +228,49 @@ export const AlertaContratosPropostasConfig: React.FC = () => {
     setConfig({ ...config, dias_semana: newDias });
   };
 
+  const sendTestAlert = async () => {
+    if (!testPhone.trim()) {
+      toast.error('Informe o número de telefone');
+      return;
+    }
+
+    // Validar formato do telefone
+    const cleanPhone = testPhone.replace(/\D/g, '');
+    if (cleanPhone.length < 10 || cleanPhone.length > 13) {
+      toast.error('Número de telefone inválido');
+      return;
+    }
+
+    setIsSendingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('daily-commercial-alerts', {
+        body: {
+          testMode: true,
+          testPhone: cleanPhone,
+          templateType: testTemplateType
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success('Alerta de teste enviado com sucesso!');
+      } else {
+        toast.error(data?.message || 'Erro ao enviar teste');
+      }
+    } catch (error: any) {
+      console.error('Erro ao enviar teste:', error);
+      toast.error('Erro ao enviar alerta de teste');
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
+
   if (isLoading) {
     return (
-      <Card className="bg-white/80 backdrop-blur-sm border-white/50">
+      <Card className="bg-white/60 dark:bg-neutral-900/40 backdrop-blur-md border-2 border-amber-500/30 rounded-xl">
         <CardContent className="p-6 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
         </CardContent>
       </Card>
     );
@@ -232,202 +278,354 @@ export const AlertaContratosPropostasConfig: React.FC = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3 }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
     >
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-amber-200/50 dark:border-amber-700/30 shadow-lg">
-          <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-amber-100/50 dark:hover:bg-amber-800/20 transition-colors rounded-t-xl">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-500/20 rounded-xl">
-                    <FileText className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      Alertas de Propostas & Contratos
-                      {config?.ativo ? (
-                        <Badge className="bg-green-100 text-green-700 text-[10px]">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Ativo
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-gray-100 text-gray-600 text-[10px]">
-                          Desativado
-                        </Badge>
-                      )}
-                    </CardTitle>
-                    <CardDescription>
-                      Lembretes automáticos para propostas e contratos pendentes
-                    </CardDescription>
-                  </div>
-                </div>
-                {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+      <Card 
+        className="group bg-white/60 dark:bg-neutral-900/40 backdrop-blur-md border-2 border-amber-500/30 dark:border-amber-500/30 hover:border-amber-500/50 dark:hover:border-amber-500/50 rounded-xl lg:rounded-2xl transition-all cursor-pointer hover:shadow-xl shadow-lg"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <CardHeader className="p-4 md:p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
+                <FileText className="w-5 h-5 md:w-6 md:h-6 text-white" />
               </div>
-            </CardHeader>
-          </CollapsibleTrigger>
-
-          <CollapsibleContent>
-            <CardContent className="space-y-6 pt-2">
-              {/* Toggle Geral */}
-              <div className="flex items-center justify-between p-4 bg-white/60 dark:bg-neutral-800/40 rounded-xl border border-white/50 dark:border-white/10">
-                <div className="flex items-center gap-3">
-                  <Bell className="h-5 w-5 text-amber-600" />
-                  <div>
-                    <Label className="font-medium">Alertas Diários Ativos</Label>
-                    <p className="text-xs text-muted-foreground">Ativar/desativar todos os alertas comerciais</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={config?.ativo ?? false}
-                  onCheckedChange={(checked) => config && setConfig({ ...config, ativo: checked })}
-                />
+              <div>
+                <h3 className="font-bold text-sm md:text-base bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                  Alertas de Propostas & Contratos
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Lembretes automáticos diários
+                </p>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {config?.ativo ? (
+                <Badge 
+                  variant="outline" 
+                  className="text-xs bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30 text-green-600 hidden sm:inline-flex"
+                >
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  Ativo
+                </Badge>
+              ) : (
+                <Badge 
+                  variant="outline" 
+                  className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 hidden sm:inline-flex"
+                >
+                  Desativado
+                </Badge>
+              )}
+              <Switch 
+                checked={config?.ativo ?? false}
+                onCheckedChange={(checked) => {
+                  if (config) setConfig({ ...config, ativo: checked });
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-amber-500 data-[state=checked]:to-orange-500"
+              />
+              <motion.div
+                animate={{ rotate: isExpanded ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChevronDown className="w-5 h-5 text-muted-foreground" />
+              </motion.div>
+            </div>
+          </div>
+        </CardHeader>
 
-              {/* Horários de Envio */}
-              <div className="space-y-3">
-                <Label className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  Horários de Envio (Brasília)
-                </Label>
-                <div className="flex flex-wrap gap-2">
-                  {config?.horarios_envio.map((horario) => (
-                    <Badge 
-                      key={horario} 
-                      className="bg-amber-100 text-amber-700 text-sm px-3 py-1 flex items-center gap-2"
-                    >
-                      {horario}
-                      <button
-                        onClick={() => removeHorario(horario)}
-                        className="hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    type="time"
-                    value={newHorario}
-                    onChange={(e) => setNewHorario(e.target.value)}
-                    className="w-32"
-                    placeholder="HH:MM"
-                  />
-                  <Button variant="outline" size="sm" onClick={addHorario}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Adicionar
-                  </Button>
-                </div>
-              </div>
-
-              {/* Dias da Semana */}
-              <div className="space-y-3">
-                <Label>Dias de Envio</Label>
-                <div className="flex flex-wrap gap-2">
-                  {diasSemana.map((dia) => (
-                    <button
-                      key={dia.id}
-                      onClick={() => toggleDia(dia.id)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                        config?.dias_semana.includes(dia.id)
-                          ? 'bg-amber-500 text-white'
-                          : 'bg-white/60 dark:bg-neutral-800/60 text-muted-foreground hover:bg-amber-100'
-                      }`}
-                    >
-                      {dia.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Tipos de Alerta */}
-              <div className="space-y-3">
-                <Label className="flex items-center gap-2">
-                  <Settings2 className="h-4 w-4 text-muted-foreground" />
-                  Tipos de Alerta
-                </Label>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-white/60 dark:bg-neutral-800/40 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={config?.alerta_propostas_pendentes ?? false}
-                        onCheckedChange={(checked) => 
-                          config && setConfig({ ...config, alerta_propostas_pendentes: !!checked })
-                        }
-                      />
-                      <Label className="text-sm">Propostas não aceitas ({'>'}24h)</Label>
-                    </div>
-                    <Badge variant="outline" className="text-[10px]">
-                      <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />
-                      Destinatários da proposta
-                    </Badge>
+        {isExpanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <CardContent className="space-y-4 pt-0" onClick={(e) => e.stopPropagation()}>
+              
+              {/* Configurações Section */}
+              <Collapsible open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+                <CollapsibleTrigger 
+                  className="flex items-center justify-between w-full p-4 bg-muted/50 hover:bg-muted rounded-lg transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-2">
+                    <Settings2 className="w-4 h-4 text-amber-500" />
+                    <span className="font-semibold text-sm">Configurações</span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-white/60 dark:bg-neutral-800/40 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={config?.alerta_contratos_pendentes ?? false}
-                        onCheckedChange={(checked) => 
-                          config && setConfig({ ...config, alerta_contratos_pendentes: !!checked })
-                        }
-                      />
-                      <Label className="text-sm">Contratos não assinados ({'>'}48h)</Label>
-                    </div>
-                    <Badge variant="outline" className="text-[10px]">
-                      <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />
-                      Signatários + vendedor
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white/60 dark:bg-neutral-800/40 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={config?.alerta_propostas_expirando ?? false}
-                        onCheckedChange={(checked) => 
-                          config && setConfig({ ...config, alerta_propostas_expirando: !!checked })
-                        }
-                      />
-                      <Label className="text-sm">Propostas prestes a expirar (24h antes)</Label>
-                    </div>
-                    <Badge variant="outline" className="text-[10px]">
-                      <Clock className="h-3 w-3 mr-1 text-blue-500" />
-                      Aviso preventivo
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              {/* Templates de Mensagem */}
-              <div className="space-y-4">
-                <Label>Templates de Mensagem</Label>
+                  {isConfigOpen ? (
+                    <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </CollapsibleTrigger>
                 
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Template Propostas</Label>
-                  <Textarea
-                    value={config?.template_propostas ?? ''}
-                    onChange={(e) => config && setConfig({ ...config, template_propostas: e.target.value })}
-                    rows={4}
-                    placeholder="Use {{pending_count}} para número de propostas pendentes"
-                    className="text-sm"
-                  />
-                </div>
+                <CollapsibleContent className="mt-4 space-y-4">
+                  {/* Horários de Envio */}
+                  <div className="space-y-3 p-4 bg-white/60 dark:bg-neutral-800/40 rounded-xl border border-white/50 dark:border-white/10">
+                    <Label className="flex items-center gap-2 text-sm font-medium">
+                      <Clock className="h-4 w-4 text-amber-500" />
+                      Horários de Envio (Brasília)
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {config?.horarios_envio.map((horario) => (
+                        <Badge 
+                          key={horario} 
+                          className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-sm px-3 py-1 flex items-center gap-2"
+                        >
+                          {horario}
+                          <button
+                            onClick={() => removeHorario(horario)}
+                            className="hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        type="time"
+                        value={newHorario}
+                        onChange={(e) => setNewHorario(e.target.value)}
+                        className="w-32"
+                        placeholder="HH:MM"
+                      />
+                      <Button variant="outline" size="sm" onClick={addHorario} className="border-amber-500/30 hover:bg-amber-50 dark:hover:bg-amber-900/20">
+                        <Plus className="h-4 w-4 mr-1" />
+                        Adicionar
+                      </Button>
+                    </div>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Template Contratos</Label>
-                  <Textarea
-                    value={config?.template_contratos ?? ''}
-                    onChange={(e) => config && setConfig({ ...config, template_contratos: e.target.value })}
-                    rows={4}
-                    placeholder="Use {{unsigned_count}} para número de contratos pendentes"
-                    className="text-sm"
-                  />
-                </div>
-              </div>
+                  {/* Dias da Semana */}
+                  <div className="space-y-3 p-4 bg-white/60 dark:bg-neutral-800/40 rounded-xl border border-white/50 dark:border-white/10">
+                    <Label className="text-sm font-medium">Dias de Envio</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {diasSemana.map((dia) => (
+                        <button
+                          key={dia.id}
+                          onClick={() => toggleDia(dia.id)}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                            config?.dias_semana.includes(dia.id)
+                              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md'
+                              : 'bg-white/60 dark:bg-neutral-800/60 text-muted-foreground hover:bg-amber-100 dark:hover:bg-amber-900/20'
+                          }`}
+                        >
+                          {dia.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              {/* Botão Salvar */}
+                  {/* Tipos de Alerta */}
+                  <div className="space-y-3 p-4 bg-white/60 dark:bg-neutral-800/40 rounded-xl border border-white/50 dark:border-white/10">
+                    <Label className="flex items-center gap-2 text-sm font-medium">
+                      <Bell className="h-4 w-4 text-amber-500" />
+                      Tipos de Alerta
+                    </Label>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={config?.alerta_propostas_pendentes ?? false}
+                            onCheckedChange={(checked) => 
+                              config && setConfig({ ...config, alerta_propostas_pendentes: !!checked })
+                            }
+                          />
+                          <Label className="text-sm cursor-pointer">Propostas não aceitas ({'>'}24h)</Label>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] border-amber-500/30">
+                          <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />
+                          Destinatários
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={config?.alerta_contratos_pendentes ?? false}
+                            onCheckedChange={(checked) => 
+                              config && setConfig({ ...config, alerta_contratos_pendentes: !!checked })
+                            }
+                          />
+                          <Label className="text-sm cursor-pointer">Contratos não assinados ({'>'}48h)</Label>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] border-amber-500/30">
+                          <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />
+                          Signatários
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={config?.alerta_propostas_expirando ?? false}
+                            onCheckedChange={(checked) => 
+                              config && setConfig({ ...config, alerta_propostas_expirando: !!checked })
+                            }
+                          />
+                          <Label className="text-sm cursor-pointer">Propostas prestes a expirar (24h antes)</Label>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] border-blue-500/30">
+                          <Clock className="h-3 w-3 mr-1 text-blue-500" />
+                          Preventivo
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* Templates Section */}
+              <Collapsible open={isTemplatesOpen} onOpenChange={setIsTemplatesOpen}>
+                <CollapsibleTrigger 
+                  className="flex items-center justify-between w-full p-4 bg-muted/50 hover:bg-muted rounded-lg transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-amber-500" />
+                    <span className="font-semibold text-sm">Templates de Mensagem</span>
+                  </div>
+                  {isTemplatesOpen ? (
+                    <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </CollapsibleTrigger>
+                
+                <CollapsibleContent className="mt-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                      📊 Template Propostas
+                    </Label>
+                    <Textarea
+                      value={config?.template_propostas ?? ''}
+                      onChange={(e) => config && setConfig({ ...config, template_propostas: e.target.value })}
+                      rows={4}
+                      placeholder="Use {{pending_count}} para número de propostas pendentes"
+                      className="text-sm font-mono bg-white/60 dark:bg-neutral-800/40"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                      📄 Template Contratos
+                    </Label>
+                    <Textarea
+                      value={config?.template_contratos ?? ''}
+                      onChange={(e) => config && setConfig({ ...config, template_contratos: e.target.value })}
+                      rows={4}
+                      placeholder="Use {{unsigned_count}} para número de contratos pendentes"
+                      className="text-sm font-mono bg-white/60 dark:bg-neutral-800/40"
+                    />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* Test Module Section */}
+              <Collapsible open={isTestOpen} onOpenChange={setIsTestOpen}>
+                <CollapsibleTrigger 
+                  className="flex items-center justify-between w-full p-4 bg-gradient-to-r from-violet-500/10 to-purple-500/10 hover:from-violet-500/20 hover:to-purple-500/20 border border-violet-500/20 rounded-lg transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-2">
+                    <Send className="w-4 h-4 text-violet-500" />
+                    <span className="font-semibold text-sm">Enviar Teste</span>
+                    <Badge className="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 text-[10px]">
+                      Testar Alertas
+                    </Badge>
+                  </div>
+                  {isTestOpen ? (
+                    <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </CollapsibleTrigger>
+                
+                <CollapsibleContent className="mt-4">
+                  <div className="space-y-4 p-4 bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/10 dark:to-purple-900/10 rounded-xl border border-violet-200/50 dark:border-violet-700/30">
+                    {/* Phone Input */}
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2 text-sm font-medium">
+                        <Phone className="h-4 w-4 text-violet-500" />
+                        Número de Telefone
+                      </Label>
+                      <Input
+                        type="tel"
+                        value={testPhone}
+                        onChange={(e) => setTestPhone(e.target.value)}
+                        placeholder="+55 (00) 00000-0000"
+                        className="bg-white/80 dark:bg-neutral-800/60"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Informe o número com DDD para enviar o teste via WhatsApp
+                      </p>
+                    </div>
+
+                    {/* Template Type Selector */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Tipo de Template</Label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setTestTemplateType('propostas')}
+                          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            testTemplateType === 'propostas'
+                              ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-md'
+                              : 'bg-white/60 dark:bg-neutral-800/60 text-muted-foreground hover:bg-violet-100 dark:hover:bg-violet-900/20'
+                          }`}
+                        >
+                          📊 Propostas
+                        </button>
+                        <button
+                          onClick={() => setTestTemplateType('contratos')}
+                          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            testTemplateType === 'contratos'
+                              ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-md'
+                              : 'bg-white/60 dark:bg-neutral-800/60 text-muted-foreground hover:bg-violet-100 dark:hover:bg-violet-900/20'
+                          }`}
+                        >
+                          📄 Contratos
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Template Preview */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Preview do Template</Label>
+                      <div className="p-3 bg-white/80 dark:bg-neutral-800/60 rounded-lg border border-violet-200/50 dark:border-violet-700/30">
+                        <pre className="text-xs whitespace-pre-wrap font-mono text-muted-foreground">
+                          {testTemplateType === 'propostas' 
+                            ? config?.template_propostas 
+                            : config?.template_contratos}
+                        </pre>
+                      </div>
+                    </div>
+
+                    {/* Send Button */}
+                    <Button 
+                      onClick={sendTestAlert}
+                      disabled={isSendingTest || !testPhone.trim()}
+                      className="w-full bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white shadow-lg"
+                    >
+                      {isSendingTest ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4 mr-2" />
+                      )}
+                      Enviar Alerta de Teste
+                    </Button>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* Save Button */}
               <div className="flex justify-end pt-2">
-                <Button onClick={handleSave} disabled={isSaving} className="bg-amber-600 hover:bg-amber-700">
+                <Button 
+                  onClick={handleSave} 
+                  disabled={isSaving} 
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg"
+                >
                   {isSaving ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
@@ -437,9 +635,9 @@ export const AlertaContratosPropostasConfig: React.FC = () => {
                 </Button>
               </div>
             </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
+          </motion.div>
+        )}
+      </Card>
     </motion.div>
   );
 };
