@@ -5,6 +5,7 @@ import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail,
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -342,6 +343,37 @@ const NovaPropostaPage = () => {
     }
   });
 
+  // Buscar todos os usuários administrativos para seletor de vendedor
+  const { data: adminUsers = [] } = useQuery({
+    queryKey: ['admin-users-for-seller-select'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, nome, email, telefone')
+        .in('role', ['super_admin', 'admin', 'comercial', 'marketing', 'gerente'])
+        .order('nome');
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Estado para vendedor selecionado
+  const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
+
+  // Atualizar selectedSellerId quando currentUser carregar
+  React.useEffect(() => {
+    if (currentUser?.id && !selectedSellerId) {
+      setSelectedSellerId(currentUser.id);
+    }
+  }, [currentUser?.id]);
+
+  // Vendedor selecionado (dados completos)
+  const selectedSeller = useMemo(() => {
+    if (!selectedSellerId) return currentUser;
+    return adminUsers.find(u => u.id === selectedSellerId) || currentUser;
+  }, [selectedSellerId, adminUsers, currentUser]);
+
   // 🔔 Adicionar vendedor automaticamente como destinatário de EXA Alerts
   React.useEffect(() => {
     if (currentUser?.telefone && alertRecipients.length === 0) {
@@ -523,8 +555,8 @@ const NovaPropostaPage = () => {
           status: 'enviada',
           sent_at: new Date().toISOString(),
           expires_at: new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
-          created_by: user?.id,
-          seller_name: currentUser?.nome || currentUser?.email || 'Vendedor',
+          created_by: selectedSellerId || user?.id,
+          seller_name: selectedSeller?.nome || selectedSeller?.email || currentUser?.nome || 'Vendedor',
           payment_type: isCustomDays ? 'days' : (isCustomPayment ? 'custom' : 'standard'),
           tipo_produto: tipoProduto,
           client_address: clientData.address || null,
@@ -824,6 +856,40 @@ const NovaPropostaPage = () => {
       </div>
 
       <div className="p-4 space-y-4 pb-32">
+        {/* Seção 0: Vendedor */}
+        <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50">
+          <div className="flex items-center gap-2 mb-3">
+            <Users className="h-5 w-5 text-primary" />
+            <h2 className="font-semibold">Vendedor Responsável</h2>
+          </div>
+          <Select
+            value={selectedSellerId || ''}
+            onValueChange={(value) => setSelectedSellerId(value)}
+          >
+            <SelectTrigger className="h-12 text-base">
+              <SelectValue placeholder="Selecione o vendedor">
+                {selectedSeller?.nome || selectedSeller?.email || 'Selecionar vendedor'}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {adminUsers.map(user => (
+                <SelectItem key={user.id} value={user.id}>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span>{user.nome || user.email}</span>
+                    {user.id === currentUser?.id && (
+                      <Badge variant="secondary" className="ml-2 text-[10px]">Você</Badge>
+                    )}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-2">
+            O vendedor receberá todas as notificações desta proposta
+          </p>
+        </Card>
+
         {/* Seção 1: Dados do Cliente */}
         <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50 overflow-visible relative z-40">
           <div className="flex items-center gap-2 mb-4">
