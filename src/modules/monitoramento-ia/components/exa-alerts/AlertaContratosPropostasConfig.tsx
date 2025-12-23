@@ -24,10 +24,12 @@ import {
   CheckCircle2,
   Send,
   Phone,
-  MessageSquare
+  MessageSquare,
+  History
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { AlertHistoryDialog } from './AlertHistoryDialog';
 
 interface AlertConfig {
   id: string;
@@ -71,6 +73,7 @@ export const AlertaContratosPropostasConfig: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [config, setConfig] = useState<AlertConfig | null>(null);
   const [newHorario, setNewHorario] = useState('');
+  const [historyOpen, setHistoryOpen] = useState(false);
   
   // Test module state
   const [testPhone, setTestPhone] = useState('');
@@ -108,6 +111,10 @@ export const AlertaContratosPropostasConfig: React.FC = () => {
           template_propostas: data.template_propostas || defaultConfig.template_propostas,
           template_contratos: data.template_contratos || defaultConfig.template_contratos,
         });
+        // Load persisted test phone
+        if ((data as any).test_phone) {
+          setTestPhone((data as any).test_phone);
+        }
       } else {
         const { data: newData, error: insertError } = await supabase
           .from('commercial_alerts_config')
@@ -165,6 +172,7 @@ export const AlertaContratosPropostasConfig: React.FC = () => {
           alerta_propostas_expirando: config.alerta_propostas_expirando,
           template_propostas: config.template_propostas,
           template_contratos: config.template_contratos,
+          test_phone: testPhone.replace(/\D/g, '') || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', config.id);
@@ -619,8 +627,17 @@ export const AlertaContratosPropostasConfig: React.FC = () => {
                 </CollapsibleContent>
               </Collapsible>
 
-              {/* Save Button */}
-              <div className="flex justify-end pt-2">
+              {/* Actions Row */}
+              <div className="flex items-center justify-between pt-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setHistoryOpen(true)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <History className="h-4 w-4 mr-1.5" />
+                  Histórico
+                </Button>
                 <Button 
                   onClick={handleSave} 
                   disabled={isSaving} 
@@ -638,6 +655,14 @@ export const AlertaContratosPropostasConfig: React.FC = () => {
           </motion.div>
         )}
       </Card>
+
+      {/* History Dialog */}
+      <AlertHistoryDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        alertKey="daily-commercial-alerts"
+        alertTitle="Propostas & Contratos"
+      />
     </motion.div>
   );
 };

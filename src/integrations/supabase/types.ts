@@ -1798,6 +1798,7 @@ export type Database = {
           id: string
           template_contratos: string | null
           template_propostas: string | null
+          test_phone: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1811,6 +1812,7 @@ export type Database = {
           id?: string
           template_contratos?: string | null
           template_propostas?: string | null
+          test_phone?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1824,6 +1826,7 @@ export type Database = {
           id?: string
           template_contratos?: string | null
           template_propostas?: string | null
+          test_phone?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -4283,6 +4286,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      exa_alerts_message_logs: {
+        Row: {
+          alert_key: string
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          message_preview: string | null
+          metadata: Json | null
+          phone: string
+          provider: string
+          provider_message_id: string | null
+          recipient_name: string | null
+          status: string
+        }
+        Insert: {
+          alert_key: string
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          message_preview?: string | null
+          metadata?: Json | null
+          phone: string
+          provider?: string
+          provider_message_id?: string | null
+          recipient_name?: string | null
+          status?: string
+        }
+        Update: {
+          alert_key?: string
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          message_preview?: string | null
+          metadata?: Json | null
+          phone?: string
+          provider?: string
+          provider_message_id?: string | null
+          recipient_name?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       exa_alerts_rules: {
         Row: {

@@ -13,7 +13,7 @@ interface ProposalRecipient {
 
 serve(async (req) => {
   console.log("╔══════════════════════════════════════════════════════════════╗");
-  console.log("║ 📢 DAILY-COMMERCIAL-ALERTS - INÍCIO                          ║");
+  console.log("║ 📢 DAILY-COMMERCIAL-ALERTS - V2 (Z-API + Audit Logs)         ║");
   console.log("╚══════════════════════════════════════════════════════════════╝");
 
   if (req.method === "OPTIONS") {
@@ -23,7 +23,6 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const manychatApiKey = Deno.env.get("MANYCHAT_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Parse request body for test mode
@@ -38,21 +37,85 @@ serve(async (req) => {
     const testPhone = body.testPhone;
     const templateType = body.templateType || 'propostas';
 
-    // ============ TEST MODE ============
+    // ============ TEST MODE - USE Z-API ============
     if (isTestMode && testPhone) {
-      console.log("🧪 MODO DE TESTE ATIVADO");
+      console.log("🧪 MODO DE TESTE ATIVADO (Z-API)");
       console.log(`📱 Telefone: ${testPhone}`);
       console.log(`📝 Template: ${templateType}`);
 
-      if (!manychatApiKey) {
-        console.error("❌ MANYCHAT_API_KEY não configurada");
+      // Get Z-API agent config (use a default agent for alerts)
+      const { data: agent, error: agentError } = await supabase
+        .from("agents")
+        .select("*")
+        .eq("whatsapp_provider", "zapi")
+        .eq("is_active", true)
+        .limit(1)
+        .single();
+
+      if (agentError || !agent) {
+        console.error("❌ Nenhum agente Z-API ativo encontrado");
+        
+        // Log error
+        await supabase.from("exa_alerts_message_logs").insert({
+          alert_key: "daily-commercial-alerts",
+          event_type: "test_send",
+          phone: testPhone,
+          recipient_name: "Teste",
+          provider: "zapi",
+          status: "error",
+          error_message: "Nenhum agente Z-API configurado",
+          metadata: { templateType }
+        });
+
         return new Response(
-          JSON.stringify({ success: false, message: "MANYCHAT_API_KEY não configurada" }),
+          JSON.stringify({ success: false, message: "Nenhum agente Z-API configurado" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Buscar template da configuração
+      const zapiConfig = agent.zapi_config;
+      if (!zapiConfig?.instance_id || !zapiConfig?.token) {
+        console.error("❌ Configuração Z-API inválida");
+        
+        await supabase.from("exa_alerts_message_logs").insert({
+          alert_key: "daily-commercial-alerts",
+          event_type: "test_send",
+          phone: testPhone,
+          recipient_name: "Teste",
+          provider: "zapi",
+          status: "error",
+          error_message: "Configuração Z-API inválida",
+          metadata: { templateType }
+        });
+
+        return new Response(
+          JSON.stringify({ success: false, message: "Configuração Z-API inválida" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const zapiClientToken = Deno.env.get("ZAPI_CLIENT_TOKEN");
+      if (!zapiClientToken) {
+        console.error("❌ ZAPI_CLIENT_TOKEN não configurado");
+        
+        await supabase.from("exa_alerts_message_logs").insert({
+          alert_key: "daily-commercial-alerts",
+          event_type: "test_send",
+          phone: testPhone,
+          recipient_name: "Teste",
+          provider: "zapi",
+          status: "error",
+          error_message: "ZAPI_CLIENT_TOKEN não configurado",
+          metadata: { templateType }
+        });
+
+        return new Response(
+          JSON.stringify({ success: false, message: "ZAPI_CLIENT_TOKEN não configurado" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Fetch template from config
       const { data: config } = await supabase
         .from("commercial_alerts_config")
         .select("template_propostas, template_contratos")
@@ -65,43 +128,89 @@ serve(async (req) => {
         );
       }
 
-      // Construir mensagem de teste
+      // Build test message
       const template = templateType === 'propostas' 
         ? config.template_propostas 
         : config.template_contratos;
 
-      const testMessage = `🧪 *TESTE DE ALERTA*\n\n${template || 'Template não configurado'}\n\n---\n✅ Este é um alerta de teste enviado via EXA Alerts`;
+      const testMessage = `🧪 *TESTE DE ALERTA EXA*\n\n${template || 'Template não configurado'}\n\n---\n✅ Este é um alerta de teste enviado via Z-API`;
 
+      // Send via Z-API directly
+      const sendUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+      
       try {
-        await sendManyChatMessage(manychatApiKey, testPhone, testMessage);
+        const normalizedPhone = testPhone.replace(/\D/g, '');
         
-        // Log do teste
-        await supabase.from("agent_logs").insert({
-          agent_key: "daily-commercial-alerts",
-          event_type: "test_alert",
-          metadata: {
-            test_phone: testPhone,
-            template_type: templateType,
-            success: true
+        console.log(`📤 Enviando via Z-API para ${normalizedPhone}...`);
+        
+        const response = await fetch(sendUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Client-Token': zapiClientToken,
+          },
+          body: JSON.stringify({
+            phone: normalizedPhone,
+            message: testMessage
+          })
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(`Z-API Error: ${response.status} - ${JSON.stringify(result)}`);
+        }
+
+        console.log("✅ Alerta de teste enviado com sucesso!", result);
+
+        // Log success in audit table
+        await supabase.from("exa_alerts_message_logs").insert({
+          alert_key: "daily-commercial-alerts",
+          event_type: "test_send",
+          phone: normalizedPhone,
+          recipient_name: "Teste Manual",
+          provider: "zapi",
+          status: "success",
+          message_preview: testMessage.substring(0, 200),
+          provider_message_id: result.messageId || null,
+          metadata: { 
+            templateType,
+            zapiResponse: result
           }
         });
 
-        console.log("✅ Alerta de teste enviado com sucesso!");
+        // Also log in zapi_logs for compatibility
+        await supabase.from("zapi_logs").insert({
+          agent_key: agent.key,
+          direction: "outbound",
+          phone_number: normalizedPhone,
+          message_text: testMessage,
+          status: "sent",
+          zapi_message_id: result.messageId || null,
+          metadata: { test_alert: true, templateType }
+        });
+
         return new Response(
-          JSON.stringify({ success: true, message: "Alerta de teste enviado!" }),
+          JSON.stringify({ 
+            success: true, 
+            message: "Alerta de teste enviado via Z-API!",
+            messageId: result.messageId 
+          }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       } catch (err: any) {
-        console.error("❌ Erro ao enviar teste:", err);
+        console.error("❌ Erro ao enviar teste via Z-API:", err);
         
-        await supabase.from("agent_logs").insert({
-          agent_key: "daily-commercial-alerts",
-          event_type: "test_alert_error",
-          metadata: {
-            test_phone: testPhone,
-            template_type: templateType,
-            error: err.message
-          }
+        // Log error in audit table
+        await supabase.from("exa_alerts_message_logs").insert({
+          alert_key: "daily-commercial-alerts",
+          event_type: "test_send",
+          phone: testPhone,
+          recipient_name: "Teste Manual",
+          provider: "zapi",
+          status: "error",
+          error_message: err.message,
+          metadata: { templateType }
         });
 
         return new Response(
@@ -112,7 +221,7 @@ serve(async (req) => {
     }
 
     // ============ NORMAL EXECUTION ============
-    // 1. Buscar configurações de alertas comerciais
+    // 1. Fetch commercial alert config
     const { data: config } = await supabase
       .from("commercial_alerts_config")
       .select("*")
@@ -129,10 +238,86 @@ serve(async (req) => {
 
     console.log("📋 Configuração carregada:", JSON.stringify(config, null, 2));
 
+    // Get Z-API agent for sending
+    const { data: zapiAgent } = await supabase
+      .from("agents")
+      .select("*")
+      .eq("whatsapp_provider", "zapi")
+      .eq("is_active", true)
+      .limit(1)
+      .single();
+
+    const zapiConfig = zapiAgent?.zapi_config;
+    const zapiClientToken = Deno.env.get("ZAPI_CLIENT_TOKEN");
+    const canSendZapi = zapiConfig?.instance_id && zapiConfig?.token && zapiClientToken;
+
     const alertsSent: string[] = [];
     const errors: string[] = [];
 
-    // 2. Buscar propostas pendentes há mais de 24h (se habilitado)
+    // Helper function to send message via Z-API
+    const sendZapiMessage = async (phone: string, message: string, recipientName: string, eventType: string): Promise<boolean> => {
+      if (!canSendZapi) {
+        console.log("⚠️ Z-API não configurado, pulando envio");
+        return false;
+      }
+
+      const normalizedPhone = phone.replace(/\D/g, '').replace(/^55/, '');
+      const fullPhone = normalizedPhone.startsWith('55') ? normalizedPhone : '55' + normalizedPhone;
+
+      try {
+        const sendUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+        
+        const response = await fetch(sendUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Client-Token': zapiClientToken!,
+          },
+          body: JSON.stringify({
+            phone: fullPhone,
+            message
+          })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(`Z-API Error: ${response.status}`);
+        }
+
+        // Log success
+        await supabase.from("exa_alerts_message_logs").insert({
+          alert_key: "daily-commercial-alerts",
+          event_type: eventType,
+          phone: fullPhone,
+          recipient_name: recipientName,
+          provider: "zapi",
+          status: "success",
+          message_preview: message.substring(0, 200),
+          provider_message_id: result.messageId || null,
+          metadata: { zapiResponse: result }
+        });
+
+        return true;
+      } catch (err: any) {
+        console.error(`❌ Erro Z-API para ${recipientName}:`, err.message);
+        
+        await supabase.from("exa_alerts_message_logs").insert({
+          alert_key: "daily-commercial-alerts",
+          event_type: eventType,
+          phone: fullPhone,
+          recipient_name: recipientName,
+          provider: "zapi",
+          status: "error",
+          error_message: err.message,
+          metadata: {}
+        });
+
+        return false;
+      }
+    };
+
+    // 2. Check pending proposals (>24h)
     if (config.alerta_propostas_pendentes) {
       console.log("🔍 Buscando propostas pendentes há mais de 24h...");
       
@@ -164,15 +349,12 @@ serve(async (req) => {
             : `🔔 *Lembrete de Proposta*\n\nA proposta *${proposal.number}* para *${proposal.client_name}*${proposal.client_company_name ? ` (${proposal.client_company_name})` : ''} está pendente há ${hoursPending} horas.\n\nAcesse o painel para acompanhar.`;
 
           for (const recipient of recipients) {
-            try {
-              if (manychatApiKey) {
-                await sendManyChatMessage(manychatApiKey, recipient.phone, message);
-                alertsSent.push(`Proposta ${proposal.number} → ${recipient.name}`);
-                console.log(`✅ Alerta enviado para ${recipient.name} (${recipient.phone})`);
-              }
-            } catch (err) {
-              console.error(`❌ Erro ao enviar para ${recipient.name}:`, err);
-              errors.push(`Proposta ${proposal.number} → ${recipient.name}: ${err}`);
+            const success = await sendZapiMessage(recipient.phone, message, recipient.name, "scheduled_send");
+            if (success) {
+              alertsSent.push(`Proposta ${proposal.number} → ${recipient.name}`);
+              console.log(`✅ Alerta enviado para ${recipient.name} (${recipient.phone})`);
+            } else {
+              errors.push(`Proposta ${proposal.number} → ${recipient.name}: Falha no envio`);
             }
           }
         }
@@ -181,7 +363,7 @@ serve(async (req) => {
       }
     }
 
-    // 3. Buscar contratos não assinados há mais de 48h (se habilitado)
+    // 3. Check unsigned contracts (>48h)
     if (config.alerta_contratos_pendentes) {
       console.log("🔍 Buscando contratos não assinados há mais de 48h...");
       
@@ -210,12 +392,7 @@ serve(async (req) => {
             }
           }
 
-          const { data: signatarios } = await supabase
-            .from("contrato_signatarios")
-            .select("nome, email")
-            .eq("contrato_id", contract.id);
-
-          if (recipients.length === 0 && (!signatarios || signatarios.length === 0)) {
+          if (recipients.length === 0) {
             console.log(`⚠️ Contrato ${contract.numero_contrato} sem destinatários`);
             continue;
           }
@@ -228,15 +405,12 @@ serve(async (req) => {
             : `📄 *Lembrete de Contrato*\n\nO contrato *${contract.numero_contrato}* para *${contract.cliente_nome}* está aguardando assinatura há ${hoursPending} horas.\n\nAcompanhe no painel jurídico.`;
 
           for (const recipient of recipients) {
-            try {
-              if (manychatApiKey) {
-                await sendManyChatMessage(manychatApiKey, recipient.phone, message);
-                alertsSent.push(`Contrato ${contract.numero_contrato} → ${recipient.name}`);
-                console.log(`✅ Alerta de contrato enviado para ${recipient.name}`);
-              }
-            } catch (err) {
-              console.error(`❌ Erro ao enviar para ${recipient.name}:`, err);
-              errors.push(`Contrato ${contract.numero_contrato} → ${recipient.name}: ${err}`);
+            const success = await sendZapiMessage(recipient.phone, message, recipient.name, "scheduled_send");
+            if (success) {
+              alertsSent.push(`Contrato ${contract.numero_contrato} → ${recipient.name}`);
+              console.log(`✅ Alerta de contrato enviado para ${recipient.name}`);
+            } else {
+              errors.push(`Contrato ${contract.numero_contrato} → ${recipient.name}: Falha no envio`);
             }
           }
         }
@@ -245,7 +419,7 @@ serve(async (req) => {
       }
     }
 
-    // 4. Propostas prestes a expirar (se habilitado)
+    // 4. Check expiring proposals (next 24h)
     if (config.alerta_propostas_expirando) {
       console.log("🔍 Buscando propostas prestes a expirar (próximas 24h)...");
       
@@ -269,20 +443,18 @@ serve(async (req) => {
           const message = `⚠️ *Proposta Expirando!*\n\nA proposta *${proposal.number}* para *${proposal.client_name}*${proposal.client_company_name ? ` (${proposal.client_company_name})` : ''} expira em *${hoursRemaining} horas*.\n\nEntre em contato com o cliente!`;
 
           for (const recipient of recipients) {
-            try {
-              if (manychatApiKey) {
-                await sendManyChatMessage(manychatApiKey, recipient.phone, message);
-                alertsSent.push(`Expirando ${proposal.number} → ${recipient.name}`);
-              }
-            } catch (err) {
-              errors.push(`Expirando ${proposal.number} → ${recipient.name}: ${err}`);
+            const success = await sendZapiMessage(recipient.phone, message, recipient.name, "scheduled_send");
+            if (success) {
+              alertsSent.push(`Expirando ${proposal.number} → ${recipient.name}`);
+            } else {
+              errors.push(`Expirando ${proposal.number} → ${recipient.name}: Falha`);
             }
           }
         }
       }
     }
 
-    // 5. Log da execução
+    // 5. Log execution
     await supabase.from("agent_logs").insert({
       agent_key: "daily-commercial-alerts",
       event_type: "execution",
@@ -291,7 +463,8 @@ serve(async (req) => {
         errors: errors.length,
         details: alertsSent,
         error_details: errors,
-        config_used: config.id
+        config_used: config.id,
+        provider: "zapi"
       }
     });
 
@@ -321,11 +494,11 @@ serve(async (req) => {
   }
 });
 
-// Buscar destinatários específicos de uma proposta
+// Fetch specific recipients for a proposal
 async function getProposalRecipients(supabase: any, proposal: any): Promise<ProposalRecipient[]> {
   const recipients: ProposalRecipient[] = [];
 
-  // 1. Vendedor que criou a proposta (created_by)
+  // 1. Seller who created the proposal
   if (proposal.created_by) {
     const { data: seller } = await supabase
       .from("users")
@@ -341,7 +514,7 @@ async function getProposalRecipients(supabase: any, proposal: any): Promise<Prop
     }
   }
 
-  // 2. Destinatários extras (proposal_alert_recipients)
+  // 2. Extra recipients
   const { data: extraRecipients } = await supabase
     .from("proposal_alert_recipients")
     .select("name, phone, active, receive_whatsapp")
@@ -361,35 +534,4 @@ async function getProposalRecipients(supabase: any, proposal: any): Promise<Prop
   }
 
   return recipients;
-}
-
-// Enviar mensagem via ManyChat
-async function sendManyChatMessage(apiKey: string, phone: string, message: string): Promise<void> {
-  let normalizedPhone = phone.replace(/\D/g, "");
-  if (!normalizedPhone.startsWith("55")) {
-    normalizedPhone = "55" + normalizedPhone;
-  }
-
-  const response = await fetch("https://api.manychat.com/fb/sending/sendContent", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      subscriber_id: normalizedPhone,
-      data: {
-        version: "v2",
-        content: {
-          type: "text",
-          text: message
-        }
-      }
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`ManyChat error: ${response.status} - ${errorText}`);
-  }
 }
