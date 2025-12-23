@@ -509,3 +509,21 @@ verify_jwt = true
 [[cron]]
 function_name = "monitor-delivery-status"
 schedule = "*/5 * * * *"
+
+[functions.daily-commercial-alerts]
+verify_jwt = false
+
+# Alertas comerciais diários - 9h Brasília (12:00 UTC)
+[[cron]]
+function_name = "daily-commercial-alerts"
+schedule = "0 12 * * 1-5"
+
+# Alertas comerciais diários - 12h Brasília (15:00 UTC)
+[[cron]]
+function_name = "daily-commercial-alerts"
+schedule = "0 15 * * 1-5"
+
+# Alertas comerciais diários - 15h Brasília (18:00 UTC)
+[[cron]]
+function_name = "daily-commercial-alerts"
+schedule = "0 18 * * 1-5"

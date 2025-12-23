@@ -229,6 +229,33 @@ serve(async (req) => {
       }
     });
 
+    // 11. Notificar via EXA Alerts (contrato criado)
+    console.log("🔔 Enviando notificação de contrato criado...");
+    try {
+      await supabase.functions.invoke("notify-exa-alert", {
+        body: {
+          type: "contract_created",
+          lead: {
+            name: `${clientData.primeiro_nome} ${clientData.sobrenome}`,
+            phone: proposal.client_phone,
+            email: clientData.email || proposal.client_email
+          },
+          data: {
+            proposal_id: proposalId,
+            proposal_number: proposal.number,
+            contract_id: contrato.id,
+            contract_number: contratoNumber,
+            client_company: proposal.client_company_name,
+            valor_total: valorTotal,
+            seller_id: proposal.created_by
+          }
+        }
+      });
+      console.log("✅ Notificação EXA Alerts enviada");
+    } catch (notifyErr) {
+      console.warn("⚠️ Erro ao enviar notificação (não crítico):", notifyErr);
+    }
+
     console.log("========================================");
     console.log("✅ CONTRATO CRIADO COM SUCESSO");
     console.log("========================================");

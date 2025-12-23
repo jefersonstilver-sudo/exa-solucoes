@@ -63,6 +63,24 @@ serve(async (req) => {
       message += `📦 Pedido: ${data.pedido_id?.slice(0, 8)}...\n`;
       message += `👔 Vendedor: ${data.vendedor}\n`;
       message += `${data.is_new_user ? '🆕 Nova conta criada!' : '👤 Usuário existente'}`;
+    } else if (type === 'contract_created') {
+      message = `📄 *CONTRATO CRIADO!*\n\n`;
+      message += `📋 Proposta: #${data.proposal_number}\n`;
+      message += `📝 Contrato: ${data.contract_number}\n`;
+      message += `👤 Cliente: ${lead.name}\n`;
+      if (data.client_company) message += `🏢 Empresa: ${data.client_company}\n`;
+      message += `💰 Valor: R$ ${(data.valor_total || 0).toLocaleString('pt-BR')}\n`;
+      message += `\n✅ O contrato está aguardando assinatura do cliente.`;
+      
+      // Para contract_created, buscar destinatários específicos da proposta
+      if (data.proposal_id) {
+        const proposalRecipients = await getProposalRecipients(supabase, data.proposal_id, data.seller_id);
+        if (proposalRecipients.length > 0) {
+          // Substituir os recipients padrão pelos específicos da proposta
+          recipients.length = 0;
+          proposalRecipients.forEach(r => recipients.push(r));
+        }
+      }
     } else {
       message = `🔔 Notificação EXA Alert\n\n${JSON.stringify(data || lead, null, 2)}`;
     }
@@ -132,3 +150,39 @@ serve(async (req) => {
     });
   }
 });
+
+// Buscar destinatários específicos de uma proposta
+async function getProposalRecipients(supabase: any, proposalId: string, sellerId?: string) {
+  const recipients: { whatsapp_number: string; nome: string }[] = [];
+
+  // 1. Vendedor que criou a proposta
+  if (sellerId) {
+    const { data: seller } = await supabase
+      .from("users")
+      .select("nome, telefone")
+      .eq("id", sellerId)
+      .single();
+
+    if (seller?.telefone) {
+      recipients.push({ whatsapp_number: seller.telefone, nome: seller.nome || "Vendedor" });
+    }
+  }
+
+  // 2. Destinatários extras da proposta
+  const { data: extraRecipients } = await supabase
+    .from("proposal_alert_recipients")
+    .select("name, phone, active, receive_whatsapp")
+    .eq("proposal_id", proposalId)
+    .eq("active", true)
+    .eq("receive_whatsapp", true);
+
+  if (extraRecipients) {
+    for (const r of extraRecipients) {
+      if (r.phone && !recipients.some(existing => existing.whatsapp_number === r.phone)) {
+        recipients.push({ whatsapp_number: r.phone, nome: r.name || "Destinatário" });
+      }
+    }
+  }
+
+  return recipients;
+}

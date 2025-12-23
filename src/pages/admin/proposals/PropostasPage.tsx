@@ -90,6 +90,7 @@ const PropostasPage = () => {
   const { isSuperAdmin, user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('todas');
+  const [showExpiredCanceled, setShowExpiredCanceled] = useState(false);
   const [liveViewNotifications, setLiveViewNotifications] = useState<LiveViewNotification[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -262,6 +263,12 @@ const PropostasPage = () => {
       p.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.number?.toLowerCase().includes(searchTerm.toLowerCase());
 
+    // Filtrar expiradas/canceladas por padrão (a menos que toggle ativo)
+    const isExpiredOrCanceled = ['expirada', 'cancelada'].includes(p.status);
+    if (isExpiredOrCanceled && !showExpiredCanceled && activeFilter !== 'expiradas') {
+      return false;
+    }
+
     let matchesFilter = true;
     if (activeFilter === 'pendentes') {
       matchesFilter = ['pendente', 'enviada', 'visualizada'].includes(p.status);
@@ -271,6 +278,8 @@ const PropostasPage = () => {
       matchesFilter = p.status === 'recusada';
     } else if (activeFilter === 'pagas') {
       matchesFilter = ['paga', 'convertida'].includes(p.status);
+    } else if (activeFilter === 'expiradas') {
+      matchesFilter = isExpiredOrCanceled;
     }
 
     return matchesSearch && matchesFilter;
@@ -370,12 +379,15 @@ const PropostasPage = () => {
       .reduce((sum, p) => sum + (p.fidel_monthly_value * p.duration_months), 0)
   };
 
+  const expiredCount = proposals.filter(p => ['expirada', 'cancelada'].includes(p.status)).length;
+  
   const filters = [
-    { id: 'todas', label: 'Todas', count: proposals.length },
+    { id: 'todas', label: 'Todas', count: proposals.filter(p => !['expirada', 'cancelada'].includes(p.status)).length },
     { id: 'pendentes', label: '⏳ Pendentes', count: stats.pendentes },
     { id: 'aceitas', label: '✅ Aceitas', count: proposalsInPeriod.filter(p => ['aceita', 'paga', 'convertida'].includes(p.status)).length },
     { id: 'pagas', label: '💰 Pagas', count: pagasCount },
     { id: 'recusadas', label: '❌ Recusadas', count: proposals.filter(p => p.status === 'recusada').length },
+    { id: 'expiradas', label: '⌛ Expiradas', count: expiredCount },
   ];
 
   // Verificar se cliente está visualizando AGORA (heartbeat < 45 segundos)
