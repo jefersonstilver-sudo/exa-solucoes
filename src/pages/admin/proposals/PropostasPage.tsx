@@ -378,19 +378,27 @@ const PropostasPage = () => {
     { id: 'recusadas', label: '❌ Recusadas', count: proposals.filter(p => p.status === 'recusada').length },
   ];
 
+  // Verificar se cliente está visualizando AGORA (heartbeat < 45 segundos)
+  const isActivelyViewing = (proposal: Proposal): boolean => {
+    if (!proposal.is_viewing || !proposal.last_heartbeat_at) return false;
+    const lastHeartbeat = new Date(proposal.last_heartbeat_at);
+    const now = new Date();
+    const secondsSinceHeartbeat = (now.getTime() - lastHeartbeat.getTime()) / 1000;
+    return secondsSinceHeartbeat < 45;
+  };
+
   const getStatusBadge = (status: string, proposal?: Proposal) => {
-    // Status finais NUNCA devem mostrar "Ao vivo" - prioridade máxima
+    // Status finais NUNCA mostram "Visualizando agora!!"
     const finalStatuses = ['recusada', 'paga', 'convertida', 'expirada', 'aceita'];
     
-    // Só mostrar "Ao vivo" se is_viewing E status NÃO é final
-    if (proposal?.is_viewing && !finalStatuses.includes(status)) {
-      return <Badge className="bg-green-500 hover:bg-green-600 animate-pulse text-[10px]">👁️ Ao vivo</Badge>;
+    // Verificar heartbeat real antes de mostrar "Visualizando agora!!"
+    if (proposal && isActivelyViewing(proposal) && !finalStatuses.includes(status)) {
+      return <Badge className="bg-green-500 hover:bg-green-600 animate-pulse text-[10px]">👁️ Visualizando agora!!</Badge>;
     }
     
     const statusConfig: Record<string, { label: string; className: string }> = {
       pendente: { label: 'Pendente', className: 'bg-gray-100 text-gray-700' },
       enviada: { label: 'Enviada', className: 'bg-blue-100 text-blue-700' },
-      visualizando: { label: '👁️ Ao vivo', className: 'bg-green-500 text-white animate-pulse' },
       visualizada: { label: 'Visualizada', className: 'bg-purple-100 text-purple-700' },
       aceita: { label: '✅ Aceita', className: 'bg-emerald-100 text-emerald-700' },
       paga: { label: '💰 Paga', className: 'bg-green-100 text-green-700' },
@@ -749,6 +757,20 @@ const PropostasPage = () => {
                             </span>
                           )}
                         </div>
+                      </div>
+
+                      {/* Empresa + Vendedor - Lado Direito */}
+                      <div className="text-right min-w-[100px] flex-shrink-0">
+                        {proposal.client_company_name && (
+                          <p className="text-[11px] font-medium text-foreground truncate max-w-[120px]" title={proposal.client_company_name}>
+                            {proposal.client_company_name}
+                          </p>
+                        )}
+                        {proposal.seller_name && (
+                          <p className="text-[10px] text-muted-foreground truncate max-w-[120px]" title={proposal.seller_name}>
+                            👤 {proposal.seller_name}
+                          </p>
+                        )}
                       </div>
 
                       {/* Actions */}
