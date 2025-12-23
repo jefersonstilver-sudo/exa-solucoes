@@ -6,6 +6,7 @@ import { EXAAlertsHeader } from '../components/exa-alerts/EXAAlertsHeader';
 import { AlertaCEOCard } from '../components/exa-alerts/AlertaCEOCard';
 import { AlertaPropostasCard } from '../components/exa-alerts/AlertaPropostasCard';
 import { AlertaPainelOfflineCard } from '../components/exa-alerts/AlertaPainelOfflineCard';
+import { AlertaContratosPropostasConfig } from '../components/exa-alerts/AlertaContratosPropostasConfig';
 import { AlertCard } from '../components/exa-alerts/AlertCard';
 import { AddAlertDialog } from '../components/exa-alerts/AddAlertDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -151,6 +152,9 @@ export const AlertasPage = () => {
 
         {/* Panel Offline Alert Card */}
         <AlertaPainelOfflineCard />
+
+        {/* Contracts & Proposals Alert Config */}
+        <AlertaContratosPropostasConfig />
 
         {/* Other Alerts Grid */}
         {alerts.length > 0 && (

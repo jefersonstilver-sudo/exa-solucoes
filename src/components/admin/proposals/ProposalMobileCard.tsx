@@ -22,6 +22,7 @@ interface Proposal {
   client_cnpj?: string | null;
   client_phone: string | null;
   client_email: string | null;
+  client_company_name?: string | null;
   total_panels: number;
   fidel_monthly_value: number;
   cash_total_value: number;
@@ -34,6 +35,7 @@ interface Proposal {
   last_heartbeat_at?: string | null;
   payment_type?: string | null;
   custom_installments?: CustomInstallment[] | null;
+  seller_name?: string | null;
 }
 
 // Check if client is actively viewing RIGHT NOW (heartbeat within last 45 seconds)
@@ -67,9 +69,8 @@ const formatTimeSpent = (seconds: number | null) => {
 
 const getStatusConfig = (status: string, isLive?: boolean) => {
   const configs: Record<string, { label: string; className: string }> = {
-    pendente: { label: 'Enviada', className: 'bg-blue-100 text-blue-700' },
+    pendente: { label: 'Pendente', className: 'bg-gray-100 text-gray-700' },
     enviada: { label: 'Enviada', className: 'bg-blue-100 text-blue-700' },
-    visualizando: { label: 'Visualizada', className: 'bg-purple-100 text-purple-700' },
     visualizada: { label: 'Visualizada', className: 'bg-purple-100 text-purple-700' },
     aceita: { label: 'Aceita', className: 'bg-emerald-100 text-emerald-700' },
     paga: { label: 'Paga', className: 'bg-green-100 text-green-700' },
@@ -79,6 +80,7 @@ const getStatusConfig = (status: string, isLive?: boolean) => {
   };
   return { 
     ...configs[status] || configs.enviada,
+    // Só mostra "Visualizando agora!!" se heartbeat real < 45s (verificado em isActivelyViewing)
     isLive: isLive && !['recusada', 'paga', 'convertida', 'expirada', 'aceita'].includes(status)
   };
 };
@@ -116,11 +118,11 @@ export const ProposalMobileCard: React.FC<ProposalMobileCardProps> = ({
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-mono text-muted-foreground">{proposal.number}</span>
         <div className="flex items-center gap-1.5">
-          {/* Live indicator - minimal dot */}
+          {/* Live indicator - só mostra quando heartbeat real < 45s */}
           {statusConfig.isLive && (
             <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-green-50 border border-green-200">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-[9px] font-medium text-green-700">Ao vivo</span>
+              <span className="text-[9px] font-medium text-green-700">Visualizando agora!!</span>
             </div>
           )}
           <Badge className={`${statusConfig.className} text-[10px] px-1.5 py-0 border-0`}>
@@ -129,10 +131,24 @@ export const ProposalMobileCard: React.FC<ProposalMobileCardProps> = ({
         </div>
       </div>
 
-      {/* Client name */}
-      <div className="flex items-center gap-2">
-        <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-        <span className="font-medium text-foreground truncate text-sm">{proposal.client_name}</span>
+      {/* Client name + Empresa/Vendedor */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <span className="font-medium text-foreground truncate text-sm">{proposal.client_name}</span>
+        </div>
+        <div className="text-right flex-shrink-0">
+          {proposal.client_company_name && (
+            <p className="text-[10px] font-medium text-foreground truncate max-w-[90px]" title={proposal.client_company_name}>
+              {proposal.client_company_name}
+            </p>
+          )}
+          {proposal.seller_name && (
+            <p className="text-[9px] text-muted-foreground truncate max-w-[90px]" title={proposal.seller_name}>
+              👤 {proposal.seller_name}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Values row - Custom installments vs Standard */}

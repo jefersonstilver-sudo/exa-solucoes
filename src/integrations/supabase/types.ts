@@ -1786,6 +1786,48 @@ export type Database = {
           },
         ]
       }
+      commercial_alerts_config: {
+        Row: {
+          alerta_contratos_pendentes: boolean | null
+          alerta_propostas_expirando: boolean | null
+          alerta_propostas_pendentes: boolean | null
+          ativo: boolean | null
+          created_at: string | null
+          dias_semana: Json | null
+          horarios_envio: Json | null
+          id: string
+          template_contratos: string | null
+          template_propostas: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          alerta_contratos_pendentes?: boolean | null
+          alerta_propostas_expirando?: boolean | null
+          alerta_propostas_pendentes?: boolean | null
+          ativo?: boolean | null
+          created_at?: string | null
+          dias_semana?: Json | null
+          horarios_envio?: Json | null
+          id?: string
+          template_contratos?: string | null
+          template_propostas?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          alerta_contratos_pendentes?: boolean | null
+          alerta_propostas_expirando?: boolean | null
+          alerta_propostas_pendentes?: boolean | null
+          ativo?: boolean | null
+          created_at?: string | null
+          dias_semana?: Json | null
+          horarios_envio?: Json | null
+          id?: string
+          template_contratos?: string | null
+          template_propostas?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       configuracoes_adicionais: {
         Row: {
           backup_automatico_ativo: boolean | null
