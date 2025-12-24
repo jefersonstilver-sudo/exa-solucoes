@@ -3,6 +3,7 @@ import { FileSignature, Clock, AlertTriangle, ArrowRight, FileX } from 'lucide-r
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCardConfig } from '@/hooks/useCardConfig';
@@ -210,28 +211,32 @@ const ContratosAlertCard: React.FC = () => {
           </div>
         )}
 
-        {/* NOVO: Alerta de pedidos ativos sem contrato */}
+        {/* Alerta de pedidos ativos sem contrato - apenas badge com hover para lista */}
         {pedidosSemContrato.length > 0 && (
-          <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-            <div className="flex items-center gap-2 mb-2">
-              <FileX className="h-4 w-4 text-red-600" />
-              <span className="text-xs font-semibold text-red-700">
-                {pedidosSemContrato.length} pedido{pedidosSemContrato.length > 1 ? 's' : ''} ativo{pedidosSemContrato.length > 1 ? 's' : ''} sem contrato
-              </span>
-            </div>
-            <div className="space-y-1 max-h-20 overflow-y-auto">
-              {pedidosSemContrato.slice(0, 3).map(pedido => (
-                <div key={pedido.id} className="text-[10px] text-red-600 truncate">
-                  • {pedido.clientName}
+          <HoverCard openDelay={100}>
+            <HoverCardTrigger asChild>
+              <div className="p-2 rounded-lg bg-red-50 border border-red-200 cursor-pointer hover:bg-red-100 transition-colors">
+                <div className="flex items-center gap-2">
+                  <FileX className="h-4 w-4 text-red-600" />
+                  <span className="text-xs font-semibold text-red-700">
+                    {pedidosSemContrato.length} ativo{pedidosSemContrato.length > 1 ? 's' : ''} sem contrato
+                  </span>
                 </div>
-              ))}
-              {pedidosSemContrato.length > 3 && (
-                <div className="text-[10px] text-red-500 font-medium">
-                  +{pedidosSemContrato.length - 3} mais...
+              </div>
+            </HoverCardTrigger>
+            <HoverCardContent className="w-72 p-3" side="top">
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold text-gray-900">Pedidos sem Contrato</h4>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {pedidosSemContrato.map(pedido => (
+                    <div key={pedido.id} className="text-xs text-red-600 truncate">
+                      • {pedido.clientName}
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            </HoverCardContent>
+          </HoverCard>
         )}
 
         <Button
