@@ -9,6 +9,7 @@ interface BalanceData {
   blocked: number;
   to_be_released: number;
   currency: string;
+  source?: string;
 }
 
 interface BalanceHeroSectionProps {
@@ -24,40 +25,13 @@ const BalanceHeroSection: React.FC<BalanceHeroSectionProps> = ({
   onRefresh,
   lastUpdated
 }) => {
-  const balanceCards = [
-    {
-      label: 'Disponível',
-      value: balance?.available || 0,
-      icon: Wallet,
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-50',
-      borderColor: 'border-emerald-200'
-    },
-    {
-      label: 'Bloqueado',
-      value: balance?.blocked || 0,
-      icon: Lock,
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-50',
-      borderColor: 'border-amber-200'
-    },
-    {
-      label: 'A Liberar',
-      value: balance?.to_be_released || 0,
-      icon: Clock,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200'
-    }
-  ];
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <Card className="p-6 bg-card border border-border">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-semibold text-foreground">Saldo Mercado Pago</h2>
+          <h2 className="text-lg font-semibold text-foreground">Saldo Mercado Pago</h2>
           {lastUpdated && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Atualizado: {new Date(lastUpdated).toLocaleString('pt-BR')}
             </p>
           )}
@@ -75,26 +49,52 @@ const BalanceHeroSection: React.FC<BalanceHeroSectionProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {balanceCards.map((card) => (
-          <Card
-            key={card.label}
-            className={`p-6 border-2 ${card.borderColor} ${card.bgColor} transition-all duration-200 hover:shadow-md`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">{card.label}</p>
-                <p className={`text-2xl font-bold ${card.color} mt-1`}>
-                  {loading ? '...' : formatCurrency(card.value)}
-                </p>
-              </div>
-              <div className={`p-3 rounded-full ${card.bgColor}`}>
-                <card.icon className={`h-6 w-6 ${card.color}`} />
-              </div>
+        {/* Disponível */}
+        <div className="p-4 rounded-lg bg-muted/50 border border-border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Disponível</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {loading ? '...' : formatCurrency(balance?.available || 0)}
+              </p>
             </div>
-          </Card>
-        ))}
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Wallet className="h-5 w-5 text-primary" />
+            </div>
+          </div>
+        </div>
+
+        {/* Bloqueado */}
+        <div className="p-4 rounded-lg bg-muted/50 border border-border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Bloqueado</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {loading ? '...' : formatCurrency(balance?.blocked || 0)}
+              </p>
+            </div>
+            <div className="p-2 rounded-lg bg-muted">
+              <Lock className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </div>
+        </div>
+
+        {/* A Liberar */}
+        <div className="p-4 rounded-lg bg-muted/50 border border-border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">A Liberar</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {loading ? '...' : formatCurrency(balance?.to_be_released || 0)}
+              </p>
+            </div>
+            <div className="p-2 rounded-lg bg-muted">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </Card>
   );
 };
 
