@@ -156,12 +156,10 @@ const PropostasPage = () => {
         if (p.created_by) proposalCreatorMap.set(p.id, p.created_by);
       });
 
-      // Buscar parcelas com filtro de período
+      // Buscar parcelas (sem filtro de período para mostrar totais reais)
       const { data: parcelas, error: parcelasError } = await supabase
         .from('parcelas')
-        .select('pedido_id, valor_final, status, data_pagamento, data_vencimento')
-        .gte('data_vencimento', selectedPeriod.startDate.toISOString().split('T')[0])
-        .lte('data_vencimento', selectedPeriod.endDate.toISOString().split('T')[0]);
+        .select('pedido_id, valor_final, status, data_pagamento, data_vencimento');
       
       if (parcelasError) throw parcelasError;
 
@@ -373,11 +371,12 @@ const PropostasPage = () => {
 
   const stats = {
     proposalsToday: proposals.filter(p => isToday(new Date(p.created_at))).length,
-    pendentes: proposals.filter(p => ['pendente', 'enviada', 'visualizada'].includes(p.status)).length,
+    pendentes: proposals.filter(p => ['pendente', 'enviada', 'visualizada', 'atualizada'].includes(p.status)).length,
+    enviadas: proposals.filter(p => ['enviada', 'atualizada'].includes(p.status)).length,
     valorRecebido: financialData?.valorRecebido || 0,
     valorAReceber: financialData?.valorAReceber || 0,
     valorPotencial: proposals
-      .filter(p => ['pendente', 'enviada', 'visualizada'].includes(p.status))
+      .filter(p => ['pendente', 'enviada', 'visualizada', 'atualizada'].includes(p.status))
       .reduce((sum, p) => sum + (p.fidel_monthly_value * p.duration_months), 0)
   };
 
@@ -562,8 +561,8 @@ const PropostasPage = () => {
           <ProposalsPeriodSelector value={selectedPeriod} onChange={setSelectedPeriod} />
         </div>
 
-        {/* Stats 2x2 Grid */}
-        <div className="grid grid-cols-2 gap-2">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-3 gap-2">
           <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-green-600" />
@@ -580,14 +579,23 @@ const PropostasPage = () => {
           </Card>
           <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-blue-600" />
+              <Send className="h-4 w-4 text-blue-600" />
+              <span className="text-[10px] text-muted-foreground">Enviadas</span>
+            </div>
+            <div className="text-lg font-bold text-blue-600">{stats.enviadas}</div>
+          </Card>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-purple-600" />
               <span className="text-[10px] text-muted-foreground">Pendentes</span>
             </div>
-            <div className="text-lg font-bold text-blue-600">{stats.pendentes}</div>
+            <div className="text-lg font-bold text-purple-600">{stats.pendentes}</div>
           </Card>
           <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-purple-600" />
+              <FileText className="h-4 w-4 text-gray-600" />
               <span className="text-[10px] text-muted-foreground">Hoje</span>
             </div>
             <div className="text-lg font-bold">{stats.proposalsToday}</div>
