@@ -154,7 +154,7 @@ export function ModernAdminSidebar() {
           icon: Building2,
           moduleKey: MODULE_KEYS.sync_notion,
           badge: '🔄',
-          badgeColor: 'bg-blue-500'
+          badgeColor: 'bg-[#9C1E1E]'
         },
         {
           title: 'Pedidos',
@@ -162,7 +162,7 @@ export function ModernAdminSidebar() {
           icon: ShoppingBag,
           moduleKey: MODULE_KEYS.pedidos,
           badge: pedidosSemVideo > 0 ? pedidosSemVideo : undefined,
-          badgeColor: 'bg-orange-500',
+          badgeColor: 'bg-[#9C1E1E]',
           badgeTooltip: 'Pedidos ativos aguardando envio de vídeo'
         },
         {
@@ -177,7 +177,7 @@ export function ModernAdminSidebar() {
           icon: FileText,
           moduleKey: MODULE_KEYS.propostas,
           badge: propostasAguardando > 0 ? propostasAguardando : undefined,
-          badgeColor: 'bg-blue-500',
+          badgeColor: 'bg-[#9C1E1E]',
           badgeTooltip: 'Propostas enviadas aguardando resposta do cliente'
         },
         {
@@ -186,7 +186,7 @@ export function ModernAdminSidebar() {
           icon: Scale,
           moduleKey: MODULE_KEYS.juridico,
           badge: contratosPendentes > 0 ? contratosPendentes : undefined,
-          badgeColor: 'bg-purple-500',
+          badgeColor: 'bg-[#9C1E1E]',
           badgeTooltip: 'Contratos enviados aguardando assinatura'
         },
         {
@@ -201,7 +201,7 @@ export function ModernAdminSidebar() {
           icon: CheckSquare,
           moduleKey: MODULE_KEYS.aprovacoes,
           badge: videosParaAprovar > 0 ? videosParaAprovar : undefined,
-          badgeColor: 'bg-yellow-500',
+          badgeColor: 'bg-[#9C1E1E]',
           badgeTooltip: 'Vídeos aguardando aprovação do cliente'
         },
         {
@@ -216,7 +216,7 @@ export function ModernAdminSidebar() {
           icon: Gift,
           moduleKey: MODULE_KEYS.beneficios,
           badge: beneficiosAcao > 0 ? beneficiosAcao : undefined,
-          badgeColor: 'bg-pink-500',
+          badgeColor: 'bg-[#9C1E1E]',
           badgePulse: beneficiosAcao > 0,
           badgeTooltip: 'Benefícios com ação necessária'
         }
@@ -237,7 +237,7 @@ export function ModernAdminSidebar() {
           icon: MessageSquare,
           moduleKey: MODULE_KEYS.crm_chat,
           badge: unreadCount > 0 ? unreadCount : undefined,
-          badgeColor: 'bg-green-500',
+          badgeColor: 'bg-[#9C1E1E]',
           badgeTooltip: 'Mensagens não lidas'
         },
         {
@@ -246,7 +246,7 @@ export function ModernAdminSidebar() {
           icon: AlertTriangle,
           moduleKey: MODULE_KEYS.escalacoes,
           badge: escalacoesPendentes > 0 ? escalacoesPendentes : undefined,
-          badgeColor: 'bg-orange-500',
+          badgeColor: 'bg-[#9C1E1E]',
           badgeTooltip: 'Escalações pendentes de resolução'
         }
       ]
@@ -283,7 +283,7 @@ export function ModernAdminSidebar() {
           icon: Tv,
           moduleKey: MODULE_KEYS.paineis,
           badge: offlineCount > 0 ? offlineCount : undefined,
-          badgeColor: 'bg-red-500',
+          badgeColor: 'bg-[#9C1E1E]',
           badgeTooltip: 'Painéis offline'
         }
       ]
@@ -332,7 +332,7 @@ export function ModernAdminSidebar() {
           icon: Clapperboard,
           moduleKey: MODULE_KEYS.editor_videos,
           badge: 'BETA',
-          badgeColor: 'bg-purple-500'
+          badgeColor: 'bg-[#9C1E1E]'
         },
         {
           title: 'Emails',
@@ -553,7 +553,7 @@ export function ModernAdminSidebar() {
                                 <TooltipProvider delayDuration={0}>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <span className={`${badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center cursor-help ${badgePulse ? 'animate-pulse ring-2 ring-pink-300/50' : ''}`}>
+                                      <span className={`${badgeColor} text-white text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center cursor-help shadow-sm ${badgePulse ? 'animate-pulse ring-2 ring-red-300/50' : ''}`}>
                                         {badge}
                                       </span>
                                     </TooltipTrigger>
@@ -630,7 +630,7 @@ export function ModernAdminSidebar() {
                               <TooltipProvider delayDuration={0}>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <span className={`${badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center cursor-help ${badgePulse ? 'animate-pulse ring-2 ring-pink-300/50' : ''}`}>
+                                    <span className={`${badgeColor} text-white text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center cursor-help shadow-sm ${badgePulse ? 'animate-pulse ring-2 ring-red-300/50' : ''}`}>
                                       {badge}
                                     </span>
                                   </TooltipTrigger>
@@ -648,7 +648,7 @@ export function ModernAdminSidebar() {
                           </>
                         )}
                       {collapsed && badge !== undefined && (
-                        <span className={`absolute -top-1 -right-1 ${badgeColor} text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center ${badgePulse ? 'animate-pulse ring-2 ring-pink-300/50' : ''}`}>
+                        <span className={`absolute -top-1 -right-1 ${badgeColor} text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm ${badgePulse ? 'animate-pulse ring-2 ring-red-300/50' : ''}`}>
                           {typeof badge === 'number' && badge > 9 ? '9+' : badge}
                         </span>
                       )}
@@ -671,7 +671,7 @@ export function ModernAdminSidebar() {
                                     <p className="text-[10px] text-white/70">{badgeTooltip}</p>
                                   )}
                                   {badge !== undefined && (
-                                    <span className={`${badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full w-fit`}>
+                                    <span className={`${badgeColor} text-white text-[11px] font-bold px-2 py-0.5 rounded-full w-fit shadow-sm`}>
                                       {badge}
                                     </span>
                                   )}
