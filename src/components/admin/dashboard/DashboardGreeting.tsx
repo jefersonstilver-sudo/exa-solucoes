@@ -27,11 +27,10 @@ const DashboardGreeting: React.FC = () => {
     }
     return 'Admin';
   };
-  return <div className="mb-2">
-      <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+  return <div className="mb-2 md:hidden">
+      <h1 className="text-xl font-bold text-gray-900">
         {getGreeting()}, <span className="text-[hsl(var(--exa-red))]">{getUserName()}</span> 👋
       </h1>
-      
     </div>;
 };
 export default DashboardGreeting;
