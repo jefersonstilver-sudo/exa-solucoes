@@ -35,6 +35,7 @@ import TiposContaPage from '@/pages/admin/TiposContaPage';
 import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
 import SecurityPage from '@/pages/admin/SecurityPage';
 import AcessoNegadoPage from '@/pages/admin/AcessoNegadoPage';
+import PosicoesDisponiveisPage from '@/pages/admin/PosicoesDisponiveisPage';
 import ProtectedModuleRoute from '@/components/admin/ProtectedModuleRoute';
 import { MODULE_KEYS } from '@/hooks/useDynamicModulePermissions';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
@@ -64,6 +65,11 @@ const AdminRoutes = () => {
       <Route index element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.dashboard}>
           <Dashboard />
+        </ProtectedModuleRoute>
+      } />
+      <Route path="posicoes" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.posicoes}>
+          <PosicoesDisponiveisPage />
         </ProtectedModuleRoute>
       } />
       <Route path="sync-notion" element={

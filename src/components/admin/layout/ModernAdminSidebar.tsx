@@ -32,7 +32,8 @@ import {
   FileText,
   Scale,
   Sun,
-  Moon
+  Moon,
+  BarChart3
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -139,6 +140,13 @@ export function ModernAdminSidebar() {
           href: basePath,
           icon: LayoutDashboard,
           moduleKey: MODULE_KEYS.dashboard
+        },
+        {
+          title: 'Posições',
+          href: buildPath('posicoes'),
+          icon: BarChart3,
+          moduleKey: MODULE_KEYS.posicoes,
+          badgeTooltip: 'Controle de estoque de posições disponíveis'
         },
         {
           title: 'Sync Notion',
