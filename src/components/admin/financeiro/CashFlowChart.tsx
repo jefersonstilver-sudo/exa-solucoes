@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface CashFlowData {
   date: string;
@@ -18,68 +18,65 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data = [], loading }) => 
   const hasData = data && data.length > 0;
 
   const formatCurrency = (value: number) => {
-    return `R$ ${value.toLocaleString('pt-BR')}`;
+    return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   };
 
   return (
-    <Card className="border border-border">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <TrendingUp className="h-5 w-5 text-primary" />
+    <Card className="bg-card border border-border">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
+          <TrendingUp className="h-4 w-4 text-primary" />
           Fluxo de Caixa
         </CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="h-[300px] flex items-center justify-center">
-            <div className="animate-pulse text-muted-foreground">Carregando dados do Mercado Pago...</div>
+          <div className="h-[250px] flex items-center justify-center">
+            <span className="text-muted-foreground">Carregando...</span>
           </div>
         ) : !hasData ? (
-          <div className="h-[300px] flex items-center justify-center">
-            <p className="text-muted-foreground text-sm">Sem dados de fluxo de caixa no período</p>
+          <div className="h-[250px] flex items-center justify-center">
+            <span className="text-muted-foreground text-sm">Sem dados de fluxo de caixa</span>
           </div>
         ) : (
-          <div className="h-[300px] w-full">
+          <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorEntradas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="date" 
-                  tick={{ fontSize: 12 }}
-                  className="text-muted-foreground"
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
                 />
                 <YAxis 
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
                   tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-                  tick={{ fontSize: 12 }}
-                  className="text-muted-foreground"
                 />
-                <Tooltip
-                  formatter={(value: number) => formatCurrency(value)}
-                  contentStyle={{
+                <Tooltip 
+                  contentStyle={{ 
                     backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '8px',
+                    fontSize: '12px'
                   }}
-                  labelStyle={{ color: 'hsl(var(--foreground))' }}
+                  formatter={(value: number) => [formatCurrency(value), 'Entradas']}
                 />
-                <Legend />
-                <Line 
+                <Area 
                   type="monotone" 
                   dataKey="entradas" 
-                  name="Entradas"
-                  stroke="hsl(142, 76%, 36%)" 
+                  stroke="hsl(var(--primary))" 
                   strokeWidth={2}
-                  dot={{ fill: 'hsl(142, 76%, 36%)', strokeWidth: 2 }}
+                  fillOpacity={1} 
+                  fill="url(#colorEntradas)" 
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="saidas" 
-                  name="Saídas"
-                  stroke="hsl(0, 84%, 60%)" 
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(0, 84%, 60%)', strokeWidth: 2 }}
-                />
-              </LineChart>
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         )}

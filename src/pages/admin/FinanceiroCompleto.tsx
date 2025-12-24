@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useMercadoPagoFinancial } from '@/hooks/admin/useMercadoPagoFinancial';
 import BalanceHeroSection from '@/components/admin/financeiro/BalanceHeroSection';
 import FinancialKPIsRow from '@/components/admin/financeiro/FinancialKPIsRow';
@@ -29,76 +29,73 @@ const FinanceiroCompleto: React.FC = () => {
     fetchPayments();
   };
 
-  // Derive chart data from real payments
-  const cashFlowData = React.useMemo(() => {
+  // Transform payments for table - using correct field names from API
+  const transactionsData = useMemo(() => {
     if (!payments || payments.length === 0) return [];
     
-    const grouped: Record<string, { entradas: number; saidas: number }> = {};
-    
-    payments.forEach(p => {
-      const date = new Date(p.date_approved || p.date_created).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-      if (!grouped[date]) {
-        grouped[date] = { entradas: 0, saidas: 0 };
-      }
-      if (p.status === 'approved') {
-        grouped[date].entradas += p.net_received_amount || p.transaction_amount || 0;
-      }
-      if (p.status === 'refunded' || p.status === 'cancelled') {
-        grouped[date].saidas += p.transaction_amount || 0;
-      }
-    });
-    
-    return Object.entries(grouped)
-      .map(([date, values]) => ({ date, ...values }))
-      .slice(-7);
+    return payments.map((p: any) => ({
+      id: p.id?.toString() || '',
+      date: new Date(p.date_approved || p.date_created).toLocaleDateString('pt-BR'),
+      external_reference: p.external_reference || '',
+      payer_name: p.payer?.first_name 
+        ? `${p.payer.first_name} ${p.payer.last_name || ''}`.trim() 
+        : '',
+      payer_email: p.payer?.email || '',
+      amount: p.amounts?.transaction || p.transaction_amount || 0,
+      net_amount: p.amounts?.net_received || p.net_received_amount || 0,
+      payment_method: p.payment_method?.type || p.payment_type_id || '',
+      status: p.status || ''
+    }));
   }, [payments]);
 
-  const paymentMethodsData = React.useMemo(() => {
+  // Derive cash flow data from real payments
+  const cashFlowData = useMemo(() => {
     if (!payments || payments.length === 0) return [];
     
     const grouped: Record<string, number> = {};
     
-    payments.filter(p => p.status === 'approved').forEach(p => {
-      const method = p.payment_type_id || 'Outro';
-      const methodName = method === 'credit_card' ? 'Cartão' : 
-                        method === 'debit_card' ? 'Débito' :
-                        method === 'bank_transfer' || method === 'pix' ? 'PIX' :
-                        method === 'ticket' ? 'Boleto' : 'Outro';
-      grouped[methodName] = (grouped[methodName] || 0) + (p.transaction_amount || 0);
+    payments.forEach((p: any) => {
+      if (p.status === 'approved') {
+        const dateStr = new Date(p.date_approved || p.date_created).toLocaleDateString('pt-BR', { 
+          day: '2-digit', 
+          month: '2-digit' 
+        });
+        const amount = p.amounts?.net_received || p.amounts?.transaction || p.transaction_amount || 0;
+        grouped[dateStr] = (grouped[dateStr] || 0) + amount;
+      }
     });
     
-    const colors = ['#10B981', '#3B82F6', '#F59E0B', '#6B7280'];
-    return Object.entries(grouped).map(([name, value], i) => ({
-      name,
-      value,
-      color: colors[i % colors.length]
-    }));
+    return Object.entries(grouped)
+      .map(([date, entradas]) => ({ date, entradas, saidas: 0 }))
+      .slice(-7);
   }, [payments]);
 
-  // Transform payments for table
-  const transactionsData = React.useMemo(() => {
+  // Derive payment methods data from real payments
+  const paymentMethodsData = useMemo(() => {
     if (!payments || payments.length === 0) return [];
     
-    return payments.map(p => ({
-      id: p.id?.toString() || '',
-      date: new Date(p.date_approved || p.date_created).toLocaleDateString('pt-BR'),
-      pedido_id: p.external_reference ? `#${p.external_reference.slice(0, 8)}` : '—',
-      client_name: p.payer?.first_name ? `${p.payer.first_name} ${p.payer.last_name || ''}`.trim() : p.payer?.email || '—',
-      value: p.transaction_amount || 0,
-      net_value: p.net_received_amount || 0,
-      payment_method: p.payment_type_id === 'credit_card' ? 'Cartão' :
-                     p.payment_type_id === 'pix' || p.payment_type_id === 'bank_transfer' ? 'PIX' :
-                     p.payment_type_id === 'ticket' ? 'Boleto' : p.payment_type_id || '—',
-      status: p.status === 'approved' ? 'Aprovado' : 
-             p.status === 'pending' ? 'Pendente' :
-             p.status === 'rejected' ? 'Rejeitado' : p.status || '—',
-      mp_verified: p.status === 'approved' ? 'verified' as const : 
-                  p.status === 'pending' ? 'warning' as const : 'critical' as const
-    }));
+    const grouped: Record<string, number> = {};
+    const methodLabels: Record<string, string> = {
+      'pix': 'PIX',
+      'credit_card': 'Cartão',
+      'debit_card': 'Débito',
+      'bank_transfer': 'Transferência',
+      'ticket': 'Boleto',
+      'account_money': 'Saldo MP'
+    };
+    
+    payments.filter((p: any) => p.status === 'approved').forEach((p: any) => {
+      const methodType = p.payment_method?.type || p.payment_type_id || 'outro';
+      const methodName = methodLabels[methodType] || methodType;
+      const amount = p.amounts?.transaction || p.transaction_amount || 0;
+      grouped[methodName] = (grouped[methodName] || 0) + amount;
+    });
+    
+    return Object.entries(grouped).map(([name, value]) => ({ name, value }));
   }, [payments]);
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-primary/10">

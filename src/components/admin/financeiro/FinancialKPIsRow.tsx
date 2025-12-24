@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, DollarSign, CreditCard, RefreshCcw, AlertTriangle, Percent, Users } from 'lucide-react';
+import { DollarSign, CreditCard, Percent, RefreshCcw, AlertTriangle, Users } from 'lucide-react';
 import { formatCurrency } from '@/utils/priceUtils';
 
 interface KPIData {
@@ -23,54 +23,42 @@ const FinancialKPIsRow: React.FC<FinancialKPIsRowProps> = ({ data, loading }) =>
     {
       label: 'Receita 30d',
       value: data?.revenue_30d || 0,
-      format: 'currency',
-      icon: DollarSign,
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-50'
+      format: 'currency' as const,
+      icon: DollarSign
     },
     {
       label: 'Ticket Médio',
       value: data?.avg_ticket || 0,
-      format: 'currency',
-      icon: CreditCard,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50'
+      format: 'currency' as const,
+      icon: CreditCard
     },
     {
       label: 'Taxas MP',
       value: data?.mp_fees || 0,
-      format: 'currency',
-      icon: Percent,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50'
+      format: 'currency' as const,
+      icon: Percent
     },
     {
       label: 'Reembolsos',
       value: data?.refunds || 0,
-      format: 'currency',
-      icon: RefreshCcw,
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-50'
+      format: 'currency' as const,
+      icon: RefreshCcw
     },
     {
       label: 'Chargebacks',
       value: data?.chargebacks || 0,
-      format: 'number',
-      icon: AlertTriangle,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50'
+      format: 'number' as const,
+      icon: AlertTriangle
     },
     {
       label: 'Pagamentos',
       value: data?.payments_count || 0,
-      format: 'number',
-      icon: Users,
-      color: 'text-violet-600',
-      bgColor: 'bg-violet-50'
+      format: 'number' as const,
+      icon: Users
     }
   ];
 
-  const formatValue = (value: number, format: string) => {
+  const formatValue = (value: number, format: 'currency' | 'number' | 'percent') => {
     if (loading) return '...';
     if (format === 'currency') return formatCurrency(value);
     if (format === 'percent') return `${value.toFixed(1)}%`;
@@ -82,15 +70,15 @@ const FinancialKPIsRow: React.FC<FinancialKPIsRowProps> = ({ data, loading }) =>
       {kpis.map((kpi) => (
         <Card
           key={kpi.label}
-          className="p-4 border border-border hover:shadow-sm transition-shadow"
+          className="p-4 bg-card border border-border"
         >
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${kpi.bgColor}`}>
-              <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
+            <div className="p-2 rounded-lg bg-muted">
+              <kpi.icon className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs text-muted-foreground truncate">{kpi.label}</p>
-              <p className={`text-sm font-semibold ${kpi.color}`}>
+              <p className="text-sm font-semibold text-foreground">
                 {formatValue(kpi.value, kpi.format)}
               </p>
             </div>
