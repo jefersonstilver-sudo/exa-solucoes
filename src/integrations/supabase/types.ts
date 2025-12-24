@@ -4481,6 +4481,74 @@ export type Database = {
           },
         ]
       }
+      financial_audit_alerts: {
+        Row: {
+          alert_type: string
+          client_email: string | null
+          client_name: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          level: string
+          message: string
+          mp_payer_name: string | null
+          mp_value: number | null
+          order_value: number | null
+          pedido_id: string | null
+          resolution_notes: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          alert_type: string
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          level: string
+          message: string
+          mp_payer_name?: string | null
+          mp_value?: number | null
+          order_value?: number | null
+          pedido_id?: string | null
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          alert_type?: string
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          level?: string
+          message?: string
+          mp_payer_name?: string | null
+          mp_value?: number | null
+          order_value?: number | null
+          pedido_id?: string | null
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_audit_alerts_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_audit_logs: {
         Row: {
           access_timestamp: string | null
@@ -5219,6 +5287,99 @@ export type Database = {
             columns: ["parent_message_id"]
             isOneToOne: false
             referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mp_transactions_cache: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          date_approved: string | null
+          date_created: string | null
+          external_reference: string | null
+          fee_amount: number | null
+          id: string
+          money_release_date: string | null
+          mp_payment_id: string
+          net_received_amount: number | null
+          payer_email: string | null
+          payer_identification: string | null
+          payer_name: string | null
+          payment_method: string | null
+          payment_type: string | null
+          pedido_id: string | null
+          proposal_id: string | null
+          raw_data: Json | null
+          status: string
+          status_detail: string | null
+          synced_at: string | null
+          transaction_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          date_approved?: string | null
+          date_created?: string | null
+          external_reference?: string | null
+          fee_amount?: number | null
+          id?: string
+          money_release_date?: string | null
+          mp_payment_id: string
+          net_received_amount?: number | null
+          payer_email?: string | null
+          payer_identification?: string | null
+          payer_name?: string | null
+          payment_method?: string | null
+          payment_type?: string | null
+          pedido_id?: string | null
+          proposal_id?: string | null
+          raw_data?: Json | null
+          status: string
+          status_detail?: string | null
+          synced_at?: string | null
+          transaction_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          date_approved?: string | null
+          date_created?: string | null
+          external_reference?: string | null
+          fee_amount?: number | null
+          id?: string
+          money_release_date?: string | null
+          mp_payment_id?: string
+          net_received_amount?: number | null
+          payer_email?: string | null
+          payer_identification?: string | null
+          payer_name?: string | null
+          payment_method?: string | null
+          payment_type?: string | null
+          pedido_id?: string | null
+          proposal_id?: string | null
+          raw_data?: Json | null
+          status?: string
+          status_detail?: string | null
+          synced_at?: string | null
+          transaction_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_transactions_cache_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mp_transactions_cache_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
             referencedColumns: ["id"]
           },
         ]
