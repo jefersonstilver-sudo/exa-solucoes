@@ -411,7 +411,7 @@ export function ModernAdminSidebar() {
 
   return (
     <Sidebar 
-      className="h-screen bg-black/40 backdrop-blur-2xl border-r border-white/10 shadow-2xl overscroll-contain"
+      className="h-screen bg-gradient-to-b from-[#3D0C0C]/95 via-[#2A0808]/95 to-[#1A0505]/95 backdrop-blur-2xl border-r border-red-500/20 shadow-2xl overscroll-contain"
       collapsible={isMobile ? "offcanvas" : "icon"}
       variant={isMobile ? "sidebar" : isTablet ? "sidebar" : "sidebar"}
       style={{ 
@@ -420,7 +420,7 @@ export function ModernAdminSidebar() {
       }}
     >
       {/* Header com glassmorphism */}
-      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-white/10 bg-white/5 backdrop-blur-xl`}>
+      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-red-500/20 bg-red-950/30 backdrop-blur-xl`}>
         <div className="flex items-center justify-center mb-3">
           <UnifiedLogo 
             size="custom" 
@@ -433,7 +433,7 @@ export function ModernAdminSidebar() {
         {!collapsed && (
           <div className="text-center">
             <div className="text-white font-medium text-sm">
-              EXA Media
+              Painel Administrativo
             </div>
             <div className="flex items-center justify-center space-x-1 mt-1">
               <Crown className={`h-3 w-3 ${getAdminBadgeColor()}`} />
@@ -446,7 +446,7 @@ export function ModernAdminSidebar() {
       </SidebarHeader>
 
       <SidebarContent 
-        className={`${collapsed ? 'px-2' : 'px-3'} py-4 space-y-3 overflow-y-auto admin-sidebar-scroll touch-pan-y overscroll-contain bg-black/20 backdrop-blur-xl`}
+        className={`${collapsed ? 'px-2' : 'px-3'} py-4 space-y-3 overflow-y-auto admin-sidebar-scroll touch-pan-y overscroll-contain bg-red-950/20 backdrop-blur-xl`}
         style={{ 
           WebkitOverflowScrolling: 'touch',
           scrollBehavior: 'smooth',
@@ -562,7 +562,7 @@ export function ModernAdminSidebar() {
       </SidebarContent>
       
       {/* Footer com perfil do usuário - estilo glassmorphism */}
-      <SidebarFooter className="p-3 border-t border-white/10 bg-white/5 backdrop-blur-xl">
+      <SidebarFooter className="p-3 border-t border-red-500/20 bg-red-950/30 backdrop-blur-xl">
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
           <Avatar className="h-9 w-9 ring-2 ring-red-500/30">
             <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white font-semibold text-sm">
