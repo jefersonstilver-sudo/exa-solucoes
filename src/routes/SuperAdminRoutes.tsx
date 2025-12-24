@@ -25,6 +25,7 @@ import BenefitManagement from '@/pages/admin/BenefitManagement';
 import CRMClients from '@/pages/admin/CRMClients';
 import SecurityDashboard from '@/pages/admin/SecurityDashboard';
 import FinancialReports from '@/pages/admin/FinancialReports';
+import FinanceiroCompleto from '@/pages/admin/FinanceiroCompleto';
 import ZApiDiagnostics from '@/pages/admin/ZApiDiagnostics';
 import AssinaturasPage from '@/pages/admin/AssinaturasPage';
 import EmailLogs from '@/pages/admin/EmailLogs';
@@ -73,6 +74,7 @@ const SuperAdminRoutes = () => {
       <Route path="instrucoes-compra-vales" element={<BenefitPurchaseInstructions />} />
       <Route path="gerenciar-beneficios" element={<BenefitManagement />} />
       <Route path="relatorios-financeiros" element={<FinancialReports />} />
+      <Route path="financeiro-mp" element={<FinanceiroCompleto />} />
       
       {/* ============ CRM ============ */}
       <Route path="crm" element={<CRMClients />} />

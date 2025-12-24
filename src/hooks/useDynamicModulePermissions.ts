@@ -38,6 +38,7 @@ export const MODULE_KEYS = {
   relatorios: 'relatorios',
   seguranca: 'seguranca',
   configuracoes: 'configuracoes',
+  financeiro_mp: 'financeiro_mp',
 } as const;
 
 export type ModuleKey = keyof typeof MODULE_KEYS;
