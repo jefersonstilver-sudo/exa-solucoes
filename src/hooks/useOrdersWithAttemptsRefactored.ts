@@ -39,6 +39,13 @@ export const useOrdersWithAttemptsRefactored = () => {
         throw pedidosError;
       }
       
+      // Buscar IDs de pedidos que têm vídeos
+      const { data: pedidosComVideo } = await supabase
+        .from('pedido_videos')
+        .select('pedido_id');
+      
+      const pedidoIdsComVideo = new Set(pedidosComVideo?.map(pv => pv.pedido_id) || []);
+      
       // Buscar tentativas normalmente
       const tentativas = await fetchAttemptsData();
       
@@ -64,7 +71,8 @@ export const useOrdersWithAttemptsRefactored = () => {
         tipo_pagamento: pedido.tipo_pagamento,
         is_fidelidade: pedido.is_fidelidade,
         contrato_status: pedido.contrato_status,
-        contrato_assinado_em: pedido.contrato_assinado_em
+        contrato_assinado_em: pedido.contrato_assinado_em,
+        hasVideo: pedidoIdsComVideo.has(pedido.id)
       }));
       
       const tentativasFormatadas = formatAttemptsData(tentativasComEmails);
