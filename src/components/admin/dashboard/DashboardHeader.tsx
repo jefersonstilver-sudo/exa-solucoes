@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { ChartBar } from 'lucide-react';
 import { ElegantPeriodType } from './ElegantPeriodButton';
 import ElegantPeriodButton from './ElegantPeriodButton';
-import RealtimeStatusBadge from './RealtimeStatusBadge';
 
 interface DashboardHeaderProps {
   periodFilter: ElegantPeriodType;
@@ -29,11 +28,8 @@ const DashboardHeader = ({
   onSavePeriodChange
 }: DashboardHeaderProps) => {
   return (
-    <div className="flex items-center justify-between gap-3">
-      {/* Realtime Status Badge */}
-      <RealtimeStatusBadge isConnected={true} />
-      
-      <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+    <div className="flex items-center justify-end gap-3">
+      <div className="flex items-center gap-2 flex-shrink-0">
         <ElegantPeriodButton 
           value={periodFilter} 
           onChange={onPeriodChange} 

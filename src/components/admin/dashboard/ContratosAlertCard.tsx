@@ -156,7 +156,7 @@ const ContratosAlertCard: React.FC = () => {
   }
 
   return (
-    <Card className="h-full bg-white rounded-2xl border border-gray-100 shadow-sm transition-all duration-300 ease-out flex flex-col">
+    <Card className="h-full bg-white rounded-2xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_20px_50px_rgb(0,0,0,0.2)] hover:scale-[1.01] hover:-translate-y-1 transition-all duration-300 ease-out flex flex-col">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm md:text-base flex items-center justify-between">
           <div className="flex items-center gap-2">

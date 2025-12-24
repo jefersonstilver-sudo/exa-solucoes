@@ -17,21 +17,38 @@ export const SortableDashboardCard: React.FC<SortableDashboardCardProps> = ({ id
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+    isOver,
+  } = useSortable({ 
+    id,
+    transition: {
+      duration: 400,
+      easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+    }
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: transition || 'all 300ms cubic-bezier(0.25, 1, 0.5, 1)',
+    transition: transition || 'all 450ms cubic-bezier(0.34, 1.56, 0.64, 1)',
     zIndex: isDragging ? 50 : 1,
   };
 
-  // Show placeholder when this card is being dragged
+  // Placeholder pulsante quando arrastando
   if (isDragging) {
     return (
-      <div
+      <motion.div
         ref={setNodeRef}
         style={style}
-        className="rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 min-h-[200px] transition-all duration-300"
+        initial={{ opacity: 0.4, scale: 0.98 }}
+        animate={{ 
+          opacity: [0.3, 0.5, 0.3],
+          scale: [0.97, 0.99, 0.97],
+        }}
+        transition={{
+          duration: 1.8,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="rounded-2xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 to-primary/10 min-h-[200px]"
       />
     );
   }
@@ -42,22 +59,38 @@ export const SortableDashboardCard: React.FC<SortableDashboardCardProps> = ({ id
       style={style}
       {...attributes}
       {...listeners}
+      layout
+      layoutId={id}
       initial={false}
       animate={{
-        scale: 1,
+        scale: isOver ? 1.02 : 1,
+        y: isOver ? -6 : 0,
         opacity: 1,
       }}
       whileHover={{
-        scale: 1.01,
-        transition: { duration: 0.2 }
+        scale: 1.015,
+        y: -3,
+        transition: { 
+          duration: 0.35,
+          ease: [0.25, 0.46, 0.45, 0.94]
+        }
+      }}
+      whileTap={{
+        scale: 1.045,
+        boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.3)',
+        transition: { 
+          duration: 0.25,
+          ease: "easeOut"
+        }
       }}
       transition={{
         type: 'spring',
-        stiffness: 400,
-        damping: 25,
-        mass: 0.8
+        stiffness: 180,
+        damping: 28,
+        mass: 1.3,
+        restDelta: 0.001
       }}
-      className="cursor-grab active:cursor-grabbing will-change-transform"
+      className="cursor-grab active:cursor-grabbing will-change-transform touch-none"
     >
       {children}
     </motion.div>
