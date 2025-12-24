@@ -527,3 +527,12 @@ schedule = "0 15 * * 1-5"
 [[cron]]
 function_name = "daily-commercial-alerts"
 schedule = "0 18 * * 1-5"
+
+[functions.get-mercadopago-balance]
+verify_jwt = true
+
+[functions.search-mercadopago-payments]
+verify_jwt = true
+
+[functions.audit-orders-vs-mercadopago]
+verify_jwt = true
