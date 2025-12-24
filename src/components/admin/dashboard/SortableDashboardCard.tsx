@@ -2,6 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
+import { GripVertical } from 'lucide-react';
 
 interface SortableDashboardCardProps {
   id: string;
@@ -14,6 +15,7 @@ export const SortableDashboardCard: React.FC<SortableDashboardCardProps> = ({ id
     attributes,
     listeners,
     setNodeRef,
+    setActivatorNodeRef,
     transform,
     transition,
     isDragging,
@@ -57,8 +59,6 @@ export const SortableDashboardCard: React.FC<SortableDashboardCardProps> = ({ id
     <motion.div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
       layout
       layoutId={id}
       initial={false}
@@ -67,22 +67,6 @@ export const SortableDashboardCard: React.FC<SortableDashboardCardProps> = ({ id
         y: isOver ? -6 : 0,
         opacity: 1,
       }}
-      whileHover={{
-        scale: 1.015,
-        y: -3,
-        transition: { 
-          duration: 0.35,
-          ease: [0.25, 0.46, 0.45, 0.94]
-        }
-      }}
-      whileTap={{
-        scale: 1.045,
-        boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.3)',
-        transition: { 
-          duration: 0.25,
-          ease: "easeOut"
-        }
-      }}
       transition={{
         type: 'spring',
         stiffness: 180,
@@ -90,9 +74,34 @@ export const SortableDashboardCard: React.FC<SortableDashboardCardProps> = ({ id
         mass: 1.3,
         restDelta: 0.001
       }}
-      className="cursor-grab active:cursor-grabbing will-change-transform touch-none"
+      className="relative will-change-transform"
     >
-      {children}
+      {/* Drag Handle - Botão dedicado para arrastar */}
+      <motion.div
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
+        whileHover={{
+          scale: 1.1,
+          backgroundColor: 'rgba(0, 0, 0, 0.08)',
+        }}
+        whileTap={{
+          scale: 1.2,
+          backgroundColor: 'rgba(0, 0, 0, 0.12)',
+        }}
+        className="absolute top-2 right-2 z-10 p-1.5 rounded-lg cursor-grab active:cursor-grabbing 
+                   bg-white/80 backdrop-blur-sm shadow-sm border border-gray-100
+                   opacity-0 group-hover:opacity-100 hover:opacity-100 transition-all duration-200
+                   touch-none"
+        style={{ opacity: 1 }}
+      >
+        <GripVertical className="w-4 h-4 text-gray-400" />
+      </motion.div>
+      
+      {/* Card Content */}
+      <div className="group">
+        {children}
+      </div>
     </motion.div>
   );
 };

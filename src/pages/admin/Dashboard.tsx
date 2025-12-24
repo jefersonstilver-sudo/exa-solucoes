@@ -46,10 +46,10 @@ const Dashboard = () => {
   const [cardsOrder, setCardsOrder] = useState<string[]>(DEFAULT_CARDS_ORDER);
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Sensors for drag with activation constraint
+  // Sensors for drag - mais sensível para o handle
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 }
+      activationConstraint: { distance: 3 }
     })
   );
 

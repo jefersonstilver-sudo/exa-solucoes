@@ -37,9 +37,9 @@ const AppleLikeMetricCard = ({
         bg-white
         border border-gray-100
         rounded-xl p-2.5
-        shadow-sm
+        shadow-[0_10px_40px_rgba(0,0,0,0.12)]
         transition-all duration-300 ease-out
-        hover:shadow-md hover:scale-[1.01]
+        hover:shadow-[0_18px_50px_rgba(0,0,0,0.18)] hover:scale-[1.01] hover:-translate-y-0.5
         ${onClick ? 'cursor-pointer' : ''}
       `}
       onClick={onClick}
