@@ -21,7 +21,7 @@ const FinanceiroCompleto: React.FC = () => {
 
   useEffect(() => {
     fetchBalance();
-    fetchPayments();
+    fetchPayments(); // Busca todos os status
   }, [fetchBalance, fetchPayments]);
 
   const handleRefreshAll = () => {
@@ -29,67 +29,69 @@ const FinanceiroCompleto: React.FC = () => {
     fetchPayments();
   };
 
-  // Transform payments for table - using correct field names from API
+  // Transform payments for table - usando campos REAIS do MP
   const transactionsData = useMemo(() => {
     if (!payments || payments.length === 0) return [];
     
     return payments.map((p: any) => ({
-      id: p.id?.toString() || '',
-      date: new Date(p.date_approved || p.date_created).toLocaleDateString('pt-BR'),
+      id: String(p.id),
+      date: p.date_approved 
+        ? new Date(p.date_approved).toLocaleDateString('pt-BR')
+        : new Date(p.date_created).toLocaleDateString('pt-BR'),
       external_reference: p.external_reference || '',
-      payer_name: p.payer?.first_name 
-        ? `${p.payer.first_name} ${p.payer.last_name || ''}`.trim() 
-        : '',
-      payer_email: p.payer?.email || '',
-      amount: p.amounts?.transaction || p.transaction_amount || 0,
-      net_amount: p.amounts?.net_received || p.net_received_amount || 0,
-      payment_method: p.payment_method?.type || p.payment_type_id || '',
+      payer_name: p.payer_name || '',
+      payer_email: p.payer_email || p.payer?.email || '',
+      amount: p.transaction_amount || 0,
+      net_amount: p.net_received_amount || 0,
+      payment_method: p.payment_type_id || p.payment_method_id || '',
       status: p.status || ''
     }));
   }, [payments]);
 
-  // Derive cash flow data from real payments
+  // Derive cash flow data from real payments - usando date_approved e net_received_amount
   const cashFlowData = useMemo(() => {
     if (!payments || payments.length === 0) return [];
     
     const grouped: Record<string, number> = {};
     
-    payments.forEach((p: any) => {
-      if (p.status === 'approved') {
-        const dateStr = new Date(p.date_approved || p.date_created).toLocaleDateString('pt-BR', { 
+    payments
+      .filter((p: any) => p.status === 'approved' && p.date_approved)
+      .forEach((p: any) => {
+        const dateStr = new Date(p.date_approved).toLocaleDateString('pt-BR', { 
           day: '2-digit', 
           month: '2-digit' 
         });
-        const amount = p.amounts?.net_received || p.amounts?.transaction || p.transaction_amount || 0;
+        const amount = p.net_received_amount || p.transaction_amount || 0;
         grouped[dateStr] = (grouped[dateStr] || 0) + amount;
-      }
-    });
+      });
     
     return Object.entries(grouped)
       .map(([date, entradas]) => ({ date, entradas, saidas: 0 }))
       .slice(-7);
   }, [payments]);
 
-  // Derive payment methods data from real payments
+  // Derive payment methods data - usando payment_type_id
   const paymentMethodsData = useMemo(() => {
     if (!payments || payments.length === 0) return [];
     
     const grouped: Record<string, number> = {};
     const methodLabels: Record<string, string> = {
       'pix': 'PIX',
-      'credit_card': 'Cartão',
-      'debit_card': 'Débito',
+      'credit_card': 'Cartão Crédito',
+      'debit_card': 'Cartão Débito',
       'bank_transfer': 'Transferência',
       'ticket': 'Boleto',
       'account_money': 'Saldo MP'
     };
     
-    payments.filter((p: any) => p.status === 'approved').forEach((p: any) => {
-      const methodType = p.payment_method?.type || p.payment_type_id || 'outro';
-      const methodName = methodLabels[methodType] || methodType;
-      const amount = p.amounts?.transaction || p.transaction_amount || 0;
-      grouped[methodName] = (grouped[methodName] || 0) + amount;
-    });
+    payments
+      .filter((p: any) => p.status === 'approved')
+      .forEach((p: any) => {
+        const methodType = p.payment_type_id || 'outro';
+        const methodName = methodLabels[methodType] || methodType;
+        const amount = p.transaction_amount || 0;
+        grouped[methodName] = (grouped[methodName] || 0) + amount;
+      });
     
     return Object.entries(grouped).map(([name, value]) => ({ name, value }));
   }, [payments]);

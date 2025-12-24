@@ -1,7 +1,6 @@
 // Mercado Pago Payments Search
-// Busca pagamentos com filtros avançados
+// Busca pagamentos com filtros avançados - retorna dados REAIS do MP
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔍 [MP-SEARCH] Buscando pagamentos...');
+    console.log('🔍 [MP-SEARCH] Iniciando busca de pagamentos...');
     
     const mpAccessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
     
@@ -46,6 +45,8 @@ serve(async (req) => {
     if (payment_method) params.append('payment_method_id', payment_method);
     if (external_reference) params.append('external_reference', external_reference);
 
+    console.log('🔍 [MP-SEARCH] Query params:', params.toString());
+
     const response = await fetch(
       `https://api.mercadopago.com/v1/payments/search?${params.toString()}`,
       {
@@ -57,74 +58,140 @@ serve(async (req) => {
     );
 
     if (!response.ok) {
-      throw new Error(`Erro ao buscar pagamentos: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('❌ [MP-SEARCH] Erro API MP:', response.status, errorText);
+      throw new Error(`Erro ao buscar pagamentos: ${response.status} - ${response.statusText}`);
     }
 
     const data = await response.json();
+    const rawResults = data.results || [];
     
-    // Processar e enriquecer os dados
-    const payments = (data.results || []).map((payment: any) => ({
-      id: payment.id,
-      status: payment.status,
-      status_detail: payment.status_detail,
-      date_created: payment.date_created,
-      date_approved: payment.date_approved,
-      money_release_date: payment.money_release_date,
-      external_reference: payment.external_reference,
-      payment_method: {
-        id: payment.payment_method_id,
-        type: payment.payment_type_id,
-        issuer: payment.issuer_id
-      },
-      amounts: {
-        transaction: payment.transaction_amount,
-        net_received: payment.transaction_details?.net_received_amount || 0,
-        total_paid: payment.transaction_details?.total_paid_amount || 0,
-        currency: payment.currency_id
-      },
-      fees: payment.fee_details || [],
-      payer: {
-        id: payment.payer?.id,
-        email: payment.payer?.email,
-        first_name: payment.payer?.first_name,
-        last_name: payment.payer?.last_name,
-        identification: payment.payer?.identification
-      },
-      description: payment.description,
-      installments: payment.installments
-    }));
+    console.log(`📦 [MP-SEARCH] Recebidos ${rawResults.length} pagamentos do MP`);
+    
+    // Log detalhado do primeiro pagamento para debug
+    if (rawResults.length > 0) {
+      const sample = rawResults[0];
+      console.log('📋 [MP-SEARCH] Exemplo de pagamento RAW:', JSON.stringify({
+        id: sample.id,
+        status: sample.status,
+        date_created: sample.date_created,
+        date_approved: sample.date_approved,
+        transaction_amount: sample.transaction_amount,
+        transaction_details: sample.transaction_details,
+        fee_details: sample.fee_details,
+        payment_method_id: sample.payment_method_id,
+        payment_type_id: sample.payment_type_id,
+        payer: sample.payer,
+        external_reference: sample.external_reference,
+        description: sample.description
+      }, null, 2));
+    }
+
+    // Processar e mapear usando campos REAIS do Mercado Pago
+    const payments = rawResults.map((payment: any) => {
+      // Calcular taxa total
+      let totalFees = 0;
+      if (payment.fee_details && Array.isArray(payment.fee_details)) {
+        totalFees = payment.fee_details.reduce((sum: number, fee: any) => sum + (fee.amount || 0), 0);
+      }
+
+      // Nome do pagador
+      let payerName = '';
+      if (payment.payer) {
+        if (payment.payer.first_name) {
+          payerName = `${payment.payer.first_name} ${payment.payer.last_name || ''}`.trim();
+        } else if (payment.payer.email) {
+          payerName = payment.payer.email.split('@')[0];
+        }
+      }
+
+      return {
+        // IDs e Referências
+        id: payment.id,
+        external_reference: payment.external_reference || null,
+        
+        // Datas
+        date_created: payment.date_created,
+        date_approved: payment.date_approved,
+        money_release_date: payment.money_release_date,
+        
+        // Status
+        status: payment.status,
+        status_detail: payment.status_detail,
+        
+        // Valores - usando campos reais do MP
+        transaction_amount: payment.transaction_amount || 0,
+        net_received_amount: payment.transaction_details?.net_received_amount || 0,
+        total_paid_amount: payment.transaction_details?.total_paid_amount || 0,
+        fee_amount: totalFees,
+        currency_id: payment.currency_id || 'BRL',
+        
+        // Método de pagamento - campos reais
+        payment_method_id: payment.payment_method_id,
+        payment_type_id: payment.payment_type_id,
+        issuer_id: payment.issuer_id,
+        installments: payment.installments,
+        
+        // Pagador - dados reais
+        payer: {
+          id: payment.payer?.id || null,
+          email: payment.payer?.email || null,
+          first_name: payment.payer?.first_name || null,
+          last_name: payment.payer?.last_name || null,
+          identification: payment.payer?.identification || null,
+          phone: payment.payer?.phone || null
+        },
+        payer_name: payerName,
+        payer_email: payment.payer?.email || null,
+        
+        // Descrição
+        description: payment.description,
+        
+        // Card (se aplicável)
+        card: payment.card ? {
+          first_six_digits: payment.card.first_six_digits,
+          last_four_digits: payment.card.last_four_digits,
+          cardholder: payment.card.cardholder
+        } : null
+      };
+    });
 
     // Calcular resumo
     const summary = {
       total_count: data.paging?.total || payments.length,
       returned_count: payments.length,
-      total_amount: payments.reduce((sum: number, p: any) => sum + (p.amounts?.transaction || 0), 0),
-      net_amount: payments.reduce((sum: number, p: any) => sum + (p.amounts?.net_received || 0), 0),
+      total_amount: payments.reduce((sum: number, p: any) => sum + (p.transaction_amount || 0), 0),
+      net_amount: payments.reduce((sum: number, p: any) => sum + (p.net_received_amount || 0), 0),
+      total_fees: payments.reduce((sum: number, p: any) => sum + (p.fee_amount || 0), 0),
       by_status: {} as Record<string, number>,
       by_method: {} as Record<string, number>
     };
 
     for (const p of payments) {
       summary.by_status[p.status] = (summary.by_status[p.status] || 0) + 1;
-      summary.by_method[p.payment_method.id] = (summary.by_method[p.payment_method.id] || 0) + 1;
+      summary.by_method[p.payment_type_id || 'unknown'] = (summary.by_method[p.payment_type_id || 'unknown'] || 0) + 1;
     }
 
-    console.log(`✅ [MP-SEARCH] Encontrados ${payments.length} pagamentos`);
+    console.log(`✅ [MP-SEARCH] Processados ${payments.length} pagamentos`);
+    console.log(`💰 [MP-SEARCH] Total: R$ ${summary.total_amount.toFixed(2)} | Líquido: R$ ${summary.net_amount.toFixed(2)} | Taxas: R$ ${summary.total_fees.toFixed(2)}`);
 
     return new Response(JSON.stringify({
       payments,
       summary,
-      paging: data.paging
+      paging: data.paging,
+      source: 'mercadopago_api'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error: any) {
-    console.error('❌ [MP-SEARCH] Erro:', error);
+    console.error('❌ [MP-SEARCH] Erro:', error.message);
     
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || 'Erro ao buscar pagamentos'
+      error: error.message || 'Erro ao buscar pagamentos',
+      payments: [],
+      summary: null
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
