@@ -132,69 +132,93 @@ const PropostasPage = () => {
     }
   });
 
-  // Query para buscar valores recebidos e a receber (agrupado por vendedor) com filtro de período
+  // Query para buscar valores recebidos e a receber DIRETAMENTE das parcelas (sem filtrar por proposal_id)
   const { data: financialData } = useQuery({
-    queryKey: ['proposals-financial', selectedPeriod],
+    queryKey: ['proposals-financial-global'],
     queryFn: async () => {
-      // Buscar pedidos com proposal_id não nulo e dados da proposta associada
-      const { data: orders, error: ordersError } = await supabase
-        .from('pedidos')
-        .select('id, proposal_id, valor_total, status, created_at')
-        .not('proposal_id', 'is', null);
-      
-      if (ordersError) throw ordersError;
-
-      // Buscar proposals para mapear created_by
-      const proposalIds = orders?.map(o => o.proposal_id).filter(Boolean) || [];
-      const { data: proposalsData } = await supabase
-        .from('proposals')
-        .select('id, created_by')
-        .in('id', proposalIds);
-      
-      const proposalCreatorMap = new Map<string, string>();
-      proposalsData?.forEach(p => {
-        if (p.created_by) proposalCreatorMap.set(p.id, p.created_by);
-      });
-
-      // Buscar parcelas (sem filtro de período para mostrar totais reais)
-      const { data: parcelas, error: parcelasError } = await supabase
+      // Buscar TODAS as parcelas diretamente
+      const { data: parcelas, error } = await supabase
         .from('parcelas')
-        .select('pedido_id, valor_final, status, data_pagamento, data_vencimento');
+        .select('pedido_id, valor_final, status, data_pagamento');
       
-      if (parcelasError) throw parcelasError;
+      if (error) throw error;
 
-      // Calcular valores totais e por vendedor
       let valorRecebido = 0;
       let valorAReceber = 0;
-      const sellerFinancials = new Map<string, { received: number; toReceive: number }>();
 
-      orders?.forEach(order => {
-        const creatorId = order.proposal_id ? proposalCreatorMap.get(order.proposal_id) : null;
-        const orderParcelas = parcelas?.filter(p => p.pedido_id === order.id) || [];
+      parcelas?.forEach(p => {
+        const isPaid = p.status === 'pago' || p.status === 'paga';
+        const isPending = p.status === 'pendente' || p.status === 'aguardando_pagamento';
         
-        orderParcelas.forEach(p => {
-          const isPaid = p.status === 'pago' || p.status === 'paga';
-          const isPending = p.status === 'pendente' || p.status === 'aguardando_pagamento';
-          
-          if (isPaid) {
-            valorRecebido += p.valor_final || 0;
-            if (creatorId) {
-              const existing = sellerFinancials.get(creatorId) || { received: 0, toReceive: 0 };
-              existing.received += p.valor_final || 0;
-              sellerFinancials.set(creatorId, existing);
-            }
-          } else if (isPending) {
-            valorAReceber += p.valor_final || 0;
-            if (creatorId) {
-              const existing = sellerFinancials.get(creatorId) || { received: 0, toReceive: 0 };
-              existing.toReceive += p.valor_final || 0;
-              sellerFinancials.set(creatorId, existing);
-            }
-          }
-        });
+        if (isPaid) {
+          valorRecebido += p.valor_final || 0;
+        } else if (isPending) {
+          valorAReceber += p.valor_final || 0;
+        }
       });
 
-      return { valorRecebido, valorAReceber, sellerFinancials };
+      return { valorRecebido, valorAReceber };
+    }
+  });
+
+  // IDs fixos dos 3 vendedores
+  const SELLER_IDS = {
+    brunoDantas: '6390fcd3-3eaa-4f57-9a7b-b3466a306ee8',
+    jefersonStilver: '7cca6d1b-ca4f-4190-a7fe-5148e7dc2308',
+    eduardoComercial: 'c9ff75c5-a051-4b6d-a278-cdd5a2306820'
+  };
+
+  // Query para stats dos 3 vendedores fixos
+  const { data: sellersData } = useQuery({
+    queryKey: ['sellers-stats-fixed'],
+    queryFn: async () => {
+      const sellerIds = Object.values(SELLER_IDS);
+
+      // Buscar nome dos usuários
+      const { data: users } = await supabase
+        .from('users')
+        .select('id, nome, email')
+        .in('id', sellerIds);
+
+      // Buscar propostas por vendedor
+      const { data: proposalsData } = await supabase
+        .from('proposals')
+        .select('id, created_by, status, cash_total_value')
+        .in('created_by', sellerIds);
+
+      // Calcular stats por vendedor
+      const calculateStats = (userId: string) => {
+        const user = users?.find(u => u.id === userId);
+        const sellerProposals = proposalsData?.filter(p => p.created_by === userId) || [];
+        
+        const enviadas = sellerProposals.filter(p => 
+          ['enviada', 'atualizada', 'visualizada'].includes(p.status)
+        ).length;
+        const pendentes = sellerProposals.filter(p => 
+          ['pendente', 'enviada', 'visualizada', 'atualizada'].includes(p.status)
+        ).length;
+        const aceitas = sellerProposals.filter(p => 
+          ['aceita', 'paga', 'convertida'].includes(p.status)
+        ).length;
+        const valorTotal = sellerProposals
+          .filter(p => ['aceita', 'paga', 'convertida'].includes(p.status))
+          .reduce((sum, p) => sum + (p.cash_total_value || 0), 0);
+
+        return {
+          id: userId,
+          nome: user?.nome || user?.email?.split('@')[0] || 'Vendedor',
+          enviadas,
+          pendentes,
+          aceitas,
+          valorTotal
+        };
+      };
+
+      return {
+        brunoDantas: calculateStats(SELLER_IDS.brunoDantas),
+        jefersonStilver: calculateStats(SELLER_IDS.jefersonStilver),
+        eduardoComercial: calculateStats(SELLER_IDS.eduardoComercial)
+      };
     }
   });
 
@@ -346,28 +370,28 @@ const PropostasPage = () => {
     proposalsInPeriod.forEach(p => {
       if (!p.created_by || !p.seller_name) return;
       
-      // Get financial data for this seller
-      const sellerFinancial = financialData?.sellerFinancials?.get(p.created_by);
-      
       const existing = sellersMap.get(p.created_by) || {
         id: p.created_by,
         name: p.seller_name,
         proposalsSent: 0,
         proposalsAccepted: 0,
-        valueReceived: sellerFinancial?.received || 0,
-        valueToReceive: sellerFinancial?.toReceive || 0
+        valueReceived: 0,
+        valueToReceive: 0
       };
 
       existing.proposalsSent++;
       if (['aceita', 'paga', 'convertida'].includes(p.status)) {
         existing.proposalsAccepted++;
+        existing.valueReceived += p.cash_total_value || 0;
+      } else if (['pendente', 'enviada', 'visualizada', 'atualizada'].includes(p.status)) {
+        existing.valueToReceive += p.cash_total_value || 0;
       }
 
       sellersMap.set(p.created_by, existing);
     });
 
     return Array.from(sellersMap.values()).sort((a, b) => b.proposalsSent - a.proposalsSent);
-  }, [proposalsInPeriod, financialData?.sellerFinancials]);
+  }, [proposalsInPeriod]);
 
   const stats = {
     proposalsToday: proposals.filter(p => isToday(new Date(p.created_at))).length,
@@ -561,7 +585,7 @@ const PropostasPage = () => {
           <ProposalsPeriodSelector value={selectedPeriod} onChange={setSelectedPeriod} />
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - Linha 1: Recebido + A Receber + Pendentes/Aceitas */}
         <div className="grid grid-cols-3 gap-2">
           <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
             <div className="flex items-center gap-2">
@@ -577,28 +601,111 @@ const PropostasPage = () => {
             </div>
             <div className="text-sm font-bold text-amber-600">{formatCurrencyCompact(stats.valorAReceber)}</div>
           </Card>
+          {/* Card combinado Pendentes + Aceitas */}
           <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-            <div className="flex items-center gap-2">
-              <Send className="h-4 w-4 text-blue-600" />
-              <span className="text-[10px] text-muted-foreground">Enviadas</span>
+            <div className="flex items-center justify-between">
+              <div className="text-center flex-1">
+                <div className="flex items-center justify-center gap-1">
+                  <Clock className="h-3 w-3 text-purple-600" />
+                  <span className="text-[9px] text-muted-foreground">Pend</span>
+                </div>
+                <div className="text-sm font-bold text-purple-600">{stats.pendentes}</div>
+              </div>
+              <div className="w-px h-8 bg-gray-200" />
+              <div className="text-center flex-1">
+                <div className="flex items-center justify-center gap-1">
+                  <Check className="h-3 w-3 text-green-600" />
+                  <span className="text-[9px] text-muted-foreground">Aceitas</span>
+                </div>
+                <div className="text-sm font-bold text-green-600">
+                  {proposals.filter(p => ['aceita', 'paga', 'convertida'].includes(p.status)).length}
+                </div>
+              </div>
             </div>
-            <div className="text-lg font-bold text-blue-600">{stats.enviadas}</div>
           </Card>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-purple-600" />
-              <span className="text-[10px] text-muted-foreground">Pendentes</span>
+
+        {/* Stats Grid - Linha 2: Cards de Vendedores */}
+        <div className="grid grid-cols-3 gap-2">
+          {/* Bruno Dantas */}
+          <Card className="p-2 bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200/50">
+            <div className="flex items-center gap-1.5 mb-1">
+              <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
+                <span className="text-[10px] text-white font-bold">B</span>
+              </div>
+              <span className="text-[10px] font-medium text-purple-800 truncate">Bruno</span>
             </div>
-            <div className="text-lg font-bold text-purple-600">{stats.pendentes}</div>
+            <div className="grid grid-cols-3 gap-1 text-center text-[9px]">
+              <div>
+                <div className="text-muted-foreground">Env</div>
+                <div className="font-bold text-blue-600">{sellersData?.brunoDantas?.enviadas || 0}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Pend</div>
+                <div className="font-bold text-purple-600">{sellersData?.brunoDantas?.pendentes || 0}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Ace</div>
+                <div className="font-bold text-green-600">{sellersData?.brunoDantas?.aceitas || 0}</div>
+              </div>
+            </div>
+            <div className="text-[10px] font-semibold text-center mt-1 text-purple-700">
+              {formatCurrencyCompact(sellersData?.brunoDantas?.valorTotal || 0)}
+            </div>
           </Card>
-          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-gray-600" />
-              <span className="text-[10px] text-muted-foreground">Hoje</span>
+
+          {/* Jeferson Stilver */}
+          <Card className="p-2 bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200/50">
+            <div className="flex items-center gap-1.5 mb-1">
+              <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                <span className="text-[10px] text-white font-bold">J</span>
+              </div>
+              <span className="text-[10px] font-medium text-blue-800 truncate">Jeferson</span>
             </div>
-            <div className="text-lg font-bold">{stats.proposalsToday}</div>
+            <div className="grid grid-cols-3 gap-1 text-center text-[9px]">
+              <div>
+                <div className="text-muted-foreground">Env</div>
+                <div className="font-bold text-blue-600">{sellersData?.jefersonStilver?.enviadas || 0}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Pend</div>
+                <div className="font-bold text-purple-600">{sellersData?.jefersonStilver?.pendentes || 0}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Ace</div>
+                <div className="font-bold text-green-600">{sellersData?.jefersonStilver?.aceitas || 0}</div>
+              </div>
+            </div>
+            <div className="text-[10px] font-semibold text-center mt-1 text-blue-700">
+              {formatCurrencyCompact(sellersData?.jefersonStilver?.valorTotal || 0)}
+            </div>
+          </Card>
+
+          {/* Eduardo Comercial */}
+          <Card className="p-2 bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200/50">
+            <div className="flex items-center gap-1.5 mb-1">
+              <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                <span className="text-[10px] text-white font-bold">E</span>
+              </div>
+              <span className="text-[10px] font-medium text-emerald-800 truncate">Eduardo</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1 text-center text-[9px]">
+              <div>
+                <div className="text-muted-foreground">Env</div>
+                <div className="font-bold text-blue-600">{sellersData?.eduardoComercial?.enviadas || 0}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Pend</div>
+                <div className="font-bold text-purple-600">{sellersData?.eduardoComercial?.pendentes || 0}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Ace</div>
+                <div className="font-bold text-green-600">{sellersData?.eduardoComercial?.aceitas || 0}</div>
+              </div>
+            </div>
+            <div className="text-[10px] font-semibold text-center mt-1 text-emerald-700">
+              {formatCurrencyCompact(sellersData?.eduardoComercial?.valorTotal || 0)}
+            </div>
           </Card>
         </div>
 
