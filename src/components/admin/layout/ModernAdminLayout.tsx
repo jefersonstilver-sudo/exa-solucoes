@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import ModernAdminSidebar from './ModernAdminSidebar';
 import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
@@ -12,6 +12,26 @@ import { SofiaProvider } from '@/contexts/SofiaContext';
 interface ModernAdminLayoutProps {
   children?: React.ReactNode;
 }
+
+const SidebarTriggerPositioned = ({ isTablet }: { isTablet: boolean }) => {
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
+  
+  const expandedWidth = isTablet ? 240 : 320;
+  const collapsedWidth = 64;
+  const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
+  
+  return (
+    <SidebarTrigger 
+      className="absolute z-50 hidden md:flex transition-all duration-200"
+      style={{
+        left: `${currentWidth}px`,
+        top: '32px',
+        transform: 'translate(-50%, -50%)'
+      }}
+    />
+  );
+};
 
 const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
   const { isMobile, isTablet } = useAdvancedResponsive();
@@ -35,14 +55,7 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
           </div>
           
           {/* Botão 3D vermelho elegante na interseção sidebar/header */}
-          <SidebarTrigger 
-            className="absolute z-50 hidden md:flex"
-            style={{
-              left: isTablet ? '240px' : '320px',
-              top: '32px',
-              transform: 'translate(-50%, -50%)'
-            }}
-          />
+          <SidebarTriggerPositioned isTablet={isTablet} />
           
           <SidebarInset className="flex flex-col w-full overflow-x-hidden">
             {/* Header - Apple-like clean design */}

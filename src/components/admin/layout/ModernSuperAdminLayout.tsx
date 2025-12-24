@@ -1,12 +1,32 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import ModernAdminSidebar from './ModernAdminSidebar';
 import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { SofiaVoiceButton } from '@/components/admin/sofia';
 import { SofiaProvider } from '@/contexts/SofiaContext';
+
+const SidebarTriggerPositioned = ({ isTablet }: { isTablet: boolean }) => {
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
+  
+  const expandedWidth = isTablet ? 220 : 260;
+  const collapsedWidth = 64;
+  const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
+  
+  return (
+    <SidebarTrigger 
+      className="absolute z-50 hidden md:flex transition-all duration-200"
+      style={{
+        left: `${currentWidth}px`,
+        top: '40px',
+        transform: 'translate(-50%, -50%)'
+      }}
+    />
+  );
+};
 
 const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) => {
   const { isMobile, isTablet } = useAdvancedResponsive();
@@ -25,14 +45,7 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
           <div className="relative z-30"><ModernAdminSidebar /></div>
           
           {/* Botão 3D vermelho elegante na interseção sidebar/header */}
-          <SidebarTrigger 
-            className="absolute z-50 hidden md:flex"
-            style={{
-              left: isTablet ? '220px' : '260px',
-              top: '40px',
-              transform: 'translate(-50%, -50%)'
-            }}
-          />
+          <SidebarTriggerPositioned isTablet={isTablet} />
           
           <SidebarInset className="flex flex-col w-full overflow-x-hidden">
             {/* Header com logo EXA - estilo elegante vermelho */}
