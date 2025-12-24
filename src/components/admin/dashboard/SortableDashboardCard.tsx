@@ -6,9 +6,10 @@ import { motion } from 'framer-motion';
 interface SortableDashboardCardProps {
   id: string;
   children: React.ReactNode;
+  isDragging?: boolean;
 }
 
-export const SortableDashboardCard: React.FC<SortableDashboardCardProps> = ({ id, children }) => {
+export const SortableDashboardCard: React.FC<SortableDashboardCardProps> = ({ id, children, isDragging: isOverlayDragging }) => {
   const {
     attributes,
     listeners,
@@ -20,9 +21,20 @@ export const SortableDashboardCard: React.FC<SortableDashboardCardProps> = ({ id
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: transition || 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1)',
+    transition: transition || 'all 300ms cubic-bezier(0.25, 1, 0.5, 1)',
     zIndex: isDragging ? 50 : 1,
   };
+
+  // Show placeholder when this card is being dragged
+  if (isDragging) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 min-h-[200px] transition-all duration-300"
+      />
+    );
+  }
 
   return (
     <motion.div
@@ -32,16 +44,17 @@ export const SortableDashboardCard: React.FC<SortableDashboardCardProps> = ({ id
       {...listeners}
       initial={false}
       animate={{
-        scale: isDragging ? 1.02 : 1,
-        opacity: isDragging ? 0.9 : 1,
-        boxShadow: isDragging 
-          ? '0 20px 40px rgba(0,0,0,0.15)' 
-          : '0 1px 3px rgba(0,0,0,0.05)'
+        scale: 1,
+        opacity: 1,
+      }}
+      whileHover={{
+        scale: 1.01,
+        transition: { duration: 0.2 }
       }}
       transition={{
         type: 'spring',
-        stiffness: 500,
-        damping: 30,
+        stiffness: 400,
+        damping: 25,
         mass: 0.8
       }}
       className="cursor-grab active:cursor-grabbing will-change-transform"

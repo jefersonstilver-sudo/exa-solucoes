@@ -11,7 +11,7 @@ interface AppleLikeMetricCardProps {
   label: string;
   value: string | number;
   icon: LucideIcon;
-  description?: string;
+  description?: React.ReactNode;
   hoverContent?: React.ReactNode;
   onClick?: () => void;
   variant?: 'default' | 'danger';

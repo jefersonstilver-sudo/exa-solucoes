@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { createPortal } from 'react-dom';
 import { useMonthlyDashboardData } from '@/hooks/useMonthlyDashboardData';
 import { useDashboardUnifiedStats } from '@/hooks/useDashboardUnifiedStats';
 import { useDashboardPreferences } from '@/hooks/useDashboardPreferences';
@@ -12,7 +13,6 @@ import DashboardLoadingState from '@/components/admin/dashboard/DashboardLoading
 import UnifiedStatsRow from '@/components/admin/dashboard/UnifiedStatsRow';
 import AgentStatsRow from '@/components/admin/dashboard/AgentStatsRow';
 import ProposalStatsRow from '@/components/admin/dashboard/ProposalStatsRow';
-import ProposalsAlertCard from '@/components/admin/dashboard/ProposalsAlertCard';
 import PanelsStatusCard from '@/components/admin/dashboard/PanelsStatusCard';
 import SellersRankingCard from '@/components/admin/dashboard/SellersRankingCard';
 import ContratosAlertCard from '@/components/admin/dashboard/ContratosAlertCard';
@@ -20,7 +20,8 @@ import AlertasGeraisCard from '@/components/admin/dashboard/AlertasGeraisCard';
 import SortableDashboardCard from '@/components/admin/dashboard/SortableDashboardCard';
 import { ElegantPeriodType, getElegantPeriodDates } from '@/components/admin/dashboard/ElegantPeriodButton';
 
-const DEFAULT_CARDS_ORDER = ['proposals', 'panels', 'sellers', 'contracts', 'alerts'];
+// Removed 'proposals' from default order
+const DEFAULT_CARDS_ORDER = ['panels', 'sellers', 'contracts', 'alerts'];
 
 const Dashboard = () => {
   console.log('🎯 [DASHBOARD] Componente renderizado');
@@ -42,6 +43,7 @@ const Dashboard = () => {
   const [showSecondaryStats, setShowSecondaryStats] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [cardsOrder, setCardsOrder] = useState<string[]>(DEFAULT_CARDS_ORDER);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   // Sensors for drag with activation constraint
   const sensors = useSensors(
@@ -57,7 +59,12 @@ const Dashboard = () => {
         setPeriodFilter(savedPeriod);
       }
       if (savedCardsOrder && savedCardsOrder.length > 0) {
-        setCardsOrder(savedCardsOrder);
+        // Filter out removed cards (like 'proposals')
+        const validCards = savedCardsOrder.filter(id => DEFAULT_CARDS_ORDER.includes(id) || id === 'proposals');
+        const filteredCards = validCards.filter(id => id !== 'proposals');
+        if (filteredCards.length > 0) {
+          setCardsOrder(filteredCards);
+        }
       }
       setInitialized(true);
     }
@@ -93,9 +100,15 @@ const Dashboard = () => {
     setCustomEndDate(end);
   };
 
+  // Handle drag start
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  }, []);
+
   // Handle drag end for reordering cards
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveId(null);
     
     if (over && active.id !== over.id) {
       const oldIndex = cardsOrder.indexOf(active.id as string);
@@ -113,8 +126,6 @@ const Dashboard = () => {
   // Render card by ID
   const renderCard = useCallback((cardId: string) => {
     switch (cardId) {
-      case 'proposals':
-        return <ProposalsAlertCard />;
       case 'panels':
         return (
           <PanelsStatusCard 
@@ -148,9 +159,9 @@ const Dashboard = () => {
     }
   }, [unifiedStats]);
 
-  // Separate cards into rows
-  const row1Cards = cardsOrder.slice(0, 3);
-  const row2Cards = cardsOrder.slice(3);
+  // Separate cards into rows (now 4 cards: 2 + 2)
+  const row1Cards = cardsOrder.slice(0, 2);
+  const row2Cards = cardsOrder.slice(2);
 
   console.log('🎯 [DASHBOARD] Estado atual:', {
     loading,
@@ -210,13 +221,14 @@ const Dashboard = () => {
         <DndContext 
           sensors={sensors} 
           collisionDetection={closestCenter} 
+          onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={cardsOrder} strategy={rectSortingStrategy}>
-            {/* Row 1: 3 columns */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Row 1: 2 columns */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {row1Cards.map(cardId => (
-                <SortableDashboardCard key={cardId} id={cardId}>
+                <SortableDashboardCard key={cardId} id={cardId} isDragging={activeId === cardId}>
                   {renderCard(cardId)}
                 </SortableDashboardCard>
               ))}
@@ -225,12 +237,29 @@ const Dashboard = () => {
             {/* Row 2: 2 columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {row2Cards.map(cardId => (
-                <SortableDashboardCard key={cardId} id={cardId}>
+                <SortableDashboardCard key={cardId} id={cardId} isDragging={activeId === cardId}>
                   {renderCard(cardId)}
                 </SortableDashboardCard>
               ))}
             </div>
           </SortableContext>
+
+          {/* DragOverlay for visual dragging */}
+          {createPortal(
+            <DragOverlay 
+              dropAnimation={{
+                duration: 300,
+                easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+              }}
+            >
+              {activeId && (
+                <div className="opacity-95 scale-105 shadow-2xl rounded-lg">
+                  {renderCard(activeId)}
+                </div>
+              )}
+            </DragOverlay>,
+            document.body
+          )}
         </DndContext>
 
         {/* Charts - Compactos */}
