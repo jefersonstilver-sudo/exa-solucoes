@@ -270,7 +270,7 @@ const SidebarTrigger = React.forwardRef<
       data-sidebar="trigger"
       data-state={state}
       className={cn(
-        "h-5 w-5 rounded-full flex items-center justify-center",
+        "h-4 w-4 rounded-full flex items-center justify-center",
         "bg-gradient-to-br from-red-500 via-red-600 to-red-800",
         "border border-red-400/50",
         "shadow-[0_2px_0_0_#7f1d1d,0_3px_6px_rgba(0,0,0,0.4)]",
@@ -291,7 +291,7 @@ const SidebarTrigger = React.forwardRef<
     >
       <ChevronLeft 
         className={cn(
-          "h-3 w-3 transition-transform duration-200",
+          "h-2.5 w-2.5 transition-transform duration-200",
           isCollapsed && "rotate-180"
         )} 
       />

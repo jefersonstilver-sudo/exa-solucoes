@@ -26,7 +26,7 @@ const SidebarTriggerPositioned = ({ isTablet }: { isTablet: boolean }) => {
       className="absolute z-50 hidden md:flex transition-all duration-200"
       style={{
         left: `${currentWidth}px`,
-        top: '32px',
+        top: '150px',
         transform: 'translate(-50%, -50%)'
       }}
     />
