@@ -1,7 +1,6 @@
 // Mercado Pago Balance & Account Info
 // Retorna saldo disponível, bloqueado e a liberar da conta MP
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,7 +36,38 @@ serve(async (req) => {
     const accountData = await accountResponse.json();
     console.log('👤 [MP-BALANCE] Conta:', accountData.nickname || accountData.email);
 
-    // 2. Buscar pagamentos recentes para calcular valores
+    // 2. Tentar buscar saldo real via API de balance (se disponível)
+    let realBalance = null;
+    let balanceSource = 'calculated';
+    
+    try {
+      const balanceResponse = await fetch('https://api.mercadopago.com/users/me/balance', {
+        headers: {
+          'Authorization': `Bearer ${mpAccessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (balanceResponse.ok) {
+        const balanceData = await balanceResponse.json();
+        console.log('💵 [MP-BALANCE] Saldo real obtido:', JSON.stringify(balanceData));
+        
+        if (balanceData.available_balance !== undefined) {
+          realBalance = {
+            available: balanceData.available_balance || 0,
+            blocked: balanceData.unavailable_balance || 0,
+            to_be_released: balanceData.pending_balance || 0
+          };
+          balanceSource = 'api';
+        }
+      } else {
+        console.log('⚠️ [MP-BALANCE] API de saldo não disponível, usando cálculo baseado em pagamentos');
+      }
+    } catch (balanceError) {
+      console.log('⚠️ [MP-BALANCE] Erro ao buscar saldo direto:', balanceError);
+    }
+
+    // 3. Buscar pagamentos recentes para calcular valores (sempre, para KPIs)
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     
@@ -86,7 +116,7 @@ serve(async (req) => {
       }
     }
 
-    // 3. Buscar pagamentos pendentes
+    // 4. Buscar pagamentos pendentes
     const pendingResponse = await fetch(
       `https://api.mercadopago.com/v1/payments/search?status=pending&limit=50`,
       {
@@ -108,12 +138,28 @@ serve(async (req) => {
       }
     }
 
-    // 4. Calcular saldos estimados
-    const availableBalance = netReceived - pendingRelease;
-    const blockedBalance = pendingRelease;
-    const toBeReleased = pendingRelease;
+    // 5. Usar saldo real se disponível, senão calcular estimativa
+    let balanceData;
+    
+    if (realBalance) {
+      balanceData = {
+        available: realBalance.available,
+        blocked: realBalance.blocked,
+        to_be_released: realBalance.to_be_released,
+        currency: 'BRL'
+      };
+    } else {
+      // Calcular saldos estimados baseado em pagamentos
+      const availableBalance = netReceived - pendingRelease;
+      balanceData = {
+        available: Math.max(0, availableBalance),
+        blocked: pendingRelease,
+        to_be_released: pendingRelease,
+        currency: 'BRL'
+      };
+    }
 
-    const balanceData = {
+    const responseData = {
       account: {
         id: accountData.id,
         nickname: accountData.nickname,
@@ -121,12 +167,8 @@ serve(async (req) => {
         site_status: accountData.status?.site_status,
         country_id: accountData.country_id
       },
-      balance: {
-        available: Math.max(0, availableBalance),
-        blocked: blockedBalance,
-        to_be_released: toBeReleased,
-        currency: 'BRL'
-      },
+      balance: balanceData,
+      balance_source: balanceSource,
       summary_30d: {
         total_received: totalReceived,
         net_received: netReceived,
@@ -138,9 +180,9 @@ serve(async (req) => {
       last_updated: new Date().toISOString()
     };
 
-    console.log('✅ [MP-BALANCE] Saldo calculado:', JSON.stringify(balanceData.balance));
+    console.log('✅ [MP-BALANCE] Saldo calculado (fonte: ' + balanceSource + '):', JSON.stringify(responseData.balance));
 
-    return new Response(JSON.stringify(balanceData), {
+    return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 

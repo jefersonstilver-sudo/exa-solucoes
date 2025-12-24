@@ -14,40 +14,34 @@ interface CashFlowChartProps {
   loading?: boolean;
 }
 
-const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, loading }) => {
-  // Mock data for demonstration
-  const mockData: CashFlowData[] = [
-    { date: '01/12', entradas: 12500, saidas: 2100 },
-    { date: '05/12', entradas: 8900, saidas: 1800 },
-    { date: '10/12', entradas: 15200, saidas: 3200 },
-    { date: '15/12', entradas: 9800, saidas: 2500 },
-    { date: '20/12', entradas: 18500, saidas: 4100 },
-    { date: '24/12', entradas: 11200, saidas: 2800 },
-  ];
-
-  const chartData = data || mockData;
+const CashFlowChart: React.FC<CashFlowChartProps> = ({ data = [], loading }) => {
+  const hasData = data && data.length > 0;
 
   const formatCurrency = (value: number) => {
     return `R$ ${value.toLocaleString('pt-BR')}`;
   };
 
   return (
-    <Card className="border-2 border-border">
+    <Card className="border border-border">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <TrendingUp className="h-5 w-5 text-primary" />
-          Fluxo de Caixa (30 dias)
+          Fluxo de Caixa
         </CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="h-[300px] flex items-center justify-center">
-            <div className="animate-pulse text-muted-foreground">Carregando...</div>
+            <div className="animate-pulse text-muted-foreground">Carregando dados do Mercado Pago...</div>
+          </div>
+        ) : !hasData ? (
+          <div className="h-[300px] flex items-center justify-center">
+            <p className="text-muted-foreground text-sm">Sem dados de fluxo de caixa no período</p>
           </div>
         ) : (
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis 
                   dataKey="date" 
