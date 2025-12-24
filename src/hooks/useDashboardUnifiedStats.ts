@@ -18,7 +18,8 @@ export interface VendedorProposalStats {
   vendedorId: string;
   vendedorNome: string;
   enviadas: number;
-  aguardando: number;
+  visualizadas: number;      // Propostas apenas visualizadas
+  aguardando: number;        // Propostas aguardando (enviadas + visualizadas)
   aceitas: number;
   valorRecebido: number;     // Receita EFETIVA (parcelas pagas)
   valorProjetado: number;    // Receita PROJETADA (parcelas pendentes)
@@ -424,6 +425,7 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
             vendedorId,
             vendedorNome,
             enviadas: 0,
+            visualizadas: 0,
             aguardando: 0,
             aceitas: 0,
             valorRecebido: 0,
@@ -434,6 +436,11 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         }
         
         vendedoresMap[vendedorId].enviadas++;
+        
+        // Contagem separada para visualizadas
+        if (p.status === 'visualizada') {
+          vendedoresMap[vendedorId].visualizadas++;
+        }
         
         if (['enviada', 'visualizada'].includes(p.status)) {
           vendedoresMap[vendedorId].aguardando++;

@@ -54,6 +54,7 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
           vendedorId: sellerId,
           vendedorNome: FIXED_SELLER_NAMES[sellerId] || 'Vendedor',
           enviadas: 0,
+          visualizadas: 0,
           aguardando: 0,
           aceitas: 0,
           valorRecebido: 0,
@@ -165,7 +166,7 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
                 </div>
                 <div className="flex items-center gap-1 text-purple-600">
                   <Eye className="h-3 w-3" />
-                  <span className="font-medium">{vendedor.aguardando}</span>
+                  <span className="font-medium">{vendedor.visualizadas}</span>
                   <span className="text-muted-foreground">vis</span>
                 </div>
                 <div className="flex items-center gap-1 text-emerald-600">
