@@ -9,6 +9,7 @@ const MASTER_ACCOUNT_EMAIL = 'jefersonstilver@gmail.com';
 // Module keys mapping to sidebar items
 export const MODULE_KEYS = {
   dashboard: 'dashboard',
+  posicoes: 'posicoes',
   sync_notion: 'sync_notion',
   pedidos: 'pedidos',
   produtos: 'produtos',
