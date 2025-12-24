@@ -3,7 +3,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CustomCheckbox } from '@/components/ui/custom-checkbox';
-import { Eye, Calendar } from 'lucide-react';
+import { Eye, Calendar, Film } from 'lucide-react';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 import { useAuth } from '@/hooks/useAuth';
 import { 
@@ -18,6 +18,12 @@ import {
   getTypeBadge 
 } from '../utils/orderTableUtils';
 import { ActiveVideosColumn } from '../ActiveVideosColumn';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface OrdersTableRowProps {
   item: OrderOrAttempt & { daysRemaining?: number | null };
@@ -66,16 +72,37 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
         {formatDate(item.created_at)}
       </TableCell>
       <TableCell>
-        {getStatusBadge(item)}
-        {/* Mostrar dias restantes para pedidos ativos */}
-        {item.daysRemaining !== undefined && item.daysRemaining !== null && (
-          <div className="mt-1">
-            <Badge variant="outline" className="border-blue-500 text-blue-700 text-xs">
+        <div className="flex flex-col gap-1">
+          {getStatusBadge(item)}
+          {/* Indicador sutil de "Sem Vídeo" para pedidos ativos/pagos */}
+          {item.type === 'order' && 
+           item.hasVideo === false && 
+           ['ativo', 'pago', 'pago_pendente_video', 'video_aprovado'].includes(item.status?.toLowerCase()) && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge 
+                    variant="outline" 
+                    className="w-fit border-orange-400 bg-orange-50 text-orange-600 text-[10px] px-1.5 py-0"
+                  >
+                    <Film className="h-2.5 w-2.5 mr-0.5" />
+                    Sem vídeo
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Este pedido ainda não possui vídeo enviado</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {/* Mostrar dias restantes para pedidos ativos */}
+          {item.daysRemaining !== undefined && item.daysRemaining !== null && (
+            <Badge variant="outline" className="w-fit border-blue-500 text-blue-700 text-xs">
               <Calendar className="h-3 w-3 mr-1" />
               {item.daysRemaining > 0 ? `${item.daysRemaining} dias restantes` : 'Vencido'}
             </Badge>
-          </div>
-        )}
+          )}
+        </div>
       </TableCell>
       <TableCell className={`font-bold text-base ${item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'}`}>
         {formatCurrency(item.valor_total || 0)}

@@ -31,6 +31,7 @@ export interface OrderOrAttempt {
   total_parcelas?: number;
   contrato_status?: string;
   contrato_assinado_em?: string;
+  hasVideo?: boolean;
 }
 
 export interface OrdersStats {

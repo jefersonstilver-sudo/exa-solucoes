@@ -150,9 +150,9 @@ export const ActiveVideosColumn = ({ orderId, orderStatus }: ActiveVideosColumnP
   if (orderVideos.length === 0) {
     return (
       <div className="text-center py-4">
-        <Badge variant="outline" className="bg-gray-50 text-gray-500 border-gray-300">
+        <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-300">
           <Clock className="h-3 w-3 mr-1" />
-          Nenhum vídeo ativo
+          Aguardando vídeo
         </Badge>
       </div>
     );
