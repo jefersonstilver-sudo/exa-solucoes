@@ -20,8 +20,8 @@ import AlertasGeraisCard from '@/components/admin/dashboard/AlertasGeraisCard';
 import SortableDashboardCard from '@/components/admin/dashboard/SortableDashboardCard';
 import { ElegantPeriodType, getElegantPeriodDates } from '@/components/admin/dashboard/ElegantPeriodButton';
 
-// Removed 'proposals' from default order
-const DEFAULT_CARDS_ORDER = ['panels', 'sellers', 'contracts', 'alerts'];
+// Default order: Dispositivos, Contratos, Vendedores na primeira linha (3 cols)
+const DEFAULT_CARDS_ORDER = ['panels', 'contracts', 'sellers', 'alerts'];
 
 const Dashboard = () => {
   console.log('🎯 [DASHBOARD] Componente renderizado');
@@ -159,9 +159,9 @@ const Dashboard = () => {
     }
   }, [unifiedStats]);
 
-  // Separate cards into rows (now 4 cards: 2 + 2)
-  const row1Cards = cardsOrder.slice(0, 2);
-  const row2Cards = cardsOrder.slice(2);
+  // Separate cards into rows (3 columns layout: 3 + remaining)
+  const row1Cards = cardsOrder.slice(0, 3);
+  const row2Cards = cardsOrder.slice(3);
 
   console.log('🎯 [DASHBOARD] Estado atual:', {
     loading,
@@ -225,8 +225,8 @@ const Dashboard = () => {
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={cardsOrder} strategy={rectSortingStrategy}>
-            {/* Row 1: 2 columns */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Row 1: 3 columns on large screens */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {row1Cards.map(cardId => (
                 <SortableDashboardCard key={cardId} id={cardId} isDragging={activeId === cardId}>
                   {renderCard(cardId)}
@@ -234,14 +234,16 @@ const Dashboard = () => {
               ))}
             </div>
 
-            {/* Row 2: 2 columns */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {row2Cards.map(cardId => (
-                <SortableDashboardCard key={cardId} id={cardId} isDragging={activeId === cardId}>
-                  {renderCard(cardId)}
-                </SortableDashboardCard>
-              ))}
-            </div>
+            {/* Row 2: Remaining cards */}
+            {row2Cards.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {row2Cards.map(cardId => (
+                  <SortableDashboardCard key={cardId} id={cardId} isDragging={activeId === cardId}>
+                    {renderCard(cardId)}
+                  </SortableDashboardCard>
+                ))}
+              </div>
+            )}
           </SortableContext>
 
           {/* DragOverlay for visual dragging */}
