@@ -227,6 +227,38 @@ export const useMonthlyDashboardData = (startDate?: Date, endDate?: Date) => {
 
   useEffect(() => {
     fetchMonthlyStats();
+
+    // Real-time subscriptions for dashboard data
+    const channels = [
+      supabase.channel('monthly-pedidos-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => {
+          console.log('[useMonthlyDashboardData] Pedidos changed - refreshing');
+          fetchMonthlyStats();
+        })
+        .subscribe(),
+      supabase.channel('monthly-users-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
+          console.log('[useMonthlyDashboardData] Users changed - refreshing');
+          fetchMonthlyStats();
+        })
+        .subscribe(),
+      supabase.channel('monthly-buildings-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'buildings' }, () => {
+          console.log('[useMonthlyDashboardData] Buildings changed - refreshing');
+          fetchMonthlyStats();
+        })
+        .subscribe(),
+      supabase.channel('monthly-devices-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, () => {
+          console.log('[useMonthlyDashboardData] Devices changed - refreshing');
+          fetchMonthlyStats();
+        })
+        .subscribe(),
+    ];
+
+    return () => {
+      channels.forEach(channel => supabase.removeChannel(channel));
+    };
   }, [fetchMonthlyStats]);
 
   const refetch = useCallback(() => {

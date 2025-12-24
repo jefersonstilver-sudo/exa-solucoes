@@ -124,7 +124,7 @@ const AlertasGeraisCard: React.FC = () => {
   const hasAlerts = stats.videosParaAprovar > 0 || stats.vouchersParaEnviar > 0 || stats.conversasSemResposta > 0;
 
   return (
-    <Card className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.005] transition-all duration-300 ease-out">
+    <Card className="h-full bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.005] transition-all duration-300 ease-out flex flex-col">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm md:text-base flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -146,7 +146,7 @@ const AlertasGeraisCard: React.FC = () => {
           />
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 flex-1 flex flex-col">
         {/* Grid 2x2 de alertas */}
         <div className="grid grid-cols-2 gap-2">
           {/* Vídeos para aprovar */}

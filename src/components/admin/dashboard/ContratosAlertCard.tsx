@@ -156,7 +156,7 @@ const ContratosAlertCard: React.FC = () => {
   }
 
   return (
-    <Card className="bg-white rounded-2xl border border-gray-100 shadow-sm transition-all duration-300 ease-out">
+    <Card className="h-full bg-white rounded-2xl border border-gray-100 shadow-sm transition-all duration-300 ease-out flex flex-col">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm md:text-base flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -173,7 +173,7 @@ const ContratosAlertCard: React.FC = () => {
           />
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 flex-1 flex flex-col">
         {/* Número principal */}
         <div className="text-center py-2">
           <span className="text-4xl font-bold text-blue-600">{totalPendentes}</span>
