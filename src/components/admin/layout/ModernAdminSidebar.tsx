@@ -81,8 +81,6 @@ import {
 import { useUnreadCount } from '@/modules/monitoramento-ia/hooks/useUnreadCount';
 import { useEscalacoesPendentes } from '@/hooks/useEscalacoesPendentes';
 import { useOfflineAlerts } from '@/hooks/useOfflineAlerts';
-import { useSidebarFavorites } from '@/hooks/useSidebarFavorites';
-import { SidebarFavoritesStar } from './SidebarFavoritesStar';
 import { useTheme } from '@/components/ui/theme-provider';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -114,8 +112,6 @@ export function ModernAdminSidebar() {
   const { count: beneficiosAcao } = useBeneficiosAcaoNecessaria();
   const { pendingCount: videosParaAprovar } = usePendingVideosCount();
   
-  // Favorites system
-  const { favorites, toggleFavorite, isFavorite } = useSidebarFavorites();
 
   const handleSignOut = async () => {
     try {
@@ -405,12 +401,6 @@ export function ModernAdminSidebar() {
   })).filter(group => group.items.length > 0);
 
   // Get favorite items from all groups
-  const favoriteItems = useMemo(() => {
-    const allItems = filteredGroups.flatMap(g => g.items);
-    return favorites
-      .map(href => allItems.find(item => item.href === href))
-      .filter(Boolean) as typeof allItems;
-  }, [favorites, filteredGroups]);
 
   const getAdminBadgeColor = () => {
     switch (userInfo.role) {
@@ -521,77 +511,6 @@ export function ModernAdminSidebar() {
           paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)'
         }}
       >
-        {/* Favorites Section */}
-        {favoriteItems.length > 0 && (
-          <SidebarGroup>
-            {!collapsed && (
-              <SidebarGroupLabel className="text-[9px] font-bold text-amber-400/70 uppercase tracking-widest mb-2 px-2 flex items-center gap-1">
-                <Star className="h-3 w-3 fill-amber-400/70" />
-                Favoritos
-              </SidebarGroupLabel>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-0.5">
-                {favoriteItems.map((item) => {
-                  const isExactMatch = location.pathname === item.href;
-                  const isSubRoute = item.href !== basePath && location.pathname.startsWith(item.href + '/');
-                  const isActive = isExactMatch || isSubRoute;
-                  const Icon = item.icon;
-                  const badge = (item as any).badge;
-                  const badgeColor = (item as any).badgeColor || 'bg-red-500';
-                  const badgePulse = (item as any).badgePulse || false;
-                  const badgeTooltip = (item as any).badgeTooltip;
-
-                  return (
-                    <SidebarMenuItem key={`fav-${item.href}`}>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.href}
-                          className={`flex items-center ${collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2 gap-3'} rounded-lg transition-all duration-200 font-medium group relative h-10 ${
-                            isActive 
-                              ? "bg-amber-500/10 text-white border-l-[3px] border-amber-500 rounded-l-none" 
-                              : "text-amber-100/80 hover:bg-amber-500/10 hover:text-white active:scale-[0.98]"
-                          } touch-manipulation`}
-                          onClick={() => {
-                            if (isMobile || isSidebarMobile) {
-                              setOpenMobile(false);
-                            }
-                          }}
-                        >
-                          <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4'} flex-shrink-0`} />
-                          {!collapsed && (
-                            <>
-                              <span className="text-sm font-medium truncate flex-1">{item.title}</span>
-                              {badge !== undefined && (
-                                <TooltipProvider delayDuration={0}>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <span className={`${badgeColor} text-white text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center cursor-help shadow-sm ${badgePulse ? 'animate-pulse ring-2 ring-red-300/50' : ''}`}>
-                                        {badge}
-                                      </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="bg-[#1A1A1A] text-white border-white/10 text-xs max-w-[200px]">
-                                      {badgeTooltip || item.title}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
-                              <SidebarFavoritesStar
-                                isFavorite={true}
-                                onToggle={() => toggleFavorite(item.href)}
-                                collapsed={collapsed}
-                              />
-                            </>
-                          )}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
 
         {filteredGroups.map((group) => (
           <SidebarGroup key={group.label}>
@@ -653,11 +572,6 @@ export function ModernAdminSidebar() {
                                 </Tooltip>
                               </TooltipProvider>
                             )}
-                            <SidebarFavoritesStar
-                              isFavorite={isFavorite(item.href)}
-                              onToggle={() => toggleFavorite(item.href)}
-                              collapsed={collapsed}
-                            />
                           </>
                         )}
                       {collapsed && badge !== undefined && (
