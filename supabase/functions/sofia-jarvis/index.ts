@@ -117,19 +117,21 @@ async function handleOverview(): Promise<{ text: string; data: any }> {
   const today = new Date().toISOString().split('T')[0];
   const thisMonth = new Date().toISOString().slice(0, 7);
   
-  // Parallel queries for speed - CORRIGIDO: usa ultima_sync e status dos painéis
+  // Parallel queries for speed - CORRIGIDO: usa tabela DEVICES (mesma do dashboard)
   const [
     buildingsResult,
-    panelsResult,
+    devicesResult,
     ordersResult,
+    parcelasResult,
     leadsResult,
     conversationsResult,
     alertsResult,
     proposalsResult
   ] = await Promise.all([
     supabase.from('buildings').select('id, status').eq('status', 'ativo'),
-    supabase.from('painels').select('id, status, ultima_sync'),
+    supabase.from('devices').select('id, status'), // USA DEVICES, NÃO PAINELS
     supabase.from('pedidos').select('id, status, valor_total, created_at').gte('created_at', `${thisMonth}-01`),
+    supabase.from('parcelas').select('id, valor_final, status, data_pagamento').eq('status', 'pago').gte('data_pagamento', `${thisMonth}-01`),
     supabase.from('leads_exa').select('id, status, created_at').gte('created_at', `${thisMonth}-01`),
     supabase.from('conversations').select('id, last_message_at').gte('last_message_at', today),
     supabase.from('panel_alerts').select('id, severity').eq('resolved', false),
@@ -137,27 +139,20 @@ async function handleOverview(): Promise<{ text: string; data: any }> {
   ]);
 
   const buildings = buildingsResult.data || [];
-  const panels = panelsResult.data || [];
+  const devices = devicesResult.data || [];
   const orders = ordersResult.data || [];
+  const parcelasPagas = parcelasResult.data || [];
   const leads = leadsResult.data || [];
   const conversations = conversationsResult.data || [];
   const alerts = alertsResult.data || [];
   const proposals = proposalsResult.data || [];
 
-  // CORRIGIDO: Usar status diretamente OU ultima_sync
-  const onlinePanels = panels.filter(p => {
-    // Primeiro verifica se status já é 'online'
-    if (p.status === 'online') return true;
-    // Depois verifica ultima_sync (não last_heartbeat)
-    if (!p.ultima_sync) return false;
-    const lastSync = new Date(p.ultima_sync);
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    return lastSync > fiveMinutesAgo;
-  });
+  // CORRIGIDO: Usar tabela DEVICES com campo status
+  const onlineDevices = devices.filter(d => d.status === 'online');
+  const offlineDevices = devices.filter(d => d.status !== 'online');
 
-  const totalRevenue = orders
-    .filter(o => ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(o.status))
-    .reduce((sum, o) => sum + (o.valor_total || 0), 0);
+  // CORRIGIDO: Receita EFETIVA = soma de PARCELAS PAGAS (não pedidos)
+  const receitaEfetiva = parcelasPagas.reduce((sum, p) => sum + (p.valor_final || 0), 0);
 
   const criticalAlerts = alerts.filter(a => a.severity === 'critical').length;
   
@@ -168,8 +163,8 @@ async function handleOverview(): Promise<{ text: string; data: any }> {
 
   const data = {
     buildings: buildings.length,
-    panels: { total: panels.length, online: onlinePanels.length },
-    monthlyRevenue: totalRevenue,
+    devices: { total: devices.length, online: onlineDevices.length, offline: offlineDevices.length },
+    monthlyRevenue: receitaEfetiva,
     monthlyOrders: orders.length,
     monthlyLeads: leads.length,
     todayConversations: conversations.length,
@@ -182,7 +177,7 @@ async function handleOverview(): Promise<{ text: string; data: any }> {
     }
   };
 
-  let text = `Visão geral do sistema: Temos ${buildings.length} prédios ativos, ${onlinePanels.length} de ${panels.length} painéis online. Este mês: faturamento de ${formatCurrency(totalRevenue)}, ${orders.length} pedidos e ${leads.length} leads. Hoje tivemos ${conversations.length} conversas.`;
+  let text = `Visão geral do sistema: Temos ${buildings.length} prédios ativos, ${onlineDevices.length} de ${devices.length} dispositivos online. Este mês: receita EFETIVA (já recebida) de ${formatCurrency(receitaEfetiva)}, ${orders.length} pedidos e ${leads.length} leads. Hoje tivemos ${conversations.length} conversas.`;
   
   // Adicionar info de propostas quentes
   if (hotProposals.length > 0) {
@@ -269,56 +264,49 @@ async function handleBuildingDetails(params: any): Promise<{ text: string; data:
   return { text, data: b };
 }
 
-// Panel Status - Status dos painéis (CORRIGIDO COM CAMPOS CORRETOS)
+// Device Status - Status dos DISPOSITIVOS (usa tabela devices, igual dashboard)
 async function handlePanelStatus(params: any): Promise<{ text: string; data: any }> {
-  console.log('[Sofia JARVIS] Getting panel status...');
+  console.log('[Sofia JARVIS] Getting device status from DEVICES table...');
 
-  const { data: panels, error } = await supabase
-    .from('painels')
+  // CORRIGIDO: Usar tabela DEVICES (mesma do dashboard) em vez de painels
+  const { data: devices, error } = await supabase
+    .from('devices')
     .select(`
-      id, code, status, ultima_sync, ip_interno, building_id,
-      buildings(nome, bairro)
+      id, name, status, last_heartbeat, ip_address,
+      building:buildings(nome, bairro)
     `)
-    .order('ultima_sync', { ascending: false, nullsFirst: false })
+    .order('last_heartbeat', { ascending: false, nullsFirst: false })
     .limit(50);
 
   if (error) {
-    console.error('[Sofia JARVIS] Panel query error:', error);
-    return { text: `Erro ao buscar painéis: ${error.message}`, data: [] };
+    console.error('[Sofia JARVIS] Device query error:', error);
+    return { text: `Erro ao buscar dispositivos: ${error.message}`, data: [] };
   }
 
-  if (!panels?.length) {
-    return { text: 'Não encontrei informações de painéis.', data: [] };
+  if (!devices?.length) {
+    return { text: 'Não encontrei informações de dispositivos.', data: [] };
   }
 
-  const now = new Date();
-  const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+  const online = devices.filter(d => d.status === 'online');
+  const offline = devices.filter(d => d.status !== 'online');
 
-  const online = panels.filter(p => p.ultima_sync && new Date(p.ultima_sync) > fiveMinutesAgo);
-  const offline = panels.filter(p => !p.ultima_sync || new Date(p.ultima_sync) <= fiveMinutesAgo);
-  const waitingCode = panels.filter(p => !p.code || p.code === '');
-
-  let text = `Temos ${panels.length} painéis. ${online.length} online, ${offline.length} offline. `;
-  
-  if (waitingCode.length > 0) {
-    text += `${waitingCode.length} aguardando código. `;
-  }
+  let text = `Temos ${devices.length} dispositivos. ${online.length} online, ${offline.length} offline. `;
 
   if (offline.length > 0 && offline.length <= 5) {
-    const offlineList = offline.map(p => {
-      const building = (p.buildings as any);
-      return `${p.code || 'sem-código'} (${building?.nome || 'sem prédio'})`;
+    const offlineList = offline.map(d => {
+      const building = (d.building as any);
+      return `${d.name || 'sem-nome'} (${building?.nome || 'sem prédio'})`;
     }).join(', ');
     text += `Offline: ${offlineList}. `;
   } else if (offline.length > 5) {
-    text += `Há ${offline.length} painéis offline. `;
+    text += `Há ${offline.length} dispositivos offline. `;
   }
 
   // Lista dos online para contexto
   if (online.length > 0 && online.length <= 10) {
-    const onlineList = online.slice(0, 5).map(p => {
-      const building = (p.buildings as any);
-      return `${p.code || 'sem-código'} (${building?.nome || 'N/A'})`;
+    const onlineList = online.slice(0, 5).map(d => {
+      const building = (d.building as any);
+      return `${d.name || 'sem-nome'} (${building?.nome || 'N/A'})`;
     }).join(', ');
     text += `Online: ${onlineList}${online.length > 5 ? '...' : ''}. `;
   }
@@ -326,22 +314,21 @@ async function handlePanelStatus(params: any): Promise<{ text: string; data: any
   return { 
     text, 
     data: { 
-      total: panels.length, 
+      total: devices.length, 
       online: online.length, 
-      offline: offline.length, 
-      waitingCode: waitingCode.length,
-      panels 
+      offline: offline.length,
+      devices 
     } 
   };
 }
 
-// Sales Metrics - Métricas de vendas
+// Sales Metrics - Métricas de vendas CORRIGIDO: Receita Efetiva vs Projetada
 async function handleSalesMetrics(params: any): Promise<{ text: string; data: any }> {
   console.log('[Sofia JARVIS] Getting sales metrics...', params);
 
   const today = new Date();
-  const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
-  const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay())).toISOString();
+  const startOfDay = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+  const startOfWeek = new Date(new Date().setDate(today.getDate() - today.getDay())).toISOString();
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
 
   const period = params?.period || 'month';
@@ -349,29 +336,39 @@ async function handleSalesMetrics(params: any): Promise<{ text: string; data: an
   if (period === 'today') startDate = startOfDay;
   if (period === 'week') startDate = startOfWeek;
 
-  const { data: orders, error } = await supabase
-    .from('pedidos')
-    .select('id, status, valor_total, created_at, plano_meses')
-    .gte('created_at', startDate)
-    .order('created_at', { ascending: false });
+  // CORRIGIDO: Buscar pedidos E parcelas separadamente
+  const [ordersResult, parcelasPagasResult, parcelasPendentesResult] = await Promise.all([
+    supabase.from('pedidos').select('id, status, valor_total, created_at, plano_meses').gte('created_at', startDate).order('created_at', { ascending: false }),
+    supabase.from('parcelas').select('id, valor_final, data_pagamento').eq('status', 'pago').gte('data_pagamento', startDate),
+    supabase.from('parcelas').select('id, valor_final').in('status', ['pendente', 'atrasado'])
+  ]);
 
-  if (error || !orders?.length) {
-    return { text: `Sem pedidos ${period === 'today' ? 'hoje' : period === 'week' ? 'esta semana' : 'este mês'}.`, data: {} };
-  }
+  const orders = ordersResult.data || [];
+  const parcelasPagas = parcelasPagasResult.data || [];
+  const parcelasPendentes = parcelasPendentesResult.data || [];
 
-  const paidStatuses = ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'];
-  const paidOrders = orders.filter(o => paidStatuses.includes(o.status));
-  const pendingOrders = orders.filter(o => o.status === 'pendente');
-  const totalRevenue = paidOrders.reduce((sum, o) => sum + (o.valor_total || 0), 0);
-  const pendingRevenue = pendingOrders.reduce((sum, o) => sum + (o.valor_total || 0), 0);
+  // CORRIGIDO: Receita EFETIVA = parcelas PAGAS (data_pagamento no período)
+  const receitaEfetiva = parcelasPagas.reduce((sum, p) => sum + (p.valor_final || 0), 0);
+  
+  // Receita PROJETADA = parcelas pendentes/atrasadas (a receber)
+  const receitaProjetada = parcelasPendentes.reduce((sum, p) => sum + (p.valor_final || 0), 0);
 
   const periodLabel = period === 'today' ? 'Hoje' : period === 'week' ? 'Esta semana' : 'Este mês';
   
-  const text = `${periodLabel}: ${orders.length} pedidos no total. ` +
-    `${paidOrders.length} pagos totalizando ${formatCurrency(totalRevenue)}. ` +
-    `${pendingOrders.length} pendentes totalizando ${formatCurrency(pendingRevenue)}.`;
+  const text = `${periodLabel}: ${orders.length} pedidos criados. ` +
+    `💰 Receita EFETIVA (já recebida): ${formatCurrency(receitaEfetiva)} de ${parcelasPagas.length} parcelas pagas. ` +
+    `📊 Receita PROJETADA (a receber): ${formatCurrency(receitaProjetada)} de ${parcelasPendentes.length} parcelas pendentes.`;
 
-  return { text, data: { total: orders.length, paid: paidOrders.length, pending: pendingOrders.length, totalRevenue, pendingRevenue } };
+  return { 
+    text, 
+    data: { 
+      totalPedidos: orders.length, 
+      receitaEfetiva, 
+      receitaProjetada,
+      parcelasPagas: parcelasPagas.length, 
+      parcelasPendentes: parcelasPendentes.length 
+    } 
+  };
 }
 
 // Read Conversation - Ler mensagens de uma conversa
