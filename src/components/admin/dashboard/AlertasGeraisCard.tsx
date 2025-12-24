@@ -175,7 +175,7 @@ const AlertasGeraisCard: React.FC = () => {
                 ? 'bg-pink-50 border-pink-200 hover:bg-pink-100' 
                 : 'bg-gray-50 border-gray-200'
             }`}
-            onClick={() => navigate('/admin/benefits')}
+            onClick={() => navigate('/admin/beneficio-prestadores')}
           >
             <div className="flex items-center gap-2 mb-1">
               <Gift className={`h-4 w-4 ${stats.vouchersParaEnviar > 0 ? 'text-pink-600' : 'text-gray-400'}`} />
