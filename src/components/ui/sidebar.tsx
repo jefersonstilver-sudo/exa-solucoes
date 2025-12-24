@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { PanelLeft } from "lucide-react"
+import { ChevronLeft } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -261,23 +261,25 @@ const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,
   React.ComponentProps<typeof Button>
 >(({ className, onClick, ...props }, ref) => {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, state } = useSidebar()
+  const isCollapsed = state === "collapsed"
 
   return (
     <button
       ref={ref}
       data-sidebar="trigger"
+      data-state={state}
       className={cn(
-        "h-6 w-6 rounded-full flex items-center justify-center",
+        "h-5 w-5 rounded-full flex items-center justify-center",
         "bg-gradient-to-br from-red-500 via-red-600 to-red-800",
         "border border-red-400/50",
-        "shadow-[0_3px_0_0_#7f1d1d,0_4px_8px_rgba(0,0,0,0.4)]",
+        "shadow-[0_2px_0_0_#7f1d1d,0_3px_6px_rgba(0,0,0,0.4)]",
         "hover:shadow-[0_1px_0_0_#7f1d1d,0_2px_4px_rgba(0,0,0,0.3)]",
-        "hover:translate-y-[2px]",
+        "hover:translate-y-[1px]",
         "active:shadow-[0_0px_0_0_#7f1d1d,0_1px_2px_rgba(0,0,0,0.2)]",
-        "active:translate-y-[3px]",
+        "active:translate-y-[2px]",
         "text-white",
-        "transition-all duration-150 ease-out",
+        "transition-all duration-200 ease-out",
         "cursor-pointer",
         className
       )}
@@ -287,7 +289,12 @@ const SidebarTrigger = React.forwardRef<
       }}
       {...props}
     >
-      <PanelLeft className="h-3.5 w-3.5" />
+      <ChevronLeft 
+        className={cn(
+          "h-3 w-3 transition-transform duration-200",
+          isCollapsed && "rotate-180"
+        )} 
+      />
       <span className="sr-only">Toggle Sidebar</span>
     </button>
   )
