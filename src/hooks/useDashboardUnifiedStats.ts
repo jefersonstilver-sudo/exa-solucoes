@@ -27,10 +27,21 @@ export interface VendedorProposalStats {
   taxaConversao: number;
 }
 
+export interface CadastroDetalhado {
+  id: string;
+  nome: string;
+  email: string;
+  role: string;
+  data_criacao: string;
+}
+
 export interface UnifiedDashboardStats {
   cadastros: number;
   cadastrosAnterior: number;
+  cadastrosLista: CadastroDetalhado[];  // Lista detalhada para HoverCard
   pedidos: number;
+  pedidosAtivos: number;               // Pedidos ativos
+  pedidosSemContrato: number;          // Pedidos ativos sem contrato assinado
   pedidosDetalhes: {
     pagos: number;
     pendentes: number;
@@ -38,6 +49,7 @@ export interface UnifiedDashboardStats {
   };
   vendas: number;              // Receita EFETIVAMENTE recebida (parcelas pagas)
   vendasProjetadas: number;    // Parcelas PENDENTES (receita futura)
+  vendasProjetadas2025: number; // Projeção anual 2025
   vendasAnterior: number;
   conversas: number;
   conversasPorTipo: Record<string, ConversationTypeStats>;
@@ -72,10 +84,14 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
   const [stats, setStats] = useState<UnifiedDashboardStats>({
     cadastros: 0,
     cadastrosAnterior: 0,
+    cadastrosLista: [],
     pedidos: 0,
+    pedidosAtivos: 0,
+    pedidosSemContrato: 0,
     pedidosDetalhes: { pagos: 0, pendentes: 0, ticketMedio: 0 },
     vendas: 0,
     vendasProjetadas: 0,
+    vendasProjetadas2025: 0,
     vendasAnterior: 0,
     conversas: 0,
     conversasPorTipo: {},
@@ -112,23 +128,32 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       const previousStart = new Date(startDate.getTime() - diffMs);
       const previousEnd = startDate;
 
-      // 1. Cadastros
-      const { count: cadastros } = await supabase
-        .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .gte('created_at', start)
-        .lte('created_at', end);
+      // 1. Cadastros - Usando tabela users com data_criacao
+      const { data: cadastrosData } = await supabase
+        .from('users')
+        .select('id, nome, email, role, data_criacao')
+        .gte('data_criacao', start)
+        .lte('data_criacao', end);
+
+      const cadastros = cadastrosData?.length || 0;
+      const cadastrosLista: CadastroDetalhado[] = cadastrosData?.map(u => ({
+        id: u.id,
+        nome: u.nome || 'Sem nome',
+        email: u.email || '',
+        role: u.role || 'cliente',
+        data_criacao: u.data_criacao || ''
+      })) || [];
 
       const { count: cadastrosAnterior } = await supabase
-        .from('profiles')
+        .from('users')
         .select('id', { count: 'exact', head: true })
-        .gte('created_at', previousStart.toISOString())
-        .lte('created_at', previousEnd.toISOString());
+        .gte('data_criacao', previousStart.toISOString())
+        .lte('data_criacao', previousEnd.toISOString());
 
       // 2. Pedidos (não cortesia)
       const { data: pedidosData } = await supabase
         .from('pedidos')
-        .select('status, valor_total')
+        .select('status, valor_total, contrato_status')
         .gte('created_at', start)
         .lte('created_at', end)
         .gt('valor_total', 0);
@@ -140,6 +165,17 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       const ticketMedio = pedidosData?.length 
         ? pedidosData.reduce((sum, p) => sum + (p.valor_total || 0), 0) / pedidosData.length 
         : 0;
+
+      // 2.1. Pedidos Ativos (todos que estão funcionando) e sem contrato
+      const { data: pedidosAtivosData } = await supabase
+        .from('pedidos')
+        .select('id, status, contrato_status')
+        .in('status', paidStatuses);
+
+      const pedidosAtivos = pedidosAtivosData?.length || 0;
+      const pedidosSemContrato = pedidosAtivosData?.filter(p => 
+        p.contrato_status !== 'assinado'
+      ).length || 0;
 
       // 3. Vendas - Calcular baseado em PARCELAS PAGAS para pedidos parcelados
       const { data: vendasData } = await supabase
@@ -198,6 +234,19 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       }
 
       const vendas = vendasEfetivas;
+
+      // Projeção anual 2025 - buscar todas as parcelas pendentes de 2025
+      const startOf2025 = new Date('2025-01-01').toISOString();
+      const endOf2025 = new Date('2025-12-31').toISOString();
+      
+      const { data: parcelas2025 } = await supabase
+        .from('parcelas')
+        .select('valor_final')
+        .in('status', ['pendente', 'atrasado'])
+        .gte('data_vencimento', startOf2025)
+        .lte('data_vencimento', endOf2025);
+
+      const vendasProjetadas2025 = parcelas2025?.reduce((sum, p) => sum + (p.valor_final || 0), 0) || 0;
 
       // Período anterior (mantém cálculo simples para comparação)
       const { data: vendasAnteriores } = await supabase
@@ -478,10 +527,14 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       setStats({
         cadastros: cadastros || 0,
         cadastrosAnterior: cadastrosAnterior || 0,
+        cadastrosLista,
         pedidos,
+        pedidosAtivos,
+        pedidosSemContrato,
         pedidosDetalhes: { pagos, pendentes, ticketMedio },
         vendas,
         vendasProjetadas,
+        vendasProjetadas2025,
         vendasAnterior,
         conversas,
         conversasPorTipo,

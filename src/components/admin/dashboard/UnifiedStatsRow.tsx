@@ -1,7 +1,8 @@
 import React from 'react';
-import { UserPlus, ShoppingBag, DollarSign, MessageCircle, Building2, Gift, FileText } from 'lucide-react';
+import { UserPlus, ShoppingBag, DollarSign, MessageCircle, Building2, FileText, AlertTriangle } from 'lucide-react';
 import AppleLikeMetricCard from './AppleLikeMetricCard';
 import { UnifiedDashboardStats } from '@/hooks/useDashboardUnifiedStats';
+import { Badge } from '@/components/ui/badge';
 
 interface UnifiedStatsRowProps {
   stats: UnifiedDashboardStats;
@@ -30,6 +31,10 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
   const cadastrosTrend = calculateTrend(stats.cadastros, stats.cadastrosAnterior);
   const vendasTrend = calculateTrend(stats.vendas, stats.vendasAnterior);
 
+  // Separar clientes de admins
+  const clientes = stats.cadastrosLista?.filter(u => u.role === 'cliente') || [];
+  const admins = stats.cadastrosLista?.filter(u => u.role !== 'cliente') || [];
+
   return (
     <div className="w-full">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -44,8 +49,29 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
               <div>
                 <p className="text-sm font-semibold text-foreground mb-1">Novos Cadastros</p>
                 <p className="text-xs text-muted-foreground">
-                  Total de novos usuários registrados no período selecionado
+                  Usuários registrados no período
                 </p>
+              </div>
+              <div className="space-y-2 pt-2 border-t border-border/50">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">👤 Clientes:</span>
+                  <span className="text-sm font-semibold text-blue-600">{clientes.length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">🔧 Admins:</span>
+                  <span className="text-sm font-semibold text-purple-600">{admins.length}</span>
+                </div>
+                {stats.cadastrosLista.length > 0 && (
+                  <div className="pt-2 border-t border-border/30 max-h-32 overflow-y-auto">
+                    <p className="text-xs text-muted-foreground mb-1">Últimos cadastros:</p>
+                    {stats.cadastrosLista.slice(0, 5).map((user, idx) => (
+                      <div key={idx} className="text-xs py-0.5">
+                        <span className="font-medium">{user.nome}</span>
+                        <span className="text-muted-foreground ml-1">({user.role})</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="pt-2 border-t border-border/50">
                 <div className="flex justify-between items-center">
@@ -57,28 +83,43 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
           }
         />
 
-        {/* 2. Pedidos */}
+        {/* 2. Pedidos Ativos */}
         <AppleLikeMetricCard
-          label="Pedidos Recebidos"
-          value={stats.loading ? '...' : stats.pedidos}
+          label="Pedidos Ativos"
+          value={stats.loading ? '...' : stats.pedidosAtivos}
           icon={ShoppingBag}
-          description={stats.loading ? undefined : `${stats.pedidosDetalhes.pagos} pagos`}
+          description={stats.loading ? undefined : (
+            stats.pedidosSemContrato > 0 ? (
+              <span className="flex items-center gap-1 text-amber-600">
+                <AlertTriangle className="h-3 w-3" />
+                {stats.pedidosSemContrato} sem contrato
+              </span>
+            ) : (
+              <span className="text-emerald-600">Todos com contrato</span>
+            )
+          )}
           hoverContent={
             <div className="space-y-3">
               <div>
-                <p className="text-sm font-semibold text-foreground mb-1">Detalhes dos Pedidos</p>
+                <p className="text-sm font-semibold text-foreground mb-1">Status dos Pedidos</p>
                 <p className="text-xs text-muted-foreground">
-                  Acompanhe o status de todos os pedidos recebidos
+                  Pedidos atualmente em operação
                 </p>
               </div>
               <div className="space-y-2 pt-2 border-t border-border/50">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Pagos:</span>
-                  <span className="text-sm font-semibold text-emerald-600">{stats.pedidosDetalhes.pagos}</span>
+                  <span className="text-xs text-muted-foreground">✅ Total Ativos:</span>
+                  <span className="text-sm font-semibold text-emerald-600">{stats.pedidosAtivos}</span>
                 </div>
+                {stats.pedidosSemContrato > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">⚠️ Sem Contrato:</span>
+                    <span className="text-sm font-semibold text-amber-600">{stats.pedidosSemContrato}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Pendentes:</span>
-                  <span className="text-sm font-semibold text-amber-600">{stats.pedidosDetalhes.pendentes}</span>
+                  <span className="text-xs text-muted-foreground">📋 Novos no Período:</span>
+                  <span className="text-sm font-semibold">{stats.pedidos}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Ticket Médio:</span>
@@ -109,7 +150,7 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
                   <span className="text-sm font-semibold text-emerald-600">{formatCurrency(stats.vendas)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">📅 Receita Projetada:</span>
+                  <span className="text-xs text-muted-foreground">📅 Projetada (período):</span>
                   <span className="text-sm font-semibold text-blue-600">{formatCurrency(stats.vendasProjetadas)}</span>
                 </div>
                 <div className="flex justify-between items-center pt-1 border-t border-border/30">
@@ -125,24 +166,32 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
           }
         />
 
-        {/* 4. Conversas */}
+        {/* 4. Receita Projetada do Período + 2025 */}
         <AppleLikeMetricCard
-          label="Conversas Ativas"
-          value={stats.loading ? '...' : stats.conversas}
-          icon={MessageCircle}
-          description={stats.loading ? undefined : `${stats.novosContatos} novos contatos`}
+          label="Receita Projetada"
+          value={stats.loading ? '...' : formatCurrency(stats.vendasProjetadas)}
+          icon={DollarSign}
+          description={!stats.loading ? (
+            <span className="text-xs text-muted-foreground">
+              2025: {formatCurrency(stats.vendasProjetadas2025)}
+            </span>
+          ) : undefined}
           hoverContent={
             <div className="space-y-3">
               <div>
-                <p className="text-sm font-semibold text-foreground mb-1">Gestão de Conversas</p>
+                <p className="text-sm font-semibold text-foreground mb-1">Receita Projetada</p>
                 <p className="text-xs text-muted-foreground">
-                  Acompanhe o engajamento com seus clientes
+                  Parcelas pendentes a receber
                 </p>
               </div>
-              <div className="pt-2 border-t border-border/50">
+              <div className="space-y-2 pt-2 border-t border-border/50">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Novos Contatos:</span>
-                  <span className="text-sm font-semibold">{stats.novosContatos}</span>
+                  <span className="text-xs text-muted-foreground">📅 Projetada (período):</span>
+                  <span className="text-sm font-semibold text-blue-600">{formatCurrency(stats.vendasProjetadas)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">📊 Projeção 2025:</span>
+                  <span className="text-sm font-semibold text-purple-600">{formatCurrency(stats.vendasProjetadas2025)}</span>
                 </div>
               </div>
             </div>
