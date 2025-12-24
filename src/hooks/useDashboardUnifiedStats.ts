@@ -566,6 +566,74 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
 
   useEffect(() => {
     fetchStats();
+
+    // Real-time subscriptions for all relevant tables
+    const channels = [
+      supabase.channel('unified-users-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
+          console.log('[useDashboardUnifiedStats] Users changed - refreshing');
+          fetchStats();
+        })
+        .subscribe(),
+      supabase.channel('unified-pedidos-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => {
+          console.log('[useDashboardUnifiedStats] Pedidos changed - refreshing');
+          fetchStats();
+        })
+        .subscribe(),
+      supabase.channel('unified-parcelas-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'parcelas' }, () => {
+          console.log('[useDashboardUnifiedStats] Parcelas changed - refreshing');
+          fetchStats();
+        })
+        .subscribe(),
+      supabase.channel('unified-messages-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+          console.log('[useDashboardUnifiedStats] Messages changed - refreshing');
+          fetchStats();
+        })
+        .subscribe(),
+      supabase.channel('unified-conversations-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
+          console.log('[useDashboardUnifiedStats] Conversations changed - refreshing');
+          fetchStats();
+        })
+        .subscribe(),
+      supabase.channel('unified-buildings-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'buildings' }, () => {
+          console.log('[useDashboardUnifiedStats] Buildings changed - refreshing');
+          fetchStats();
+        })
+        .subscribe(),
+      supabase.channel('unified-devices-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, () => {
+          console.log('[useDashboardUnifiedStats] Devices changed - refreshing');
+          fetchStats();
+        })
+        .subscribe(),
+      supabase.channel('unified-proposals-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals' }, () => {
+          console.log('[useDashboardUnifiedStats] Proposals changed - refreshing');
+          fetchStats();
+        })
+        .subscribe(),
+      supabase.channel('unified-provider-benefits-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'provider_benefits' }, () => {
+          console.log('[useDashboardUnifiedStats] Provider benefits changed - refreshing');
+          fetchStats();
+        })
+        .subscribe(),
+      supabase.channel('unified-connection-history-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'connection_history' }, () => {
+          console.log('[useDashboardUnifiedStats] Connection history changed - refreshing');
+          fetchStats();
+        })
+        .subscribe(),
+    ];
+
+    return () => {
+      channels.forEach(channel => supabase.removeChannel(channel));
+    };
   }, [startDate, endDate]);
 
   return { stats, refetch: fetchStats };

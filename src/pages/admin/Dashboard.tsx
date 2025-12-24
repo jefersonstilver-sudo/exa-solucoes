@@ -159,9 +159,6 @@ const Dashboard = () => {
     }
   }, [unifiedStats]);
 
-  // Separate cards into rows (3 columns layout: 3 + remaining)
-  const row1Cards = cardsOrder.slice(0, 3);
-  const row2Cards = cardsOrder.slice(3);
 
   console.log('🎯 [DASHBOARD] Estado atual:', {
     loading,
@@ -188,23 +185,23 @@ const Dashboard = () => {
   console.log('✅ [DASHBOARD] Renderizando dashboard completo');
   
   return (
-    <div className="min-h-screen bg-white p-2 md:p-4 lg:p-6">
-      <div className="max-w-[2000px] mx-auto space-y-4 md:space-y-6">
-        {/* Personalized Greeting */}
-        <DashboardGreeting />
-        {/* Header Compacto */}
+    <div className="min-h-screen bg-white p-2 md:p-3 lg:p-4">
+      <div className="max-w-[2000px] mx-auto space-y-3 md:space-y-4">
+        {/* Header com seletor de período - topo */}
         <DashboardHeader 
           periodFilter={periodFilter}
           onPeriodChange={handlePeriodChange}
           customStartDate={customStartDate}
           customEndDate={customEndDate}
           onCustomDateChange={handleCustomDateChange}
-          onRefetch={refetch}
           showSecondaryStats={showSecondaryStats}
           onToggleSecondaryStats={() => setShowSecondaryStats(!showSecondaryStats)}
           savePeriodEnabled={savePeriodEnabled}
           onSavePeriodChange={handleSavePeriodChange}
         />
+        
+        {/* Personalized Greeting - mobile only */}
+        <DashboardGreeting />
 
         {/* Unified Stats Row - Nova linha única com 6 cards elegantes */}
         <UnifiedStatsRow stats={unifiedStats} />
@@ -225,25 +222,14 @@ const Dashboard = () => {
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={cardsOrder} strategy={rectSortingStrategy}>
-            {/* Row 1: 3 columns on large screens */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {row1Cards.map(cardId => (
+            {/* All 4 cards in grid with equal heights */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-fr">
+              {cardsOrder.map(cardId => (
                 <SortableDashboardCard key={cardId} id={cardId} isDragging={activeId === cardId}>
                   {renderCard(cardId)}
                 </SortableDashboardCard>
               ))}
             </div>
-
-            {/* Row 2: Remaining cards */}
-            {row2Cards.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {row2Cards.map(cardId => (
-                  <SortableDashboardCard key={cardId} id={cardId} isDragging={activeId === cardId}>
-                    {renderCard(cardId)}
-                  </SortableDashboardCard>
-                ))}
-              </div>
-            )}
           </SortableContext>
 
           {/* DragOverlay for visual dragging */}

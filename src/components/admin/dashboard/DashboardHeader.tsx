@@ -1,8 +1,9 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, ChartBar } from 'lucide-react';
+import { ChartBar } from 'lucide-react';
 import { ElegantPeriodType } from './ElegantPeriodButton';
 import ElegantPeriodButton from './ElegantPeriodButton';
+import RealtimeStatusBadge from './RealtimeStatusBadge';
 
 interface DashboardHeaderProps {
   periodFilter: ElegantPeriodType;
@@ -10,7 +11,6 @@ interface DashboardHeaderProps {
   customStartDate?: Date;
   customEndDate?: Date;
   onCustomDateChange?: (start: Date | undefined, end: Date | undefined) => void;
-  onRefetch: () => void;
   showSecondaryStats?: boolean;
   onToggleSecondaryStats?: () => void;
   savePeriodEnabled?: boolean;
@@ -23,7 +23,6 @@ const DashboardHeader = ({
   customStartDate,
   customEndDate,
   onCustomDateChange,
-  onRefetch,
   showSecondaryStats = false,
   onToggleSecondaryStats,
   savePeriodEnabled = false,
@@ -31,6 +30,9 @@ const DashboardHeader = ({
 }: DashboardHeaderProps) => {
   return (
     <div className="flex items-center justify-between gap-3">
+      {/* Realtime Status Badge */}
+      <RealtimeStatusBadge isConnected={true} />
+      
       <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
         <ElegantPeriodButton 
           value={periodFilter} 
@@ -53,10 +55,6 @@ const DashboardHeader = ({
             <ChartBar className="h-4 w-4" />
           </Button>
         )}
-        
-        <Button variant="ghost" size="icon" onClick={onRefetch} className="h-9 w-9" title="Atualizar">
-          <RefreshCw className="h-4 w-4" />
-        </Button>
       </div>
     </div>
   );
