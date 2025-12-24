@@ -2,7 +2,6 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
-import { GripVertical } from 'lucide-react';
 
 interface SortableDashboardCardProps {
   id: string;
@@ -59,6 +58,8 @@ export const SortableDashboardCard: React.FC<SortableDashboardCardProps> = ({ id
     <motion.div
       ref={setNodeRef}
       style={style}
+      {...attributes}
+      {...listeners}
       layout
       layoutId={id}
       initial={false}
@@ -74,34 +75,9 @@ export const SortableDashboardCard: React.FC<SortableDashboardCardProps> = ({ id
         mass: 1.3,
         restDelta: 0.001
       }}
-      className="relative will-change-transform"
+      className="relative will-change-transform cursor-grab active:cursor-grabbing"
     >
-      {/* Drag Handle - Botão dedicado para arrastar */}
-      <motion.div
-        ref={setActivatorNodeRef}
-        {...attributes}
-        {...listeners}
-        whileHover={{
-          scale: 1.1,
-          backgroundColor: 'rgba(0, 0, 0, 0.08)',
-        }}
-        whileTap={{
-          scale: 1.2,
-          backgroundColor: 'rgba(0, 0, 0, 0.12)',
-        }}
-        className="absolute top-2 right-2 z-10 p-1.5 rounded-lg cursor-grab active:cursor-grabbing 
-                   bg-white/80 backdrop-blur-sm shadow-sm border border-gray-100
-                   opacity-0 group-hover:opacity-100 hover:opacity-100 transition-all duration-200
-                   touch-none"
-        style={{ opacity: 1 }}
-      >
-        <GripVertical className="w-4 h-4 text-gray-400" />
-      </motion.div>
-      
-      {/* Card Content */}
-      <div className="group">
-        {children}
-      </div>
+      {children}
     </motion.div>
   );
 };

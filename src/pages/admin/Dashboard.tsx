@@ -265,8 +265,6 @@ const Dashboard = () => {
           )}
         </DndContext>
 
-        {/* Charts - Compactos */}
-        <DashboardCharts data={chartData} />
       </div>
     </div>
   );
