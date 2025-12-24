@@ -1005,6 +1005,7 @@ export type Database = {
           imagem_principal: string | null
           imageurl: string | null
           latitude: number | null
+          link_comercial: string | null
           local_updated_at: string | null
           location_type: string
           longitude: number | null
@@ -1073,6 +1074,7 @@ export type Database = {
           imagem_principal?: string | null
           imageurl?: string | null
           latitude?: number | null
+          link_comercial?: string | null
           local_updated_at?: string | null
           location_type?: string
           longitude?: number | null
@@ -1141,6 +1143,7 @@ export type Database = {
           imagem_principal?: string | null
           imageurl?: string | null
           latitude?: number | null
+          link_comercial?: string | null
           local_updated_at?: string | null
           location_type?: string
           longitude?: number | null
