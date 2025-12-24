@@ -1,4 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { useMonthlyDashboardData } from '@/hooks/useMonthlyDashboardData';
 import { useDashboardUnifiedStats } from '@/hooks/useDashboardUnifiedStats';
 import { useDashboardPreferences } from '@/hooks/useDashboardPreferences';
@@ -15,7 +17,10 @@ import PanelsStatusCard from '@/components/admin/dashboard/PanelsStatusCard';
 import SellersRankingCard from '@/components/admin/dashboard/SellersRankingCard';
 import ContratosAlertCard from '@/components/admin/dashboard/ContratosAlertCard';
 import AlertasGeraisCard from '@/components/admin/dashboard/AlertasGeraisCard';
+import SortableDashboardCard from '@/components/admin/dashboard/SortableDashboardCard';
 import { ElegantPeriodType, getElegantPeriodDates } from '@/components/admin/dashboard/ElegantPeriodButton';
+
+const DEFAULT_CARDS_ORDER = ['proposals', 'panels', 'sellers', 'contracts', 'alerts'];
 
 const Dashboard = () => {
   console.log('🎯 [DASHBOARD] Componente renderizado');
@@ -24,9 +29,11 @@ const Dashboard = () => {
   const { 
     savedPeriod, 
     savePeriodEnabled, 
+    cardsOrder: savedCardsOrder,
     loading: prefsLoading,
     updateSavePeriodEnabled,
-    savePeriodPreference 
+    savePeriodPreference,
+    saveCardsOrder
   } = useDashboardPreferences();
   
   const [periodFilter, setPeriodFilter] = useState<ElegantPeriodType>('today');
@@ -34,16 +41,27 @@ const Dashboard = () => {
   const [customEndDate, setCustomEndDate] = useState<Date>();
   const [showSecondaryStats, setShowSecondaryStats] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [cardsOrder, setCardsOrder] = useState<string[]>(DEFAULT_CARDS_ORDER);
 
-  // Initialize period from saved preference
+  // Sensors for drag with activation constraint
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 }
+    })
+  );
+
+  // Initialize period and cards order from saved preference
   useEffect(() => {
     if (!prefsLoading && !initialized) {
       if (savedPeriod && savePeriodEnabled) {
         setPeriodFilter(savedPeriod);
       }
+      if (savedCardsOrder && savedCardsOrder.length > 0) {
+        setCardsOrder(savedCardsOrder);
+      }
       setInitialized(true);
     }
-  }, [prefsLoading, savedPeriod, savePeriodEnabled, initialized]);
+  }, [prefsLoading, savedPeriod, savePeriodEnabled, savedCardsOrder, initialized]);
 
   const { start, end } = useMemo(() => {
     return getElegantPeriodDates(periodFilter, customStartDate, customEndDate);
@@ -74,6 +92,65 @@ const Dashboard = () => {
     setCustomStartDate(start);
     setCustomEndDate(end);
   };
+
+  // Handle drag end for reordering cards
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = cardsOrder.indexOf(active.id as string);
+      const newIndex = cardsOrder.indexOf(over.id as string);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newOrder = arrayMove(cardsOrder, oldIndex, newIndex);
+        setCardsOrder(newOrder);
+        // Persist automatically
+        saveCardsOrder(newOrder);
+      }
+    }
+  }, [cardsOrder, saveCardsOrder]);
+
+  // Render card by ID
+  const renderCard = useCallback((cardId: string) => {
+    switch (cardId) {
+      case 'proposals':
+        return <ProposalsAlertCard />;
+      case 'panels':
+        return (
+          <PanelsStatusCard 
+            metrics={{
+              unreadConversations: 0,
+              panelsOnline: unifiedStats.devicesOnline,
+              panelsTotal: unifiedStats.devicesTotal,
+              todayRevenue: 0,
+              pendingOrders: 0,
+              panelsOffline: unifiedStats.devicesOffline,
+              loading: unifiedStats.loading,
+              isRealtimeConnected: true,
+              lastUpdate: new Date()
+            }}
+            quedasPeriodo={unifiedStats.quedasPeriodo}
+          />
+        );
+      case 'sellers':
+        return (
+          <SellersRankingCard 
+            vendedores={unifiedStats.propostasPorVendedor}
+            loading={unifiedStats.loading}
+          />
+        );
+      case 'contracts':
+        return <ContratosAlertCard />;
+      case 'alerts':
+        return <AlertasGeraisCard />;
+      default:
+        return null;
+    }
+  }, [unifiedStats]);
+
+  // Separate cards into rows
+  const row1Cards = cardsOrder.slice(0, 3);
+  const row2Cards = cardsOrder.slice(3);
 
   console.log('🎯 [DASHBOARD] Estado atual:', {
     loading,
@@ -129,37 +206,35 @@ const Dashboard = () => {
           </>
         )}
 
-        {/* Priority Cards Grid - Mobile: Stack, Desktop: 3 cols */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <ProposalsAlertCard />
-          <PanelsStatusCard 
-            metrics={{
-              unreadConversations: 0,
-              panelsOnline: unifiedStats.devicesOnline,
-              panelsTotal: unifiedStats.devicesTotal,
-              todayRevenue: 0,
-              pendingOrders: 0,
-              panelsOffline: unifiedStats.devicesOffline,
-              loading: unifiedStats.loading,
-              isRealtimeConnected: true,
-              lastUpdate: new Date()
-            }}
-            quedasPeriodo={unifiedStats.quedasPeriodo}
-          />
-          <SellersRankingCard 
-            vendedores={unifiedStats.propostasPorVendedor}
-            loading={unifiedStats.loading}
-          />
-        </div>
+        {/* Priority Cards Grid with Drag and Drop */}
+        <DndContext 
+          sensors={sensors} 
+          collisionDetection={closestCenter} 
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={cardsOrder} strategy={rectSortingStrategy}>
+            {/* Row 1: 3 columns */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {row1Cards.map(cardId => (
+                <SortableDashboardCard key={cardId} id={cardId}>
+                  {renderCard(cardId)}
+                </SortableDashboardCard>
+              ))}
+            </div>
+
+            {/* Row 2: 2 columns */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {row2Cards.map(cardId => (
+                <SortableDashboardCard key={cardId} id={cardId}>
+                  {renderCard(cardId)}
+                </SortableDashboardCard>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
 
         {/* Charts - Compactos */}
         <DashboardCharts data={chartData} />
-
-        {/* Contratos e Alertas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ContratosAlertCard />
-          <AlertasGeraisCard />
-        </div>
       </div>
     </div>
   );

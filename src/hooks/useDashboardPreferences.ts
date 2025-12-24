@@ -6,11 +6,15 @@ import type { Json } from '@/integrations/supabase/types';
 interface DashboardPreferences {
   period_filter?: ElegantPeriodType;
   save_period?: boolean;
+  cards_order?: string[];
 }
+
+const DEFAULT_CARDS_ORDER = ['proposals', 'panels', 'sellers', 'contracts', 'alerts'];
 
 export const useDashboardPreferences = () => {
   const [savedPeriod, setSavedPeriod] = useState<ElegantPeriodType | null>(null);
   const [savePeriodEnabled, setSavePeriodEnabled] = useState(false);
+  const [cardsOrder, setCardsOrder] = useState<string[]>(DEFAULT_CARDS_ORDER);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -44,6 +48,9 @@ export const useDashboardPreferences = () => {
             setSavedPeriod(prefs.period_filter);
             setSavePeriodEnabled(true);
           }
+          if (prefs.cards_order && Array.isArray(prefs.cards_order)) {
+            setCardsOrder(prefs.cards_order);
+          }
         }
       } catch (err) {
         console.error('Error in fetchPreferences:', err);
@@ -56,12 +63,13 @@ export const useDashboardPreferences = () => {
   }, []);
 
   // Save preferences to database
-  const savePreferences = useCallback(async (period: ElegantPeriodType, enabled: boolean) => {
+  const savePreferences = useCallback(async (period: ElegantPeriodType, enabled: boolean, order?: string[]) => {
     if (!userId) return;
 
-    const prefs = {
+    const prefs: DashboardPreferences = {
       period_filter: period,
-      save_period: enabled
+      save_period: enabled,
+      cards_order: order || cardsOrder
     };
 
     try {
@@ -76,7 +84,33 @@ export const useDashboardPreferences = () => {
     } catch (err) {
       console.error('Error in savePreferences:', err);
     }
-  }, [userId]);
+  }, [userId, cardsOrder]);
+
+  // Save cards order
+  const saveCardsOrder = useCallback(async (order: string[]) => {
+    if (!userId) return;
+    
+    setCardsOrder(order);
+
+    const prefs: DashboardPreferences = {
+      period_filter: savedPeriod || undefined,
+      save_period: savePeriodEnabled,
+      cards_order: order
+    };
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ dashboard_preferences: prefs as Json })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error saving cards order:', error);
+      }
+    } catch (err) {
+      console.error('Error in saveCardsOrder:', err);
+    }
+  }, [userId, savedPeriod, savePeriodEnabled]);
 
   // Update save period enabled and persist
   const updateSavePeriodEnabled = useCallback((enabled: boolean, currentPeriod: ElegantPeriodType) => {
@@ -100,8 +134,10 @@ export const useDashboardPreferences = () => {
   return {
     savedPeriod,
     savePeriodEnabled,
+    cardsOrder,
     loading,
     updateSavePeriodEnabled,
-    savePeriodPreference
+    savePeriodPreference,
+    saveCardsOrder
   };
 };
