@@ -3,7 +3,7 @@ import { Bell, Video, Gift, MessageSquare, Users, ArrowRight } from 'lucide-reac
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCardConfig } from '@/hooks/useCardConfig';
 import CardConfigPopover from './CardConfigPopover';
@@ -19,6 +19,8 @@ interface AlertasStats {
 
 const AlertasGeraisCard: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith('/super_admin') ? '/super_admin' : '/admin';
   const { value: timeoutMinutes, updateValue } = useCardConfig('dashboard_conversations_timeout_minutes', 3);
   const [stats, setStats] = useState<AlertasStats>({
     videosParaAprovar: 0,
@@ -196,7 +198,7 @@ const AlertasGeraisCard: React.FC = () => {
                 ? 'bg-blue-50 border-blue-200 hover:bg-blue-100' 
                 : 'bg-gray-50 border-gray-200'
             }`}
-            onClick={() => navigate('/admin/monitoramento-ia/conversas')}
+            onClick={() => navigate(`${basePath}/crm-chat`)}
           >
             <div className="flex items-center gap-2 mb-1">
               <MessageSquare className={`h-4 w-4 ${stats.conversasSemResposta > 0 ? 'text-blue-600' : 'text-gray-400'}`} />
