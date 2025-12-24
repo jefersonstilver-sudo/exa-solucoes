@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
   LayoutDashboard, 
   ShoppingBag, 
@@ -28,11 +28,8 @@ import {
   CreditCard,
   Bot,
   AlertTriangle,
-  Star,
   FileText,
   Scale,
-  Sun,
-  Moon,
   BarChart3,
   Landmark
 } from "lucide-react";
@@ -45,16 +42,6 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import NotificationCenter from '@/components/admin/layout/NotificationCenter';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import {
   Tooltip,
@@ -62,6 +49,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 import {
   Sidebar,
@@ -81,8 +69,6 @@ import {
 import { useUnreadCount } from '@/modules/monitoramento-ia/hooks/useUnreadCount';
 import { useEscalacoesPendentes } from '@/hooks/useEscalacoesPendentes';
 import { useOfflineAlerts } from '@/hooks/useOfflineAlerts';
-import { useTheme } from '@/components/ui/theme-provider';
-import { ThemeToggle } from './ThemeToggle';
 
 // Novos hooks para badges dinâmicos
 import { usePedidosSemVideo } from '@/hooks/usePedidosSemVideo';
@@ -90,7 +76,6 @@ import { usePropostasAguardando } from '@/hooks/usePropostasAguardando';
 import { useContratosPendentes } from '@/hooks/useContratosPendentes';
 import { useBeneficiosAcaoNecessaria } from '@/hooks/useBeneficiosAcaoNecessaria';
 import { usePendingVideosCount } from '@/hooks/usePendingVideosCount';
-
 export function ModernAdminSidebar() {
   const { state, open, setOpen, setOpenMobile, isMobile: isSidebarMobile } = useSidebar();
   const location = useLocation();
@@ -426,16 +411,16 @@ export function ModernAdminSidebar() {
 
   return (
     <Sidebar 
-      className="h-screen bg-gradient-to-b from-[#1A0A0A] via-[#2D1515] to-[#3D1F1F] border-r border-red-900/20 shadow-2xl overscroll-contain"
+      className="h-screen bg-black/40 backdrop-blur-2xl border-r border-white/10 shadow-2xl overscroll-contain"
       collapsible={isMobile ? "offcanvas" : "icon"}
       variant={isMobile ? "sidebar" : isTablet ? "sidebar" : "sidebar"}
       style={{ 
-        backgroundColor: '#1A0A0A',
         height: '100dvh',
         paddingTop: 'env(safe-area-inset-top)'
       }}
     >
-      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-red-900/30 bg-[#1A0A0A]/95 backdrop-blur-sm`}>
+      {/* Header com glassmorphism */}
+      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-white/10 bg-white/5 backdrop-blur-xl`}>
         <div className="flex items-center justify-center mb-3">
           <UnifiedLogo 
             size="custom" 
@@ -446,66 +431,23 @@ export function ModernAdminSidebar() {
         </div>
         
         {!collapsed && (
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <div className="text-white font-medium text-xs truncate">
-                {userProfile?.email?.split('@')[0] || 'Admin'}
-              </div>
-              <div className="flex items-center space-x-1 mt-0.5">
-                <Crown className={`h-3 w-3 ${getAdminBadgeColor()}`} />
-                <span className={`text-[10px] font-medium ${getAdminBadgeColor()} truncate`}>
-                  {getAdminTitle()}
-                </span>
-              </div>
+          <div className="text-center">
+            <div className="text-white font-medium text-sm">
+              EXA Media
             </div>
-            
-            <div className="flex items-center space-x-1">
-              <NotificationCenter />
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-7 w-7 rounded-full hover:bg-white/10 touch-target">
-                    <Avatar className="h-7 w-7">
-                      <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white font-semibold text-xs">
-                        {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-[#2D1515] border-red-900/30" align="end">
-                  <div className="flex flex-col space-y-1 p-2">
-                    <p className="text-sm font-medium text-white">{userProfile?.email || 'Admin'}</p>
-                    <p className="text-xs text-red-200/60">{getAdminTitle()}</p>
-                  </div>
-                  <DropdownMenuSeparator className="bg-red-900/30" />
-                  {isSuperAdmin && (
-                    <DropdownMenuItem 
-                      onClick={() => navigate(buildPath('configuracoes'))}
-                      className="text-red-100/80 hover:text-white hover:bg-red-500/15"
-                    >
-                      <Settings className="mr-2 h-4 w-4" />
-                      Configurações
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator className="bg-red-900/30" />
-                  <DropdownMenuItem 
-                    onClick={handleSignOut}
-                    className="text-red-400 hover:text-red-300 hover:bg-red-500/15"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sair
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            <div className="flex items-center justify-center space-x-1 mt-1">
+              <Crown className={`h-3 w-3 ${getAdminBadgeColor()}`} />
+              <span className={`text-[10px] font-medium ${getAdminBadgeColor()}`}>
+                {getAdminTitle()}
+              </span>
             </div>
           </div>
         )}
       </SidebarHeader>
 
       <SidebarContent 
-        className={`${collapsed ? 'px-2' : 'px-3'} py-4 space-y-3 overflow-y-auto admin-sidebar-scroll touch-pan-y overscroll-contain`}
+        className={`${collapsed ? 'px-2' : 'px-3'} py-4 space-y-3 overflow-y-auto admin-sidebar-scroll touch-pan-y overscroll-contain bg-black/20 backdrop-blur-xl`}
         style={{ 
-          background: 'linear-gradient(180deg, #1A0A0A 0%, #2D1515 50%, #3D1F1F 100%)',
           WebkitOverflowScrolling: 'touch',
           scrollBehavior: 'smooth',
           paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)'
@@ -619,8 +561,66 @@ export function ModernAdminSidebar() {
         ))}
       </SidebarContent>
       
-      <SidebarFooter className="p-2 border-t border-white/10 bg-[#0F0F0F]/95 backdrop-blur-sm">
-        <ThemeToggle collapsed={collapsed} />
+      {/* Footer com perfil do usuário - estilo glassmorphism */}
+      <SidebarFooter className="p-3 border-t border-white/10 bg-white/5 backdrop-blur-xl">
+        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
+          <Avatar className="h-9 w-9 ring-2 ring-red-500/30">
+            <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white font-semibold text-sm">
+              {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
+            </AvatarFallback>
+          </Avatar>
+          
+          {!collapsed && (
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">
+                {userProfile?.email?.split('@')[0] || 'Admin'}
+              </p>
+              <p className="text-[10px] text-white/50">
+                {getAdminTitle()}
+              </p>
+            </div>
+          )}
+          
+          {!collapsed && (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={handleSignOut}
+                    className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-[#1A1A1A] text-white border-white/10">
+                  Sair
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+        
+        {collapsed && (
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleSignOut}
+                  className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10 mt-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="bg-[#1A1A1A] text-white border-white/10">
+                Sair
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </SidebarFooter>
     </Sidebar>
   );
