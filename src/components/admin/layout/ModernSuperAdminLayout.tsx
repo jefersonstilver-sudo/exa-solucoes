@@ -16,7 +16,7 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
       <SidebarProvider
         defaultOpen={!isMobile} 
         style={{
-          "--sidebar-width": isTablet ? "240px" : "320px",
+          "--sidebar-width": isTablet ? "220px" : "260px",
           "--sidebar-width-icon": "64px",
         } as React.CSSProperties}
       >
