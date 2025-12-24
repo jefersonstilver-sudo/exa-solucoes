@@ -7,7 +7,7 @@ interface BalanceData {
   blocked: number;
   to_be_released: number;
   currency: string;
-  source?: 'api' | 'calculated' | 'unavailable';
+  source?: 'api' | 'unavailable' | 'error';
 }
 
 interface KPIData {
@@ -20,31 +20,36 @@ interface KPIData {
   payments_count: number;
 }
 
-interface PayerInfo {
-  id?: string;
-  email?: string;
-  first_name?: string;
-  last_name?: string;
-  identification?: {
-    type?: string;
-    number?: string;
-  };
-}
-
+// Interface alinhada com campos REAIS do Mercado Pago
 interface PaymentData {
   id: number;
+  external_reference: string | null;
   date_created: string;
-  date_approved?: string;
+  date_approved: string | null;
+  money_release_date: string | null;
   status: string;
-  status_detail?: string;
-  payment_type_id: string;
-  payment_method_id?: string;
+  status_detail: string;
   transaction_amount: number;
-  net_received_amount?: number;
-  fee_amount?: number;
-  external_reference?: string;
-  payer?: PayerInfo;
-  description?: string;
+  net_received_amount: number;
+  total_paid_amount: number;
+  fee_amount: number;
+  currency_id: string;
+  payment_method_id: string;
+  payment_type_id: string;
+  issuer_id: string | null;
+  installments: number;
+  payer: {
+    id: string | null;
+    email: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    identification: any;
+    phone: any;
+  };
+  payer_name: string;
+  payer_email: string | null;
+  description: string | null;
+  card: any;
 }
 
 export const useMercadoPagoFinancial = () => {
@@ -62,32 +67,55 @@ export const useMercadoPagoFinancial = () => {
       
       if (error) throw error;
       
+      console.log('📊 [Hook] Resposta do balance:', data);
+      
+      // Processar saldo - pode ser null se não disponível
       if (data.balance) {
         setBalance({
-          ...data.balance,
-          source: data.balance_source || 'calculated'
+          available: data.balance.available || 0,
+          blocked: data.balance.blocked || 0,
+          to_be_released: data.balance.to_be_released || 0,
+          currency: data.balance.currency || 'BRL',
+          source: data.balance_source || 'api'
+        });
+      } else {
+        // Saldo não disponível via API
+        setBalance({
+          available: 0,
+          blocked: 0,
+          to_be_released: 0,
+          currency: 'BRL',
+          source: data.balance_source === 'error' ? 'error' : 'unavailable'
         });
       }
       
       setLastUpdated(data.last_updated);
       
-      // Calculate KPIs from summary
+      // KPIs reais dos últimos 30 dias
       if (data.summary_30d) {
+        const summary = data.summary_30d;
         setKpis({
-          revenue_30d: data.summary_30d.total_received || 0,
-          avg_ticket: data.summary_30d.payments_count > 0 
-            ? data.summary_30d.total_received / data.summary_30d.payments_count 
+          revenue_30d: summary.total_received || 0,
+          avg_ticket: summary.payments_count > 0 
+            ? summary.total_received / summary.payments_count 
             : 0,
-          mp_fees: data.summary_30d.fees_paid || 0,
-          refunds: 0,
-          chargebacks: 0,
-          net_margin: data.summary_30d.net_received || 0,
-          payments_count: data.summary_30d.payments_count || 0
+          mp_fees: summary.fees_paid || 0,
+          refunds: 0, // Precisaria buscar separadamente
+          chargebacks: 0, // Precisaria buscar separadamente
+          net_margin: summary.net_received || 0,
+          payments_count: summary.payments_count || 0
         });
       }
     } catch (error: any) {
-      console.error('Error fetching balance:', error);
+      console.error('❌ [Hook] Erro ao buscar saldo:', error);
       toast.error('Erro ao buscar saldo do Mercado Pago');
+      setBalance({
+        available: 0,
+        blocked: 0,
+        to_be_released: 0,
+        currency: 'BRL',
+        source: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -103,7 +131,7 @@ export const useMercadoPagoFinancial = () => {
     try {
       const { data, error } = await supabase.functions.invoke('search-mercadopago-payments', {
         body: {
-          status: params?.status || 'approved',
+          status: params?.status, // null busca todos os status
           limit: params?.limit || 50,
           date_from: params?.date_from,
           date_to: params?.date_to
@@ -112,13 +140,19 @@ export const useMercadoPagoFinancial = () => {
       
       if (error) throw error;
       
+      console.log('📊 [Hook] Resposta payments:', {
+        count: data.payments?.length,
+        summary: data.summary,
+        source: data.source
+      });
+      
       if (data.payments && Array.isArray(data.payments)) {
         setPayments(data.payments);
       } else {
         setPayments([]);
       }
     } catch (error: any) {
-      console.error('Error fetching payments:', error);
+      console.error('❌ [Hook] Erro ao buscar pagamentos:', error);
       toast.error('Erro ao buscar pagamentos do Mercado Pago');
       setPayments([]);
     } finally {

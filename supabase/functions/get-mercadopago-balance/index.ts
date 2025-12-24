@@ -30,16 +30,19 @@ serve(async (req) => {
     });
 
     if (!accountResponse.ok) {
+      const errorText = await accountResponse.text();
+      console.error('❌ [MP-BALANCE] Erro ao buscar conta:', accountResponse.status, errorText);
       throw new Error(`Erro ao buscar conta: ${accountResponse.statusText}`);
     }
 
     const accountData = await accountResponse.json();
-    console.log('👤 [MP-BALANCE] Conta:', accountData.nickname || accountData.email);
+    console.log('👤 [MP-BALANCE] Conta:', accountData.nickname || accountData.email, '| ID:', accountData.id);
 
-    // 2. Tentar buscar saldo real via API de balance (se disponível)
-    let realBalance = null;
-    let balanceSource = 'calculated';
-    
+    // 2. Tentar múltiplas fontes de saldo
+    let balanceData = null;
+    let balanceSource = 'unavailable';
+
+    // Tentativa 1: /users/me/balance (nem sempre disponível)
     try {
       const balanceResponse = await fetch('https://api.mercadopago.com/users/me/balance', {
         headers: {
@@ -48,26 +51,58 @@ serve(async (req) => {
         }
       });
       
+      console.log('🔍 [MP-BALANCE] Resposta /users/me/balance:', balanceResponse.status);
+      
       if (balanceResponse.ok) {
-        const balanceData = await balanceResponse.json();
-        console.log('💵 [MP-BALANCE] Saldo real obtido:', JSON.stringify(balanceData));
+        const data = await balanceResponse.json();
+        console.log('💵 [MP-BALANCE] Dados de saldo:', JSON.stringify(data));
         
-        if (balanceData.available_balance !== undefined) {
-          realBalance = {
-            available: balanceData.available_balance || 0,
-            blocked: balanceData.unavailable_balance || 0,
-            to_be_released: balanceData.pending_balance || 0
+        if (data.available_balance !== undefined || data.total_amount !== undefined) {
+          balanceData = {
+            available: data.available_balance || data.total_amount || 0,
+            blocked: data.unavailable_balance || data.unavailable_amount || 0,
+            to_be_released: data.pending_balance || 0,
+            currency: 'BRL'
           };
           balanceSource = 'api';
         }
-      } else {
-        console.log('⚠️ [MP-BALANCE] API de saldo não disponível, usando cálculo baseado em pagamentos');
       }
-    } catch (balanceError) {
-      console.log('⚠️ [MP-BALANCE] Erro ao buscar saldo direto:', balanceError);
+    } catch (e) {
+      console.log('⚠️ [MP-BALANCE] /users/me/balance não disponível');
     }
 
-    // 3. Buscar pagamentos recentes para calcular valores (sempre, para KPIs)
+    // Tentativa 2: /v1/account/balance
+    if (!balanceData) {
+      try {
+        const altBalanceResponse = await fetch('https://api.mercadopago.com/v1/account/balance', {
+          headers: {
+            'Authorization': `Bearer ${mpAccessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('🔍 [MP-BALANCE] Resposta /v1/account/balance:', altBalanceResponse.status);
+        
+        if (altBalanceResponse.ok) {
+          const data = await altBalanceResponse.json();
+          console.log('💵 [MP-BALANCE] Dados alt balance:', JSON.stringify(data));
+          
+          if (data.available_balance !== undefined) {
+            balanceData = {
+              available: data.available_balance || 0,
+              blocked: data.unavailable_balance || 0,
+              to_be_released: data.pending_balance || 0,
+              currency: 'BRL'
+            };
+            balanceSource = 'api';
+          }
+        }
+      } catch (e) {
+        console.log('⚠️ [MP-BALANCE] /v1/account/balance não disponível');
+      }
+    }
+
+    // 3. Buscar pagamentos para KPIs (últimos 30 dias)
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     
@@ -85,35 +120,28 @@ serve(async (req) => {
       }
     );
 
-    let approvedPayments = [];
     let totalReceived = 0;
     let netReceived = 0;
-    let pendingRelease = 0;
     let feesTotal = 0;
+    let paymentsCount = 0;
 
     if (paymentsResponse.ok) {
       const paymentsData = await paymentsResponse.json();
-      approvedPayments = paymentsData.results || [];
+      const approvedPayments = paymentsData.results || [];
+      paymentsCount = approvedPayments.length;
 
       for (const payment of approvedPayments) {
         totalReceived += payment.transaction_amount || 0;
         netReceived += payment.transaction_details?.net_received_amount || 0;
         
-        // Calcular taxas
         if (payment.fee_details && payment.fee_details.length > 0) {
           for (const fee of payment.fee_details) {
             feesTotal += fee.amount || 0;
           }
         }
-
-        // Verificar se já foi liberado (money_release_date no passado)
-        if (payment.money_release_date) {
-          const releaseDate = new Date(payment.money_release_date);
-          if (releaseDate > now) {
-            pendingRelease += payment.transaction_details?.net_received_amount || 0;
-          }
-        }
       }
+      
+      console.log(`📊 [MP-BALANCE] ${paymentsCount} pagamentos (30d) | Bruto: R$ ${totalReceived.toFixed(2)} | Líquido: R$ ${netReceived.toFixed(2)} | Taxas: R$ ${feesTotal.toFixed(2)}`);
     }
 
     // 4. Buscar pagamentos pendentes
@@ -138,27 +166,7 @@ serve(async (req) => {
       }
     }
 
-    // 5. Usar saldo real se disponível, senão calcular estimativa
-    let balanceData;
-    
-    if (realBalance) {
-      balanceData = {
-        available: realBalance.available,
-        blocked: realBalance.blocked,
-        to_be_released: realBalance.to_be_released,
-        currency: 'BRL'
-      };
-    } else {
-      // Calcular saldos estimados baseado em pagamentos
-      const availableBalance = netReceived - pendingRelease;
-      balanceData = {
-        available: Math.max(0, availableBalance),
-        blocked: pendingRelease,
-        to_be_released: pendingRelease,
-        currency: 'BRL'
-      };
-    }
-
+    // 5. Resposta final - SEM CALCULAR SALDO FICTÍCIO
     const responseData = {
       account: {
         id: accountData.id,
@@ -167,31 +175,33 @@ serve(async (req) => {
         site_status: accountData.status?.site_status,
         country_id: accountData.country_id
       },
-      balance: balanceData,
+      balance: balanceData, // null se não disponível
       balance_source: balanceSource,
       summary_30d: {
         total_received: totalReceived,
         net_received: netReceived,
         fees_paid: feesTotal,
-        payments_count: approvedPayments.length,
+        payments_count: paymentsCount,
         pending_payments: pendingPayments,
         pending_amount: pendingAmount
       },
       last_updated: new Date().toISOString()
     };
 
-    console.log('✅ [MP-BALANCE] Saldo calculado (fonte: ' + balanceSource + '):', JSON.stringify(responseData.balance));
+    console.log(`✅ [MP-BALANCE] Fonte do saldo: ${balanceSource} | Saldo: ${balanceData ? 'disponível' : 'NÃO disponível'}`);
 
     return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error: any) {
-    console.error('❌ [MP-BALANCE] Erro:', error);
+    console.error('❌ [MP-BALANCE] Erro:', error.message);
     
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || 'Erro ao buscar saldo'
+      error: error.message || 'Erro ao buscar saldo',
+      balance: null,
+      balance_source: 'error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
