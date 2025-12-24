@@ -7,12 +7,7 @@ interface BalanceData {
   blocked: number;
   to_be_released: number;
   currency: string;
-}
-
-interface AccountData {
-  id: number;
-  nickname: string;
-  email: string;
+  source?: 'api' | 'calculated' | 'unavailable';
 }
 
 interface KPIData {
@@ -25,34 +20,39 @@ interface KPIData {
   payments_count: number;
 }
 
-interface AuditAlert {
-  id: string;
-  level: 'critical' | 'warning' | 'info';
-  type: string;
-  message: string;
-  pedido_id: string | null;
-  client_name: string | null;
-  order_value: number | null;
-  mp_value: number | null;
-  mp_payer_name: string | null;
+interface PayerInfo {
+  id?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  identification?: {
+    type?: string;
+    number?: string;
+  };
 }
 
-interface AuditStats {
-  total_orders_checked: number;
-  validated: number;
-  warnings: number;
-  critical: number;
-  integrity_percentage: number;
+interface PaymentData {
+  id: number;
+  date_created: string;
+  date_approved?: string;
+  status: string;
+  status_detail?: string;
+  payment_type_id: string;
+  payment_method_id?: string;
+  transaction_amount: number;
+  net_received_amount?: number;
+  fee_amount?: number;
+  external_reference?: string;
+  payer?: PayerInfo;
+  description?: string;
 }
 
 export const useMercadoPagoFinancial = () => {
   const [balance, setBalance] = useState<BalanceData | null>(null);
-  const [account, setAccount] = useState<AccountData | null>(null);
   const [kpis, setKpis] = useState<KPIData | null>(null);
-  const [auditStats, setAuditStats] = useState<AuditStats | null>(null);
-  const [auditAlerts, setAuditAlerts] = useState<AuditAlert[]>([]);
+  const [payments, setPayments] = useState<PaymentData[]>([]);
   const [loading, setLoading] = useState(false);
-  const [auditLoading, setAuditLoading] = useState(false);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   const fetchBalance = useCallback(async () => {
@@ -62,8 +62,13 @@ export const useMercadoPagoFinancial = () => {
       
       if (error) throw error;
       
-      setBalance(data.balance);
-      setAccount(data.account);
+      if (data.balance) {
+        setBalance({
+          ...data.balance,
+          source: data.balance_source || 'calculated'
+        });
+      }
+      
       setLastUpdated(data.last_updated);
       
       // Calculate KPIs from summary
@@ -88,41 +93,47 @@ export const useMercadoPagoFinancial = () => {
     }
   }, []);
 
-  const runAudit = useCallback(async () => {
-    setAuditLoading(true);
+  const fetchPayments = useCallback(async (params?: {
+    status?: string;
+    date_from?: string;
+    date_to?: string;
+    limit?: number;
+  }) => {
+    setPaymentsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('audit-orders-vs-mercadopago');
+      const { data, error } = await supabase.functions.invoke('search-mercadopago-payments', {
+        body: {
+          status: params?.status || 'approved',
+          limit: params?.limit || 50,
+          date_from: params?.date_from,
+          date_to: params?.date_to
+        }
+      });
       
       if (error) throw error;
       
-      setAuditStats(data.stats);
-      setAuditAlerts(data.alerts || []);
-      
-      if (data.stats.critical > 0) {
-        toast.error(`Encontrados ${data.stats.critical} alertas críticos!`);
-      } else if (data.stats.warnings > 0) {
-        toast.warning(`${data.stats.warnings} avisos encontrados`);
+      if (data.payments && Array.isArray(data.payments)) {
+        setPayments(data.payments);
       } else {
-        toast.success('Auditoria concluída sem problemas!');
+        setPayments([]);
       }
     } catch (error: any) {
-      console.error('Error running audit:', error);
-      toast.error('Erro ao executar auditoria');
+      console.error('Error fetching payments:', error);
+      toast.error('Erro ao buscar pagamentos do Mercado Pago');
+      setPayments([]);
     } finally {
-      setAuditLoading(false);
+      setPaymentsLoading(false);
     }
   }, []);
 
   return {
     balance,
-    account,
     kpis,
-    auditStats,
-    auditAlerts,
+    payments,
     loading,
-    auditLoading,
+    paymentsLoading,
     lastUpdated,
     fetchBalance,
-    runAudit
+    fetchPayments
   };
 };
