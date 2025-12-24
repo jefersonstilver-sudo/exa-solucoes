@@ -264,21 +264,32 @@ const SidebarTrigger = React.forwardRef<
   const { toggleSidebar } = useSidebar()
 
   return (
-    <Button
+    <button
       ref={ref}
       data-sidebar="trigger"
-      variant="ghost"
-      size="icon"
-      className={cn("h-7 w-7", className)}
+      className={cn(
+        "h-6 w-6 rounded-full flex items-center justify-center",
+        "bg-gradient-to-br from-red-500 via-red-600 to-red-800",
+        "border border-red-400/50",
+        "shadow-[0_3px_0_0_#7f1d1d,0_4px_8px_rgba(0,0,0,0.4)]",
+        "hover:shadow-[0_1px_0_0_#7f1d1d,0_2px_4px_rgba(0,0,0,0.3)]",
+        "hover:translate-y-[2px]",
+        "active:shadow-[0_0px_0_0_#7f1d1d,0_1px_2px_rgba(0,0,0,0.2)]",
+        "active:translate-y-[3px]",
+        "text-white",
+        "transition-all duration-150 ease-out",
+        "cursor-pointer",
+        className
+      )}
       onClick={(event) => {
-        onClick?.(event)
+        onClick?.(event as React.MouseEvent<HTMLButtonElement>)
         toggleSidebar()
       }}
       {...props}
     >
-      <PanelLeft />
+      <PanelLeft className="h-3.5 w-3.5" />
       <span className="sr-only">Toggle Sidebar</span>
-    </Button>
+    </button>
   )
 })
 SidebarTrigger.displayName = "SidebarTrigger"

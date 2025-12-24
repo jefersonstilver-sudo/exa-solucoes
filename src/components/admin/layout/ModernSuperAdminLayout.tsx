@@ -20,9 +20,20 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
           "--sidebar-width-icon": "64px",
         } as React.CSSProperties}
       >
-        <div className="flex h-screen w-full bg-background overflow-hidden">
+        <div className="flex h-screen w-full bg-background overflow-hidden relative">
           {/* Sidebar sempre renderizada, mas em modo drawer/overlay no mobile */}
           <div className="relative z-30"><ModernAdminSidebar /></div>
+          
+          {/* Botão 3D vermelho elegante na interseção sidebar/header */}
+          <SidebarTrigger 
+            className="absolute z-50 hidden md:flex"
+            style={{
+              left: isTablet ? '220px' : '260px',
+              top: '40px',
+              transform: 'translate(-50%, -50%)'
+            }}
+          />
+          
           <SidebarInset className="flex flex-col w-full overflow-x-hidden">
             {/* Header com logo EXA - estilo elegante vermelho */}
             <header className={`sticky top-0 z-10 h-14 md:h-20 flex items-center border-b px-3 md:px-6 shadow-lg ${
@@ -30,9 +41,8 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
                 ? 'bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-white/20' 
                 : 'bg-background border-border'
             }`}>
-              <SidebarTrigger className={`mr-3 md:mr-4 h-8 w-8 rounded-md transition-colors touch-target ${
-                isMobile ? 'hover:bg-white/20 text-white' : 'hover:bg-accent text-foreground'
-              }`} />
+              {/* Trigger mobile dentro do header */}
+              <SidebarTrigger className="md:hidden mr-3" />
               <ModernAdminHeader />
             </header>
             <main className="flex-1 p-2 md:p-6 overflow-y-auto bg-gradient-to-b from-background to-muted/20 min-h-0 overflow-x-hidden">
