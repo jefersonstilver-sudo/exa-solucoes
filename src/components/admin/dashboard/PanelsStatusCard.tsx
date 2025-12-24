@@ -102,7 +102,7 @@ const PanelsStatusCard = ({ metrics, quedasPeriodo = 0 }: PanelsStatusCardProps)
   }, []);
 
   return (
-    <Card className="h-full bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.005] transition-all duration-300 ease-out flex flex-col">
+    <Card className="h-full bg-white rounded-2xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_20px_50px_rgb(0,0,0,0.2)] hover:scale-[1.01] hover:-translate-y-1 transition-all duration-300 ease-out flex flex-col">
       <CardHeader className="pb-3 flex-shrink-0">
         <CardTitle className="text-sm md:text-base flex flex-col gap-2">
           <div className="flex items-center justify-between">

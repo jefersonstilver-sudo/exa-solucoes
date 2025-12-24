@@ -115,7 +115,7 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
   }
 
   return (
-    <Card className="h-full p-4 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 ease-out flex flex-col">
+    <Card className="h-full p-4 bg-white border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_20px_50px_rgb(0,0,0,0.2)] hover:scale-[1.01] hover:-translate-y-1 transition-all duration-300 ease-out flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Trophy className="h-5 w-5 text-amber-500" />

@@ -35,6 +35,14 @@ export interface CadastroDetalhado {
   data_criacao: string;
 }
 
+export interface VendaProjetadaDetalhada {
+  clienteNome: string;
+  produto: string;
+  periodo: string;
+  valorMes: number;
+  valorTotal: number;
+}
+
 export interface UnifiedDashboardStats {
   cadastros: number;
   cadastrosAnterior: number;
@@ -49,6 +57,7 @@ export interface UnifiedDashboardStats {
   };
   vendas: number;              // Receita EFETIVAMENTE recebida (parcelas pagas)
   vendasProjetadas: number;    // Parcelas PENDENTES (receita futura)
+  vendasProjetadasLista: VendaProjetadaDetalhada[]; // Lista detalhada para hover
   vendasProjetadas2025: number; // Projeção anual 2025
   vendasAnterior: number;
   conversas: number;
@@ -91,6 +100,7 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
     pedidosDetalhes: { pagos: 0, pendentes: 0, ticketMedio: 0 },
     vendas: 0,
     vendasProjetadas: 0,
+    vendasProjetadasLista: [],
     vendasProjetadas2025: 0,
     vendasAnterior: 0,
     conversas: 0,
@@ -247,6 +257,63 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         .lte('data_vencimento', endOf2025);
 
       const vendasProjetadas2025 = parcelas2025?.reduce((sum, p) => sum + (p.valor_final || 0), 0) || 0;
+
+      // Buscar lista detalhada de vendas projetadas para hover
+      const { data: vendasProjetadasDetalhe } = await supabase
+        .from('pedidos')
+        .select(`
+          id,
+          plano_meses,
+          data_inicio,
+          data_fim,
+          lista_paineis,
+          client:users!pedidos_client_id_fkey(nome)
+        `)
+        .in('status', ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'])
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      // Buscar parcelas pendentes desses pedidos
+      const pedidoIdsParaDetalhe = vendasProjetadasDetalhe?.map(p => p.id) || [];
+      let vendasProjetadasLista: VendaProjetadaDetalhada[] = [];
+
+      if (pedidoIdsParaDetalhe.length > 0) {
+        const { data: parcelasDetalhe } = await supabase
+          .from('parcelas')
+          .select('pedido_id, valor_final')
+          .in('pedido_id', pedidoIdsParaDetalhe)
+          .in('status', ['pendente', 'atrasado']);
+
+        // Agrupar parcelas por pedido
+        const parcelasPorPedidoDetalhe: Record<string, { valorMes: number; count: number }> = {};
+        parcelasDetalhe?.forEach(p => {
+          if (!parcelasPorPedidoDetalhe[p.pedido_id]) {
+            parcelasPorPedidoDetalhe[p.pedido_id] = { valorMes: 0, count: 0 };
+          }
+          parcelasPorPedidoDetalhe[p.pedido_id].valorMes = p.valor_final || 0;
+          parcelasPorPedidoDetalhe[p.pedido_id].count++;
+        });
+
+        // Montar lista detalhada
+        vendasProjetadasLista = vendasProjetadasDetalhe
+          ?.filter(p => parcelasPorPedidoDetalhe[p.id])
+          .map(p => {
+            const clientNome = (p.client as any)?.nome || 'Cliente';
+            const paineis = Array.isArray(p.lista_paineis) ? p.lista_paineis.length : 1;
+            const meses = p.plano_meses || 12;
+            const dataInicio = p.data_inicio ? new Date(p.data_inicio).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) : '';
+            const dataFim = p.data_fim ? new Date(p.data_fim).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) : '';
+            const parcelasInfo = parcelasPorPedidoDetalhe[p.id];
+
+            return {
+              clienteNome: clientNome,
+              produto: `${paineis} painel${paineis > 1 ? 's' : ''} - ${meses} meses`,
+              periodo: `${dataInicio} - ${dataFim}`,
+              valorMes: parcelasInfo.valorMes,
+              valorTotal: parcelasInfo.valorMes * parcelasInfo.count
+            };
+          }) || [];
+      }
 
       // Período anterior (mantém cálculo simples para comparação)
       const { data: vendasAnteriores } = await supabase
@@ -534,6 +601,7 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         pedidosDetalhes: { pagos, pendentes, ticketMedio },
         vendas,
         vendasProjetadas,
+        vendasProjetadasLista,
         vendasProjetadas2025,
         vendasAnterior,
         conversas,

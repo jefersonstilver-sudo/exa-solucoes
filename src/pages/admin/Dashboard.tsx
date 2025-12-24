@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
 import { useMonthlyDashboardData } from '@/hooks/useMonthlyDashboardData';
 import { useDashboardUnifiedStats } from '@/hooks/useDashboardUnifiedStats';
 import { useDashboardPreferences } from '@/hooks/useDashboardPreferences';
@@ -232,18 +233,32 @@ const Dashboard = () => {
             </div>
           </SortableContext>
 
-          {/* DragOverlay for visual dragging */}
+          {/* DragOverlay for ultra-fluid visual dragging */}
           {createPortal(
             <DragOverlay 
               dropAnimation={{
-                duration: 300,
-                easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+                duration: 450,
+                easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
               }}
             >
               {activeId && (
-                <div className="opacity-95 scale-105 shadow-2xl rounded-lg">
+                <motion.div 
+                  initial={{ scale: 1, rotate: 0, opacity: 0.9 }}
+                  animate={{ 
+                    scale: 1.06, 
+                    rotate: 0.8,
+                    opacity: 1,
+                  }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 280,
+                    damping: 22,
+                    mass: 1.1
+                  }}
+                  className="rounded-2xl shadow-[0_35px_70px_-15px_rgba(0,0,0,0.4)]"
+                >
                   {renderCard(activeId)}
-                </div>
+                </motion.div>
               )}
             </DragOverlay>,
             document.body
