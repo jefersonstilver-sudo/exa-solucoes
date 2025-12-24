@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileSignature, Clock, AlertTriangle, ArrowRight } from 'lucide-react';
+import { FileSignature, Clock, AlertTriangle, ArrowRight, FileX } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,12 @@ interface ContratoStats {
   vencidos: number;
 }
 
+interface PedidoSemContrato {
+  id: string;
+  clientName: string;
+  status: string;
+}
+
 const ContratosAlertCard: React.FC = () => {
   const navigate = useNavigate();
   const { value: expiringDays, updateValue } = useCardConfig('dashboard_contracts_expiring_days', 7);
@@ -24,6 +30,7 @@ const ContratosAlertCard: React.FC = () => {
     expirando: 0,
     vencidos: 0
   });
+  const [pedidosSemContrato, setPedidosSemContrato] = useState<PedidoSemContrato[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -73,6 +80,40 @@ const ContratosAlertCard: React.FC = () => {
         });
 
         setStats({ pendentes, enviados, expirando, vencidos });
+
+        // Buscar pedidos ATIVOS que não têm contrato assinado
+        const { data: pedidosAtivos, error: pedidosError } = await supabase
+          .from('pedidos')
+          .select('id, client_id, status, contrato_status')
+          .in('status', ['ativo', 'pago_pendente_video'])
+          .or('contrato_status.is.null,contrato_status.neq.assinado');
+
+        if (pedidosError) {
+          console.error('[ContratosAlertCard] Error fetching active orders:', pedidosError);
+        } else if (pedidosAtivos && pedidosAtivos.length > 0) {
+          // Buscar nomes dos clientes
+          const clientIds = [...new Set(pedidosAtivos.map(p => p.client_id).filter(Boolean))];
+          
+          let clientNames: Record<string, string> = {};
+          if (clientIds.length > 0) {
+            const { data: clients } = await supabase
+              .from('users')
+              .select('id, nome, email')
+              .in('id', clientIds);
+            
+            clients?.forEach(c => {
+              clientNames[c.id] = c.nome || c.email?.split('@')[0] || 'Cliente';
+            });
+          }
+
+          const pedidosSemContratoList: PedidoSemContrato[] = pedidosAtivos.map(p => ({
+            id: p.id,
+            clientName: clientNames[p.client_id] || 'Cliente',
+            status: p.status
+          }));
+
+          setPedidosSemContrato(pedidosSemContratoList);
+        }
       } catch (err) {
         console.error('[ContratosAlertCard] Error:', err);
       } finally {
@@ -115,7 +156,7 @@ const ContratosAlertCard: React.FC = () => {
   }
 
   return (
-    <Card className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.005] transition-all duration-300 ease-out">
+    <Card className="bg-white rounded-2xl border border-gray-100 shadow-sm transition-all duration-300 ease-out">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm md:text-base flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -151,7 +192,7 @@ const ContratosAlertCard: React.FC = () => {
           </div>
         </div>
 
-        {/* Alertas */}
+        {/* Alertas de expiração */}
         {(stats.expirando > 0 || stats.vencidos > 0) && (
           <div className="flex flex-wrap gap-2">
             {stats.expirando > 0 && (
@@ -166,6 +207,30 @@ const ContratosAlertCard: React.FC = () => {
                 {stats.vencidos} vencidos
               </Badge>
             )}
+          </div>
+        )}
+
+        {/* NOVO: Alerta de pedidos ativos sem contrato */}
+        {pedidosSemContrato.length > 0 && (
+          <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+            <div className="flex items-center gap-2 mb-2">
+              <FileX className="h-4 w-4 text-red-600" />
+              <span className="text-xs font-semibold text-red-700">
+                {pedidosSemContrato.length} pedido{pedidosSemContrato.length > 1 ? 's' : ''} ativo{pedidosSemContrato.length > 1 ? 's' : ''} sem contrato
+              </span>
+            </div>
+            <div className="space-y-1 max-h-20 overflow-y-auto">
+              {pedidosSemContrato.slice(0, 3).map(pedido => (
+                <div key={pedido.id} className="text-[10px] text-red-600 truncate">
+                  • {pedido.clientName}
+                </div>
+              ))}
+              {pedidosSemContrato.length > 3 && (
+                <div className="text-[10px] text-red-500 font-medium">
+                  +{pedidosSemContrato.length - 3} mais...
+                </div>
+              )}
+            </div>
           </div>
         )}
 
