@@ -84,6 +84,13 @@ import { SidebarFavoritesStar } from './SidebarFavoritesStar';
 import { useTheme } from '@/components/ui/theme-provider';
 import { ThemeToggle } from './ThemeToggle';
 
+// Novos hooks para badges dinâmicos
+import { usePedidosSemVideo } from '@/hooks/usePedidosSemVideo';
+import { usePropostasAguardando } from '@/hooks/usePropostasAguardando';
+import { useContratosPendentes } from '@/hooks/useContratosPendentes';
+import { useBeneficiosAcaoNecessaria } from '@/hooks/useBeneficiosAcaoNecessaria';
+import { usePendingVideosCount } from '@/hooks/usePendingVideosCount';
+
 export function ModernAdminSidebar() {
   const { state, open, setOpen, setOpenMobile, isMobile: isSidebarMobile } = useSidebar();
   const location = useLocation();
@@ -93,10 +100,17 @@ export function ModernAdminSidebar() {
   const navigate = useNavigate();
   const { isMobile, isTablet } = useResponsiveLayout();
 
-  // Badges dinâmicos
+  // Badges dinâmicos existentes
   const { unreadCount } = useUnreadCount();
   const { pendentesCount: escalacoesPendentes } = useEscalacoesPendentes();
   const { offlineCount } = useOfflineAlerts();
+  
+  // Novos badges dinâmicos
+  const { count: pedidosSemVideo } = usePedidosSemVideo();
+  const { count: propostasAguardando } = usePropostasAguardando();
+  const { count: contratosPendentes } = useContratosPendentes();
+  const { count: beneficiosAcao } = useBeneficiosAcaoNecessaria();
+  const { pendingCount: videosParaAprovar } = usePendingVideosCount();
   
   // Favorites system
   const { favorites, toggleFavorite, isFavorite } = useSidebarFavorites();
@@ -138,7 +152,9 @@ export function ModernAdminSidebar() {
           title: 'Pedidos',
           href: buildPath('pedidos'),
           icon: ShoppingBag,
-          moduleKey: MODULE_KEYS.pedidos
+          moduleKey: MODULE_KEYS.pedidos,
+          badge: pedidosSemVideo > 0 ? pedidosSemVideo : undefined,
+          badgeColor: 'bg-orange-500'
         },
         {
           title: 'Produtos',
@@ -150,13 +166,17 @@ export function ModernAdminSidebar() {
           title: 'Propostas',
           href: buildPath('propostas'),
           icon: FileText,
-          moduleKey: MODULE_KEYS.propostas
+          moduleKey: MODULE_KEYS.propostas,
+          badge: propostasAguardando > 0 ? propostasAguardando : undefined,
+          badgeColor: 'bg-blue-500'
         },
         {
           title: 'Jurídico',
           href: buildPath('juridico'),
           icon: Scale,
-          moduleKey: MODULE_KEYS.juridico
+          moduleKey: MODULE_KEYS.juridico,
+          badge: contratosPendentes > 0 ? contratosPendentes : undefined,
+          badgeColor: 'bg-purple-500'
         },
         {
           title: 'Assinaturas',
@@ -168,7 +188,9 @@ export function ModernAdminSidebar() {
           title: 'Aprovações',
           href: buildPath('aprovacoes'),
           icon: CheckSquare,
-          moduleKey: MODULE_KEYS.aprovacoes
+          moduleKey: MODULE_KEYS.aprovacoes,
+          badge: videosParaAprovar > 0 ? videosParaAprovar : undefined,
+          badgeColor: 'bg-yellow-500'
         },
         {
           title: 'Cupons',
@@ -180,7 +202,10 @@ export function ModernAdminSidebar() {
           title: 'Benefícios Prestadores',
           href: buildPath('beneficio-prestadores'),
           icon: Gift,
-          moduleKey: MODULE_KEYS.beneficios
+          moduleKey: MODULE_KEYS.beneficios,
+          badge: beneficiosAcao > 0 ? beneficiosAcao : undefined,
+          badgeColor: 'bg-pink-500',
+          badgePulse: beneficiosAcao > 0
         }
       ]
     },
@@ -548,6 +573,7 @@ export function ModernAdminSidebar() {
                   const Icon = item.icon;
                   const badge = (item as any).badge;
                   const badgeColor = (item as any).badgeColor || 'bg-red-500';
+                  const badgePulse = (item as any).badgePulse || false;
 
                   const linkContent = (
                     <NavLink
@@ -573,7 +599,7 @@ export function ModernAdminSidebar() {
                               {item.title}
                             </span>
                             {badge !== undefined && (
-                              <span className={`${badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center`}>
+                              <span className={`${badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${badgePulse ? 'animate-pulse ring-2 ring-pink-300/50' : ''}`}>
                                 {badge}
                               </span>
                             )}
@@ -585,7 +611,7 @@ export function ModernAdminSidebar() {
                           </>
                         )}
                       {collapsed && badge !== undefined && (
-                        <span className={`absolute -top-1 -right-1 ${badgeColor} text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center`}>
+                        <span className={`absolute -top-1 -right-1 ${badgeColor} text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center ${badgePulse ? 'animate-pulse ring-2 ring-pink-300/50' : ''}`}>
                           {typeof badge === 'number' && badge > 9 ? '9+' : badge}
                         </span>
                       )}
