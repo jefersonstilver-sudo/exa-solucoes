@@ -12,6 +12,13 @@ export interface PosicoesPredio {
   isLotado: boolean;
 }
 
+export interface EmpresaPedido {
+  pedidoId: string;
+  empresaNome: string;
+  email: string;
+  valorTotal: number;
+}
+
 export interface PosicoesData {
   posicoesMap: Record<string, PosicoesPredio>;
   totalPosicoes: number;
@@ -20,6 +27,16 @@ export interface PosicoesData {
   totalDisponiveis: number;
   percentualGeral: number;
   prediosLotados: number;
+  totalPredios: number;
+  totalPedidosAtivos: number;
+  pedidosAtivos: Array<{
+    id: string;
+    lista_predios: string[];
+    valor_total: number;
+    empresaNome: string;
+    email: string;
+  }>;
+  empresasPorPredio: Record<string, EmpresaPedido[]>;
   isLoading: boolean;
   refetch: () => void;
 }
@@ -55,13 +72,20 @@ export const usePosicoesDisponiveis = () => {
     staleTime: 2 * 60 * 1000
   });
 
-  // Buscar pedidos ativos (ocupam posições) - apenas horizontal
+  // Buscar pedidos ativos (ocupam posições) - apenas horizontal com dados da empresa
   const { data: pedidosAtivos } = useQuery({
     queryKey: ['pedidos-ocupando-posicoes'],
     queryFn: async () => {
       const { data } = await supabase
         .from('pedidos')
-        .select('id, lista_predios, tipo_produto')
+        .select(`
+          id, 
+          lista_predios, 
+          tipo_produto, 
+          valor_total,
+          client_id,
+          users!pedidos_client_id_fkey(id, email, empresa_nome)
+        `)
         .in('status', ['ativo', 'pago', 'pago_pendente_video', 'video_aprovado'])
         .or('tipo_produto.eq.horizontal,tipo_produto.is.null');
       return data || [];
@@ -87,6 +111,7 @@ export const usePosicoesDisponiveis = () => {
   // Calcular posições por prédio
   const posicoesData = useMemo<PosicoesData>(() => {
     const posicoesMap: Record<string, PosicoesPredio> = {};
+    const empresasPorPredio: Record<string, EmpresaPedido[]> = {};
     
     // Inicializar todos os prédios
     (predios || []).forEach(predio => {
@@ -99,14 +124,37 @@ export const usePosicoesDisponiveis = () => {
         percentualOcupado: 0,
         isLotado: false
       };
+      empresasPorPredio[predio.id] = [];
     });
 
-    // Contar posições ocupadas (pedidos ativos)
-    (pedidosAtivos || []).forEach(pedido => {
-      const listaPredios = pedido.lista_predios as string[] || [];
-      listaPredios.forEach(buildingId => {
+    // Processar pedidos ativos
+    const pedidosProcessados = (pedidosAtivos || []).map(pedido => {
+      const user = pedido.users as { id: string; email: string; empresa_nome: string | null } | null;
+      return {
+        id: pedido.id,
+        lista_predios: (pedido.lista_predios as string[]) || [],
+        valor_total: pedido.valor_total || 0,
+        empresaNome: user?.empresa_nome || 'Empresa não informada',
+        email: user?.email || ''
+      };
+    });
+
+    // Contar posições ocupadas (pedidos ativos) e mapear empresas por prédio
+    pedidosProcessados.forEach(pedido => {
+      pedido.lista_predios.forEach(buildingId => {
         if (posicoesMap[buildingId]) {
           posicoesMap[buildingId].ocupadas += 1;
+          
+          // Adicionar empresa ao prédio
+          if (!empresasPorPredio[buildingId]) {
+            empresasPorPredio[buildingId] = [];
+          }
+          empresasPorPredio[buildingId].push({
+            pedidoId: pedido.id,
+            empresaNome: pedido.empresaNome,
+            email: pedido.email,
+            valorTotal: pedido.valor_total
+          });
         }
       });
     });
@@ -155,6 +203,10 @@ export const usePosicoesDisponiveis = () => {
       totalDisponiveis,
       percentualGeral,
       prediosLotados,
+      totalPredios: predios?.length || 0,
+      totalPedidosAtivos: pedidosProcessados.length,
+      pedidosAtivos: pedidosProcessados,
+      empresasPorPredio,
       isLoading: !predios || !pedidosAtivos || !propostasAtivas,
       refetch
     };
