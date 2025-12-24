@@ -234,7 +234,7 @@ const ProposalsAlertCard: React.FC = () => {
           variant="ghost"
           size="sm"
           className="w-full"
-          onClick={() => navigate('/admin/proposals')}
+          onClick={() => navigate('/admin/propostas')}
         >
           Ver propostas
           <ArrowRight className="h-3 w-3 ml-1" />

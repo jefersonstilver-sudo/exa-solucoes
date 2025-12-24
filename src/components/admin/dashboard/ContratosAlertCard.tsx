@@ -173,7 +173,7 @@ const ContratosAlertCard: React.FC = () => {
           variant="ghost"
           size="sm"
           className="w-full"
-          onClick={() => navigate('/admin/contracts')}
+          onClick={() => navigate('/admin/juridico')}
         >
           Ver contratos
           <ArrowRight className="h-3 w-3 ml-1" />
