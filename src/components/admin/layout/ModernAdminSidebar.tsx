@@ -33,7 +33,8 @@ import {
   Scale,
   Sun,
   Moon,
-  BarChart3
+  BarChart3,
+  Landmark
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -339,6 +340,18 @@ export function ModernAdminSidebar() {
           href: buildPath('comunicacoes'),
           icon: Mail,
           moduleKey: MODULE_KEYS.emails
+        }
+      ]
+    },
+    {
+      label: 'Financeiro MP',
+      items: [
+        {
+          title: 'Financeiro Completo',
+          href: buildPath('financeiro-mp'),
+          icon: Landmark,
+          moduleKey: MODULE_KEYS.financeiro_mp,
+          badgeTooltip: 'Módulo integrado Mercado Pago com anti-fraude'
         }
       ]
     },
