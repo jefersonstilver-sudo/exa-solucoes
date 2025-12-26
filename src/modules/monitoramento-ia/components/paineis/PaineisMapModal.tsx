@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { X, AlertTriangle, Zap, Loader2 } from 'lucide-react';
+import { X, AlertTriangle, Zap, Loader2, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { FancyToggle } from '@/components/ui/fancy-toggle';
 import loadGoogleMaps from '@/utils/googleMapsLoader';
-import { DEFAULT_MAP_CONFIG, MAP_STYLES } from '@/utils/mapConstants';
+import { DEFAULT_MAP_CONFIG } from '@/utils/mapConstants';
 import { useBuildingsWithDeviceStatus, BuildingWithDeviceStatus } from '../../hooks/useBuildingsWithDeviceStatus';
 import { BuildingDetailCard } from './BuildingDetailCard';
-import { MarkerClusterer } from '@googlemaps/markerclusterer';
 
 interface PaineisMapModalProps {
   isOpen: boolean;
@@ -16,6 +14,26 @@ interface PaineisMapModalProps {
   eventsMap?: Map<string, number>;
   periodLabel?: string;
 }
+
+// Clean map styles - hide ALL POIs, labels, company names
+const CLEAN_MAP_STYLES: google.maps.MapTypeStyle[] = [
+  // Hide ALL points of interest
+  { featureType: "poi", elementType: "all", stylers: [{ visibility: "off" }] },
+  // Hide ALL labels/text
+  { featureType: "all", elementType: "labels.text", stylers: [{ visibility: "off" }] },
+  { featureType: "all", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  // Hide transit
+  { featureType: "transit", elementType: "all", stylers: [{ visibility: "off" }] },
+  // Keep roads visible but no labels
+  { featureType: "road", elementType: "geometry", stylers: [{ visibility: "on" }] },
+  { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
+  // Keep water and landscape visible
+  { featureType: "water", elementType: "geometry", stylers: [{ visibility: "on" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ visibility: "on" }] },
+  // Administrative boundaries
+  { featureType: "administrative", elementType: "geometry", stylers: [{ visibility: "on" }] },
+  { featureType: "administrative", elementType: "labels", stylers: [{ visibility: "off" }] },
+];
 
 export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
   isOpen,
@@ -26,14 +44,13 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
-  const clustererRef = useRef<MarkerClusterer | null>(null);
 
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingWithDeviceStatus | null>(null);
   const [showOnlyOffline, setShowOnlyOffline] = useState(false);
   const [showOnlyWithEvents, setShowOnlyWithEvents] = useState(false);
   const [mapReady, setMapReady] = useState(false);
 
-  const { buildings, loading, stats } = useBuildingsWithDeviceStatus(eventsMap);
+  const { buildings, loading, stats, refetch } = useBuildingsWithDeviceStatus(eventsMap);
 
   // Filter buildings based on toggles
   const filteredBuildings = buildings.filter(b => {
@@ -110,8 +127,8 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
 
         const map = new Map(mapRef.current, {
           center: DEFAULT_MAP_CONFIG.center,
-          zoom: DEFAULT_MAP_CONFIG.zoom,
-          mapId: 'paineis-map',
+          zoom: 14, // More zoomed in for horizontal view
+          // NO mapId - this allows styles to work
           disableDefaultUI: true,
           zoomControl: true,
           mapTypeControl: false,
@@ -119,7 +136,7 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
           fullscreenControl: false,
           gestureHandling: 'greedy',
           scrollwheel: true,
-          styles: MAP_STYLES,
+          styles: CLEAN_MAP_STYLES,
         });
 
         mapInstanceRef.current = map;
@@ -134,17 +151,18 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
     return () => {
       isMounted = false;
       markersRef.current = [];
-      if (clustererRef.current) {
-        clustererRef.current.clearMarkers();
-        clustererRef.current = null;
-      }
     };
   }, [isOpen]);
 
   // InfoWindow ref for hover tooltips
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
 
-  // Update markers when buildings change
+  // Handle address update from BuildingDetailCard
+  const handleAddressUpdate = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  // Update markers when buildings change - NO CLUSTERER
   useEffect(() => {
     if (!mapReady || !mapInstanceRef.current) return;
 
@@ -153,10 +171,6 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
       marker.map = null;
     });
     markersRef.current = [];
-
-    if (clustererRef.current) {
-      clustererRef.current.clearMarkers();
-    }
 
     // Create InfoWindow for hover if not exists
     if (!infoWindowRef.current) {
@@ -222,27 +236,24 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
 
     markersRef.current = newMarkers;
 
-    // Create clusterer with enhanced styling
-    clustererRef.current = new MarkerClusterer({
-      map: mapInstanceRef.current,
-      markers: newMarkers,
-      renderer: {
-        render: ({ count, position }) => {
-          const div = document.createElement('div');
-          div.className = 'flex items-center justify-center w-14 h-14 rounded-full text-white font-bold shadow-xl border-3 border-white';
-          div.style.background = 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)';
-          div.style.boxShadow = '0 4px 14px rgba(99, 102, 241, 0.4), 0 2px 6px rgba(0,0,0,0.2)';
-          div.textContent = String(count);
-          return new google.maps.marker.AdvancedMarkerElement({
-            position,
-            content: div,
-          });
-        },
-      },
-    });
+    // Fit bounds to show all markers if we have markers
+    if (newMarkers.length > 0 && mapInstanceRef.current) {
+      const bounds = new google.maps.LatLngBounds();
+      newMarkers.forEach(marker => {
+        if (marker.position) {
+          bounds.extend(marker.position as google.maps.LatLng);
+        }
+      });
+      mapInstanceRef.current.fitBounds(bounds, { top: 80, right: 20, bottom: 60, left: 20 });
+    }
   }, [filteredBuildings, mapReady, createMarkerElement]);
 
   if (!isOpen) return null;
+
+  // Count stats for display
+  const offlineCount = buildings.filter(b => b.status === 'offline' || b.status === 'partial').length;
+  const eventsCount = buildings.reduce((sum, b) => sum + b.eventsCount, 0);
+  const totalPanels = buildings.reduce((sum, b) => sum + b.totalDevices, 0);
 
   return (
     <motion.div
@@ -251,50 +262,73 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 bg-background"
     >
-      {/* Minimalist Header - 48px */}
-      <div className="absolute top-0 left-0 right-0 z-10 h-12 bg-card/90 backdrop-blur-sm border-b border-border flex items-center justify-between px-3">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Switch
-              id="only-offline"
-              checked={showOnlyOffline}
-              onCheckedChange={setShowOnlyOffline}
-              className="scale-90"
-            />
-            <Label htmlFor="only-offline" className="text-xs cursor-pointer flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3 text-red-500" />
-              Problemas
-            </Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch
-              id="with-events"
-              checked={showOnlyWithEvents}
-              onCheckedChange={setShowOnlyWithEvents}
-              className="scale-90"
-            />
-            <Label htmlFor="with-events" className="text-xs cursor-pointer flex items-center gap-1">
-              <Zap className="w-3 h-3 text-orange-500" />
-              Quedas {periodLabel}
-            </Label>
-          </div>
+      {/* Glassmorphism Header */}
+      <div className="absolute top-0 left-0 right-0 z-10 h-14 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-white/20 dark:border-gray-700/30 shadow-sm flex items-center justify-between px-4">
+        {/* Left: Toggles */}
+        <div className="flex items-center gap-6">
+          <FancyToggle
+            checked={showOnlyOffline}
+            onChange={setShowOnlyOffline}
+            color="red"
+            size="large"
+            icon={<AlertTriangle className="w-3.5 h-3.5" />}
+          >
+            Problemas
+            {offlineCount > 0 && (
+              <span className="ml-1 text-[10px] bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-full">
+                {offlineCount}
+              </span>
+            )}
+          </FancyToggle>
+
+          <FancyToggle
+            checked={showOnlyWithEvents}
+            onChange={setShowOnlyWithEvents}
+            color="orange"
+            size="large"
+            icon={<Zap className="w-3.5 h-3.5" />}
+          >
+            Quedas {periodLabel}
+            {eventsCount > 0 && (
+              <span className="ml-1 text-[10px] bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded-full">
+                {eventsCount}
+              </span>
+            )}
+          </FancyToggle>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{stats.total} prédios</span>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+        {/* Right: Stats & Close */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5" />
+              <span className="font-medium">{stats.total}</span>
+              <span>prédios</span>
+            </div>
+            <div className="w-px h-4 bg-border" />
+            <div className="flex items-center gap-1">
+              <span className="font-medium">{totalPanels}</span>
+              <span>painéis</span>
+            </div>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onClose} 
+            className="h-9 w-9 rounded-full bg-white/50 dark:bg-gray-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80"
+          >
             <X className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
-      {/* Map container - full screen with small top padding */}
-      <div ref={mapRef} className="w-full h-full pt-12" />
+      {/* Map container - full screen with header offset */}
+      <div ref={mapRef} className="w-full h-full pt-14" />
 
       {/* Loading overlay */}
       {(loading || !mapReady) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-30">
-          <div className="flex flex-col items-center gap-3">
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-30">
+          <div className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-card/80 backdrop-blur-xl border border-white/20 shadow-xl">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <p className="text-muted-foreground text-sm">Carregando mapa...</p>
           </div>
@@ -306,23 +340,24 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
         <BuildingDetailCard
           building={selectedBuilding}
           onClose={() => setSelectedBuilding(null)}
+          onAddressUpdate={handleAddressUpdate}
           periodLabel={periodLabel}
         />
       )}
 
-      {/* Compact Legend - bottom right */}
-      <div className="absolute bottom-3 right-3 bg-card/90 backdrop-blur-sm rounded-lg border border-border px-3 py-2 z-10 flex items-center gap-3">
+      {/* Compact Legend - bottom right glassmorphism */}
+      <div className="absolute bottom-4 right-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-xl border border-white/20 dark:border-gray-700/30 px-4 py-2.5 z-10 flex items-center gap-4 shadow-lg">
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
-          <span className="text-[10px] text-muted-foreground">Online</span>
+          <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm shadow-green-500/50" />
+          <span className="text-xs text-foreground/80">Online</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
-          <span className="text-[10px] text-muted-foreground">Parcial</span>
+          <div className="w-3 h-3 rounded-full bg-yellow-500 shadow-sm shadow-yellow-500/50" />
+          <span className="text-xs text-foreground/80">Parcial</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-[10px] text-muted-foreground">Offline</span>
+          <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-sm shadow-red-500/50" />
+          <span className="text-xs text-foreground/80">Offline</span>
         </div>
       </div>
     </motion.div>
