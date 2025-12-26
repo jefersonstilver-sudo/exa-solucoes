@@ -27,6 +27,21 @@ interface DeviceMetadata {
   paused_by?: string;
 }
 
+interface GlobalAlertState {
+  last_storm_detected_at?: string;
+  storm_cooldown_until?: string;
+  alerts_last_5_min?: number;
+  last_alert_count_reset?: string;
+}
+
+// ==================== PROTECTION CONSTANTS ====================
+const MASS_OFFLINE_THRESHOLD_PERCENT = 0.7; // 70% devices offline = mass failure
+const MIN_DEVICES_FOR_MASS_CHECK = 5; // Only check mass failure if >= 5 devices
+const MAX_ALERTS_PER_DEVICE_PER_HOUR = 6; // Max 6 alerts per device per hour
+const MIN_SECONDS_BETWEEN_DEVICE_ALERTS = 180; // Min 3 minutes between alerts for same device
+const GLOBAL_ALERT_STORM_THRESHOLD = 30; // If 30+ alerts in 5 min, trigger storm protection
+const STORM_COOLDOWN_MINUTES = 15; // Pause all alerts for 15 min after storm
+
 // Helper to check if we're in scheduled shutdown period (1:00 - 6:00 BRT)
 const isScheduledShutdownPeriod = (): boolean => {
   const brazilTime = new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
@@ -57,12 +72,38 @@ Deno.serve(async (req) => {
     const isShutdownPeriod = isScheduledShutdownPeriod();
     const brazilTime = getBrazilTimeString();
     
-    console.log(`🤖 [MONITOR] Iniciando verificação ${testMode ? '(MODO TESTE)' : ''} - Horário BRT: ${brazilTime}${isShutdownPeriod ? ' [PERÍODO PROGRAMADO 1h-4h]' : ''}...`);
+    console.log(`🤖 [MONITOR] Iniciando verificação ${testMode ? '(MODO TESTE)' : ''} - Horário BRT: ${brazilTime}${isShutdownPeriod ? ' [PERÍODO PROGRAMADO 1h-6h]' : ''}...`);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // ==================== GLOBAL STATE CHECK ====================
+    const { data: globalState } = await supabase
+      .from('agent_context')
+      .select('*')
+      .eq('key', 'monitor_panels_state')
+      .single();
+    
+    const state: GlobalAlertState = (globalState?.value as GlobalAlertState) || {};
+    const now = new Date();
+    
+    // Check storm cooldown
+    if (state.storm_cooldown_until && !testMode) {
+      const cooldownEnd = new Date(state.storm_cooldown_until);
+      if (now < cooldownEnd) {
+        const remainingMin = Math.ceil((cooldownEnd.getTime() - now.getTime()) / 60000);
+        console.log(`⛔ [MONITOR] Sistema em COOLDOWN após tempestade de alertas. Restam ${remainingMin} minutos.`);
+        return new Response(JSON.stringify({ 
+          message: 'Em cooldown após tempestade de alertas',
+          cooldown_remaining_minutes: remainingMin 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        });
+      }
+    }
 
     // 1. Get all active alert rules
     const { data: alertRules, error: rulesError } = await supabase
@@ -131,10 +172,43 @@ Deno.serve(async (req) => {
 
     console.log(`📊 [MONITOR] Analisando ${devices?.length || 0} devices (${alertConfigs?.length || 0} com config de alertas)...`);
 
-    const now = new Date();
+    // ==================== MASS OFFLINE DETECTION ====================
+    const totalDevices = devices?.length || 0;
+    const offlineDevices = devices?.filter(d => d.status === 'offline') || [];
+    const offlineCount = offlineDevices.length;
+    const offlinePercent = totalDevices > 0 ? offlineCount / totalDevices : 0;
+
+    if (totalDevices >= MIN_DEVICES_FOR_MASS_CHECK && offlinePercent >= MASS_OFFLINE_THRESHOLD_PERCENT && !testMode) {
+      console.log(`⚠️ [MONITOR] QUEDA MASSIVA DETECTADA: ${offlineCount}/${totalDevices} devices offline (${Math.round(offlinePercent * 100)}%)`);
+      console.log(`⚠️ [MONITOR] Provavelmente falha de infraestrutura/API - ALERTAS SUSPENSOS`);
+      
+      // Log the event
+      await supabase.from('panel_offline_alerts_history').insert({
+        painel_id: null,
+        device_name: 'SISTEMA',
+        tipo: 'queda_massiva',
+        mensagem: `Queda massiva detectada: ${offlineCount}/${totalDevices} devices (${Math.round(offlinePercent * 100)}%) - Alertas suspensos`,
+        tempo_offline_minutos: 0,
+        destinatarios_notificados: [],
+        regra_id: null,
+        regra_nome: 'PROTEÇÃO ANTI-FALSO-POSITIVO'
+      });
+
+      return new Response(JSON.stringify({ 
+        message: 'Queda massiva detectada - alertas suspensos',
+        offline_count: offlineCount,
+        total_devices: totalDevices,
+        offline_percent: Math.round(offlinePercent * 100)
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      });
+    }
+
     let offlineDetected = 0;
     let backOnlineDetected = 0;
     let alertsSent = 0;
+    let alertsBlockedByRateLimit = 0;
 
     // Get confirmation buttons
     const { data: confirmButtons } = await supabase
@@ -206,6 +280,36 @@ Deno.serve(async (req) => {
       return `${hours}h ${remainingMinutes}min`;
     };
 
+    // ==================== CHECK PER-DEVICE RATE LIMITS ====================
+    const checkDeviceRateLimit = (metadata: DeviceMetadata): { allowed: boolean; reason?: string } => {
+      const lastAlertAt = metadata.last_offline_alert_at ? new Date(metadata.last_offline_alert_at) : null;
+      const alertCount = metadata.offline_alert_count || 0;
+
+      // Check minimum time between alerts
+      if (lastAlertAt) {
+        const secondsSinceLastAlert = (now.getTime() - lastAlertAt.getTime()) / 1000;
+        if (secondsSinceLastAlert < MIN_SECONDS_BETWEEN_DEVICE_ALERTS) {
+          return { 
+            allowed: false, 
+            reason: `Apenas ${Math.round(secondsSinceLastAlert)}s desde último alerta (mín: ${MIN_SECONDS_BETWEEN_DEVICE_ALERTS}s)` 
+          };
+        }
+      }
+
+      // Check max alerts per hour
+      if (alertCount >= MAX_ALERTS_PER_DEVICE_PER_HOUR && lastAlertAt) {
+        const hoursSinceFirst = (now.getTime() - lastAlertAt.getTime()) / 3600000;
+        if (hoursSinceFirst < 1) {
+          return { 
+            allowed: false, 
+            reason: `Limite de ${MAX_ALERTS_PER_DEVICE_PER_HOUR} alertas/hora atingido` 
+          };
+        }
+      }
+
+      return { allowed: true };
+    };
+
     for (const device of devices || []) {
       const lastOnline = device.last_online_at ? new Date(device.last_online_at) : null;
       const timeSinceLastOnline = lastOnline ? now.getTime() - lastOnline.getTime() : Infinity;
@@ -244,7 +348,7 @@ Deno.serve(async (req) => {
             painel_id: device.id,
             device_name: device.name,
             tipo: 'programado',
-            mensagem: `Período programado (1h-4h) - alerta ignorado`,
+            mensagem: `Período programado (1h-6h) - alerta ignorado`,
             tempo_offline_minutos: Math.round(timeSinceLastOnline / 60000),
             destinatarios_notificados: [],
             regra_id: applicableRule.id,
@@ -262,6 +366,16 @@ Deno.serve(async (req) => {
           }
           if (new Date(pausedUntil) > now) {
             console.log(`⏸️ [MONITOR] Device ${device.name}: notificações pausadas até ${pausedUntil}`);
+            continue;
+          }
+        }
+
+        // ==================== RATE LIMIT CHECK ====================
+        if (!testMode) {
+          const rateLimitCheck = checkDeviceRateLimit(metadata);
+          if (!rateLimitCheck.allowed) {
+            console.log(`🚫 [MONITOR] Device ${device.name}: RATE LIMIT - ${rateLimitCheck.reason}`);
+            alertsBlockedByRateLimit++;
             continue;
           }
         }
@@ -294,7 +408,10 @@ Deno.serve(async (req) => {
           const timeSinceLastAlert = now.getTime() - lastAlertAt.getTime();
           const intervaloMs = applicableRule.intervalo_repeticao_segundos * 1000;
           
-          if (timeSinceLastAlert >= intervaloMs) {
+          // Use the LARGER of: configured interval OR minimum interval
+          const effectiveIntervalMs = Math.max(intervaloMs, MIN_SECONDS_BETWEEN_DEVICE_ALERTS * 1000);
+          
+          if (timeSinceLastAlert >= effectiveIntervalMs) {
             shouldSendAlert = true;
             isRepeatAlert = true;
           }
@@ -441,6 +558,35 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ==================== STORM DETECTION ====================
+    if (!testMode && alertsSent >= GLOBAL_ALERT_STORM_THRESHOLD) {
+      console.log(`⛈️ [MONITOR] TEMPESTADE DE ALERTAS DETECTADA: ${alertsSent} alertas enviados!`);
+      console.log(`⛈️ [MONITOR] Ativando cooldown de ${STORM_COOLDOWN_MINUTES} minutos`);
+
+      const cooldownEnd = new Date(now.getTime() + STORM_COOLDOWN_MINUTES * 60000);
+      
+      await supabase.from('agent_context').upsert({
+        key: 'monitor_panels_state',
+        value: {
+          last_storm_detected_at: now.toISOString(),
+          storm_cooldown_until: cooldownEnd.toISOString(),
+          alerts_sent_during_storm: alertsSent
+        },
+        updated_at: now.toISOString()
+      }, { onConflict: 'key' });
+
+      await supabase.from('panel_offline_alerts_history').insert({
+        painel_id: null,
+        device_name: 'SISTEMA',
+        tipo: 'storm_detected',
+        mensagem: `Tempestade de alertas: ${alertsSent} enviados. Cooldown ativado por ${STORM_COOLDOWN_MINUTES} min`,
+        tempo_offline_minutos: 0,
+        destinatarios_notificados: [],
+        regra_id: null,
+        regra_nome: 'PROTEÇÃO ANTI-TEMPESTADE'
+      });
+    }
+
     const summary = {
       timestamp: now.toISOString(),
       total_devices: devices?.length || 0,
@@ -448,22 +594,23 @@ Deno.serve(async (req) => {
       offline_detected: offlineDetected,
       back_online_detected: backOnlineDetected,
       alerts_sent: alertsSent,
+      alerts_blocked_by_rate_limit: alertsBlockedByRateLimit,
       monitoring_active: true,
       test_mode: testMode
     };
 
-    console.log('✅ [MONITOR] Verificação concluída:', summary);
+    console.log(`✅ [MONITOR] Verificação concluída:`, JSON.stringify(summary, null, 2));
 
-    return new Response(JSON.stringify(summary), { 
+    return new Response(JSON.stringify(summary), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200 
+      status: 200
     });
 
   } catch (error) {
-    console.error('❌ [MONITOR] Erro crítico:', error);
-    return new Response(
-      JSON.stringify({ error: error.message, monitoring_active: false }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    );
+    console.error('❌ [MONITOR] Erro:', error);
+    return new Response(JSON.stringify({ error: String(error) }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500
+    });
   }
 });
