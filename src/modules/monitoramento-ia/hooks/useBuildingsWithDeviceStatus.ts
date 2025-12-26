@@ -42,6 +42,48 @@ export const PROVIDER_COLORS: Record<string, string> = {
   'default': '#6B7280', // gray
 };
 
+interface BuildingBase {
+  id: string;
+  nome: string;
+  endereco: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  manual_latitude: number | null;
+  manual_longitude: number | null;
+}
+
+// Função para encontrar building por nome similar ao device
+function findBuildingByDeviceName(deviceName: string, buildings: BuildingBase[]): BuildingBase | null {
+  if (!deviceName) return null;
+  
+  const normalized = deviceName.toLowerCase().trim();
+  
+  // 1. Busca exata
+  const exactMatch = buildings.find(b => 
+    b.nome.toLowerCase().trim() === normalized
+  );
+  if (exactMatch) return exactMatch;
+  
+  // 2. Busca parcial - device "Provence 2" → building "Edifício Provence" ou "Provence"
+  const deviceBase = normalized
+    .replace(/\s*\d+$/, '') // Remove número final (ex: "2", "3")
+    .replace(/^(edifício|edificio|residencial|condomínio|cond\.?)\s+/i, '') // Remove prefixos
+    .trim();
+  
+  const partialMatch = buildings.find(b => {
+    const buildingName = b.nome.toLowerCase()
+      .replace(/^(edifício|edificio|residencial|condomínio|cond\.?)\s+/i, '')
+      .trim();
+    
+    // Verifica se um contém o outro
+    return buildingName.includes(deviceBase) || deviceBase.includes(buildingName);
+  });
+  
+  if (partialMatch) return partialMatch;
+  
+  return null;
+}
+
 export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
   const [buildings, setBuildings] = useState<BuildingWithDeviceStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,21 +94,36 @@ export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch buildings with coordinates
+      // Fetch ALL buildings (com ou sem coordenadas - vamos usar endereço depois)
       const { data: buildingsData, error: buildingsError } = await supabase
         .from('buildings')
-        .select('id, nome, endereco, latitude, longitude, manual_latitude, manual_longitude')
-        .or('latitude.neq.0,manual_latitude.neq.0');
+        .select('id, nome, endereco, latitude, longitude, manual_latitude, manual_longitude');
 
       if (buildingsError) throw buildingsError;
 
-      // Fetch devices with building_id
+      // Fetch ALL devices (não apenas os com building_id)
       const { data: devicesData, error: devicesError } = await supabase
         .from('devices')
-        .select('id, name, status, building_id, provider')
-        .not('building_id', 'is', null);
+        .select('id, name, status, building_id, provider');
 
       if (devicesError) throw devicesError;
+
+      // Mapear devices órfãos para buildings por nome
+      const deviceToBuildingMap = new Map<string, string>(); // deviceId -> buildingId
+      
+      (devicesData || []).forEach(device => {
+        if (device.building_id) {
+          // Já tem building_id, usa direto
+          deviceToBuildingMap.set(device.id, device.building_id);
+        } else if (device.name) {
+          // Tenta encontrar building por nome similar
+          const matchedBuilding = findBuildingByDeviceName(device.name, buildingsData || []);
+          if (matchedBuilding) {
+            deviceToBuildingMap.set(device.id, matchedBuilding.id);
+            console.log(`[useBuildingsWithDeviceStatus] Match: "${device.name}" → "${matchedBuilding.nome}"`);
+          }
+        }
+      });
 
       // Aggregate devices by building
       const buildingsWithStatus: BuildingWithDeviceStatus[] = (buildingsData || [])
@@ -79,8 +136,9 @@ export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
           return hasManual || hasAuto;
         })
         .map(building => {
+          // Busca devices que pertencem a este building (por building_id ou por match de nome)
           const buildingDevices = (devicesData || [])
-            .filter(d => d.building_id === building.id)
+            .filter(d => deviceToBuildingMap.get(d.id) === building.id)
             .map(d => ({
               id: d.id,
               alias: d.name || 'Sem nome',
