@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface ConversationTypeStats {
@@ -126,9 +126,17 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
     loading: true
   });
 
-  const fetchStats = async () => {
+  // Ref to track if this is the initial load
+  const isInitialLoad = useRef(true);
+  // Debounce ref for realtime updates
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const fetchStats = useCallback(async (showLoading = true) => {
     try {
-      setStats(prev => ({ ...prev, loading: true }));
+      // Only show loading on initial load, not on realtime updates
+      if (showLoading && isInitialLoad.current) {
+        setStats(prev => ({ ...prev, loading: true }));
+      }
 
       const start = startDate.toISOString();
       const end = endDate.toISOString();
@@ -626,83 +634,102 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         propostasPorVendedor,
         loading: false
       });
+      
+      // Mark initial load as complete
+      isInitialLoad.current = false;
     } catch (error) {
       console.error('[useDashboardUnifiedStats] Error:', error);
       setStats(prev => ({ ...prev, loading: false }));
+      isInitialLoad.current = false;
     }
-  };
+  }, [startDate, endDate]);
+
+  // Debounced refresh for realtime updates
+  const debouncedRefresh = useCallback(() => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    debounceTimer.current = setTimeout(() => {
+      fetchStats(false); // Don't show loading for realtime updates
+    }, 500);
+  }, [fetchStats]);
 
   useEffect(() => {
-    fetchStats();
+    // Reset initial load flag when dates change
+    isInitialLoad.current = true;
+    fetchStats(true);
 
-    // Real-time subscriptions for all relevant tables
+    // Real-time subscriptions with DEBOUNCE to prevent flickering
     const channels = [
-      supabase.channel('unified-users-rt')
+      supabase.channel('unified-users-rt-v2')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
-          console.log('[useDashboardUnifiedStats] Users changed - refreshing');
-          fetchStats();
+          console.log('[useDashboardUnifiedStats] Users changed - debounced refresh');
+          debouncedRefresh();
         })
         .subscribe(),
-      supabase.channel('unified-pedidos-rt')
+      supabase.channel('unified-pedidos-rt-v2')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => {
-          console.log('[useDashboardUnifiedStats] Pedidos changed - refreshing');
-          fetchStats();
+          console.log('[useDashboardUnifiedStats] Pedidos changed - debounced refresh');
+          debouncedRefresh();
         })
         .subscribe(),
-      supabase.channel('unified-parcelas-rt')
+      supabase.channel('unified-parcelas-rt-v2')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'parcelas' }, () => {
-          console.log('[useDashboardUnifiedStats] Parcelas changed - refreshing');
-          fetchStats();
+          console.log('[useDashboardUnifiedStats] Parcelas changed - debounced refresh');
+          debouncedRefresh();
         })
         .subscribe(),
-      supabase.channel('unified-messages-rt')
+      supabase.channel('unified-messages-rt-v2')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
-          console.log('[useDashboardUnifiedStats] Messages changed - refreshing');
-          fetchStats();
+          console.log('[useDashboardUnifiedStats] Messages changed - debounced refresh');
+          debouncedRefresh();
         })
         .subscribe(),
-      supabase.channel('unified-conversations-rt')
+      supabase.channel('unified-conversations-rt-v2')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
-          console.log('[useDashboardUnifiedStats] Conversations changed - refreshing');
-          fetchStats();
+          console.log('[useDashboardUnifiedStats] Conversations changed - debounced refresh');
+          debouncedRefresh();
         })
         .subscribe(),
-      supabase.channel('unified-buildings-rt')
+      supabase.channel('unified-buildings-rt-v2')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'buildings' }, () => {
-          console.log('[useDashboardUnifiedStats] Buildings changed - refreshing');
-          fetchStats();
+          console.log('[useDashboardUnifiedStats] Buildings changed - debounced refresh');
+          debouncedRefresh();
         })
         .subscribe(),
-      supabase.channel('unified-devices-rt')
+      supabase.channel('unified-devices-rt-v2')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, () => {
-          console.log('[useDashboardUnifiedStats] Devices changed - refreshing');
-          fetchStats();
+          console.log('[useDashboardUnifiedStats] Devices changed - debounced refresh');
+          debouncedRefresh();
         })
         .subscribe(),
-      supabase.channel('unified-proposals-rt')
+      supabase.channel('unified-proposals-rt-v2')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals' }, () => {
-          console.log('[useDashboardUnifiedStats] Proposals changed - refreshing');
-          fetchStats();
+          console.log('[useDashboardUnifiedStats] Proposals changed - debounced refresh');
+          debouncedRefresh();
         })
         .subscribe(),
-      supabase.channel('unified-provider-benefits-rt')
+      supabase.channel('unified-provider-benefits-rt-v2')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'provider_benefits' }, () => {
-          console.log('[useDashboardUnifiedStats] Provider benefits changed - refreshing');
-          fetchStats();
+          console.log('[useDashboardUnifiedStats] Provider benefits changed - debounced refresh');
+          debouncedRefresh();
         })
         .subscribe(),
-      supabase.channel('unified-connection-history-rt')
+      supabase.channel('unified-connection-history-rt-v2')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'connection_history' }, () => {
-          console.log('[useDashboardUnifiedStats] Connection history changed - refreshing');
-          fetchStats();
+          console.log('[useDashboardUnifiedStats] Connection history changed - debounced refresh');
+          debouncedRefresh();
         })
         .subscribe(),
     ];
 
     return () => {
       channels.forEach(channel => supabase.removeChannel(channel));
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
     };
-  }, [startDate, endDate]);
+  }, [fetchStats, debouncedRefresh]);
 
   return { stats, refetch: fetchStats };
 };
