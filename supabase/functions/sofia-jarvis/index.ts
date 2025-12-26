@@ -198,14 +198,93 @@ async function handleOverview(): Promise<{ text: string; data: any }> {
   return { text, data };
 }
 
-// Query Buildings - Consultar prédios
+// ==================== PRÉDIOS LOJA (CONTEXTO VENDAS) ====================
+// Handler específico para informações de prédios na LOJA - preços, audiência, telas
+async function handlePrediosLoja(params: any): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting STORE buildings info (prices, audience)...');
+  
+  let query = supabase.from('buildings').select(`
+    id, nome, endereco, bairro, status, 
+    preco_base, preco_trimestral, preco_semestral, preco_anual,
+    numero_telas, visualizacoes_mes, publico_estimado,
+    numero_unidades, numero_andares, numero_elevadores, numero_blocos
+  `);
+
+  if (params?.bairro) {
+    query = query.ilike('bairro', `%${params.bairro}%`);
+  }
+  if (params?.status) {
+    query = query.eq('status', params.status);
+  } else {
+    query = query.in('status', ['ativo', 'instalação', 'instalacao']);
+  }
+
+  const { data: buildings, error } = await query.order('preco_base', { ascending: false }).limit(50);
+
+  if (error || !buildings?.length) {
+    return { text: 'Não encontrei prédios disponíveis.', data: [] };
+  }
+
+  // Calcular estatísticas da loja
+  const ativos = buildings.filter(b => b.status === 'ativo');
+  const emInstalacao = buildings.filter(b => b.status === 'instalação' || b.status === 'instalacao');
+  
+  const totalTelas = buildings.reduce((sum, b) => sum + (b.numero_telas || 0), 0);
+  const totalAudiencia = buildings.reduce((sum, b) => sum + (b.publico_estimado || 0), 0);
+  const totalVisualizacoes = buildings.reduce((sum, b) => sum + (b.visualizacoes_mes || 0), 0);
+  
+  const precos = buildings.map(b => b.preco_base || 0).filter(p => p > 0);
+  const precoMin = Math.min(...precos);
+  const precoMax = Math.max(...precos);
+
+  const buildingsList = buildings.slice(0, 5).map(b => 
+    `${b.nome} (${b.bairro}): ${b.numero_telas || 0} telas, ${formatCurrency(b.preco_base || 0)}/mês, ${b.publico_estimado || 0} pessoas`
+  ).join('. ');
+
+  const text = `🏢 PRÉDIOS NA LOJA (informações comerciais):
+
+📊 RESUMO:
+- Total: ${buildings.length} prédios (${ativos.length} ativos, ${emInstalacao.length} em instalação)
+- Telas totais: ${totalTelas}
+- Audiência total: ${totalAudiencia.toLocaleString('pt-BR')} pessoas/mês
+- Visualizações totais: ${totalVisualizacoes.toLocaleString('pt-BR')}/mês
+
+💰 PREÇOS:
+- Faixa: ${formatCurrency(precoMin)} a ${formatCurrency(precoMax)}/mês
+
+🏢 EXEMPLOS:
+${buildingsList}`;
+
+  return { 
+    text, 
+    data: { 
+      total: buildings.length, 
+      ativos: ativos.length, 
+      emInstalacao: emInstalacao.length,
+      totalTelas,
+      totalAudiencia,
+      totalVisualizacoes,
+      precoMin,
+      precoMax,
+      buildings 
+    } 
+  };
+}
+
+// Query Buildings - Consultar prédios (mantido para compatibilidade)
 async function handleQueryBuildings(params: any): Promise<{ text: string; data: any }> {
   console.log('[Sofia JARVIS] Querying buildings...', params);
+  
+  // Se perguntando sobre prédios em geral, redirecionar para handler da loja
+  if (!params?.building_id && !params?.nome) {
+    return handlePrediosLoja(params);
+  }
   
   let query = supabase.from('buildings').select(`
     id, nome, endereco, bairro, status, preco_base, 
     numero_unidades, numero_andares, numero_elevadores,
-    publico_estimado, visualizacoes_mes
+    publico_estimado, visualizacoes_mes, numero_telas,
+    preco_trimestral, preco_semestral, preco_anual
   `);
 
   if (params?.bairro) {
@@ -230,7 +309,7 @@ async function handleQueryBuildings(params: any): Promise<{ text: string; data: 
   }
 
   const buildingsList = buildings.map(b => 
-    `${b.nome} no ${b.bairro}: ${b.numero_andares || 0} andares, ${b.numero_unidades || 0} unidades, ${formatCurrency(b.preco_base || 0)}/mês`
+    `${b.nome} no ${b.bairro}: ${b.numero_telas || 0} telas, ${b.numero_andares || 0} andares, ${formatCurrency(b.preco_base || 0)}/mês`
   ).join('. ');
 
   const text = `Encontrei ${buildings.length} prédios. ${buildingsList}`;
@@ -378,6 +457,79 @@ async function handleSalesMetrics(params: any): Promise<{ text: string; data: an
       receitaProjetada,
       parcelasPagasConfirmadas: parcelasPagasConfirmadas.length, 
       parcelasPendentes: parcelasPendentes.length 
+    } 
+  };
+}
+
+// ==================== PEDIDOS ATIVOS (ANUNCIANTES) ====================
+// Handler para listar pedidos ativos e quem está anunciando
+async function handlePedidosAtivos(): Promise<{ text: string; data: any }> {
+  console.log('[Sofia JARVIS] Getting active orders (advertisers)...');
+
+  const { data: pedidos, error } = await supabase
+    .from('pedidos')
+    .select(`
+      id, status, valor_total, plano_meses, data_inicio, data_fim, created_at,
+      users:client_id(id, nome, company_name, email, telefone)
+    `)
+    .in('status', ['ativo', 'pago_pendente_video', 'video_aprovado', 'pago', 'em_exibicao'])
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error('[Sofia JARVIS] Active orders error:', error);
+    return { text: `Erro ao buscar pedidos ativos: ${error.message}`, data: [] };
+  }
+
+  if (!pedidos?.length) {
+    return { text: 'Não há pedidos ativos no momento.', data: [] };
+  }
+
+  // Estatísticas por status
+  const stats = {
+    total: pedidos.length,
+    ativo: pedidos.filter(p => p.status === 'ativo').length,
+    em_exibicao: pedidos.filter(p => p.status === 'em_exibicao').length,
+    video_aprovado: pedidos.filter(p => p.status === 'video_aprovado').length,
+    pago_pendente_video: pedidos.filter(p => p.status === 'pago_pendente_video').length,
+    pago: pedidos.filter(p => p.status === 'pago').length,
+    valorTotal: pedidos.reduce((sum, p) => sum + (p.valor_total || 0), 0)
+  };
+
+  // Lista de anunciantes únicos
+  const anunciantes = [...new Set(pedidos.map(p => {
+    const user = p.users as any;
+    return user?.company_name || user?.nome || 'N/A';
+  }))];
+
+  const list = pedidos.slice(0, 8).map(p => {
+    const user = p.users as any;
+    const nome = user?.company_name || user?.nome || 'N/A';
+    const fim = p.data_fim ? formatDate(p.data_fim) : 'N/A';
+    return `📌 ${nome}: ${p.status} | ${formatCurrency(p.valor_total || 0)} | Fim: ${fim}`;
+  }).join('\n');
+
+  const text = `🛒 PEDIDOS ATIVOS (anunciantes):
+
+📊 RESUMO:
+- Total: ${stats.total} pedidos ativos
+- Em exibição: ${stats.em_exibicao + stats.ativo}
+- Vídeo aprovado: ${stats.video_aprovado}
+- Aguardando vídeo: ${stats.pago_pendente_video}
+- Valor total contratado: ${formatCurrency(stats.valorTotal)}
+
+👥 ANUNCIANTES ATIVOS: ${anunciantes.length}
+${anunciantes.slice(0, 10).join(', ')}${anunciantes.length > 10 ? '...' : ''}
+
+📋 ÚLTIMOS PEDIDOS:
+${list}`;
+
+  return { 
+    text, 
+    data: { 
+      stats, 
+      anunciantes, 
+      pedidos 
     } 
   };
 }
@@ -1065,7 +1217,10 @@ async function handleGetProposals(params: any): Promise<{ text: string; data: an
     return { text: 'Sem propostas encontradas.', data: [] };
   }
 
-  // Estatísticas detalhadas
+  // NOVO: Detectar propostas expiradas
+  const now = new Date();
+  
+  // Estatísticas detalhadas COM EXPIRADAS
   const stats = {
     total: proposals.length,
     enviadas: proposals.filter(p => p.status === 'enviada' || p.status === 'pending').length,
@@ -1074,6 +1229,12 @@ async function handleGetProposals(params: any): Promise<{ text: string; data: an
     convertidas: proposals.filter(p => p.converted_order_id).length,
     nunca_abriram: proposals.filter(p => (p.view_count || 0) === 0).length,
     rejeitadas: proposals.filter(p => p.rejection_reason).length,
+    // NOVO: Propostas expiradas (expires_at < NOW() E não convertidas)
+    expiradas: proposals.filter(p => 
+      p.expires_at && 
+      new Date(p.expires_at) < now && 
+      !p.converted_order_id
+    ).length,
   };
 
   // Lista detalhada com métricas
@@ -1082,16 +1243,18 @@ async function handleGetProposals(params: any): Promise<{ text: string; data: an
     const tempo = formatSeconds(p.total_time_spent_seconds || 0);
     const views = p.view_count || 0;
     const converteu = p.converted_order_id ? ' ✅PEDIDO' : '';
+    // Verificar se expirou
+    const expirada = p.expires_at && new Date(p.expires_at) < now && !p.converted_order_id ? ' ⏰EXPIRADA' : '';
     // Calcular valor corretamente usando campos que existem
     const valor = p.cash_total_value || (p.fidel_monthly_value ? p.fidel_monthly_value * (p.duration_months || 12) : 0);
     
-    return `${emoji} ${p.number || p.id.substring(0, 8)} - ${p.client_name}: ${p.status} | ${views}x | ${tempo}${converteu} | ${formatCurrency(valor)}`;
+    return `${emoji} ${p.number || p.id.substring(0, 8)} - ${p.client_name}: ${p.status} | ${views}x | ${tempo}${converteu}${expirada} | ${formatCurrency(valor)}`;
   }).join('\n');
 
   const text = `📊 RESUMO DE PROPOSTAS:
 Total: ${stats.total} | Enviadas: ${stats.enviadas} | Visualizadas: ${stats.visualizadas}
 🔴 Vendo agora: ${stats.visualizando_agora} | ✅ Convertidas: ${stats.convertidas}
-📭 Nunca abriram: ${stats.nunca_abriram} | ❌ Rejeitadas: ${stats.rejeitadas}
+⏰ EXPIRADAS: ${stats.expiradas} | 📭 Nunca abriram: ${stats.nunca_abriram} | ❌ Rejeitadas: ${stats.rejeitadas}
 
 📋 ÚLTIMAS PROPOSTAS:
 ${list}`;
@@ -3110,6 +3273,17 @@ serve(async (req) => {
       case 'conversas_eduardo_hoje':
         result = await handleEduardoToday();
         break;
+      // ========== PRÉDIOS (LOJA/VENDAS) - CONTEXTO COMERCIAL ==========
+      case 'predios_loja':
+      case 'predios_venda':
+      case 'predios_disponiveis':
+      case 'listar_predios':
+      case 'preco_predios':
+      case 'precos_predios':
+      case 'audiencia_predios':
+      case 'telas_predios':
+        result = await handlePrediosLoja(params);
+        break;
       // ========== ALIASES / SYNONYMS ==========
       case 'building_info':
       case 'buildings':
@@ -3156,6 +3330,12 @@ serve(async (req) => {
       case 'todas_propostas':
         result = await handleGetProposals(params);
         break;
+      // ========== PROPOSTAS EXPIRADAS ==========
+      case 'propostas_expiradas':
+      case 'expired_proposals':
+      case 'expiradas':
+        result = await handleGetProposals({ ...params, expired: true });
+        break;
       case 'proposta':
         // Se tem parâmetro específico, busca detalhes, senão lista
         if (params?.number || params?.proposal_id || params?.client_name) {
@@ -3195,6 +3375,17 @@ serve(async (req) => {
       case 'compras':
       case 'ordens':
         result = await handleSalesMetrics(params);
+        break;
+      // ========== PEDIDOS ATIVOS / ANUNCIANTES ==========
+      case 'pedidos_ativos':
+      case 'active_orders':
+      case 'anunciantes_ativos':
+      case 'quem_esta_anunciando':
+      case 'anunciantes':
+      case 'clientes_ativos':
+      case 'em_exibicao':
+        result = await handlePedidosAtivos();
+        break;
         break;
       // ========== VÍDEOS - TODOS OS ALIASES ==========
       case 'videos':
