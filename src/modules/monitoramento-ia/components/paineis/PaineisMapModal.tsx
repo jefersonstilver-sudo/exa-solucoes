@@ -43,17 +43,17 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
     return true;
   });
 
-  // Create marker pin element
+  // Create marker pin element with enhanced visuals
   const createMarkerElement = useCallback((building: BuildingWithDeviceStatus) => {
     const pin = document.createElement('div');
-    pin.className = 'relative cursor-pointer transform hover:scale-110 transition-transform';
+    pin.className = 'relative cursor-pointer transform hover:scale-110 transition-all duration-200';
 
-    // Colors based on status
+    // Enhanced colors based on status - more vibrant
     const colors = {
-      online: { bg: '#10B981', border: '#059669', pulse: false },
-      partial: { bg: '#F59E0B', border: '#D97706', pulse: false },
-      offline: { bg: '#EF4444', border: '#DC2626', pulse: true },
-      unknown: { bg: '#6B7280', border: '#4B5563', pulse: false },
+      online: { bg: '#22C55E', border: '#16A34A', glow: 'rgba(34, 197, 94, 0.4)', pulse: false },
+      partial: { bg: '#F59E0B', border: '#D97706', glow: 'rgba(245, 158, 11, 0.4)', pulse: false },
+      offline: { bg: '#EF4444', border: '#DC2626', glow: 'rgba(239, 68, 68, 0.5)', pulse: true },
+      unknown: { bg: '#6B7280', border: '#4B5563', glow: 'rgba(107, 114, 128, 0.3)', pulse: false },
     };
     const config = colors[building.status];
 
@@ -62,26 +62,51 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
       ? PROVIDER_COLORS[building.provider] || PROVIDER_COLORS.default 
       : undefined;
 
+    // Status text for tooltip
+    const statusText = building.status === 'online' 
+      ? `${building.totalDevices} online` 
+      : building.status === 'offline' 
+        ? `${building.totalDevices} offline`
+        : `${building.onlineCount}/${building.totalDevices} online`;
+
     pin.innerHTML = `
-      <div class="relative">
+      <div class="relative" title="${building.nome} - ${statusText}">
         ${config.pulse ? `
-          <div class="absolute inset-0 rounded-full animate-ping opacity-75" 
-               style="background-color: ${config.bg}40;"></div>
-        ` : ''}
-        <div class="relative w-10 h-10 rounded-full flex items-center justify-center shadow-lg border-2"
-             style="background-color: ${config.bg}; border-color: ${config.border};">
-          <span class="text-white text-xs font-bold">${building.totalDevices}</span>
+          <div class="absolute inset-[-4px] rounded-full animate-pulse" 
+               style="background-color: ${config.glow}; animation: pulse-glow 1.5s ease-in-out infinite;"></div>
+          <div class="absolute inset-[-8px] rounded-full" 
+               style="background-color: ${config.glow}; animation: pulse-ring 1.5s ease-in-out infinite;"></div>
+        ` : `
+          <div class="absolute inset-[-3px] rounded-full opacity-60" 
+               style="background-color: ${config.glow};"></div>
+        `}
+        <div class="relative w-11 h-11 rounded-full flex items-center justify-center shadow-xl border-3"
+             style="background: linear-gradient(135deg, ${config.bg} 0%, ${config.border} 100%); 
+                    border-color: white; 
+                    box-shadow: 0 4px 14px ${config.glow}, 0 2px 6px rgba(0,0,0,0.2);">
+          <span class="text-white text-sm font-bold drop-shadow-md">${building.totalDevices}</span>
         </div>
         ${providerColor ? `
-          <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow"
+          <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow-md"
                style="background-color: ${providerColor};"></div>
         ` : ''}
         ${building.eventsCount > 0 ? `
-          <div class="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center border-2 border-white shadow">
+          <div class="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
             <span class="text-white text-[10px] font-bold">${building.eventsCount > 99 ? '99+' : building.eventsCount}</span>
           </div>
         ` : ''}
       </div>
+      <style>
+        @keyframes pulse-glow {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.1); }
+        }
+        @keyframes pulse-ring {
+          0% { opacity: 0.4; transform: scale(1); }
+          50% { opacity: 0; transform: scale(1.4); }
+          100% { opacity: 0; transform: scale(1.6); }
+        }
+      </style>
     `;
 
     return pin;
@@ -111,6 +136,8 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
+          gestureHandling: 'greedy', // Permite zoom com rodinha em qualquer lugar
+          scrollwheel: true, // Habilita scroll wheel zoom
         });
 
         mapInstanceRef.current = map;
@@ -132,6 +159,9 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
     };
   }, [isOpen]);
 
+  // InfoWindow ref for hover tooltips
+  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+
   // Update markers when buildings change
   useEffect(() => {
     if (!mapReady || !mapInstanceRef.current) return;
@@ -144,6 +174,13 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
 
     if (clustererRef.current) {
       clustererRef.current.clearMarkers();
+    }
+
+    // Create InfoWindow for hover if not exists
+    if (!infoWindowRef.current) {
+      infoWindowRef.current = new google.maps.InfoWindow({
+        disableAutoPan: true,
+      });
     }
 
     const { AdvancedMarkerElement } = google.maps.marker;
@@ -165,6 +202,55 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
         title: building.nome,
       });
 
+      // Status color for InfoWindow
+      const statusColors = {
+        online: '#22C55E',
+        partial: '#F59E0B', 
+        offline: '#EF4444',
+        unknown: '#6B7280',
+      };
+      const statusColor = statusColors[building.status];
+      const statusText = building.status === 'online' 
+        ? 'Online' 
+        : building.status === 'offline' 
+          ? 'Offline'
+          : 'Parcial';
+
+      // Devices list for tooltip
+      const devicesList = building.devices.slice(0, 5).map(d => 
+        `<div style="display:flex;align-items:center;gap:4px;font-size:11px;">
+          <span style="width:6px;height:6px;border-radius:50%;background:${d.status === 'online' ? '#22C55E' : '#EF4444'}"></span>
+          ${d.alias}
+        </div>`
+      ).join('');
+      const moreDevices = building.devices.length > 5 
+        ? `<div style="font-size:10px;color:#888;margin-top:4px;">+${building.devices.length - 5} mais</div>` 
+        : '';
+
+      // Hover - show InfoWindow
+      markerElement.addEventListener('mouseenter', () => {
+        infoWindowRef.current?.setContent(`
+          <div style="padding:8px 12px;min-width:160px;max-width:220px;font-family:system-ui,-apple-system,sans-serif;">
+            <div style="font-weight:600;font-size:14px;margin-bottom:6px;color:#1f2937;">${building.nome}</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${statusColor};"></span>
+              <span style="font-size:12px;color:${statusColor};font-weight:500;">${building.onlineCount}/${building.totalDevices} ${statusText}</span>
+            </div>
+            <div style="border-top:1px solid #e5e7eb;padding-top:6px;">
+              ${devicesList}
+              ${moreDevices}
+            </div>
+            ${building.provider ? `<div style="font-size:10px;color:#888;margin-top:6px;">Provider: ${building.provider}</div>` : ''}
+          </div>
+        `);
+        infoWindowRef.current?.open(mapInstanceRef.current, marker);
+      });
+
+      markerElement.addEventListener('mouseleave', () => {
+        infoWindowRef.current?.close();
+      });
+
+      // Click - show detail card
       marker.addListener('click', () => {
         setSelectedBuilding(building);
       });
@@ -174,14 +260,16 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
 
     markersRef.current = newMarkers;
 
-    // Create clusterer
+    // Create clusterer with enhanced styling
     clustererRef.current = new MarkerClusterer({
       map: mapInstanceRef.current,
       markers: newMarkers,
       renderer: {
         render: ({ count, position }) => {
           const div = document.createElement('div');
-          div.className = 'flex items-center justify-center w-12 h-12 rounded-full bg-primary text-white font-bold shadow-lg border-2 border-white';
+          div.className = 'flex items-center justify-center w-14 h-14 rounded-full text-white font-bold shadow-xl border-3 border-white';
+          div.style.background = 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)';
+          div.style.boxShadow = '0 4px 14px rgba(99, 102, 241, 0.4), 0 2px 6px rgba(0,0,0,0.2)';
           div.textContent = String(count);
           return new google.maps.marker.AdvancedMarkerElement({
             position,
