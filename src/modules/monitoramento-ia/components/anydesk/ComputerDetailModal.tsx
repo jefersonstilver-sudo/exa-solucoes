@@ -20,6 +20,10 @@ interface ComputerDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   theme: 'dark' | 'light';
+  // Props para eventos proporcionais ao período selecionado
+  periodEventsCount?: number;
+  periodOfflineCount?: number;
+  periodLabel?: string;
 }
 
 interface AlertConfig {
@@ -31,7 +35,10 @@ export const ComputerDetailModal = ({
   computer, 
   isOpen, 
   onClose,
-  theme
+  theme,
+  periodEventsCount,
+  periodOfflineCount,
+  periodLabel = 'no período'
 }: ComputerDetailModalProps) => {
   const [alertConfig, setAlertConfig] = useState<AlertConfig>({
     alerts_enabled: true,
@@ -225,15 +232,21 @@ export const ComputerDetailModal = ({
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-module-secondary mb-1">Total de Eventos</p>
-                  <p className="text-2xl font-bold text-module-primary">{computer.total_events || 0}</p>
+                  <p className="text-xs text-module-secondary mb-1">
+                    Eventos {periodLabel}
+                  </p>
+                  <p className="text-2xl font-bold text-module-primary">
+                    {periodEventsCount !== undefined ? periodEventsCount : (computer.total_events || 0)}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-module-secondary mb-1 flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3 text-red-600" />
-                    Quedas
+                    Quedas {periodLabel}
                   </p>
-                  <p className="text-2xl font-bold text-red-600">{computer.offline_count || 0}</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {periodOfflineCount !== undefined ? periodOfflineCount : (computer.offline_count || 0)}
+                  </p>
                 </div>
               </CardContent>
             </Card>

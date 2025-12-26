@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface MonthlyDashboardStats {
@@ -225,41 +225,52 @@ export const useMonthlyDashboardData = (startDate?: Date, endDate?: Date) => {
     }
   }, [startDate?.getTime(), endDate?.getTime()]);
 
+  // Debounce ref for realtime updates
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const debouncedRefresh = useCallback(() => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    debounceTimer.current = setTimeout(() => {
+      // Don't show full loading state on realtime refresh
+      fetchMonthlyStats();
+    }, 500);
+  }, [fetchMonthlyStats]);
+
   useEffect(() => {
     fetchMonthlyStats();
 
-    // Real-time subscriptions for dashboard data
+    // Real-time subscriptions with DEBOUNCE (removed devices - handled by useDashboardUnifiedStats)
     const channels = [
-      supabase.channel('monthly-pedidos-rt')
+      supabase.channel('monthly-pedidos-rt-v2')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => {
-          console.log('[useMonthlyDashboardData] Pedidos changed - refreshing');
-          fetchMonthlyStats();
+          console.log('[useMonthlyDashboardData] Pedidos changed - debounced refresh');
+          debouncedRefresh();
         })
         .subscribe(),
-      supabase.channel('monthly-users-rt')
+      supabase.channel('monthly-users-rt-v2')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
-          console.log('[useMonthlyDashboardData] Users changed - refreshing');
-          fetchMonthlyStats();
+          console.log('[useMonthlyDashboardData] Users changed - debounced refresh');
+          debouncedRefresh();
         })
         .subscribe(),
-      supabase.channel('monthly-buildings-rt')
+      supabase.channel('monthly-buildings-rt-v2')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'buildings' }, () => {
-          console.log('[useMonthlyDashboardData] Buildings changed - refreshing');
-          fetchMonthlyStats();
+          console.log('[useMonthlyDashboardData] Buildings changed - debounced refresh');
+          debouncedRefresh();
         })
         .subscribe(),
-      supabase.channel('monthly-devices-rt')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, () => {
-          console.log('[useMonthlyDashboardData] Devices changed - refreshing');
-          fetchMonthlyStats();
-        })
-        .subscribe(),
+      // REMOVED: devices subscription - already handled by useDashboardUnifiedStats
     ];
 
     return () => {
       channels.forEach(channel => supabase.removeChannel(channel));
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
     };
-  }, [fetchMonthlyStats]);
+  }, [fetchMonthlyStats, debouncedRefresh]);
 
   const refetch = useCallback(() => {
     fetchMonthlyStats();

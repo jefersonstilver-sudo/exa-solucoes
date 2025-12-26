@@ -131,7 +131,12 @@ async function handleOverview(): Promise<{ text: string; data: any }> {
     supabase.from('buildings').select('id, status').eq('status', 'ativo'),
     supabase.from('devices').select('id, status'), // USA DEVICES, NÃO PAINELS
     supabase.from('pedidos').select('id, status, valor_total, created_at').gte('created_at', `${thisMonth}-01`),
-    supabase.from('parcelas').select('id, valor_final, status, data_pagamento').eq('status', 'pago').gte('data_pagamento', `${thisMonth}-01`),
+    // CRITICAL: ONLY count parcelas with mercadopago_payment_id (confirmed by Mercado Pago)
+    supabase.from('parcelas')
+      .select('id, valor_final, status, data_pagamento, mercadopago_payment_id')
+      .eq('status', 'pago')
+      .not('mercadopago_payment_id', 'is', null)
+      .gte('data_pagamento', `${thisMonth}-01`),
     supabase.from('leads_exa').select('id, status, created_at').gte('created_at', `${thisMonth}-01`),
     supabase.from('conversations').select('id, last_message_at').gte('last_message_at', today),
     supabase.from('panel_alerts').select('id, severity').eq('resolved', false),
@@ -141,7 +146,7 @@ async function handleOverview(): Promise<{ text: string; data: any }> {
   const buildings = buildingsResult.data || [];
   const devices = devicesResult.data || [];
   const orders = ordersResult.data || [];
-  const parcelasPagas = parcelasResult.data || [];
+  const parcelasPagasConfirmadas = parcelasResult.data || [];
   const leads = leadsResult.data || [];
   const conversations = conversationsResult.data || [];
   const alerts = alertsResult.data || [];
@@ -151,8 +156,8 @@ async function handleOverview(): Promise<{ text: string; data: any }> {
   const onlineDevices = devices.filter(d => d.status === 'online');
   const offlineDevices = devices.filter(d => d.status !== 'online');
 
-  // CORRIGIDO: Receita EFETIVA = soma de PARCELAS PAGAS (não pedidos)
-  const receitaEfetiva = parcelasPagas.reduce((sum, p) => sum + (p.valor_final || 0), 0);
+  // CORRIGIDO: Receita EFETIVA = SOMENTE parcelas pagas COM mercadopago_payment_id
+  const receitaEfetiva = parcelasPagasConfirmadas.reduce((sum, p) => sum + (p.valor_final || 0), 0);
 
   const criticalAlerts = alerts.filter(a => a.severity === 'critical').length;
   
@@ -322,7 +327,7 @@ async function handlePanelStatus(params: any): Promise<{ text: string; data: any
   };
 }
 
-// Sales Metrics - Métricas de vendas CORRIGIDO: Receita Efetiva vs Projetada
+// Sales Metrics - Métricas de vendas CORRIGIDO: Receita Efetiva = APENAS parcelas com confirmação Mercado Pago
 async function handleSalesMetrics(params: any): Promise<{ text: string; data: any }> {
   console.log('[Sofia JARVIS] Getting sales metrics...', params);
 
@@ -336,19 +341,25 @@ async function handleSalesMetrics(params: any): Promise<{ text: string; data: an
   if (period === 'today') startDate = startOfDay;
   if (period === 'week') startDate = startOfWeek;
 
-  // CORRIGIDO: Buscar pedidos E parcelas separadamente
-  const [ordersResult, parcelasPagasResult, parcelasPendentesResult] = await Promise.all([
+  // CRÍTICO: Buscar APENAS parcelas pagas COM confirmação do Mercado Pago
+  // Isso garante consistência com o dashboard que usa a mesma lógica
+  const [ordersResult, parcelasPagasConfirmadasResult, parcelasPendentesResult] = await Promise.all([
     supabase.from('pedidos').select('id, status, valor_total, created_at, plano_meses').gte('created_at', startDate).order('created_at', { ascending: false }),
-    supabase.from('parcelas').select('id, valor_final, data_pagamento').eq('status', 'pago').gte('data_pagamento', startDate),
+    // CRITICAL: ONLY count parcelas with mercadopago_payment_id (confirmed by Mercado Pago)
+    supabase.from('parcelas')
+      .select('id, valor_final, data_pagamento, mercadopago_payment_id')
+      .eq('status', 'pago')
+      .not('mercadopago_payment_id', 'is', null)
+      .gte('data_pagamento', startDate),
     supabase.from('parcelas').select('id, valor_final').in('status', ['pendente', 'atrasado'])
   ]);
 
   const orders = ordersResult.data || [];
-  const parcelasPagas = parcelasPagasResult.data || [];
+  const parcelasPagasConfirmadas = parcelasPagasConfirmadasResult.data || [];
   const parcelasPendentes = parcelasPendentesResult.data || [];
 
-  // CORRIGIDO: Receita EFETIVA = parcelas PAGAS (data_pagamento no período)
-  const receitaEfetiva = parcelasPagas.reduce((sum, p) => sum + (p.valor_final || 0), 0);
+  // CORRIGIDO: Receita EFETIVA = SOMENTE parcelas pagas COM mercadopago_payment_id
+  const receitaEfetiva = parcelasPagasConfirmadas.reduce((sum, p) => sum + (p.valor_final || 0), 0);
   
   // Receita PROJETADA = parcelas pendentes/atrasadas (a receber)
   const receitaProjetada = parcelasPendentes.reduce((sum, p) => sum + (p.valor_final || 0), 0);
@@ -356,7 +367,7 @@ async function handleSalesMetrics(params: any): Promise<{ text: string; data: an
   const periodLabel = period === 'today' ? 'Hoje' : period === 'week' ? 'Esta semana' : 'Este mês';
   
   const text = `${periodLabel}: ${orders.length} pedidos criados. ` +
-    `💰 Receita EFETIVA (já recebida): ${formatCurrency(receitaEfetiva)} de ${parcelasPagas.length} parcelas pagas. ` +
+    `💰 Receita EFETIVA (confirmada Mercado Pago): ${formatCurrency(receitaEfetiva)} de ${parcelasPagasConfirmadas.length} parcelas. ` +
     `📊 Receita PROJETADA (a receber): ${formatCurrency(receitaProjetada)} de ${parcelasPendentes.length} parcelas pendentes.`;
 
   return { 
@@ -365,7 +376,7 @@ async function handleSalesMetrics(params: any): Promise<{ text: string; data: an
       totalPedidos: orders.length, 
       receitaEfetiva, 
       receitaProjetada,
-      parcelasPagas: parcelasPagas.length, 
+      parcelasPagasConfirmadas: parcelasPagasConfirmadas.length, 
       parcelasPendentes: parcelasPendentes.length 
     } 
   };

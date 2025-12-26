@@ -462,6 +462,9 @@ export const PaineisPage = () => {
             setSelectedDevice(null);
           }}
           theme={theme}
+          periodEventsCount={periodEventsMap.get(selectedDevice.id) || 0}
+          periodOfflineCount={periodEventsMap.get(selectedDevice.id) || 0}
+          periodLabel={getPeriodLabel(period)}
         />
       )}
       
