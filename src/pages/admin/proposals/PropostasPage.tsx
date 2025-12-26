@@ -62,6 +62,7 @@ interface Proposal {
     amount: number;
   }> | null;
   metadata?: { type?: string };
+  tipo_produto?: 'horizontal' | 'vertical_premium' | null;
 }
 
 interface LiveViewNotification {
@@ -858,8 +859,13 @@ const PropostasPage = () => {
                           <span className="font-semibold text-foreground">
                             {proposal.payment_type === 'custom' && proposal.custom_installments?.length 
                               ? formatCurrency(proposal.custom_installments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0))
-                              : formatCurrency((proposal.fidel_monthly_value || 0) * (proposal.duration_months || 1))
+                              : proposal.payment_type === 'pix_avista' || proposal.payment_type === 'cartao'
+                                ? formatCurrency(proposal.cash_total_value)
+                                : formatCurrency(proposal.fidel_monthly_value)
                             }
+                            {proposal.payment_type !== 'custom' && proposal.payment_type !== 'pix_avista' && proposal.payment_type !== 'cartao' && (
+                              <span className="text-[10px] text-muted-foreground font-normal">/mês</span>
+                            )}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -889,8 +895,16 @@ const PropostasPage = () => {
                         </div>
                       </div>
 
-                      {/* Empresa + Vendedor - Lado Direito */}
-                      <div className="text-right min-w-[100px] flex-shrink-0">
+                      {/* Empresa + Vendedor + Produto - Lado Direito */}
+                      <div className="text-right min-w-[100px] flex-shrink-0 space-y-0.5">
+                        {proposal.tipo_produto && (
+                          <Badge className={proposal.tipo_produto === 'vertical_premium' 
+                            ? "bg-purple-100 text-purple-700 text-[9px] px-1.5 py-0 border-0" 
+                            : "bg-blue-100 text-blue-700 text-[9px] px-1.5 py-0 border-0"
+                          }>
+                            {proposal.tipo_produto === 'vertical_premium' ? '📺 Vertical' : '🖼️ Horizontal'}
+                          </Badge>
+                        )}
                         {proposal.client_company_name && (
                           <p className="text-[11px] font-medium text-foreground truncate max-w-[120px]" title={proposal.client_company_name}>
                             {proposal.client_company_name}

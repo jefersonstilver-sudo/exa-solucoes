@@ -36,6 +36,7 @@ interface Proposal {
   payment_type?: string | null;
   custom_installments?: CustomInstallment[] | null;
   seller_name?: string | null;
+  tipo_produto?: 'horizontal' | 'vertical_premium' | null;
 }
 
 // Check if client is actively viewing RIGHT NOW (heartbeat within last 45 seconds)
@@ -137,7 +138,15 @@ export const ProposalMobileCard: React.FC<ProposalMobileCardProps> = ({
           <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <span className="font-medium text-foreground truncate text-sm">{proposal.client_name}</span>
         </div>
-        <div className="text-right flex-shrink-0">
+        <div className="text-right flex-shrink-0 space-y-0.5">
+          {proposal.tipo_produto && (
+            <Badge className={proposal.tipo_produto === 'vertical_premium' 
+              ? "bg-purple-100 text-purple-700 text-[9px] px-1.5 py-0 border-0" 
+              : "bg-blue-100 text-blue-700 text-[9px] px-1.5 py-0 border-0"
+            }>
+              {proposal.tipo_produto === 'vertical_premium' ? '📺 Vertical' : '🖼️ Horizontal'}
+            </Badge>
+          )}
           {proposal.client_company_name && (
             <p className="text-[10px] font-medium text-foreground truncate max-w-[90px]" title={proposal.client_company_name}>
               {proposal.client_company_name}
@@ -187,14 +196,18 @@ export const ProposalMobileCard: React.FC<ProposalMobileCardProps> = ({
       ) : (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {/* Valor Mensal como principal */}
             <div>
-              <p className="text-[10px] text-muted-foreground">À Vista</p>
-              <p className="text-sm font-bold text-emerald-600">{formatCurrency(proposal.cash_total_value)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-muted-foreground">Fidelidade</p>
+              <p className="text-[10px] text-muted-foreground">Mensal</p>
               <p className="text-sm font-semibold">{formatCurrency(proposal.fidel_monthly_value)}/mês</p>
             </div>
+            {/* À Vista só mostra se for pagamento à vista selecionado */}
+            {(proposal.payment_type === 'pix_avista' || proposal.payment_type === 'cartao') && (
+              <div>
+                <p className="text-[10px] text-muted-foreground">À Vista</p>
+                <p className="text-sm font-bold text-emerald-600">{formatCurrency(proposal.cash_total_value)}</p>
+              </div>
+            )}
           </div>
           <div className="text-right">
             <p className="text-[10px] text-muted-foreground">{proposal.duration_months} meses</p>
