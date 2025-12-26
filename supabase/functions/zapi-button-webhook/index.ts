@@ -76,12 +76,12 @@ serve(async (req) => {
         console.log('✅ [BUTTON-WEBHOOK] Device found by ID:', device.name);
       }
 
-      // Also find the most recent alert for this device
+      // Also find the most recent alert for this device - use created_at (correct column)
       const { data: alertData } = await supabase
         .from('panel_offline_alerts_history')
         .select('*')
         .eq('painel_id', deviceId)
-        .order('sent_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1)
         .single();
       
@@ -89,26 +89,27 @@ serve(async (req) => {
         matchedAlert = alertData;
       }
     } else {
-      // Fallback: Find by matching phone in recipients
+      // Fallback: Find by matching phone in recipients - use destinatarios_notificados (correct column)
       const { data: recentAlerts } = await supabase
         .from('panel_offline_alerts_history')
         .select('*')
-        .order('sent_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(30);
 
       if (recentAlerts) {
         const phoneClean = phone?.replace(/\D/g, '');
         
         for (const alert of recentAlerts) {
-          const recipients = alert.recipients || [];
+          // Use destinatarios_notificados which is the correct column (array of phone strings)
+          const recipients = alert.destinatarios_notificados || [];
           
-          for (const recipient of recipients) {
-            const recipientClean = recipient.phone?.replace(/\D/g, '');
+          for (const recipientPhone of recipients) {
+            const recipientClean = recipientPhone?.replace(/\D/g, '');
             if (recipientClean && phoneClean && 
                 (recipientClean.includes(phoneClean.slice(-8)) || phoneClean.includes(recipientClean.slice(-8)))) {
               matchedAlert = alert;
               deviceId = alert.painel_id;
-              console.log('📍 [BUTTON-WEBHOOK] Matched alert by phone:', alert.device_name);
+              console.log('📍 [BUTTON-WEBHOOK] Matched alert by phone for painel_id:', deviceId);
               break;
             }
           }
@@ -131,7 +132,7 @@ serve(async (req) => {
     }
 
     const metadata = (deviceInfo?.metadata || {}) as Record<string, any>;
-    const deviceName = deviceInfo?.name || matchedAlert?.device_name || 'Painel desconhecido';
+    const deviceName = deviceInfo?.name || 'Painel desconhecido';
 
     // DETERMINE ACTION BASED ON BUTTON LABEL
     let actionType = 'confirmation';

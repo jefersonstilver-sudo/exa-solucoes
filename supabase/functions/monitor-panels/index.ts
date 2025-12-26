@@ -34,6 +34,12 @@ interface GlobalAlertState {
   last_alert_count_reset?: string;
 }
 
+interface DeviceAlertConfig {
+  device_id: string;
+  alerts_enabled: boolean;
+  offline_threshold_minutes: number | null;
+}
+
 // ==================== PROTECTION CONSTANTS ====================
 const MASS_OFFLINE_THRESHOLD_PERCENT = 0.7; // 70% devices offline = mass failure
 const MIN_DEVICES_FOR_MASS_CHECK = 5; // Only check mass failure if >= 5 devices
@@ -57,6 +63,47 @@ const getBrazilTimeString = (): string => {
 // Helper to generate UUID
 const generateUUID = (): string => {
   return crypto.randomUUID();
+};
+
+// Helper to log to history table with correct columns ONLY
+const logToHistory = async (
+  supabase: any,
+  data: {
+    painel_id: string | null;
+    tipo: string;
+    mensagem: string;
+    tempo_offline_minutos: number;
+    destinatarios_notificados: string[];
+    regra_id?: string | null;
+    regra_nome?: string | null;
+    incident_id?: string | null;
+    incident_number?: number | null;
+    alert_number?: number | null;
+  }
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase.from('panel_offline_alerts_history').insert({
+      painel_id: data.painel_id,
+      tipo: data.tipo,
+      mensagem: data.mensagem,
+      tempo_offline_minutos: data.tempo_offline_minutos,
+      destinatarios_notificados: data.destinatarios_notificados,
+      regra_id: data.regra_id || null,
+      regra_nome: data.regra_nome || null,
+      incident_id: data.incident_id || null,
+      incident_number: data.incident_number || null,
+      alert_number: data.alert_number || null
+    });
+    
+    if (error) {
+      console.error('❌ [MONITOR] Erro ao gravar histórico:', error.message, JSON.stringify(data));
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('❌ [MONITOR] Exceção ao gravar histórico:', err);
+    return false;
+  }
 };
 
 Deno.serve(async (req) => {
@@ -161,13 +208,13 @@ Deno.serve(async (req) => {
 
     if (devicesError) throw devicesError;
 
-    // 4.1 Get device alert configs to check alerts_enabled per device
+    // 4.1 Get device alert configs (alerts_enabled AND offline_threshold_minutes)
     const { data: alertConfigs } = await supabase
       .from('device_alert_configs')
-      .select('device_id, alerts_enabled');
+      .select('device_id, alerts_enabled, offline_threshold_minutes');
 
-    const alertConfigsMap = new Map<string, boolean>(
-      (alertConfigs || []).map((c: any) => [c.device_id, c.alerts_enabled])
+    const alertConfigsMap = new Map<string, DeviceAlertConfig>(
+      (alertConfigs || []).map((c: DeviceAlertConfig) => [c.device_id, c])
     );
 
     console.log(`📊 [MONITOR] Analisando ${devices?.length || 0} devices (${alertConfigs?.length || 0} com config de alertas)...`);
@@ -182,15 +229,12 @@ Deno.serve(async (req) => {
       console.log(`⚠️ [MONITOR] QUEDA MASSIVA DETECTADA: ${offlineCount}/${totalDevices} devices offline (${Math.round(offlinePercent * 100)}%)`);
       console.log(`⚠️ [MONITOR] Provavelmente falha de infraestrutura/API - ALERTAS SUSPENSOS`);
       
-      // Log the event
-      await supabase.from('panel_offline_alerts_history').insert({
+      await logToHistory(supabase, {
         painel_id: null,
-        device_name: 'SISTEMA',
         tipo: 'queda_massiva',
         mensagem: `Queda massiva detectada: ${offlineCount}/${totalDevices} devices (${Math.round(offlinePercent * 100)}%) - Alertas suspensos`,
         tempo_offline_minutos: 0,
         destinatarios_notificados: [],
-        regra_id: null,
         regra_nome: 'PROTEÇÃO ANTI-FALSO-POSITIVO'
       });
 
@@ -209,6 +253,7 @@ Deno.serve(async (req) => {
     let backOnlineDetected = 0;
     let alertsSent = 0;
     let alertsBlockedByRateLimit = 0;
+    let alertsBlockedByThreshold = 0;
 
     // Get confirmation buttons
     const { data: confirmButtons } = await supabase
@@ -217,7 +262,7 @@ Deno.serve(async (req) => {
       .eq('ativo', true)
       .order('ordem', { ascending: true });
 
-    // Helper to send WhatsApp - now includes deviceId in button actions for tracking
+    // Helper to send WhatsApp
     const sendWhatsApp = async (phone: string, message: string, withButtons: boolean = false, deviceId?: string): Promise<{ success: boolean; messageId?: string }> => {
       try {
         let formattedPhone = phone.replace(/\D/g, '');
@@ -230,7 +275,6 @@ Deno.serve(async (req) => {
         else if (zapiConfig.client_token) headers['Client-Token'] = zapiConfig.client_token;
 
         if (withButtons && confirmButtons && confirmButtons.length > 0) {
-          // Include deviceId in button ID for tracking: "buttonId:deviceId"
           const buttonActions = confirmButtons.map((btn) => ({
             id: deviceId ? `${btn.id}:${deviceId}` : btn.id,
             type: 'REPLY',
@@ -317,36 +361,64 @@ Deno.serve(async (req) => {
       const currentStatus = device.status;
       const metadata = (device.metadata || {}) as DeviceMetadata;
 
+      // ==================== FIX #1: ONLY CONSIDER OFFLINE IF device.status === 'offline' ====================
+      // This is the CRITICAL FIX - we only alert if the device is actually marked offline by sync
+      const isDeviceReallyOffline = currentStatus === 'offline';
+
       // CHECK: Device has alerts disabled in device_alert_configs table
-      const alertsEnabledForDevice = alertConfigsMap.get(device.id);
+      const deviceConfig = alertConfigsMap.get(device.id);
+      const alertsEnabledForDevice = deviceConfig?.alerts_enabled;
+      
       if (alertsEnabledForDevice === false && !testMode) {
         console.log(`⏸️ [MONITOR] Device ${device.name}: alertas desativados via configuração admin`);
         continue;
       }
 
-      // Find applicable rule
+      // ==================== FIX #2: RESPECT PER-DEVICE offline_threshold_minutes ====================
+      // Calculate effective threshold: MAX of global rule and per-device config
+      const deviceThresholdSeconds = deviceConfig?.offline_threshold_minutes 
+        ? deviceConfig.offline_threshold_minutes * 60 
+        : 0;
+
+      // Find applicable rule - but ONLY if device is REALLY offline
       let applicableRule: AlertRule | undefined;
       
       if (testMode && testRuleId) {
         applicableRule = alertRules.find(r => r.id === testRuleId);
-      } else {
-        applicableRule = alertRules
+      } else if (isDeviceReallyOffline) {
+        // First, get rules where global threshold is met
+        const candidateRules = alertRules
           .filter(r => offlineSeconds >= r.tempo_offline_segundos)
-          .sort((a, b) => b.tempo_offline_segundos - a.tempo_offline_segundos)[0];
+          .sort((a, b) => b.tempo_offline_segundos - a.tempo_offline_segundos);
+        
+        // Now, check if effective threshold (with per-device config) is also met
+        for (const rule of candidateRules) {
+          const effectiveThresholdSeconds = Math.max(rule.tempo_offline_segundos, deviceThresholdSeconds);
+          
+          if (offlineSeconds >= effectiveThresholdSeconds) {
+            applicableRule = rule;
+            break;
+          }
+        }
+        
+        // If no rule met the effective threshold, log it
+        if (candidateRules.length > 0 && !applicableRule && deviceThresholdSeconds > 0) {
+          console.log(`⏳ [MONITOR] Device ${device.name}: offline ${offlineSeconds}s, mas threshold individual é ${deviceThresholdSeconds}s - aguardando`);
+          alertsBlockedByThreshold++;
+        }
       }
 
-      const isOffline = applicableRule !== undefined || testMode;
+      const shouldProcessOffline = (applicableRule !== undefined || testMode) && (isDeviceReallyOffline || testMode);
 
-      // ========== DEVICE WENT OFFLINE ==========
-      if (isOffline && applicableRule) {
-        console.log(`🔴 [MONITOR] Device ${device.name}: offline há ${formatOfflineDuration(timeSinceLastOnline)}${isShutdownPeriod ? ' [PERÍODO PROGRAMADO]' : ''}`);
+      // ========== DEVICE IS OFFLINE ==========
+      if (shouldProcessOffline && applicableRule) {
+        console.log(`🔴 [MONITOR] Device ${device.name}: status=${currentStatus}, offline há ${formatOfflineDuration(timeSinceLastOnline)}${isShutdownPeriod ? ' [PERÍODO PROGRAMADO]' : ''}`);
         offlineDetected++;
 
         // Skip during shutdown period
         if (isShutdownPeriod && !testMode) {
-          await supabase.from('panel_offline_alerts_history').insert({
+          await logToHistory(supabase, {
             painel_id: device.id,
-            device_name: device.name,
             tipo: 'programado',
             mensagem: `Período programado (1h-6h) - alerta ignorado`,
             tempo_offline_minutos: Math.round(timeSinceLastOnline / 60000),
@@ -445,13 +517,12 @@ Deno.serve(async (req) => {
             `📅 ${brazilTime}` +
             alertLabel;
 
-          const sentRecipients: Array<{ phone: string; name: string; messageId?: string }> = [];
+          const sentRecipients: string[] = [];
           for (const recipient of recipients) {
-            // Pass device.id to include in button actions for tracking
             const result = await sendWhatsApp(recipient.telefone, message, true, device.id);
             if (result.success) {
               alertsSent++;
-              sentRecipients.push({ phone: recipient.telefone, name: recipient.nome, messageId: result.messageId });
+              sentRecipients.push(recipient.telefone);
             }
           }
 
@@ -474,19 +545,17 @@ Deno.serve(async (req) => {
 
             await supabase
               .from('devices')
-              .update({ status: 'offline', metadata: newMetadata })
+              .update({ metadata: newMetadata })
               .eq('id', device.id);
           }
 
-          // Log alert with incident info
-          await supabase.from('panel_offline_alerts_history').insert({
+          // Log alert with CORRECT columns only
+          await logToHistory(supabase, {
             painel_id: device.id,
-            device_name: device.name,
             tipo: testMode ? 'teste' : 'offline',
-            mensagem: `${alertNumber}º aviso - Ocorrência #${incidentNumber}`,
+            mensagem: `${alertNumber}º aviso - Ocorrência #${incidentNumber} - ${device.name}`,
             tempo_offline_minutos: Math.round(timeSinceLastOnline / 60000),
-            destinatarios_notificados: recipients.map(r => r.telefone),
-            recipients: sentRecipients,
+            destinatarios_notificados: sentRecipients,
             regra_id: applicableRule.id,
             regra_nome: applicableRule.nome,
             incident_id: currentIncidentId,
@@ -495,20 +564,18 @@ Deno.serve(async (req) => {
           });
           
           if (testMode) break;
-        } else if (currentStatus !== 'offline' && !testMode) {
-          await supabase.from('devices').update({ status: 'offline' }).eq('id', device.id);
         }
       }
 
       // ========== DEVICE CAME BACK ONLINE ==========
-      if (!testMode && currentStatus === 'offline' && !isOffline && lastOnline) {
+      // Only notify if device was previously marked as offline and NOW is online
+      if (!testMode && currentStatus === 'online' && metadata.triggered_rules && metadata.triggered_rules.length > 0) {
         console.log(`🟢 [MONITOR] Device VOLTOU ONLINE: ${device.name}`);
         backOnlineDetected++;
 
         if (isShutdownPeriod) continue;
 
         const notifyOnlineRules = alertRules.filter(r => r.notificar_quando_online);
-        const wasAlerted = metadata.triggered_rules && metadata.triggered_rules.length > 0;
         const incidentId = metadata.current_incident_id;
         const incidentNum = metadata.incident_number;
 
@@ -526,10 +593,10 @@ Deno.serve(async (req) => {
 
         await supabase
           .from('devices')
-          .update({ status: 'online', metadata: cleanMetadata })
+          .update({ metadata: cleanMetadata })
           .eq('id', device.id);
 
-        if (wasAlerted && notifyOnlineRules.length > 0) {
+        if (notifyOnlineRules.length > 0) {
           const lastRuleName = metadata.last_rule_id 
             ? alertRules.find(r => r.id === metadata.last_rule_id)?.nome || 'Alerta'
             : 'Alerta';
@@ -544,11 +611,10 @@ Deno.serve(async (req) => {
             await sendWhatsApp(recipient.telefone, message, false);
           }
 
-          await supabase.from('panel_offline_alerts_history').insert({
+          await logToHistory(supabase, {
             painel_id: device.id,
-            device_name: device.name,
             tipo: 'online',
-            mensagem: `Voltou online - Ocorrência #${incidentNum} encerrada`,
+            mensagem: `Voltou online - Ocorrência #${incidentNum} encerrada - ${device.name}`,
             tempo_offline_minutos: 0,
             destinatarios_notificados: recipients.map(r => r.telefone),
             incident_id: incidentId,
@@ -575,14 +641,12 @@ Deno.serve(async (req) => {
         updated_at: now.toISOString()
       }, { onConflict: 'key' });
 
-      await supabase.from('panel_offline_alerts_history').insert({
+      await logToHistory(supabase, {
         painel_id: null,
-        device_name: 'SISTEMA',
         tipo: 'storm_detected',
         mensagem: `Tempestade de alertas: ${alertsSent} enviados. Cooldown ativado por ${STORM_COOLDOWN_MINUTES} min`,
         tempo_offline_minutos: 0,
         destinatarios_notificados: [],
-        regra_id: null,
         regra_nome: 'PROTEÇÃO ANTI-TEMPESTADE'
       });
     }
@@ -595,6 +659,7 @@ Deno.serve(async (req) => {
       back_online_detected: backOnlineDetected,
       alerts_sent: alertsSent,
       alerts_blocked_by_rate_limit: alertsBlockedByRateLimit,
+      alerts_blocked_by_threshold: alertsBlockedByThreshold,
       monitoring_active: true,
       test_mode: testMode
     };
