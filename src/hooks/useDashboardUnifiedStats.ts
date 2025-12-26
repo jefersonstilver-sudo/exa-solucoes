@@ -202,25 +202,28 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       let vendasProjetadas = 0;
 
       if (pedidoIds.length > 0) {
-        // Buscar parcelas pagas
-        const { data: parcelasPagas } = await supabase
+        // CRITICAL: Buscar APENAS parcelas pagas COM confirmação do Mercado Pago
+        // Isso garante que só contamos receita REALMENTE recebida
+        const { data: parcelasPagasConfirmadas } = await supabase
           .from('parcelas')
-          .select('pedido_id, valor_final')
+          .select('pedido_id, valor_final, mercadopago_payment_id')
           .in('pedido_id', pedidoIds)
-          .eq('status', 'pago');
+          .eq('status', 'pago')
+          .not('mercadopago_payment_id', 'is', null);
 
-        // Buscar parcelas pendentes
+        // Buscar parcelas pendentes (para projeção)
         const { data: parcelasPendentes } = await supabase
           .from('parcelas')
           .select('pedido_id, valor_final')
           .in('pedido_id', pedidoIds)
           .in('status', ['pendente', 'atrasado']);
 
-        // Criar mapa de valores pagos e pendentes por pedido
+        // Criar mapa de valores pagos (apenas com confirmação MP) e pendentes por pedido
         const parcelasPagasPorPedido: Record<string, number> = {};
         const parcelasPendentesPorPedido: Record<string, number> = {};
         
-        parcelasPagas?.forEach(p => {
+        // SOMENTE parcelas com mercadopago_payment_id contam como receita efetiva
+        parcelasPagasConfirmadas?.forEach(p => {
           parcelasPagasPorPedido[p.pedido_id] = (parcelasPagasPorPedido[p.pedido_id] || 0) + (p.valor_final || 0);
         });
 
@@ -229,17 +232,14 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         });
 
         // Calcular receita efetiva e projetada
+        // IMPORTANTE: Tanto pedidos parcelados quanto únicos só contam se tiverem
+        // parcela paga COM confirmação do Mercado Pago (mercadopago_payment_id)
         vendasData?.forEach(pedido => {
-          const temParcelas = pedido.is_fidelidade || (pedido.total_parcelas && pedido.total_parcelas > 1);
+          // Receita efetiva: SOMENTE valores confirmados pelo MP
+          vendasEfetivas += parcelasPagasPorPedido[pedido.id] || 0;
           
-          if (temParcelas) {
-            // Pedido parcelado: usar valores das parcelas
-            vendasEfetivas += parcelasPagasPorPedido[pedido.id] || 0;
-            vendasProjetadas += parcelasPendentesPorPedido[pedido.id] || 0;
-          } else {
-            // Pedido único: usar valor_total como receita efetiva
-            vendasEfetivas += pedido.valor_total || 0;
-          }
+          // Receita projetada: parcelas pendentes
+          vendasProjetadas += parcelasPendentesPorPedido[pedido.id] || 0;
         });
       }
 
