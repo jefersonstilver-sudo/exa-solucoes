@@ -1,120 +1,96 @@
 import React, { useState, useEffect } from 'react';
-import { FileSignature, Clock, AlertTriangle, ArrowRight, FileX } from 'lucide-react';
+import { FileText, Clock, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useCardConfig } from '@/hooks/useCardConfig';
-import CardConfigPopover from './CardConfigPopover';
 
-interface ContratoStats {
-  pendentes: number;
-  enviados: number;
-  expirando: number;
-  vencidos: number;
-}
-
-interface PedidoSemContrato {
+interface PropostaPendente {
   id: string;
   clientName: string;
-  status: string;
+  companyName: string | null;
+  valorDisplay: number;
+  isMonthly: boolean;
+  daysUntilExpire: number;
+  expired: boolean;
 }
 
 const ContratosAlertCard: React.FC = () => {
   const navigate = useNavigate();
-  const { value: expiringDays, updateValue } = useCardConfig('dashboard_contracts_expiring_days', 7);
-  const [stats, setStats] = useState<ContratoStats>({
-    pendentes: 0,
-    enviados: 0,
-    expirando: 0,
-    vencidos: 0
-  });
-  const [pedidosSemContrato, setPedidosSemContrato] = useState<PedidoSemContrato[]>([]);
+  const [propostas, setPropostas] = useState<PropostaPendente[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchContractStats = async () => {
+    const fetchPropostasPendentes = async () => {
       try {
-        const now = new Date();
-        const expiringDate = new Date(now.getTime() + expiringDays * 24 * 60 * 60 * 1000);
-
-        // Buscar pedidos que exigem contrato
         const { data, error } = await supabase
-          .from('pedidos')
-          .select('id, contrato_status, contrato_enviado_em')
-          .eq('exigir_contrato', true)
-          .in('contrato_status', ['pendente', 'enviado']);
+          .from('proposals')
+          .select(`
+            id,
+            client_name,
+            client_company_name,
+            expires_at,
+            is_custom_days,
+            custom_days,
+            payment_type,
+            fidel_monthly_value,
+            cash_total_value,
+            custom_installments
+          `)
+          .in('status', ['enviada', 'atualizada', 'visualizada'])
+          .order('expires_at', { ascending: true });
 
         if (error) {
           console.error('[ContratosAlertCard] Error:', error);
           return;
         }
 
-        let pendentes = 0;
-        let enviados = 0;
-        let expirando = 0;
-        let vencidos = 0;
+        const now = new Date();
+        
+        const propostasList: PropostaPendente[] = (data || []).map(p => {
+          const expiresAt = p.expires_at ? new Date(p.expires_at) : null;
+          const diffMs = expiresAt ? expiresAt.getTime() - now.getTime() : 0;
+          const daysUntilExpire = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+          const expired = expiresAt ? expiresAt < now : false;
 
-        // Prazo padrão de assinatura: 7 dias após envio
-        const prazoAssinaturaDias = 7;
+          // Calcular valor a exibir baseado em is_custom_days
+          let valorDisplay = 0;
+          let isMonthly = false;
 
-        data?.forEach(pedido => {
-          if (pedido.contrato_status === 'pendente') {
-            pendentes++;
-          } else if (pedido.contrato_status === 'enviado') {
-            enviados++;
-            
-            // Calcular expiração baseado na data de envio + prazo
-            if (pedido.contrato_enviado_em) {
-              const enviadoEm = new Date(pedido.contrato_enviado_em);
-              const expiresAt = new Date(enviadoEm.getTime() + prazoAssinaturaDias * 24 * 60 * 60 * 1000);
-              
-              if (expiresAt < now) {
-                vencidos++;
-              } else if (expiresAt < expiringDate) {
-                expirando++;
-              }
+          if (p.is_custom_days) {
+            // Período em DIAS: mostrar valor TOTAL
+            const customInstallments = p.custom_installments as any[] | null;
+            if (customInstallments && Array.isArray(customInstallments)) {
+              valorDisplay = customInstallments.reduce((sum, inst) => sum + (inst.amount || 0), 0);
+            } else {
+              valorDisplay = p.cash_total_value || 0;
+            }
+            isMonthly = false;
+          } else {
+            // Período MENSAL
+            if (p.payment_type === 'pix_avista' || p.payment_type === 'cartao') {
+              valorDisplay = p.cash_total_value || 0;
+              isMonthly = false;
+            } else {
+              valorDisplay = p.fidel_monthly_value || 0;
+              isMonthly = true;
             }
           }
+
+          return {
+            id: p.id,
+            clientName: p.client_name || 'Cliente',
+            companyName: p.client_company_name,
+            valorDisplay,
+            isMonthly,
+            daysUntilExpire,
+            expired
+          };
         });
 
-        setStats({ pendentes, enviados, expirando, vencidos });
-
-        // Buscar pedidos ATIVOS que não têm contrato assinado
-        const { data: pedidosAtivos, error: pedidosError } = await supabase
-          .from('pedidos')
-          .select('id, client_id, status, contrato_status')
-          .in('status', ['ativo', 'pago_pendente_video'])
-          .or('contrato_status.is.null,contrato_status.neq.assinado');
-
-        if (pedidosError) {
-          console.error('[ContratosAlertCard] Error fetching active orders:', pedidosError);
-        } else if (pedidosAtivos && pedidosAtivos.length > 0) {
-          // Buscar nomes dos clientes
-          const clientIds = [...new Set(pedidosAtivos.map(p => p.client_id).filter(Boolean))];
-          
-          let clientNames: Record<string, string> = {};
-          if (clientIds.length > 0) {
-            const { data: clients } = await supabase
-              .from('users')
-              .select('id, nome, email')
-              .in('id', clientIds);
-            
-            clients?.forEach(c => {
-              clientNames[c.id] = c.nome || c.email?.split('@')[0] || 'Cliente';
-            });
-          }
-
-          const pedidosSemContratoList: PedidoSemContrato[] = pedidosAtivos.map(p => ({
-            id: p.id,
-            clientName: clientNames[p.client_id] || 'Cliente',
-            status: p.status
-          }));
-
-          setPedidosSemContrato(pedidosSemContratoList);
-        }
+        setPropostas(propostasList);
       } catch (err) {
         console.error('[ContratosAlertCard] Error:', err);
       } finally {
@@ -122,26 +98,56 @@ const ContratosAlertCard: React.FC = () => {
       }
     };
 
-    fetchContractStats();
+    fetchPropostasPendentes();
 
     // Subscribe to changes
     const channel = supabase
-      .channel('contracts_dashboard_monitor')
+      .channel('propostas_pendentes_dashboard')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'pedidos'
+        table: 'proposals'
       }, () => {
-        fetchContractStats();
+        fetchPropostasPendentes();
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [expiringDays]);
+  }, []);
 
-  const totalPendentes = stats.pendentes + stats.enviados;
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const getExpirationBadge = (days: number, expired: boolean) => {
+    if (expired) {
+      return (
+        <Badge className="text-[9px] px-1.5 py-0.5 bg-red-100 text-red-700 border-red-300 whitespace-nowrap">
+          <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
+          Expirada
+        </Badge>
+      );
+    }
+    if (days <= 3) {
+      return (
+        <Badge className="text-[9px] px-1.5 py-0.5 bg-orange-100 text-orange-700 border-orange-300 whitespace-nowrap">
+          <Clock className="h-2.5 w-2.5 mr-0.5" />
+          {days}d
+        </Badge>
+      );
+    }
+    return (
+      <Badge className="text-[9px] px-1.5 py-0.5 bg-green-100 text-green-700 border-green-300 whitespace-nowrap">
+        <Clock className="h-2.5 w-2.5 mr-0.5" />
+        {days}d
+      </Badge>
+    );
+  };
 
   if (loading) {
     return (
@@ -158,94 +164,58 @@ const ContratosAlertCard: React.FC = () => {
 
   return (
     <Card className="h-full bg-white rounded-2xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_20px_50px_rgb(0,0,0,0.2)] hover:scale-[1.01] hover:-translate-y-1 transition-all duration-300 ease-out flex flex-col">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <CardTitle className="text-sm md:text-base flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <FileSignature className="h-4 w-4 text-blue-500" />
-            Contratos Pendentes
+            <FileText className="h-4 w-4 text-blue-500" />
+            Propostas Aguardando
           </div>
-          <CardConfigPopover
-            label="Dias para alerta de expiração"
-            unit="dias"
-            value={expiringDays}
-            onSave={updateValue}
-            min={1}
-            max={30}
-          />
+          <Badge variant="secondary" className="text-xs">
+            {propostas.length}
+          </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 flex-1 flex flex-col">
-        {/* Número principal */}
-        <div className="text-center py-2">
-          <span className="text-4xl font-bold text-blue-600">{totalPendentes}</span>
-          <p className="text-xs text-muted-foreground mt-1">aguardando assinatura</p>
-        </div>
-
-        {/* Detalhes */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="p-2 rounded-lg bg-gray-50 border border-gray-200 text-center">
-            <span className="text-lg font-bold text-gray-700">{stats.pendentes}</span>
-            <p className="text-[10px] text-muted-foreground">A enviar</p>
+      <CardContent className="flex-1 flex flex-col pt-0">
+        {propostas.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center text-center py-4">
+            <p className="text-sm text-muted-foreground">
+              Nenhuma proposta pendente
+            </p>
           </div>
-          <div className="p-2 rounded-lg bg-blue-50 border border-blue-200 text-center">
-            <span className="text-lg font-bold text-blue-700">{stats.enviados}</span>
-            <p className="text-[10px] text-muted-foreground">Enviados</p>
-          </div>
-        </div>
-
-        {/* Alertas de expiração */}
-        {(stats.expirando > 0 || stats.vencidos > 0) && (
-          <div className="flex flex-wrap gap-2">
-            {stats.expirando > 0 && (
-              <Badge className="text-[10px] bg-orange-100 text-orange-700 border-orange-300">
-                <Clock className="h-3 w-3 mr-1" />
-                {stats.expirando} expirando
-              </Badge>
-            )}
-            {stats.vencidos > 0 && (
-              <Badge className="text-[10px] bg-red-100 text-red-700 border-red-300">
-                <AlertTriangle className="h-3 w-3 mr-1" />
-                {stats.vencidos} vencidos
-              </Badge>
-            )}
-          </div>
-        )}
-
-        {/* Alerta de pedidos ativos sem contrato - apenas badge com hover para lista */}
-        {pedidosSemContrato.length > 0 && (
-          <HoverCard openDelay={100}>
-            <HoverCardTrigger asChild>
-              <div className="p-2 rounded-lg bg-red-50 border border-red-200 cursor-pointer hover:bg-red-100 transition-colors">
-                <div className="flex items-center gap-2">
-                  <FileX className="h-4 w-4 text-red-600" />
-                  <span className="text-xs font-semibold text-red-700">
-                    {pedidosSemContrato.length} ativo{pedidosSemContrato.length > 1 ? 's' : ''} sem contrato
-                  </span>
-                </div>
-              </div>
-            </HoverCardTrigger>
-            <HoverCardContent className="w-72 p-3" side="top">
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-gray-900">Pedidos sem Contrato</h4>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                  {pedidosSemContrato.map(pedido => (
-                    <div key={pedido.id} className="text-xs text-red-600 truncate">
-                      • {pedido.clientName}
+        ) : (
+          <ScrollArea className="flex-1 -mx-2 px-2" style={{ maxHeight: '180px' }}>
+            <div className="space-y-2">
+              {propostas.map((proposta) => (
+                <div 
+                  key={proposta.id}
+                  className="p-2 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/admin/propostas/${proposta.id}`)}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-gray-900 truncate">
+                        {proposta.companyName || proposta.clientName}
+                      </p>
+                      <p className="text-[11px] text-emerald-600 font-semibold">
+                        {formatCurrency(proposta.valorDisplay)}
+                        {proposta.isMonthly && <span className="text-[9px] text-muted-foreground font-normal">/mês</span>}
+                      </p>
                     </div>
-                  ))}
+                    {getExpirationBadge(proposta.daysUntilExpire, proposta.expired)}
+                  </div>
                 </div>
-              </div>
-            </HoverCardContent>
-          </HoverCard>
+              ))}
+            </div>
+          </ScrollArea>
         )}
 
         <Button
           variant="ghost"
           size="sm"
-          className="w-full"
-          onClick={() => navigate('/admin/juridico')}
+          className="w-full mt-2"
+          onClick={() => navigate('/admin/propostas')}
         >
-          Ver contratos
+          Ver propostas
           <ArrowRight className="h-3 w-3 ml-1" />
         </Button>
       </CardContent>
