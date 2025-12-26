@@ -37,6 +37,8 @@ interface Proposal {
   custom_installments?: CustomInstallment[] | null;
   seller_name?: string | null;
   tipo_produto?: 'horizontal' | 'vertical_premium' | null;
+  is_custom_days?: boolean | null;
+  custom_days?: number | null;
 }
 
 // Check if client is actively viewing RIGHT NOW (heartbeat within last 45 seconds)
@@ -160,8 +162,27 @@ export const ProposalMobileCard: React.FC<ProposalMobileCardProps> = ({
         </div>
       </div>
 
-      {/* Values row - Custom installments vs Standard */}
-      {proposal.payment_type === 'custom' && proposal.custom_installments && proposal.custom_installments.length > 0 ? (
+      {/* Values row - is_custom_days shows total, otherwise monthly */}
+      {proposal.is_custom_days ? (
+        // Período em DIAS: mostra valor total
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-[10px] text-muted-foreground">{proposal.custom_days || 0} dias</p>
+              <p className="text-sm font-semibold text-emerald-600">
+                {formatCurrency(proposal.custom_installments?.reduce((sum, i) => sum + i.amount, 0) || proposal.cash_total_value || 0)}
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0 border-0">
+              Período Personalizado
+            </Badge>
+            <p className="text-[10px] text-muted-foreground">{timeAgo}</p>
+          </div>
+        </div>
+      ) : proposal.payment_type === 'custom' && proposal.custom_installments && proposal.custom_installments.length > 0 ? (
+        // Parcelamento custom com período mensal
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0 border-0">
@@ -175,22 +196,10 @@ export const ProposalMobileCard: React.FC<ProposalMobileCardProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 text-xs">
               <span className="text-muted-foreground">
-                1ª: <span className="font-semibold text-foreground">{formatCurrency(proposal.custom_installments[0].amount)}</span>
+                Mensal: <span className="font-semibold text-foreground">{formatCurrency(proposal.fidel_monthly_value)}/mês</span>
               </span>
-              {proposal.custom_installments.length > 1 && (
-                <span className="text-muted-foreground">
-                  Última: <span className="font-semibold text-foreground">
-                    {formatCurrency(proposal.custom_installments[proposal.custom_installments.length - 1].amount)}
-                  </span>
-                </span>
-              )}
             </div>
             <span className="text-[10px] text-muted-foreground">{timeAgo}</span>
-          </div>
-          <div className="text-[10px] text-muted-foreground">
-            Total: <span className="font-semibold text-foreground">
-              {formatCurrency(proposal.custom_installments.reduce((sum, i) => sum + i.amount, 0))}
-            </span>
           </div>
         </div>
       ) : (
