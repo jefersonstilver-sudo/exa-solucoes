@@ -179,8 +179,8 @@ export const useConversations = () => {
   useEffect(() => {
     fetchConversations();
 
-    // Atualizar a cada 10 segundos
-    const interval = setInterval(fetchConversations, 10000);
+    // Atualizar a cada 30 segundos
+    const interval = setInterval(fetchConversations, 30000);
     return () => clearInterval(interval);
   }, []);
 

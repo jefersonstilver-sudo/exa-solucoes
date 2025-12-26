@@ -45,6 +45,9 @@ export const PROVIDER_COLORS: Record<string, string> = {
 export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
   const [buildings, setBuildings] = useState<BuildingWithDeviceStatus[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Estabilizar referência do eventsMap para evitar re-fetches
+  const eventsMapRef = useMemo(() => eventsMap, [eventsMap?.size]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -103,9 +106,9 @@ export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
 
           // Get events count for devices in this building
           let eventsCount = 0;
-          if (eventsMap) {
+          if (eventsMapRef) {
             buildingDevices.forEach(d => {
-              eventsCount += eventsMap.get(d.id) || 0;
+              eventsCount += eventsMapRef.get(d.id) || 0;
             });
           }
 
@@ -138,7 +141,7 @@ export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
     } finally {
       setLoading(false);
     }
-  }, [eventsMap]);
+  }, [eventsMapRef]);
 
   useEffect(() => {
     fetchData();

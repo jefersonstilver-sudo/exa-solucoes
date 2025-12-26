@@ -173,8 +173,8 @@ export const DashboardUnificado = () => {
   useEffect(() => {
     fetchDashboardData();
     
-    // Auto-refresh a cada 10 segundos
-    const interval = setInterval(fetchDashboardData, 10000);
+    // Auto-refresh a cada 60 segundos
+    const interval = setInterval(fetchDashboardData, 60000);
     
     return () => clearInterval(interval);
   }, []);
