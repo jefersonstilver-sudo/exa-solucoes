@@ -11,8 +11,6 @@ const FIXED_SELLER_IDS = [
   '6390fcd3-3eaa-4f57-9a7b-b3466a306ee8', // Bruno Dantas
   'c9ff75c5-a051-4b6d-a278-cdd5a2306820', // Eduardo Comercial
   '21333746-3d73-48f2-8af8-61fb3f86bcf8', // Suzana Financeiro
-  'c9ff75c5-a051-4b6d-a278-cdd5a2306820', // Eduardo Comercial
-  '21333746-3d73-48f2-8af8-61fb3f86bcf8', // Suzana Financeiro
 ];
 
 const FIXED_SELLER_NAMES: Record<string, string> = {
