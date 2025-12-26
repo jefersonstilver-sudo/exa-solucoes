@@ -14,9 +14,17 @@ export const DEFAULT_MAP_CONFIG = {
 };
 
 export const MAP_STYLES = [
-  {
-    featureType: "poi",
-    elementType: "labels", 
-    stylers: [{ visibility: "off" }]
-  }
+  // Hide all POIs (businesses, parks, etc.)
+  { featureType: "poi", elementType: "all", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.business", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.park", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.attraction", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.place_of_worship", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.school", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.medical", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.government", stylers: [{ visibility: "off" }] },
+  // Hide transit labels
+  { featureType: "transit", elementType: "labels", stylers: [{ visibility: "off" }] },
+  // Simplify road labels
+  { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
 ];

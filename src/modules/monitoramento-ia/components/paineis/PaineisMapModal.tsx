@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { X, Filter, MapPin, Wifi, WifiOff, AlertTriangle, Loader2 } from 'lucide-react';
+import { X, AlertTriangle, Zap, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import loadGoogleMaps from '@/utils/googleMapsLoader';
-import { DEFAULT_MAP_CONFIG } from '@/utils/mapConstants';
-import { useBuildingsWithDeviceStatus, BuildingWithDeviceStatus, PROVIDER_COLORS } from '../../hooks/useBuildingsWithDeviceStatus';
+import { DEFAULT_MAP_CONFIG, MAP_STYLES } from '@/utils/mapConstants';
+import { useBuildingsWithDeviceStatus, BuildingWithDeviceStatus } from '../../hooks/useBuildingsWithDeviceStatus';
 import { BuildingDetailCard } from './BuildingDetailCard';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 
@@ -43,68 +42,50 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
     return true;
   });
 
-  // Create marker pin element with enhanced visuals
-  const createMarkerElement = useCallback((building: BuildingWithDeviceStatus) => {
+  // Create small 3D numbered pin element
+  const createMarkerElement = useCallback((building: BuildingWithDeviceStatus, sequentialNumber: number) => {
     const pin = document.createElement('div');
-    pin.className = 'relative cursor-pointer transform hover:scale-110 transition-all duration-200';
+    pin.className = 'relative cursor-pointer';
 
-    // Enhanced colors based on status - more vibrant
-    const colors = {
-      online: { bg: '#22C55E', border: '#16A34A', glow: 'rgba(34, 197, 94, 0.4)', pulse: false },
-      partial: { bg: '#F59E0B', border: '#D97706', glow: 'rgba(245, 158, 11, 0.4)', pulse: false },
-      offline: { bg: '#EF4444', border: '#DC2626', glow: 'rgba(239, 68, 68, 0.5)', pulse: true },
-      unknown: { bg: '#6B7280', border: '#4B5563', glow: 'rgba(107, 114, 128, 0.3)', pulse: false },
-    };
-    const config = colors[building.status];
-
-    // Provider accent color
-    const providerColor = building.provider 
-      ? PROVIDER_COLORS[building.provider] || PROVIDER_COLORS.default 
-      : undefined;
-
-    // Status text for tooltip
-    const statusText = building.status === 'online' 
-      ? `${building.totalDevices} online` 
-      : building.status === 'offline' 
-        ? `${building.totalDevices} offline`
-        : `${building.onlineCount}/${building.totalDevices} online`;
+    // Colors based on status
+    const isOnline = building.status === 'online';
+    const isOffline = building.status === 'offline';
+    const primaryColor = isOnline ? '#22C55E' : isOffline ? '#EF4444' : '#F59E0B';
+    const darkColor = isOnline ? '#16A34A' : isOffline ? '#DC2626' : '#D97706';
+    const glowColor = isOnline ? 'rgba(34, 197, 94, 0.5)' : isOffline ? 'rgba(239, 68, 68, 0.6)' : 'rgba(245, 158, 11, 0.5)';
 
     pin.innerHTML = `
-      <div class="relative" title="${building.nome} - ${statusText}">
-        ${config.pulse ? `
-          <div class="absolute inset-[-4px] rounded-full animate-pulse" 
-               style="background-color: ${config.glow}; animation: pulse-glow 1.5s ease-in-out infinite;"></div>
-          <div class="absolute inset-[-8px] rounded-full" 
-               style="background-color: ${config.glow}; animation: pulse-ring 1.5s ease-in-out infinite;"></div>
+      <div class="relative" style="width:28px;height:36px;">
+        ${isOffline ? `
+          <div style="position:absolute;inset:-4px;border-radius:50%;background:${glowColor};animation:pulse-offline 1.2s ease-in-out infinite;"></div>
         ` : `
-          <div class="absolute inset-[-3px] rounded-full opacity-60" 
-               style="background-color: ${config.glow};"></div>
+          <div style="position:absolute;inset:-2px;border-radius:50% 50% 50% 50%;background:${glowColor};opacity:0.6;"></div>
         `}
-        <div class="relative w-11 h-11 rounded-full flex items-center justify-center shadow-xl border-3"
-             style="background: linear-gradient(135deg, ${config.bg} 0%, ${config.border} 100%); 
-                    border-color: white; 
-                    box-shadow: 0 4px 14px ${config.glow}, 0 2px 6px rgba(0,0,0,0.2);">
-          <span class="text-white text-sm font-bold drop-shadow-md">${building.totalDevices}</span>
-        </div>
-        ${providerColor ? `
-          <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow-md"
-               style="background-color: ${providerColor};"></div>
-        ` : ''}
-        ${building.eventsCount > 0 ? `
-          <div class="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
-            <span class="text-white text-[10px] font-bold">${building.eventsCount > 99 ? '99+' : building.eventsCount}</span>
-          </div>
-        ` : ''}
+        <svg width="28" height="36" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+          <defs>
+            <linearGradient id="pinGrad${sequentialNumber}" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:${primaryColor};stop-opacity:1" />
+              <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
+            </linearGradient>
+            <linearGradient id="pinHighlight${sequentialNumber}" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style="stop-color:white;stop-opacity:0.4" />
+              <stop offset="50%" style="stop-color:white;stop-opacity:0" />
+            </linearGradient>
+          </defs>
+          <!-- Pin body -->
+          <path d="M14 0C6.268 0 0 6.268 0 14c0 7.732 14 22 14 22s14-14.268 14-22C28 6.268 21.732 0 14 0z" fill="url(#pinGrad${sequentialNumber})"/>
+          <!-- Highlight -->
+          <ellipse cx="10" cy="10" rx="6" ry="5" fill="url(#pinHighlight${sequentialNumber})"/>
+          <!-- White circle for number -->
+          <circle cx="14" cy="12" r="8" fill="white"/>
+          <!-- Number -->
+          <text x="14" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="${darkColor}" font-family="system-ui,-apple-system,sans-serif">${sequentialNumber}</text>
+        </svg>
       </div>
       <style>
-        @keyframes pulse-glow {
-          0%, 100% { opacity: 0.5; transform: scale(1); }
-          50% { opacity: 0.8; transform: scale(1.1); }
-        }
-        @keyframes pulse-ring {
-          0% { opacity: 0.4; transform: scale(1); }
-          50% { opacity: 0; transform: scale(1.4); }
-          100% { opacity: 0; transform: scale(1.6); }
+        @keyframes pulse-offline {
+          0%, 100% { opacity: 0.4; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.15); }
         }
       </style>
     `;
@@ -131,13 +112,14 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
           center: DEFAULT_MAP_CONFIG.center,
           zoom: DEFAULT_MAP_CONFIG.zoom,
           mapId: 'paineis-map',
-          disableDefaultUI: false,
+          disableDefaultUI: true,
           zoomControl: true,
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
-          gestureHandling: 'greedy', // Permite zoom com rodinha em qualquer lugar
-          scrollwheel: true, // Habilita scroll wheel zoom
+          gestureHandling: 'greedy',
+          scrollwheel: true,
+          styles: MAP_STYLES,
         });
 
         mapInstanceRef.current = map;
@@ -187,13 +169,14 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
 
     const newMarkers: google.maps.marker.AdvancedMarkerElement[] = [];
 
-    filteredBuildings.forEach(building => {
+    filteredBuildings.forEach((building, index) => {
       const lat = building.manual_latitude || building.latitude;
       const lng = building.manual_longitude || building.longitude;
 
       if (!lat || !lng || lat === 0 || lng === 0) return;
 
-      const markerElement = createMarkerElement(building);
+      const sequentialNumber = index + 1;
+      const markerElement = createMarkerElement(building, sequentialNumber);
 
       const marker = new AdvancedMarkerElement({
         position: { lat, lng },
@@ -210,37 +193,16 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
         unknown: '#6B7280',
       };
       const statusColor = statusColors[building.status];
-      const statusText = building.status === 'online' 
-        ? 'Online' 
-        : building.status === 'offline' 
-          ? 'Offline'
-          : 'Parcial';
 
-      // Devices list for tooltip
-      const devicesList = building.devices.slice(0, 5).map(d => 
-        `<div style="display:flex;align-items:center;gap:4px;font-size:11px;">
-          <span style="width:6px;height:6px;border-radius:50%;background:${d.status === 'online' ? '#22C55E' : '#EF4444'}"></span>
-          ${d.alias}
-        </div>`
-      ).join('');
-      const moreDevices = building.devices.length > 5 
-        ? `<div style="font-size:10px;color:#888;margin-top:4px;">+${building.devices.length - 5} mais</div>` 
-        : '';
-
-      // Hover - show InfoWindow
+      // Hover - show simple name tooltip
       markerElement.addEventListener('mouseenter', () => {
         infoWindowRef.current?.setContent(`
-          <div style="padding:8px 12px;min-width:160px;max-width:220px;font-family:system-ui,-apple-system,sans-serif;">
-            <div style="font-weight:600;font-size:14px;margin-bottom:6px;color:#1f2937;">${building.nome}</div>
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${statusColor};"></span>
-              <span style="font-size:12px;color:${statusColor};font-weight:500;">${building.onlineCount}/${building.totalDevices} ${statusText}</span>
+          <div style="padding:6px 10px;font-family:system-ui,-apple-system,sans-serif;">
+            <div style="font-weight:600;font-size:13px;color:#1f2937;">${building.nome}</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:3px;">
+              <span style="width:6px;height:6px;border-radius:50%;background:${statusColor};"></span>
+              <span style="font-size:11px;color:#666;">${building.onlineCount}/${building.totalDevices} painéis</span>
             </div>
-            <div style="border-top:1px solid #e5e7eb;padding-top:6px;">
-              ${devicesList}
-              ${moreDevices}
-            </div>
-            ${building.provider ? `<div style="font-size:10px;color:#888;margin-top:6px;">Provider: ${building.provider}</div>` : ''}
           </div>
         `);
         infoWindowRef.current?.open(mapInstanceRef.current, marker);
@@ -289,55 +251,19 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 bg-background"
     >
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <MapPin className="w-6 h-6 text-primary" />
-            <div>
-              <h2 className="text-lg font-bold text-foreground">Mapa de Painéis</h2>
-              <p className="text-sm text-muted-foreground">
-                Foz do Iguaçu • {periodLabel}
-              </p>
-            </div>
-          </div>
-
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
-
-        {/* Stats bar */}
-        <div className="flex items-center gap-3 px-4 pb-3 overflow-x-auto">
-          <Badge variant="outline" className="gap-1.5 whitespace-nowrap">
-            <MapPin className="w-3.5 h-3.5" />
-            {stats.total} prédios
-          </Badge>
-          <Badge variant="outline" className="gap-1.5 text-green-600 border-green-300 whitespace-nowrap">
-            <Wifi className="w-3.5 h-3.5" />
-            {stats.online} online
-          </Badge>
-          <Badge variant="outline" className="gap-1.5 text-yellow-600 border-yellow-300 whitespace-nowrap">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            {stats.partial} parcial
-          </Badge>
-          <Badge variant="outline" className="gap-1.5 text-red-600 border-red-300 whitespace-nowrap">
-            <WifiOff className="w-3.5 h-3.5" />
-            {stats.offline} offline
-          </Badge>
-        </div>
-
-        {/* Filters */}
-        <div className="flex items-center gap-4 px-4 pb-3 border-t border-border pt-3">
-          <Filter className="w-4 h-4 text-muted-foreground" />
+      {/* Minimalist Header - 48px */}
+      <div className="absolute top-0 left-0 right-0 z-10 h-12 bg-card/90 backdrop-blur-sm border-b border-border flex items-center justify-between px-3">
+        <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Switch
               id="only-offline"
               checked={showOnlyOffline}
               onCheckedChange={setShowOnlyOffline}
+              className="scale-90"
             />
-            <Label htmlFor="only-offline" className="text-sm cursor-pointer">
-              Apenas com problemas
+            <Label htmlFor="only-offline" className="text-xs cursor-pointer flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3 text-red-500" />
+              Problemas
             </Label>
           </div>
           <div className="flex items-center gap-2">
@@ -345,23 +271,32 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
               id="with-events"
               checked={showOnlyWithEvents}
               onCheckedChange={setShowOnlyWithEvents}
+              className="scale-90"
             />
-            <Label htmlFor="with-events" className="text-sm cursor-pointer">
-              Com quedas {periodLabel}
+            <Label htmlFor="with-events" className="text-xs cursor-pointer flex items-center gap-1">
+              <Zap className="w-3 h-3 text-orange-500" />
+              Quedas {periodLabel}
             </Label>
           </div>
         </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">{stats.total} prédios</span>
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
-      {/* Map container */}
-      <div ref={mapRef} className="w-full h-full pt-40" />
+      {/* Map container - full screen with small top padding */}
+      <div ref={mapRef} className="w-full h-full pt-12" />
 
       {/* Loading overlay */}
       {(loading || !mapReady) && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-30">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Carregando mapa...</p>
+            <p className="text-muted-foreground text-sm">Carregando mapa...</p>
           </div>
         </div>
       )}
@@ -375,22 +310,19 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
         />
       )}
 
-      {/* Legend */}
-      <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm rounded-lg border border-border p-3 z-10 hidden md:block">
-        <p className="text-xs font-medium text-muted-foreground mb-2">Legenda</p>
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500" />
-            <span className="text-xs">Todos online</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-yellow-500" />
-            <span className="text-xs">Parcialmente online</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500" />
-            <span className="text-xs">Todos offline</span>
-          </div>
+      {/* Compact Legend - bottom right */}
+      <div className="absolute bottom-3 right-3 bg-card/90 backdrop-blur-sm rounded-lg border border-border px-3 py-2 z-10 flex items-center gap-3">
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+          <span className="text-[10px] text-muted-foreground">Online</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+          <span className="text-[10px] text-muted-foreground">Parcial</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+          <span className="text-[10px] text-muted-foreground">Offline</span>
         </div>
       </div>
     </motion.div>
