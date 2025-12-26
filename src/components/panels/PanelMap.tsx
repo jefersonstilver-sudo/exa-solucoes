@@ -1,17 +1,8 @@
-
 import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
 import { Panel } from '@/types/panel';
 import { MapPin } from 'lucide-react';
+import loadGoogleMaps from '@/utils/googleMapsLoader';
 import { FOZ_DO_IGUACU_CENTER, DEFAULT_MAP_CONFIG, MAP_STYLES } from '@/utils/mapConstants';
-
-// Declare global Google Maps types
-declare global {
-  interface Window {
-    google: any;
-    initMap: () => void;
-  }
-}
 
 interface PanelMapProps {
   panels: Panel[];
@@ -19,135 +10,126 @@ interface PanelMapProps {
   onSelectPanel?: (panel: Panel) => void;
 }
 
-const PanelMap: React.FC<PanelMapProps> = ({ 
-  panels, 
+const PanelMap: React.FC<PanelMapProps> = ({
+  panels,
   selectedLocation,
-  onSelectPanel 
+  onSelectPanel,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
-  const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+
   const [mapLoaded, setMapLoaded] = useState(false);
-  
+
   // Initialize map when the component mounts
   useEffect(() => {
-    // Skip if map is already initialized or the reference doesn't exist
-    if (mapInstance || !mapRef.current) return;
-    
-    const initMap = () => {
-      // Default to Foz do Iguaçu region where the panels are located
-      const mapCenter = selectedLocation || FOZ_DO_IGUACU_CENTER;
-      
-      const mapOptions: google.maps.MapOptions = {
-        center: mapCenter,
-        zoom: DEFAULT_MAP_CONFIG.zoom,
-        mapTypeControl: false,
-        fullscreenControl: false,
-        streetViewControl: false,
-        styles: MAP_STYLES
-      };
-      
-      const map = new window.google.maps.Map(mapRef.current, mapOptions);
-      setMapInstance(map);
-      setMapLoaded(true);
-    };
-    
-    // Load Google Maps script if not already loaded
-    if (!window.google) {
-      // In a real application, you would use an API key
-      // For demonstration, we'll use a placeholder
-      const apiKey = '';
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap`;
-      script.async = true;
-      script.defer = true;
-      
-      window.initMap = initMap;
-      document.head.appendChild(script);
-      
-      return () => {
-        document.head.removeChild(script);
-        delete window.initMap;
-      };
-    } else {
-      initMap();
+    let isMounted = true;
+
+    async function initMap() {
+      try {
+        const maps = await loadGoogleMaps();
+        if (!isMounted || !mapRef.current || mapInstanceRef.current) return;
+
+        // Default to Foz do Iguaçu region where the panels are located
+        const mapCenter = selectedLocation || FOZ_DO_IGUACU_CENTER;
+
+        const mapOptions: google.maps.MapOptions = {
+          center: mapCenter,
+          zoom: DEFAULT_MAP_CONFIG.zoom,
+          mapTypeControl: false,
+          fullscreenControl: false,
+          streetViewControl: false,
+          styles: MAP_STYLES,
+        };
+
+        const map = new maps.Map(mapRef.current, mapOptions);
+        mapInstanceRef.current = map;
+        setMapLoaded(true);
+      } catch (e) {
+        console.error('[PanelMap] Failed to load Google Maps:', e);
+        setMapLoaded(false);
+      }
     }
-  }, [mapRef, mapInstance, selectedLocation]);
-  
+
+    initMap();
+
+    return () => {
+      isMounted = false;
+      markersRef.current.forEach((m) => m.setMap(null));
+      markersRef.current = [];
+      mapInstanceRef.current = null;
+    };
+  }, [selectedLocation]);
+
   // Update markers when panels or map changes
   useEffect(() => {
-    if (!mapInstance || !mapLoaded) return;
-    
+    const map = mapInstanceRef.current;
+    if (!map || !mapLoaded) return;
+
     // Clear previous markers
-    markers.forEach(marker => marker.setMap(null));
+    markersRef.current.forEach((marker) => marker.setMap(null));
+    markersRef.current = [];
+
     const newMarkers: google.maps.Marker[] = [];
-    
+
     // Add markers for each panel
-    panels.forEach(panel => {
-      if (panel.buildings && panel.buildings.latitude && panel.buildings.longitude) {
-        // Check if condominiumProfile is string or object and extract profile type
-        const isCommercial = typeof panel.buildings?.condominiumProfile === 'string' 
-          ? panel.buildings.condominiumProfile === 'commercial'
-          : panel.buildings?.condominiumProfile?.type === 'commercial';
-        
-        // Create custom marker with different color based on profile
-        const markerIcon = {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          fillColor: isCommercial ? '#00FFAB' : '#3C1361',
-          fillOpacity: 0.8,
-          strokeWeight: 1,
-          strokeColor: '#ffffff',
-          scale: 10
-        };
-        
-        const marker = new window.google.maps.Marker({
-          position: { 
-            lat: panel.buildings.latitude, 
-            lng: panel.buildings.longitude 
-          },
-          map: mapInstance,
-          title: panel.buildings.nome,
-          icon: markerIcon,
-          animation: window.google.maps.Animation.DROP
+    panels.forEach((panel) => {
+      const b = panel.buildings as any;
+      const lat = b?.manual_latitude ?? b?.latitude;
+      const lng = b?.manual_longitude ?? b?.longitude;
+      if (!lat || !lng) return;
+
+      // Check if condominiumProfile is string or object and extract profile type
+      const isCommercial =
+        typeof b?.condominiumProfile === 'string'
+          ? b.condominiumProfile === 'commercial'
+          : b?.condominiumProfile?.type === 'commercial';
+
+      // Create custom marker with different color based on profile
+      const markerIcon: google.maps.Symbol = {
+        path: google.maps.SymbolPath.CIRCLE,
+        fillColor: isCommercial ? '#00FFAB' : '#3C1361',
+        fillOpacity: 0.8,
+        strokeWeight: 1,
+        strokeColor: '#ffffff',
+        scale: 10,
+      };
+
+      const marker = new google.maps.Marker({
+        position: { lat, lng },
+        map,
+        title: b?.nome,
+        icon: markerIcon,
+        animation: google.maps.Animation.DROP,
+      });
+
+      marker.addListener('click', () => {
+        const infoWindow = new google.maps.InfoWindow({
+          content: `<div style="padding:8px;font-family:system-ui,-apple-system,sans-serif;">
+            <div style="font-weight:700;">${b?.nome ?? ''}</div>
+            <div style="margin-top:4px;font-size:12px;color:#6b7280;">${b?.endereco ?? ''}${b?.bairro ? `, ${b.bairro}` : ''}</div>
+          </div>`,
         });
-        
-        // Add click event to marker
-        marker.addListener('click', () => {
-          // Show info window
-          const infoWindow = new window.google.maps.InfoWindow({
-            content: `<div class="p-2">
-              <h3 class="font-bold">${panel.buildings.nome}</h3>
-              <p>${panel.buildings.endereco}, ${panel.buildings.bairro}</p>
-              <p class="text-sm text-[#3C1361] font-semibold mt-1">
-                ${isCommercial ? 'Comercial' : 'Residencial'}
-              </p>
-            </div>`
-          });
-          
-          infoWindow.open(mapInstance, marker);
-          
-          // Call onSelectPanel if provided
-          if (onSelectPanel) {
-            onSelectPanel(panel);
-          }
-        });
-        
-        newMarkers.push(marker);
-      }
+
+        infoWindow.open({ anchor: marker, map });
+
+        if (onSelectPanel) onSelectPanel(panel);
+      });
+
+      newMarkers.push(marker);
     });
-    
-    setMarkers(newMarkers);
-    
+
+    markersRef.current = newMarkers;
+
     // Center map on selected location if provided
     if (selectedLocation) {
-      mapInstance.setCenter(selectedLocation);
-      mapInstance.setZoom(14);
+      map.setCenter(selectedLocation);
+      map.setZoom(14);
     }
-    
-  }, [panels, mapInstance, mapLoaded, selectedLocation, onSelectPanel]);
-  
+  }, [panels, mapLoaded, selectedLocation, onSelectPanel]);
+
   return (
-    <div className="w-full rounded-xl overflow-hidden shadow-md bg-gray-100">
+    <div className="relative w-full rounded-xl overflow-hidden shadow-md bg-gray-100">
       {!mapLoaded && (
         <div className="h-64 w-full flex items-center justify-center bg-gray-100">
           <div className="flex flex-col items-center">
@@ -156,10 +138,12 @@ const PanelMap: React.FC<PanelMapProps> = ({
           </div>
         </div>
       )}
-      <div 
-        ref={mapRef} 
+
+      <div
+        ref={mapRef}
         className={`h-64 w-full transition-opacity duration-300 ${mapLoaded ? 'opacity-100' : 'opacity-0'}`}
       />
+
       {panels.length === 0 && mapLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80">
           <div className="text-center p-4">
@@ -173,3 +157,4 @@ const PanelMap: React.FC<PanelMapProps> = ({
 };
 
 export default PanelMap;
+
