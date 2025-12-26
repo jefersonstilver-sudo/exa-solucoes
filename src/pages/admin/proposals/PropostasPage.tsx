@@ -857,13 +857,11 @@ const PropostasPage = () => {
                           <span>{proposal.selected_buildings?.length || 0} prédio{(proposal.selected_buildings?.length || 0) !== 1 ? 's' : ''}</span>
                           <span>•</span>
                           <span className="font-semibold text-foreground">
-                            {proposal.payment_type === 'custom' && proposal.custom_installments?.length 
-                              ? formatCurrency(proposal.custom_installments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0))
-                              : proposal.payment_type === 'pix_avista' || proposal.payment_type === 'cartao'
-                                ? formatCurrency(proposal.cash_total_value)
-                                : formatCurrency(proposal.fidel_monthly_value)
+                            {proposal.payment_type === 'pix_avista' || proposal.payment_type === 'cartao'
+                              ? formatCurrency(proposal.cash_total_value)
+                              : formatCurrency(proposal.fidel_monthly_value)
                             }
-                            {proposal.payment_type !== 'custom' && proposal.payment_type !== 'pix_avista' && proposal.payment_type !== 'cartao' && (
+                            {proposal.payment_type !== 'pix_avista' && proposal.payment_type !== 'cartao' && (
                               <span className="text-[10px] text-muted-foreground font-normal">/mês</span>
                             )}
                           </span>
