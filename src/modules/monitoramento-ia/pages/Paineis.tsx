@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, Maximize2, Clock } from 'lucide-react';
+import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, Maximize2, Clock, MapPin } from 'lucide-react';
 import {
   Device,
   calculateDeviceStats,
@@ -25,6 +25,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { MobileHeader } from '../components/MobileHeader';
 import { PeriodSelector, PeriodType } from '../components/PeriodSelector';
 import { ConfigHorarioDialog } from '@/components/admin/paineis-exa/ConfigHorarioDialog';
+import { PaineisMapModal } from '../components/paineis/PaineisMapModal';
 
 // Compact Stat Icon Component for mobile
 const CompactStatIcon = ({ icon: Icon, value, color, label }: { 
@@ -121,6 +122,7 @@ export const PaineisPage = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
   const [configHorarioOpen, setConfigHorarioOpen] = useState(false);
+  const [isMapOpen, setIsMapOpen] = useState(false);
   
   // Hook de alertas offline
   const { offlineDevices, activeAlerts, dismissAlert } = useOfflineAlerts();
@@ -272,6 +274,14 @@ export const PaineisPage = () => {
                 customStartDate={customStartDate}
                 customEndDate={customEndDate}
               />
+              {/* Botão Mapa */}
+              <button
+                onClick={() => setIsMapOpen(true)}
+                title="Ver Mapa de Painéis"
+                className="p-2 lg:p-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-lg transition-all shadow-sm"
+              >
+                <MapPin className="w-4 h-4" />
+              </button>
               {/* Botão Configurar Horário de Funcionamento */}
               <button
                 onClick={() => setConfigHorarioOpen(true)}
@@ -495,6 +505,18 @@ export const PaineisPage = () => {
         onOpenChange={setConfigHorarioOpen}
         paineis={devices}
       />
+
+      {/* Modal do Mapa */}
+      <AnimatePresence>
+        {isMapOpen && (
+          <PaineisMapModal
+            isOpen={isMapOpen}
+            onClose={() => setIsMapOpen(false)}
+            eventsMap={periodEventsMap}
+            periodLabel={getPeriodLabel(period)}
+          />
+        )}
+      </AnimatePresence>
       </div>
     </div>
   );
