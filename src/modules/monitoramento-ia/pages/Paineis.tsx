@@ -192,7 +192,7 @@ export const PaineisPage = () => {
 
   const stats = calculateDeviceStats(devices);
 
-  // Auto-sync do AnyDesk a cada 4 segundos (em background)
+  // Auto-sync do AnyDesk a cada 2 minutos (em background)
   useEffect(() => {
     const syncInterval = setInterval(async () => {
       try {
@@ -212,7 +212,7 @@ export const PaineisPage = () => {
       } catch (error) {
         console.error('[AUTO-SYNC] Erro na sincronização automática:', error);
       }
-    }, 4000); // 4 segundos
+    }, 120000); // 2 minutos
 
     return () => clearInterval(syncInterval);
   }, []);
