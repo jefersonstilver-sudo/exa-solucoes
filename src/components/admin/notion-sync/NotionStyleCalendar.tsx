@@ -75,8 +75,8 @@ const getStatusColor = (status: string | null) => {
   return { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30' };
 };
 
-// All work-related statuses (for sidebar and filters) - INCLUDES Ativo/Online
-const WORK_STATUSES = [
+// All work-related statuses for CALENDAR (includes Ativo/Online)
+const CALENDAR_STATUSES = [
   'Ativo',
   'Online',
   'Instalação', 
@@ -89,11 +89,31 @@ const WORK_STATUSES = [
   'Primeira Reunião'
 ];
 
-// Helper to check if a status matches any work status (normalized comparison)
-const matchesWorkStatus = (status: string | null): boolean => {
+// Status de trabalho PENDENTE (para sidebar "Aguardando Agendamento")
+// NÃO inclui Ativo/Online - esses são prédios já operacionais
+const PENDING_WORK_STATUSES = [
+  'Instalação', 
+  'Instalação Internet', 
+  'Subir Nuc', 
+  'Troca painel', 
+  'Manutenção', 
+  'Manut',
+  'Visita Técnica',
+  'Primeira Reunião'
+];
+
+// Helper to check if a status matches any calendar status (normalized comparison)
+const matchesCalendarStatus = (status: string | null): boolean => {
   if (!status) return false;
   const normalized = normalizeStatus(status);
-  return WORK_STATUSES.some(ws => normalizeStatus(ws) === normalized);
+  return CALENDAR_STATUSES.some(ws => normalizeStatus(ws) === normalized);
+};
+
+// Helper to check if a status matches pending work statuses (excludes Ativo/Online)
+const matchesPendingWorkStatus = (status: string | null): boolean => {
+  if (!status) return false;
+  const normalized = normalizeStatus(status);
+  return PENDING_WORK_STATUSES.some(ws => normalizeStatus(ws) === normalized);
 };
 
 // Building card inside calendar cell
@@ -136,7 +156,7 @@ const PendingWorkItem = ({ building }: { building: Building }) => {
 
 export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(WORK_STATUSES);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(CALENDAR_STATUSES);
   const [showOnlyWithDate, setShowOnlyWithDate] = useState(false);
 
   // Filter buildings based on selected statuses (with normalized comparison)
@@ -171,10 +191,10 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
     return map;
   }, [filteredBuildings]);
 
-  // Buildings pending work (no date scheduled) - uses normalized comparison
+  // Buildings pending work (no date scheduled) - uses PENDING statuses only (excludes Ativo/Online)
   const pendingWork = useMemo(() => {
     return buildings.filter(b => 
-      matchesWorkStatus(b.notion_status) &&
+      matchesPendingWorkStatus(b.notion_status) &&
       !b.notion_data_trabalho
     );
   }, [buildings]);
@@ -198,7 +218,7 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
     );
   };
 
-  const selectAllStatuses = () => setSelectedStatuses(WORK_STATUSES);
+  const selectAllStatuses = () => setSelectedStatuses(CALENDAR_STATUSES);
   const clearAllStatuses = () => setSelectedStatuses([]);
 
   // Count buildings per status for the filter
@@ -259,7 +279,7 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
               >
                 <Filter className="h-3.5 w-3.5 mr-1.5" />
                 Status
-                {selectedStatuses.length < WORK_STATUSES.length && (
+                {selectedStatuses.length < CALENDAR_STATUSES.length && (
                   <Badge className="ml-1.5 bg-blue-500/20 text-blue-400 text-[9px] px-1">
                     {selectedStatuses.length}
                   </Badge>
@@ -288,7 +308,7 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
                 </Button>
               </div>
               <DropdownMenuSeparator className="bg-gray-700" />
-              {WORK_STATUSES.map(status => {
+              {CALENDAR_STATUSES.map(status => {
                 const colors = getStatusColor(status);
                 return (
                   <DropdownMenuCheckboxItem
@@ -325,7 +345,7 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
       </div>
 
       {/* Active filters display */}
-      {selectedStatuses.length < WORK_STATUSES.length && selectedStatuses.length > 0 && (
+      {selectedStatuses.length < CALENDAR_STATUSES.length && selectedStatuses.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {selectedStatuses.map(status => {
             const colors = getStatusColor(status);
