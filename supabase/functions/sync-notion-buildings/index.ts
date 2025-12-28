@@ -33,45 +33,50 @@ interface NotionPage {
 function mapNotionStatus(notionStatus: string | null): string {
   if (!notionStatus) return 'lead';
   
-  const statusLower = notionStatus.toLowerCase().trim();
+  // Remove emojis and normalize the status string
+  const statusClean = notionStatus
+    .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F100}-\u{1F1FF}]|[\u{1F200}-\u{1F2FF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|⚪|🟢|🔴|🟡|🟣|🔵|⚫|🟤|🟠/gu, '')
+    .trim()
+    .toLowerCase();
   
-  // Status mapping based on Notion values - now includes ALL Notion statuses
-  switch (statusLower) {
+  console.log(`[SYNC-NOTION] 🔄 Mapping status: "${notionStatus}" -> cleaned: "${statusClean}"`);
+  
+  // Status mapping based on Notion values - includes ALL Notion statuses
+  switch (statusClean) {
     case 'online':
-    case '🟢 online':
+    case 'ativo':
       return 'ativo';
     case 'offline':
-    case '🔴 offline':
       return 'inativo';
     case 'manut':
     case 'manutenção':
-    case '🟡 manut':
+    case 'manutencao':
       return 'manutencao';
     case 'instalação':
-    case '🟡 instalação':
+    case 'instalacao':
       return 'instalacao';
     case 'subir nuc':
-    case '🔴 subir nuc':
       return 'subir_nuc';
     case 'instalação internet':
-    case '🟣 instalação internet':
+    case 'instalacao internet':
       return 'instalacao_internet';
     case 'troca painel':
-    case '🔴 troca painel':
       return 'troca_painel';
     case 'primeira reunião':
-    case '⚪ primeira reunião':
+    case 'primeira reuniao':
       return 'primeira_reuniao';
     case 'visita técnica':
-    case '🔵 visita técnica':
+    case 'visita tecnica':
       return 'visita_tecnica';
     case 'interesse':
     case 'lead':
-    case '⚪ interesse':
       return 'lead';
+    case 'cancelado':
+    case 'encerrado':
+      return 'inativo';
     default:
-      console.log(`[SYNC-NOTION] ⚠️ Unknown status: ${notionStatus}, defaulting to 'lead'`);
-      return 'lead';
+      console.log(`[SYNC-NOTION] ⚠️ Unknown status: "${notionStatus}" (cleaned: "${statusClean}"), defaulting to 'ativo'`);
+      return 'ativo';
   }
 }
 
