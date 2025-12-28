@@ -28,6 +28,7 @@ interface Building {
   notion_fotos: any;
   imagem_principal: string | null;
   notion_data_trabalho: string | null;
+  notion_horario_trabalho: string | null;
 }
 
 // Status groupings matching Notion board - DARK THEME
@@ -186,14 +187,13 @@ const SyncNotionPage = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [logsOpen, setLogsOpen] = useState(false);
 
-  // Fetch buildings with notion data including photos and work date
+  // Fetch buildings with notion data including photos, work date AND work time
   const { data: buildings, isLoading: loadingBuildings } = useQuery({
     queryKey: ['notion-buildings'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('buildings')
-        .select('id, nome, endereco, bairro, status, notion_status, notion_page_id, notion_last_synced_at, notion_oti, notion_internal_id, numero_unidades, publico_estimado, notion_fotos, imagem_principal, notion_data_trabalho')
-        .not('notion_page_id', 'is', null)
+        .select('id, nome, endereco, bairro, status, notion_status, notion_page_id, notion_last_synced_at, notion_oti, notion_internal_id, numero_unidades, publico_estimado, notion_fotos, imagem_principal, notion_data_trabalho, notion_horario_trabalho')
         .order('nome');
       
       if (error) throw error;
