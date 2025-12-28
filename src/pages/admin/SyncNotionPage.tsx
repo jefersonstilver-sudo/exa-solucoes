@@ -3,13 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Building2, Clock, AlertCircle, CheckCircle, Loader2, Wrench, Users, Zap, Wifi, ChevronLeft, ChevronRight, CalendarDays, List } from 'lucide-react';
+import { RefreshCw, Building2, Clock, AlertCircle, CheckCircle, Loader2, Wrench, Users, Zap, Wifi } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, addMonths, subMonths } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
 import { BuildingColumnVisibility } from '@/components/admin/buildings/BuildingColumnVisibility';
+import { NotionStyleCalendar } from '@/components/admin/notion-sync/NotionStyleCalendar';
 
 interface Building {
   id: string;
@@ -73,8 +74,6 @@ const STATUS_GROUPS = {
   }
 };
 
-// Statuses that need maintenance work
-const MAINTENANCE_STATUSES = ['Instalação Internet', 'Instalação', 'Subir Nuc', 'Troca painel', 'Manutenção'];
 
 // Building Card Component
 const BuildingCard = ({ building, badgeColor }: { building: Building; badgeColor: string }) => {
@@ -181,177 +180,6 @@ const StatusSection = ({
   );
 };
 
-// Calendar Section Component
-const CalendarSection = ({ buildings }: { buildings: Building[] }) => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-
-  // Group buildings by work date
-  const buildingsByDate = useMemo(() => {
-    const map = new Map<string, Building[]>();
-    buildings.forEach(b => {
-      if (b.notion_data_trabalho) {
-        const dateKey = b.notion_data_trabalho.split('T')[0]; // Get just the date part
-        if (!map.has(dateKey)) map.set(dateKey, []);
-        map.get(dateKey)!.push(b);
-      }
-    });
-    return map;
-  }, [buildings]);
-
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-
-  // Get weekday names
-  const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-
-  // Get leading empty cells for the first week
-  const leadingEmptyCells = monthStart.getDay();
-
-  return (
-    <div>
-      {/* Month Navigation */}
-      <div className="flex items-center justify-center gap-1 mb-4">
-        <Button 
-          size="sm" 
-          variant="ghost" 
-          className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-white/10"
-          onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <span className="text-white text-sm font-medium min-w-[120px] text-center">
-          {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
-        </span>
-        <Button 
-          size="sm" 
-          variant="ghost" 
-          className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-white/10"
-          onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Weekday Headers */}
-      <div className="grid grid-cols-7 gap-1 mb-1">
-        {weekDays.map(day => (
-          <div key={day} className="text-center text-[10px] text-gray-500 font-medium py-1">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-1">
-        {/* Leading empty cells */}
-        {Array.from({ length: leadingEmptyCells }).map((_, i) => (
-          <div key={`empty-${i}`} className="aspect-square" />
-        ))}
-        
-        {/* Days */}
-        {daysInMonth.map(day => {
-          const dateKey = format(day, 'yyyy-MM-dd');
-          const dayBuildings = buildingsByDate.get(dateKey) || [];
-          const hasEvents = dayBuildings.length > 0;
-          const isTodayDate = isToday(day);
-
-          return (
-            <div 
-              key={dateKey}
-              className={`
-                aspect-square rounded-lg p-1 flex flex-col items-center justify-start cursor-pointer
-                transition-all duration-200
-                ${hasEvents ? 'bg-blue-600/20 hover:bg-blue-600/30' : 'hover:bg-white/5'}
-                ${isTodayDate ? 'ring-1 ring-blue-400' : ''}
-              `}
-              title={dayBuildings.map(b => b.nome).join('\n')}
-            >
-              <span className={`text-[11px] ${isTodayDate ? 'text-blue-400 font-bold' : 'text-gray-400'}`}>
-                {format(day, 'd')}
-              </span>
-              {hasEvents && (
-                <div className="flex flex-wrap gap-0.5 mt-0.5 justify-center">
-                  {dayBuildings.slice(0, 3).map((b, idx) => (
-                    <div 
-                      key={b.id}
-                      className="w-1.5 h-1.5 rounded-full bg-blue-500"
-                      title={b.nome}
-                    />
-                  ))}
-                  {dayBuildings.length > 3 && (
-                    <span className="text-[8px] text-blue-400">+{dayBuildings.length - 3}</span>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Legend */}
-      <div className="mt-3 pt-3 border-t border-gray-600/30">
-        <div className="flex items-center gap-2 text-[10px] text-gray-400">
-          <div className="w-2 h-2 rounded-full bg-blue-500" />
-          <span>Trabalho agendado</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Maintenance List Component - Buildings WITHOUT work date scheduled (URGENT)
-const MaintenanceList = ({ buildings }: { buildings: Building[] }) => {
-  // Filter buildings that need work BUT don't have a scheduled date
-  const pendingWork = useMemo(() => {
-    return buildings.filter(b => 
-      MAINTENANCE_STATUSES.includes(b.notion_status || '') &&
-      !b.notion_data_trabalho // Work date is EMPTY
-    );
-  }, [buildings]);
-
-  return (
-    <div>
-      {/* Subtitle */}
-      <p className="text-[10px] text-gray-400 mb-3">
-        Prédios aguardando agendamento de trabalho
-      </p>
-
-      {/* List */}
-      <div className="space-y-2 max-h-[350px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
-        {pendingWork.length === 0 ? (
-          <div className="text-center py-6 text-gray-500">
-            <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-xs">Todos os trabalhos agendados</p>
-          </div>
-        ) : (
-          pendingWork.map(building => (
-            <div 
-              key={building.id} 
-              className="flex items-center justify-between p-2.5 bg-[#3D3D3D] rounded-lg hover:bg-[#454545] transition-colors cursor-pointer"
-            >
-              <div className="flex-1 min-w-0">
-                <span className="text-white text-sm font-medium truncate block">{building.nome}</span>
-                <span className="text-gray-400 text-[10px] truncate block">{building.bairro}</span>
-              </div>
-              <Badge 
-                className={`text-[9px] ml-2 flex-shrink-0 ${
-                  building.notion_status === 'Subir Nuc' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                  building.notion_status === 'Manutenção' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
-                  building.notion_status === 'Troca painel' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                  building.notion_status === 'Instalação' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
-                  'bg-purple-500/20 text-purple-400 border-purple-500/30'
-                }`}
-              >
-                {building.notion_status}
-              </Badge>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-};
 
 const SyncNotionPage = () => {
   const queryClient = useQueryClient();
@@ -488,29 +316,9 @@ const SyncNotionPage = () => {
             <StatusSection group={STATUS_GROUPS.instalacaoInternet} buildings={groupedBuildings.instalacaoInternet} />
           </div>
 
-          {/* Calendar + Maintenance List - Unified Container */}
-          <div className="bg-[#252525] rounded-2xl p-4 mt-6">
-            {/* Header with tabs */}
-            <div className="flex items-center gap-6 mb-4 border-b border-gray-700 pb-3">
-              <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-white" />
-                <h2 className="text-white font-semibold text-sm">AGENDAMENTO</h2>
-              </div>
-              <div className="flex items-center gap-2">
-                <List className="h-4 w-4 text-gray-400" />
-                <h2 className="text-gray-400 font-semibold text-sm">MANUTENÇÃO</h2>
-              </div>
-            </div>
-            
-            {/* Two columns side by side */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2">
-                <CalendarSection buildings={buildings || []} />
-              </div>
-              <div>
-                <MaintenanceList buildings={buildings || []} />
-              </div>
-            </div>
+          {/* Notion Style Calendar */}
+          <div className="mt-6">
+            <NotionStyleCalendar buildings={buildings || []} />
           </div>
         </>
       )}
