@@ -35,7 +35,7 @@ function mapNotionStatus(notionStatus: string | null): string {
   
   const statusLower = notionStatus.toLowerCase().trim();
   
-  // Status mapping based on Notion values
+  // Status mapping based on Notion values - now includes ALL Notion statuses
   switch (statusLower) {
     case 'online':
     case '🟢 online':
@@ -50,6 +50,21 @@ function mapNotionStatus(notionStatus: string | null): string {
     case 'instalação':
     case '🟡 instalação':
       return 'instalacao';
+    case 'subir nuc':
+    case '🔴 subir nuc':
+      return 'subir_nuc';
+    case 'instalação internet':
+    case '🟣 instalação internet':
+      return 'instalacao_internet';
+    case 'troca painel':
+    case '🔴 troca painel':
+      return 'troca_painel';
+    case 'primeira reunião':
+    case '⚪ primeira reunião':
+      return 'primeira_reuniao';
+    case 'visita técnica':
+    case '🔵 visita técnica':
+      return 'visita_tecnica';
     case 'interesse':
     case 'lead':
     case '⚪ interesse':
@@ -121,9 +136,24 @@ function mapNotionToBuilding(page: NotionPage): Record<string, any> {
   const notionFotos = props['Fotos']?.files?.map(f => f.file?.url || f.external?.url).filter(Boolean) || [];
   const notionTermoAceite = props['Termo de Aceite']?.files || null;
   
-  // Date fields
+  // Date fields - extract date and time separately
+  const dataTrabalhoRaw = props['Data Trabalho']?.date?.start || null;
+  let notionDataTrabalho: string | null = null;
+  let notionHorarioTrabalho: string | null = null;
+  
+  if (dataTrabalhoRaw) {
+    // Check if it has time component (ISO format with T)
+    if (dataTrabalhoRaw.includes('T')) {
+      const [datePart, timePart] = dataTrabalhoRaw.split('T');
+      notionDataTrabalho = datePart;
+      // Extract time in HH:MM format
+      notionHorarioTrabalho = timePart.slice(0, 5);
+    } else {
+      notionDataTrabalho = dataTrabalhoRaw;
+    }
+  }
+  
   const notionInstalado = props['instalado']?.date?.start || null;
-  const notionDataTrabalho = props['Data Trabalho']?.date?.start || null;
   const notionOutDate = props['Out 2025']?.date?.start || null;
   
   // Unique ID field
@@ -170,6 +200,7 @@ function mapNotionToBuilding(page: NotionPage): Record<string, any> {
     notion_termo_aceite: notionTermoAceite,
     notion_instalado: notionInstalado,
     notion_data_trabalho: notionDataTrabalho,
+    notion_horario_trabalho: notionHorarioTrabalho,
     notion_out_date: notionOutDate,
     notion_internal_id: notionInternalId,
   };

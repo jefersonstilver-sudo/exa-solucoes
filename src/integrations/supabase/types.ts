@@ -1020,6 +1020,7 @@ export type Database = {
           notion_data_trabalho: string | null
           notion_email: string | null
           notion_fotos: Json | null
+          notion_horario_trabalho: string | null
           notion_instalado: string | null
           notion_internal_id: number | null
           notion_internet: string | null
@@ -1089,6 +1090,7 @@ export type Database = {
           notion_data_trabalho?: string | null
           notion_email?: string | null
           notion_fotos?: Json | null
+          notion_horario_trabalho?: string | null
           notion_instalado?: string | null
           notion_internal_id?: number | null
           notion_internet?: string | null
@@ -1158,6 +1160,7 @@ export type Database = {
           notion_data_trabalho?: string | null
           notion_email?: string | null
           notion_fotos?: Json | null
+          notion_horario_trabalho?: string | null
           notion_instalado?: string | null
           notion_internal_id?: number | null
           notion_internet?: string | null

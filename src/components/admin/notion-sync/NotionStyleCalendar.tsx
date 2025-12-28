@@ -3,7 +3,15 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, addMonths
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Building2, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Building2, CheckCircle, Filter, X, Clock } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
 
 interface Building {
   id: string;
@@ -21,6 +29,7 @@ interface Building {
   notion_fotos: any;
   imagem_principal: string | null;
   notion_data_trabalho: string | null;
+  notion_horario_trabalho?: string | null;
 }
 
 interface NotionStyleCalendarProps {
@@ -30,21 +39,33 @@ interface NotionStyleCalendarProps {
 // Status colors for calendar cards
 const STATUS_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   'Ativo': { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30' },
+  'Online': { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30' },
   'Instalação': { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
   'Instalação Internet': { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' },
   'Subir Nuc': { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' },
   'Manutenção': { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' },
+  'Manut': { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' },
   'Troca painel': { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' },
   'Primeira Reunião': { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30' },
   'Visita Técnica': { bg: 'bg-cyan-500/20', text: 'text-cyan-400', border: 'border-cyan-500/30' },
+  'Offline': { bg: 'bg-gray-600/20', text: 'text-gray-500', border: 'border-gray-600/30' },
 };
 
 const getStatusColor = (status: string | null) => {
   return STATUS_COLORS[status || ''] || { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30' };
 };
 
-// Statuses that need maintenance work
-const MAINTENANCE_STATUSES = ['Instalação Internet', 'Instalação', 'Subir Nuc', 'Troca painel', 'Manutenção'];
+// All work-related statuses (for sidebar and filters)
+const WORK_STATUSES = [
+  'Instalação', 
+  'Instalação Internet', 
+  'Subir Nuc', 
+  'Troca painel', 
+  'Manutenção', 
+  'Manut',
+  'Visita Técnica',
+  'Primeira Reunião'
+];
 
 // Building card inside calendar cell
 const CalendarBuildingCard = ({ building }: { building: Building }) => {
@@ -52,10 +73,15 @@ const CalendarBuildingCard = ({ building }: { building: Building }) => {
   
   return (
     <div 
-      className={`px-1.5 py-1 rounded text-[10px] truncate cursor-pointer transition-all hover:opacity-80 ${colors.bg} ${colors.text} border ${colors.border}`}
-      title={`${building.nome} - ${building.notion_status || 'Sem status'}`}
+      className={`px-1.5 py-1 rounded text-[10px] cursor-pointer transition-all hover:opacity-80 ${colors.bg} ${colors.text} border ${colors.border}`}
+      title={`${building.nome} - ${building.notion_status || 'Sem status'}${building.notion_horario_trabalho ? ` às ${building.notion_horario_trabalho}` : ''}`}
     >
-      <span className="font-medium truncate block">{building.nome}</span>
+      <div className="flex items-center gap-1">
+        {building.notion_horario_trabalho && (
+          <span className="font-bold flex-shrink-0">{building.notion_horario_trabalho}</span>
+        )}
+        <span className="font-medium truncate">{building.nome}</span>
+      </div>
     </div>
   );
 };
@@ -81,24 +107,43 @@ const PendingWorkItem = ({ building }: { building: Building }) => {
 
 export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(WORK_STATUSES);
+  const [showOnlyWithDate, setShowOnlyWithDate] = useState(false);
+
+  // Filter buildings based on selected statuses
+  const filteredBuildings = useMemo(() => {
+    return buildings.filter(b => {
+      const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(b.notion_status || '');
+      const matchesDateFilter = !showOnlyWithDate || b.notion_data_trabalho;
+      return matchesStatus && matchesDateFilter;
+    });
+  }, [buildings, selectedStatuses, showOnlyWithDate]);
 
   // Group buildings by work date
   const buildingsByDate = useMemo(() => {
     const map = new Map<string, Building[]>();
-    buildings.forEach(b => {
+    filteredBuildings.forEach(b => {
       if (b.notion_data_trabalho) {
         const dateKey = b.notion_data_trabalho.split('T')[0];
         if (!map.has(dateKey)) map.set(dateKey, []);
         map.get(dateKey)!.push(b);
       }
     });
+    // Sort buildings by time within each day
+    map.forEach((dayBuildings) => {
+      dayBuildings.sort((a, b) => {
+        const timeA = a.notion_horario_trabalho || '99:99';
+        const timeB = b.notion_horario_trabalho || '99:99';
+        return timeA.localeCompare(timeB);
+      });
+    });
     return map;
-  }, [buildings]);
+  }, [filteredBuildings]);
 
   // Buildings pending work (no date scheduled)
   const pendingWork = useMemo(() => {
     return buildings.filter(b => 
-      MAINTENANCE_STATUSES.includes(b.notion_status || '') &&
+      WORK_STATUSES.includes(b.notion_status || '') &&
       !b.notion_data_trabalho
     );
   }, [buildings]);
@@ -113,6 +158,27 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
   const weekDays = ['dom.', 'seg.', 'ter.', 'qua.', 'qui.', 'sex.', 'sáb.'];
 
   const goToToday = () => setCurrentMonth(new Date());
+
+  const toggleStatus = (status: string) => {
+    setSelectedStatuses(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status)
+        : [...prev, status]
+    );
+  };
+
+  const selectAllStatuses = () => setSelectedStatuses(WORK_STATUSES);
+  const clearAllStatuses = () => setSelectedStatuses([]);
+
+  // Count buildings per status for the filter
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    buildings.forEach(b => {
+      const status = b.notion_status || 'Sem status';
+      counts[status] = (counts[status] || 0) + 1;
+    });
+    return counts;
+  }, [buildings]);
 
   return (
     <div className="bg-[#252525] rounded-2xl p-4">
@@ -150,7 +216,101 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
             Hoje
           </Button>
         </div>
+
+        {/* Filters */}
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 px-3 text-xs bg-transparent border-gray-600 text-gray-300 hover:bg-white/10 hover:text-white"
+              >
+                <Filter className="h-3.5 w-3.5 mr-1.5" />
+                Status
+                {selectedStatuses.length < WORK_STATUSES.length && (
+                  <Badge className="ml-1.5 bg-blue-500/20 text-blue-400 text-[9px] px-1">
+                    {selectedStatuses.length}
+                  </Badge>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-[#2D2D2D] border-gray-700 min-w-[200px]">
+              <DropdownMenuLabel className="text-gray-400 text-xs">Filtrar por Status</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-gray-700" />
+              <div className="flex gap-1 px-2 py-1">
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="h-6 text-[10px] text-gray-400 hover:text-white"
+                  onClick={selectAllStatuses}
+                >
+                  Todos
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="h-6 text-[10px] text-gray-400 hover:text-white"
+                  onClick={clearAllStatuses}
+                >
+                  Limpar
+                </Button>
+              </div>
+              <DropdownMenuSeparator className="bg-gray-700" />
+              {WORK_STATUSES.map(status => {
+                const colors = getStatusColor(status);
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={status}
+                    checked={selectedStatuses.includes(status)}
+                    onCheckedChange={() => toggleStatus(status)}
+                    className="text-white text-xs cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      <div className={`w-2 h-2 rounded ${colors.bg} ${colors.border} border`} />
+                      <span className="flex-1">{status}</span>
+                      <span className="text-gray-500 text-[10px]">{statusCounts[status] || 0}</span>
+                    </div>
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button
+            size="sm"
+            variant={showOnlyWithDate ? "default" : "outline"}
+            className={`h-8 px-3 text-xs ${
+              showOnlyWithDate 
+                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                : 'bg-transparent border-gray-600 text-gray-300 hover:bg-white/10 hover:text-white'
+            }`}
+            onClick={() => setShowOnlyWithDate(!showOnlyWithDate)}
+          >
+            <Clock className="h-3.5 w-3.5 mr-1.5" />
+            Com Data
+          </Button>
+        </div>
       </div>
+
+      {/* Active filters display */}
+      {selectedStatuses.length < WORK_STATUSES.length && selectedStatuses.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {selectedStatuses.map(status => {
+            const colors = getStatusColor(status);
+            return (
+              <Badge 
+                key={status}
+                className={`text-[10px] cursor-pointer ${colors.bg} ${colors.text} ${colors.border}`}
+                onClick={() => toggleStatus(status)}
+              >
+                {status}
+                <X className="h-2.5 w-2.5 ml-1" />
+              </Badge>
+            );
+          })}
+        </div>
+      )}
 
       {/* Main content: Calendar + Sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -210,7 +370,7 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
           {/* Legend */}
           <div className="mt-4 pt-3 border-t border-gray-700/50">
             <div className="flex flex-wrap gap-3 text-[10px]">
-              {Object.entries(STATUS_COLORS).slice(0, 6).map(([status, colors]) => (
+              {Object.entries(STATUS_COLORS).slice(0, 8).map(([status, colors]) => (
                 <div key={status} className="flex items-center gap-1.5">
                   <div className={`w-2.5 h-2.5 rounded ${colors.bg} ${colors.border} border`} />
                   <span className="text-gray-400">{status}</span>
