@@ -36,12 +36,14 @@ interface NotionStyleCalendarProps {
   buildings: Building[];
 }
 
-// Status colors for calendar cards
+// Status colors for calendar cards - includes all possible statuses
 const STATUS_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   'Ativo': { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30' },
   'Online': { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30' },
   'Instalação': { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
+  'Instalaçao': { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' }, // accent variation
   'Instalação Internet': { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' },
+  'Instalaçao Internet': { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' }, // accent variation
   'Subir Nuc': { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' },
   'Manutenção': { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' },
   'Manut': { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' },
@@ -51,12 +53,32 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; border: string }
   'Offline': { bg: 'bg-gray-600/20', text: 'text-gray-500', border: 'border-gray-600/30' },
 };
 
-const getStatusColor = (status: string | null) => {
-  return STATUS_COLORS[status || ''] || { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30' };
+// Normalize status for comparisons (remove accents, lowercase)
+const normalizeStatus = (status: string | null): string => {
+  if (!status) return '';
+  return status
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 };
 
-// All work-related statuses (for sidebar and filters)
+const getStatusColor = (status: string | null) => {
+  if (!status) return { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30' };
+  // Direct match first
+  if (STATUS_COLORS[status]) return STATUS_COLORS[status];
+  // Try normalized match
+  const normalized = normalizeStatus(status);
+  for (const [key, value] of Object.entries(STATUS_COLORS)) {
+    if (normalizeStatus(key) === normalized) return value;
+  }
+  return { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30' };
+};
+
+// All work-related statuses (for sidebar and filters) - INCLUDES Ativo/Online
 const WORK_STATUSES = [
+  'Ativo',
+  'Online',
   'Instalação', 
   'Instalação Internet', 
   'Subir Nuc', 
@@ -66,6 +88,13 @@ const WORK_STATUSES = [
   'Visita Técnica',
   'Primeira Reunião'
 ];
+
+// Helper to check if a status matches any work status (normalized comparison)
+const matchesWorkStatus = (status: string | null): boolean => {
+  if (!status) return false;
+  const normalized = normalizeStatus(status);
+  return WORK_STATUSES.some(ws => normalizeStatus(ws) === normalized);
+};
 
 // Building card inside calendar cell
 const CalendarBuildingCard = ({ building }: { building: Building }) => {
@@ -110,10 +139,12 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(WORK_STATUSES);
   const [showOnlyWithDate, setShowOnlyWithDate] = useState(false);
 
-  // Filter buildings based on selected statuses
+  // Filter buildings based on selected statuses (with normalized comparison)
   const filteredBuildings = useMemo(() => {
     return buildings.filter(b => {
-      const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(b.notion_status || '');
+      const buildingStatusNormalized = normalizeStatus(b.notion_status);
+      const matchesStatus = selectedStatuses.length === 0 || 
+        selectedStatuses.some(selected => normalizeStatus(selected) === buildingStatusNormalized);
       const matchesDateFilter = !showOnlyWithDate || b.notion_data_trabalho;
       return matchesStatus && matchesDateFilter;
     });
@@ -140,10 +171,10 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
     return map;
   }, [filteredBuildings]);
 
-  // Buildings pending work (no date scheduled)
+  // Buildings pending work (no date scheduled) - uses normalized comparison
   const pendingWork = useMemo(() => {
     return buildings.filter(b => 
-      WORK_STATUSES.includes(b.notion_status || '') &&
+      matchesWorkStatus(b.notion_status) &&
       !b.notion_data_trabalho
     );
   }, [buildings]);

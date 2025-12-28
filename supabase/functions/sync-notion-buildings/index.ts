@@ -279,6 +279,15 @@ serve(async (req) => {
   const startTime = Date.now();
   let logId: string | null = null;
   
+  // Parse request body for force mode
+  let forceUpdate = false;
+  try {
+    const body = await req.json();
+    forceUpdate = body?.force === true;
+  } catch {
+    // No body or invalid JSON, continue with default
+  }
+  
   // Initialize Supabase client
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -288,7 +297,7 @@ serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
-    console.log('[SYNC-NOTION] 🚀 Starting Notion sync...');
+    console.log(`[SYNC-NOTION] 🚀 Starting Notion sync... (force=${forceUpdate})`);
     
     // Validate required secrets
     if (!notionApiKey || !notionDatabaseId) {
@@ -332,12 +341,14 @@ serve(async (req) => {
         const existing = existingByNotionId.get(page.id);
         
         if (existing) {
-          // Check if Notion has newer data
+          // Check if Notion has newer data OR if force mode is enabled
           const notionUpdatedAt = new Date(page.last_edited_time);
           const localNotionUpdatedAt = existing.notion_updated_at ? new Date(existing.notion_updated_at) : new Date(0);
           
-          if (notionUpdatedAt > localNotionUpdatedAt) {
-            // Notion is newer, update local
+          const shouldUpdate = forceUpdate || (notionUpdatedAt > localNotionUpdatedAt);
+          
+          if (shouldUpdate) {
+            // Notion is newer OR force update, update local
             const { error: updateError } = await supabase
               .from('buildings')
               .update({
@@ -350,7 +361,7 @@ serve(async (req) => {
               errors.push({ type: 'update', pageId: page.id, error: updateError.message });
             } else {
               updated++;
-              console.log(`[SYNC-NOTION] ✅ Updated: ${mappedData.nome}`);
+              console.log(`[SYNC-NOTION] ✅ Updated: ${mappedData.nome}${forceUpdate ? ' (forced)' : ''}`);
             }
           } else if (existing.local_updated_at && existing.notion_last_synced_at) {
             // Check if local has changes to sync back to Notion
