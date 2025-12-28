@@ -216,16 +216,18 @@ const SyncNotionPage = () => {
     }
   });
 
-  // Force sync mutation
+  // Force sync mutation - with force=true to bypass last_edited_time check
   const syncMutation = useMutation({
     mutationFn: async () => {
       setIsSyncing(true);
-      const { data, error } = await supabase.functions.invoke('sync-notion-buildings');
+      const { data, error } = await supabase.functions.invoke('sync-notion-buildings', {
+        body: { force: true } // Force update all buildings
+      });
       if (error) throw error;
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`Sincronização concluída! ${data?.created || 0} criados, ${data?.updated || 0} atualizados`);
+      toast.success(`Sincronização forçada concluída! ${data?.stats?.created || 0} criados, ${data?.stats?.updated || 0} atualizados`);
       queryClient.invalidateQueries({ queryKey: ['notion-buildings'] });
       queryClient.invalidateQueries({ queryKey: ['notion-sync-logs'] });
     },
@@ -237,13 +239,50 @@ const SyncNotionPage = () => {
     }
   });
 
-  // Group buildings by status
-  const groupedBuildings = useMemo(() => ({
-    online: buildings?.filter(b => STATUS_GROUPS.online.statuses.includes(b.notion_status || '')) || [],
-    offline: buildings?.filter(b => STATUS_GROUPS.offline.statuses.includes(b.notion_status || '')) || [],
-    instalacao: buildings?.filter(b => STATUS_GROUPS.instalacao.statuses.includes(b.notion_status || '')) || [],
-    instalacaoInternet: buildings?.filter(b => STATUS_GROUPS.instalacaoInternet.statuses.includes(b.notion_status || '')) || []
-  }), [buildings]);
+  // Group buildings by status (with normalized comparison)
+  const normalizeStatusForGroup = (status: string | null): string => {
+    if (!status) return '';
+    return status.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  };
+  
+  const groupedBuildings = useMemo(() => {
+    const normalizeAndMatch = (statuses: string[], buildingStatus: string | null) => {
+      if (!buildingStatus) return false;
+      const normalized = normalizeStatusForGroup(buildingStatus);
+      return statuses.some(s => normalizeStatusForGroup(s) === normalized);
+    };
+    
+    return {
+      online: buildings?.filter(b => normalizeAndMatch(STATUS_GROUPS.online.statuses, b.notion_status)) || [],
+      offline: buildings?.filter(b => normalizeAndMatch(STATUS_GROUPS.offline.statuses, b.notion_status)) || [],
+      instalacao: buildings?.filter(b => normalizeAndMatch(STATUS_GROUPS.instalacao.statuses, b.notion_status)) || [],
+      instalacaoInternet: buildings?.filter(b => normalizeAndMatch(STATUS_GROUPS.instalacaoInternet.statuses, b.notion_status)) || []
+    };
+  }, [buildings]);
+
+  // Diagnostic panel data - shows why buildings might not appear in calendar
+  const diagnosticData = useMemo(() => {
+    if (!buildings) return null;
+    
+    const currentMonth = new Date();
+    const currentMonthStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+    
+    const withWorkDate = buildings.filter(b => b.notion_data_trabalho);
+    const withWorkDateThisMonth = withWorkDate.filter(b => b.notion_data_trabalho?.startsWith(currentMonthStr));
+    const withWorkDateNoTime = withWorkDate.filter(b => !b.notion_horario_trabalho);
+    const notionBuildings = buildings.filter(b => b.notion_page_id);
+    const missingNotionStatus = notionBuildings.filter(b => !b.notion_status);
+    
+    return {
+      total: buildings.length,
+      fromNotion: notionBuildings.length,
+      withWorkDate: withWorkDate.length,
+      withWorkDateThisMonth: withWorkDateThisMonth.length,
+      missingTime: withWorkDateNoTime.length,
+      missingStatus: missingNotionStatus.length,
+      buildingsWithWorkDateNoTime: withWorkDateNoTime.slice(0, 5) // Show first 5
+    };
+  }, [buildings]);
 
   const lastSync = syncLogs?.[0];
   const totalBuildings = buildings?.length || 0;
@@ -320,6 +359,56 @@ const SyncNotionPage = () => {
           <div className="mt-6">
             <NotionStyleCalendar buildings={buildings || []} />
           </div>
+
+          {/* Diagnostic Panel */}
+          {diagnosticData && (
+            <div className="mt-6 bg-[#2D2D2D] rounded-xl p-4 border border-gray-700/50">
+              <div className="flex items-center gap-2 mb-4">
+                <AlertCircle className="h-5 w-5 text-amber-400" />
+                <h3 className="text-white font-semibold text-sm">Diagnóstico de Sincronização</h3>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div className="bg-[#3D3D3D] rounded-lg p-3 text-center">
+                  <div className="text-lg font-bold text-white">{diagnosticData.fromNotion}</div>
+                  <div className="text-[10px] text-gray-400">Do Notion</div>
+                </div>
+                <div className="bg-[#3D3D3D] rounded-lg p-3 text-center">
+                  <div className="text-lg font-bold text-blue-400">{diagnosticData.withWorkDate}</div>
+                  <div className="text-[10px] text-gray-400">Com Data Trabalho</div>
+                </div>
+                <div className="bg-[#3D3D3D] rounded-lg p-3 text-center">
+                  <div className="text-lg font-bold text-emerald-400">{diagnosticData.withWorkDateThisMonth}</div>
+                  <div className="text-[10px] text-gray-400">Este Mês</div>
+                </div>
+                <div className="bg-[#3D3D3D] rounded-lg p-3 text-center">
+                  <div className={`text-lg font-bold ${diagnosticData.missingTime > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                    {diagnosticData.missingTime}
+                  </div>
+                  <div className="text-[10px] text-gray-400">Sem Horário</div>
+                </div>
+              </div>
+
+              {/* Show buildings missing time */}
+              {diagnosticData.buildingsWithWorkDateNoTime.length > 0 && (
+                <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                  <div className="text-xs text-amber-400 font-medium mb-2">
+                    ⚠️ Prédios com data mas SEM horário definido no Notion:
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {diagnosticData.buildingsWithWorkDateNoTime.map(b => (
+                      <Badge key={b.id} className="bg-amber-500/20 text-amber-300 text-[10px]">
+                        {b.nome} ({b.notion_data_trabalho})
+                      </Badge>
+                    ))}
+                    {diagnosticData.missingTime > 5 && (
+                      <span className="text-[10px] text-gray-400">+{diagnosticData.missingTime - 5} mais...</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
 
