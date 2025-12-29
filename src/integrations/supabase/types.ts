@@ -5530,11 +5530,14 @@ export type Database = {
       }
       notion_tasks: {
         Row: {
+          alarme_insistente: boolean | null
+          alarme_padrao: boolean | null
           categoria: string | null
           created_at: string | null
           data: string | null
           descricao: string | null
           finalizado_por: string | null
+          hora: string | null
           id: string
           nome: string
           notion_created_time: string | null
@@ -5542,17 +5545,22 @@ export type Database = {
           notion_page_id: string
           notion_url: string | null
           prioridade: string | null
+          responsaveis_ids: string[] | null
           responsavel: string | null
           responsavel_avatar: string | null
+          silenciado: boolean | null
           status: string | null
           updated_at: string | null
         }
         Insert: {
+          alarme_insistente?: boolean | null
+          alarme_padrao?: boolean | null
           categoria?: string | null
           created_at?: string | null
           data?: string | null
           descricao?: string | null
           finalizado_por?: string | null
+          hora?: string | null
           id?: string
           nome: string
           notion_created_time?: string | null
@@ -5560,17 +5568,22 @@ export type Database = {
           notion_page_id: string
           notion_url?: string | null
           prioridade?: string | null
+          responsaveis_ids?: string[] | null
           responsavel?: string | null
           responsavel_avatar?: string | null
+          silenciado?: boolean | null
           status?: string | null
           updated_at?: string | null
         }
         Update: {
+          alarme_insistente?: boolean | null
+          alarme_padrao?: boolean | null
           categoria?: string | null
           created_at?: string | null
           data?: string | null
           descricao?: string | null
           finalizado_por?: string | null
+          hora?: string | null
           id?: string
           nome?: string
           notion_created_time?: string | null
@@ -5578,8 +5591,10 @@ export type Database = {
           notion_page_id?: string
           notion_url?: string | null
           prioridade?: string | null
+          responsaveis_ids?: string[] | null
           responsavel?: string | null
           responsavel_avatar?: string | null
+          silenciado?: boolean | null
           status?: string | null
           updated_at?: string | null
         }
@@ -8202,6 +8217,50 @@ export type Database = {
             columns: ["related_message_id"]
             isOneToOne: false
             referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_alert_logs: {
+        Row: {
+          alert_type: string
+          confirmed_by: Json | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          recipients: Json | null
+          sent_at: string | null
+          status: string | null
+          task_id: string | null
+        }
+        Insert: {
+          alert_type: string
+          confirmed_by?: Json | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          recipients?: Json | null
+          sent_at?: string | null
+          status?: string | null
+          task_id?: string | null
+        }
+        Update: {
+          alert_type?: string
+          confirmed_by?: Json | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          recipients?: Json | null
+          sent_at?: string | null
+          status?: string | null
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_alert_logs_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "notion_tasks"
             referencedColumns: ["id"]
           },
         ]

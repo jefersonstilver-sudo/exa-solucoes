@@ -547,3 +547,11 @@ verify_jwt = false
 [[cron]]
 function_name = "sync-notion-tasks"
 schedule = "*/10 * * * *"
+
+[functions.task-reminder-scheduler]
+verify_jwt = false
+
+# Task Reminder Scheduler - a cada minuto para alertas precisos
+[[cron]]
+function_name = "task-reminder-scheduler"
+schedule = "* * * * *"
