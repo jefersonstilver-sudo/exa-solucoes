@@ -16,8 +16,12 @@ export const createFilterActions = (set: any, get: any) => ({
     
     if (disableFilters || allBuildings.length === 0) {
       const activeStatuses = ['ativo', 'instalação', 'instalacao'];
-      const activeBuildings = allBuildings.filter((building: any) => activeStatuses.includes(building.status));
-      console.log('✅ [BUILDING STORE] Filtros desabilitados ou sem prédios - Mostrando todos os prédios ativos:', activeBuildings.length);
+      const activeBuildings = allBuildings.filter((building: any) =>
+        activeStatuses.includes(building.status) &&
+        typeof building.imagem_principal === 'string' &&
+        building.imagem_principal.trim().length > 0
+      );
+      console.log('✅ [BUILDING STORE] Filtros desabilitados ou sem prédios - Mostrando todos os prédios elegíveis (status + foto):', activeBuildings.length);
       activeBuildings.forEach((building: any, index: number) => {
         console.log(`🏢 [BUILDING STORE] Prédio sem filtro ${index + 1}: ${building.nome}`);
       });
@@ -25,13 +29,17 @@ export const createFilterActions = (set: any, get: any) => ({
       return;
     }
 
-    // Base: all active statuses (including instalação variants)
+    // Base: only buildings eligible for public store (status + required photo)
     const activeStatuses = ['ativo', 'instalação', 'instalacao'];
-    let result = allBuildings.filter((building: any) => activeStatuses.includes(building.status));
-    console.log('🏢 [BUILDING STORE] Status filter applied - Active buildings:', result.length, 
-      'Status counts:', allBuildings.reduce((acc: Record<string, number>, b: any) => { 
-        acc[b.status] = (acc[b.status] || 0) + 1; 
-        return acc; 
+    let result = allBuildings.filter((building: any) =>
+      activeStatuses.includes(building.status) &&
+      typeof building.imagem_principal === 'string' &&
+      building.imagem_principal.trim().length > 0
+    );
+    console.log('🏢 [BUILDING STORE] Eligible filter applied - Buildings:', result.length,
+      'Status counts:', allBuildings.reduce((acc: Record<string, number>, b: any) => {
+        acc[b.status] = (acc[b.status] || 0) + 1;
+        return acc;
       }, {}));
 
     // Aplicar filtro de distância quando houver localização selecionada

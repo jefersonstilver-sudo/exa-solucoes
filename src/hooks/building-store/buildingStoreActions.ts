@@ -28,11 +28,15 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
     try {
       const buildings = await fetchBuildingsForStore();
       console.log('📊 [BUILDING STORE] Prédios atualizados:', buildings.length);
-      
-      const activeBuildings = buildings.filter(building => ['ativo', 'instalação', 'instalacao'].includes(building.status));
-      console.log('🔄 [BUILDING STORE] Prédios ativos após refresh:', activeBuildings.length);
-      
-      set({ 
+
+      const activeBuildings = buildings.filter(building =>
+        ['ativo', 'instalação', 'instalacao'].includes(building.status) &&
+        typeof building.imagem_principal === 'string' &&
+        building.imagem_principal.trim().length > 0
+      );
+      console.log('🔄 [BUILDING STORE] Prédios elegíveis (status + foto) após refresh:', activeBuildings.length);
+
+      set({
         allBuildings: buildings as BuildingStore[],
         buildings: activeBuildings as BuildingStore[],
         isLoading: false
@@ -93,27 +97,31 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
       // CORREÇÃO: Chamar sem argumentos, pois a função não aceita parâmetros
       const buildings = await fetchBuildingsForStore();
       console.log('📊 [BUILDING STORE] Prédios recebidos do service:', buildings.length);
-      
+
       buildings.forEach((building, index) => {
         console.log(`📊 [BUILDING STORE] Prédio ${index + 1}: ${building.nome} (Status: ${building.status}, Público: ${building.publico_estimado})`);
       });
-      
-      // CORREÇÃO CRÍTICA: Garantir que o estado seja atualizado corretamente
-      const activeBuildings = buildings.filter(building => ['ativo', 'instalação', 'instalacao'].includes(building.status));
-      console.log('🔄 [BUILDING STORE] === ANÁLISE DE PRÉDIOS ===');
+
+      // Mostrar na loja pública somente prédios elegíveis: status certo + com imagem principal
+      const eligibleBuildings = buildings.filter(building =>
+        ['ativo', 'instalação', 'instalacao'].includes(building.status) &&
+        typeof building.imagem_principal === 'string' &&
+        building.imagem_principal.trim().length > 0
+      );
+      console.log('🔄 [BUILDING STORE] === ANÁLISE DE PRÉDIOS (LOJA PÚBLICA) ===');
       console.log('🔄 [BUILDING STORE] Total de prédios recebidos:', buildings.length);
-      console.log('🔄 [BUILDING STORE] Prédios ativos encontrados:', activeBuildings.length);
-      
-      activeBuildings.forEach((building, index) => {
-        console.log(`🏢 [BUILDING STORE] Prédio ativo ${index + 1}: ${building.nome} (Lat: ${building.latitude}, Lng: ${building.longitude})`);
+      console.log('🔄 [BUILDING STORE] Prédios elegíveis (status + foto):', eligibleBuildings.length);
+
+      eligibleBuildings.forEach((building, index) => {
+        console.log(`🏢 [BUILDING STORE] Prédio elegível ${index + 1}: ${building.nome} (Lat: ${building.latitude}, Lng: ${building.longitude})`);
       });
-      
-      set({ 
+
+      set({
         allBuildings: buildings as BuildingStore[],
-        buildings: activeBuildings as BuildingStore[],
+        buildings: eligibleBuildings as BuildingStore[],
         isLoading: false
       });
-      
+
       console.log('✅ [BUILDING STORE] Estado atualizado com sucesso');
       
       // Reaplicar filtros/ordenação (inclui distância)
