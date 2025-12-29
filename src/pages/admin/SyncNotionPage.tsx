@@ -79,83 +79,97 @@ function findDeviceForBuilding(building: Building, devices: Device[]): Device | 
   return null;
 }
 
-// Status groupings matching Notion board - DARK THEME
+// Status groupings matching Notion board - LIGHT THEME
 const STATUS_GROUPS = {
   online: {
     title: 'PRÉDIOS ONLINE',
     icon: CheckCircle,
     statuses: ['Ativo'],
-    bgColor: 'bg-[#2D3B2D]', // Verde escuro Notion
-    borderColor: 'border-emerald-800/30',
-    iconColor: 'text-emerald-400',
-    headerColor: 'text-emerald-400',
-    badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+    bgColor: 'bg-emerald-50',
+    borderColor: 'border-emerald-200',
+    iconColor: 'text-emerald-600',
+    headerColor: 'text-emerald-700',
+    badgeColor: 'bg-emerald-100 text-emerald-700 border-emerald-200'
   },
   offline: {
     title: 'PRÉDIOS OFF-LINE',
     icon: AlertCircle,
     statuses: ['Subir Nuc', 'Troca painel', 'Manutenção'],
-    bgColor: 'bg-[#4D2D2D]', // Vermelho escuro Notion
-    borderColor: 'border-red-800/30',
-    iconColor: 'text-red-400',
-    headerColor: 'text-red-400',
-    badgeColor: 'bg-red-500/20 text-red-400 border-red-500/30'
+    bgColor: 'bg-red-50',
+    borderColor: 'border-red-200',
+    iconColor: 'text-red-600',
+    headerColor: 'text-red-700',
+    badgeColor: 'bg-red-100 text-red-700 border-red-200'
   },
   instalacao: {
     title: 'EM INSTALAÇÃO',
     icon: Wrench,
     statuses: ['Instalação Internet', 'Instalação'],
-    bgColor: 'bg-[#3D2D1D]', // Marrom/bronze Notion
-    borderColor: 'border-amber-800/30',
-    iconColor: 'text-amber-400',
-    headerColor: 'text-amber-400',
-    badgeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+    bgColor: 'bg-amber-50',
+    borderColor: 'border-amber-200',
+    iconColor: 'text-amber-600',
+    headerColor: 'text-amber-700',
+    badgeColor: 'bg-blue-100 text-blue-700 border-blue-200'
   },
   instalacaoInternet: {
     title: 'INSTALAÇÃO DE INTERNET',
     icon: Wifi,
     statuses: ['Primeira Reunião', 'Visita Técnica'],
-    bgColor: 'bg-[#3D3D3D]', // Cinza escuro
-    borderColor: 'border-gray-700/30',
-    iconColor: 'text-gray-300',
-    headerColor: 'text-gray-300',
-    badgeColor: 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+    bgColor: 'bg-gray-50',
+    borderColor: 'border-gray-200',
+    iconColor: 'text-gray-600',
+    headerColor: 'text-gray-700',
+    badgeColor: 'bg-purple-100 text-purple-700 border-purple-200'
   }
 };
 
 
-// Building Card Component
+// Building Card Component - LIGHT THEME
 const BuildingCard = ({ building, badgeColor }: { building: Building; badgeColor: string }) => {
   const getImageUrl = () => {
+    // Priority 1: notion_fotos
     if (building.notion_fotos) {
       try {
         const fotos = typeof building.notion_fotos === 'string' 
           ? JSON.parse(building.notion_fotos) 
           : building.notion_fotos;
         if (Array.isArray(fotos) && fotos.length > 0) {
-          return fotos[0]?.url || fotos[0];
+          const firstPhoto = fotos[0]?.url || fotos[0]?.file?.url || fotos[0];
+          if (typeof firstPhoto === 'string' && firstPhoto.length > 0) return firstPhoto;
         }
       } catch (e) {
         console.error('Error parsing notion_fotos:', e);
       }
     }
-    return building.imagem_principal || null;
+    // Priority 2: imagem_principal (may be a path or full URL)
+    if (building.imagem_principal) {
+      if (building.imagem_principal.startsWith('http')) {
+        return building.imagem_principal;
+      }
+      // Construct Supabase storage URL
+      return `https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/buildings/${building.imagem_principal}`;
+    }
+    return null;
   };
 
   const imageUrl = getImageUrl();
 
   return (
-    <div className="flex-shrink-0 w-[180px] md:w-[200px] bg-[#2D2D2D] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-700/50 group cursor-pointer">
-      <div className="h-[120px] md:h-[140px] bg-gray-800 relative overflow-hidden">
+    <div className="flex-shrink-0 w-[180px] md:w-[200px] bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border border-gray-200 group cursor-pointer">
+      <div className="h-[120px] md:h-[140px] bg-gray-100 relative overflow-hidden">
         {imageUrl ? (
           <img 
             src={imageUrl} 
             alt={building.nome}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-700">
-            <Building2 className="h-10 w-10 text-gray-600" />
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+            <Building2 className="h-10 w-10 text-gray-400" />
           </div>
         )}
         <div className="absolute top-2 left-2">
@@ -165,7 +179,7 @@ const BuildingCard = ({ building, badgeColor }: { building: Building; badgeColor
         </div>
         {building.notion_oti && (
           <div className="absolute top-2 right-2">
-            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-[10px] px-1.5 py-0.5 shadow-sm">
+            <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-[10px] px-1.5 py-0.5 shadow-sm">
               {building.notion_oti}
             </Badge>
           </div>
@@ -173,9 +187,9 @@ const BuildingCard = ({ building, badgeColor }: { building: Building; badgeColor
       </div>
       
       <div className="p-3">
-        <h3 className="font-semibold text-sm text-white truncate">{building.nome}</h3>
-        <p className="text-xs text-gray-400 truncate mt-0.5">{building.bairro}</p>
-        <div className="flex items-center gap-2 mt-2 text-[10px] text-gray-500">
+        <h3 className="font-semibold text-sm text-gray-900 truncate">{building.nome}</h3>
+        <p className="text-xs text-gray-500 truncate mt-0.5">{building.bairro}</p>
+        <div className="flex items-center gap-2 mt-2 text-[10px] text-gray-400">
           {building.numero_unidades && (
             <span className="flex items-center gap-0.5">
               <Building2 className="h-3 w-3" />
@@ -194,7 +208,7 @@ const BuildingCard = ({ building, badgeColor }: { building: Building; badgeColor
   );
 };
 
-// Status Section Component
+// Status Section Component - LIGHT THEME
 const StatusSection = ({ 
   group, 
   buildings 
@@ -212,11 +226,11 @@ const StatusSection = ({
         <div className="flex items-center gap-2">
           <Icon className={`h-5 w-5 ${group.iconColor}`} />
           <h2 className={`font-semibold ${group.headerColor} text-sm md:text-base`}>{group.title}</h2>
-          <Badge className="bg-gray-600/50 text-white text-xs border-gray-500/30">{buildings.length}</Badge>
+          <Badge className="bg-gray-200 text-gray-700 text-xs border-gray-300">{buildings.length}</Badge>
         </div>
       </div>
       
-      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
         {buildings.map((building) => (
           <BuildingCard 
             key={building.id} 
@@ -440,27 +454,27 @@ const SyncNotionPage = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-5 bg-[#1E1E1E] min-h-screen">
+    <div className="p-4 md:p-6 space-y-5 bg-white min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-white/10">
-              <RefreshCw className="h-5 w-5 text-white" />
+          <h1 className="text-lg md:text-xl font-bold text-gray-900 flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-gray-100">
+              <RefreshCw className="h-5 w-5 text-gray-700" />
             </div>
-            Sync Notion
+            Agenda Técnica
           </h1>
           <div className="flex items-center gap-3 mt-1 ml-11">
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-500">
               {totalBuildings} prédios
             </p>
             {/* Auto-sync indicator */}
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] text-emerald-400 font-medium">Auto-sync ativo</span>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] text-emerald-600 font-medium">Auto-sync ativo</span>
             </div>
             {getTimeSinceLastSync() && (
-              <span className="text-[10px] text-gray-500">
+              <span className="text-[10px] text-gray-400">
                 Última: {getTimeSinceLastSync()} • Próxima: {getNextSyncTime()}
               </span>
             )}
@@ -473,7 +487,7 @@ const SyncNotionPage = () => {
             disabled={syncDeviceStatusMutation.isPending}
             size="sm"
             variant="outline"
-            className="border-emerald-600 text-emerald-400 hover:bg-emerald-600/20"
+            className="border-emerald-500 text-emerald-600 hover:bg-emerald-50"
           >
             {syncDeviceStatusMutation.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -498,30 +512,30 @@ const SyncNotionPage = () => {
         </div>
       </div>
 
-      {/* Quick Stats - 4 metrics */}
+      {/* Quick Stats - 4 metrics - LIGHT THEME */}
       <div className="grid grid-cols-4 gap-2 md:gap-3">
-        <div className="bg-[#2D3B2D] rounded-xl p-3 shadow-sm border border-emerald-800/30 text-center">
-          <div className="text-xl md:text-2xl font-bold text-emerald-400">{groupedBuildings.online.length}</div>
-          <div className="text-[10px] text-emerald-300/70">Online</div>
+        <div className="bg-emerald-50 rounded-xl p-3 shadow-sm border border-emerald-200 text-center">
+          <div className="text-xl md:text-2xl font-bold text-emerald-600">{groupedBuildings.online.length}</div>
+          <div className="text-[10px] text-emerald-500">Online</div>
         </div>
-        <div className="bg-[#4D2D2D] rounded-xl p-3 shadow-sm border border-red-800/30 text-center">
-          <div className="text-xl md:text-2xl font-bold text-red-400">{groupedBuildings.offline.length}</div>
-          <div className="text-[10px] text-red-300/70">Offline</div>
+        <div className="bg-red-50 rounded-xl p-3 shadow-sm border border-red-200 text-center">
+          <div className="text-xl md:text-2xl font-bold text-red-600">{groupedBuildings.offline.length}</div>
+          <div className="text-[10px] text-red-500">Offline</div>
         </div>
-        <div className="bg-[#3D2D1D] rounded-xl p-3 shadow-sm border border-amber-800/30 text-center">
-          <div className="text-xl md:text-2xl font-bold text-amber-400">{groupedBuildings.instalacao.length}</div>
-          <div className="text-[10px] text-amber-300/70">Instalação</div>
+        <div className="bg-amber-50 rounded-xl p-3 shadow-sm border border-amber-200 text-center">
+          <div className="text-xl md:text-2xl font-bold text-amber-600">{groupedBuildings.instalacao.length}</div>
+          <div className="text-[10px] text-amber-500">Instalação</div>
         </div>
-        <div className="bg-[#3D3D3D] rounded-xl p-3 shadow-sm border border-gray-700/30 text-center">
-          <div className="text-xl md:text-2xl font-bold text-gray-300">{groupedBuildings.instalacaoInternet.length}</div>
-          <div className="text-[10px] text-gray-400">Aguardando</div>
+        <div className="bg-gray-50 rounded-xl p-3 shadow-sm border border-gray-200 text-center">
+          <div className="text-xl md:text-2xl font-bold text-gray-600">{groupedBuildings.instalacaoInternet.length}</div>
+          <div className="text-[10px] text-gray-500">Aguardando</div>
         </div>
       </div>
 
       {/* Loading State */}
       {loadingBuildings ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
         </div>
       ) : (
         <>
@@ -538,49 +552,49 @@ const SyncNotionPage = () => {
             <NotionStyleCalendar buildings={buildings || []} />
           </div>
 
-          {/* Diagnostic Panel */}
+          {/* Diagnostic Panel - LIGHT THEME */}
           {diagnosticData && (
-            <div className="mt-6 bg-[#2D2D2D] rounded-xl p-4 border border-gray-700/50">
+            <div className="mt-6 bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
-                <AlertCircle className="h-5 w-5 text-amber-400" />
-                <h3 className="text-white font-semibold text-sm">Diagnóstico de Sincronização</h3>
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+                <h3 className="text-gray-900 font-semibold text-sm">Diagnóstico de Sincronização</h3>
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <div className="bg-[#3D3D3D] rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-white">{diagnosticData.fromNotion}</div>
-                  <div className="text-[10px] text-gray-400">Do Notion</div>
+                <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-100">
+                  <div className="text-lg font-bold text-gray-900">{diagnosticData.fromNotion}</div>
+                  <div className="text-[10px] text-gray-500">Do Notion</div>
                 </div>
-                <div className="bg-[#3D3D3D] rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-blue-400">{diagnosticData.withWorkDate}</div>
-                  <div className="text-[10px] text-gray-400">Com Data Trabalho</div>
+                <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-100">
+                  <div className="text-lg font-bold text-blue-600">{diagnosticData.withWorkDate}</div>
+                  <div className="text-[10px] text-gray-500">Com Data Trabalho</div>
                 </div>
-                <div className="bg-[#3D3D3D] rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-emerald-400">{diagnosticData.withWorkDateThisMonth}</div>
-                  <div className="text-[10px] text-gray-400">Este Mês</div>
+                <div className="bg-emerald-50 rounded-lg p-3 text-center border border-emerald-100">
+                  <div className="text-lg font-bold text-emerald-600">{diagnosticData.withWorkDateThisMonth}</div>
+                  <div className="text-[10px] text-gray-500">Este Mês</div>
                 </div>
-                <div className="bg-[#3D3D3D] rounded-lg p-3 text-center">
-                  <div className={`text-lg font-bold ${diagnosticData.missingTime > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                <div className={`${diagnosticData.missingTime > 0 ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'} rounded-lg p-3 text-center border`}>
+                  <div className={`text-lg font-bold ${diagnosticData.missingTime > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
                     {diagnosticData.missingTime}
                   </div>
-                  <div className="text-[10px] text-gray-400">Sem Horário</div>
+                  <div className="text-[10px] text-gray-500">Sem Horário</div>
                 </div>
               </div>
 
               {/* Show buildings missing time */}
               {diagnosticData.buildingsWithWorkDateNoTime.length > 0 && (
-                <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                  <div className="text-xs text-amber-400 font-medium mb-2">
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="text-xs text-amber-700 font-medium mb-2">
                     ⚠️ Prédios com data mas SEM horário definido no Notion:
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {diagnosticData.buildingsWithWorkDateNoTime.map(b => (
-                      <Badge key={b.id} className="bg-amber-500/20 text-amber-300 text-[10px]">
+                      <Badge key={b.id} className="bg-amber-100 text-amber-700 border-amber-200 text-[10px]">
                         {b.nome} ({b.notion_data_trabalho})
                       </Badge>
                     ))}
                     {diagnosticData.missingTime > 5 && (
-                      <span className="text-[10px] text-gray-400">+{diagnosticData.missingTime - 5} mais...</span>
+                      <span className="text-[10px] text-gray-500">+{diagnosticData.missingTime - 5} mais...</span>
                     )}
                   </div>
                 </div>
@@ -590,24 +604,24 @@ const SyncNotionPage = () => {
         </>
       )}
 
-      {/* Sync Logs - Collapsible */}
+      {/* Sync Logs - Collapsible - LIGHT THEME */}
       <Collapsible open={logsOpen} onOpenChange={setLogsOpen}>
         <CollapsibleTrigger asChild>
-          <button className="w-full bg-[#2D2D2D] rounded-xl p-3 shadow-sm border border-gray-700/50 flex items-center justify-between hover:bg-[#3D3D3D] transition-colors">
+          <button className="w-full bg-white rounded-xl p-3 shadow-sm border border-gray-200 flex items-center justify-between hover:bg-gray-50 transition-colors">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-300">Histórico de Sincronizações</span>
+              <Clock className="h-4 w-4 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Histórico de Sincronizações</span>
               {lastSync && (
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-400">
                   Última: {format(new Date(lastSync.sync_started_at), "dd/MM HH:mm", { locale: ptBR })}
                 </span>
               )}
             </div>
-            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${logsOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${logsOpen ? 'rotate-180' : ''}`} />
           </button>
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-2">
-          <div className="bg-[#2D2D2D] rounded-xl shadow-sm border border-gray-700/50 divide-y divide-gray-700/50">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
             {loadingLogs ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -617,32 +631,32 @@ const SyncNotionPage = () => {
                 <div key={log.id} className="p-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {log.status === 'success' ? (
-                      <CheckCircle className="h-4 w-4 text-emerald-400" />
+                      <CheckCircle className="h-4 w-4 text-emerald-500" />
                     ) : log.status === 'error' ? (
-                      <AlertCircle className="h-4 w-4 text-red-400" />
+                      <AlertCircle className="h-4 w-4 text-red-500" />
                     ) : (
-                      <Loader2 className="h-4 w-4 text-blue-400 animate-spin" />
+                      <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
                     )}
-                    <span className="text-sm text-gray-300">
+                    <span className="text-sm text-gray-700">
                       {format(new Date(log.sync_started_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-xs">
                     {log.buildings_created > 0 && (
-                      <span className="text-emerald-400 font-medium">+{log.buildings_created}</span>
+                      <span className="text-emerald-600 font-medium">+{log.buildings_created}</span>
                     )}
                     {log.buildings_updated > 0 && (
-                      <span className="text-blue-400 font-medium">↻{log.buildings_updated}</span>
+                      <span className="text-blue-600 font-medium">↻{log.buildings_updated}</span>
                     )}
                     {log.duration_ms && (
-                      <span className="text-gray-500">{(log.duration_ms / 1000).toFixed(1)}s</span>
+                      <span className="text-gray-400">{(log.duration_ms / 1000).toFixed(1)}s</span>
                     )}
                   </div>
                 </div>
               ))
             )}
             {syncLogs?.length === 0 && (
-              <div className="p-6 text-center text-gray-500">
+              <div className="p-6 text-center text-gray-400">
                 <Clock className="h-6 w-6 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">Nenhuma sincronização realizada</p>
               </div>
