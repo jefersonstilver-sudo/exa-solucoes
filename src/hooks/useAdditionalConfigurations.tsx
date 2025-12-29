@@ -87,6 +87,10 @@ export interface AdditionalConfiguration {
   sofia_2fa_gerente_master: boolean;
   sofia_ativa: boolean;
   
+  // Login 2FA para Master
+  login_2fa_master_ativo?: boolean;
+  login_2fa_telefone_master?: string;
+  
   created_at: string;
   updated_at: string;
 }

@@ -1863,6 +1863,8 @@ export type Database = {
           limite_pedidos_simultaneos: number | null
           limite_tamanho_video_mb: number | null
           limite_videos_por_cliente: number | null
+          login_2fa_master_ativo: boolean | null
+          login_2fa_telefone_master: string | null
           manutencao_mensagem: string | null
           modo_demonstracao: boolean | null
           mostrar_precos: boolean | null
@@ -1922,6 +1924,8 @@ export type Database = {
           limite_pedidos_simultaneos?: number | null
           limite_tamanho_video_mb?: number | null
           limite_videos_por_cliente?: number | null
+          login_2fa_master_ativo?: boolean | null
+          login_2fa_telefone_master?: string | null
           manutencao_mensagem?: string | null
           modo_demonstracao?: boolean | null
           mostrar_precos?: boolean | null
@@ -1981,6 +1985,8 @@ export type Database = {
           limite_pedidos_simultaneos?: number | null
           limite_tamanho_video_mb?: number | null
           limite_videos_por_cliente?: number | null
+          login_2fa_master_ativo?: boolean | null
+          login_2fa_telefone_master?: string | null
           manutencao_mensagem?: string | null
           modo_demonstracao?: boolean | null
           mostrar_precos?: boolean | null
@@ -8644,6 +8650,7 @@ export type Database = {
           expires_at: string | null
           id: string
           ip_address: string | null
+          is_active: boolean | null
           is_vpn: boolean | null
           isp: string | null
           language: string | null
@@ -8660,6 +8667,8 @@ export type Database = {
           screen_height: number | null
           screen_width: number | null
           session_id: string
+          terminated_at: string | null
+          terminated_by: string | null
           timezone: string | null
           user_agent: string | null
           user_id: string | null
@@ -8681,6 +8690,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           ip_address?: string | null
+          is_active?: boolean | null
           is_vpn?: boolean | null
           isp?: string | null
           language?: string | null
@@ -8697,6 +8707,8 @@ export type Database = {
           screen_height?: number | null
           screen_width?: number | null
           session_id: string
+          terminated_at?: string | null
+          terminated_by?: string | null
           timezone?: string | null
           user_agent?: string | null
           user_id?: string | null
@@ -8718,6 +8730,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           ip_address?: string | null
+          is_active?: boolean | null
           is_vpn?: boolean | null
           isp?: string | null
           language?: string | null
@@ -8734,6 +8747,8 @@ export type Database = {
           screen_height?: number | null
           screen_width?: number | null
           session_id?: string
+          terminated_at?: string | null
+          terminated_by?: string | null
           timezone?: string | null
           user_agent?: string | null
           user_id?: string | null

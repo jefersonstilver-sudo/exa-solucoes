@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Shield, Save, Lock, Clock, Bot, Loader2 } from 'lucide-react';
+import { Shield, Save, Lock, Clock, Bot, Loader2, Globe, Smartphone } from 'lucide-react';
 import { AdditionalConfiguration } from '@/hooks/useAdditionalConfigurations';
 import { toast } from '@/hooks/use-toast';
+import { ActiveSessionsManager } from '../security/ActiveSessionsManager';
+import { Login2FAConfig } from '../security/Login2FAConfig';
 
 interface SecurityTabProps {
   config: AdditionalConfiguration | null;
@@ -185,6 +187,12 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({ config, updateConfig }
           </div>
         </CardContent>
       </Card>
+
+      {/* Sessões Ativas do Master */}
+      <ActiveSessionsManager />
+
+      {/* Autenticação em Dois Fatores */}
+      <Login2FAConfig config={config} updateConfig={updateConfig} />
 
       {/* Alertas de Segurança */}
       <Card>
