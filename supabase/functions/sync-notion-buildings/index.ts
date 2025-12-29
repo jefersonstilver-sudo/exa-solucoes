@@ -318,15 +318,22 @@ serve(async (req) => {
     const notionPages = await fetchNotionDatabase(notionApiKey, notionDatabaseId);
     console.log(`[SYNC-NOTION] 📊 Found ${notionPages.length} pages in Notion`);
 
-    // Fetch existing buildings with notion_page_id
+    // Fetch existing buildings - including those with and without notion_page_id
     const { data: existingBuildings, error: fetchError } = await supabase
       .from('buildings')
       .select('id, notion_page_id, notion_updated_at, local_updated_at, notion_last_synced_at, nome, endereco, status, notion_status');
     
     if (fetchError) throw fetchError;
 
+    // Map by notion_page_id for existing synced buildings
     const existingByNotionId = new Map(
       existingBuildings?.filter(b => b.notion_page_id).map(b => [b.notion_page_id, b]) || []
+    );
+    
+    // Map by normalized name for matching manual buildings
+    const normalizeNameForMatch = (name: string) => name.toLowerCase().trim().replace(/\s+/g, ' ');
+    const existingByName = new Map(
+      existingBuildings?.map(b => [normalizeNameForMatch(b.nome), b]) || []
     );
 
     let created = 0;
@@ -396,24 +403,48 @@ serve(async (req) => {
             }
           }
         } else {
-          // New building from Notion
-          const { error: insertError } = await supabase
-            .from('buildings')
-            .insert({
-              ...mappedData,
-              notion_last_synced_at: new Date().toISOString(),
-            });
+          // Building not found by notion_page_id - try to match by name
+          const normalizedName = normalizeNameForMatch(mappedData.nome);
+          const matchedByName = existingByName.get(normalizedName);
           
-          if (insertError) {
-            // Check if it's a duplicate name or address
-            if (insertError.code === '23505') {
-              console.log(`[SYNC-NOTION] ⚠️ Duplicate building skipped: ${mappedData.nome}`);
+          if (matchedByName) {
+            // Found matching building by name - update only notion_* fields (not core data)
+            const notionOnlyData = {
+              notion_page_id: page.id,
+              notion_updated_at: mappedData.notion_updated_at,
+              notion_properties: mappedData.notion_properties,
+              notion_status: mappedData.notion_status,
+              notion_tipo: mappedData.notion_tipo,
+              notion_portaria: mappedData.notion_portaria,
+              notion_internet: mappedData.notion_internet,
+              notion_oti: mappedData.notion_oti,
+              notion_email: mappedData.notion_email,
+              notion_whatsapp_url: mappedData.notion_whatsapp_url,
+              notion_contrato_url: mappedData.notion_contrato_url,
+              notion_fotos: mappedData.notion_fotos,
+              notion_termo_aceite: mappedData.notion_termo_aceite,
+              notion_instalado: mappedData.notion_instalado,
+              notion_data_trabalho: mappedData.notion_data_trabalho,
+              notion_horario_trabalho: mappedData.notion_horario_trabalho,
+              notion_out_date: mappedData.notion_out_date,
+              notion_internal_id: mappedData.notion_internal_id,
+              notion_last_synced_at: new Date().toISOString(),
+            };
+            
+            const { error: updateError } = await supabase
+              .from('buildings')
+              .update(notionOnlyData)
+              .eq('id', matchedByName.id);
+            
+            if (updateError) {
+              errors.push({ type: 'update_by_name', pageId: page.id, error: updateError.message });
             } else {
-              errors.push({ type: 'insert', pageId: page.id, error: insertError.message });
+              updated++;
+              console.log(`[SYNC-NOTION] ✅ Linked by name: ${mappedData.nome}`);
             }
           } else {
-            created++;
-            console.log(`[SYNC-NOTION] ➕ Created: ${mappedData.nome}`);
+            // No matching building found - DO NOT CREATE, just log
+            console.log(`[SYNC-NOTION] ⏭️ Skipped (no manual match): ${mappedData.nome}`);
           }
         }
       } catch (pageError: any) {
