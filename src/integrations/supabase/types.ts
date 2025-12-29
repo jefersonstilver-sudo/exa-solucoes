@@ -9670,6 +9670,7 @@ export type Database = {
       clean_old_navigation_history: { Args: never; Returns: undefined }
       cleanup_expired_blocked_ips: { Args: never; Returns: undefined }
       cleanup_expired_sessions: { Args: never; Returns: undefined }
+      cleanup_expired_user_sessions: { Args: never; Returns: number }
       cleanup_old_logs: { Args: never; Returns: undefined }
       cleanup_orphaned_users: { Args: never; Returns: Json }
       cleanup_unauthorized_uploads: { Args: never; Returns: Json }

@@ -157,6 +157,24 @@ export const useActiveSession = (options: UseActiveSessionOptions = {}) => {
 
         console.log('🔵 [DATABASE] Upserting sessão:', sessionId);
 
+        // Se esta sessão já foi encerrada (por outro dispositivo / admin), não reativa.
+        const { data: existingSession, error: existingError } = await supabase
+          .from('user_sessions')
+          .select('is_active')
+          .eq('session_id', sessionId)
+          .maybeSingle();
+
+        if (existingError) {
+          console.error('❌ Erro ao verificar status da sessão:', existingError);
+          return;
+        }
+
+        if (existingSession && existingSession.is_active === false) {
+          console.warn('🛑 Tentativa de reativar sessão encerrada. Fazendo signOut:', sessionId);
+          await supabase.auth.signOut();
+          return;
+        }
+
         const { data, error } = await supabase
           .from('user_sessions')
           .upsert(sessionData, { onConflict: 'session_id' })
@@ -190,12 +208,34 @@ export const useActiveSession = (options: UseActiveSessionOptions = {}) => {
 
     const updateHeartbeat = async () => {
       try {
+        // Importante: NUNCA reativar uma sessão que foi encerrada via painel (is_active=false).
+        // Se a sessão estiver inativa, o UPDATE abaixo não vai afetar nenhuma linha.
         console.log('💓 Atualizando heartbeat...');
-        await supabase.from('user_sessions').update({
-          last_activity: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-          is_active: true
-        }).eq('session_id', sessionId);
+        const { data, error } = await supabase
+          .from('user_sessions')
+          .update({
+            last_activity: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+          })
+          .eq('session_id', sessionId)
+          .eq('is_active', true)
+          .select('is_active');
+
+        if (error) {
+          console.error('❌ Erro ao atualizar heartbeat:', error);
+          return;
+        }
+
+        // Se não retornou linha, é porque a sessão já foi encerrada.
+        if (!data || data.length === 0) {
+          console.warn('🛑 Sessão encerrada remotamente. Fazendo signOut:', sessionId);
+          if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+          try {
+            await supabase.auth.signOut();
+          } catch (e) {
+            console.error('❌ Erro ao executar signOut após encerramento remoto:', e);
+          }
+        }
       } catch (error) {
         console.error('❌ Erro ao atualizar heartbeat:', error);
       }
