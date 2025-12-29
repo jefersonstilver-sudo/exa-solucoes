@@ -5492,6 +5492,99 @@ export type Database = {
         }
         Relationships: []
       }
+      notion_task_sync_logs: {
+        Row: {
+          details: Json | null
+          duration_ms: number | null
+          errors: Json | null
+          id: string
+          status: string | null
+          sync_completed_at: string | null
+          sync_started_at: string | null
+          tasks_created: number | null
+          tasks_updated: number | null
+        }
+        Insert: {
+          details?: Json | null
+          duration_ms?: number | null
+          errors?: Json | null
+          id?: string
+          status?: string | null
+          sync_completed_at?: string | null
+          sync_started_at?: string | null
+          tasks_created?: number | null
+          tasks_updated?: number | null
+        }
+        Update: {
+          details?: Json | null
+          duration_ms?: number | null
+          errors?: Json | null
+          id?: string
+          status?: string | null
+          sync_completed_at?: string | null
+          sync_started_at?: string | null
+          tasks_created?: number | null
+          tasks_updated?: number | null
+        }
+        Relationships: []
+      }
+      notion_tasks: {
+        Row: {
+          categoria: string | null
+          created_at: string | null
+          data: string | null
+          descricao: string | null
+          finalizado_por: string | null
+          id: string
+          nome: string
+          notion_created_time: string | null
+          notion_last_edited_time: string | null
+          notion_page_id: string
+          notion_url: string | null
+          prioridade: string | null
+          responsavel: string | null
+          responsavel_avatar: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string | null
+          data?: string | null
+          descricao?: string | null
+          finalizado_por?: string | null
+          id?: string
+          nome: string
+          notion_created_time?: string | null
+          notion_last_edited_time?: string | null
+          notion_page_id: string
+          notion_url?: string | null
+          prioridade?: string | null
+          responsavel?: string | null
+          responsavel_avatar?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string | null
+          data?: string | null
+          descricao?: string | null
+          finalizado_por?: string | null
+          id?: string
+          nome?: string
+          notion_created_time?: string | null
+          notion_last_edited_time?: string | null
+          notion_page_id?: string
+          notion_url?: string | null
+          prioridade?: string | null
+          responsavel?: string | null
+          responsavel_avatar?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       paineis_comandos: {
         Row: {
           comando: string

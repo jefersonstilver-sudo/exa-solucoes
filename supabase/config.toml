@@ -539,3 +539,11 @@ verify_jwt = true
 
 [functions.sync-device-building-status]
 verify_jwt = false
+
+[functions.sync-notion-tasks]
+verify_jwt = false
+
+# Sync Notion Tasks a cada 10 minutos
+[[cron]]
+function_name = "sync-notion-tasks"
+schedule = "*/10 * * * *"
