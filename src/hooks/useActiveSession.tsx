@@ -60,6 +60,13 @@ export const useActiveSession = (options: UseActiveSessionOptions = {}) => {
       return;
     }
 
+    // ✅ CRÍTICO: só iniciar quando tivermos o userProfile (senão a sessão pode ser criada sem user_id
+    // e nunca mais será atualizada por causa do sessionStartedRef).
+    if (!userProfile?.id) {
+      console.log('⏳ useActiveSession: Aguardando userProfile para iniciar rastreamento...');
+      return;
+    }
+
     console.log('🔵 useActiveSession: Iniciando...');
     const sessionId = getSessionId();
 
