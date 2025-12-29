@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Video, Gift, MessageSquare, Users, ArrowRight } from 'lucide-react';
+import { Bell, Video, Gift, Building2, CalendarCheck, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,14 +7,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCardConfig } from '@/hooks/useCardConfig';
 import CardConfigPopover from './CardConfigPopover';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+
 
 interface AlertasStats {
   videosParaAprovar: number;
   vouchersParaEnviar: number;
-  conversasSemResposta: number;
-  contatosPorTipo: Record<string, number>;
-  totalContatos: number;
+  prediosAguardandoAgendamento: number;
+  tarefasPendentes: number;
 }
 
 const AlertasGeraisCard: React.FC = () => {
@@ -25,9 +24,8 @@ const AlertasGeraisCard: React.FC = () => {
   const [stats, setStats] = useState<AlertasStats>({
     videosParaAprovar: 0,
     vouchersParaEnviar: 0,
-    conversasSemResposta: 0,
-    contatosPorTipo: {},
-    totalContatos: 0
+    prediosAguardandoAgendamento: 0,
+    tarefasPendentes: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -47,36 +45,23 @@ const AlertasGeraisCard: React.FC = () => {
           .eq('status', 'choice_made')
           .is('gift_code', null);
 
-        // 3. Conversas sem resposta (usando awaiting_response)
-        const { count: conversasCount } = await supabase
-          .from('conversations')
+        // 3. Prédios aguardando agendamento técnico (status lead ou instalacao)
+        const { count: prediosCount } = await supabase
+          .from('buildings')
           .select('id', { count: 'exact', head: true })
-          .eq('awaiting_response', true);
+          .in('status', ['lead', 'instalacao']);
 
-        // 4. Contatos por tipo (últimos 30 dias)
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-        const { data: contatosData } = await supabase
-          .from('conversations')
-          .select('contact_type')
-          .gte('created_at', thirtyDaysAgo.toISOString());
-
-        const contatosPorTipo: Record<string, number> = {};
-        let totalContatos = 0;
-
-        contatosData?.forEach(c => {
-          const tipo = c.contact_type || 'Sem tipo';
-          contatosPorTipo[tipo] = (contatosPorTipo[tipo] || 0) + 1;
-          totalContatos++;
-        });
+        // 4. Tarefas pendentes na agenda
+        const { count: tarefasCount } = await supabase
+          .from('notion_tasks' as any)
+          .select('id', { count: 'exact', head: true })
+          .or('status.neq.Concluído,status.is.null');
 
         setStats({
           videosParaAprovar: videosCount || 0,
           vouchersParaEnviar: vouchersCount || 0,
-          conversasSemResposta: conversasCount || 0,
-          contatosPorTipo,
-          totalContatos
+          prediosAguardandoAgendamento: prediosCount || 0,
+          tarefasPendentes: tarefasCount || 0
         });
       } catch (err) {
         console.error('[AlertasGeraisCard] Error:', err);
@@ -98,8 +83,12 @@ const AlertasGeraisCard: React.FC = () => {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'provider_benefits' }, fetchAlertStats)
         .subscribe(),
       supabase
-        .channel('conversations_alerts_monitor')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, fetchAlertStats)
+        .channel('buildings_alerts_monitor')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'buildings' }, fetchAlertStats)
+        .subscribe(),
+      supabase
+        .channel('tasks_alerts_monitor')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notion_tasks' }, fetchAlertStats)
         .subscribe()
     ];
 
@@ -121,7 +110,7 @@ const AlertasGeraisCard: React.FC = () => {
     );
   }
 
-  const hasAlerts = stats.videosParaAprovar > 0 || stats.vouchersParaEnviar > 0 || stats.conversasSemResposta > 0;
+  const hasAlerts = stats.videosParaAprovar > 0 || stats.vouchersParaEnviar > 0 || stats.prediosAguardandoAgendamento > 0 || stats.tarefasPendentes > 0;
 
   return (
     <Card className="h-full bg-white rounded-2xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_20px_50px_rgb(0,0,0,0.2)] hover:scale-[1.01] hover:-translate-y-1 transition-all duration-300 ease-out flex flex-col">
@@ -132,7 +121,7 @@ const AlertasGeraisCard: React.FC = () => {
             Alertas de Ação
             {hasAlerts && (
               <Badge className="h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-red-500 text-white">
-                {stats.videosParaAprovar + stats.vouchersParaEnviar + stats.conversasSemResposta}
+                {stats.videosParaAprovar + stats.vouchersParaEnviar + stats.prediosAguardandoAgendamento + stats.tarefasPendentes}
               </Badge>
             )}
           </div>
@@ -191,56 +180,47 @@ const AlertasGeraisCard: React.FC = () => {
             <p className="text-[9px] text-muted-foreground">para enviar</p>
           </div>
 
-          {/* Conversas sem resposta */}
+          {/* Prédios aguardando agendamento técnico */}
           <div 
             className={`p-2.5 rounded-lg border cursor-pointer transition-colors ${
-              stats.conversasSemResposta > 0 
+              stats.prediosAguardandoAgendamento > 0 
                 ? 'bg-blue-50 border-blue-200 hover:bg-blue-100' 
                 : 'bg-gray-50 border-gray-200'
             }`}
-            onClick={() => navigate(`${basePath}/crm-chat`)}
+            onClick={() => navigate(`${basePath}/predios`)}
           >
             <div className="flex items-center gap-2 mb-1">
-              <MessageSquare className={`h-4 w-4 ${stats.conversasSemResposta > 0 ? 'text-blue-600' : 'text-gray-400'}`} />
-              <span className={`text-[10px] font-medium ${stats.conversasSemResposta > 0 ? 'text-blue-700' : 'text-gray-500'}`}>
-                Conversas
+              <Building2 className={`h-4 w-4 ${stats.prediosAguardandoAgendamento > 0 ? 'text-blue-600' : 'text-gray-400'}`} />
+              <span className={`text-[10px] font-medium ${stats.prediosAguardandoAgendamento > 0 ? 'text-blue-700' : 'text-gray-500'}`}>
+                Prédios
               </span>
             </div>
-            <p className={`text-xl font-bold ${stats.conversasSemResposta > 0 ? 'text-blue-700' : 'text-gray-400'}`}>
-              {stats.conversasSemResposta}
+            <p className={`text-xl font-bold ${stats.prediosAguardandoAgendamento > 0 ? 'text-blue-700' : 'text-gray-400'}`}>
+              {stats.prediosAguardandoAgendamento}
             </p>
-            <p className="text-[9px] text-muted-foreground">aguardando</p>
+            <p className="text-[9px] text-muted-foreground">sem agendamento</p>
           </div>
 
-          {/* Contatos (com hover para detalhes por tipo) */}
-          <HoverCard openDelay={100}>
-            <HoverCardTrigger asChild>
-              <div className="p-2.5 rounded-lg border bg-emerald-50 border-emerald-200 cursor-pointer hover:bg-emerald-100 transition-colors">
-                <div className="flex items-center gap-2 mb-1">
-                  <Users className="h-4 w-4 text-emerald-600" />
-                  <span className="text-[10px] font-medium text-emerald-700">Contatos</span>
-                </div>
-                <p className="text-xl font-bold text-emerald-700">{stats.totalContatos}</p>
-                <p className="text-[9px] text-muted-foreground">últimos 30 dias</p>
-              </div>
-            </HoverCardTrigger>
-            <HoverCardContent className="w-48 p-3" side="top">
-              <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-gray-900">Contatos por Tipo</h4>
-                <div className="space-y-1">
-                  {Object.entries(stats.contatosPorTipo)
-                    .sort(([, a], [, b]) => b - a)
-                    .slice(0, 5)
-                    .map(([tipo, count]) => (
-                      <div key={tipo} className="flex justify-between text-xs">
-                        <span className="text-muted-foreground truncate">{tipo}</span>
-                        <span className="font-medium">{count}</span>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </HoverCardContent>
-          </HoverCard>
+          {/* Tarefas pendentes */}
+          <div 
+            className={`p-2.5 rounded-lg border cursor-pointer transition-colors ${
+              stats.tarefasPendentes > 0 
+                ? 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100' 
+                : 'bg-gray-50 border-gray-200'
+            }`}
+            onClick={() => navigate(`${basePath}/agenda`)}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <CalendarCheck className={`h-4 w-4 ${stats.tarefasPendentes > 0 ? 'text-emerald-600' : 'text-gray-400'}`} />
+              <span className={`text-[10px] font-medium ${stats.tarefasPendentes > 0 ? 'text-emerald-700' : 'text-gray-500'}`}>
+                Tarefas
+              </span>
+            </div>
+            <p className={`text-xl font-bold ${stats.tarefasPendentes > 0 ? 'text-emerald-700' : 'text-gray-400'}`}>
+              {stats.tarefasPendentes}
+            </p>
+            <p className="text-[9px] text-muted-foreground">pendentes</p>
+          </div>
         </div>
 
         {!hasAlerts && (
