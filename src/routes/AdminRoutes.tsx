@@ -30,6 +30,7 @@ import NovoContratoPage from '@/pages/admin/contracts/NovoContratoPage';
 import NovoContratoSindicoPage from '@/pages/admin/contracts/NovoContratoSindicoPage';
 import ContratoDetalhesPage from '@/pages/admin/contracts/ContratoDetalhesPage';
 import SyncNotionPage from '@/pages/admin/SyncNotionPage';
+import AgendaPage from '@/pages/admin/AgendaPage';
 import UsersPage from '@/pages/admin/UsersPage';
 import TiposContaPage from '@/pages/admin/TiposContaPage';
 import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
@@ -75,6 +76,11 @@ const AdminRoutes = () => {
       <Route path="sync-notion" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.sync_notion}>
           <SyncNotionPage />
+        </ProtectedModuleRoute>
+      } />
+      <Route path="agenda" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.agenda}>
+          <AgendaPage />
         </ProtectedModuleRoute>
       } />
       <Route path="pedidos" element={

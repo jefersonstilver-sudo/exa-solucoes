@@ -36,21 +36,21 @@ interface NotionStyleCalendarProps {
   buildings: Building[];
 }
 
-// Status colors for calendar cards - includes all possible statuses
+// Status colors for calendar cards - LIGHT THEME
 const STATUS_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  'Ativo': { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30' },
-  'Online': { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30' },
-  'Instalação': { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
-  'Instalaçao': { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' }, // accent variation
-  'Instalação Internet': { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' },
-  'Instalaçao Internet': { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' }, // accent variation
-  'Subir Nuc': { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' },
-  'Manutenção': { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' },
-  'Manut': { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' },
-  'Troca painel': { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' },
-  'Primeira Reunião': { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30' },
-  'Visita Técnica': { bg: 'bg-cyan-500/20', text: 'text-cyan-400', border: 'border-cyan-500/30' },
-  'Offline': { bg: 'bg-gray-600/20', text: 'text-gray-500', border: 'border-gray-600/30' },
+  'Ativo': { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200' },
+  'Online': { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200' },
+  'Instalação': { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200' },
+  'Instalaçao': { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200' },
+  'Instalação Internet': { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200' },
+  'Instalaçao Internet': { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200' },
+  'Subir Nuc': { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-200' },
+  'Manutenção': { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200' },
+  'Manut': { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200' },
+  'Troca painel': { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-200' },
+  'Primeira Reunião': { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' },
+  'Visita Técnica': { bg: 'bg-cyan-100', text: 'text-cyan-700', border: 'border-cyan-200' },
+  'Offline': { bg: 'bg-gray-100', text: 'text-gray-500', border: 'border-gray-200' },
 };
 
 // Normalize status for comparisons (remove accents, lowercase)
@@ -64,7 +64,7 @@ const normalizeStatus = (status: string | null): string => {
 };
 
 const getStatusColor = (status: string | null) => {
-  if (!status) return { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30' };
+  if (!status) return { bg: 'bg-gray-100', text: 'text-gray-500', border: 'border-gray-200' };
   // Direct match first
   if (STATUS_COLORS[status]) return STATUS_COLORS[status];
   // Try normalized match
@@ -72,7 +72,7 @@ const getStatusColor = (status: string | null) => {
   for (const [key, value] of Object.entries(STATUS_COLORS)) {
     if (normalizeStatus(key) === normalized) return value;
   }
-  return { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30' };
+  return { bg: 'bg-gray-100', text: 'text-gray-500', border: 'border-gray-200' };
 };
 
 // All work-related statuses for CALENDAR (includes Ativo/Online)
@@ -135,17 +135,17 @@ const CalendarBuildingCard = ({ building }: { building: Building }) => {
   );
 };
 
-// Pending work sidebar item
+// Pending work sidebar item - LIGHT THEME
 const PendingWorkItem = ({ building }: { building: Building }) => {
   const colors = getStatusColor(building.notion_status);
   
   return (
     <div 
-      className="flex items-center justify-between p-2.5 bg-[#3D3D3D] rounded-lg hover:bg-[#454545] transition-colors cursor-pointer"
+      className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer border border-gray-100"
     >
       <div className="flex-1 min-w-0">
-        <span className="text-white text-sm font-medium truncate block">{building.nome}</span>
-        <span className="text-gray-400 text-[10px] truncate block">{building.bairro}</span>
+        <span className="text-gray-900 text-sm font-medium truncate block">{building.nome}</span>
+        <span className="text-gray-500 text-[10px] truncate block">{building.bairro}</span>
       </div>
       <Badge className={`text-[9px] ml-2 flex-shrink-0 ${colors.bg} ${colors.text} ${colors.border}`}>
         {building.notion_status}
@@ -232,27 +232,27 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
   }, [buildings]);
 
   return (
-    <div className="bg-[#252525] rounded-2xl p-4">
+    <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-700">
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <Button 
             size="sm" 
             variant="ghost" 
-            className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-white/10"
+            className="h-8 w-8 p-0 text-gray-500 hover:text-gray-900 hover:bg-gray-100"
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           
-          <h2 className="text-white font-semibold text-base min-w-[160px] text-center capitalize">
+          <h2 className="text-gray-900 font-semibold text-base min-w-[160px] text-center capitalize">
             {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
           </h2>
           
           <Button 
             size="sm" 
             variant="ghost" 
-            className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-white/10"
+            className="h-8 w-8 p-0 text-gray-500 hover:text-gray-900 hover:bg-gray-100"
             onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
           >
             <ChevronRight className="h-4 w-4" />
@@ -261,7 +261,7 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
           <Button
             size="sm"
             variant="outline"
-            className="ml-2 h-7 px-3 text-xs bg-transparent border-gray-600 text-gray-300 hover:bg-white/10 hover:text-white"
+            className="ml-2 h-7 px-3 text-xs border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
             onClick={goToToday}
           >
             Hoje
@@ -275,25 +275,25 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8 px-3 text-xs bg-transparent border-gray-600 text-gray-300 hover:bg-white/10 hover:text-white"
+                className="h-8 px-3 text-xs border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
               >
                 <Filter className="h-3.5 w-3.5 mr-1.5" />
                 Status
                 {selectedStatuses.length < CALENDAR_STATUSES.length && (
-                  <Badge className="ml-1.5 bg-blue-500/20 text-blue-400 text-[9px] px-1">
+                  <Badge className="ml-1.5 bg-blue-100 text-blue-700 text-[9px] px-1">
                     {selectedStatuses.length}
                   </Badge>
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-[#2D2D2D] border-gray-700 min-w-[200px]">
-              <DropdownMenuLabel className="text-gray-400 text-xs">Filtrar por Status</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-gray-700" />
+            <DropdownMenuContent className="bg-white border-gray-200 min-w-[200px]">
+              <DropdownMenuLabel className="text-gray-500 text-xs">Filtrar por Status</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-gray-200" />
               <div className="flex gap-1 px-2 py-1">
                 <Button 
                   size="sm" 
                   variant="ghost" 
-                  className="h-6 text-[10px] text-gray-400 hover:text-white"
+                  className="h-6 text-[10px] text-gray-500 hover:text-gray-900"
                   onClick={selectAllStatuses}
                 >
                   Todos
@@ -301,13 +301,13 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
                 <Button 
                   size="sm" 
                   variant="ghost" 
-                  className="h-6 text-[10px] text-gray-400 hover:text-white"
+                  className="h-6 text-[10px] text-gray-500 hover:text-gray-900"
                   onClick={clearAllStatuses}
                 >
                   Limpar
                 </Button>
               </div>
-              <DropdownMenuSeparator className="bg-gray-700" />
+              <DropdownMenuSeparator className="bg-gray-200" />
               {CALENDAR_STATUSES.map(status => {
                 const colors = getStatusColor(status);
                 return (
@@ -315,12 +315,12 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
                     key={status}
                     checked={selectedStatuses.includes(status)}
                     onCheckedChange={() => toggleStatus(status)}
-                    className="text-white text-xs cursor-pointer"
+                    className="text-gray-900 text-xs cursor-pointer"
                   >
                     <div className="flex items-center gap-2 w-full">
                       <div className={`w-2 h-2 rounded ${colors.bg} ${colors.border} border`} />
                       <span className="flex-1">{status}</span>
-                      <span className="text-gray-500 text-[10px]">{statusCounts[status] || 0}</span>
+                      <span className="text-gray-400 text-[10px]">{statusCounts[status] || 0}</span>
                     </div>
                   </DropdownMenuCheckboxItem>
                 );
@@ -334,7 +334,7 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
             className={`h-8 px-3 text-xs ${
               showOnlyWithDate 
                 ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                : 'bg-transparent border-gray-600 text-gray-300 hover:bg-white/10 hover:text-white'
+                : 'border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-900'
             }`}
             onClick={() => setShowOnlyWithDate(!showOnlyWithDate)}
           >
@@ -376,7 +376,7 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
             ))}
           </div>
 
-          {/* Calendar Days Grid */}
+          {/* Calendar Days Grid - LIGHT THEME */}
           <div className="grid grid-cols-7 gap-1">
             {calendarDays.map(day => {
               const dateKey = format(day, 'yyyy-MM-dd');
@@ -390,14 +390,14 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
                   className={`
                     min-h-[100px] rounded-lg p-1.5 flex flex-col
                     transition-all duration-200 border
-                    ${isCurrentMonth ? 'bg-[#2D2D2D] border-gray-700/50' : 'bg-[#1E1E1E] border-transparent'}
-                    ${isTodayDate ? 'ring-2 ring-blue-500 ring-offset-1 ring-offset-[#252525]' : ''}
+                    ${isCurrentMonth ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100'}
+                    ${isTodayDate ? 'ring-2 ring-blue-500 ring-offset-1 ring-offset-white' : ''}
                   `}
                 >
                   {/* Day number */}
                   <div className={`
                     text-xs font-medium mb-1
-                    ${isTodayDate ? 'text-blue-400' : isCurrentMonth ? 'text-gray-300' : 'text-gray-600'}
+                    ${isTodayDate ? 'text-blue-600' : isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}
                   `}>
                     {format(day, 'd')}
                   </div>
@@ -418,33 +418,33 @@ export const NotionStyleCalendar = ({ buildings }: NotionStyleCalendarProps) => 
             })}
           </div>
 
-          {/* Legend */}
-          <div className="mt-4 pt-3 border-t border-gray-700/50">
+          {/* Legend - LIGHT THEME */}
+          <div className="mt-4 pt-3 border-t border-gray-200">
             <div className="flex flex-wrap gap-3 text-[10px]">
               {Object.entries(STATUS_COLORS).slice(0, 8).map(([status, colors]) => (
                 <div key={status} className="flex items-center gap-1.5">
                   <div className={`w-2.5 h-2.5 rounded ${colors.bg} ${colors.border} border`} />
-                  <span className="text-gray-400">{status}</span>
+                  <span className="text-gray-600">{status}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Sidebar: Pending Work */}
+        {/* Sidebar: Pending Work - LIGHT THEME */}
         <div className="lg:col-span-1">
-          <div className="bg-[#2D2D2D] rounded-xl p-3 border border-gray-700/50">
-            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-700/50">
-              <Building2 className="h-4 w-4 text-amber-400" />
-              <h3 className="text-white font-medium text-sm">Aguardando Agendamento</h3>
-              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]">
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
+              <Building2 className="h-4 w-4 text-amber-500" />
+              <h3 className="text-gray-900 font-medium text-sm">Aguardando Agendamento</h3>
+              <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px]">
                 {pendingWork.length}
               </Badge>
             </div>
 
-            <div className="space-y-2 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+            <div className="space-y-2 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
               {pendingWork.length === 0 ? (
-                <div className="text-center py-6 text-gray-500">
+                <div className="text-center py-6 text-gray-400">
                   <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p className="text-xs">Todos agendados!</p>
                 </div>
