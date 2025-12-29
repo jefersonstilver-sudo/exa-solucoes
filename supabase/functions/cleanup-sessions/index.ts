@@ -21,7 +21,12 @@ serve(async (req) => {
 
     const { data, error } = await supabase
       .from('user_sessions')
-      .delete()
+      .update({
+        is_active: false,
+        terminated_at: new Date().toISOString(),
+        terminated_by: null,
+      })
+      .eq('is_active', true)
       .lt('expires_at', new Date().toISOString())
       .select()
 
