@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { DndContext, DragOverlay, closestCenter, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import CreateTaskModal from '@/components/admin/agenda/CreateTaskModal';
+import EditTaskModal from '@/components/admin/agenda/EditTaskModal';
 import TaskListModal from '@/components/admin/agenda/TaskListModal';
 import ScheduleTimeModal from '@/components/admin/agenda/ScheduleTimeModal';
 import TaskCard from '@/components/admin/agenda/TaskCard';
@@ -90,6 +91,10 @@ const AgendaPage = () => {
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [scheduleModalTask, setScheduleModalTask] = useState<NotionTask | null>(null);
   const [scheduleModalDate, setScheduleModalDate] = useState<string | null>(null);
+  
+  // Edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editModalTask, setEditModalTask] = useState<NotionTask | null>(null);
 
   // Fetch tasks
   const { data: tasks, isLoading } = useQuery({
@@ -203,8 +208,13 @@ const AgendaPage = () => {
     return map;
   }, [filteredTasks]);
 
-  // Pending tasks (not completed, with or without date)
-  const pendingTasks = useMemo(() => {
+  // Pending tasks - ONLY those without date and not completed (for drag section)
+  const pendingTasksWithoutDate = useMemo(() => {
+    return tasks?.filter(t => t.status !== 'Concluído' && !t.data) || [];
+  }, [tasks]);
+
+  // All pending tasks (for stats and modal)
+  const allPendingTasks = useMemo(() => {
     return tasks?.filter(t => t.status !== 'Concluído') || [];
   }, [tasks]);
 
@@ -234,22 +244,28 @@ const AgendaPage = () => {
   // Stats
   const stats = useMemo(() => {
     return {
-      pending: pendingTasks.length,
+      pending: allPendingTasks.length,
       overdue: overdueTasks.length,
       completed: completedTasks.length,
       today: todayTasks.length,
     };
-  }, [pendingTasks, overdueTasks, completedTasks, todayTasks]);
+  }, [allPendingTasks, overdueTasks, completedTasks, todayTasks]);
 
   // Get filtered tasks for modal
   const getFilteredTasksForModal = () => {
     switch (listModalFilter) {
-      case 'pending': return pendingTasks;
+      case 'pending': return allPendingTasks;
       case 'overdue': return overdueTasks;
       case 'completed': return completedTasks;
       case 'today': return todayTasks;
       default: return [];
     }
+  };
+
+  // Handle task click from calendar
+  const handleTaskClick = (task: NotionTask) => {
+    setEditModalTask(task);
+    setEditModalOpen(true);
   };
 
   // Open list modal with filter
@@ -365,7 +381,7 @@ const AgendaPage = () => {
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Novo Compromisso
+            Nova Tarefa
           </Button>
           <div className="flex items-center rounded-lg border border-gray-200 p-1">
             <Button
@@ -546,20 +562,21 @@ const AgendaPage = () => {
                       day={day}
                       tasks={dayTasks}
                       isCurrentMonth={isCurrentMonth}
+                      onTaskClick={handleTaskClick}
                     />
                   );
                 })}
               </div>
             </div>
 
-            {/* Pending Tasks Section with Draggable Cards */}
+            {/* Pending Tasks Section with Draggable Cards - Only tasks WITHOUT date */}
             <div className="bg-white rounded-2xl border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-amber-500" />
-                  <h3 className="font-semibold text-gray-900 text-sm">Tarefas Pendentes</h3>
+                  <h3 className="font-semibold text-gray-900 text-sm">Tarefas Pendentes (sem data)</h3>
                   <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
-                    {pendingTasks.length}
+                    {pendingTasksWithoutDate.length}
                   </Badge>
                   <span className="text-[10px] text-gray-400 ml-2">
                     Arraste para agendar
@@ -575,26 +592,26 @@ const AgendaPage = () => {
                 </Button>
               </div>
               
-              {pendingTasks.length === 0 ? (
+              {pendingTasksWithoutDate.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-gray-400">
                   <CheckCircle className="h-10 w-10 mb-2 opacity-50" />
-                  <p className="text-sm">Nenhuma tarefa pendente!</p>
+                  <p className="text-sm">Todas as tarefas já têm data!</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {pendingTasks.slice(0, 9).map(task => (
+                  {pendingTasksWithoutDate.slice(0, 9).map(task => (
                     <DraggableTaskCard key={task.id} task={task} showCompleteButton />
                   ))}
                 </div>
               )}
-              {pendingTasks.length > 9 && (
+              {pendingTasksWithoutDate.length > 9 && (
                 <div className="text-center mt-4">
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => openListModal('pending')}
                   >
-                    Ver mais {pendingTasks.length - 9} tarefas
+                    Ver mais {pendingTasksWithoutDate.length - 9} tarefas
                   </Button>
                 </div>
               )}
@@ -622,23 +639,23 @@ const AgendaPage = () => {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {dayTasks.map(task => (
-                  <TaskCard key={task.id} task={task} showCompleteButton />
+                  <TaskCard key={task.id} task={task} showCompleteButton onClick={() => handleTaskClick(task)} />
                 ))}
               </div>
             </div>
           ))}
-          {pendingTasks.filter(t => !t.data).length > 0 && (
+          {pendingTasksWithoutDate.length > 0 && (
             <div className="bg-amber-50 rounded-xl border border-amber-200 p-4">
               <h3 className="font-semibold text-amber-700 text-sm mb-3 flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 Sem Data Definida
                 <Badge className="bg-amber-100 text-amber-700 text-[10px]">
-                  {pendingTasks.filter(t => !t.data).length}
+                  {pendingTasksWithoutDate.length}
                 </Badge>
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {pendingTasks.filter(t => !t.data).map(task => (
-                  <TaskCard key={task.id} task={task} showCompleteButton />
+                {pendingTasksWithoutDate.map(task => (
+                  <TaskCard key={task.id} task={task} showCompleteButton onClick={() => handleTaskClick(task)} />
                 ))}
               </div>
             </div>
@@ -664,6 +681,11 @@ const AgendaPage = () => {
         targetDate={scheduleModalDate}
         onConfirm={handleScheduleConfirm}
         isLoading={updateTaskMutation.isPending}
+      />
+      <EditTaskModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        task={editModalTask}
       />
     </div>
   );

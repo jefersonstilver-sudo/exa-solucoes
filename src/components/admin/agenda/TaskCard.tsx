@@ -56,9 +56,10 @@ interface TaskCardProps {
   compact?: boolean;
   showCompleteButton?: boolean;
   onComplete?: (taskId: string) => void;
+  onClick?: () => void;
 }
 
-const TaskCard = ({ task, compact = false, showCompleteButton = true, onComplete }: TaskCardProps) => {
+const TaskCard = ({ task, compact = false, showCompleteButton = true, onComplete, onClick }: TaskCardProps) => {
   const queryClient = useQueryClient();
   const statusColors = getStatusColor(task.status);
   const prioridadeColors = getPrioridadeColor(task.prioridade);
@@ -92,20 +93,30 @@ const TaskCard = ({ task, compact = false, showCompleteButton = true, onComplete
   if (compact) {
     return (
       <div 
-        className={`px-2 py-1 rounded text-xs cursor-pointer transition-all hover:scale-105 ${statusColors.bg} ${statusColors.text} border ${statusColors.border} ${isOverdue ? 'ring-1 ring-red-400' : ''}`}
+        onClick={onClick}
+        className={`px-2 py-1.5 rounded text-xs cursor-pointer transition-all hover:scale-105 hover:shadow-sm ${statusColors.bg} ${statusColors.text} border ${statusColors.border} ${isOverdue ? 'ring-1 ring-red-400' : ''}`}
         title={`${task.nome} - ${task.status || 'Sem status'}`}
       >
         <div className="flex items-center gap-1">
-          {task.prioridade === 'Alta' && <AlertTriangle className="h-3 w-3 text-red-500" />}
-          {isOverdue && <AlertTriangle className="h-3 w-3 text-red-500" />}
-          <span className="font-medium truncate">{task.nome}</span>
+          {task.prioridade === 'Alta' && <AlertTriangle className="h-3 w-3 text-red-500 flex-shrink-0" />}
+          {isOverdue && !task.prioridade && <AlertTriangle className="h-3 w-3 text-red-500 flex-shrink-0" />}
+          <span className="font-medium truncate flex-1">{task.nome}</span>
+        </div>
+        {/* Status badge compacto */}
+        <div className="flex items-center gap-1 mt-0.5">
+          <span className={`text-[9px] px-1 py-0.5 rounded ${statusColors.bg} ${statusColors.text} font-medium`}>
+            {task.status === 'NÃO REALIZADO' ? 'Pendente' : task.status === 'REALIZADO' ? 'Realizado' : 'Concluído'}
+          </span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all ${isOverdue ? 'ring-1 ring-red-300' : ''} ${isCompleted ? 'opacity-75' : ''}`}>
+    <div 
+      onClick={onClick}
+      className={`p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer ${isOverdue ? 'ring-1 ring-red-300' : ''} ${isCompleted ? 'opacity-75' : ''}`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -115,29 +126,24 @@ const TaskCard = ({ task, compact = false, showCompleteButton = true, onComplete
               </Badge>
             )}
             {task.status && (
-              <Badge className={`text-[10px] ${statusColors.bg} ${statusColors.text} ${statusColors.border}`}>
-                {task.status}
+              <Badge className={`text-[10px] font-semibold ${statusColors.bg} ${statusColors.text} ${statusColors.border}`}>
+                {task.status === 'NÃO REALIZADO' ? 'Pendente' : task.status}
               </Badge>
             )}
             {isOverdue && (
-              <Badge className="text-[10px] bg-red-100 text-red-700 border-red-200">
+              <Badge className="text-[10px] bg-red-100 text-red-700 border-red-200 font-semibold">
                 Atrasada
+              </Badge>
+            )}
+            {task.categoria && (
+              <Badge className="text-[10px] bg-purple-50 text-purple-700 border-purple-200">
+                {task.categoria}
               </Badge>
             )}
           </div>
           <h3 className={`font-medium text-gray-900 text-sm ${isCompleted ? 'line-through text-gray-500' : ''}`}>
             {task.nome}
           </h3>
-          {task.responsavel && (
-            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-              {task.responsavel_avatar ? (
-                <img src={task.responsavel_avatar} className="h-4 w-4 rounded-full" alt="" />
-              ) : (
-                <span>👤</span>
-              )}
-              {task.responsavel}
-            </p>
-          )}
           {task.data && (
             <p className={`text-xs mt-1 flex items-center gap-1 ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
               <Calendar className="h-3 w-3" />
