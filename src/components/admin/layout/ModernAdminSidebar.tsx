@@ -31,7 +31,8 @@ import {
   FileText,
   Scale,
   BarChart3,
-  Landmark
+  Landmark,
+  Calendar
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
