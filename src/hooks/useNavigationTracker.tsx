@@ -2,10 +2,21 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import type { Json } from '@/integrations/supabase/types';
 
 const STORAGE_KEY_SESSION_ID = 'exa_session_id';
 const STORAGE_KEY_SESSION_CREATED = 'exa_session_created_at';
 const SESSION_EXPIRY_HOURS = 24;
+
+// Helper to convert any object to Supabase Json type safely
+const toJson = (obj: unknown): Json => {
+  if (obj === null || obj === undefined) return null;
+  try {
+    return JSON.parse(JSON.stringify(obj)) as Json;
+  } catch {
+    return null;
+  }
+};
 
 /**
  * Hook que rastreia navegação de todos os usuários para auditoria premium
@@ -141,10 +152,10 @@ export const useNavigationTracker = () => {
         time_spent_seconds: timeSpent,
         scroll_depth: scrollDepthRef.current,
         clicks_count: clickCountRef.current,
-        action_details: {
+        action_details: toJson({
           referrer: document.referrer || null,
           timestamp: new Date().toISOString(),
-        }
+        })
       }]);
     } catch (error) {
       console.error('❌ Erro ao salvar navegação:', error);
@@ -220,7 +231,7 @@ export const useNavigationTracker = () => {
         path: location.pathname,
         page_title: getPageTitle(location.pathname),
         action_type: actionType,
-        action_details: details || {},
+        action_details: toJson(details),
       }]);
     } catch (error) {
       console.error('❌ Erro ao registrar ação:', error);

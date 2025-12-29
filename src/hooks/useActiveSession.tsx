@@ -1,18 +1,52 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { ipGeolocationService } from '@/services/ipGeolocation';
-import { v4 as uuidv4 } from 'uuid';
+
+const STORAGE_KEY_SESSION_ID = 'exa_session_id';
+const STORAGE_KEY_SESSION_CREATED = 'exa_session_created_at';
+const SESSION_EXPIRY_HOURS = 24;
 
 interface UseActiveSessionOptions {
   disabled?: boolean;
 }
 
+/**
+ * Hook que gerencia sessão ativa do usuário
+ * Usa session_id persistente no localStorage para evitar duplicação
+ */
 export const useActiveSession = (options: UseActiveSessionOptions = {}) => {
   const { disabled = false } = options;
   const { userProfile } = useAuth();
-  const sessionIdRef = useRef<string>(uuidv4());
   const heartbeatIntervalRef = useRef<NodeJS.Timeout>();
+  const sessionStartedRef = useRef<boolean>(false);
+
+  // Obter ou criar session_id persistente (compartilhado com useNavigationTracker)
+  const getSessionId = useCallback((): string => {
+    try {
+      const storedId = localStorage.getItem(STORAGE_KEY_SESSION_ID);
+      const storedCreatedAt = localStorage.getItem(STORAGE_KEY_SESSION_CREATED);
+      
+      // Verificar se sessão expirou (24h)
+      if (storedId && storedCreatedAt) {
+        const createdAt = new Date(storedCreatedAt).getTime();
+        const now = Date.now();
+        const hoursDiff = (now - createdAt) / (1000 * 60 * 60);
+        
+        if (hoursDiff < SESSION_EXPIRY_HOURS) {
+          return storedId;
+        }
+      }
+      
+      // Criar nova sessão
+      const newId = crypto.randomUUID();
+      localStorage.setItem(STORAGE_KEY_SESSION_ID, newId);
+      localStorage.setItem(STORAGE_KEY_SESSION_CREATED, new Date().toISOString());
+      return newId;
+    } catch {
+      return crypto.randomUUID();
+    }
+  }, []);
 
   useEffect(() => {
     // Se desabilitado (ex: painéis públicos), não faz nada
@@ -21,11 +55,17 @@ export const useActiveSession = (options: UseActiveSessionOptions = {}) => {
       return;
     }
     
+    // Evitar múltiplas inicializações
+    if (sessionStartedRef.current) {
+      return;
+    }
+
     console.log('🔵 useActiveSession: Iniciando...');
-    const sessionId = sessionIdRef.current;
+    const sessionId = getSessionId();
 
     const startSession = async () => {
       try {
+        sessionStartedRef.current = true;
         console.log('🔵 [RASTREAMENTO AVANÇADO] Iniciando captura completa de dados...');
         
         // 1. OBTER IP REAL (múltiplos serviços)
@@ -111,16 +151,15 @@ export const useActiveSession = (options: UseActiveSessionOptions = {}) => {
           utm_medium: utmMedium,
           utm_campaign: utmCampaign,
           last_activity: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString()
+          expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+          is_active: true
         };
 
-        console.log('🔵 [DATABASE] Inserindo sessão completa:', sessionData);
-
-        console.log('🔵 Tentando inserir sessão:', sessionData);
+        console.log('🔵 [DATABASE] Upserting sessão:', sessionId);
 
         const { data, error } = await supabase
           .from('user_sessions')
-          .upsert(sessionData)
+          .upsert(sessionData, { onConflict: 'session_id' })
           .select();
 
         if (error) {
@@ -128,7 +167,7 @@ export const useActiveSession = (options: UseActiveSessionOptions = {}) => {
           return;
         }
 
-        console.log('✅ Sessão criada com sucesso:', data);
+        console.log('✅ Sessão criada/atualizada com sucesso:', data);
 
         console.log('🔵 [SYSTEM EVENT] Registrando evento de início de sessão...');
         await supabase.from('log_eventos_sistema').insert({
@@ -154,7 +193,8 @@ export const useActiveSession = (options: UseActiveSessionOptions = {}) => {
         console.log('💓 Atualizando heartbeat...');
         await supabase.from('user_sessions').update({
           last_activity: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString()
+          expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+          is_active: true
         }).eq('session_id', sessionId);
       } catch (error) {
         console.error('❌ Erro ao atualizar heartbeat:', error);
@@ -163,9 +203,13 @@ export const useActiveSession = (options: UseActiveSessionOptions = {}) => {
 
     const endSession = async () => {
       try {
-        console.log('🔴 Encerrando sessão:', sessionId);
-        await supabase.from('user_sessions').delete().eq('session_id', sessionId);
-        console.log('✅ Sessão encerrada');
+        console.log('🔴 Marcando sessão como inativa:', sessionId);
+        // Apenas marcar como inativa, não deletar (para auditoria)
+        await supabase.from('user_sessions').update({
+          is_active: false,
+          terminated_at: new Date().toISOString()
+        }).eq('session_id', sessionId);
+        console.log('✅ Sessão marcada como inativa');
       } catch (error) {
         console.error('❌ Erro ao encerrar sessão:', error);
       }
@@ -184,7 +228,9 @@ export const useActiveSession = (options: UseActiveSessionOptions = {}) => {
       }
       endSession();
     };
-  }, [userProfile?.id, disabled]);
+  }, [userProfile?.id, disabled, getSessionId]);
+
+  return { getSessionId };
 };
 
 function getDeviceType(): string {
@@ -202,3 +248,12 @@ function getBrowserInfo(): string {
   if (ua.includes('Edge')) return 'Edge';
   return 'Other';
 }
+
+// Exportar função utilitária para obter session_id atual
+export const getCurrentSessionId = (): string | null => {
+  try {
+    return localStorage.getItem(STORAGE_KEY_SESSION_ID);
+  } catch {
+    return null;
+  }
+};
