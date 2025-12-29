@@ -143,7 +143,7 @@ const AgendaPage = () => {
         .order('data', { ascending: true, nullsFirst: false });
       
       if (error) throw error;
-      return (data || []) as NotionTask[];
+      return (data || []) as unknown as NotionTask[];
     }
   });
 
