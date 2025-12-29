@@ -555,3 +555,6 @@ verify_jwt = false
 [[cron]]
 function_name = "task-reminder-scheduler"
 schedule = "* * * * *"
+
+[functions.update-notion-task]
+verify_jwt = false

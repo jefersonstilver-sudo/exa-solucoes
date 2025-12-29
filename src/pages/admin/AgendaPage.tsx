@@ -30,9 +30,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
+import { DndContext, DragOverlay, closestCenter, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import CreateTaskModal from '@/components/admin/agenda/CreateTaskModal';
 import TaskListModal from '@/components/admin/agenda/TaskListModal';
 import TaskCard from '@/components/admin/agenda/TaskCard';
+import DraggableTaskCard from '@/components/admin/agenda/DraggableTaskCard';
+import DroppableCalendarDay from '@/components/admin/agenda/DroppableCalendarDay';
+import { useActivityLogger } from '@/hooks/useActivityLogger';
+import { useAuth } from '@/hooks/useAuth';
 
 interface NotionTask {
   id: string;
@@ -67,10 +72,13 @@ const getStatusColor = (status: string | null) => {
 
 const AgendaPage = () => {
   const queryClient = useQueryClient();
+  const { logUpdate } = useActivityLogger();
+  const { userProfile } = useAuth();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['NÃO REALIZADO', 'REALIZADO', 'Concluído']);
   const [selectedPrioridades, setSelectedPrioridades] = useState<string[]>(['Alta', 'Baixa']);
+  const [activeTask, setActiveTask] = useState<NotionTask | null>(null);
   
   // Modal states
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -122,6 +130,29 @@ const AgendaPage = () => {
     },
     onError: (error: any) => {
       toast.error(`Erro na sincronização: ${error.message}`);
+    }
+  });
+
+  // Update task date mutation (for drag-and-drop)
+  const updateTaskMutation = useMutation({
+    mutationFn: async ({ taskId, newDate }: { taskId: string; newDate: string }) => {
+      const { data, error } = await supabase.functions.invoke('update-notion-task', {
+        body: { 
+          taskId, 
+          updates: { data: newDate },
+          userId: userProfile?.id 
+        }
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      const syncInfo = data?.notion_synced ? ' (sincronizado com Notion)' : '';
+      toast.success(`Tarefa reagendada com sucesso!${syncInfo}`);
+      queryClient.invalidateQueries({ queryKey: ['notion-tasks'] });
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao reagendar tarefa: ${error.message}`);
     }
   });
 
@@ -223,6 +254,42 @@ const AgendaPage = () => {
     if (diffMins < 1) return 'agora';
     if (diffMins < 60) return `${diffMins} min`;
     return `${Math.floor(diffMins / 60)}h`;
+  };
+
+  // Drag-and-drop handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const task = active.data.current?.task as NotionTask | undefined;
+    if (task) {
+      setActiveTask(task);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveTask(null);
+
+    if (!over) return;
+
+    const taskId = active.id as string;
+    const newDate = over.id as string;
+    const task = active.data.current?.task as NotionTask | undefined;
+
+    if (!task) return;
+
+    // If dropped on the same date, do nothing
+    if (task.data?.split('T')[0] === newDate) return;
+
+    // Update the task date
+    updateTaskMutation.mutate({ taskId, newDate });
+
+    // Log the activity
+    logUpdate('agenda_task', taskId, {
+      action: 'drag_reschedule',
+      task_name: task.nome,
+      previous_date: task.data,
+      new_date: newDate,
+    });
   };
 
   return (
@@ -331,175 +398,178 @@ const AgendaPage = () => {
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
         </div>
       ) : viewMode === 'calendar' ? (
-        <div className="space-y-6">
-          {/* Calendar - Full Width */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4">
-            {/* Calendar Header */}
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="h-8 w-8 p-0"
-                  onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <h2 className="font-semibold text-gray-900 min-w-[160px] text-center capitalize">
-                  {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
-                </h2>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="h-8 w-8 p-0"
-                  onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="ml-2 h-7 px-3 text-xs"
-                  onClick={() => setCurrentMonth(new Date())}
-                >
-                  Hoje
-                </Button>
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="outline" className="h-8 text-xs">
-                    <Filter className="h-3.5 w-3.5 mr-1.5" />
-                    Filtros
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="min-w-[180px]">
-                  <DropdownMenuLabel className="text-xs text-gray-500">Status</DropdownMenuLabel>
-                  {Object.keys(STATUS_COLORS).map(status => (
-                    <DropdownMenuCheckboxItem
-                      key={status}
-                      checked={selectedStatuses.includes(status)}
-                      onCheckedChange={() => {
-                        setSelectedStatuses(prev => 
-                          prev.includes(status) 
-                            ? prev.filter(s => s !== status)
-                            : [...prev, status]
-                        );
-                      }}
-                      className="text-xs"
-                    >
-                      {status}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="text-xs text-gray-500">Prioridade</DropdownMenuLabel>
-                  {Object.keys(PRIORIDADE_COLORS).map(prio => (
-                    <DropdownMenuCheckboxItem
-                      key={prio}
-                      checked={selectedPrioridades.includes(prio)}
-                      onCheckedChange={() => {
-                        setSelectedPrioridades(prev => 
-                          prev.includes(prio) 
-                            ? prev.filter(p => p !== prio)
-                            : [...prev, prio]
-                        );
-                      }}
-                      className="text-xs"
-                    >
-                      {prio}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            {/* Weekday Headers */}
-            <div className="grid grid-cols-7 gap-1 mb-1">
-              {weekDays.map(day => (
-                <div key={day} className="text-center text-xs text-gray-400 font-medium py-2 uppercase">
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            {/* Calendar Grid - Larger cells */}
-            <div className="grid grid-cols-7 gap-1">
-              {calendarDays.map(day => {
-                const dateKey = format(day, 'yyyy-MM-dd');
-                const dayTasks = tasksByDate.get(dateKey) || [];
-                const isTodayDate = isToday(day);
-                const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
-
-                return (
-                  <div 
-                    key={dateKey}
-                    className={`
-                      min-h-[120px] rounded-lg p-2 flex flex-col transition-all border
-                      ${isCurrentMonth ? 'bg-gray-50 border-gray-100' : 'bg-white border-transparent'}
-                      ${isTodayDate ? 'ring-2 ring-blue-500 ring-offset-1' : ''}
-                    `}
+        <DndContext 
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="space-y-6">
+            {/* Calendar - Full Width */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-4">
+              {/* Calendar Header */}
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-8 w-8 p-0"
+                    onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
                   >
-                    <div className={`text-xs font-medium mb-1.5 ${isTodayDate ? 'text-blue-600' : isCurrentMonth ? 'text-gray-700' : 'text-gray-300'}`}>
-                      {format(day, 'd')}
-                    </div>
-                    <div className="flex-1 space-y-1 overflow-hidden">
-                      {dayTasks.slice(0, 4).map(task => (
-                        <TaskCard key={task.id} task={task} compact />
-                      ))}
-                      {dayTasks.length > 4 && (
-                        <div className="text-[10px] text-gray-400 pl-1">+{dayTasks.length - 4} mais</div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <h2 className="font-semibold text-gray-900 min-w-[160px] text-center capitalize">
+                    {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
+                  </h2>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-8 w-8 p-0"
+                    onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="ml-2 h-7 px-3 text-xs"
+                    onClick={() => setCurrentMonth(new Date())}
+                  >
+                    Hoje
+                  </Button>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" variant="outline" className="h-8 text-xs">
+                      <Filter className="h-3.5 w-3.5 mr-1.5" />
+                      Filtros
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="min-w-[180px]">
+                    <DropdownMenuLabel className="text-xs text-gray-500">Status</DropdownMenuLabel>
+                    {Object.keys(STATUS_COLORS).map(status => (
+                      <DropdownMenuCheckboxItem
+                        key={status}
+                        checked={selectedStatuses.includes(status)}
+                        onCheckedChange={() => {
+                          setSelectedStatuses(prev => 
+                            prev.includes(status) 
+                              ? prev.filter(s => s !== status)
+                              : [...prev, status]
+                          );
+                        }}
+                        className="text-xs"
+                      >
+                        {status}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-xs text-gray-500">Prioridade</DropdownMenuLabel>
+                    {Object.keys(PRIORIDADE_COLORS).map(prio => (
+                      <DropdownMenuCheckboxItem
+                        key={prio}
+                        checked={selectedPrioridades.includes(prio)}
+                        onCheckedChange={() => {
+                          setSelectedPrioridades(prev => 
+                            prev.includes(prio) 
+                              ? prev.filter(p => p !== prio)
+                              : [...prev, prio]
+                          );
+                        }}
+                        className="text-xs"
+                      >
+                        {prio}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
 
-          {/* Pending Tasks Section Below Calendar */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-amber-500" />
-                <h3 className="font-semibold text-gray-900 text-sm">Tarefas Pendentes</h3>
-                <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
-                  {pendingTasks.length}
-                </Badge>
-              </div>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="text-xs text-gray-500"
-                onClick={() => openListModal('pending')}
-              >
-                Ver todas
-              </Button>
-            </div>
-            
-            {pendingTasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                <CheckCircle className="h-10 w-10 mb-2 opacity-50" />
-                <p className="text-sm">Nenhuma tarefa pendente!</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {pendingTasks.slice(0, 9).map(task => (
-                  <TaskCard key={task.id} task={task} showCompleteButton />
+              {/* Weekday Headers */}
+              <div className="grid grid-cols-7 gap-1 mb-1">
+                {weekDays.map(day => (
+                  <div key={day} className="text-center text-xs text-gray-400 font-medium py-2 uppercase">
+                    {day}
+                  </div>
                 ))}
               </div>
-            )}
-            {pendingTasks.length > 9 && (
-              <div className="text-center mt-4">
+
+              {/* Calendar Grid with Droppable Cells */}
+              <div className="grid grid-cols-7 gap-1">
+                {calendarDays.map(day => {
+                  const dateKey = format(day, 'yyyy-MM-dd');
+                  const dayTasks = tasksByDate.get(dateKey) || [];
+                  const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
+
+                  return (
+                    <DroppableCalendarDay
+                      key={dateKey}
+                      day={day}
+                      tasks={dayTasks}
+                      isCurrentMonth={isCurrentMonth}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Pending Tasks Section with Draggable Cards */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-amber-500" />
+                  <h3 className="font-semibold text-gray-900 text-sm">Tarefas Pendentes</h3>
+                  <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
+                    {pendingTasks.length}
+                  </Badge>
+                  <span className="text-[10px] text-gray-400 ml-2">
+                    Arraste para agendar
+                  </span>
+                </div>
                 <Button 
-                  variant="outline" 
-                  size="sm"
+                  size="sm" 
+                  variant="ghost" 
+                  className="text-xs text-gray-500"
                   onClick={() => openListModal('pending')}
                 >
-                  Ver mais {pendingTasks.length - 9} tarefas
+                  Ver todas
                 </Button>
               </div>
-            )}
+              
+              {pendingTasks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                  <CheckCircle className="h-10 w-10 mb-2 opacity-50" />
+                  <p className="text-sm">Nenhuma tarefa pendente!</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {pendingTasks.slice(0, 9).map(task => (
+                    <DraggableTaskCard key={task.id} task={task} showCompleteButton />
+                  ))}
+                </div>
+              )}
+              {pendingTasks.length > 9 && (
+                <div className="text-center mt-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => openListModal('pending')}
+                  >
+                    Ver mais {pendingTasks.length - 9} tarefas
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+
+          {/* Drag Overlay for visual feedback */}
+          <DragOverlay>
+            {activeTask ? (
+              <div className="opacity-90 rotate-3 scale-105">
+                <TaskCard task={activeTask} showCompleteButton={false} />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       ) : (
         /* List View */
         <div className="space-y-4">
