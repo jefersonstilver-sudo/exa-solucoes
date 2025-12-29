@@ -235,8 +235,10 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
                       return (
                         <div className="bg-white/95 backdrop-blur-sm border border-border/50 rounded-lg p-2 shadow-lg text-xs">
                           <p className="font-semibold">{data.name}</p>
-                          <p className="text-emerald-600">{formatCurrency(data.valor)} recebido</p>
-                          {data.projetado > 0 && (
+                          <p className="text-emerald-600">
+                            {isPrivate ? '•••••' : formatCurrency(data.valor)} recebido
+                          </p>
+                          {data.projetado > 0 && !isPrivate && (
                             <p className="text-amber-600">+{formatCurrency(data.projetado)} projetado</p>
                           )}
                           <p className="text-muted-foreground">

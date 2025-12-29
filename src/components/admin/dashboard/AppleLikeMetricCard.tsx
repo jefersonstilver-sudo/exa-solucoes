@@ -15,6 +15,7 @@ interface AppleLikeMetricCardProps {
   hoverContent?: React.ReactNode;
   onClick?: () => void;
   variant?: 'default' | 'danger';
+  disableHover?: boolean; // Bloqueia hover para proteção de dados
 }
 
 const AppleLikeMetricCard = ({
@@ -24,7 +25,8 @@ const AppleLikeMetricCard = ({
   description,
   hoverContent,
   onClick,
-  variant = 'default'
+  variant = 'default',
+  disableHover = false
 }: AppleLikeMetricCardProps) => {
   const cardContent = (
     <motion.div
@@ -73,8 +75,8 @@ const AppleLikeMetricCard = ({
     </motion.div>
   );
 
-  // If there's hover content, wrap in HoverCard
-  if (hoverContent) {
+  // If there's hover content AND hover is not disabled, wrap in HoverCard
+  if (hoverContent && !disableHover) {
     return (
       <HoverCard openDelay={200} closeDelay={100}>
         <HoverCardTrigger asChild>

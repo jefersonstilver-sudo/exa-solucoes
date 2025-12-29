@@ -146,6 +146,7 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
           value={stats.loading ? '...' : (isPrivate ? '•••••' : formatCurrency(stats.vendas))}
           icon={DollarSign}
           description={!stats.loading ? vendasTrend.value : undefined}
+          disableHover={isPrivate}
           hoverContent={
             <div className="space-y-3">
               <div>
@@ -186,6 +187,7 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
               2025: {isPrivate ? '•••••' : formatCurrency(stats.vendasProjetadas2025)}
             </span>
           ) : undefined}
+          disableHover={isPrivate}
           hoverContent={
             <div className="space-y-3">
               <div>

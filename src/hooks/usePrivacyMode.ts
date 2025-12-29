@@ -7,9 +7,10 @@ export const usePrivacyModeStore = () => {
   const [isPrivate, setIsPrivate] = useState(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored === 'true';
+      // Se nunca foi definido (null), começa ATIVO por padrão para proteção
+      return stored === null ? true : stored === 'true';
     } catch {
-      return false;
+      return true; // Por segurança, começa ativo
     }
   });
 
