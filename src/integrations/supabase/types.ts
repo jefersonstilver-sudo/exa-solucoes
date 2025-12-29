@@ -7801,6 +7801,48 @@ export type Database = {
         }
         Relationships: []
       }
+      session_navigation_history: {
+        Row: {
+          action_details: Json | null
+          action_type: string | null
+          clicks_count: number | null
+          created_at: string | null
+          id: string
+          page_title: string | null
+          path: string
+          scroll_depth: number | null
+          session_id: string
+          time_spent_seconds: number | null
+          user_id: string | null
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type?: string | null
+          clicks_count?: number | null
+          created_at?: string | null
+          id?: string
+          page_title?: string | null
+          path: string
+          scroll_depth?: number | null
+          session_id: string
+          time_spent_seconds?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string | null
+          clicks_count?: number | null
+          created_at?: string | null
+          id?: string
+          page_title?: string | null
+          path?: string
+          scroll_depth?: number | null
+          session_id?: string
+          time_spent_seconds?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       signatarios_exa: {
         Row: {
           cargo: string
@@ -9625,6 +9667,7 @@ export type Database = {
         Args: { p_video1_id: string; p_video2_id: string }
         Returns: boolean
       }
+      clean_old_navigation_history: { Args: never; Returns: undefined }
       cleanup_expired_blocked_ips: { Args: never; Returns: undefined }
       cleanup_expired_sessions: { Args: never; Returns: undefined }
       cleanup_old_logs: { Args: never; Returns: undefined }
