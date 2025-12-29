@@ -45,17 +45,23 @@ const AlertasGeraisCard: React.FC = () => {
           .eq('status', 'choice_made')
           .is('gift_code', null);
 
-        // 3. Prédios aguardando agendamento técnico (status lead ou instalacao)
+        // 3. Prédios aguardando agendamento técnico (mesma lógica da página Sync Notion)
+        const PENDING_WORK_STATUSES = [
+          'Instalação', 'Instalação Internet', 'Subir Nuc', 
+          'Troca painel', 'Manutenção', 'Manut', 
+          'Visita Técnica', 'Primeira Reunião'
+        ];
         const { count: prediosCount } = await supabase
           .from('buildings')
           .select('id', { count: 'exact', head: true })
-          .in('status', ['lead', 'instalacao']);
+          .in('notion_status', PENDING_WORK_STATUSES)
+          .is('notion_data_trabalho', null);
 
-        // 4. Tarefas pendentes na agenda
+        // 4. Tarefas pendentes na agenda (não concluídas)
         const { count: tarefasCount } = await supabase
           .from('notion_tasks' as any)
           .select('id', { count: 'exact', head: true })
-          .or('status.neq.Concluído,status.is.null');
+          .neq('status', 'Concluído');
 
         setStats({
           videosParaAprovar: videosCount || 0,
@@ -187,7 +193,7 @@ const AlertasGeraisCard: React.FC = () => {
                 ? 'bg-blue-50 border-blue-200 hover:bg-blue-100' 
                 : 'bg-gray-50 border-gray-200'
             }`}
-            onClick={() => navigate(`${basePath}/predios`)}
+            onClick={() => navigate(`${basePath}/sync-notion`)}
           >
             <div className="flex items-center gap-2 mb-1">
               <Building2 className={`h-4 w-4 ${stats.prediosAguardandoAgendamento > 0 ? 'text-blue-600' : 'text-gray-400'}`} />
