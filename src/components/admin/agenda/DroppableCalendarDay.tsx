@@ -22,9 +22,10 @@ interface DroppableCalendarDayProps {
   day: Date;
   tasks: NotionTask[];
   isCurrentMonth: boolean;
+  onTaskClick?: (task: NotionTask) => void;
 }
 
-const DroppableCalendarDay = ({ day, tasks, isCurrentMonth }: DroppableCalendarDayProps) => {
+const DroppableCalendarDay = ({ day, tasks, isCurrentMonth, onTaskClick }: DroppableCalendarDayProps) => {
   const dateKey = format(day, 'yyyy-MM-dd');
   const isTodayDate = isToday(day);
   
@@ -47,11 +48,16 @@ const DroppableCalendarDay = ({ day, tasks, isCurrentMonth }: DroppableCalendarD
         {format(day, 'd')}
       </div>
       <div className="flex-1 space-y-1 overflow-hidden">
-        {tasks.slice(0, 4).map(task => (
-          <TaskCard key={task.id} task={task} compact />
+        {tasks.slice(0, 3).map(task => (
+          <TaskCard 
+            key={task.id} 
+            task={task} 
+            compact 
+            onClick={() => onTaskClick?.(task)}
+          />
         ))}
-        {tasks.length > 4 && (
-          <div className="text-[10px] text-gray-400 pl-1">+{tasks.length - 4} mais</div>
+        {tasks.length > 3 && (
+          <div className="text-[10px] text-gray-400 pl-1">+{tasks.length - 3} mais</div>
         )}
       </div>
     </div>
