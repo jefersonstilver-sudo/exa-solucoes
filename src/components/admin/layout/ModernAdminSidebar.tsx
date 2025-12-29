@@ -131,7 +131,7 @@ export function ModernAdminSidebar() {
           badgeTooltip: 'Controle de estoque de posições disponíveis'
         },
         {
-          title: 'Sync Notion',
+          title: 'Agenda Técnica',
           href: buildPath('sync-notion'),
           icon: Building2,
           moduleKey: MODULE_KEYS.sync_notion,
