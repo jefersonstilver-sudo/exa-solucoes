@@ -33,6 +33,7 @@ import {
 import { DndContext, DragOverlay, closestCenter, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import CreateTaskModal from '@/components/admin/agenda/CreateTaskModal';
 import TaskListModal from '@/components/admin/agenda/TaskListModal';
+import ScheduleTimeModal from '@/components/admin/agenda/ScheduleTimeModal';
 import TaskCard from '@/components/admin/agenda/TaskCard';
 import DraggableTaskCard from '@/components/admin/agenda/DraggableTaskCard';
 import DroppableCalendarDay from '@/components/admin/agenda/DroppableCalendarDay';
@@ -84,6 +85,11 @@ const AgendaPage = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [listModalOpen, setListModalOpen] = useState(false);
   const [listModalFilter, setListModalFilter] = useState<'pending' | 'overdue' | 'completed' | 'today'>('pending');
+  
+  // Schedule modal states (for drag-and-drop)
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [scheduleModalTask, setScheduleModalTask] = useState<NotionTask | null>(null);
+  const [scheduleModalDate, setScheduleModalDate] = useState<string | null>(null);
 
   // Fetch tasks
   const { data: tasks, isLoading } = useQuery({
@@ -133,13 +139,27 @@ const AgendaPage = () => {
     }
   });
 
-  // Update task date mutation (for drag-and-drop)
+  // Update task date mutation (for drag-and-drop with time selection)
   const updateTaskMutation = useMutation({
-    mutationFn: async ({ taskId, newDate }: { taskId: string; newDate: string }) => {
+    mutationFn: async ({ 
+      taskId, 
+      newDate, 
+      hora, 
+      tipoHorario 
+    }: { 
+      taskId: string; 
+      newDate: string; 
+      hora: string; 
+      tipoHorario: 'fixo' | 'ate';
+    }) => {
       const { data, error } = await supabase.functions.invoke('update-notion-task', {
         body: { 
           taskId, 
-          updates: { data: newDate },
+          updates: { 
+            data: newDate,
+            hora,
+            tipo_horario: tipoHorario,
+          },
           userId: userProfile?.id 
         }
       });
@@ -150,6 +170,9 @@ const AgendaPage = () => {
       const syncInfo = data?.notion_synced ? ' (sincronizado com Notion)' : '';
       toast.success(`Tarefa reagendada com sucesso!${syncInfo}`);
       queryClient.invalidateQueries({ queryKey: ['notion-tasks'] });
+      setScheduleModalOpen(false);
+      setScheduleModalTask(null);
+      setScheduleModalDate(null);
     },
     onError: (error: any) => {
       toast.error(`Erro ao reagendar tarefa: ${error.message}`);
@@ -280,15 +303,32 @@ const AgendaPage = () => {
     // If dropped on the same date, do nothing
     if (task.data?.split('T')[0] === newDate) return;
 
-    // Update the task date
-    updateTaskMutation.mutate({ taskId, newDate });
+    // Open the schedule modal instead of saving directly
+    setScheduleModalTask(task);
+    setScheduleModalDate(newDate);
+    setScheduleModalOpen(true);
+  };
+
+  // Handle schedule confirmation from modal
+  const handleScheduleConfirm = (hora: string, tipoHorario: 'fixo' | 'ate') => {
+    if (!scheduleModalTask || !scheduleModalDate) return;
+
+    // Update the task with date, time, and time type
+    updateTaskMutation.mutate({ 
+      taskId: scheduleModalTask.id, 
+      newDate: scheduleModalDate,
+      hora,
+      tipoHorario,
+    });
 
     // Log the activity
-    logUpdate('agenda_task', taskId, {
+    logUpdate('agenda_task', scheduleModalTask.id, {
       action: 'drag_reschedule',
-      task_name: task.nome,
-      previous_date: task.data,
-      new_date: newDate,
+      task_name: scheduleModalTask.nome,
+      previous_date: scheduleModalTask.data,
+      new_date: scheduleModalDate,
+      hora,
+      tipo_horario: tipoHorario,
     });
   };
 
@@ -616,6 +656,14 @@ const AgendaPage = () => {
         onOpenChange={setListModalOpen}
         filterType={listModalFilter}
         tasks={getFilteredTasksForModal()}
+      />
+      <ScheduleTimeModal
+        open={scheduleModalOpen}
+        onOpenChange={setScheduleModalOpen}
+        task={scheduleModalTask}
+        targetDate={scheduleModalDate}
+        onConfirm={handleScheduleConfirm}
+        isLoading={updateTaskMutation.isPending}
       />
     </div>
   );

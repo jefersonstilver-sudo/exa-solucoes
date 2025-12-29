@@ -5550,6 +5550,7 @@ export type Database = {
           responsavel_avatar: string | null
           silenciado: boolean | null
           status: string | null
+          tipo_horario: string | null
           updated_at: string | null
         }
         Insert: {
@@ -5573,6 +5574,7 @@ export type Database = {
           responsavel_avatar?: string | null
           silenciado?: boolean | null
           status?: string | null
+          tipo_horario?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -5596,6 +5598,7 @@ export type Database = {
           responsavel_avatar?: string | null
           silenciado?: boolean | null
           status?: string | null
+          tipo_horario?: string | null
           updated_at?: string | null
         }
         Relationships: []
