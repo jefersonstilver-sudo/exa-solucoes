@@ -1,8 +1,10 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ChartBar } from 'lucide-react';
+import { ChartBar, EyeOff, Eye } from 'lucide-react';
 import { ElegantPeriodType } from './ElegantPeriodButton';
 import ElegantPeriodButton from './ElegantPeriodButton';
+import { usePrivacyMode } from '@/hooks/usePrivacyMode';
+import { Badge } from '@/components/ui/badge';
 
 interface DashboardHeaderProps {
   periodFilter: ElegantPeriodType;
@@ -27,8 +29,22 @@ const DashboardHeader = ({
   savePeriodEnabled = false,
   onSavePeriodChange
 }: DashboardHeaderProps) => {
+  const { isPrivate, togglePrivacy } = usePrivacyMode();
+
   return (
     <div className="flex items-center justify-end gap-3">
+      {/* Indicador Modo Privado */}
+      {isPrivate && (
+        <Badge 
+          variant="outline" 
+          className="text-[10px] gap-1 px-2 py-0.5 bg-muted/50 text-muted-foreground border-muted-foreground/30 cursor-pointer hover:bg-muted transition-colors"
+          onClick={togglePrivacy}
+          title="Clique ou pressione ALT+M para exibir valores"
+        >
+          <EyeOff className="h-3 w-3" />
+          Privado
+        </Badge>
+      )}
       <div className="flex items-center gap-2 flex-shrink-0">
         <ElegantPeriodButton 
           value={periodFilter} 

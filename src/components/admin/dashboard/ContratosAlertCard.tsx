@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { usePrivacyModeStore } from '@/hooks/usePrivacyMode';
 
 interface PropostaPendente {
   id: string;
@@ -21,6 +22,7 @@ const ContratosAlertCard: React.FC = () => {
   const navigate = useNavigate();
   const [propostas, setPropostas] = useState<PropostaPendente[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isPrivate } = usePrivacyModeStore();
 
   useEffect(() => {
     const fetchPropostasPendentes = async () => {
@@ -124,6 +126,10 @@ const ContratosAlertCard: React.FC = () => {
     }).format(value);
   };
 
+  const renderCurrency = (value: number) => {
+    return isPrivate ? '•••••' : formatCurrency(value);
+  };
+
   const getExpirationBadge = (days: number, expired: boolean) => {
     if (expired) {
       return (
@@ -197,8 +203,8 @@ const ContratosAlertCard: React.FC = () => {
                         {proposta.companyName || proposta.clientName}
                       </p>
                       <p className="text-[11px] text-emerald-600 font-semibold">
-                        {formatCurrency(proposta.valorDisplay)}
-                        {proposta.isMonthly && <span className="text-[9px] text-muted-foreground font-normal">/mês</span>}
+                        {renderCurrency(proposta.valorDisplay)}
+                        {proposta.isMonthly && !isPrivate && <span className="text-[9px] text-muted-foreground font-normal">/mês</span>}
                       </p>
                     </div>
                     {getExpirationBadge(proposta.daysUntilExpire, proposta.expired)}

@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { usePrivacyModeStore } from '@/hooks/usePrivacyMode';
 
 interface Order {
   id: string;
@@ -18,6 +19,7 @@ const RecentSalesCard = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isPrivate } = usePrivacyModeStore();
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -47,6 +49,10 @@ const RecentSalesCard = () => {
       style: 'currency',
       currency: 'BRL'
     }).format(value);
+  };
+
+  const renderCurrency = (value: number) => {
+    return isPrivate ? '•••••' : formatCurrency(value);
   };
 
   const getStatusColor = (status: string) => {
@@ -104,7 +110,7 @@ const RecentSalesCard = () => {
                     <div className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
                       <span className="text-sm font-bold text-gray-900">
-                        {formatCurrency(order.valor_total)}
+                        {renderCurrency(order.valor_total)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1 mt-1">

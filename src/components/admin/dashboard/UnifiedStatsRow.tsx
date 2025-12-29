@@ -3,12 +3,16 @@ import { UserPlus, ShoppingBag, DollarSign, MessageCircle, Building2, FileText, 
 import AppleLikeMetricCard from './AppleLikeMetricCard';
 import { UnifiedDashboardStats } from '@/hooks/useDashboardUnifiedStats';
 import { Badge } from '@/components/ui/badge';
+import { PrivacyMask } from '@/components/ui/PrivacyMask';
+import { usePrivacyModeStore } from '@/hooks/usePrivacyMode';
 
 interface UnifiedStatsRowProps {
   stats: UnifiedDashboardStats;
 }
 
 const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
+  const { isPrivate } = usePrivacyModeStore();
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -16,6 +20,12 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(value);
+  };
+
+  // Wrapper para valores financeiros com privacidade
+  const renderCurrency = (value: number) => {
+    const formatted = formatCurrency(value);
+    return <PrivacyMask value={formatted} maskLength="long" />;
   };
 
   const calculateTrend = (current: number, previous: number) => {
@@ -133,7 +143,7 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
         {/* 3. Vendas - Receita Efetiva */}
         <AppleLikeMetricCard
           label="Receita Efetiva"
-          value={stats.loading ? '...' : formatCurrency(stats.vendas)}
+          value={stats.loading ? '...' : (isPrivate ? '•••••' : formatCurrency(stats.vendas))}
           icon={DollarSign}
           description={!stats.loading ? vendasTrend.value : undefined}
           hoverContent={
@@ -169,11 +179,11 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
         {/* 4. Receita Projetada do Período + 2025 */}
         <AppleLikeMetricCard
           label="Receita Projetada"
-          value={stats.loading ? '...' : formatCurrency(stats.vendasProjetadas)}
+          value={stats.loading ? '...' : (isPrivate ? '•••••' : formatCurrency(stats.vendasProjetadas))}
           icon={DollarSign}
           description={!stats.loading ? (
             <span className="text-xs text-muted-foreground">
-              2025: {formatCurrency(stats.vendasProjetadas2025)}
+              2025: {isPrivate ? '•••••' : formatCurrency(stats.vendasProjetadas2025)}
             </span>
           ) : undefined}
           hoverContent={

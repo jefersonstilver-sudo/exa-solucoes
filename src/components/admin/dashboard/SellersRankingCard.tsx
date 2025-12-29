@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { VendedorProposalStats } from '@/hooks/useDashboardUnifiedStats';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { usePrivacyModeStore } from '@/hooks/usePrivacyMode';
 
 // IDs fixos dos vendedores que devem aparecer
 const FIXED_SELLER_IDS = [
@@ -27,6 +28,7 @@ interface SellersRankingCardProps {
 
 const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loading }) => {
   const [expanded, setExpanded] = useState(false);
+  const { isPrivate } = usePrivacyModeStore();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -35,6 +37,10 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(value);
+  };
+
+  const renderCurrency = (value: number) => {
+    return isPrivate ? '•••••' : formatCurrency(value);
   };
 
   // Filtrar apenas os 4 vendedores fixos
@@ -180,9 +186,9 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
             {/* Valor */}
             <div className="text-right flex-shrink-0">
               <p className="text-sm font-bold text-emerald-600">
-                {formatCurrency(vendedor.valorRecebido)}
+                {renderCurrency(vendedor.valorRecebido)}
               </p>
-              {vendedor.valorProjetado > 0 && (
+              {vendedor.valorProjetado > 0 && !isPrivate && (
                 <p className="text-[10px] text-muted-foreground">
                   +{formatCurrency(vendedor.valorProjetado)} proj.
                 </p>
@@ -271,13 +277,13 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
             </div>
             <div className="text-center">
               <p className="text-lg font-bold text-emerald-600">
-                {formatCurrency(filteredVendedores.reduce((sum, v) => sum + v.valorRecebido, 0))}
+                {renderCurrency(filteredVendedores.reduce((sum, v) => sum + v.valorRecebido, 0))}
               </p>
               <p className="text-[10px] text-muted-foreground">Recebido</p>
             </div>
             <div className="text-center">
               <p className="text-lg font-bold text-amber-600">
-                {formatCurrency(filteredVendedores.reduce((sum, v) => sum + v.valorProjetado, 0))}
+                {renderCurrency(filteredVendedores.reduce((sum, v) => sum + v.valorProjetado, 0))}
               </p>
               <p className="text-[10px] text-muted-foreground">Projetado</p>
             </div>
