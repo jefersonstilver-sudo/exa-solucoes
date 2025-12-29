@@ -264,27 +264,26 @@ export const ActiveSessionsManager: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const otherSessionIds = sessions
-        .filter(s => !isCurrentSession(s))
-        .map(s => s.id);
-
-      if (otherSessionIds.length === 0) {
-        toast.info('Não há outras sessões para encerrar');
-        return;
-      }
-
-      const { error } = await supabase
+      // Evita listas gigantes na URL ("id in (...)"), que causam 400 Bad Request.
+      // Fazemos um UPDATE por filtro, encerrando todas as sessões ativas do usuário,
+      // exceto a sessão atual do navegador.
+      const baseUpdate = supabase
         .from('user_sessions')
         .update({
           is_active: false,
           terminated_at: new Date().toISOString(),
-          terminated_by: user.id
+          terminated_by: user.id,
         })
-        .in('id', otherSessionIds);
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
+      const { error } = currentBrowserSessionId
+        ? await baseUpdate.neq('session_id', currentBrowserSessionId)
+        : await baseUpdate;
 
       if (error) throw error;
 
-      toast.success(`${otherSessionIds.length} sessões encerradas`);
+      toast.success('Sessões encerradas');
       setSelectedIds(new Set());
       fetchSessions(true);
     } catch (error) {
