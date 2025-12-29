@@ -135,8 +135,14 @@ export function ModernAdminSidebar() {
           href: buildPath('sync-notion'),
           icon: Building2,
           moduleKey: MODULE_KEYS.sync_notion,
-          badge: '🔄',
-          badgeColor: 'bg-[#9C1E1E]'
+        },
+        {
+          title: 'Agenda',
+          href: buildPath('agenda'),
+          icon: Calendar,
+          moduleKey: MODULE_KEYS.agenda,
+          badge: '📅',
+          badgeColor: 'bg-blue-600'
         },
         {
           title: 'Pedidos',
