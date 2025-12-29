@@ -10306,6 +10306,7 @@ export type Database = {
       is_current_user_super_admin: { Args: never; Returns: boolean }
       is_emergency_mode: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      is_super_admin_for_sessions: { Args: never; Returns: boolean }
       is_super_admin_secure: { Args: never; Returns: boolean }
       is_super_admin_simple: { Args: never; Returns: boolean }
       is_super_admin_user: { Args: never; Returns: boolean }
