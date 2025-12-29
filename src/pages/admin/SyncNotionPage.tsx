@@ -416,6 +416,29 @@ const SyncNotionPage = () => {
   const lastSync = syncLogs?.[0];
   const totalBuildings = buildings?.length || 0;
 
+  // Calculate time since last sync
+  const getTimeSinceLastSync = () => {
+    if (!lastSync?.sync_started_at) return null;
+    const lastSyncDate = new Date(lastSync.sync_started_at);
+    const now = new Date();
+    const diffMs = now.getTime() - lastSyncDate.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'agora mesmo';
+    if (diffMins < 60) return `há ${diffMins} min`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `há ${diffHours}h`;
+    return `há ${Math.floor(diffHours / 24)} dias`;
+  };
+
+  // Calculate next auto sync (every 10 min for Notion, every 5 min for AnyDesk)
+  const getNextSyncTime = () => {
+    const now = new Date();
+    const mins = now.getMinutes();
+    const nextNotionSync = 10 - (mins % 10);
+    return `${nextNotionSync} min`;
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-5 bg-[#1E1E1E] min-h-screen">
       {/* Header */}
@@ -427,9 +450,21 @@ const SyncNotionPage = () => {
             </div>
             Sync Notion
           </h1>
-          <p className="text-xs text-gray-400 mt-1 ml-11">
-            Sincronização bidirecional • {totalBuildings} prédios
-          </p>
+          <div className="flex items-center gap-3 mt-1 ml-11">
+            <p className="text-xs text-gray-400">
+              {totalBuildings} prédios
+            </p>
+            {/* Auto-sync indicator */}
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] text-emerald-400 font-medium">Auto-sync ativo</span>
+            </div>
+            {getTimeSinceLastSync() && (
+              <span className="text-[10px] text-gray-500">
+                Última: {getTimeSinceLastSync()} • Próxima: {getNextSyncTime()}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <BuildingColumnVisibility />
