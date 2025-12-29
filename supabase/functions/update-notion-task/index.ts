@@ -7,6 +7,8 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log("🚀 update-notion-task function called");
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -17,12 +19,16 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("❌ Supabase credentials not configured");
       throw new Error("Supabase credentials not configured");
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { taskId, updates, userId } = await req.json();
+    const body = await req.json();
+    const { taskId, updates, userId } = body;
+
+    console.log("📝 Request body:", JSON.stringify(body, null, 2));
 
     if (!taskId) {
       throw new Error("taskId is required");
@@ -38,8 +44,11 @@ serve(async (req) => {
       .single();
 
     if (fetchError || !task) {
+      console.error("❌ Task not found:", fetchError);
       throw new Error(`Task not found: ${fetchError?.message || 'Not found'}`);
     }
+
+    console.log("✅ Found task:", task.nome);
 
     const oldDate = task.data;
     const newDate = updates.data;
@@ -54,6 +63,7 @@ serve(async (req) => {
       .eq("id", taskId);
 
     if (updateError) {
+      console.error("❌ Failed to update task:", updateError);
       throw new Error(`Failed to update task in Supabase: ${updateError.message}`);
     }
 
@@ -87,6 +97,8 @@ serve(async (req) => {
         }
 
         if (Object.keys(notionProperties).length > 0) {
+          console.log("📤 Sending to Notion:", JSON.stringify(notionProperties, null, 2));
+          
           const notionResponse = await fetch(
             `https://api.notion.com/v1/pages/${task.notion_page_id}`,
             {
@@ -112,6 +124,8 @@ serve(async (req) => {
         console.error(`⚠️ Error updating Notion:`, notionError);
         // Continue - Supabase was already updated
       }
+    } else {
+      console.log("ℹ️ Skipping Notion sync (no notion_page_id or local task)");
     }
 
     // 4. Log the activity
@@ -129,6 +143,8 @@ serve(async (req) => {
               task_name: task.nome,
               previous_date: oldDate,
               new_date: newDate,
+              hora: updates.hora,
+              tipo_horario: updates.tipo_horario,
             }),
             metadata: {
               notion_synced: notionUpdated,
@@ -141,6 +157,8 @@ serve(async (req) => {
         console.error(`⚠️ Failed to log activity:`, logError);
       }
     }
+
+    console.log("🎉 Update complete!");
 
     return new Response(
       JSON.stringify({
