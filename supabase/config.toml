@@ -561,3 +561,14 @@ verify_jwt = false
 
 [functions.process-schedule-intent]
 verify_jwt = false
+
+[functions.relatorio-operacional-generate]
+verify_jwt = true
+
+[functions.relatorio-operacional-scheduled]
+verify_jwt = false
+
+# Relatório Operacional - verifica a cada minuto
+[[cron]]
+function_name = "relatorio-operacional-scheduled"
+schedule = "* * * * *"
