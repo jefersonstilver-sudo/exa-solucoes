@@ -65,14 +65,16 @@ const PosicoesDisponiveisPage = () => {
     refetch 
   } = usePosicoesDisponiveis();
 
-  // Buscar prédios com imagens e link_comercial
+  // Buscar apenas prédios da loja pública (com imagem e status ativo/instalação)
   const { data: predios, isLoading: isLoadingPredios } = useQuery({
-    queryKey: ['predios-posicoes-page'],
+    queryKey: ['predios-posicoes-page-loja-publica'],
     queryFn: async () => {
       const { data } = await supabase
         .from('buildings')
         .select('id, nome, bairro, imagem_principal, numero_elevadores, publico_estimado, link_comercial')
-        .eq('status', 'ativo')
+        .in('status', ['ativo', 'instalacao', 'instalação'])
+        .not('imagem_principal', 'is', null)
+        .neq('imagem_principal', '')
         .order('nome');
       return data || [];
     }

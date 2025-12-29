@@ -59,14 +59,16 @@ export const usePosicoesDisponiveis = () => {
 
   const maxClientes = produtoHorizontal ?? 15;
 
-  // Buscar todos os prédios ativos
+  // Buscar apenas prédios da loja pública (com imagem e status ativo/instalação)
   const { data: predios } = useQuery({
-    queryKey: ['predios-posicoes'],
+    queryKey: ['predios-posicoes-loja-publica'],
     queryFn: async () => {
       const { data } = await supabase
         .from('buildings')
         .select('id, nome, bairro, imagem_principal, numero_elevadores, publico_estimado, status')
-        .eq('status', 'ativo');
+        .in('status', ['ativo', 'instalacao', 'instalação'])
+        .not('imagem_principal', 'is', null)
+        .neq('imagem_principal', '');
       return data || [];
     },
     staleTime: 2 * 60 * 1000
