@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useEffect } from 'react';
+import React from 'react';
 
 interface PrivacyModeState {
   isPrivate: boolean;
@@ -20,7 +20,7 @@ export const usePrivacyModeStore = create<PrivacyModeState>()(
 export const usePrivacyMode = () => {
   const { isPrivate, togglePrivacy } = usePrivacyModeStore();
 
-  useEffect(() => {
+  React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // ALT + M para toggle do modo privado
       if (e.altKey && e.key.toLowerCase() === 'm') {
