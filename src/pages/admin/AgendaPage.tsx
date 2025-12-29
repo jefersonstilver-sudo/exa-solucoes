@@ -38,6 +38,7 @@ import ScheduleTimeModal from '@/components/admin/agenda/ScheduleTimeModal';
 import TaskCard from '@/components/admin/agenda/TaskCard';
 import DraggableTaskCard from '@/components/admin/agenda/DraggableTaskCard';
 import DroppableCalendarDay from '@/components/admin/agenda/DroppableCalendarDay';
+import AgendaAlertContactsButton from '@/components/admin/agenda/AgendaAlertContactsButton';
 import { useActivityLogger } from '@/hooks/useActivityLogger';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -414,6 +415,7 @@ const AgendaPage = () => {
             )}
             Sincronizar
           </Button>
+          <AgendaAlertContactsButton />
         </div>
       </div>
 

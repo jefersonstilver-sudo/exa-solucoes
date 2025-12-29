@@ -4203,6 +4203,7 @@ export type Database = {
           id: string
           nivel_acesso: string | null
           nome: string
+          pode_agendar: boolean | null
           pode_usar_ia: boolean | null
           telefone: string
           telefone_verificado: boolean | null
@@ -4217,6 +4218,7 @@ export type Database = {
           id?: string
           nivel_acesso?: string | null
           nome: string
+          pode_agendar?: boolean | null
           pode_usar_ia?: boolean | null
           telefone: string
           telefone_verificado?: boolean | null
@@ -4231,6 +4233,7 @@ export type Database = {
           id?: string
           nivel_acesso?: string | null
           nome?: string
+          pode_agendar?: boolean | null
           pode_usar_ia?: boolean | null
           telefone?: string
           telefone_verificado?: boolean | null
