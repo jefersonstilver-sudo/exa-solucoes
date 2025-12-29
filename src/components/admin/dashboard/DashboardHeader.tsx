@@ -33,13 +33,12 @@ const DashboardHeader = ({
 
   return (
     <div className="flex items-center justify-end gap-3">
-      {/* Indicador Modo Privado */}
+      {/* Indicador Modo Privado - apenas visual, ALT+M para desativar */}
       {isPrivate && (
         <Badge 
           variant="outline" 
-          className="text-[10px] gap-1 px-2 py-0.5 bg-muted/50 text-muted-foreground border-muted-foreground/30 cursor-pointer hover:bg-muted transition-colors"
-          onClick={togglePrivacy}
-          title="Clique ou pressione ALT+M para exibir valores"
+          className="text-[10px] gap-1 px-2 py-0.5 bg-muted/50 text-muted-foreground border-muted-foreground/30 select-none"
+          title="ALT+M para exibir valores"
         >
           <EyeOff className="h-3 w-3" />
           Privado
