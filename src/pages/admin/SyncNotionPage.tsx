@@ -31,6 +31,54 @@ interface Building {
   notion_horario_trabalho: string | null;
 }
 
+interface Device {
+  id: string;
+  name: string | null;
+  status: 'online' | 'offline' | null;
+  building_id: string | null;
+}
+
+// Função para normalizar nomes para comparação
+function normalizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/^(edificio|edifício|residencial|condomínio|condominio|cond\.?)\s+/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Função para encontrar device que corresponde ao building
+function findDeviceForBuilding(building: Building, devices: Device[]): Device | null {
+  const buildingNorm = normalizeName(building.nome);
+  
+  // 1. Primeiro tenta por building_id
+  const byId = devices.find(d => d.building_id === building.id);
+  if (byId) return byId;
+  
+  // 2. Depois tenta por match de nome
+  for (const device of devices) {
+    if (!device.name) continue;
+    const deviceNorm = normalizeName(device.name);
+    
+    // Match exato
+    if (deviceNorm === buildingNorm) return device;
+    
+    // Match parcial (um contém o outro)
+    if (deviceNorm.includes(buildingNorm) || buildingNorm.includes(deviceNorm)) return device;
+    
+    // Match sem números finais
+    const deviceBase = deviceNorm.replace(/\s*\d+$/, '');
+    const buildingBase = buildingNorm.replace(/\s*\d+$/, '');
+    if (deviceBase === buildingBase || deviceBase.includes(buildingBase) || buildingBase.includes(deviceBase)) {
+      return device;
+    }
+  }
+  
+  return null;
+}
+
 // Status groupings matching Notion board - DARK THEME
 const STATUS_GROUPS = {
   online: {
@@ -201,6 +249,21 @@ const SyncNotionPage = () => {
     }
   });
 
+  // Fetch devices for real AnyDesk status
+  const { data: devices } = useQuery({
+    queryKey: ['sync-page-devices'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('devices')
+        .select('id, name, status, building_id')
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      return (data || []) as Device[];
+    },
+    refetchInterval: 30000 // Refresh every 30 seconds
+  });
+
   // Fetch sync logs
   const { data: syncLogs, isLoading: loadingLogs } = useQuery({
     queryKey: ['notion-sync-logs'],
@@ -230,6 +293,7 @@ const SyncNotionPage = () => {
       toast.success(`Sincronização forçada concluída! ${data?.stats?.created || 0} criados, ${data?.stats?.updated || 0} atualizados`);
       queryClient.invalidateQueries({ queryKey: ['notion-buildings'] });
       queryClient.invalidateQueries({ queryKey: ['notion-sync-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['sync-page-devices'] });
     },
     onError: (error: any) => {
       toast.error(`Erro na sincronização: ${error.message}`);
@@ -239,7 +303,25 @@ const SyncNotionPage = () => {
     }
   });
 
-  // Group buildings by status (with normalized comparison)
+  // Sync device-building status mutation
+  const syncDeviceStatusMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('sync-device-building-status');
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      const stats = data?.stats || {};
+      toast.success(`Sincronização AnyDesk concluída! ${stats.devicesAssociated || 0} devices associados, ${stats.buildingsUpdatedToOnline || 0} prédios atualizados para Online`);
+      queryClient.invalidateQueries({ queryKey: ['notion-buildings'] });
+      queryClient.invalidateQueries({ queryKey: ['sync-page-devices'] });
+    },
+    onError: (error: any) => {
+      toast.error(`Erro na sincronização AnyDesk: ${error.message}`);
+    }
+  });
+
+  // Group buildings by status WITH REAL ANYDESK STATUS
   const normalizeStatusForGroup = (status: string | null): string => {
     if (!status) return '';
     return status.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -251,14 +333,61 @@ const SyncNotionPage = () => {
       const normalized = normalizeStatusForGroup(buildingStatus);
       return statuses.some(s => normalizeStatusForGroup(s) === normalized);
     };
+
+    // Helper: Check if building has online device
+    const hasBuildingOnlineDevice = (building: Building): boolean => {
+      if (!devices?.length) return false;
+      const device = findDeviceForBuilding(building, devices);
+      return device?.status === 'online';
+    };
+
+    // Helper: Check if building has offline device
+    const hasBuildingOfflineDevice = (building: Building): boolean => {
+      if (!devices?.length) return false;
+      const device = findDeviceForBuilding(building, devices);
+      return device?.status === 'offline';
+    };
+
+    // Helper: Check if building has any device
+    const hasBuildingDevice = (building: Building): boolean => {
+      if (!devices?.length) return false;
+      const device = findDeviceForBuilding(building, devices);
+      return !!device;
+    };
+
+    // ONLINE: Prédios com status Ativo OU com device online (AnyDesk = prioridade máxima)
+    const onlineBuildings = buildings?.filter(b => 
+      normalizeAndMatch(STATUS_GROUPS.online.statuses, b.notion_status) || 
+      hasBuildingOnlineDevice(b)
+    ) || [];
+
+    // OFFLINE: Prédios com device cadastrado que está OFFLINE (exclui os que já estão em onlineBuildings)
+    const onlineBuildingIds = new Set(onlineBuildings.map(b => b.id));
+    const offlineBuildings = buildings?.filter(b => 
+      !onlineBuildingIds.has(b.id) && hasBuildingOfflineDevice(b)
+    ) || [];
+
+    // EM INSTALAÇÃO: Prédios em instalação SEM device online ainda
+    const instalacaoBuildings = buildings?.filter(b => 
+      !onlineBuildingIds.has(b.id) && 
+      normalizeAndMatch(STATUS_GROUPS.instalacao.statuses, b.notion_status) &&
+      !hasBuildingOnlineDevice(b)
+    ) || [];
+
+    // AGUARDANDO: Prédios em estágio inicial (sem device ainda)
+    const aguardandoBuildings = buildings?.filter(b => 
+      !onlineBuildingIds.has(b.id) &&
+      normalizeAndMatch(STATUS_GROUPS.instalacaoInternet.statuses, b.notion_status) &&
+      !hasBuildingDevice(b)
+    ) || [];
     
     return {
-      online: buildings?.filter(b => normalizeAndMatch(STATUS_GROUPS.online.statuses, b.notion_status)) || [],
-      offline: buildings?.filter(b => normalizeAndMatch(STATUS_GROUPS.offline.statuses, b.notion_status)) || [],
-      instalacao: buildings?.filter(b => normalizeAndMatch(STATUS_GROUPS.instalacao.statuses, b.notion_status)) || [],
-      instalacaoInternet: buildings?.filter(b => normalizeAndMatch(STATUS_GROUPS.instalacaoInternet.statuses, b.notion_status)) || []
+      online: onlineBuildings,
+      offline: offlineBuildings,
+      instalacao: instalacaoBuildings,
+      instalacaoInternet: aguardandoBuildings
     };
-  }, [buildings]);
+  }, [buildings, devices]);
 
   // Diagnostic panel data - shows why buildings might not appear in calendar
   const diagnosticData = useMemo(() => {
@@ -304,6 +433,20 @@ const SyncNotionPage = () => {
         </div>
         <div className="flex items-center gap-2">
           <BuildingColumnVisibility />
+          <Button
+            onClick={() => syncDeviceStatusMutation.mutate()}
+            disabled={syncDeviceStatusMutation.isPending}
+            size="sm"
+            variant="outline"
+            className="border-emerald-600 text-emerald-400 hover:bg-emerald-600/20"
+          >
+            {syncDeviceStatusMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Wifi className="h-4 w-4 mr-2" />
+            )}
+            Sync AnyDesk
+          </Button>
           <Button
             onClick={() => syncMutation.mutate()}
             disabled={isSyncing}
