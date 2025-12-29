@@ -1,28 +1,61 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import React from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
-interface PrivacyModeState {
-  isPrivate: boolean;
-  togglePrivacy: () => void;
-}
+const STORAGE_KEY = 'dashboard-privacy-mode';
 
-export const usePrivacyModeStore = create<PrivacyModeState>()(
-  persist(
-    (set) => ({
-      isPrivate: false,
-      togglePrivacy: () => set((state) => ({ isPrivate: !state.isPrivate })),
-    }),
-    { name: 'dashboard-privacy-mode' }
-  )
-);
+// Simple hook for privacy mode - no external dependencies
+export const usePrivacyModeStore = () => {
+  const [isPrivate, setIsPrivate] = useState(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored === 'true';
+    } catch {
+      return false;
+    }
+  });
 
+  useEffect(() => {
+    const handleStorage = () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        setIsPrivate(stored === 'true');
+      } catch {}
+    };
+
+    window.addEventListener('storage', handleStorage);
+    
+    // Also listen for custom event for same-tab updates
+    const handlePrivacyChange = () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        setIsPrivate(stored === 'true');
+      } catch {}
+    };
+    window.addEventListener('privacy-mode-change', handlePrivacyChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('privacy-mode-change', handlePrivacyChange);
+    };
+  }, []);
+
+  const togglePrivacy = useCallback(() => {
+    const newValue = !isPrivate;
+    setIsPrivate(newValue);
+    try {
+      localStorage.setItem(STORAGE_KEY, String(newValue));
+      window.dispatchEvent(new CustomEvent('privacy-mode-change'));
+    } catch {}
+  }, [isPrivate]);
+
+  return { isPrivate, togglePrivacy };
+};
+
+// Hook with keyboard shortcut listener (ALT+M)
 export const usePrivacyMode = () => {
   const { isPrivate, togglePrivacy } = usePrivacyModeStore();
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // ALT + M para toggle do modo privado
       if (e.altKey && e.key.toLowerCase() === 'm') {
         e.preventDefault();
         togglePrivacy();
