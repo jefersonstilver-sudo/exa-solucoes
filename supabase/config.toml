@@ -558,3 +558,6 @@ schedule = "* * * * *"
 
 [functions.update-notion-task]
 verify_jwt = false
+
+[functions.process-schedule-intent]
+verify_jwt = false
