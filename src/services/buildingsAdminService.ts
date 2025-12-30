@@ -52,7 +52,8 @@ export const fetchAllBuildingsForAdmin = async () => {
   try {
     console.log('🏢 [ADMIN BUILDINGS SERVICE] Iniciando busca de TODOS os prédios para administração...');
     
-    // Buscar APENAS prédios manuais (sem notion_page_id) com JOIN em devices para status do painel
+    // Buscar APENAS prédios manuais com conexão AWS (codigo_predio) E foto (imagem_principal)
+    // Isso exclui Sala Jeff (sem foto) e prédios que não foram adicionados manualmente à loja
     const buildingsPromise = supabase
       .from('buildings')
       .select(`
@@ -64,7 +65,8 @@ export const fetchAllBuildingsForAdmin = async () => {
           condominio_name
         )
       `)
-      .is('notion_page_id', null)
+      .not('codigo_predio', 'is', null)
+      .not('imagem_principal', 'is', null)
       .order('nome');
 
     // Buscar painéis ativos por prédio
