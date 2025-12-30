@@ -3,7 +3,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConnectionTimeline } from "./ConnectionTimeline";
 import { UptimeChart } from "./UptimeChart";
-import { Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell } from "lucide-react";
+import { AssignBuildingDialog } from "./AssignBuildingDialog";
+import { Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell, Building2, Link2, Unlink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,6 @@ import { useRealTimeCounter } from "../../hooks/useRealTimeCounter";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
 interface ComputerDetailModalProps {
   computer: any;
   isOpen: boolean;
@@ -45,12 +45,14 @@ export const ComputerDetailModal = ({
     offline_threshold_minutes: 5,
   });
   const [loading, setLoading] = useState(false);
-
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [assignedBuilding, setAssignedBuilding] = useState<{ id: string; nome: string } | null>(null);
   const offlineCounter = useRealTimeCounter(computer?.status === 'offline' ? computer?.last_online_at : null);
 
   useEffect(() => {
     if (computer?.id && isOpen) {
       loadAlertConfig();
+      loadAssignedBuilding();
     }
   }, [computer?.id, isOpen]);
 
@@ -74,6 +76,36 @@ export const ComputerDetailModal = ({
     } catch (error) {
       console.error('Error loading alert config:', error);
     }
+  };
+
+  const loadAssignedBuilding = async () => {
+    try {
+      if (!computer?.building_id) {
+        setAssignedBuilding(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('buildings')
+        .select('id, nome')
+        .eq('id', computer.building_id)
+        .single();
+
+      if (error) {
+        console.error('Error loading assigned building:', error);
+        setAssignedBuilding(null);
+        return;
+      }
+
+      setAssignedBuilding(data);
+    } catch (error) {
+      console.error('Error loading assigned building:', error);
+      setAssignedBuilding(null);
+    }
+  };
+
+  const handleBuildingAssigned = () => {
+    loadAssignedBuilding();
   };
 
   const saveAlertConfig = async () => {
@@ -291,6 +323,52 @@ export const ComputerDetailModal = ({
                 </Button>
               </CardContent>
             </Card>
+
+            {/* CARD 4: PRÉDIO ATRIBUÍDO */}
+            <Card className="bg-module-card border-module shadow-sm md:col-span-3">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
+                  <Building2 className="h-4 w-4 text-module-accent" />
+                  Prédio Atribuído (Loja)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {assignedBuilding ? (
+                      <>
+                        <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                          <Link2 className="h-5 w-5 text-emerald-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-emerald-700">{assignedBuilding.nome}</p>
+                          <p className="text-xs text-module-secondary">Vinculado à loja</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                          <Unlink className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Não atribuído</p>
+                          <p className="text-xs text-module-secondary">Clique para vincular a um prédio</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <Button
+                    onClick={() => setIsAssignDialogOpen(true)}
+                    variant={assignedBuilding ? "outline" : "default"}
+                    size="sm"
+                    className={assignedBuilding ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50" : "bg-module-accent hover:bg-module-accent-hover text-white"}
+                  >
+                    <Building2 className="h-4 w-4 mr-2" />
+                    {assignedBuilding ? 'Alterar Prédio' : 'Atribuir Prédio'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* INFORMAÇÕES ADICIONAIS */}
@@ -371,6 +449,16 @@ export const ComputerDetailModal = ({
           </Tabs>
         </div>
       </DialogContent>
+
+      {/* Dialog de Atribuição de Prédio */}
+      <AssignBuildingDialog
+        isOpen={isAssignDialogOpen}
+        onClose={() => setIsAssignDialogOpen(false)}
+        deviceId={computer?.id || ''}
+        deviceName={displayName}
+        currentBuildingId={computer?.building_id || null}
+        onAssigned={handleBuildingAssigned}
+      />
     </Dialog>
   );
 };
