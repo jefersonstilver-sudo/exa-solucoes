@@ -2,10 +2,12 @@ import { Device } from '../utils/devices';
 import { humanizeDate } from '../utils/formatters';
 import { useRealTimeCounter } from '../hooks/useRealTimeCounter';
 import { Badge } from '@/components/ui/badge';
-import { Wifi, MapPin, Activity } from 'lucide-react';
+import { Wifi, MapPin, Activity, Building2, Check, Unlink } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PanelCardProps {
-  device: Device;
+  device: Device & { building_id?: string | null };
   onClick: () => void;
   periodEventsCount?: number;
   periodLabel?: string;
@@ -19,7 +21,29 @@ export const PanelCard = ({
 }: PanelCardProps) => {
   const hasCriticalAlert = (device as any).has_critical_alert === true;
   const offlineCounter = useRealTimeCounter(device.status === 'offline' ? device.last_online_at : null);
-  
+  const [assignedBuildingName, setAssignedBuildingName] = useState<string | null>(null);
+
+  // Carregar nome do prédio atribuído
+  useEffect(() => {
+    const loadAssignedBuilding = async () => {
+      if (!device.building_id) {
+        setAssignedBuildingName(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('buildings')
+        .select('nome')
+        .eq('id', device.building_id)
+        .single();
+
+      if (!error && data) {
+        setAssignedBuildingName(data.nome);
+      }
+    };
+
+    loadAssignedBuilding();
+  }, [device.building_id]);
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'online':
@@ -129,12 +153,25 @@ export const PanelCard = ({
           </div>
         )}
 
-        {/* Badge: Eventos */}
+        {/* Badge: Eventos + Atribuição */}
         <div className="flex flex-wrap gap-1 sm:gap-2 justify-center mb-2 sm:mb-3 lg:mb-4">
           <Badge variant="secondary" className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-gray-200 text-gray-900 border-gray-300 px-1.5 sm:px-2 py-0.5">
             <Activity className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
             {eventsLabel}
           </Badge>
+          
+          {/* Badge de Atribuição a Prédio da Loja */}
+          {device.building_id && assignedBuildingName ? (
+            <Badge className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-emerald-100 text-emerald-700 border-emerald-300 px-1.5 sm:px-2 py-0.5">
+              <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+              <span className="truncate max-w-[80px] sm:max-w-[120px]">{assignedBuildingName}</span>
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-gray-50 text-gray-500 border-gray-300 px-1.5 sm:px-2 py-0.5">
+              <Unlink className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+              Não atribuído
+            </Badge>
+          )}
         </div>
 
         {/* AnyDesk ID - Secundário e discreto */}

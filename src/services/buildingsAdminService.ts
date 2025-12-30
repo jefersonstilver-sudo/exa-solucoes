@@ -56,18 +56,17 @@ export const fetchAllBuildingsForAdmin = async () => {
     // Isso exclui Sala Jeff (sem foto) e prédios que não foram adicionados manualmente à loja
     const buildingsPromise = supabase
       .from('buildings')
-      .select(`
-        *,
-        device:devices!device_id (
-          id,
-          status,
-          last_online_at,
-          condominio_name
-        )
-      `)
+      .select('*')
       .not('codigo_predio', 'is', null)
       .not('imagem_principal', 'is', null)
       .order('nome');
+
+    // Buscar devices para vincular via building_id (relacionamento reverso)
+    const devicesPromise = supabase
+      .from('devices')
+      .select('id, building_id, status, last_online_at, condominio_name')
+      .eq('is_active', true)
+      .not('building_id', 'is', null);
 
     // Buscar painéis ativos por prédio
     const panelsPromise = supabase
@@ -90,12 +89,13 @@ export const fetchAllBuildingsForAdmin = async () => {
       setTimeout(() => reject(new Error('Timeout na busca de dados')), 10000);
     });
 
-    const [buildingsResult, panelsResult, salesResult] = await Promise.race([
-      Promise.all([buildingsPromise, panelsPromise, salesPromise]),
+    const [buildingsResult, devicesResult, panelsResult, salesResult] = await Promise.race([
+      Promise.all([buildingsPromise, devicesPromise, panelsPromise, salesPromise]),
       timeoutPromise
     ]) as any;
 
     const { data: buildingsData, error: buildingsError } = buildingsResult;
+    const { data: devicesData, error: devicesError } = devicesResult;
     const { data: panelsData, error: panelsError } = panelsResult;
     const { data: salesData, error: salesError } = salesResult;
 
@@ -104,6 +104,14 @@ export const fetchAllBuildingsForAdmin = async () => {
       toast.error(`Erro ao carregar prédios: ${buildingsError.message}`);
       return { buildings: [], panels: [] };
     }
+
+    // Criar mapa de devices por building_id (relacionamento reverso)
+    const devicesByBuildingId = (devicesData || []).reduce((acc: any, device: any) => {
+      if (device.building_id) {
+        acc[device.building_id] = device;
+      }
+      return acc;
+    }, {});
 
     // Processar dados dos painéis ativos
     const activePanelsByBuilding = (panelsData || []).reduce((acc: any, panel: any) => {
@@ -123,17 +131,18 @@ export const fetchAllBuildingsForAdmin = async () => {
       return acc;
     }, {});
 
-    // Enriquecer dados dos prédios com métricas e status do device
+    // Enriquecer dados dos prédios com métricas e status do device (via relacionamento reverso)
     const enrichedBuildings = (buildingsData || []).map((building: any) => {
-      const device = building.device;
+      // Buscar device vinculado a este prédio (device.building_id = building.id)
+      const linkedDevice = devicesByBuildingId[building.id];
       return {
         ...building,
         paineis_ativos: activePanelsByBuilding[building.id] || 0,
         vendas_mes_atual: salesByBuilding[building.id] || 0,
-        // Device status
-        device_id: building.device_id || null,
-        device_status: device?.status || 'not_connected',
-        device_last_online_at: device?.last_online_at || null
+        // Device status (relacionamento reverso: device → building)
+        device_id: linkedDevice?.id || null,
+        device_status: linkedDevice?.status || 'not_connected',
+        device_last_online_at: linkedDevice?.last_online_at || null
       };
     });
 
