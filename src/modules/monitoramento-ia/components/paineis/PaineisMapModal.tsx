@@ -42,6 +42,43 @@ const BASE_CLEAN_MAP_STYLES: google.maps.MapTypeStyle[] = [
   { featureType: 'administrative', elementType: 'labels', stylers: [{ visibility: 'off' }] },
 ];
 
+// Create SVG marker as data URL (works without mapId)
+const createMarkerSvgUrl = (
+  status: 'online' | 'offline' | 'partial' | 'unknown',
+  sequentialNumber: number
+): string => {
+  const colors = {
+    online: { primary: '#22C55E', dark: '#16A34A' },
+    partial: { primary: '#F59E0B', dark: '#D97706' },
+    offline: { primary: '#EF4444', dark: '#DC2626' },
+    unknown: { primary: '#6B7280', dark: '#4B5563' },
+  };
+  
+  const { primary, dark } = colors[status];
+  
+  const svg = `
+    <svg width="32" height="42" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="pinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:${primary};stop-opacity:1" />
+          <stop offset="100%" style="stop-color:${dark};stop-opacity:1" />
+        </linearGradient>
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+        </filter>
+      </defs>
+      <g filter="url(#shadow)">
+        <path d="M16 0C7.163 0 0 7.163 0 16c0 8.837 16 26 16 26s16-17.163 16-26C32 7.163 24.837 0 16 0z" fill="url(#pinGrad)"/>
+        <ellipse cx="11" cy="11" rx="7" ry="6" fill="white" fill-opacity="0.3"/>
+        <circle cx="16" cy="14" r="9" fill="white"/>
+        <text x="16" y="18" text-anchor="middle" font-size="11" font-weight="700" fill="${dark}" font-family="system-ui,-apple-system,sans-serif">${sequentialNumber}</text>
+      </g>
+    </svg>
+  `;
+  
+  return 'data:image/svg+xml,' + encodeURIComponent(svg.trim());
+};
+
 export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
   isOpen,
   onClose,
@@ -50,7 +87,7 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
+  const markersRef = useRef<google.maps.Marker[]>([]);
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
 
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingWithDeviceStatus | null>(null);
@@ -96,53 +133,6 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
     return styles;
   }, [showLabels, showPois, showTransit]);
 
-  const createMarkerElement = useCallback((building: BuildingWithDeviceStatus, sequentialNumber: number) => {
-    const pin = document.createElement('div');
-    pin.className = 'relative cursor-pointer';
-
-    const isOnline = building.status === 'online';
-    const isOffline = building.status === 'offline';
-    const primaryColor = isOnline ? '#22C55E' : isOffline ? '#EF4444' : '#F59E0B';
-    const darkColor = isOnline ? '#16A34A' : isOffline ? '#DC2626' : '#D97706';
-    const glowColor = isOnline
-      ? 'rgba(34, 197, 94, 0.5)'
-      : isOffline
-        ? 'rgba(239, 68, 68, 0.6)'
-        : 'rgba(245, 158, 11, 0.5)';
-
-    pin.innerHTML = `
-      <div class="relative" style="width:28px;height:36px;">
-        ${isOffline
-          ? `<div style="position:absolute;inset:-4px;border-radius:50%;background:${glowColor};animation:pulse-offline 1.2s ease-in-out infinite;"></div>`
-          : `<div style="position:absolute;inset:-2px;border-radius:50% 50% 50% 50%;background:${glowColor};opacity:0.6;"></div>`}
-        <svg width="28" height="36" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
-          <defs>
-            <linearGradient id="pinGrad${sequentialNumber}" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style="stop-color:${primaryColor};stop-opacity:1" />
-              <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
-            </linearGradient>
-            <linearGradient id="pinHighlight${sequentialNumber}" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style="stop-color:white;stop-opacity:0.4" />
-              <stop offset="50%" style="stop-color:white;stop-opacity:0" />
-            </linearGradient>
-          </defs>
-          <path d="M14 0C6.268 0 0 6.268 0 14c0 7.732 14 22 14 22s14-14.268 14-22C28 6.268 21.732 0 14 0z" fill="url(#pinGrad${sequentialNumber})"/>
-          <ellipse cx="10" cy="10" rx="6" ry="5" fill="url(#pinHighlight${sequentialNumber})"/>
-          <circle cx="14" cy="12" r="8" fill="white"/>
-          <text x="14" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="${darkColor}" font-family="system-ui,-apple-system,sans-serif">${sequentialNumber}</text>
-        </svg>
-      </div>
-      <style>
-        @keyframes pulse-offline {
-          0%, 100% { opacity: 0.4; transform: scale(1); }
-          50% { opacity: 0.8; transform: scale(1.15); }
-        }
-      </style>
-    `;
-
-    return pin;
-  }, []);
-
   useEffect(() => {
     if (!isOpen || !mapRef.current) return;
 
@@ -156,7 +146,6 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
         if (!isMounted || !mapRef.current) return;
 
         const { Map } = (await google.maps.importLibrary('maps')) as google.maps.MapsLibrary;
-        await google.maps.importLibrary('marker');
 
         const map = new Map(mapRef.current, {
           center: DEFAULT_MAP_CONFIG.center,
@@ -171,19 +160,12 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
           styles: computedStyles,
         });
 
-        // Try to enable tilt/heading if supported by this map mode
-        try {
-          map.setTilt(45);
-        } catch {
-          // ignore
-        }
-
         mapInstanceRef.current = map;
         setMapReady(true);
       } catch (error: any) {
         console.error('[PaineisMapModal] Error initializing map:', error);
         setMapReady(false);
-        setMapInitError('Esta página não carregou o Google Maps corretamente.');
+        setMapInitError('Erro ao carregar o mapa. Tente novamente.');
       }
     };
 
@@ -191,6 +173,8 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
 
     return () => {
       isMounted = false;
+      // Clean up markers
+      markersRef.current.forEach((marker) => marker.setMap(null));
       markersRef.current = [];
       mapInstanceRef.current = null;
       setMapReady(false);
@@ -211,31 +195,40 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
     if (!mapReady || !mapInstanceRef.current) return;
 
     // Clear existing markers
-    markersRef.current.forEach((marker) => {
-      marker.map = null;
-    });
+    markersRef.current.forEach((marker) => marker.setMap(null));
     markersRef.current = [];
 
     if (!infoWindowRef.current) {
       infoWindowRef.current = new google.maps.InfoWindow({ disableAutoPan: true });
     }
 
-    const { AdvancedMarkerElement } = google.maps.marker;
-    const newMarkers: google.maps.marker.AdvancedMarkerElement[] = [];
+    const newMarkers: google.maps.Marker[] = [];
 
     filteredBuildings.forEach((building, index) => {
       const lat = building.manual_latitude || building.latitude;
       const lng = building.manual_longitude || building.longitude;
       if (!lat || !lng || lat === 0 || lng === 0) return;
 
-      const markerElement = createMarkerElement(building, index + 1);
+      const iconUrl = createMarkerSvgUrl(building.status, index + 1);
 
-      const marker = new AdvancedMarkerElement({
+      // Use classic google.maps.Marker (no mapId required)
+      const marker = new google.maps.Marker({
         position: { lat, lng },
         map: mapInstanceRef.current,
-        content: markerElement,
+        icon: {
+          url: iconUrl,
+          scaledSize: new google.maps.Size(32, 42),
+          anchor: new google.maps.Point(16, 42),
+        },
         title: building.nome,
+        animation: building.status === 'offline' ? google.maps.Animation.BOUNCE : undefined,
+        optimized: true,
       });
+
+      // Stop bounce animation after 2 seconds for offline markers
+      if (building.status === 'offline') {
+        setTimeout(() => marker.setAnimation(null), 2000);
+      }
 
       const statusColors = {
         online: '#22C55E',
@@ -245,20 +238,20 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
       } as const;
       const statusColor = statusColors[building.status];
 
-      markerElement.addEventListener('mouseenter', () => {
+      marker.addListener('mouseover', () => {
         infoWindowRef.current?.setContent(`
-          <div style="padding:6px 10px;font-family:system-ui,-apple-system,sans-serif;">
+          <div style="padding:8px 12px;font-family:system-ui,-apple-system,sans-serif;min-width:140px;">
             <div style="font-weight:600;font-size:13px;color:#1f2937;">${building.nome}</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:3px;">
-              <span style="width:6px;height:6px;border-radius:50%;background:${statusColor};"></span>
-              <span style="font-size:11px;color:#666;">${building.onlineCount}/${building.totalDevices} painéis</span>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:${statusColor};box-shadow:0 0 4px ${statusColor};"></span>
+              <span style="font-size:11px;color:#666;">${building.onlineCount}/${building.totalDevices} painéis online</span>
             </div>
           </div>
         `);
         infoWindowRef.current?.open(mapInstanceRef.current, marker);
       });
 
-      markerElement.addEventListener('mouseleave', () => {
+      marker.addListener('mouseout', () => {
         infoWindowRef.current?.close();
       });
 
@@ -274,11 +267,12 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
     if (newMarkers.length > 0) {
       const bounds = new google.maps.LatLngBounds();
       newMarkers.forEach((m) => {
-        if (m.position) bounds.extend(m.position as google.maps.LatLng);
+        const pos = m.getPosition();
+        if (pos) bounds.extend(pos);
       });
-      mapInstanceRef.current.fitBounds(bounds, { top: 80, right: 20, bottom: 60, left: 20 });
+      mapInstanceRef.current.fitBounds(bounds, { top: 80, right: 20, bottom: 80, left: 20 });
     }
-  }, [filteredBuildings, mapReady, createMarkerElement]);
+  }, [filteredBuildings, mapReady]);
 
   const rotate = useCallback((delta: number) => {
     const map = mapInstanceRef.current;
@@ -293,11 +287,6 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
     try {
       const current = (map as any).getHeading?.() ?? 0;
       (map as any).setHeading(current + delta);
-      try {
-        map.setTilt(45);
-      } catch {
-        // ignore
-      }
     } catch {
       toast.error('Não foi possível girar o mapa.');
     }
@@ -309,21 +298,31 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
   const eventsCount = buildings.reduce((sum, b) => sum + b.eventsCount, 0);
   const totalPanels = buildings.reduce((sum, b) => sum + b.totalDevices, 0);
 
-  const headerHeight = 'calc(56px + env(safe-area-inset-top))';
+  const headerHeight = 64;
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-background"
+      className="fixed inset-0 z-[100] bg-background overflow-hidden"
+      style={{ isolation: 'isolate' }}
     >
-      {/* Glass Header (safe-area aware) */}
+      {/* Glass Header */}
       <div
-        className="absolute top-0 left-0 right-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-white/20 dark:border-gray-700/30 shadow-sm flex items-center justify-between px-4"
-        style={{ height: headerHeight, paddingTop: 'env(safe-area-inset-top)' }}
+        className="absolute top-0 left-0 right-0 z-20 
+          bg-gradient-to-b from-white/95 to-white/85 
+          dark:from-gray-900/95 dark:to-gray-900/85 
+          backdrop-blur-2xl 
+          border-b border-gray-200/50 dark:border-gray-700/50 
+          shadow-lg shadow-black/5
+          flex items-center justify-between px-4"
+        style={{ 
+          height: headerHeight, 
+          paddingTop: 'env(safe-area-inset-top)',
+        }}
       >
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 sm:gap-6">
           <FancyToggle
             checked={showOnlyOffline}
             onChange={setShowOnlyOffline}
@@ -331,9 +330,9 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
             size="large"
             icon={<AlertTriangle className="w-3.5 h-3.5" />}
           >
-            Problemas
+            <span className="hidden sm:inline">Problemas</span>
             {offlineCount > 0 && (
-              <span className="ml-1 text-[10px] bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-full">
+              <span className="ml-1 text-[10px] bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-full font-medium">
                 {offlineCount}
               </span>
             )}
@@ -346,25 +345,25 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
             size="large"
             icon={<Zap className="w-3.5 h-3.5" />}
           >
-            Quedas {periodLabel}
+            <span className="hidden sm:inline">Quedas {periodLabel}</span>
             {eventsCount > 0 && (
-              <span className="ml-1 text-[10px] bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded-full">
+              <span className="ml-1 text-[10px] bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded-full font-medium">
                 {eventsCount}
               </span>
             )}
           </FancyToggle>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="hidden md:flex items-center gap-3 text-xs text-muted-foreground bg-white/50 dark:bg-gray-800/50 rounded-full px-3 py-1.5">
             <div className="flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5" />
-              <span className="font-medium">{stats.total}</span>
+              <span className="font-semibold text-foreground">{stats.total}</span>
               <span>prédios</span>
             </div>
             <div className="w-px h-4 bg-border" />
             <div className="flex items-center gap-1">
-              <span className="font-medium">{totalPanels}</span>
+              <span className="font-semibold text-foreground">{totalPanels}</span>
               <span>painéis</span>
             </div>
           </div>
@@ -373,7 +372,7 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
             variant="ghost"
             size="icon"
             onClick={() => setSettingsOpen((v) => !v)}
-            className="h-9 w-9 rounded-full bg-white/50 dark:bg-gray-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80"
+            className="h-9 w-9 rounded-full bg-white/60 dark:bg-gray-800/60 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 shadow-sm"
             aria-label="Configurações do mapa"
           >
             <Settings2 className="w-4 h-4" />
@@ -383,7 +382,7 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="h-9 w-9 rounded-full bg-white/50 dark:bg-gray-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80"
+            className="h-9 w-9 rounded-full bg-white/60 dark:bg-gray-800/60 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 shadow-sm"
             aria-label="Fechar"
           >
             <X className="w-4 h-4" />
@@ -391,30 +390,43 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
         </div>
       </div>
 
-      {/* Map */}
-      <div ref={mapRef} className="w-full h-full" style={{ paddingTop: headerHeight }} />
+      {/* Map Container */}
+      <div 
+        ref={mapRef} 
+        className="absolute inset-0"
+        style={{ top: headerHeight }}
+      />
 
       {/* Settings panel */}
       {settingsOpen && (
-        <div
-          className="absolute left-4 right-4 top-[calc(56px+env(safe-area-inset-top)+12px)] z-20 bg-white/85 dark:bg-gray-900/85 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-2xl shadow-xl p-4"
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="absolute left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-30
+            bg-white/90 dark:bg-gray-900/90 
+            backdrop-blur-2xl 
+            border border-gray-200/50 dark:border-gray-700/50 
+            rounded-2xl shadow-2xl shadow-black/10 
+            p-4"
+          style={{ top: headerHeight + 12 }}
           role="dialog"
           aria-label="Configurações do mapa"
         >
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-medium text-foreground">Configuração</div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm font-semibold text-foreground">Configurações</div>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setSettingsOpen(false)}
-              className="h-8 w-8 rounded-full"
+              className="h-7 w-7 rounded-full"
               aria-label="Fechar configurações"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </Button>
           </div>
 
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-2">
             <FancyToggle
               checked={showLabels}
               onChange={setShowLabels}
@@ -422,7 +434,7 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
               size="large"
               icon={<Type className="w-3.5 h-3.5" />}
             >
-              Nomes/labels
+              Nomes e labels
             </FancyToggle>
 
             <FancyToggle
@@ -432,7 +444,7 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
               size="large"
               icon={<MapPinned className="w-3.5 h-3.5" />}
             >
-              Pontos/empresas
+              Pontos de interesse
             </FancyToggle>
 
             <FancyToggle
@@ -442,19 +454,19 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
               size="large"
               icon={<TramFront className="w-3.5 h-3.5" />}
             >
-              Transporte
+              Transporte público
             </FancyToggle>
 
-            <div className="flex items-center justify-between rounded-2xl border border-white/20 dark:border-gray-700/30 bg-white/60 dark:bg-gray-800/40 px-4 py-3">
-              <div className="text-xs text-muted-foreground">
-                <div className="font-medium text-foreground text-sm">Girar mapa</div>
-                <div className="mt-0.5">Ajuste fino (se suportado)</div>
+            <div className="flex items-center justify-between rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/50 px-3 py-2.5">
+              <div>
+                <div className="font-medium text-sm text-foreground">Girar mapa</div>
+                <div className="text-xs text-muted-foreground">Se suportado</div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-full"
+                  className="h-8 w-8 rounded-full"
                   onClick={() => rotate(-15)}
                   aria-label="Girar para a esquerda"
                 >
@@ -463,7 +475,7 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-full"
+                  className="h-8 w-8 rounded-full"
                   onClick={() => rotate(15)}
                   aria-label="Girar para a direita"
                 >
@@ -473,19 +485,35 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
             </div>
           </div>
 
-          <div className="mt-3 text-xs text-muted-foreground">Dica: desmarque tudo para ver apenas ruas + pins de painéis.</div>
-        </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Dica: desmarque tudo para ver apenas ruas + pins.
+          </p>
+        </motion.div>
       )}
 
       {/* Loading overlay */}
       {(loading || !mapReady) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-30">
-          <div className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-card/80 backdrop-blur-xl border border-white/20 shadow-xl">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-muted-foreground text-sm">Carregando mapa...</p>
-            {mapInitError && <p className="text-xs text-destructive">{mapInitError}</p>}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute inset-0 flex items-center justify-center bg-background/90 backdrop-blur-sm z-40"
+        >
+          <div className="flex flex-col items-center gap-4 p-8 rounded-3xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-2xl">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
+              <Loader2 className="w-10 h-10 animate-spin text-primary relative" />
+            </div>
+            <div className="text-center">
+              <p className="font-medium text-foreground">Carregando mapa...</p>
+              <p className="text-sm text-muted-foreground mt-1">Aguarde um momento</p>
+            </div>
+            {mapInitError && (
+              <p className="text-xs text-destructive bg-destructive/10 px-3 py-1.5 rounded-full">
+                {mapInitError}
+              </p>
+            )}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Building detail card */}
@@ -499,18 +527,26 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-4 right-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-xl border border-white/20 dark:border-gray-700/30 px-4 py-2.5 z-10 flex items-center gap-4 shadow-lg">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm shadow-green-500/50" />
-          <span className="text-xs text-foreground/80">Online</span>
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0 
+        bg-white/90 dark:bg-gray-900/90 
+        backdrop-blur-2xl 
+        rounded-2xl 
+        border border-gray-200/50 dark:border-gray-700/50 
+        px-5 py-3 z-20 
+        flex items-center gap-5 
+        shadow-xl shadow-black/10"
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-3.5 h-3.5 rounded-full bg-green-500 shadow-md shadow-green-500/40" />
+          <span className="text-xs font-medium text-foreground">Online</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-yellow-500 shadow-sm shadow-yellow-500/50" />
-          <span className="text-xs text-foreground/80">Parcial</span>
+        <div className="flex items-center gap-2">
+          <div className="w-3.5 h-3.5 rounded-full bg-yellow-500 shadow-md shadow-yellow-500/40" />
+          <span className="text-xs font-medium text-foreground">Parcial</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-sm shadow-red-500/50" />
-          <span className="text-xs text-foreground/80">Offline</span>
+        <div className="flex items-center gap-2">
+          <div className="w-3.5 h-3.5 rounded-full bg-red-500 animate-pulse shadow-md shadow-red-500/40" />
+          <span className="text-xs font-medium text-foreground">Offline</span>
         </div>
       </div>
     </motion.div>
