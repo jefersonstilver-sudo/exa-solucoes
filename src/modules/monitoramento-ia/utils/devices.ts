@@ -52,7 +52,8 @@ export async function fetchDevices(
 ) {
   let query = supabase
     .from('devices')
-    .select('*', { count: 'exact' });
+    .select('*', { count: 'exact' })
+    .or('is_deleted.is.null,is_deleted.eq.false'); // Excluir devices marcados como deletados
 
   // Filtros
   if (filters?.status && filters.status.length > 0) {

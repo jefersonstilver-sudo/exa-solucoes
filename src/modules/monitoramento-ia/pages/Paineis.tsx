@@ -471,6 +471,10 @@ export const PaineisPage = () => {
             setIsDetailModalOpen(false);
             setSelectedDevice(null);
           }}
+          onDeleted={() => {
+            // Recarregar a lista após exclusão
+            refresh();
+          }}
           theme={theme}
           periodEventsCount={periodEventsMap.get(selectedDevice.id) || 0}
           periodOfflineCount={periodEventsMap.get(selectedDevice.id) || 0}

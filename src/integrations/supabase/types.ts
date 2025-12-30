@@ -3660,8 +3660,11 @@ export type Database = {
           condominio_name: string
           consecutive_offline_count: number
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           is_active: boolean | null
+          is_deleted: boolean | null
           last_online_at: string | null
           metadata: Json | null
           name: string
@@ -3679,8 +3682,11 @@ export type Database = {
           condominio_name: string
           consecutive_offline_count?: number
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           last_online_at?: string | null
           metadata?: Json | null
           name: string
@@ -3698,8 +3704,11 @@ export type Database = {
           condominio_name?: string
           consecutive_offline_count?: number
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           last_online_at?: string | null
           metadata?: Json | null
           name?: string
