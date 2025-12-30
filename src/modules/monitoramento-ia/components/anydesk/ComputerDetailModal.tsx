@@ -21,6 +21,7 @@ interface ComputerDetailModalProps {
   computer: any;
   isOpen: boolean;
   onClose: () => void;
+  onDeleted?: () => void; // Callback para quando o device for excluído
   theme: 'dark' | 'light';
   // Props para eventos proporcionais ao período selecionado
   periodEventsCount?: number;
@@ -37,6 +38,7 @@ export const ComputerDetailModal = ({
   computer, 
   isOpen, 
   onClose,
+  onDeleted,
   theme,
   periodEventsCount,
   periodOfflineCount,
@@ -169,28 +171,27 @@ export const ComputerDetailModal = ({
   const handleDeleteDevice = async () => {
     setIsDeleting(true);
     try {
-      // Delete connection history first
-      await supabase
-        .from('connection_history')
-        .delete()
-        .eq('computer_id', computer.id);
-
-      // Delete device alert configs
-      await (supabase as any)
-        .from('device_alert_configs')
-        .delete()
-        .eq('device_id', computer.id);
-
-      // Hard delete the device
+      // Soft delete - marcar como excluído em vez de deletar
+      // Isso evita que o sync-anydesk recrie o device
       const { error } = await supabase
         .from('devices')
-        .delete()
+        .update({
+          is_deleted: true,
+          deleted_at: new Date().toISOString(),
+          deleted_by: 'admin_master',
+          status: 'deleted', // Marcar status para filtrar na UI
+        })
         .eq('id', computer.id);
 
       if (error) throw error;
 
       toast.success(`Painel "${displayName}" excluído permanentemente!`);
       onClose();
+      
+      // Chamar callback para atualizar a lista
+      if (onDeleted) {
+        onDeleted();
+      }
     } catch (error) {
       console.error('Erro ao excluir painel:', error);
       toast.error('Erro ao excluir painel');

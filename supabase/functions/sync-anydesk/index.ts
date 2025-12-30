@@ -206,6 +206,12 @@ serve(async (req) => {
           .eq('anydesk_client_id', anydeskId)
           .maybeSingle();
         
+        // SKIP DELETED DEVICES - não sincronizar devices marcados como excluídos
+        if (existingDevice?.is_deleted === true) {
+          console.log(`[SYNC-ANYDESK] ⏭️ Skipping deleted device ${anydeskId} (${existingDevice?.name})`);
+          continue;
+        }
+        
         // ============ IMPROVED DEBOUNCE LOGIC ============
         // Goal: Prevent flipflop by requiring multiple confirmations before status change
         
