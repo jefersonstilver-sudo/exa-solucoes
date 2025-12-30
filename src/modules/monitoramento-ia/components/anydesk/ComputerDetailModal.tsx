@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConnectionTimeline } from "./ConnectionTimeline";
 import { UptimeChart } from "./UptimeChart";
 import { AssignBuildingDialog } from "./AssignBuildingDialog";
-import { Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell, Building2, Link2, Unlink } from "lucide-react";
+import { Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell, Building2, Link2, Unlink, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,8 @@ import { useRealTimeCounter } from "../../hooks/useRealTimeCounter";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useDynamicModulePermissions } from "@/hooks/useDynamicModulePermissions";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 interface ComputerDetailModalProps {
   computer: any;
   isOpen: boolean;
@@ -47,7 +49,9 @@ export const ComputerDetailModal = ({
   const [loading, setLoading] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [assignedBuilding, setAssignedBuilding] = useState<{ id: string; nome: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const offlineCounter = useRealTimeCounter(computer?.status === 'offline' ? computer?.last_online_at : null);
+  const { isMasterAccount } = useDynamicModulePermissions();
 
   useEffect(() => {
     if (computer?.id && isOpen) {
@@ -159,6 +163,39 @@ export const ComputerDetailModal = ({
       toast.error('Erro ao salvar configurações de alertas');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteDevice = async () => {
+    setIsDeleting(true);
+    try {
+      // Delete connection history first
+      await supabase
+        .from('connection_history')
+        .delete()
+        .eq('computer_id', computer.id);
+
+      // Delete device alert configs
+      await (supabase as any)
+        .from('device_alert_configs')
+        .delete()
+        .eq('device_id', computer.id);
+
+      // Hard delete the device
+      const { error } = await supabase
+        .from('devices')
+        .delete()
+        .eq('id', computer.id);
+
+      if (error) throw error;
+
+      toast.success(`Painel "${displayName}" excluído permanentemente!`);
+      onClose();
+    } catch (error) {
+      console.error('Erro ao excluir painel:', error);
+      toast.error('Erro ao excluir painel');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -369,6 +406,65 @@ export const ComputerDetailModal = ({
                 </div>
               </CardContent>
             </Card>
+
+            {/* ZONA DE PERIGO - Apenas Admin Master + Device Offline */}
+            {isMasterAccount && !isOnline && (
+              <Card className="bg-red-50 border-red-200 shadow-sm md:col-span-3">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2 text-red-700">
+                    <Trash2 className="h-4 w-4" />
+                    Zona de Perigo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-red-600 font-medium">
+                        Excluir este painel permanentemente
+                      </p>
+                      <p className="text-xs text-red-500">
+                        Esta ação não pode ser desfeita. Todos os dados serão perdidos.
+                      </p>
+                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir Painel
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Confirmar Exclusão Permanente</AlertDialogTitle>
+                          <AlertDialogDescription className="space-y-2">
+                            <span className="block">
+                              Você está prestes a excluir permanentemente o painel <strong>{displayName}</strong>.
+                            </span>
+                            <span className="block">
+                              Esta ação irá remover todos os dados, histórico de eventos e configurações deste painel. Esta ação <strong>NÃO</strong> pode ser desfeita.
+                            </span>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleDeleteDevice}
+                            disabled={isDeleting}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            {isDeleting ? 'Excluindo...' : 'Sim, excluir permanentemente'}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* INFORMAÇÕES ADICIONAIS */}
