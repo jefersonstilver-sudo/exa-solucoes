@@ -17,7 +17,8 @@ import {
   Package,
   TrendingUp,
   ShoppingBag,
-  ExternalLink
+  ExternalLink,
+  DollarSign
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +34,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { ProjecaoVendasModal } from '@/components/admin/posicoes/ProjecaoVendasModal';
 
 interface BuildingWithPosicao {
   id: string;
@@ -49,18 +51,19 @@ interface BuildingWithPosicao {
 const PosicoesDisponiveisPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'available' | 'lotado'>('all');
+  const [showProjecaoModal, setShowProjecaoModal] = useState(false);
   
   const { 
     posicoesMap, 
     totalPosicoes, 
     totalOcupadas, 
-    totalReservadas, 
     totalDisponiveis,
     percentualGeral,
     totalPredios,
     totalPedidosAtivos,
     pedidosAtivos,
     empresasPorPredio,
+    projecaoVendas,
     isLoading: isLoadingPosicoes,
     refetch 
   } = usePosicoesDisponiveis();
@@ -206,14 +209,20 @@ const PosicoesDisponiveisPage = () => {
           </div>
         </Card>
 
-        <Card className="p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+        {/* Card Projeção de Vendas - Clicável */}
+        <Card 
+          className="p-4 bg-gradient-to-br from-emerald-50 to-teal-100 border-emerald-200 cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
+          onClick={() => setShowProjecaoModal(true)}
+        >
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-yellow-500 rounded-lg">
-              <Clock className="h-4 w-4 text-white" />
+            <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg shadow-sm">
+              <DollarSign className="h-4 w-4 text-white" />
             </div>
             <div>
-              <p className="text-xs text-yellow-600 font-medium">Reservadas</p>
-              <p className="text-xl font-bold text-yellow-700">{totalReservadas}</p>
+              <p className="text-xs text-emerald-600 font-medium">Projeção Vendas</p>
+              <p className="text-xl font-bold text-emerald-700">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(projecaoVendas.total)}
+              </p>
             </div>
           </div>
         </Card>
@@ -547,6 +556,14 @@ const PosicoesDisponiveisPage = () => {
           </p>
         </Card>
       )}
+
+      {/* Modal de Projeção de Vendas */}
+      <ProjecaoVendasModal
+        open={showProjecaoModal}
+        onClose={() => setShowProjecaoModal(false)}
+        projecao={projecaoVendas}
+        onRefresh={refetch}
+      />
     </div>
   );
 };
