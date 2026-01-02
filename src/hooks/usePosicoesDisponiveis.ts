@@ -19,6 +19,22 @@ export interface EmpresaPedido {
   valorTotal: number;
 }
 
+export interface ProjecaoPredio {
+  buildingId: string;
+  nome: string;
+  bairro: string;
+  disponiveis: number;
+  precoBase: number;
+  valorProjecao: number;
+}
+
+export interface ProjecaoVendas {
+  total: number;
+  porPredio: ProjecaoPredio[];
+  totalPrediosComPreco: number;
+  totalPosicoesComPreco: number;
+}
+
 export interface PosicoesData {
   posicoesMap: Record<string, PosicoesPredio>;
   totalPosicoes: number;
@@ -37,6 +53,7 @@ export interface PosicoesData {
     email: string;
   }>;
   empresasPorPredio: Record<string, EmpresaPedido[]>;
+  projecaoVendas: ProjecaoVendas;
   isLoading: boolean;
   refetch: () => void;
 }
@@ -59,13 +76,13 @@ export const usePosicoesDisponiveis = () => {
 
   const maxClientes = produtoHorizontal ?? 15;
 
-  // Buscar apenas prédios da loja pública (com imagem e status ativo/instalação)
+  // Buscar apenas prédios da loja pública (com imagem e status ativo/instalação) - incluindo preco_base
   const { data: predios } = useQuery({
-    queryKey: ['predios-posicoes-loja-publica'],
+    queryKey: ['predios-posicoes-loja-publica-com-preco'],
     queryFn: async () => {
       const { data } = await supabase
         .from('buildings')
-        .select('id, nome, bairro, imagem_principal, numero_elevadores, publico_estimado, status')
+        .select('id, nome, bairro, imagem_principal, numero_elevadores, publico_estimado, status, preco_base')
         .in('status', ['ativo', 'instalacao', 'instalação'])
         .not('imagem_principal', 'is', null)
         .neq('imagem_principal', '');
@@ -114,6 +131,7 @@ export const usePosicoesDisponiveis = () => {
   const posicoesData = useMemo<PosicoesData>(() => {
     const posicoesMap: Record<string, PosicoesPredio> = {};
     const empresasPorPredio: Record<string, EmpresaPedido[]> = {};
+    const prediosInfo: Record<string, { nome: string; bairro: string; precoBase: number }> = {};
     
     // Inicializar todos os prédios
     (predios || []).forEach(predio => {
@@ -127,6 +145,11 @@ export const usePosicoesDisponiveis = () => {
         isLotado: false
       };
       empresasPorPredio[predio.id] = [];
+      prediosInfo[predio.id] = {
+        nome: predio.nome,
+        bairro: predio.bairro,
+        precoBase: predio.preco_base || 0
+      };
     });
 
     // Processar pedidos ativos
@@ -172,11 +195,16 @@ export const usePosicoesDisponiveis = () => {
       });
     });
 
-    // Calcular disponíveis e percentuais
+    // Calcular disponíveis, percentuais e projeção de vendas
     let totalPosicoes = 0;
     let totalOcupadas = 0;
     let totalReservadas = 0;
     let prediosLotados = 0;
+    
+    const projecaoPorPredio: ProjecaoPredio[] = [];
+    let totalProjecao = 0;
+    let totalPrediosComPreco = 0;
+    let totalPosicoesComPreco = 0;
 
     Object.values(posicoesMap).forEach(posicao => {
       posicao.disponiveis = Math.max(0, posicao.maxClientes - posicao.ocupadas - posicao.reservadas);
@@ -190,7 +218,27 @@ export const usePosicoesDisponiveis = () => {
       if (posicao.isLotado) {
         prediosLotados += 1;
       }
+
+      // Calcular projeção de vendas para prédios com preço
+      const info = prediosInfo[posicao.buildingId];
+      if (info && info.precoBase > 0 && posicao.disponiveis > 0) {
+        const valorProjecao = posicao.disponiveis * info.precoBase;
+        projecaoPorPredio.push({
+          buildingId: posicao.buildingId,
+          nome: info.nome,
+          bairro: info.bairro,
+          disponiveis: posicao.disponiveis,
+          precoBase: info.precoBase,
+          valorProjecao
+        });
+        totalProjecao += valorProjecao;
+        totalPrediosComPreco += 1;
+        totalPosicoesComPreco += posicao.disponiveis;
+      }
     });
+
+    // Ordenar projeção por valor (maior primeiro)
+    projecaoPorPredio.sort((a, b) => b.valorProjecao - a.valorProjecao);
 
     const totalDisponiveis = totalPosicoes - totalOcupadas - totalReservadas;
     const percentualGeral = totalPosicoes > 0 
@@ -209,6 +257,12 @@ export const usePosicoesDisponiveis = () => {
       totalPedidosAtivos: pedidosProcessados.length,
       pedidosAtivos: pedidosProcessados,
       empresasPorPredio,
+      projecaoVendas: {
+        total: totalProjecao,
+        porPredio: projecaoPorPredio,
+        totalPrediosComPreco,
+        totalPosicoesComPreco
+      },
       isLoading: !predios || !pedidosAtivos || !propostasAtivas,
       refetch
     };
