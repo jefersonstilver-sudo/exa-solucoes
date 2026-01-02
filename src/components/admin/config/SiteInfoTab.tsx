@@ -296,7 +296,10 @@ export const SiteInfoTab: React.FC<SiteInfoTabProps> = ({ config, updateConfig }
       </Card>
 
       {/* Botão Salvar */}
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground italic">
+          Quem respeita o processo, colhe o resultado.
+        </p>
         <Button onClick={handleSave} disabled={saving}>
           {saving ? (
             <>
