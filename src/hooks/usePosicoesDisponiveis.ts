@@ -24,8 +24,25 @@ export interface ProjecaoPredio {
   nome: string;
   bairro: string;
   disponiveis: number;
-  precoBase: number;
+  precoMedio: number;
   valorProjecao: number;
+}
+
+export interface PropostaBase {
+  id: string;
+  number: string;
+  clientName: string;
+  clientCompanyName: string | null;
+  sellerName: string;
+  totalPanels: number;
+  durationMonths: number;
+  isCustomDays: boolean;
+  customDays: number | null;
+  valorMensal: number;
+  valorTotal: number;
+  predios: string[];
+  createdAt: string;
+  status: string;
 }
 
 export interface ProjecaoVendas {
@@ -33,6 +50,8 @@ export interface ProjecaoVendas {
   porPredio: ProjecaoPredio[];
   totalPrediosComPreco: number;
   totalPosicoesComPreco: number;
+  precoMedioGeral: number;
+  propostas: PropostaBase[];
 }
 
 export interface PosicoesData {
@@ -127,11 +146,25 @@ export const usePosicoesDisponiveis = () => {
     staleTime: 1 * 60 * 1000
   });
 
+  // Buscar últimas 15 propostas para cálculo de preço médio
+  const { data: ultimasPropostas } = useQuery({
+    queryKey: ['ultimas-propostas-projecao'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('proposals')
+        .select('id, number, client_name, client_company_name, seller_name, total_panels, duration_months, is_custom_days, custom_days, fidel_monthly_value, cash_total_value, selected_buildings, created_at, status')
+        .order('created_at', { ascending: false })
+        .limit(15);
+      return data || [];
+    },
+    staleTime: 2 * 60 * 1000
+  });
+
   // Calcular posições por prédio
   const posicoesData = useMemo<PosicoesData>(() => {
     const posicoesMap: Record<string, PosicoesPredio> = {};
     const empresasPorPredio: Record<string, EmpresaPedido[]> = {};
-    const prediosInfo: Record<string, { nome: string; bairro: string; precoBase: number }> = {};
+    const prediosInfo: Record<string, { nome: string; bairro: string }> = {};
     
     // Inicializar todos os prédios
     (predios || []).forEach(predio => {
@@ -147,8 +180,7 @@ export const usePosicoesDisponiveis = () => {
       empresasPorPredio[predio.id] = [];
       prediosInfo[predio.id] = {
         nome: predio.nome,
-        bairro: predio.bairro,
-        precoBase: predio.preco_base || 0
+        bairro: predio.bairro
       };
     });
 
@@ -195,6 +227,60 @@ export const usePosicoesDisponiveis = () => {
       });
     });
 
+    // Processar últimas propostas para cálculo de preço médio por prédio
+    const precosPorPredio: Record<string, number[]> = {};
+    const propostasProcessadas: PropostaBase[] = (ultimasPropostas || []).map(prop => {
+      const selectedBuildings = prop.selected_buildings as Array<{ building_id: string; building_name?: string }> || [];
+      const prediosNomes = selectedBuildings.map(b => b.building_name || b.building_id);
+      
+      // Calcular valor mensal por posição
+      const valorMensal = prop.fidel_monthly_value || 0;
+      const totalPanels = prop.total_panels || 1;
+      const valorPorPosicao = valorMensal / totalPanels;
+      
+      // Registrar preço por prédio
+      selectedBuildings.forEach(b => {
+        if (!precosPorPredio[b.building_id]) {
+          precosPorPredio[b.building_id] = [];
+        }
+        precosPorPredio[b.building_id].push(valorPorPosicao);
+      });
+      
+      return {
+        id: prop.id,
+        number: prop.number || '',
+        clientName: prop.client_name || '',
+        clientCompanyName: prop.client_company_name,
+        sellerName: prop.seller_name || '',
+        totalPanels: prop.total_panels || 0,
+        durationMonths: prop.duration_months || 0,
+        isCustomDays: prop.is_custom_days || false,
+        customDays: prop.custom_days,
+        valorMensal: prop.fidel_monthly_value || 0,
+        valorTotal: prop.cash_total_value || 0,
+        predios: prediosNomes,
+        createdAt: prop.created_at || '',
+        status: prop.status || ''
+      };
+    });
+
+    // Calcular média de preços por prédio
+    const precoMedioPorPredio: Record<string, number> = {};
+    Object.entries(precosPorPredio).forEach(([buildingId, precos]) => {
+      precoMedioPorPredio[buildingId] = precos.reduce((a, b) => a + b, 0) / precos.length;
+    });
+
+    // Calcular preço médio geral (de todas as propostas)
+    let somaPrecos = 0;
+    let countPrecos = 0;
+    Object.values(precosPorPredio).forEach(precos => {
+      precos.forEach(preco => {
+        somaPrecos += preco;
+        countPrecos += 1;
+      });
+    });
+    const precoMedioGeral = countPrecos > 0 ? somaPrecos / countPrecos : 0;
+
     // Calcular disponíveis, percentuais e projeção de vendas
     let totalPosicoes = 0;
     let totalOcupadas = 0;
@@ -219,16 +305,18 @@ export const usePosicoesDisponiveis = () => {
         prediosLotados += 1;
       }
 
-      // Calcular projeção de vendas para prédios com preço
+      // Calcular projeção de vendas usando preço médio das propostas ou fallback para preço médio geral
       const info = prediosInfo[posicao.buildingId];
-      if (info && info.precoBase > 0 && posicao.disponiveis > 0) {
-        const valorProjecao = posicao.disponiveis * info.precoBase;
+      const precoMedio = precoMedioPorPredio[posicao.buildingId] || precoMedioGeral;
+      
+      if (info && precoMedio > 0 && posicao.disponiveis > 0) {
+        const valorProjecao = posicao.disponiveis * precoMedio;
         projecaoPorPredio.push({
           buildingId: posicao.buildingId,
           nome: info.nome,
           bairro: info.bairro,
           disponiveis: posicao.disponiveis,
-          precoBase: info.precoBase,
+          precoMedio: precoMedio,
           valorProjecao
         });
         totalProjecao += valorProjecao;
@@ -261,12 +349,14 @@ export const usePosicoesDisponiveis = () => {
         total: totalProjecao,
         porPredio: projecaoPorPredio,
         totalPrediosComPreco,
-        totalPosicoesComPreco
+        totalPosicoesComPreco,
+        precoMedioGeral,
+        propostas: propostasProcessadas
       },
       isLoading: !predios || !pedidosAtivos || !propostasAtivas,
       refetch
     };
-  }, [predios, pedidosAtivos, propostasAtivas, maxClientes, refetch]);
+  }, [predios, pedidosAtivos, propostasAtivas, ultimasPropostas, maxClientes, refetch]);
 
   return posicoesData;
 };
