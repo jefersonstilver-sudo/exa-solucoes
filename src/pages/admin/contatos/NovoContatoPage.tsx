@@ -118,11 +118,16 @@ const NovoContatoPage = () => {
               <Button variant="outline" size="sm" onClick={handleCancel} className="h-8">
                 Cancelar
               </Button>
-              <Button size="sm" onClick={handleSubmit} disabled={loading} className="h-8">
+              <Button 
+                size="sm" 
+                onClick={handleSubmit} 
+                disabled={loading} 
+                className="h-9 bg-gray-900 hover:bg-gray-800 text-white"
+              >
                 {loading ? (
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
-                  <Save className="w-4 h-4 mr-1" />
+                  <Save className="w-4 h-4 mr-2" />
                 )}
                 Salvar Contato
               </Button>
