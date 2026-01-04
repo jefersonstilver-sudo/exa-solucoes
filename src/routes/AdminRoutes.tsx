@@ -47,6 +47,11 @@ const EditorVideoControlePage = lazy(() => import('@/pages/video-editor/VideoEdi
 // Sofia Executive Dashboard
 const SofiaExecutive = lazy(() => import('@/pages/admin/SofiaExecutive'));
 
+// Processos & Operação
+const ProcessosPage = lazy(() => import('@/pages/admin/processos/ProcessosPage'));
+const DepartmentProcessesPage = lazy(() => import('@/pages/admin/processos/DepartmentProcessesPage'));
+const ProcessEditorPage = lazy(() => import('@/pages/admin/processos/ProcessEditorPage'));
+
 // Lazy imports para páginas do monitoramento-ia (agora integradas)
 const CRMUnificado = lazy(() => import('@/modules/monitoramento-ia/pages/CRMUnificado'));
 const EscalacoesComerciais = lazy(() => import('@/modules/monitoramento-ia/pages/EscalacoesComerciais'));
@@ -187,6 +192,29 @@ const AdminRoutes = () => {
         </ProtectedModuleRoute>
       } />
       
+      {/* ============ PROCESSOS & OPERAÇÃO ============ */}
+      <Route path="processos" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.processos}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Processos..." />}>
+            <ProcessosPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="processos/:departmentId" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.processos}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Processos..." />}>
+            <DepartmentProcessesPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="processos/:departmentId/:processId" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.processos}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Editor..." />}>
+            <ProcessEditorPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+
       {/* ============ INTELIGÊNCIA ============ */}
       <Route path="agentes-sofia" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.agentes_sofia}>
