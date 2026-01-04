@@ -55,6 +55,7 @@ const ProcessEditorPage = lazy(() => import('@/pages/admin/processos/ProcessEdit
 // Contatos
 const ContatosPage = lazy(() => import('@/pages/admin/contatos/ContatosPage'));
 const ContatoDetalhePage = lazy(() => import('@/pages/admin/contatos/ContatoDetalhePage'));
+const NovoContatoPage = lazy(() => import('@/pages/admin/contatos/NovoContatoPage'));
 const PontuacaoConfigPage = lazy(() => import('@/pages/admin/contatos/PontuacaoConfigPage'));
 const BloqueiosPage = lazy(() => import('@/pages/admin/contatos/BloqueiosPage'));
 
@@ -180,6 +181,13 @@ const AdminRoutes = () => {
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.contatos}>
           <Suspense fallback={<GlobalLoadingPage message="Carregando Contatos..." />}>
             <ContatosPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="contatos/novo" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.contatos}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Formulário..." />}>
+            <NovoContatoPage />
           </Suspense>
         </ProtectedModuleRoute>
       } />

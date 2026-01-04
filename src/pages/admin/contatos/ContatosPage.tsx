@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useContatos } from '@/hooks/contatos';
 import { CategoriaContato, ContatosFilters, ContatosOrderBy, ContatosOrderDirection } from '@/types/contatos';
-import { ContatosCategoryTabs, ContatosTable, NovoContatoDialog } from '@/components/contatos/listagem';
+import { ContatosCategoryTabs, ContatosTable } from '@/components/contatos/listagem';
 import { ContatosFiltersSheet } from '@/components/contatos/listagem/ContatosFiltersSheet';
 import { useNavigate } from 'react-router-dom';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
@@ -15,7 +15,6 @@ const ContatosPage = () => {
   const { buildPath } = useAdminBasePath();
   const [selectedCategory, setSelectedCategory] = useState<CategoriaContato | null>(null);
   const [search, setSearch] = useState('');
-  const [showNewDialog, setShowNewDialog] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<ContatosFilters>({});
   const [orderBy, setOrderBy] = useState<ContatosOrderBy>('created_at');
@@ -41,6 +40,10 @@ const ContatosPage = () => {
   const activeFiltersCount = useMemo(() => {
     return Object.values(filters).filter(v => v !== undefined && v !== '').length;
   }, [filters]);
+
+  const handleNewContact = () => {
+    navigate(buildPath('contatos/novo'));
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 p-3 md:p-4 space-y-4">
@@ -73,7 +76,7 @@ const ContatosPage = () => {
             <Settings className="w-3.5 h-3.5 mr-1" />
             Config
           </Button>
-          <Button size="sm" onClick={() => setShowNewDialog(true)} className="h-8">
+          <Button size="sm" onClick={handleNewContact} className="h-8">
             <Plus className="w-3.5 h-3.5 mr-1" />
             Novo
           </Button>
@@ -199,14 +202,13 @@ const ContatosPage = () => {
         <Button
           size="lg"
           className="rounded-full w-14 h-14 shadow-lg"
-          onClick={() => setShowNewDialog(true)}
+          onClick={handleNewContact}
         >
           <Plus className="w-6 h-6" />
         </Button>
       </div>
 
-      {/* Dialogs */}
-      <NovoContatoDialog open={showNewDialog} onOpenChange={setShowNewDialog} />
+      {/* Filters Sheet */}
       <ContatosFiltersSheet 
         open={showFilters} 
         onOpenChange={setShowFilters}
