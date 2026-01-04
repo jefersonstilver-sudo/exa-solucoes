@@ -54,6 +54,7 @@ const AgentKnowledge = lazy(() => import('@/modules/monitoramento-ia/pages/agent
 // Lazy imports para Contatos & Inteligência Comercial
 const ContatosPage = lazy(() => import('@/pages/admin/contatos/ContatosPage'));
 const ContatoDetalhePage = lazy(() => import('@/pages/admin/contatos/ContatoDetalhePage'));
+const NovoContatoPage = lazy(() => import('@/pages/admin/contatos/NovoContatoPage'));
 const PontuacaoConfigPage = lazy(() => import('@/pages/admin/contatos/PontuacaoConfigPage'));
 const BloqueiosPage = lazy(() => import('@/pages/admin/contatos/BloqueiosPage'));
 
@@ -106,6 +107,11 @@ const SuperAdminRoutes = () => {
       <Route path="contatos" element={
         <Suspense fallback={<GlobalLoadingPage message="Carregando Contatos..." />}>
           <ContatosPage />
+        </Suspense>
+      } />
+      <Route path="contatos/novo" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando Formulário..." />}>
+          <NovoContatoPage />
         </Suspense>
       } />
       <Route path="contatos/configuracoes/pontuacao" element={
