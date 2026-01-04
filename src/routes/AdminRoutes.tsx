@@ -54,6 +54,9 @@ const ProcessEditorPage = lazy(() => import('@/pages/admin/processos/ProcessEdit
 
 // Contatos
 const ContatosPage = lazy(() => import('@/pages/admin/contatos/ContatosPage'));
+const ContatoDetalhePage = lazy(() => import('@/pages/admin/contatos/ContatoDetalhePage'));
+const PontuacaoConfigPage = lazy(() => import('@/pages/admin/contatos/PontuacaoConfigPage'));
+const BloqueiosPage = lazy(() => import('@/pages/admin/contatos/BloqueiosPage'));
 
 // Lazy imports para páginas do monitoramento-ia (agora integradas)
 const CRMUnificado = lazy(() => import('@/modules/monitoramento-ia/pages/CRMUnificado'));
@@ -177,6 +180,27 @@ const AdminRoutes = () => {
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.contatos}>
           <Suspense fallback={<GlobalLoadingPage message="Carregando Contatos..." />}>
             <ContatosPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="contatos/:id" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.contatos}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Contato..." />}>
+            <ContatoDetalhePage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="contatos/configuracoes/pontuacao" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.contatos}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Configurações..." />}>
+            <PontuacaoConfigPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="contatos/bloqueios" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.contatos}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Bloqueios..." />}>
+            <BloqueiosPage />
           </Suspense>
         </ProtectedModuleRoute>
       } />
