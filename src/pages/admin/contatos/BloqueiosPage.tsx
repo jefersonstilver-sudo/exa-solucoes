@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { useContatos, useScoringRules } from '@/hooks/contatos';
 import { CategoriaBadge, ScoreProgressBar } from '@/components/contatos/common';
 import { CATEGORIAS_CONFIG } from '@/types/contatos';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 
 const BloqueiosPage = () => {
   const navigate = useNavigate();
+  const { buildPath } = useAdminBasePath();
   const { contacts, loading } = useContatos({ bloqueado: true });
   const { rules, getConfigForCategory, getMaxScore } = useScoringRules();
 
@@ -45,7 +47,7 @@ const BloqueiosPage = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/super_admin/contatos')}
+          onClick={() => navigate(buildPath('contatos'))}
           className="mb-2"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -149,7 +151,7 @@ const BloqueiosPage = () => {
 
                   <Button
                     variant="outline"
-                    onClick={() => navigate(`/super_admin/contatos/${contact.id}`)}
+                    onClick={() => navigate(buildPath(`contatos/${contact.id}`))}
                   >
                     Completar Dados
                     <ArrowRight className="w-4 h-4 ml-2" />

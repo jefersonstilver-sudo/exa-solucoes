@@ -21,10 +21,12 @@ import { toast } from 'sonner';
 import { Contact, CATEGORIAS_CONFIG, CATEGORIAS_ORDER, CategoriaContato } from '@/types/contatos';
 import { CategoriaBadge, TemperaturaBadge, ScoreProgressBar } from '@/components/contatos/common';
 import { useScoringRules } from '@/hooks/contatos';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 
 const ContatoDetalhePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { buildPath } = useAdminBasePath();
   const { rules, getConfigForCategory, getMaxScore } = useScoringRules();
   
   const [contact, setContact] = useState<Contact | null>(null);
@@ -53,7 +55,7 @@ const ContatoDetalhePage = () => {
     } catch (error) {
       console.error('Erro ao buscar contato:', error);
       toast.error('Contato não encontrado');
-      navigate('/super_admin/contatos');
+      navigate(buildPath('contatos'));
     } finally {
       setLoading(false);
     }
@@ -122,7 +124,7 @@ const ContatoDetalhePage = () => {
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => navigate('/super_admin/contatos')}
+        onClick={() => navigate(buildPath('contatos'))}
         className="mb-4"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />

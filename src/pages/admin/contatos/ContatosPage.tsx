@@ -6,9 +6,10 @@ import { useContatos } from '@/hooks/contatos';
 import { CategoriaContato } from '@/types/contatos';
 import { ContatosCategoryTabs, ContatosTable, NovoContatoDialog } from '@/components/contatos/listagem';
 import { useNavigate } from 'react-router-dom';
-
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 const ContatosPage = () => {
   const navigate = useNavigate();
+  const { buildPath } = useAdminBasePath();
   const [selectedCategory, setSelectedCategory] = useState<CategoriaContato | null>(null);
   const [search, setSearch] = useState('');
   const [showNewDialog, setShowNewDialog] = useState(false);
@@ -39,7 +40,7 @@ const ContatosPage = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate('/super_admin/contatos/bloqueios')}
+            onClick={() => navigate(buildPath('contatos/bloqueios'))}
             className="text-amber-600 border-amber-600 hover:bg-amber-50"
           >
             <AlertTriangle className="w-4 h-4 mr-1" />
@@ -48,7 +49,7 @@ const ContatosPage = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate('/super_admin/contatos/configuracoes/pontuacao')}
+            onClick={() => navigate(buildPath('contatos/configuracoes/pontuacao'))}
           >
             <Settings className="w-4 h-4 mr-1" />
             Config

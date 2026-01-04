@@ -14,6 +14,7 @@ import { Contact, CATEGORIAS_CONFIG } from '@/types/contatos';
 import { CategoriaBadge, TemperaturaBadge, ScoreCircle } from '../common';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 
 interface ContatosTableProps {
   contacts: Contact[];
@@ -22,6 +23,7 @@ interface ContatosTableProps {
 
 export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading }) => {
   const navigate = useNavigate();
+  const { buildPath } = useAdminBasePath();
 
   const handleWhatsApp = (e: React.MouseEvent, contact: Contact) => {
     e.stopPropagation();
@@ -43,7 +45,7 @@ export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading 
   };
 
   const handleView = (contact: Contact) => {
-    navigate(`/super_admin/contatos/${contact.id}`);
+    navigate(buildPath(`contatos/${contact.id}`));
   };
 
   if (loading) {
