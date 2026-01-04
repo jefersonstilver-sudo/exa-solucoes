@@ -16,14 +16,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { CATEGORIAS_ORDER, CATEGORIAS_CONFIG, CategoriaContato, Contact } from '@/types/contatos';
+import { CATEGORIAS_ORDER, CATEGORIAS_CONFIG, CategoriaContato, Contact, OrigemContato, ORIGEM_CONFIG } from '@/types/contatos';
 import { useContatos } from '@/hooks/contatos';
 
 interface NovoContatoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+const ORIGEM_OPTIONS: OrigemContato[] = [
+  'cadastro_manual',
+  'google',
+  'maps',
+  'instagram',
+  'indicacao',
+  'rua',
+  'site',
+  'telefone',
+  'email',
+  'outros'
+];
 
 export const NovoContatoDialog: React.FC<NovoContatoDialogProps> = ({
   open,
@@ -42,7 +54,7 @@ export const NovoContatoDialog: React.FC<NovoContatoDialogProps> = ({
     cidade: 'Foz do Iguaçu',
     estado: 'PR',
     tipo_negocio: '',
-    origem: ''
+    origem: 'cadastro_manual'
   });
 
   const handleChange = (field: keyof Contact, value: string) => {
@@ -71,7 +83,7 @@ export const NovoContatoDialog: React.FC<NovoContatoDialogProps> = ({
         cidade: 'Foz do Iguaçu',
         estado: 'PR',
         tipo_negocio: '',
-        origem: ''
+        origem: 'cadastro_manual'
       });
     } catch (error) {
       // Error handled in hook
@@ -199,19 +211,18 @@ export const NovoContatoDialog: React.FC<NovoContatoDialogProps> = ({
             <div className="space-y-2">
               <Label htmlFor="origem">Origem</Label>
               <Select
-                value={formData.origem || ''}
+                value={formData.origem || 'cadastro_manual'}
                 onValueChange={(v) => handleChange('origem', v)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Como conheceu?" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="google">Google</SelectItem>
-                  <SelectItem value="maps">Google Maps</SelectItem>
-                  <SelectItem value="instagram">Instagram</SelectItem>
-                  <SelectItem value="indicacao">Indicação</SelectItem>
-                  <SelectItem value="rua">Prospecção na rua</SelectItem>
-                  <SelectItem value="outro">Outro</SelectItem>
+                  {ORIGEM_OPTIONS.map((origem) => (
+                    <SelectItem key={origem} value={origem}>
+                      {ORIGEM_CONFIG[origem].label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

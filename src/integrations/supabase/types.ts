@@ -2154,6 +2154,100 @@ export type Database = {
           },
         ]
       }
+      contact_audit_logs: {
+        Row: {
+          action: string
+          changed_fields: Json | null
+          contact_id: string | null
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          new_values: Json | null
+          old_values: Json | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          changed_fields?: Json | null
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          changed_fields?: Json | null
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_audit_logs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_files: {
+        Row: {
+          category: string | null
+          contact_id: string
+          created_at: string | null
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category?: string | null
+          contact_id: string
+          created_at?: string | null
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: string | null
+          contact_id?: string
+          created_at?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_files_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_interactions: {
         Row: {
           contact_id: string | null
@@ -2185,6 +2279,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "contact_interactions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_notes: {
+        Row: {
+          contact_id: string
+          content: string
+          created_at: string | null
+          created_by: string | null
+          created_by_email: string | null
+          id: string
+          is_important: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          contact_id: string
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          created_by_email?: string | null
+          id?: string
+          is_important?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          contact_id?: string
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          created_by_email?: string | null
+          id?: string
+          is_important?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_notes_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
@@ -2297,16 +2432,20 @@ export type Database = {
           cep: string | null
           cidade: string | null
           cnpj: string | null
+          conversation_id: string | null
           created_at: string | null
           created_by: string | null
+          dias_sem_contato: number | null
           dores_identificadas: string | null
           email: string | null
           empresa: string | null
           endereco: string | null
           estado: string | null
           id: string
+          instagram: string | null
           last_action: string | null
           last_contact_at: string | null
+          logo_url: string | null
           metadata: Json | null
           motivo_bloqueio: string | null
           nome: string
@@ -2317,13 +2456,16 @@ export type Database = {
           pontuacao_calculada_em: string | null
           publico_alvo: string | null
           responsavel_id: string | null
+          satisfacao: number | null
           sobrenome: string | null
           status: string | null
           tags: string[] | null
           telefone: string
           temperatura: string | null
+          ticket_estimado: number | null
           tipo_negocio: string | null
           tomador_decisao: string | null
+          total_investido: number | null
           updated_at: string | null
           website: string | null
         }
@@ -2335,16 +2477,20 @@ export type Database = {
           cep?: string | null
           cidade?: string | null
           cnpj?: string | null
+          conversation_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          dias_sem_contato?: number | null
           dores_identificadas?: string | null
           email?: string | null
           empresa?: string | null
           endereco?: string | null
           estado?: string | null
           id?: string
+          instagram?: string | null
           last_action?: string | null
           last_contact_at?: string | null
+          logo_url?: string | null
           metadata?: Json | null
           motivo_bloqueio?: string | null
           nome: string
@@ -2355,13 +2501,16 @@ export type Database = {
           pontuacao_calculada_em?: string | null
           publico_alvo?: string | null
           responsavel_id?: string | null
+          satisfacao?: number | null
           sobrenome?: string | null
           status?: string | null
           tags?: string[] | null
           telefone: string
           temperatura?: string | null
+          ticket_estimado?: number | null
           tipo_negocio?: string | null
           tomador_decisao?: string | null
+          total_investido?: number | null
           updated_at?: string | null
           website?: string | null
         }
@@ -2373,16 +2522,20 @@ export type Database = {
           cep?: string | null
           cidade?: string | null
           cnpj?: string | null
+          conversation_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          dias_sem_contato?: number | null
           dores_identificadas?: string | null
           email?: string | null
           empresa?: string | null
           endereco?: string | null
           estado?: string | null
           id?: string
+          instagram?: string | null
           last_action?: string | null
           last_contact_at?: string | null
+          logo_url?: string | null
           metadata?: Json | null
           motivo_bloqueio?: string | null
           nome?: string
@@ -2393,13 +2546,16 @@ export type Database = {
           pontuacao_calculada_em?: string | null
           publico_alvo?: string | null
           responsavel_id?: string | null
+          satisfacao?: number | null
           sobrenome?: string | null
           status?: string | null
           tags?: string[] | null
           telefone?: string
           temperatura?: string | null
+          ticket_estimado?: number | null
           tipo_negocio?: string | null
           tomador_decisao?: string | null
+          total_investido?: number | null
           updated_at?: string | null
           website?: string | null
         }

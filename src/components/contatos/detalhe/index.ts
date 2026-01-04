@@ -1,0 +1,11 @@
+export { TabVisaoGeral } from './TabVisaoGeral';
+export { TabPontuacao } from './TabPontuacao';
+export { TabInteligencia } from './TabInteligencia';
+export { TabConversas } from './TabConversas';
+export { TabPedidos } from './TabPedidos';
+export { TabPropostas } from './TabPropostas';
+export { TabContratos } from './TabContratos';
+export { TabAgenda } from './TabAgenda';
+export { TabArquivos } from './TabArquivos';
+export { TabNotas } from './TabNotas';
+export { TabConfiguracoes } from './TabConfiguracoes';
