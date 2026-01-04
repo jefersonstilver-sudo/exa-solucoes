@@ -57,18 +57,26 @@ export const formatFullName = (firstName: string, lastName: string): string => {
  */
 export const capitalizeNameParts = (name: string): string => {
   if (!name) return '';
-  return name
-    .trim()
+  
+  // Preservar espaço final enquanto usuário digita
+  const hasTrailingSpace = name.endsWith(' ');
+  
+  const formatted = name
     .toLowerCase()
-    .split(/\s+/)
-    .map(word => {
-      if (word.length === 0) return '';
+    .split(/(\s+)/) // Preservar espaços como tokens separados
+    .map(part => {
+      // Se for espaço, preservar
+      if (/^\s+$/.test(part)) return ' ';
+      if (part.length === 0) return '';
       // Preservar partículas como "da", "de", "do", "dos", "das"
       const particles = ['da', 'de', 'do', 'dos', 'das', 'e'];
-      if (particles.includes(word)) return word;
-      return word.charAt(0).toUpperCase() + word.slice(1);
+      if (particles.includes(part)) return part;
+      return part.charAt(0).toUpperCase() + part.slice(1);
     })
-    .join(' ');
+    .join('');
+  
+  // Garantir espaço final se usuário digitou
+  return hasTrailingSpace ? formatted.trimEnd() + ' ' : formatted;
 };
 
 /**
