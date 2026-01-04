@@ -51,6 +51,17 @@ const AlertasPage = lazy(() => import('@/modules/monitoramento-ia/pages/Alertas'
 const PaineisPage = lazy(() => import('@/modules/monitoramento-ia/pages/Paineis').then(m => ({ default: m.PaineisPage })));
 const AgentKnowledge = lazy(() => import('@/modules/monitoramento-ia/pages/agents/AgentKnowledge').then(m => ({ default: m.AgentKnowledge })));
 
+// Lazy imports para Contatos & Inteligência Comercial
+const ContatosPage = lazy(() => import('@/pages/admin/contatos/ContatosPage'));
+const ContatoDetalhePage = lazy(() => import('@/pages/admin/contatos/ContatoDetalhePage'));
+const PontuacaoConfigPage = lazy(() => import('@/pages/admin/contatos/PontuacaoConfigPage'));
+const BloqueiosPage = lazy(() => import('@/pages/admin/contatos/BloqueiosPage'));
+
+// Lazy imports para Processos & Operação
+const ProcessosPage = lazy(() => import('@/pages/admin/processos/ProcessosPage'));
+const DepartmentProcessesPage = lazy(() => import('@/pages/admin/processos/DepartmentProcessesPage'));
+const ProcessEditorPage = lazy(() => import('@/pages/admin/processos/ProcessEditorPage'));
+
 const SuperAdminRoutes = () => {
   return (
     <Routes>
@@ -88,6 +99,45 @@ const SuperAdminRoutes = () => {
       <Route path="escalacoes" element={
         <Suspense fallback={<GlobalLoadingPage message="Carregando Escalações..." />}>
           <EscalacoesComerciais />
+        </Suspense>
+      } />
+      
+      {/* ============ CONTATOS & INTELIGÊNCIA COMERCIAL ============ */}
+      <Route path="contatos" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando Contatos..." />}>
+          <ContatosPage />
+        </Suspense>
+      } />
+      <Route path="contatos/configuracoes/pontuacao" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando Configurações..." />}>
+          <PontuacaoConfigPage />
+        </Suspense>
+      } />
+      <Route path="contatos/bloqueios" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando Bloqueios..." />}>
+          <BloqueiosPage />
+        </Suspense>
+      } />
+      <Route path="contatos/:id" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando Contato..." />}>
+          <ContatoDetalhePage />
+        </Suspense>
+      } />
+      
+      {/* ============ PROCESSOS & OPERAÇÃO ============ */}
+      <Route path="processos" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando Processos..." />}>
+          <ProcessosPage />
+        </Suspense>
+      } />
+      <Route path="processos/:departmentId" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando Processos..." />}>
+          <DepartmentProcessesPage />
+        </Suspense>
+      } />
+      <Route path="processos/:departmentId/:processId" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando Editor..." />}>
+          <ProcessEditorPage />
         </Suspense>
       } />
       
