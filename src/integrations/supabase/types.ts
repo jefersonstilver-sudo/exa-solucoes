@@ -2154,6 +2154,107 @@ export type Database = {
           },
         ]
       }
+      contact_interactions: {
+        Row: {
+          contact_id: string | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          metadata: Json | null
+          tipo: string
+          usuario_id: string | null
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          metadata?: Json | null
+          tipo: string
+          usuario_id?: string | null
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          metadata?: Json | null
+          tipo?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_interactions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_scoring_config: {
+        Row: {
+          categoria: string
+          created_at: string | null
+          id: string
+          pontuacao_ativa: boolean | null
+          pontuacao_minima: number
+          updated_at: string | null
+        }
+        Insert: {
+          categoria: string
+          created_at?: string | null
+          id?: string
+          pontuacao_ativa?: boolean | null
+          pontuacao_minima?: number
+          updated_at?: string | null
+        }
+        Update: {
+          categoria?: string
+          created_at?: string | null
+          id?: string
+          pontuacao_ativa?: boolean | null
+          pontuacao_minima?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      contact_scoring_rules: {
+        Row: {
+          ativo: boolean | null
+          campo: string
+          categoria: string | null
+          created_at: string | null
+          id: string
+          label: string
+          ordem: number | null
+          pontos: number
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          campo: string
+          categoria?: string | null
+          created_at?: string | null
+          id?: string
+          label: string
+          ordem?: number | null
+          pontos?: number
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          campo?: string
+          categoria?: string | null
+          created_at?: string | null
+          id?: string
+          label?: string
+          ordem?: number | null
+          pontos?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       contact_types: {
         Row: {
           color: string | null
@@ -2184,6 +2285,123 @@ export type Database = {
           label?: string
           name?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      contacts: {
+        Row: {
+          bairro: string | null
+          bloqueado: boolean | null
+          cargo_tomador: string | null
+          categoria: string
+          cep: string | null
+          cidade: string | null
+          cnpj: string | null
+          created_at: string | null
+          created_by: string | null
+          dores_identificadas: string | null
+          email: string | null
+          empresa: string | null
+          endereco: string | null
+          estado: string | null
+          id: string
+          last_action: string | null
+          last_contact_at: string | null
+          metadata: Json | null
+          motivo_bloqueio: string | null
+          nome: string
+          observacoes_estrategicas: string | null
+          onde_anuncia_hoje: Json | null
+          origem: string | null
+          pontuacao_atual: number | null
+          pontuacao_calculada_em: string | null
+          publico_alvo: string | null
+          responsavel_id: string | null
+          sobrenome: string | null
+          status: string | null
+          tags: string[] | null
+          telefone: string
+          temperatura: string | null
+          tipo_negocio: string | null
+          tomador_decisao: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          bairro?: string | null
+          bloqueado?: boolean | null
+          cargo_tomador?: string | null
+          categoria: string
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          dores_identificadas?: string | null
+          email?: string | null
+          empresa?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          last_action?: string | null
+          last_contact_at?: string | null
+          metadata?: Json | null
+          motivo_bloqueio?: string | null
+          nome: string
+          observacoes_estrategicas?: string | null
+          onde_anuncia_hoje?: Json | null
+          origem?: string | null
+          pontuacao_atual?: number | null
+          pontuacao_calculada_em?: string | null
+          publico_alvo?: string | null
+          responsavel_id?: string | null
+          sobrenome?: string | null
+          status?: string | null
+          tags?: string[] | null
+          telefone: string
+          temperatura?: string | null
+          tipo_negocio?: string | null
+          tomador_decisao?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          bairro?: string | null
+          bloqueado?: boolean | null
+          cargo_tomador?: string | null
+          categoria?: string
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          dores_identificadas?: string | null
+          email?: string | null
+          empresa?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          last_action?: string | null
+          last_contact_at?: string | null
+          metadata?: Json | null
+          motivo_bloqueio?: string | null
+          nome?: string
+          observacoes_estrategicas?: string | null
+          onde_anuncia_hoje?: Json | null
+          origem?: string | null
+          pontuacao_atual?: number | null
+          pontuacao_calculada_em?: string | null
+          publico_alvo?: string | null
+          responsavel_id?: string | null
+          sobrenome?: string | null
+          status?: string | null
+          tags?: string[] | null
+          telefone?: string
+          temperatura?: string | null
+          tipo_negocio?: string | null
+          tomador_decisao?: string | null
+          updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
