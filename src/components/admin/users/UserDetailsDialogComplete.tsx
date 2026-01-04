@@ -431,6 +431,8 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
         { description: user.email }
       );
 
+      // Fechar dialog e atualizar lista
+      onOpenChange(false);
       onUserUpdated();
     } catch (error: any) {
       console.error('❌ Erro ao alterar bloqueio:', error);
