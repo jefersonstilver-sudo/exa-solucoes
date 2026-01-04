@@ -46,8 +46,25 @@ export const useLoginLogic = ({ onLoginSuccess }: UseLoginLogicProps = {}) => {
       if (data.user) {
         console.log('🔐 LoginSelector: Login bem-sucedido!');
         
-        // Verificar o papel do usuário através do JWT
-        const userRole = data.user.user_metadata?.role;
+        // Verificar se usuário está bloqueado
+        const { data: userData } = await supabase
+          .from('users')
+          .select('is_blocked, role')
+          .eq('id', data.user.id)
+          .single();
+
+        if (userData?.is_blocked) {
+          console.warn('🚫 [LOGIN] Usuário bloqueado:', data.user.email);
+          await supabase.auth.signOut();
+          toast.error('Conta bloqueada', {
+            description: 'Sua conta foi bloqueada pelo administrador do sistema.'
+          });
+          setLoading(false);
+          return;
+        }
+        
+        // Verificar o papel do usuário através do JWT ou do banco
+        const userRole = userData?.role || data.user.user_metadata?.role;
         console.log('🔐 LoginSelector: Role do usuário:', userRole);
         
         // Verificação básica de permissão sem bloquear o login

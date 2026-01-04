@@ -9596,6 +9596,9 @@ export type Database = {
       users: {
         Row: {
           avatar_url: string | null
+          blocked_at: string | null
+          blocked_by: string | null
+          blocked_reason: string | null
           can_use_video_editor: boolean | null
           cc_emails: string[] | null
           cpf: string | null
@@ -9617,6 +9620,7 @@ export type Database = {
           empresa_pais: string | null
           empresa_segmento: string | null
           id: string
+          is_blocked: boolean | null
           nome: string | null
           primeiro_nome: string | null
           privacy_accepted_at: string | null
@@ -9633,6 +9637,9 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
+          blocked_reason?: string | null
           can_use_video_editor?: boolean | null
           cc_emails?: string[] | null
           cpf?: string | null
@@ -9654,6 +9661,7 @@ export type Database = {
           empresa_pais?: string | null
           empresa_segmento?: string | null
           id: string
+          is_blocked?: boolean | null
           nome?: string | null
           primeiro_nome?: string | null
           privacy_accepted_at?: string | null
@@ -9670,6 +9678,9 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
+          blocked_reason?: string | null
           can_use_video_editor?: boolean | null
           cc_emails?: string[] | null
           cpf?: string | null
@@ -9691,6 +9702,7 @@ export type Database = {
           empresa_pais?: string | null
           empresa_segmento?: string | null
           id?: string
+          is_blocked?: boolean | null
           nome?: string | null
           primeiro_nome?: string | null
           privacy_accepted_at?: string | null
@@ -9706,6 +9718,20 @@ export type Database = {
           video_editor_enabled_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "users_blocked_by_fkey"
+            columns: ["blocked_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_blocked_by_fkey"
+            columns: ["blocked_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "users_video_editor_enabled_by_fkey"
             columns: ["video_editor_enabled_by"]

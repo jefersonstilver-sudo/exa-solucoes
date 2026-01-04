@@ -28,7 +28,9 @@ import {
   Loader2,
   ShieldCheck,
   Activity,
-  User
+  User,
+  Ban,
+  Unlock
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
@@ -50,6 +52,10 @@ interface User {
   nome?: string;
   telefone?: string;
   cc_emails?: string[];
+  is_blocked?: boolean;
+  blocked_at?: string;
+  blocked_by?: string;
+  blocked_reason?: string;
 }
 
 interface UserDetailsDialogCompleteProps {
@@ -59,6 +65,9 @@ interface UserDetailsDialogCompleteProps {
   onUserUpdated: () => void;
 }
 
+// Email do CEO que nunca pode ser bloqueado
+const CEO_EMAIL = 'jefersonstilver@gmail.com';
+
 export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps> = ({
   open,
   onOpenChange,
@@ -67,6 +76,7 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
 }) => {
   const { userProfile } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [blockingUser, setBlockingUser] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [selectedRole, setSelectedRole] = useState(user?.role || 'client');
   const [editData, setEditData] = useState({
@@ -79,6 +89,8 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
   const isSuperAdmin = userProfile?.role === 'super_admin';
   const isAdmin = userProfile?.role === 'admin' || isSuperAdmin;
   const canManageRoles = isAdmin || isSuperAdmin;
+  const isCEO = user?.email === CEO_EMAIL;
+  const isUserBlocked = user?.is_blocked || false;
 
   React.useEffect(() => {
     if (user && open) {
@@ -365,10 +377,75 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
     }
   };
 
+  const handleToggleBlock = async () => {
+    if (!user || !isSuperAdmin) return;
+    
+    // CEO não pode ser bloqueado
+    if (isCEO) {
+      toast.error('Ação não permitida', {
+        description: 'O CEO/criador do sistema não pode ser bloqueado'
+      });
+      return;
+    }
+
+    const action = isUserBlocked ? 'desbloquear' : 'bloquear';
+    const confirm = window.confirm(
+      `Tem certeza que deseja ${action} o usuário ${user.email}?`
+    );
+
+    if (!confirm) return;
+
+    try {
+      setBlockingUser(true);
+
+      const updateData = isUserBlocked 
+        ? {
+            is_blocked: false,
+            blocked_at: null,
+            blocked_by: null,
+            blocked_reason: null
+          }
+        : {
+            is_blocked: true,
+            blocked_at: new Date().toISOString(),
+            blocked_by: userProfile?.id || null,
+            blocked_reason: 'Bloqueado manualmente pelo administrador'
+          };
+
+      const { error } = await supabase
+        .from('users')
+        .update(updateData)
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      // Log do evento
+      await supabase.from('log_eventos_sistema').insert({
+        tipo_evento: isUserBlocked ? 'USER_UNBLOCKED' : 'USER_BLOCKED',
+        descricao: `Usuário ${user.email} foi ${isUserBlocked ? 'desbloqueado' : 'bloqueado'} por ${userProfile?.email}`,
+        usuario_id: user.id
+      });
+
+      toast.success(
+        isUserBlocked ? '✅ Usuário desbloqueado!' : '🚫 Usuário bloqueado!',
+        { description: user.email }
+      );
+
+      onUserUpdated();
+    } catch (error: any) {
+      console.error('❌ Erro ao alterar bloqueio:', error);
+      toast.error('Erro ao alterar status de bloqueio', {
+        description: error.message
+      });
+    } finally {
+      setBlockingUser(false);
+    }
+  };
+
   if (!user) return null;
 
-  // BLOQUEAR se email não confirmado
-  const isBlocked = !user.email_confirmed_at;
+  // BLOQUEAR se email não confirmado OU bloqueado manualmente
+  const isBlocked = !user.email_confirmed_at || isUserBlocked;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -390,10 +467,22 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {getRoleBadge(selectedRole)}
-            {isBlocked && (
+            {isCEO && (
+              <Badge className="bg-yellow-500/20 text-yellow-100 border-yellow-300/30">
+                <Crown className="w-3 h-3 mr-1" />
+                CEO/Criador
+              </Badge>
+            )}
+            {isUserBlocked && (
+              <Badge variant="destructive" className="animate-pulse">
+                <Ban className="w-3 h-3 mr-1" />
+                🚫 BLOQUEADO
+              </Badge>
+            )}
+            {!user.email_confirmed_at && !isUserBlocked && (
               <Badge variant="destructive" className="animate-pulse">
                 <AlertCircle className="w-3 h-3 mr-1" />
-                🚫 BLOQUEADO - Email Não Confirmado
+                Email Não Confirmado
               </Badge>
             )}
           </div>
@@ -659,6 +748,50 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
                           Enviar Email de Reset de Senha
                         </Button>
                       </div>
+
+                      {/* Bloquear/Desbloquear Acesso */}
+                      {!isCEO && (
+                        <div className={`space-y-2 p-3 rounded-lg border ${isUserBlocked ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' : 'bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800'}`}>
+                          <p className={`text-xs font-semibold ${isUserBlocked ? 'text-green-900 dark:text-green-100' : 'text-orange-900 dark:text-orange-100'}`}>
+                            {isUserBlocked ? '🔓 Desbloquear Acesso' : '🔒 Bloquear Acesso'}
+                          </p>
+                          <p className={`text-xs ${isUserBlocked ? 'text-green-700 dark:text-green-300' : 'text-orange-700 dark:text-orange-300'}`}>
+                            {isUserBlocked 
+                              ? 'O usuário está bloqueado e não consegue acessar o sistema. Clique para restaurar o acesso.'
+                              : 'Bloqueia completamente o acesso do usuário ao sistema. O usuário não conseguirá fazer login.'}
+                          </p>
+                          {isUserBlocked && user.blocked_at && (
+                            <p className="text-[10px] text-green-600 dark:text-green-400">
+                              Bloqueado em: {formatDate(user.blocked_at)}
+                            </p>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleToggleBlock}
+                            disabled={blockingUser}
+                            className={`w-full ${isUserBlocked ? 'border-green-300 text-green-700 hover:bg-green-100' : 'border-orange-300 text-orange-700 hover:bg-orange-100'}`}
+                          >
+                            {blockingUser ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : isUserBlocked ? (
+                              <Unlock className="h-4 w-4 mr-2" />
+                            ) : (
+                              <Ban className="h-4 w-4 mr-2" />
+                            )}
+                            {isUserBlocked ? 'Desbloquear Usuário' : 'Bloquear Usuário'}
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {isCEO && (
+                        <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                          <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                            <Crown className="h-4 w-4 text-yellow-500" />
+                            Esta conta é do CEO/criador e não pode ser bloqueada.
+                          </p>
+                        </div>
+                      )}
 
                       <Separator className="bg-red-200 dark:bg-red-800" />
                       
