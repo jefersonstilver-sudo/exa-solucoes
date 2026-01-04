@@ -249,7 +249,7 @@ const NovoContatoPage = () => {
     ];
 
     return (
-      <div className="flex items-center justify-center w-full">
+      <div className="flex items-center justify-center w-full max-w-2xl mx-auto bg-white rounded-xl px-6 py-3 shadow-sm border border-gray-100">
         {steps.map((step, idx) => (
           <React.Fragment key={step.num}>
             <div className="flex items-center">
@@ -258,25 +258,25 @@ const NovoContatoPage = () => {
                   <Check className="w-4 h-4" />
                 </div>
               ) : currentStep === step.num ? (
-                <div className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center text-base font-bold shadow-lg z-10">
+                <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-sm font-bold">
                   {step.num}
                 </div>
               ) : (
-                <div className="w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 flex items-center justify-center text-sm font-semibold">
+                <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 text-gray-400 flex items-center justify-center text-sm font-medium">
                   {step.num}
                 </div>
               )}
               {step.label && (
                 <span className={`ml-2 text-sm font-medium hidden sm:block ${
-                  currentStep > step.num ? 'text-green-700' : 
-                  currentStep === step.num ? 'text-gray-900 font-bold' : 'text-gray-400'
+                  currentStep > step.num ? 'text-green-600' : 
+                  currentStep === step.num ? 'text-gray-900' : 'text-gray-400'
                 }`}>
                   {step.label}
                 </span>
               )}
             </div>
             {idx < steps.length - 1 && (
-              <div className={`w-12 md:w-16 h-px mx-2 ${
+              <div className={`w-10 md:w-14 h-0.5 mx-3 rounded-full ${
                 currentStep > step.num ? 'bg-green-200' : 'bg-gray-200'
               }`} />
             )}
