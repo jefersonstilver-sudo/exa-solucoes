@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, Mail, Eye, MessageCircle } from 'lucide-react';
+import { Phone, Mail, Eye, MessageCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   Table, 
   TableBody, 
@@ -10,11 +11,12 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Contact, CATEGORIAS_CONFIG } from '@/types/contatos';
+import { Contact, CATEGORIAS_CONFIG, calcularCompletude } from '@/types/contatos';
 import { CategoriaBadge, TemperaturaBadge, ScoreCircle } from '../common';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
+import { cn } from '@/lib/utils';
 
 interface ContatosTableProps {
   contacts: Contact[];
@@ -82,11 +84,18 @@ export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading 
           {contacts.map((contact) => {
             const config = CATEGORIAS_CONFIG[contact.categoria];
             const hasPontuacao = config?.hasPontuacao;
+            const completude = calcularCompletude(contact);
+            const isCritico = completude <= 30;
+            const isParcial = completude > 30 && completude <= 70;
 
             return (
               <TableRow 
                 key={contact.id} 
-                className="hover:bg-muted/50 cursor-pointer transition-colors"
+                className={cn(
+                  "hover:bg-muted/50 cursor-pointer transition-colors",
+                  isCritico && "bg-red-50 border-l-4 border-l-red-500 hover:bg-red-100",
+                  isParcial && "bg-amber-50/50 border-l-4 border-l-amber-400 hover:bg-amber-100/50"
+                )}
                 onClick={() => handleView(contact)}
               >
                 <TableCell>
@@ -100,6 +109,17 @@ export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading 
                   <div className="flex flex-col gap-1">
                     <CategoriaBadge categoria={contact.categoria} size="sm" />
                     <TemperaturaBadge temperatura={contact.temperatura} size="sm" />
+                    {isCritico && (
+                      <Badge variant="destructive" className="text-xs px-1.5 py-0 h-5 gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        Crítico
+                      </Badge>
+                    )}
+                    {isParcial && (
+                      <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 text-amber-600 border-amber-300 bg-amber-50">
+                        Completar
+                      </Badge>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>

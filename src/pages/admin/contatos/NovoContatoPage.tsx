@@ -174,9 +174,23 @@ const NovoContatoPage = () => {
     }
   };
 
+  // Validação mínima: categoria + 1 dado de identificação
+  const canSaveQuick = () => {
+    return formData.categoria && 
+      (formData.nome || formData.telefone || formData.email || formData.empresa);
+  };
+
+  const handleQuickSave = async () => {
+    if (!canSaveQuick()) {
+      toast.error('Selecione uma categoria e preencha pelo menos um dado (nome, telefone, email ou empresa)');
+      return;
+    }
+    await handleSubmit();
+  };
+
   const handleSubmit = async () => {
-    if (!formData.nome || !formData.telefone || !formData.categoria) {
-      toast.error('Preencha os campos obrigatórios');
+    if (!canSaveQuick()) {
+      toast.error('Selecione uma categoria e preencha pelo menos um dado de identificação');
       return;
     }
 
@@ -821,14 +835,29 @@ const NovoContatoPage = () => {
               <Button variant="outline" onClick={handleCancel} className="px-6">
                 Cancelar
               </Button>
-              <Button 
-                onClick={handleNextStep}
-                disabled={!formData.categoria}
-                className="px-8 bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30"
-              >
-                Próximo: Dados Básicos
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="outline"
+                  onClick={handleQuickSave}
+                  disabled={loading || !canSaveQuick()}
+                  className="px-6 border-green-300 text-green-700 hover:bg-green-50"
+                >
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  Salvar
+                </Button>
+                <Button 
+                  onClick={handleNextStep}
+                  disabled={!formData.categoria}
+                  className="px-8 bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30"
+                >
+                  Próximo: Dados Básicos
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
             </>
           ) : currentStep === 4 ? (
             <>
@@ -855,13 +884,28 @@ const NovoContatoPage = () => {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar
               </Button>
-              <Button 
-                onClick={handleNextStep}
-                className="px-8 bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30"
-              >
-                {currentStep === 3 ? 'Revisar e Salvar' : 'Próximo'}
-                {currentStep === 3 ? <CheckCircle className="w-4 h-4 ml-2" /> : <ArrowRight className="w-4 h-4 ml-2" />}
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="outline"
+                  onClick={handleQuickSave}
+                  disabled={loading || !canSaveQuick()}
+                  className="px-6 border-green-300 text-green-700 hover:bg-green-50"
+                >
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  Salvar
+                </Button>
+                <Button 
+                  onClick={handleNextStep}
+                  className="px-8 bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30"
+                >
+                  {currentStep === 3 ? 'Revisar e Salvar' : 'Próximo'}
+                  {currentStep === 3 ? <CheckCircle className="w-4 h-4 ml-2" /> : <ArrowRight className="w-4 h-4 ml-2" />}
+                </Button>
+              </div>
             </>
           )}
         </div>

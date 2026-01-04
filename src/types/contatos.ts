@@ -95,7 +95,25 @@ export interface Contact {
   logo_url?: string;
   total_investido?: number;
   dias_sem_contato?: number;
+  // Completude calculada (não persiste no banco)
+  completude?: number;
 }
+
+// Função utilitária para calcular completude de um contato
+export const calcularCompletude = (contact: Partial<Contact>): number => {
+  let pontos = 0;
+  if (contact.nome) pontos += 15;
+  if (contact.sobrenome) pontos += 5;
+  if (contact.telefone) pontos += 15;
+  if (contact.email) pontos += 10;
+  if (contact.empresa) pontos += 10;
+  if (contact.cnpj) pontos += 10;
+  if (contact.cidade || contact.estado) pontos += 10;
+  if (contact.origem) pontos += 5;
+  if (contact.observacoes_estrategicas) pontos += 10;
+  if (contact.tomador_decisao) pontos += 10;
+  return pontos;
+};
 
 export interface ContactScoringRule {
   id: string;
