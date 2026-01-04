@@ -33,7 +33,8 @@ import {
   BarChart3,
   Landmark,
   Calendar,
-  Network
+  Network,
+  Contact
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -215,6 +216,12 @@ export function ModernAdminSidebar() {
     {
       label: 'CRM',
       items: [
+        {
+          title: 'Contatos',
+          href: buildPath('contatos'),
+          icon: Contact,
+          moduleKey: MODULE_KEYS.contatos
+        },
         {
           title: 'CRM Site',
           href: buildPath('crm'),
