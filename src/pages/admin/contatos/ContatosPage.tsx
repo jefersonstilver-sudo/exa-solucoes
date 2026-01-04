@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Plus, Search, Filter, Download, Settings, AlertTriangle, Users, Target, CheckCircle } from 'lucide-react';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useContatos } from '@/hooks/contatos';
@@ -44,6 +45,39 @@ const ContatosPage = () => {
   const handleNewContact = () => {
     navigate(buildPath('contatos/novo'));
   };
+
+  const handleExportCSV = useCallback(() => {
+    if (contacts.length === 0) return;
+    
+    const headers = ['Nome', 'Empresa', 'Telefone', 'Email', 'Categoria', 'Temperatura', 'Cidade', 'Estado', 'Score', 'Criado em'];
+    const rows = contacts.map(c => [
+      c.nome || '',
+      c.empresa || '',
+      c.telefone || '',
+      c.email || '',
+      c.categoria || '',
+      c.temperatura || '',
+      c.cidade || '',
+      c.estado || '',
+      (c as any).score_total?.toString() || '0',
+      c.created_at ? format(new Date(c.created_at), 'dd/MM/yyyy') : ''
+    ]);
+    
+    const csvContent = [
+      headers.join(';'),
+      ...rows.map(r => r.map(cell => `"${cell.replace(/"/g, '""')}"`).join(';'))
+    ].join('\n');
+    
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `contatos_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [contacts]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 p-3 md:p-4 space-y-4">
@@ -184,7 +218,7 @@ const ContatosPage = () => {
               Limpar
             </Button>
           )}
-          <Button variant="outline" size="sm" className="h-8 text-xs">
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleExportCSV}>
             <Download className="w-3.5 h-3.5 mr-1" />
             Exportar
           </Button>

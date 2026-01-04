@@ -1204,6 +1204,68 @@ export type Database = {
           },
         ]
       }
+      calendar_events: {
+        Row: {
+          contact_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          end_at: string | null
+          event_type: string | null
+          id: string
+          location: string | null
+          meeting_url: string | null
+          notes: string | null
+          participants: Json | null
+          start_at: string
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_at?: string | null
+          event_type?: string | null
+          id?: string
+          location?: string | null
+          meeting_url?: string | null
+          notes?: string | null
+          participants?: Json | null
+          start_at: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_at?: string | null
+          event_type?: string | null
+          id?: string
+          location?: string | null
+          meeting_url?: string | null
+          notes?: string | null
+          participants?: Json | null
+          start_at?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_schedule_rules: {
         Row: {
           campaign_video_schedule_id: string
