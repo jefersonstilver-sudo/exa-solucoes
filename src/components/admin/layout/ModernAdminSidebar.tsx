@@ -32,7 +32,8 @@ import {
   Scale,
   BarChart3,
   Landmark,
-  Calendar
+  Calendar,
+  Network
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -237,6 +238,14 @@ export function ModernAdminSidebar() {
           badge: escalacoesPendentes > 0 ? escalacoesPendentes : undefined,
           badgeColor: 'bg-[#9C1E1E]',
           badgeTooltip: 'Escalações pendentes de resolução'
+        },
+        {
+          title: 'Processos',
+          href: buildPath('processos'),
+          icon: Network,
+          moduleKey: MODULE_KEYS.processos,
+          badge: '🆕',
+          badgeColor: 'bg-indigo-600'
         }
       ]
     },

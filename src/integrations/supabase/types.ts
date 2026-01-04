@@ -4448,6 +4448,50 @@ export type Database = {
           },
         ]
       }
+      execution_steps: {
+        Row: {
+          audio_url: string | null
+          completed_at: string | null
+          decision_taken: string | null
+          execution_id: string | null
+          id: string
+          node_id: string
+          notes: string | null
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          completed_at?: string | null
+          decision_taken?: string | null
+          execution_id?: string | null
+          id?: string
+          node_id: string
+          notes?: string | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          completed_at?: string | null
+          decision_taken?: string | null
+          execution_id?: string | null
+          id?: string
+          node_id?: string
+          notes?: string | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "execution_steps_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "process_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_access_logs: {
         Row: {
           action: string
@@ -6915,6 +6959,310 @@ export type Database = {
           url_video?: string
         }
         Relationships: []
+      }
+      process_departments: {
+        Row: {
+          color: string
+          created_at: string | null
+          display_order: number
+          icon: string
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string
+          created_at?: string | null
+          display_order?: number
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          display_order?: number
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      process_edges: {
+        Row: {
+          animated: boolean | null
+          edge_id: string
+          edge_type: string | null
+          id: string
+          label: string | null
+          process_id: string | null
+          source_node_id: string
+          style: Json | null
+          target_node_id: string
+          version: number
+        }
+        Insert: {
+          animated?: boolean | null
+          edge_id: string
+          edge_type?: string | null
+          id?: string
+          label?: string | null
+          process_id?: string | null
+          source_node_id: string
+          style?: Json | null
+          target_node_id: string
+          version: number
+        }
+        Update: {
+          animated?: boolean | null
+          edge_id?: string
+          edge_type?: string | null
+          id?: string
+          label?: string | null
+          process_id?: string | null
+          source_node_id?: string
+          style?: Json | null
+          target_node_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_edges_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      process_executions: {
+        Row: {
+          completed_at: string | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          process_id: string | null
+          process_version: number
+          started_at: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          process_id?: string | null
+          process_version: number
+          started_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          process_id?: string | null
+          process_version?: number
+          started_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_executions_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      process_nodes: {
+        Row: {
+          alerts: string | null
+          audio_urls: string[] | null
+          best_practices: string | null
+          checklist: Json | null
+          common_errors: string | null
+          created_at: string | null
+          description: string | null
+          external_links: Json | null
+          file_urls: string[] | null
+          id: string
+          internal_links: Json | null
+          node_id: string
+          node_type: string
+          position: Json
+          process_id: string | null
+          script: string | null
+          strategic_notes: string | null
+          style: Json | null
+          title: string
+          updated_at: string | null
+          version: number
+        }
+        Insert: {
+          alerts?: string | null
+          audio_urls?: string[] | null
+          best_practices?: string | null
+          checklist?: Json | null
+          common_errors?: string | null
+          created_at?: string | null
+          description?: string | null
+          external_links?: Json | null
+          file_urls?: string[] | null
+          id?: string
+          internal_links?: Json | null
+          node_id: string
+          node_type: string
+          position?: Json
+          process_id?: string | null
+          script?: string | null
+          strategic_notes?: string | null
+          style?: Json | null
+          title: string
+          updated_at?: string | null
+          version: number
+        }
+        Update: {
+          alerts?: string | null
+          audio_urls?: string[] | null
+          best_practices?: string | null
+          checklist?: Json | null
+          common_errors?: string | null
+          created_at?: string | null
+          description?: string | null
+          external_links?: Json | null
+          file_urls?: string[] | null
+          id?: string
+          internal_links?: Json | null
+          node_id?: string
+          node_type?: string
+          position?: Json
+          process_id?: string | null
+          script?: string | null
+          strategic_notes?: string | null
+          style?: Json | null
+          title?: string
+          updated_at?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_nodes_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      process_versions: {
+        Row: {
+          changelog: string | null
+          created_at: string | null
+          created_by: string | null
+          edges_data: Json
+          id: string
+          nodes_data: Json
+          process_id: string | null
+          version: number
+          viewport: Json | null
+        }
+        Insert: {
+          changelog?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          edges_data?: Json
+          id?: string
+          nodes_data?: Json
+          process_id?: string | null
+          version: number
+          viewport?: Json | null
+        }
+        Update: {
+          changelog?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          edges_data?: Json
+          id?: string
+          nodes_data?: Json
+          process_id?: string | null
+          version?: number
+          viewport?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_versions_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      processes: {
+        Row: {
+          code: string
+          created_at: string | null
+          current_version: number | null
+          department_id: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          name: string
+          owner_id: string | null
+          secondary_owners: string[] | null
+          status: string | null
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          current_version?: number | null
+          department_id?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          owner_id?: string | null
+          secondary_owners?: string[] | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          current_version?: number | null
+          department_id?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          owner_id?: string | null
+          secondary_owners?: string[] | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "processes_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "process_departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       produtos_exa: {
         Row: {

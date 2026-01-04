@@ -40,6 +40,7 @@ export const MODULE_KEYS = {
   seguranca: 'seguranca',
   configuracoes: 'configuracoes',
   financeiro_mp: 'financeiro_mp',
+  processos: 'processos',
 } as const;
 
 export type ModuleKey = keyof typeof MODULE_KEYS;
