@@ -1,19 +1,31 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { Contact, CategoriaContato } from '@/types/contatos';
+import type { 
+  Contact, 
+  CategoriaContato, 
+  ContatosFilters, 
+  ContatosOrderBy, 
+  ContatosOrderDirection 
+} from '@/types/contatos';
 
 interface UseContatosOptions {
   categoria?: CategoriaContato;
   search?: string;
   status?: string;
   bloqueado?: boolean;
+  filters?: ContatosFilters;
+  orderBy?: ContatosOrderBy;
+  orderDirection?: ContatosOrderDirection;
+  limit?: number;
 }
 
 export const useContatos = (options: UseContatosOptions = {}) => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [totalCount, setTotalCount] = useState(0);
+  const [blockedCount, setBlockedCount] = useState(0);
 
   const fetchContacts = useCallback(async () => {
     try {
@@ -21,50 +33,135 @@ export const useContatos = (options: UseContatosOptions = {}) => {
       
       let query = supabase
         .from('contacts')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*', { count: 'exact' });
 
+      // Filtro por categoria
       if (options.categoria) {
         query = query.eq('categoria', options.categoria);
+      } else if (options.filters?.categoria) {
+        query = query.eq('categoria', options.filters.categoria);
       }
 
+      // Filtro por status
       if (options.status) {
         query = query.eq('status', options.status);
+      } else if (options.filters?.status) {
+        query = query.eq('status', options.filters.status);
       }
 
+      // Filtro por bloqueado
       if (options.bloqueado !== undefined) {
         query = query.eq('bloqueado', options.bloqueado);
+      } else if (options.filters?.bloqueado !== undefined) {
+        query = query.eq('bloqueado', options.filters.bloqueado);
       }
 
-      if (options.search) {
-        query = query.or(`nome.ilike.%${options.search}%,empresa.ilike.%${options.search}%,telefone.ilike.%${options.search}%,email.ilike.%${options.search}%`);
+      // Filtro por temperatura
+      if (options.filters?.temperatura) {
+        query = query.eq('temperatura', options.filters.temperatura);
       }
 
-      const { data, error } = await query;
+      // Filtro por origem
+      if (options.filters?.origem) {
+        query = query.eq('origem', options.filters.origem);
+      }
+
+      // Filtro por responsável
+      if (options.filters?.responsavel_id) {
+        query = query.eq('responsavel_id', options.filters.responsavel_id);
+      }
+
+      // Filtro por cidade
+      if (options.filters?.cidade) {
+        query = query.ilike('cidade', `%${options.filters.cidade}%`);
+      }
+
+      // Filtro por bairro
+      if (options.filters?.bairro) {
+        query = query.ilike('bairro', `%${options.filters.bairro}%`);
+      }
+
+      // Filtro por pontuação
+      if (options.filters?.pontuacaoMin !== undefined) {
+        query = query.gte('pontuacao_atual', options.filters.pontuacaoMin);
+      }
+      if (options.filters?.pontuacaoMax !== undefined) {
+        query = query.lte('pontuacao_atual', options.filters.pontuacaoMax);
+      }
+
+      // Filtro por data de criação
+      if (options.filters?.dataCriacaoInicio) {
+        query = query.gte('created_at', options.filters.dataCriacaoInicio);
+      }
+      if (options.filters?.dataCriacaoFim) {
+        query = query.lte('created_at', options.filters.dataCriacaoFim);
+      }
+
+      // Busca global
+      const searchTerm = options.search || options.filters?.search;
+      if (searchTerm) {
+        query = query.or(
+          `nome.ilike.%${searchTerm}%,empresa.ilike.%${searchTerm}%,telefone.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,cnpj.ilike.%${searchTerm}%`
+        );
+      }
+
+      // Ordenação
+      const orderBy = options.orderBy || 'created_at';
+      const orderDirection = options.orderDirection || 'desc';
+      query = query.order(orderBy, { ascending: orderDirection === 'asc' });
+
+      // Limite
+      if (options.limit) {
+        query = query.limit(options.limit);
+      }
+
+      const { data, error, count } = await query;
 
       if (error) throw error;
+      
       setContacts((data as Contact[]) || []);
+      setTotalCount(count || 0);
     } catch (error) {
       console.error('Erro ao buscar contatos:', error);
       toast.error('Erro ao carregar contatos');
     } finally {
       setLoading(false);
     }
-  }, [options.categoria, options.search, options.status, options.bloqueado]);
+  }, [
+    options.categoria, 
+    options.search, 
+    options.status, 
+    options.bloqueado,
+    options.filters,
+    options.orderBy,
+    options.orderDirection,
+    options.limit
+  ]);
 
   const fetchCounts = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      // Buscar contagem por categoria
+      const { data: categoriaData, error: categoriaError } = await supabase
         .from('contacts')
         .select('categoria');
 
-      if (error) throw error;
+      if (categoriaError) throw categoriaError;
 
       const countMap: Record<string, number> = {};
-      (data || []).forEach((item: { categoria: string }) => {
+      (categoriaData || []).forEach((item: { categoria: string }) => {
         countMap[item.categoria] = (countMap[item.categoria] || 0) + 1;
       });
       setCounts(countMap);
+
+      // Buscar contagem de bloqueados
+      const { count: blocked, error: blockedError } = await supabase
+        .from('contacts')
+        .select('*', { count: 'exact', head: true })
+        .eq('bloqueado', true);
+
+      if (blockedError) throw blockedError;
+      setBlockedCount(blocked || 0);
+
     } catch (error) {
       console.error('Erro ao buscar contagens:', error);
     }
@@ -72,12 +169,17 @@ export const useContatos = (options: UseContatosOptions = {}) => {
 
   const createContact = async (contact: Partial<Contact>) => {
     try {
+      // Validação: categoria é obrigatória
+      if (!contact.categoria) {
+        throw new Error('Categoria é obrigatória');
+      }
+
       const { data: userData } = await supabase.auth.getUser();
       
       const insertData = {
         nome: contact.nome || '',
         telefone: contact.telefone || '',
-        categoria: contact.categoria || 'lead',
+        categoria: contact.categoria,
         sobrenome: contact.sobrenome,
         empresa: contact.empresa,
         email: contact.email,
@@ -96,10 +198,13 @@ export const useContatos = (options: UseContatosOptions = {}) => {
         tomador_decisao: contact.tomador_decisao,
         cargo_tomador: contact.cargo_tomador,
         tipo_negocio: contact.tipo_negocio,
-        origem: contact.origem,
+        origem: contact.origem || 'cadastro_manual',
         tags: contact.tags,
+        instagram: contact.instagram,
+        ticket_estimado: contact.ticket_estimado,
+        logo_url: contact.logo_url,
         created_by: userData.user?.id,
-        responsavel_id: userData.user?.id
+        responsavel_id: contact.responsavel_id || userData.user?.id
       };
       
       const { data, error } = await supabase
@@ -122,9 +227,17 @@ export const useContatos = (options: UseContatosOptions = {}) => {
 
   const updateContact = async (id: string, updates: Partial<Contact>) => {
     try {
+      // Validação: não pode remover categoria
+      if (updates.categoria === null || updates.categoria === undefined) {
+        delete updates.categoria;
+      }
+
       const { data, error } = await supabase
         .from('contacts')
-        .update(updates)
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', id)
         .select()
         .single();
@@ -158,19 +271,92 @@ export const useContatos = (options: UseContatosOptions = {}) => {
     }
   };
 
+  const archiveContact = async (id: string) => {
+    return updateContact(id, { status: 'arquivado' });
+  };
+
+  const unarchiveContact = async (id: string) => {
+    return updateContact(id, { status: 'ativo' });
+  };
+
+  const blockContact = async (id: string, motivo: string) => {
+    return updateContact(id, { 
+      bloqueado: true, 
+      motivo_bloqueio: motivo 
+    });
+  };
+
+  const unblockContact = async (id: string) => {
+    return updateContact(id, { 
+      bloqueado: false, 
+      motivo_bloqueio: null 
+    });
+  };
+
+  // Verificar duplicidade antes de criar
+  const checkDuplicate = async (telefone?: string, email?: string, cnpj?: string) => {
+    try {
+      const conditions: string[] = [];
+      
+      if (telefone) conditions.push(`telefone.eq.${telefone}`);
+      if (email) conditions.push(`email.eq.${email}`);
+      if (cnpj) conditions.push(`cnpj.eq.${cnpj}`);
+
+      if (conditions.length === 0) return null;
+
+      const { data, error } = await supabase
+        .from('contacts')
+        .select('id, nome, empresa, telefone, email, cnpj, categoria')
+        .or(conditions.join(','))
+        .limit(5);
+
+      if (error) throw error;
+      return data as Partial<Contact>[];
+    } catch (error) {
+      console.error('Erro ao verificar duplicidade:', error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     fetchContacts();
     fetchCounts();
   }, [fetchContacts, fetchCounts]);
 
+  // Estatísticas calculadas
+  const stats = useMemo(() => {
+    const total = Object.values(counts).reduce((sum, c) => sum + c, 0);
+    const leads = counts['lead'] || 0;
+    const anunciantes = counts['anunciante'] || 0;
+    
+    return {
+      total,
+      leads,
+      anunciantes,
+      blocked: blockedCount,
+      newToday: contacts.filter(c => {
+        const today = new Date().toDateString();
+        return new Date(c.created_at).toDateString() === today;
+      }).length
+    };
+  }, [counts, blockedCount, contacts]);
+
   return {
     contacts,
     loading,
     counts,
+    stats,
+    totalCount,
+    blockedCount,
     fetchContacts,
     fetchCounts,
     createContact,
     updateContact,
-    deleteContact
+    deleteContact,
+    archiveContact,
+    unarchiveContact,
+    blockContact,
+    unblockContact,
+    checkDuplicate
   };
 };
