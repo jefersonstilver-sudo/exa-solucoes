@@ -107,12 +107,28 @@ export const useLoginForm = (redirectPath: string = '/') => {
         emailConfirmed: !!data.user.email_confirmed_at
       });
 
-      // Verificar se usuário tem 2FA ativado
+      // Verificar se usuário está bloqueado ou tem 2FA ativado
       const { data: userData } = await supabase
         .from('users')
-        .select('two_factor_enabled, telefone, role')
+        .select('two_factor_enabled, telefone, role, is_blocked')
         .eq('id', data.user.id)
         .single();
+
+      // 🚨 VERIFICAÇÃO CRÍTICA: USUÁRIO BLOQUEADO
+      if (userData?.is_blocked) {
+        console.warn('🚫 [LOGIN] Usuário bloqueado detectado:', data.user.email);
+        
+        // Fazer logout
+        await supabase.auth.signOut();
+        
+        setError('Sua conta foi bloqueada. Entre em contato com o administrador.');
+        toast.error('Conta bloqueada', {
+          description: 'Sua conta foi bloqueada pelo administrador do sistema.'
+        });
+        
+        setIsLoading(false);
+        return;
+      }
 
       // Se 2FA estiver ativado, enviar código e redirecionar
       if (userData?.two_factor_enabled && userData?.telefone) {
