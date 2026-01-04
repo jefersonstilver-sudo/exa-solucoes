@@ -9,9 +9,11 @@ import { Slider } from '@/components/ui/slider';
 import { useScoringRules } from '@/hooks/contatos';
 import { CATEGORIAS_CONFIG } from '@/types/contatos';
 import { toast } from 'sonner';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 
 const PontuacaoConfigPage = () => {
   const navigate = useNavigate();
+  const { buildPath } = useAdminBasePath();
   const { rules, configs, loading, updateRule, updateConfig } = useScoringRules();
   const [localRules, setLocalRules] = useState<typeof rules>([]);
   const [localConfigs, setLocalConfigs] = useState<typeof configs>([]);
@@ -82,7 +84,7 @@ const PontuacaoConfigPage = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/super_admin/contatos')}
+            onClick={() => navigate(buildPath('contatos'))}
             className="mb-2"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
