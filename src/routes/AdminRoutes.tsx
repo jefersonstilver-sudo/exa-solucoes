@@ -52,6 +52,9 @@ const ProcessosPage = lazy(() => import('@/pages/admin/processos/ProcessosPage')
 const DepartmentProcessesPage = lazy(() => import('@/pages/admin/processos/DepartmentProcessesPage'));
 const ProcessEditorPage = lazy(() => import('@/pages/admin/processos/ProcessEditorPage'));
 
+// Contatos
+const ContatosPage = lazy(() => import('@/pages/admin/contatos/ContatosPage'));
+
 // Lazy imports para páginas do monitoramento-ia (agora integradas)
 const CRMUnificado = lazy(() => import('@/modules/monitoramento-ia/pages/CRMUnificado'));
 const EscalacoesComerciais = lazy(() => import('@/modules/monitoramento-ia/pages/EscalacoesComerciais'));
@@ -170,6 +173,13 @@ const AdminRoutes = () => {
       } />
       
       {/* ============ CRM ============ */}
+      <Route path="contatos" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.contatos}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Contatos..." />}>
+            <ContatosPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
       <Route path="crm" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.crm_site}>
           <Suspense fallback={<GlobalLoadingPage message="Carregando CRM..." />}>

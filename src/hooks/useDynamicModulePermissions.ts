@@ -20,6 +20,7 @@ export const MODULE_KEYS = {
   aprovacoes: 'aprovacoes',
   cupons: 'cupons',
   beneficios: 'beneficios',
+  contatos: 'contatos',
   crm_site: 'crm_site',
   crm_chat: 'crm_chat',
   escalacoes: 'escalacoes',
