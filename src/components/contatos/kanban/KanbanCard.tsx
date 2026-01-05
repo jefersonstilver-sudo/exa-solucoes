@@ -84,6 +84,14 @@ export const KanbanCard = memo(({
   const ContextIcon = getContextualIcon(contact);
   const subtitle = getSubtitle(contact);
 
+  // Separar o handler de clique para não conflitar com drag
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Só abre o perfil se não estiver arrastando
+    if (!isSortableDragging) {
+      onOpenProfile?.(contact);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -91,12 +99,12 @@ export const KanbanCard = memo(({
       {...attributes}
       {...listeners}
       className={cn(
-        "group bg-white p-2.5 rounded-lg border border-gray-100 cursor-grab active:cursor-grabbing relative",
+        "group bg-white p-2.5 rounded-lg border border-gray-100 cursor-grab active:cursor-grabbing relative touch-none",
         "shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]",
         "transition-shadow duration-200",
         (isDragging || isSortableDragging) && "opacity-50 shadow-lg scale-105 rotate-2"
       )}
-      onClick={() => onOpenProfile?.(contact)}
+      onClick={handleCardClick}
     >
       {/* Barra vertical colorida - LADO DIREITO */}
       <div 
