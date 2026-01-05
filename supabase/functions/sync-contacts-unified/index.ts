@@ -25,18 +25,48 @@ function normalizePhone(phone: string | null): string | null {
   return phone.replace(/\D/g, '');
 }
 
-// Determinar origem baseado no agent_key
+// Determinar origem baseado no agent_key - CORRIGIDO
 function getOrigemFromAgent(agentKey: string): string {
-  switch (agentKey) {
+  switch (agentKey?.toLowerCase()) {
     case 'sofia':
       return 'conversa_whatsapp_sofia';
     case 'eduardo':
       return 'conversa_whatsapp_vendedor';
     case 'exa_alert':
-      return 'conversa_whatsapp_sofia'; // EXA Alert também via Sofia
+      return 'conversa_whatsapp_exa_alert';
+    case 'exa':
+      return 'conversa_whatsapp_vendedor';
+    case 'vendedor':
+      return 'conversa_whatsapp_vendedor';
     default:
-      return 'conversa_whatsapp_sofia';
+      return 'conversa_whatsapp_vendedor';
   }
+}
+
+// Calcular similaridade de strings (Levenshtein simplificado)
+function stringSimilarity(str1: string, str2: string): number {
+  if (!str1 || !str2) return 0;
+  const s1 = str1.toLowerCase().trim();
+  const s2 = str2.toLowerCase().trim();
+  if (s1 === s2) return 1;
+  
+  const longer = s1.length > s2.length ? s1 : s2;
+  const shorter = s1.length > s2.length ? s2 : s1;
+  
+  if (longer.length === 0) return 1;
+  
+  // Simple contains check
+  if (longer.includes(shorter) || shorter.includes(longer)) {
+    return shorter.length / longer.length;
+  }
+  
+  // Jaccard-like similarity for words
+  const words1 = new Set(s1.split(/\s+/));
+  const words2 = new Set(s2.split(/\s+/));
+  const intersection = new Set([...words1].filter(x => words2.has(x)));
+  const union = new Set([...words1, ...words2]);
+  
+  return intersection.size / union.size;
 }
 
 serve(async (req) => {
@@ -52,14 +82,16 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const dryRun = body.dry_run === true;
     const sourceFilter = body.source; // 'conversations', 'escalacoes', 'pedidos', 'lead_profiles', 'all'
+    const detectDuplicates = body.detect_duplicates !== false; // Default true
 
-    console.log('[SYNC-CONTACTS] 🚀 Starting unified contacts sync', { dryRun, sourceFilter });
+    console.log('[SYNC-CONTACTS] 🚀 Starting unified contacts sync', { dryRun, sourceFilter, detectDuplicates });
 
     const stats = {
       conversations: { found: 0, created: 0, updated: 0, skipped: 0 },
       escalacoes: { found: 0, created: 0, updated: 0, skipped: 0 },
       pedidos: { found: 0, created: 0, updated: 0, skipped: 0 },
       lead_profiles: { found: 0, created: 0, updated: 0, skipped: 0 },
+      duplicates: { detected: 0, groups: 0 },
       total: { created: 0, updated: 0, skipped: 0, errors: 0 }
     };
 
@@ -90,7 +122,7 @@ serve(async (req) => {
             // Verificar se contato já existe
             const { data: existingContact } = await supabase
               .from('contacts')
-              .select('id, agent_sources, metadata')
+              .select('id, agent_sources, metadata, origem')
               .eq('telefone', phoneNormalized)
               .maybeSingle();
 
@@ -98,7 +130,7 @@ serve(async (req) => {
             const categoria = CONTACT_TYPE_TO_CATEGORIA[conv.contact_type || 'unknown'] || 'lead';
 
             if (existingContact) {
-              // Atualizar contato existente - adicionar agent_source
+              // Atualizar contato existente - adicionar agent_source e corrigir origem
               const currentSources = existingContact.agent_sources || [];
               const newSources = [...new Set([...currentSources, conv.agent_key])];
               
@@ -109,6 +141,7 @@ serve(async (req) => {
                     agent_sources: newSources,
                     conversation_id: conv.id,
                     last_interaction_at: conv.last_message_at,
+                    origem: origem, // CORRIGIR ORIGEM
                     updated_at: new Date().toISOString(),
                     metadata: {
                       ...existingContact.metadata,
@@ -407,7 +440,7 @@ serve(async (req) => {
                 await supabase
                   .from('contacts')
                   .update({
-                    nome_empresa: lp.empresa_nome || undefined,
+                    empresa: lp.empresa_nome || undefined,
                     bairro: lp.bairro_interesse || undefined,
                     segmento: lp.segmento || undefined,
                     temperatura: lp.is_hot_lead ? 'quente' : undefined,
@@ -436,7 +469,7 @@ serve(async (req) => {
                   .insert({
                     nome: conv.contact_name || 'Lead Site',
                     telefone: phoneNormalized,
-                    nome_empresa: lp.empresa_nome,
+                    empresa: lp.empresa_nome,
                     bairro: lp.bairro_interesse,
                     segmento: lp.segmento,
                     categoria: 'lead',
@@ -453,13 +486,14 @@ serve(async (req) => {
                       hot_lead_score: lp.hot_lead_score,
                       probabilidade_fechamento: lp.probabilidade_fechamento,
                       proximos_passos: lp.proximos_passos,
-                      orcamento_estimado: lp.orcamento_estimado
+                      orcamento_estimado: lp.orcamento_estimado,
+                      predio_nome: lp.predio_nome,
+                      predio_tipo: lp.predio_tipo
                     }
                   })
                   .select()
                   .single();
 
-                // Linkar conversation ao contato
                 if (newContact) {
                   await supabase
                     .from('conversations')
@@ -477,19 +511,109 @@ serve(async (req) => {
       }
     }
 
+    // ========== 5. DETECTAR DUPLICADOS ==========
+    if (detectDuplicates && !dryRun) {
+      console.log('[SYNC-CONTACTS] 🔍 Detecting potential duplicates...');
+      
+      // Reset duplicates
+      await supabase
+        .from('contacts')
+        .update({ is_potential_duplicate: false, duplicate_group_id: null })
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Update all
+
+      const { data: allContacts } = await supabase
+        .from('contacts')
+        .select('id, telefone, email, cnpj, empresa, nome')
+        .eq('status', 'ativo');
+
+      if (allContacts && allContacts.length > 0) {
+        const duplicateGroups: Map<string, string[]> = new Map();
+        const processed = new Set<string>();
+
+        for (let i = 0; i < allContacts.length; i++) {
+          const contact = allContacts[i];
+          if (processed.has(contact.id)) continue;
+
+          const duplicates: string[] = [contact.id];
+
+          for (let j = i + 1; j < allContacts.length; j++) {
+            const other = allContacts[j];
+            if (processed.has(other.id)) continue;
+
+            let isDuplicate = false;
+
+            // Check phone similarity
+            if (contact.telefone && other.telefone) {
+              const phone1 = contact.telefone.slice(-8);
+              const phone2 = other.telefone.slice(-8);
+              if (phone1 === phone2) isDuplicate = true;
+            }
+
+            // Check email match
+            if (!isDuplicate && contact.email && other.email) {
+              if (contact.email.toLowerCase() === other.email.toLowerCase()) {
+                isDuplicate = true;
+              }
+            }
+
+            // Check CNPJ match
+            if (!isDuplicate && contact.cnpj && other.cnpj) {
+              const cnpj1 = contact.cnpj.replace(/\D/g, '');
+              const cnpj2 = other.cnpj.replace(/\D/g, '');
+              if (cnpj1 === cnpj2) isDuplicate = true;
+            }
+
+            // Check company name similarity
+            if (!isDuplicate && contact.empresa && other.empresa) {
+              const similarity = stringSimilarity(contact.empresa, other.empresa);
+              if (similarity > 0.8) isDuplicate = true;
+            }
+
+            if (isDuplicate) {
+              duplicates.push(other.id);
+              processed.add(other.id);
+            }
+          }
+
+          if (duplicates.length > 1) {
+            const groupId = crypto.randomUUID();
+            duplicateGroups.set(groupId, duplicates);
+            duplicates.forEach(id => processed.add(id));
+          }
+        }
+
+        // Mark duplicates in database
+        for (const [groupId, ids] of duplicateGroups) {
+          await supabase
+            .from('contacts')
+            .update({ 
+              is_potential_duplicate: true, 
+              duplicate_group_id: groupId 
+            })
+            .in('id', ids);
+
+          stats.duplicates.detected += ids.length;
+          stats.duplicates.groups++;
+        }
+
+        console.log(`[SYNC-CONTACTS] 🔍 Found ${stats.duplicates.groups} duplicate groups with ${stats.duplicates.detected} contacts`);
+      }
+    }
+
     // Calcular totais
     stats.total.created = stats.conversations.created + stats.escalacoes.created + stats.pedidos.created + stats.lead_profiles.created;
     stats.total.updated = stats.conversations.updated + stats.escalacoes.updated + stats.pedidos.updated + stats.lead_profiles.updated;
     stats.total.skipped = stats.conversations.skipped + stats.escalacoes.skipped + stats.pedidos.skipped + stats.lead_profiles.skipped;
 
-    console.log('[SYNC-CONTACTS] ✅ Sync completed:', stats);
+    console.log('[SYNC-CONTACTS] ✅ Sync completed', stats);
 
     return new Response(JSON.stringify({
       success: true,
       dry_run: dryRun,
       stats
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200
     });
 
   } catch (error) {
@@ -498,8 +622,8 @@ serve(async (req) => {
       success: false,
       error: error.message
     }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500
     });
   }
 });

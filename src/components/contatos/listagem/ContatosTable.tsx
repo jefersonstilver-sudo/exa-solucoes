@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, Mail, Eye, MessageCircle, AlertTriangle, MessagesSquare } from 'lucide-react';
+import { Phone, Mail, Eye, MessageCircle, AlertTriangle, MessagesSquare, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -12,7 +12,8 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Contact, CATEGORIAS_CONFIG, calcularCompletude } from '@/types/contatos';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { Contact, CATEGORIAS_CONFIG, calcularCompletude, ORIGEM_CONFIG } from '@/types/contatos';
 import { CategoriaBadge, TemperaturaBadge, ScoreCircle, OrigemBadge } from '../common';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -57,6 +58,17 @@ export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading 
     navigate(buildPath(`monitoramento/ia?conversation=${contact.conversation_id}`));
   };
 
+  const formatPhone = (phone: string) => {
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 11) {
+      return `(${cleaned.slice(0,2)}) ${cleaned.slice(2,7)}-${cleaned.slice(7)}`;
+    }
+    if (cleaned.length === 10) {
+      return `(${cleaned.slice(0,2)}) ${cleaned.slice(2,6)}-${cleaned.slice(6)}`;
+    }
+    return phone;
+  };
+
   if (loading) {
     return (
       <div className="bg-card rounded-lg border border-border p-8 text-center">
@@ -73,22 +85,28 @@ export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading 
     );
   }
 
+  // Ordenar: duplicados primeiro
+  const sortedContacts = [...contacts].sort((a, b) => {
+    if (a.is_potential_duplicate && !b.is_potential_duplicate) return -1;
+    if (!a.is_potential_duplicate && b.is_potential_duplicate) return 1;
+    return 0;
+  });
+
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
-            <TableHead className="w-[60px]">Score</TableHead>
+            <TableHead className="w-[70px]">Score</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Nome / Empresa</TableHead>
             <TableHead className="hidden md:table-cell">Origem</TableHead>
-            <TableHead className="hidden md:table-cell">Bairro / Cidade</TableHead>
-            <TableHead className="hidden lg:table-cell">Última Interação</TableHead>
+            <TableHead className="hidden lg:table-cell">Última Atividade</TableHead>
             <TableHead className="text-center">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {contacts.map((contact) => {
+          {sortedContacts.map((contact) => {
             const config = CATEGORIAS_CONFIG[contact.categoria];
             const hasPontuacao = config?.hasPontuacao;
             const completude = calcularCompletude(contact);
@@ -96,162 +114,254 @@ export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading 
             const isParcial = completude > 30 && completude <= 70;
 
             return (
-              <TableRow 
-                key={contact.id} 
-                className={cn(
-                  "hover:bg-muted/50 cursor-pointer transition-colors",
-                  isCritico && "bg-red-50 border-l-4 border-l-red-500 hover:bg-red-100",
-                  isParcial && "bg-amber-50/50 border-l-4 border-l-amber-400 hover:bg-amber-100/50"
-                )}
-                onClick={() => handleView(contact)}
-              >
-                <TableCell>
-                  {hasPontuacao && contact.pontuacao_atual !== null ? (
-                    <ScoreCircle score={contact.pontuacao_atual || 0} size="md" />
-                  ) : (
-                    <span className="text-xs text-muted-foreground">-</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col gap-1">
-                    <CategoriaBadge categoria={contact.categoria} size="sm" />
-                    <TemperaturaBadge temperatura={contact.temperatura} size="sm" />
-                    {isCritico && (
-                      <Badge variant="destructive" className="text-xs px-1.5 py-0 h-5 gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        Crítico
-                      </Badge>
+              <HoverCard key={contact.id} openDelay={300} closeDelay={100}>
+                <HoverCardTrigger asChild>
+                  <TableRow 
+                    className={cn(
+                      "hover:bg-muted/50 cursor-pointer transition-colors",
+                      isCritico && "bg-red-50 border-l-4 border-l-red-500 hover:bg-red-100",
+                      isParcial && "bg-amber-50/50 border-l-4 border-l-amber-400 hover:bg-amber-100/50",
+                      contact.is_potential_duplicate && "bg-orange-50 border-l-4 border-l-orange-500 hover:bg-orange-100"
                     )}
-                    {isParcial && (
-                      <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 text-amber-600 border-amber-300 bg-amber-50">
-                        Completar
-                      </Badge>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="font-medium text-foreground">
-                    {contact.empresa || `${contact.nome} ${contact.sobrenome || ''}`}
-                  </div>
-                  {contact.empresa && (
-                    <div className="text-xs text-muted-foreground">
-                      {contact.nome} {contact.sobrenome}
-                    </div>
-                  )}
-                  {contact.cnpj && (
-                    <div className="text-xs text-muted-foreground">CNPJ: {contact.cnpj}</div>
-                  )}
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  <div className="flex flex-col gap-1">
-                    {contact.origem && <OrigemBadge origem={contact.origem} size="sm" />}
-                    {contact.agent_sources && contact.agent_sources.length > 0 && (
-                      <div className="flex gap-0.5">
-                        {contact.agent_sources.map((agent) => (
-                          <Badge 
-                            key={agent} 
-                            variant="outline" 
-                            className="text-[9px] px-1 py-0 h-4 capitalize"
-                          >
-                            {agent}
+                    onClick={() => handleView(contact)}
+                  >
+                    <TableCell>
+                      {hasPontuacao && contact.pontuacao_atual !== null ? (
+                        <ScoreCircle score={contact.pontuacao_atual || 0} size="md" />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <CategoriaBadge categoria={contact.categoria} size="sm" />
+                        <TemperaturaBadge temperatura={contact.temperatura} size="sm" />
+                        {contact.is_potential_duplicate && (
+                          <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 gap-1 text-orange-600 border-orange-300 bg-orange-50">
+                            <Copy className="w-3 h-3" />
+                            Duplicado
                           </Badge>
-                        ))}
+                        )}
+                        {isCritico && (
+                          <Badge variant="destructive" className="text-xs px-1.5 py-0 h-5 gap-1">
+                            <AlertTriangle className="w-3 h-3" />
+                            Crítico
+                          </Badge>
+                        )}
+                        {isParcial && (
+                          <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 text-amber-600 border-amber-300 bg-amber-50">
+                            Completar
+                          </Badge>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  <div className="text-sm text-foreground">{contact.bairro || '-'}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {contact.cidade}, {contact.estado}
-                  </div>
-                </TableCell>
-                <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span>
-                          {contact.last_interaction_at 
-                            ? formatDistanceToNow(new Date(contact.last_interaction_at), { addSuffix: true, locale: ptBR })
-                            : contact.last_contact_at 
-                              ? formatDistanceToNow(new Date(contact.last_contact_at), { addSuffix: true, locale: ptBR })
-                              : '-'
-                          }
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {contact.last_interaction_at 
-                          ? format(new Date(contact.last_interaction_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
-                          : contact.last_contact_at 
-                            ? format(new Date(contact.last_contact_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
-                            : 'Sem interação registrada'
-                        }
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </TableCell>
-                <TableCell>
-                  <div className="flex justify-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={`h-8 w-8 ${contact.bloqueado ? 'opacity-50 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
-                      onClick={(e) => handleWhatsApp(e, contact)}
-                      disabled={contact.bloqueado}
-                      title={contact.bloqueado ? 'Bloqueado: Pontuação insuficiente' : 'WhatsApp'}
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={`h-8 w-8 ${contact.bloqueado ? 'opacity-50 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white'}`}
-                      onClick={(e) => handlePhone(e, contact)}
-                      disabled={contact.bloqueado}
-                      title={contact.bloqueado ? 'Bloqueado: Pontuação insuficiente' : 'Ligar'}
-                    >
-                      <Phone className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 bg-blue-500 hover:bg-blue-600 text-white"
-                      onClick={(e) => handleEmail(e, contact)}
-                      disabled={!contact.email}
-                      title="Email"
-                    >
-                      <Mail className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 bg-muted hover:bg-muted/80"
-                      onClick={(e) => { e.stopPropagation(); handleView(contact); }}
-                      title="Ver detalhes"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    {contact.conversation_id && (
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium text-foreground">
+                        {contact.empresa || `${contact.nome} ${contact.sobrenome || ''}`}
+                      </div>
+                      {contact.empresa && (
+                        <div className="text-xs text-muted-foreground">
+                          {contact.nome} {contact.sobrenome}
+                        </div>
+                      )}
+                      {contact.cnpj && (
+                        <div className="text-xs text-muted-foreground">CNPJ: {contact.cnpj}</div>
+                      )}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <div className="flex flex-col gap-1">
+                        {contact.origem && <OrigemBadge origem={contact.origem} size="sm" />}
+                        {contact.agent_sources && contact.agent_sources.length > 0 && (
+                          <div className="flex gap-0.5 flex-wrap">
+                            {contact.agent_sources.map((agent) => (
+                              <Badge 
+                                key={agent} 
+                                variant="outline" 
+                                className="text-[9px] px-1 py-0 h-4 capitalize"
+                              >
+                                {agent}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 bg-purple-500 hover:bg-purple-600 text-white"
-                              onClick={(e) => handleViewConversation(e, contact)}
-                              title="Ver conversa"
-                            >
-                              <MessagesSquare className="h-4 w-4" />
-                            </Button>
+                            <span>
+                              {contact.last_interaction_at 
+                                ? formatDistanceToNow(new Date(contact.last_interaction_at), { addSuffix: true, locale: ptBR })
+                                : contact.last_contact_at 
+                                  ? formatDistanceToNow(new Date(contact.last_contact_at), { addSuffix: true, locale: ptBR })
+                                  : '-'
+                              }
+                            </span>
                           </TooltipTrigger>
-                          <TooltipContent>Ver conversa no Monitoramento IA</TooltipContent>
+                          <TooltipContent>
+                            {contact.last_interaction_at 
+                              ? format(new Date(contact.last_interaction_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                              : contact.last_contact_at 
+                                ? format(new Date(contact.last_contact_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                                : 'Sem interação registrada'
+                            }
+                          </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                    )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={`h-8 w-8 ${contact.bloqueado ? 'opacity-50 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+                          onClick={(e) => handleWhatsApp(e, contact)}
+                          disabled={contact.bloqueado}
+                          title={contact.bloqueado ? 'Bloqueado: Pontuação insuficiente' : 'WhatsApp'}
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={`h-8 w-8 ${contact.bloqueado ? 'opacity-50 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white'}`}
+                          onClick={(e) => handlePhone(e, contact)}
+                          disabled={contact.bloqueado}
+                          title={contact.bloqueado ? 'Bloqueado: Pontuação insuficiente' : 'Ligar'}
+                        >
+                          <Phone className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 bg-blue-500 hover:bg-blue-600 text-white"
+                          onClick={(e) => handleEmail(e, contact)}
+                          disabled={!contact.email}
+                          title="Email"
+                        >
+                          <Mail className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 bg-muted hover:bg-muted/80"
+                          onClick={(e) => { e.stopPropagation(); handleView(contact); }}
+                          title="Ver detalhes"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {contact.conversation_id && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 bg-purple-500 hover:bg-purple-600 text-white"
+                                  onClick={(e) => handleViewConversation(e, contact)}
+                                  title="Ver conversa"
+                                >
+                                  <MessagesSquare className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Ver conversa no Monitoramento IA</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                </HoverCardTrigger>
+                <HoverCardContent className="w-80" side="right" align="start">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-foreground">
+                        {contact.nome} {contact.sobrenome}
+                      </h4>
+                      {hasPontuacao && contact.pontuacao_atual !== null && (
+                        <ScoreCircle score={contact.pontuacao_atual || 0} size="sm" />
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-muted-foreground text-xs">Telefone</p>
+                        <p className="font-medium">{formatPhone(contact.telefone)}</p>
+                      </div>
+                      {contact.email && (
+                        <div>
+                          <p className="text-muted-foreground text-xs">Email</p>
+                          <p className="font-medium truncate" title={contact.email}>{contact.email}</p>
+                        </div>
+                      )}
+                      {contact.empresa && (
+                        <div className="col-span-2">
+                          <p className="text-muted-foreground text-xs">Empresa</p>
+                          <p className="font-medium">{contact.empresa}</p>
+                        </div>
+                      )}
+                      {contact.cnpj && (
+                        <div className="col-span-2">
+                          <p className="text-muted-foreground text-xs">CNPJ</p>
+                          <p className="font-medium">{contact.cnpj}</p>
+                        </div>
+                      )}
+                      {(contact.bairro || contact.cidade) && (
+                        <div className="col-span-2">
+                          <p className="text-muted-foreground text-xs">Localização</p>
+                          <p className="font-medium">
+                            {[contact.bairro, contact.cidade, contact.estado].filter(Boolean).join(', ')}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-border space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Categoria:</span>
+                        <CategoriaBadge categoria={contact.categoria} size="sm" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Temperatura:</span>
+                        <TemperaturaBadge temperatura={contact.temperatura} size="sm" />
+                      </div>
+                      {contact.origem && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Origem:</span>
+                          <OrigemBadge origem={contact.origem} size="sm" />
+                        </div>
+                      )}
+                      {contact.agent_sources && contact.agent_sources.length > 0 && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs text-muted-foreground">Agentes:</span>
+                          {contact.agent_sources.map((agent) => (
+                            <Badge key={agent} variant="secondary" className="text-xs capitalize">
+                              {agent}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-border text-xs text-muted-foreground">
+                      <div className="flex justify-between">
+                        <span>Criado em:</span>
+                        <span>{contact.created_at ? format(new Date(contact.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }) : '-'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Última atividade:</span>
+                        <span>
+                          {contact.last_interaction_at 
+                            ? format(new Date(contact.last_interaction_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                            : '-'
+                          }
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </TableCell>
-              </TableRow>
+                </HoverCardContent>
+              </HoverCard>
             );
           })}
         </TableBody>

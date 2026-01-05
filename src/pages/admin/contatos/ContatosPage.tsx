@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Plus, Search, Filter, Download, Settings, AlertTriangle, Users, Target, CheckCircle } from 'lucide-react';
+import { Plus, Search, Filter, Download, Settings, AlertTriangle, Users, Target, CheckCircle, RefreshCcw, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,9 @@ import { ContatosFiltersSheet } from '@/components/contatos/listagem/ContatosFil
 import { useNavigate } from 'react-router-dom';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const ContatosPage = () => {
   const navigate = useNavigate();
@@ -20,8 +23,9 @@ const ContatosPage = () => {
   const [filters, setFilters] = useState<ContatosFilters>({});
   const [orderBy, setOrderBy] = useState<ContatosOrderBy>('created_at');
   const [orderDirection, setOrderDirection] = useState<ContatosOrderDirection>('desc');
+  const [syncing, setSyncing] = useState(false);
 
-  const { contacts, loading, counts, stats, archiveContact, deleteContact } = useContatos({
+  const { contacts, loading, counts, stats, archiveContact, deleteContact, refetch } = useContatos({
     categoria: selectedCategory || undefined,
     search: search || undefined,
     filters,
@@ -44,6 +48,31 @@ const ContatosPage = () => {
 
   const handleNewContact = () => {
     navigate(buildPath('contatos/novo'));
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-contacts-unified', {
+        body: { dry_run: false, detect_duplicates: true }
+      });
+
+      if (error) throw error;
+
+      const { stats } = data;
+      toast.success(
+        `Sincronização concluída: ${stats.total.created} criados, ${stats.total.updated} atualizados, ${stats.duplicates.detected} duplicados detectados`,
+        { duration: 5000 }
+      );
+
+      // Recarregar contatos
+      refetch?.();
+    } catch (error) {
+      console.error('Erro ao sincronizar:', error);
+      toast.error('Erro ao sincronizar contatos');
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const handleExportCSV = useCallback(() => {
@@ -79,6 +108,10 @@ const ContatosPage = () => {
     URL.revokeObjectURL(url);
   }, [contacts]);
 
+  const handleOrderChange = (value: string) => {
+    setOrderBy(value as ContatosOrderBy);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 p-3 md:p-4 space-y-4">
       {/* Header Compacto */}
@@ -92,6 +125,16 @@ const ContatosPage = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSync}
+            disabled={syncing}
+            className="text-xs h-8"
+          >
+            <RefreshCcw className={`w-3.5 h-3.5 mr-1 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Sincronizando...' : 'Sincronizar'}
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -194,6 +237,19 @@ const ContatosPage = () => {
           />
         </div>
         <div className="flex items-center gap-2">
+          <Select value={orderBy} onValueChange={handleOrderChange}>
+            <SelectTrigger className="w-[160px] h-8 text-xs">
+              <ArrowUpDown className="w-3.5 h-3.5 mr-1" />
+              <SelectValue placeholder="Ordenar por" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="created_at">Data Criação</SelectItem>
+              <SelectItem value="last_interaction_at">Última Atividade</SelectItem>
+              <SelectItem value="origem">Origem</SelectItem>
+              <SelectItem value="pontuacao_atual">Score</SelectItem>
+              <SelectItem value="nome">Nome</SelectItem>
+            </SelectContent>
+          </Select>
           <Button 
             variant="outline" 
             size="sm" 

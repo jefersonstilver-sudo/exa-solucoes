@@ -2502,12 +2502,14 @@ export type Database = {
           created_by: string | null
           dias_sem_contato: number | null
           dores_identificadas: string | null
+          duplicate_group_id: string | null
           email: string | null
           empresa: string | null
           endereco: string | null
           estado: string | null
           id: string
           instagram: string | null
+          is_potential_duplicate: boolean | null
           last_action: string | null
           last_contact_at: string | null
           last_interaction_at: string | null
@@ -2552,12 +2554,14 @@ export type Database = {
           created_by?: string | null
           dias_sem_contato?: number | null
           dores_identificadas?: string | null
+          duplicate_group_id?: string | null
           email?: string | null
           empresa?: string | null
           endereco?: string | null
           estado?: string | null
           id?: string
           instagram?: string | null
+          is_potential_duplicate?: boolean | null
           last_action?: string | null
           last_contact_at?: string | null
           last_interaction_at?: string | null
@@ -2602,12 +2606,14 @@ export type Database = {
           created_by?: string | null
           dias_sem_contato?: number | null
           dores_identificadas?: string | null
+          duplicate_group_id?: string | null
           email?: string | null
           empresa?: string | null
           endereco?: string | null
           estado?: string | null
           id?: string
           instagram?: string | null
+          is_potential_duplicate?: boolean | null
           last_action?: string | null
           last_contact_at?: string | null
           last_interaction_at?: string | null
