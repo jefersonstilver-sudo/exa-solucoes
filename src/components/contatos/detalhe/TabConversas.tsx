@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, Bot, User, ExternalLink, Clock } from 'lucide-react';
+import { MessageCircle, Bot, User, ExternalLink, Clock, RefreshCw, Loader2 } from 'lucide-react';
 import { Contact } from '@/types/contatos';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface TabConversasProps {
   contact: Contact;
@@ -31,6 +32,7 @@ export const TabConversas: React.FC<TabConversasProps> = ({ contact }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     fetchConversations();
@@ -83,6 +85,28 @@ export const TabConversas: React.FC<TabConversasProps> = ({ contact }) => {
       setMessages(mappedMessages);
     } catch (error) {
       console.error('Erro ao buscar mensagens:', error);
+    }
+  };
+
+  const syncConversation = async (conversationId: string) => {
+    try {
+      setSyncing(true);
+      const { data, error } = await supabase.functions.invoke('sync-single-conversation', {
+        body: { conversationId }
+      });
+      
+      if (error) throw error;
+      
+      // Recarregar mensagens após sync
+      await fetchMessages(conversationId);
+      
+      const messagesCount = data?.stats?.messages_synced || data?.messagesCount || 0;
+      toast.success(`Sincronização concluída! ${messagesCount} mensagens encontradas.`);
+    } catch (error) {
+      console.error('Erro ao sincronizar:', error);
+      toast.error('Erro ao sincronizar mensagens do WhatsApp');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -166,45 +190,87 @@ export const TabConversas: React.FC<TabConversasProps> = ({ contact }) => {
             <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Mensagens
             </CardTitle>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-7 text-xs"
-              onClick={() => {
-                const conv = conversations.find(c => c.id === selectedConversation);
-                if (conv) {
-                  const agentRoute = conv.agent_key === 'sofia' ? 'sofia' : 'eduardo';
-                  window.open(`/super_admin/conversas/whatsapp/${agentRoute}/${selectedConversation}`, '_blank');
-                }
-              }}
-            >
-              <ExternalLink className="w-3 h-3 mr-1" />
-              Abrir no CRM
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 text-xs"
+                onClick={() => syncConversation(selectedConversation)}
+                disabled={syncing}
+              >
+                <RefreshCw className={`w-3 h-3 mr-1 ${syncing ? 'animate-spin' : ''}`} />
+                {syncing ? 'Sincronizando...' : 'Sincronizar'}
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 text-xs"
+                onClick={() => {
+                  const conv = conversations.find(c => c.id === selectedConversation);
+                  if (conv) {
+                    const agentRoute = conv.agent_key === 'sofia' ? 'sofia' : 'eduardo';
+                    window.open(`/super_admin/conversas/whatsapp/${agentRoute}/${selectedConversation}`, '_blank');
+                  }
+                }}
+              >
+                <ExternalLink className="w-3 h-3 mr-1" />
+                Abrir no CRM
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 max-h-[400px] overflow-y-auto">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            {messages.length === 0 ? (
+              <div className="text-center py-8">
+                <MessageCircle className="w-8 h-8 mx-auto text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground mb-4">
+                  Nenhuma mensagem encontrada nesta conversa.
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => syncConversation(selectedConversation)}
+                  disabled={syncing}
                 >
+                  {syncing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Sincronizando...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Sincronizar do WhatsApp
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-3">
+                  Clique para buscar as mensagens diretamente do WhatsApp
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                {messages.map((msg) => (
                   <div
-                    className={`max-w-[80%] rounded-lg px-3 py-2 ${
-                      msg.role === 'user'
-                        ? 'bg-green-100 text-green-900'
-                        : 'bg-muted text-foreground'
-                    }`}
+                    key={msg.id}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                    <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
-                      <Clock className="w-2.5 h-2.5" />
-                      {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true, locale: ptBR })}
-                    </p>
+                    <div
+                      className={`max-w-[80%] rounded-lg px-3 py-2 ${
+                        msg.role === 'user'
+                          ? 'bg-green-100 text-green-900'
+                          : 'bg-muted text-foreground'
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                        <Clock className="w-2.5 h-2.5" />
+                        {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true, locale: ptBR })}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
