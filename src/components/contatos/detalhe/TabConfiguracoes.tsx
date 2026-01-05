@@ -36,6 +36,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
+import { useActivityLogger } from '@/hooks/useActivityLogger';
 
 interface TabConfiguracoesProps {
   contact: Contact;
@@ -45,9 +46,12 @@ interface TabConfiguracoesProps {
 export const TabConfiguracoes: React.FC<TabConfiguracoesProps> = ({ contact, onUpdate }) => {
   const navigate = useNavigate();
   const { buildPath } = useAdminBasePath();
+  const { logUpdate, logDelete } = useActivityLogger();
   const [saving, setSaving] = useState(false);
 
   const handleUpdateField = async (field: keyof Contact, value: any) => {
+    const oldValue = contact[field];
+    
     try {
       setSaving(true);
       const { error } = await supabase
@@ -56,6 +60,21 @@ export const TabConfiguracoes: React.FC<TabConfiguracoesProps> = ({ contact, onU
         .eq('id', contact.id);
 
       if (error) throw error;
+      
+      // Log the change
+      let action = 'fields_updated';
+      if (field === 'categoria') action = 'categoria_changed';
+      else if (field === 'temperatura') action = 'temperatura_changed';
+      else if (field === 'status') action = 'status_changed';
+      
+      await logUpdate('contact', contact.id, {
+        action,
+        field,
+        old_values: { [field]: oldValue },
+        new_values: { [field]: value },
+        contact_name: contact.empresa || contact.nome
+      });
+      
       toast.success('Atualizado com sucesso');
       onUpdate();
     } catch (error: any) {
@@ -71,6 +90,14 @@ export const TabConfiguracoes: React.FC<TabConfiguracoesProps> = ({ contact, onU
 
   const handleDelete = async () => {
     try {
+      // Log before delete (since we won't have access to data after)
+      await logDelete('contact', contact.id, {
+        contact_name: contact.empresa || contact.nome,
+        contact_phone: contact.telefone,
+        contact_email: contact.email,
+        contact_categoria: contact.categoria
+      });
+      
       const { error } = await supabase
         .from('contacts')
         .delete()

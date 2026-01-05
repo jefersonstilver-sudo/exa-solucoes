@@ -57,6 +57,7 @@ const ContatoDetalhePage = lazy(() => import('@/pages/admin/contatos/ContatoDeta
 const NovoContatoPage = lazy(() => import('@/pages/admin/contatos/NovoContatoPage'));
 const PontuacaoConfigPage = lazy(() => import('@/pages/admin/contatos/PontuacaoConfigPage'));
 const BloqueiosPage = lazy(() => import('@/pages/admin/contatos/BloqueiosPage'));
+const ContactsLogsPage = lazy(() => import('@/pages/admin/contatos/ContactsLogsPage'));
 
 // Lazy imports para Processos & Operação
 const ProcessosPage = lazy(() => import('@/pages/admin/processos/ProcessosPage'));
@@ -122,6 +123,11 @@ const SuperAdminRoutes = () => {
       <Route path="contatos/bloqueios" element={
         <Suspense fallback={<GlobalLoadingPage message="Carregando Bloqueios..." />}>
           <BloqueiosPage />
+        </Suspense>
+      } />
+      <Route path="contatos/logs" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando Logs..." />}>
+          <ContactsLogsPage />
         </Suspense>
       } />
       <Route path="contatos/:id" element={
