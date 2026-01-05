@@ -212,22 +212,23 @@ const ContatoDetalhePage = () => {
             <div className="flex items-start justify-between gap-2">
               <div>
                 <h1 className="text-lg md:text-xl font-bold text-foreground truncate">
-                  {contact.empresa || `${contact.nome} ${contact.sobrenome || ''}`}
+                  {(editing ? formData.empresa : contact.empresa) || 
+                   `${editing ? formData.nome : contact.nome} ${editing ? (formData.sobrenome || '') : (contact.sobrenome || '')}`}
                 </h1>
                 <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  {contact.nome} {contact.sobrenome}
-                  {contact.cargo_tomador && (
-                    <span className="text-xs">• {contact.cargo_tomador}</span>
+                  {editing ? formData.nome : contact.nome} {editing ? formData.sobrenome : contact.sobrenome}
+                  {(editing ? formData.cargo_tomador : contact.cargo_tomador) && (
+                    <span className="text-xs">• {editing ? formData.cargo_tomador : contact.cargo_tomador}</span>
                   )}
                 </p>
                 <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
                   <Phone className="w-3 h-3" />
-                  <span>{contact.telefone}</span>
-                  {contact.email && (
+                  <span>{editing ? formData.telefone : contact.telefone}</span>
+                  {(editing ? formData.email : contact.email) && (
                     <>
                       <span className="mx-1">•</span>
                       <Mail className="w-3 h-3" />
-                      <span className="truncate max-w-[150px]">{contact.email}</span>
+                      <span className="truncate max-w-[150px]">{editing ? formData.email : contact.email}</span>
                     </>
                   )}
                 </div>
