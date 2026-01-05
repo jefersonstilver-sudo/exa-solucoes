@@ -58,6 +58,7 @@ const ContatoDetalhePage = lazy(() => import('@/pages/admin/contatos/ContatoDeta
 const NovoContatoPage = lazy(() => import('@/pages/admin/contatos/NovoContatoPage'));
 const PontuacaoConfigPage = lazy(() => import('@/pages/admin/contatos/PontuacaoConfigPage'));
 const BloqueiosPage = lazy(() => import('@/pages/admin/contatos/BloqueiosPage'));
+const ContactsLogsPage = lazy(() => import('@/pages/admin/contatos/ContactsLogsPage'));
 
 // Lazy imports para páginas do monitoramento-ia (agora integradas)
 const CRMUnificado = lazy(() => import('@/modules/monitoramento-ia/pages/CRMUnificado'));
@@ -209,6 +210,13 @@ const AdminRoutes = () => {
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.contatos}>
           <Suspense fallback={<GlobalLoadingPage message="Carregando Bloqueios..." />}>
             <BloqueiosPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="contatos/logs" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.contatos}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Logs..." />}>
+            <ContactsLogsPage />
           </Suspense>
         </ProtectedModuleRoute>
       } />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Phone, MessageCircle, Mail, Lock, Edit, Save, X, 
@@ -13,6 +13,7 @@ import { Contact, CATEGORIAS_CONFIG } from '@/types/contatos';
 import { CategoriaBadge, TemperaturaBadge, ScoreIndicator } from '@/components/contatos/common';
 import { useScoringRules } from '@/hooks/contatos';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
+import { useActivityLogger } from '@/hooks/useActivityLogger';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Componentes das Abas
@@ -34,11 +35,13 @@ const ContatoDetalhePage = () => {
   const navigate = useNavigate();
   const { buildPath } = useAdminBasePath();
   const { getConfigForCategory, getMaxScore } = useScoringRules();
+  const { logUpdate } = useActivityLogger();
   
   const [contact, setContact] = useState<Contact | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<Contact>>({});
+  const originalContactRef = useRef<Contact | null>(null);
   const [activeTab, setActiveTab] = useState('visao-geral');
 
   useEffect(() => {
@@ -57,8 +60,10 @@ const ContatoDetalhePage = () => {
         .single();
 
       if (error) throw error;
-      setContact(data as Contact);
-      setFormData(data as Contact);
+      const contactData = data as Contact;
+      setContact(contactData);
+      setFormData(contactData);
+      originalContactRef.current = contactData;
     } catch (error) {
       console.error('Erro ao buscar contato:', error);
       toast.error('Contato não encontrado');
@@ -69,7 +74,30 @@ const ContatoDetalhePage = () => {
   };
 
   const handleSave = async () => {
-    if (!id) return;
+    if (!id || !contact) return;
+    
+    // Identify changed fields
+    const changedFields: string[] = [];
+    const oldValues: Record<string, any> = {};
+    const newValues: Record<string, any> = {};
+    
+    const fieldsToCheck = [
+      'nome', 'sobrenome', 'empresa', 'telefone', 'email', 'website',
+      'cargo_tomador', 'endereco', 'cidade', 'estado', 'cep',
+      'cnpj', 'razao_social', 'inscricao_estadual',
+      'ramo_atividade', 'segmento', 'tamanho_empresa', 'faturamento_anual',
+      'fonte_lead', 'campanha_origem', 'interesse_servicos', 'observacoes',
+      'resumo_ia', 'intencao_compra', 'necessidades_identificadas',
+      'proximos_passos', 'objecoes_registradas', 'data_ultimo_contato'
+    ] as const;
+
+    for (const field of fieldsToCheck) {
+      if (formData[field] !== contact[field]) {
+        changedFields.push(field);
+        oldValues[field] = contact[field];
+        newValues[field] = formData[field];
+      }
+    }
     
     try {
       const { error } = await supabase
@@ -81,6 +109,18 @@ const ContatoDetalhePage = () => {
         .eq('id', id);
 
       if (error) throw error;
+      
+      // Log changes if any fields were modified
+      if (changedFields.length > 0) {
+        await logUpdate('contact', id, {
+          action: 'fields_updated',
+          changed_fields: changedFields,
+          old_values: oldValues,
+          new_values: newValues,
+          contact_name: contact.empresa || contact.nome
+        });
+      }
+      
       toast.success('Contato atualizado');
       setEditing(false);
       fetchContact();
