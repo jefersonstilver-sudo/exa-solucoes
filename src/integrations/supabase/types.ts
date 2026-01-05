@@ -2529,6 +2529,7 @@ export type Database = {
           status: string | null
           tags: string[] | null
           telefone: string
+          telefones_adicionais: string[] | null
           temperatura: string | null
           ticket_estimado: number | null
           tipo_negocio: string | null
@@ -2581,6 +2582,7 @@ export type Database = {
           status?: string | null
           tags?: string[] | null
           telefone: string
+          telefones_adicionais?: string[] | null
           temperatura?: string | null
           ticket_estimado?: number | null
           tipo_negocio?: string | null
@@ -2633,6 +2635,7 @@ export type Database = {
           status?: string | null
           tags?: string[] | null
           telefone?: string
+          telefones_adicionais?: string[] | null
           temperatura?: string | null
           ticket_estimado?: number | null
           tipo_negocio?: string | null
