@@ -11,7 +11,8 @@ export type CategoriaContato =
   | 'eletricista'
   | 'provedor'
   | 'equipe_exa'
-  | 'outros';
+  | 'outros'
+  | 'ocultar';
 
 export type TemperaturaContato = 'quente' | 'morno' | 'frio';
 
@@ -503,6 +504,35 @@ export const CATEGORIAS_CONFIG: Record<CategoriaContato, CategoriaConfigCompleta
       'Deve ser reclassificada assim que houver clareza'
     ],
     alerta: '"Outros" não é destino final. É estado provisório que deve ser reclassificado!'
+  },
+  ocultar: { 
+    label: 'Ocultar', 
+    emoji: '🚫',
+    color: 'text-gray-400', 
+    bgColor: 'bg-gray-300', 
+    icon: 'EyeOff',
+    hasPontuacao: false,
+    description: 'Contato oculto do sistema (grupos, spam, irrelevante)',
+    definicao: 'Contatos que devem ser removidos das listagens principais, como grupos de WhatsApp, spam ou contatos irrelevantes.',
+    criterios: [
+      'Grupos de WhatsApp',
+      'Spam ou bots',
+      'Contatos irrelevantes',
+      'Números inválidos'
+    ],
+    exemplos: [
+      'Grupos de WhatsApp',
+      'Spam e bots',
+      'Números inválidos',
+      'Contatos descartados'
+    ],
+    regras: [
+      'Não aparece na lista de contatos',
+      'Não aparece nas conversas do CRM',
+      'Pode ser visualizado via filtro especial',
+      'Categoria permanente para exclusão visual'
+    ],
+    alerta: 'Contatos nesta categoria ficam invisíveis nas listagens normais do sistema'
   }
 };
 
@@ -517,7 +547,8 @@ export const CATEGORIAS_ORDER: CategoriaContato[] = [
   'eletricista',
   'provedor',
   'equipe_exa',
-  'outros'
+  'outros',
+  'ocultar'
 ];
 
 export const TEMPERATURA_CONFIG: Record<TemperaturaContato, {

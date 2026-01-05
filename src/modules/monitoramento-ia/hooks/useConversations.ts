@@ -40,6 +40,7 @@ export const useConversations = () => {
       
       // Buscar conversas da tabela conversations (nova estrutura)
       // Filtrar conversas inválidas (WhatsApp Business, phone = '0')
+      // JOIN com contacts para filtrar categoria 'ocultar'
       const { data: conversations, error } = await supabase
         .from('conversations')
         .select(`
@@ -50,7 +51,9 @@ export const useConversations = () => {
           last_message_at,
           created_at,
           provider,
-          status
+          status,
+          contact_id,
+          contacts!contact_id(categoria)
         `)
         .eq('provider', 'zapi')
         .neq('contact_phone', '0')
@@ -59,9 +62,19 @@ export const useConversations = () => {
 
       if (error) throw error;
 
+      // Filtrar conversas de contatos com categoria 'ocultar'
+      const filteredConversations = (conversations || []).filter(conv => {
+        // Se não tem contato vinculado, mostrar
+        if (!conv.contacts) return true;
+        // Se o contato não tem categoria 'ocultar', mostrar
+        return (conv.contacts as any)?.categoria !== 'ocultar';
+      });
+
+      if (error) throw error;
+
       // Buscar contagem de mensagens não lidas para cada conversa
       const conversationsWithCounts = await Promise.all(
-        (conversations || []).map(async (conv) => {
+        filteredConversations.map(async (conv) => {
           // Contar total de mensagens
           const { count: totalCount } = await supabase
             .from('messages')
