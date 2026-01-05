@@ -37,8 +37,11 @@ const MODULE_SECTIONS = [
     title: 'Gestão Principal',
     modules: [
       { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { key: 'posicoes', label: 'Posições', icon: LayoutDashboard },
       { key: 'sync_notion', label: 'Sync Notion', icon: RefreshCw },
+      { key: 'agenda', label: 'Agenda', icon: FileText },
       { key: 'pedidos', label: 'Pedidos', icon: FileText },
+      { key: 'produtos', label: 'Produtos', icon: FileText },
       { key: 'propostas', label: 'Propostas', icon: FileText },
       { key: 'juridico', label: 'Jurídico', icon: FileText },
       { key: 'assinaturas', label: 'Assinaturas', icon: CreditCard },
@@ -50,9 +53,12 @@ const MODULE_SECTIONS = [
   {
     title: 'CRM',
     modules: [
+      { key: 'contatos', label: 'Contatos', icon: Users },
+      { key: 'contatos_kanban', label: 'Contatos Kanban', icon: LayoutDashboard },
       { key: 'crm_site', label: 'CRM Site', icon: Globe },
       { key: 'crm_chat', label: 'CRM Chat', icon: MessageSquare },
       { key: 'escalacoes', label: 'Escalações', icon: Users },
+      { key: 'processos', label: 'Processos', icon: RefreshCw },
     ]
   },
   {
@@ -79,6 +85,12 @@ const MODULE_SECTIONS = [
       { key: 'ticker', label: 'Ticker', icon: Type },
       { key: 'editor_videos', label: 'Editor', icon: Film },
       { key: 'emails', label: 'Emails', icon: Mail },
+    ]
+  },
+  {
+    title: 'Financeiro',
+    modules: [
+      { key: 'financeiro_mp', label: 'Financeiro MP', icon: CreditCard },
     ]
   },
   {
