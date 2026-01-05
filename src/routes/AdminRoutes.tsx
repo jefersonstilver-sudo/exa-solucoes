@@ -54,6 +54,7 @@ const ProcessEditorPage = lazy(() => import('@/pages/admin/processos/ProcessEdit
 
 // Contatos
 const ContatosPage = lazy(() => import('@/pages/admin/contatos/ContatosPage'));
+const ContatosKanbanPage = lazy(() => import('@/pages/admin/contatos/ContatosKanbanPage'));
 const ContatoDetalhePage = lazy(() => import('@/pages/admin/contatos/ContatoDetalhePage'));
 const NovoContatoPage = lazy(() => import('@/pages/admin/contatos/NovoContatoPage'));
 const PontuacaoConfigPage = lazy(() => import('@/pages/admin/contatos/PontuacaoConfigPage'));
@@ -182,6 +183,13 @@ const AdminRoutes = () => {
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.contatos}>
           <Suspense fallback={<GlobalLoadingPage message="Carregando Contatos..." />}>
             <ContatosPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="contatos-kanban" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.contatos_kanban}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Kanban..." />}>
+            <ContatosKanbanPage />
           </Suspense>
         </ProtectedModuleRoute>
       } />
