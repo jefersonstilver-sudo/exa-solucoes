@@ -51,7 +51,7 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const dryRun = body.dry_run === true;
-    const sourceFilter = body.source; // 'conversations', 'escalacoes', 'pedidos', 'all'
+    const sourceFilter = body.source; // 'conversations', 'escalacoes', 'pedidos', 'lead_profiles', 'all'
 
     console.log('[SYNC-CONTACTS] 🚀 Starting unified contacts sync', { dryRun, sourceFilter });
 
@@ -59,6 +59,7 @@ serve(async (req) => {
       conversations: { found: 0, created: 0, updated: 0, skipped: 0 },
       escalacoes: { found: 0, created: 0, updated: 0, skipped: 0 },
       pedidos: { found: 0, created: 0, updated: 0, skipped: 0 },
+      lead_profiles: { found: 0, created: 0, updated: 0, skipped: 0 },
       total: { created: 0, updated: 0, skipped: 0, errors: 0 }
     };
 
@@ -339,10 +340,147 @@ serve(async (req) => {
       }
     }
 
+    // ========== 4. SINCRONIZAR LEAD_PROFILES ==========
+    if (!sourceFilter || sourceFilter === 'all' || sourceFilter === 'lead_profiles') {
+      console.log('[SYNC-CONTACTS] 👤 Processing lead_profiles...');
+      
+      const { data: leadProfiles, error: lpError } = await supabase
+        .from('lead_profiles')
+        .select(`
+          id, 
+          conversation_id,
+          empresa_nome,
+          bairro_interesse,
+          segmento,
+          intencao,
+          is_hot_lead,
+          hot_lead_score,
+          probabilidade_fechamento,
+          proximos_passos,
+          orcamento_estimado,
+          predio_nome,
+          predio_tipo,
+          created_at,
+          updated_at
+        `);
+
+      if (lpError) {
+        console.error('[SYNC-CONTACTS] ❌ Error fetching lead_profiles:', lpError);
+      } else {
+        stats.lead_profiles.found = leadProfiles?.length || 0;
+        console.log(`[SYNC-CONTACTS] Found ${stats.lead_profiles.found} lead_profiles`);
+
+        for (const lp of leadProfiles || []) {
+          if (!lp.conversation_id) {
+            stats.lead_profiles.skipped++;
+            continue;
+          }
+
+          try {
+            // Buscar a conversa para pegar o telefone
+            const { data: conv } = await supabase
+              .from('conversations')
+              .select('contact_phone, contact_name')
+              .eq('id', lp.conversation_id)
+              .maybeSingle();
+
+            if (!conv?.contact_phone) {
+              stats.lead_profiles.skipped++;
+              continue;
+            }
+
+            const phoneNormalized = normalizePhone(conv.contact_phone);
+            if (!phoneNormalized || phoneNormalized.length < 10) {
+              stats.lead_profiles.skipped++;
+              continue;
+            }
+
+            const { data: existingContact } = await supabase
+              .from('contacts')
+              .select('id, metadata')
+              .eq('telefone', phoneNormalized)
+              .maybeSingle();
+
+            if (existingContact) {
+              // Atualizar com dados enriquecidos do lead_profile
+              if (!dryRun) {
+                await supabase
+                  .from('contacts')
+                  .update({
+                    nome_empresa: lp.empresa_nome || undefined,
+                    bairro: lp.bairro_interesse || undefined,
+                    segmento: lp.segmento || undefined,
+                    temperatura: lp.is_hot_lead ? 'quente' : undefined,
+                    updated_at: new Date().toISOString(),
+                    metadata: {
+                      ...existingContact.metadata,
+                      lead_profile_id: lp.id,
+                      intencao: lp.intencao,
+                      hot_lead_score: lp.hot_lead_score,
+                      probabilidade_fechamento: lp.probabilidade_fechamento,
+                      proximos_passos: lp.proximos_passos,
+                      orcamento_estimado: lp.orcamento_estimado,
+                      predio_nome: lp.predio_nome,
+                      predio_tipo: lp.predio_tipo,
+                      migration_sources: [...(existingContact.metadata?.migration_sources || []), 'lead_profiles']
+                    }
+                  })
+                  .eq('id', existingContact.id);
+              }
+              stats.lead_profiles.updated++;
+            } else {
+              // Criar novo contato do lead_profile
+              if (!dryRun) {
+                const { data: newContact } = await supabase
+                  .from('contacts')
+                  .insert({
+                    nome: conv.contact_name || 'Lead Site',
+                    telefone: phoneNormalized,
+                    nome_empresa: lp.empresa_nome,
+                    bairro: lp.bairro_interesse,
+                    segmento: lp.segmento,
+                    categoria: 'lead',
+                    origem: 'site_crm',
+                    status: 'ativo',
+                    bloqueado: false,
+                    temperatura: lp.is_hot_lead ? 'quente' : 'morno',
+                    conversation_id: lp.conversation_id,
+                    metadata: {
+                      auto_created: true,
+                      source: 'sync_lead_profiles',
+                      lead_profile_id: lp.id,
+                      intencao: lp.intencao,
+                      hot_lead_score: lp.hot_lead_score,
+                      probabilidade_fechamento: lp.probabilidade_fechamento,
+                      proximos_passos: lp.proximos_passos,
+                      orcamento_estimado: lp.orcamento_estimado
+                    }
+                  })
+                  .select()
+                  .single();
+
+                // Linkar conversation ao contato
+                if (newContact) {
+                  await supabase
+                    .from('conversations')
+                    .update({ contact_id: newContact.id })
+                    .eq('id', lp.conversation_id);
+                }
+              }
+              stats.lead_profiles.created++;
+            }
+          } catch (err) {
+            console.error('[SYNC-CONTACTS] ❌ Error processing lead_profile:', lp.id, err);
+            stats.total.errors++;
+          }
+        }
+      }
+    }
+
     // Calcular totais
-    stats.total.created = stats.conversations.created + stats.escalacoes.created + stats.pedidos.created;
-    stats.total.updated = stats.conversations.updated + stats.escalacoes.updated + stats.pedidos.updated;
-    stats.total.skipped = stats.conversations.skipped + stats.escalacoes.skipped + stats.pedidos.skipped;
+    stats.total.created = stats.conversations.created + stats.escalacoes.created + stats.pedidos.created + stats.lead_profiles.created;
+    stats.total.updated = stats.conversations.updated + stats.escalacoes.updated + stats.pedidos.updated + stats.lead_profiles.updated;
+    stats.total.skipped = stats.conversations.skipped + stats.escalacoes.skipped + stats.pedidos.skipped + stats.lead_profiles.skipped;
 
     console.log('[SYNC-CONTACTS] ✅ Sync completed:', stats);
 
