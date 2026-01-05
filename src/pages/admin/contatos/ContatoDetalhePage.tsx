@@ -83,12 +83,14 @@ const ContatoDetalhePage = () => {
     
     const fieldsToCheck = [
       'nome', 'sobrenome', 'empresa', 'telefone', 'email', 'website',
-      'cargo_tomador', 'endereco', 'cidade', 'estado', 'cep',
-      'cnpj', 'razao_social', 'inscricao_estadual',
-      'ramo_atividade', 'segmento', 'tamanho_empresa', 'faturamento_anual',
+      'cargo_tomador', 'endereco', 'cidade', 'estado', 'cep', 'bairro',
+      'cnpj', 'ramo_atividade', 'segmento', 'tamanho_empresa', 'faturamento_anual',
       'fonte_lead', 'campanha_origem', 'interesse_servicos', 'observacoes',
       'resumo_ia', 'intencao_compra', 'necessidades_identificadas',
-      'proximos_passos', 'objecoes_registradas', 'data_ultimo_contato'
+      'proximos_passos', 'objecoes_registradas', 'data_ultimo_contato',
+      // Campos da TabInteligencia
+      'tomador_decisao', 'tipo_negocio', 'ticket_estimado', 'instagram',
+      'publico_alvo', 'dores_identificadas', 'observacoes_estrategicas'
     ] as const;
 
     for (const field of fieldsToCheck) {
@@ -406,7 +408,12 @@ const ContatoDetalhePage = () => {
         </ScrollArea>
 
         <TabsContent value="visao-geral">
-          <TabVisaoGeral contact={contact} />
+          <TabVisaoGeral 
+            contact={contact} 
+            editing={editing}
+            formData={formData}
+            setFormData={setFormData}
+          />
         </TabsContent>
 
         {hasPontuacao && (
