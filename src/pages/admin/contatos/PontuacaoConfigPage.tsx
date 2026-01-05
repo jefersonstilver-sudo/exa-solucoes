@@ -43,9 +43,15 @@ const PontuacaoConfigPage = () => {
     }
   };
 
-  const isCategoryActive = (categoria: CategoriaContato): boolean => {
+  const handleCategoryPontuacaoChange = (categoria: CategoriaContato, value: number) => {
     const config = localConfigs.find(c => c.categoria === categoria);
-    return config?.pontuacao_ativa ?? false;
+    if (config) {
+      handleConfigChange(config.id, 'pontuacao_minima', value);
+    }
+  };
+
+  const getCategoryConfig = (categoria: CategoriaContato) => {
+    return localConfigs.find(c => c.categoria === categoria);
   };
 
   const handleSave = async () => {
@@ -127,14 +133,19 @@ const PontuacaoConfigPage = () => {
           Categorias Ativas
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {CATEGORIAS_ORDER.map((cat) => (
-            <CategoriaProtocoloCard 
-              key={cat} 
-              categoria={cat}
-              ativo={isCategoryActive(cat)}
-              onToggle={(ativo) => handleCategoryToggle(cat, ativo)}
-            />
-          ))}
+          {CATEGORIAS_ORDER.map((cat) => {
+            const catConfig = getCategoryConfig(cat);
+            return (
+              <CategoriaProtocoloCard 
+                key={cat} 
+                categoria={cat}
+                ativo={catConfig?.pontuacao_ativa ?? false}
+                pontuacaoMinima={catConfig?.pontuacao_minima ?? 0}
+                onToggle={(ativo) => handleCategoryToggle(cat, ativo)}
+                onPontuacaoChange={(value) => handleCategoryPontuacaoChange(cat, value)}
+              />
+            );
+          })}
         </div>
       </section>
 
