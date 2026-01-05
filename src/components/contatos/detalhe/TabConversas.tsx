@@ -67,17 +67,17 @@ export const TabConversas: React.FC<TabConversasProps> = ({ contact }) => {
     try {
       const { data, error } = await supabase
         .from('messages')
-        .select('id, text, role, created_at')
+        .select('id, body, from_role, direction, created_at')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true })
         .limit(100);
 
       if (error) throw error;
-      // Map 'text' to 'content' for our interface
+      // Map 'body' to 'content' and 'from_role' to 'role' for our interface
       const mappedMessages = (data || []).map((msg: any) => ({
         id: msg.id,
-        content: msg.text || '',
-        role: msg.role,
+        content: msg.body || '',
+        role: msg.from_role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
         created_at: msg.created_at
       }));
       setMessages(mappedMessages);
@@ -166,7 +166,18 @@ export const TabConversas: React.FC<TabConversasProps> = ({ contact }) => {
             <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Mensagens
             </CardTitle>
-            <Button variant="ghost" size="sm" className="h-7 text-xs">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-7 text-xs"
+              onClick={() => {
+                const conv = conversations.find(c => c.id === selectedConversation);
+                if (conv) {
+                  const agentRoute = conv.agent_key === 'sofia' ? 'sofia' : 'eduardo';
+                  window.open(`/super_admin/conversas/whatsapp/${agentRoute}/${selectedConversation}`, '_blank');
+                }
+              }}
+            >
               <ExternalLink className="w-3 h-3 mr-1" />
               Abrir no CRM
             </Button>
