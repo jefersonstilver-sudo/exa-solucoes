@@ -1362,6 +1362,78 @@ Obrigado pela compreensão!`;
           
           if (insertError) throw new Error(`Failed to insert conversation: ${insertError.message}`);
           conversation = inserted;
+          
+          // 🆕 FASE 3: CRIAR CONTATO AUTOMATICAMENTE PARA NOVA CONVERSA
+          if (!isGroup && conversation) {
+            const phoneNormalized = phone.replace(/\D/g, '');
+            console.log('[ZAPI-WEBHOOK] 🔍 Checking if contact exists for phone:', phoneNormalized);
+            
+            // Verificar se contato já existe
+            const { data: existingContact } = await supabase
+              .from('contacts')
+              .select('id')
+              .eq('telefone', phoneNormalized)
+              .maybeSingle();
+            
+            if (!existingContact) {
+              // Determinar origem baseado no agente
+              let origem = 'conversa_whatsapp_sofia';
+              if (agent.key === 'eduardo') origem = 'conversa_whatsapp_vendedor';
+              else if (agent.key === 'exa_alert') origem = 'conversa_whatsapp_exa_alert';
+              
+              console.log('[ZAPI-WEBHOOK] 📝 Creating new contact for conversation:', conversation.id);
+              
+              const { data: newContact, error: contactError } = await supabase
+                .from('contacts')
+                .insert({
+                  nome: payload.senderName || 'Contato WhatsApp',
+                  telefone: phoneNormalized,
+                  categoria: 'lead', // Default para lead
+                  origem,
+                  status: 'ativo',
+                  bloqueado: false,
+                  conversation_id: conversation.id,
+                  agent_sources: [agent.key],
+                  last_interaction_at: new Date().toISOString(),
+                  metadata: {
+                    auto_created: true,
+                    source_agent: agent.key,
+                    created_from_conversation: conversation.id,
+                    first_message_at: new Date().toISOString()
+                  }
+                })
+                .select()
+                .single();
+              
+              if (contactError) {
+                console.error('[ZAPI-WEBHOOK] ⚠️ Error creating contact (non-blocking):', contactError);
+              } else if (newContact) {
+                console.log('[ZAPI-WEBHOOK] ✅ New contact created:', newContact.id);
+                
+                // Linkar conversation ao contato
+                await supabase
+                  .from('conversations')
+                  .update({ contact_id: newContact.id })
+                  .eq('id', conversation.id);
+              }
+            } else {
+              console.log('[ZAPI-WEBHOOK] ℹ️ Contact already exists:', existingContact.id);
+              
+              // Linkar conversation ao contato existente e atualizar last_interaction
+              await supabase
+                .from('contacts')
+                .update({ 
+                  last_interaction_at: new Date().toISOString(),
+                  agent_sources: supabase.rpc ? undefined : [agent.key] // Append agent if possible
+                })
+                .eq('id', existingContact.id);
+              
+              await supabase
+                .from('conversations')
+                .update({ contact_id: existingContact.id })
+                .eq('id', conversation.id);
+            }
+          }
         }
 
         if (!conversation) {

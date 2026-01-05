@@ -22,6 +22,7 @@ export type OrigemContato =
   | 'pedido_criado'
   | 'conversa_whatsapp_sofia'
   | 'conversa_whatsapp_vendedor'
+  | 'conversa_whatsapp_exa_alert'
   | 'cadastro_manual'
   | 'proposta'
   | 'contrato'
@@ -35,6 +36,7 @@ export type OrigemContato =
   | 'site'
   | 'telefone'
   | 'email'
+  | 'site_crm'
   | 'outros';
 
 export type TipoInteracao = 
@@ -87,8 +89,14 @@ export interface Contact {
   created_by?: string;
   last_contact_at?: string;
   last_action?: string;
-  // Novos campos
+  // Campos de unificação com conversations
   conversation_id?: string;
+  whatsapp_external_id?: string;
+  agent_sources?: string[];
+  last_interaction_at?: string;
+  ai_categoria_sugerida?: string;
+  ai_categoria_confianca?: number;
+  // Campos adicionais
   instagram?: string;
   ticket_estimado?: number;
   satisfacao?: number;
@@ -314,6 +322,7 @@ export const ORIGEM_CONFIG: Record<OrigemContato, {
   pedido_criado: { label: 'Pedido Criado', icon: 'Package', color: 'text-blue-600' },
   conversa_whatsapp_sofia: { label: 'WhatsApp (Sofia)', icon: 'Bot', color: 'text-purple-600' },
   conversa_whatsapp_vendedor: { label: 'WhatsApp (Vendedor)', icon: 'MessageCircle', color: 'text-green-600' },
+  conversa_whatsapp_exa_alert: { label: 'EXA Alert', icon: 'Bot', color: 'text-orange-600' },
   cadastro_manual: { label: 'Cadastro Manual', icon: 'UserPlus', color: 'text-gray-600' },
   proposta: { label: 'Proposta', icon: 'FileText', color: 'text-amber-600' },
   contrato: { label: 'Contrato', icon: 'FileCheck', color: 'text-blue-600' },
@@ -327,6 +336,7 @@ export const ORIGEM_CONFIG: Record<OrigemContato, {
   site: { label: 'Site', icon: 'Globe', color: 'text-blue-500' },
   telefone: { label: 'Telefone', icon: 'Phone', color: 'text-gray-600' },
   email: { label: 'Email', icon: 'Mail', color: 'text-amber-500' },
+  site_crm: { label: 'Site CRM', icon: 'Globe', color: 'text-indigo-500' },
   outros: { label: 'Outros', icon: 'MoreHorizontal', color: 'text-gray-400' }
 };
 

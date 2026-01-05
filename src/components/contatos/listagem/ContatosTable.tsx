@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, Mail, Eye, MessageCircle, AlertTriangle } from 'lucide-react';
+import { Phone, Mail, Eye, MessageCircle, AlertTriangle, MessagesSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -11,9 +11,10 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Contact, CATEGORIAS_CONFIG, calcularCompletude } from '@/types/contatos';
-import { CategoriaBadge, TemperaturaBadge, ScoreCircle } from '../common';
-import { format } from 'date-fns';
+import { CategoriaBadge, TemperaturaBadge, ScoreCircle, OrigemBadge } from '../common';
+import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { cn } from '@/lib/utils';
@@ -50,6 +51,12 @@ export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading 
     navigate(buildPath(`contatos/${contact.id}`));
   };
 
+  const handleViewConversation = (e: React.MouseEvent, contact: Contact) => {
+    e.stopPropagation();
+    if (!contact.conversation_id) return;
+    navigate(buildPath(`monitoramento/ia?conversation=${contact.conversation_id}`));
+  };
+
   if (loading) {
     return (
       <div className="bg-card rounded-lg border border-border p-8 text-center">
@@ -74,9 +81,9 @@ export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading 
             <TableHead className="w-[60px]">Score</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Nome / Empresa</TableHead>
+            <TableHead className="hidden md:table-cell">Origem</TableHead>
             <TableHead className="hidden md:table-cell">Bairro / Cidade</TableHead>
-            <TableHead className="hidden lg:table-cell">Tipo de Negócio</TableHead>
-            <TableHead className="hidden lg:table-cell">Última Ação</TableHead>
+            <TableHead className="hidden lg:table-cell">Última Interação</TableHead>
             <TableHead className="text-center">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -136,19 +143,52 @@ export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading 
                   )}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
+                  <div className="flex flex-col gap-1">
+                    {contact.origem && <OrigemBadge origem={contact.origem} size="sm" />}
+                    {contact.agent_sources && contact.agent_sources.length > 0 && (
+                      <div className="flex gap-0.5">
+                        {contact.agent_sources.map((agent) => (
+                          <Badge 
+                            key={agent} 
+                            variant="outline" 
+                            className="text-[9px] px-1 py-0 h-4 capitalize"
+                          >
+                            {agent}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
                   <div className="text-sm text-foreground">{contact.bairro || '-'}</div>
                   <div className="text-xs text-muted-foreground">
                     {contact.cidade}, {contact.estado}
                   </div>
                 </TableCell>
                 <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                  {contact.tipo_negocio || '-'}
-                </TableCell>
-                <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                  {contact.last_contact_at 
-                    ? format(new Date(contact.last_contact_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
-                    : '-'
-                  }
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          {contact.last_interaction_at 
+                            ? formatDistanceToNow(new Date(contact.last_interaction_at), { addSuffix: true, locale: ptBR })
+                            : contact.last_contact_at 
+                              ? formatDistanceToNow(new Date(contact.last_contact_at), { addSuffix: true, locale: ptBR })
+                              : '-'
+                          }
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {contact.last_interaction_at 
+                          ? format(new Date(contact.last_interaction_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                          : contact.last_contact_at 
+                            ? format(new Date(contact.last_contact_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                            : 'Sem interação registrada'
+                        }
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-center gap-1">
@@ -191,6 +231,24 @@ export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading 
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
+                    {contact.conversation_id && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 bg-purple-500 hover:bg-purple-600 text-white"
+                              onClick={(e) => handleViewConversation(e, contact)}
+                              title="Ver conversa"
+                            >
+                              <MessagesSquare className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Ver conversa no Monitoramento IA</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
