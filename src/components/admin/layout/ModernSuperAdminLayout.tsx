@@ -38,10 +38,13 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
   // Verifica se deve ocultar o header (modo fullscreen)
   const isFullscreenMode = FULLSCREEN_ROUTES.some(route => location.pathname.includes(route.split('/').pop() || ''));
   
+  // Sidebar minimizada por padrão em modo fullscreen
+  const sidebarDefaultOpen = isFullscreenMode ? false : !isMobile;
+  
   return (
     <SofiaProvider>
       <SidebarProvider
-        defaultOpen={!isMobile} 
+        defaultOpen={sidebarDefaultOpen} 
         style={{
           "--sidebar-width": isTablet ? "220px" : "260px",
           "--sidebar-width-icon": "64px",
