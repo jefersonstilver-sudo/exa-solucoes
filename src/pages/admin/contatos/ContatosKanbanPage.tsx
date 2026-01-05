@@ -47,11 +47,8 @@ const ContatosKanbanPage = () => {
         <LoadingSpinner />
       </div>;
   }
-  return <div className="h-[calc(100vh-4rem)] flex flex-col bg-white relative">
-      {/* Header Simples */}
-      
-
-      {/* Kanban Board */}
+  return <div className="h-screen flex flex-col bg-white relative overflow-hidden">
+      {/* Kanban Board - Full height */}
       <div className="flex-1 overflow-hidden">
         <KanbanBoard columns={columns} onMoveContact={moveContact} loading={loading} />
       </div>

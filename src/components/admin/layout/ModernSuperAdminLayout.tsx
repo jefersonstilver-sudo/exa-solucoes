@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import ModernAdminSidebar from './ModernAdminSidebar';
 import ModernAdminHeader from './ModernAdminHeader';
@@ -7,6 +7,9 @@ import MobileBottomNav from './MobileBottomNav';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { SofiaVoiceButton } from '@/components/admin/sofia';
 import { SofiaProvider } from '@/contexts/SofiaContext';
+
+// Rotas que devem ocultar o header para modo fullscreen
+const FULLSCREEN_ROUTES = ['/admin/contatos-kanban', '/super_admin/contatos-kanban'];
 
 const SidebarTriggerPositioned = ({ isTablet }: { isTablet: boolean }) => {
   const { state } = useSidebar();
@@ -30,6 +33,10 @@ const SidebarTriggerPositioned = ({ isTablet }: { isTablet: boolean }) => {
 
 const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) => {
   const { isMobile, isTablet } = useAdvancedResponsive();
+  const location = useLocation();
+  
+  // Verifica se deve ocultar o header (modo fullscreen)
+  const isFullscreenMode = FULLSCREEN_ROUTES.some(route => location.pathname.includes(route.split('/').pop() || ''));
   
   return (
     <SofiaProvider>
@@ -45,20 +52,24 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
           <div className="relative z-30"><ModernAdminSidebar /></div>
           
           {/* Botão 3D vermelho elegante na interseção sidebar/header */}
-          <SidebarTriggerPositioned isTablet={isTablet} />
+          {!isFullscreenMode && <SidebarTriggerPositioned isTablet={isTablet} />}
           
           <SidebarInset className="flex flex-col w-full overflow-x-hidden">
-            {/* Header com logo EXA - estilo elegante vermelho */}
-            <header className={`sticky top-0 z-10 h-14 md:h-20 flex items-center border-b px-3 md:px-6 shadow-lg ${
-              isMobile 
-                ? 'bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-white/20' 
-                : 'bg-background border-border'
+            {/* Header com logo EXA - oculto em modo fullscreen */}
+            {!isFullscreenMode && (
+              <header className={`sticky top-0 z-10 h-14 md:h-20 flex items-center border-b px-3 md:px-6 shadow-lg ${
+                isMobile 
+                  ? 'bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-white/20' 
+                  : 'bg-background border-border'
+              }`}>
+                {/* Trigger mobile dentro do header */}
+                <SidebarTrigger className="md:hidden mr-3" />
+                <ModernAdminHeader />
+              </header>
+            )}
+            <main className={`flex-1 overflow-y-auto bg-gradient-to-b from-background to-muted/20 min-h-0 overflow-x-hidden ${
+              isFullscreenMode ? 'p-0' : 'p-2 md:p-6'
             }`}>
-              {/* Trigger mobile dentro do header */}
-              <SidebarTrigger className="md:hidden mr-3" />
-              <ModernAdminHeader />
-            </header>
-            <main className="flex-1 p-2 md:p-6 overflow-y-auto bg-gradient-to-b from-background to-muted/20 min-h-0 overflow-x-hidden">
               {children || <Outlet />}
             </main>
           </SidebarInset>
