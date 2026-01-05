@@ -23,13 +23,17 @@ export const ContatosCategoryTabs: React.FC<ContatosCategoryTabsProps> = ({
         <button
           onClick={() => onSelectCategory(null)}
           className={cn(
-            'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+            'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all duration-300',
+            'backdrop-blur-sm border shadow-sm',
             selectedCategory === null
-              ? 'bg-primary text-primary-foreground shadow-sm ring-2 ring-offset-1 ring-primary ring-offset-background'
-              : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+              ? 'bg-primary/90 text-primary-foreground border-primary/30 shadow-lg shadow-primary/20 scale-[1.02]'
+              : 'bg-white/60 hover:bg-white/80 text-muted-foreground border-white/40 hover:shadow-md hover:scale-[1.01]'
           )}
         >
-          <span className="w-2 h-2 rounded-full bg-current opacity-70" />
+          <span className={cn(
+            'w-1.5 h-1.5 rounded-full transition-colors',
+            selectedCategory === null ? 'bg-white' : 'bg-muted-foreground/50'
+          )} />
           Todos ({totalCount})
         </button>
 
@@ -44,13 +48,17 @@ export const ContatosCategoryTabs: React.FC<ContatosCategoryTabsProps> = ({
               key={cat}
               onClick={() => onSelectCategory(cat)}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
+                'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all duration-300 whitespace-nowrap',
+                'backdrop-blur-sm border shadow-sm',
                 isSelected
-                  ? `${config.bgColor} text-white shadow-sm ring-2 ring-offset-1 ring-offset-background`
-                  : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                  ? `${config.bgColor} text-white border-white/20 shadow-lg scale-[1.02]`
+                  : 'bg-white/60 hover:bg-white/80 text-muted-foreground border-white/40 hover:shadow-md hover:scale-[1.01]'
               )}
-              style={isSelected ? { '--tw-ring-color': config.bgColor.replace('bg-', '') } as any : undefined}
             >
+              <span className={cn(
+                'w-1.5 h-1.5 rounded-full transition-colors',
+                isSelected ? 'bg-white/80' : config.bgColor.replace('bg-', 'bg-') + '/50'
+              )} />
               {config.label} ({count})
             </button>
           );
