@@ -357,6 +357,7 @@ export const useContatos = (options: UseContatosOptions = {}) => {
     unarchiveContact,
     blockContact,
     unblockContact,
-    checkDuplicate
+    checkDuplicate,
+    refetch: fetchContacts
   };
 };

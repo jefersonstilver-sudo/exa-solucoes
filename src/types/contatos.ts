@@ -96,6 +96,9 @@ export interface Contact {
   last_interaction_at?: string;
   ai_categoria_sugerida?: string;
   ai_categoria_confianca?: number;
+  // Campos para detecção de duplicados
+  is_potential_duplicate?: boolean;
+  duplicate_group_id?: string;
   // Campos adicionais
   instagram?: string;
   ticket_estimado?: number;

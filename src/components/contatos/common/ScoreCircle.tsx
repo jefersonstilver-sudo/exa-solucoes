@@ -27,15 +27,15 @@ export const ScoreCircle: React.FC<ScoreCircleProps> = ({
   };
 
   const sizeClasses = {
-    sm: 'w-8 h-8',
-    md: 'w-10 h-10',
-    lg: 'w-14 h-14'
+    sm: 'w-10 h-10',
+    md: 'w-14 h-14',
+    lg: 'w-20 h-20'
   };
 
   const textSizeClasses = {
-    sm: 'text-[8px]',
-    md: 'text-[10px]',
-    lg: 'text-xs'
+    sm: 'text-[10px]',
+    md: 'text-sm',
+    lg: 'text-base'
   };
 
   return (
