@@ -274,10 +274,10 @@ export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading 
                   </TableRow>
                 </HoverCardTrigger>
                 <HoverCardContent 
-                  className="w-80 z-[9999] bg-popover shadow-xl border" 
+                  className="w-80 z-[9999] bg-popover shadow-xl border fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" 
                   side="right" 
-                  align="start"
-                  sideOffset={16}
+                  align="center"
+                  sideOffset={0}
                   avoidCollisions={false}
                 >
                   <div className="space-y-3">
