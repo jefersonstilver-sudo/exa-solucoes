@@ -332,7 +332,11 @@ const ContatoDetalhePage = () => {
               <div className="flex-1" />
 
               {!editing ? (
-                <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="h-8">
+                <Button variant="outline" size="sm" onClick={() => {
+                  setEditing(true);
+                  setActiveTab('inteligencia');
+                  toast.info('Modo de edição ativado. Edite os campos e clique em Salvar.');
+                }} className="h-8">
                   <Edit className="w-3.5 h-3.5 mr-1" />
                   Editar
                 </Button>
