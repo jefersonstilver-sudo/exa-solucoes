@@ -3,20 +3,14 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { cn } from '@/lib/utils';
 import { KanbanCard } from './KanbanCard';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { TrendingUp, AlertTriangle } from 'lucide-react';
 import type { Contact } from '@/types/contatos';
 
 interface KanbanColumnProps {
   id: string;
   title: string;
   color: string;
-  bgColor: string;
   contacts: Contact[];
   count: number;
-  totalValue: number;
-  urgentCount?: number;
   onOpenChat?: (contact: Contact) => void;
   onOpenSchedule?: (contact: Contact) => void;
   onOpenProfile?: (contact: Contact) => void;
@@ -26,76 +20,47 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   id,
   title,
   color,
-  bgColor,
   contacts,
   count,
-  totalValue,
-  urgentCount = 0,
   onOpenChat,
   onOpenSchedule,
   onOpenProfile,
 }) => {
   const { isOver, setNodeRef } = useDroppable({ id });
 
-  const formatValue = (value: number) => {
-    if (value >= 1000) {
-      return `R$ ${(value / 1000).toFixed(0)}k`;
-    }
-    return `R$ ${value}`;
-  };
-
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "flex flex-col h-full min-w-[280px] max-w-[320px] rounded-2xl",
-        "bg-white/40 backdrop-blur-sm border border-border/30",
-        "transition-all duration-200",
-        isOver && "ring-2 ring-primary/50 bg-primary/5 scale-[1.02]"
+        "flex flex-col w-[240px] h-full rounded-xl bg-[#f5f5f5] shrink-0 border border-gray-100/50 shadow-inner",
+        isOver && "ring-2 ring-purple-400/50 bg-purple-50/30"
       )}
     >
-      {/* Column Header */}
-      <div className="p-3 border-b border-border/30">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <div className={cn("w-3 h-3 rounded-full", bgColor)} />
-            <h3 className={cn("font-semibold text-sm", color)}>
-              {title}
-            </h3>
-            <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5">
-              {count}
-            </Badge>
-          </div>
-          
-          {urgentCount > 0 && (
-            <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4 gap-0.5">
-              <AlertTriangle className="h-2.5 w-2.5" />
-              {urgentCount}
-            </Badge>
-          )}
-        </div>
-
-        {/* Metrics */}
-        {totalValue > 0 && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <TrendingUp className="h-3 w-3 text-green-600" />
-            <span className="font-medium text-green-700">{formatValue(totalValue)}</span>
-            <span>potencial</span>
-          </div>
-        )}
+      {/* Header com borda colorida no topo */}
+      <div 
+        className="px-3 py-2 rounded-t-xl bg-gradient-to-b from-white to-[#f5f5f5] shadow-sm flex items-center justify-between shrink-0 border-t-[4px]"
+        style={{ borderTopColor: color }}
+      >
+        <h3 className="font-bold text-gray-600 text-xs uppercase tracking-wide truncate">
+          {title}
+        </h3>
+        <span className="bg-gray-200/50 text-gray-500 text-[10px] px-1.5 py-0.5 rounded font-bold">
+          {count}
+        </span>
       </div>
 
       {/* Cards Container */}
-      <ScrollArea className="flex-1 p-2">
+      <div className="flex-1 overflow-y-auto p-1.5">
         <SortableContext 
           items={contacts.map(c => c.id)} 
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {contacts.map(contact => (
               <KanbanCard
                 key={contact.id}
                 contact={contact}
+                categoryColor={color}
                 onOpenChat={onOpenChat}
                 onOpenSchedule={onOpenSchedule}
                 onOpenProfile={onOpenProfile}
@@ -103,23 +68,13 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
             ))}
             
             {contacts.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground text-sm">
+              <div className="text-center py-6 text-gray-400 text-xs">
                 <p>Nenhum contato</p>
-                <p className="text-xs mt-1">Arraste cards para cá</p>
               </div>
             )}
           </div>
         </SortableContext>
-      </ScrollArea>
-
-      {/* Column Footer - contador */}
-      {contacts.length > 5 && (
-        <div className="p-2 border-t border-border/30 text-center">
-          <span className="text-xs text-muted-foreground">
-            Mostrando {Math.min(contacts.length, 20)} de {count}
-          </span>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

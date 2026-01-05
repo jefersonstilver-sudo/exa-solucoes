@@ -11,13 +11,13 @@ import {
   DragEndEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { Plus } from 'lucide-react';
 import { KanbanColumn } from './KanbanColumn';
 import { KanbanCard } from './KanbanCard';
 import { KanbanChatPanel } from './KanbanChatPanel';
 import { KanbanSchedulePopover } from './KanbanSchedulePopover';
 import { useNavigate } from 'react-router-dom';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import type { Contact } from '@/types/contatos';
 import type { KanbanColumn as KanbanColumnType } from '@/hooks/contatos/useKanbanContatos';
 
@@ -82,19 +82,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    // Encontrar coluna de origem
     const sourceColumn = findColumnByContactId(activeId);
     
-    // Determinar coluna de destino
     let targetColumn = overId;
     
-    // Se over é um contato, encontrar sua coluna
     const overContact = findContact(overId);
     if (overContact) {
       targetColumn = findColumnByContactId(overId) || overId;
     }
 
-    // Se a coluna mudou, mover o contato
     if (sourceColumn && targetColumn && sourceColumn !== targetColumn) {
       await onMoveContact(activeId, targetColumn);
     }
@@ -112,10 +108,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     navigate(buildPath(`contatos/${contact.id}`));
   };
 
+  const handleAddContact = () => {
+    navigate(buildPath('contatos/novo'));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
       </div>
     );
   }
@@ -128,36 +128,21 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <ScrollArea className="w-full">
-          <div className="flex gap-4 p-4 min-h-[calc(100vh-280px)]">
-            {columns.map(column => {
-              const urgentCount = column.contacts.filter(c => {
-                const lastInteraction = c.last_interaction_at ? new Date(c.last_interaction_at) : null;
-                if (!lastInteraction) return false;
-                const daysSince = (Date.now() - lastInteraction.getTime()) / (1000 * 60 * 60 * 24);
-                return daysSince > 7;
-              }).length;
-
-              return (
-                <KanbanColumn
-                  key={column.id}
-                  id={column.id}
-                  title={column.title}
-                  color={column.color}
-                  bgColor={column.bgColor}
-                  contacts={column.contacts}
-                  count={column.count}
-                  totalValue={column.totalValue}
-                  urgentCount={urgentCount}
-                  onOpenChat={handleOpenChat}
-                  onOpenSchedule={handleOpenSchedule}
-                  onOpenProfile={handleOpenProfile}
-                />
-              );
-            })}
-          </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+        <div className="flex gap-3 p-4 overflow-x-auto h-full">
+          {columns.map(column => (
+            <KanbanColumn
+              key={column.id}
+              id={column.id}
+              title={column.title}
+              color={column.color}
+              contacts={column.contacts}
+              count={column.count}
+              onOpenChat={handleOpenChat}
+              onOpenSchedule={handleOpenSchedule}
+              onOpenProfile={handleOpenProfile}
+            />
+          ))}
+        </div>
 
         <DragOverlay>
           {activeContact && (
@@ -167,6 +152,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           )}
         </DragOverlay>
       </DndContext>
+
+      {/* FAB - Botão Flutuante */}
+      <div className="absolute bottom-6 right-6 z-30">
+        <button 
+          onClick={handleAddContact}
+          className="w-14 h-14 bg-gradient-to-tr from-purple-700 to-purple-500 text-white rounded-full shadow-[0_8px_30px_rgba(147,51,234,0.4)] hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center border-2 border-white/20"
+        >
+          <Plus className="h-7 w-7" />
+        </button>
+      </div>
 
       {/* Chat Panel */}
       <KanbanChatPanel 
