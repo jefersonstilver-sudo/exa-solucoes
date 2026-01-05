@@ -5,8 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { User, Target, Briefcase, Instagram, DollarSign, Globe, Phone, MessageCircle, Plus, X, Lock } from 'lucide-react';
-import { Contact, isWhatsAppOrigin } from '@/types/contatos';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { User, Target, Briefcase, Instagram, DollarSign, Globe, Phone, MessageCircle, Plus, X, Lock, Tag } from 'lucide-react';
+import { Contact, isWhatsAppOrigin, CategoriaContato, CATEGORIAS_CONFIG, CATEGORIAS_ORDER } from '@/types/contatos';
 
 interface TabInteligenciaProps {
   contact: Contact;
@@ -31,6 +32,49 @@ export const TabInteligencia: React.FC<TabInteligenciaProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Categoria */}
+      <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+            <Tag className="w-4 h-4" />
+            Categoria
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label className="text-xs">Categoria do Contato</Label>
+            {editing ? (
+              <Select
+                value={formData.categoria || contact.categoria}
+                onValueChange={(v) => handleChange('categoria', v as CategoriaContato)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIAS_ORDER.map((cat) => {
+                    const config = CATEGORIAS_CONFIG[cat];
+                    return (
+                      <SelectItem key={cat} value={cat}>
+                        <span className="flex items-center gap-2">
+                          <span>{config.emoji}</span>
+                          <span>{config.label}</span>
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                <span>{CATEGORIAS_CONFIG[contact.categoria]?.emoji}</span>
+                <span className="text-sm">{CATEGORIAS_CONFIG[contact.categoria]?.label}</span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Tomador de Decisão */}
       <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-sm">
         <CardHeader className="pb-2">

@@ -89,7 +89,7 @@ const ContatoDetalhePage = () => {
       'resumo_ia', 'intencao_compra', 'necessidades_identificadas',
       'proximos_passos', 'objecoes_registradas', 'data_ultimo_contato',
       // Campos da TabInteligencia
-      'tomador_decisao', 'tipo_negocio', 'ticket_estimado', 'instagram',
+      'categoria', 'tomador_decisao', 'tipo_negocio', 'ticket_estimado', 'instagram',
       'publico_alvo', 'dores_identificadas', 'observacoes_estrategicas',
       // Telefones adicionais
       'telefones_adicionais'
@@ -268,7 +268,7 @@ const ContatoDetalhePage = () => {
 
             {/* Badges */}
             <div className="flex flex-wrap items-center gap-2 mt-3">
-              <CategoriaBadge categoria={contact.categoria} />
+              <CategoriaBadge categoria={editing ? (formData.categoria || contact.categoria) : contact.categoria} />
               {contact.temperatura && (
                 <TemperaturaBadge temperatura={contact.temperatura} />
               )}
