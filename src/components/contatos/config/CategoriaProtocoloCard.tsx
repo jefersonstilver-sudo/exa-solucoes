@@ -65,8 +65,9 @@ const CategoriaProtocoloCard: React.FC<CategoriaProtocoloCardProps> = ({
           </div>
         </TooltipTrigger>
         <TooltipContent 
-          side="top" 
-          className="max-w-[280px] p-3 bg-popover/95 backdrop-blur-sm"
+          side="right" 
+          sideOffset={8}
+          className="max-w-[280px] p-3 bg-popover/95 backdrop-blur-sm z-[9999]"
         >
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
