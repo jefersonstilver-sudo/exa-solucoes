@@ -38,8 +38,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     >
       {/* Header com borda colorida no topo */}
       <div 
-        className="px-3 py-2 rounded-t-xl bg-gradient-to-b from-white to-[#f5f5f5] shadow-sm flex items-center justify-between shrink-0 border-t-[4px]"
-        style={{ borderTopColor: color }}
+        className="px-3 py-2 rounded-t-xl bg-gradient-to-b from-white to-[#f5f5f5] shadow-sm flex items-center justify-between shrink-0"
+        style={{ borderTop: `4px solid ${color}` }}
       >
         <h3 className="font-bold text-gray-600 text-xs uppercase tracking-wide truncate">
           {title}
