@@ -125,15 +125,25 @@ export default function ModulePermissionsModal({ role, onClose }: ModulePermissi
     }
   });
 
-  // Initialize local permissions from database
+  // Initialize local permissions - include ALL modules from MODULE_SECTIONS
   useEffect(() => {
+    const permMap: Record<string, boolean> = {};
+    
+    // First, initialize ALL modules as false (default)
+    MODULE_SECTIONS.forEach(section => {
+      section.modules.forEach(module => {
+        permMap[module.key] = false;
+      });
+    });
+    
+    // Then, override with existing permissions from database
     if (permissions.length > 0) {
-      const permMap: Record<string, boolean> = {};
       permissions.forEach(p => {
         permMap[p.permission_key] = p.is_enabled;
       });
-      setLocalPermissions(permMap);
     }
+    
+    setLocalPermissions(permMap);
   }, [permissions]);
 
   // Save all changes
