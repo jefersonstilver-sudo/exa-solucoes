@@ -35,6 +35,12 @@ export const useContatos = (options: UseContatosOptions = {}) => {
         .from('contacts')
         .select('*', { count: 'exact' });
 
+      // IMPORTANTE: Excluir categoria 'ocultar' por padrão
+      // A menos que seja explicitamente solicitada
+      if (options.categoria !== 'ocultar') {
+        query = query.neq('categoria', 'ocultar');
+      }
+
       // Filtro por categoria
       if (options.categoria) {
         query = query.eq('categoria', options.categoria);

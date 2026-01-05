@@ -27,6 +27,7 @@ import { TabAgenda } from '@/components/contatos/detalhe/TabAgenda';
 import { TabArquivos } from '@/components/contatos/detalhe/TabArquivos';
 import { TabNotas } from '@/components/contatos/detalhe/TabNotas';
 import { TabConfiguracoes } from '@/components/contatos/detalhe/TabConfiguracoes';
+import { DuplicatesSection } from '@/components/contatos/detalhe/DuplicatesSection';
 
 const ContatoDetalhePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -311,6 +312,11 @@ const ContatoDetalhePage = () => {
           </div>
         </div>
       </div>
+
+      {/* Seção de Duplicados - aparece apenas quando há duplicados */}
+      {contact.is_potential_duplicate && (
+        <DuplicatesSection contact={contact} onUpdate={fetchContact} />
+      )}
 
       {/* Tabs - 11 Abas */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">

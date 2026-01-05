@@ -9,3 +9,5 @@ export { TabAgenda } from './TabAgenda';
 export { TabArquivos } from './TabArquivos';
 export { TabNotas } from './TabNotas';
 export { TabConfiguracoes } from './TabConfiguracoes';
+export { DuplicatesSection } from './DuplicatesSection';
+export { ConsolidateContactModal } from './ConsolidateContactModal';
