@@ -21,19 +21,37 @@ interface UseKanbanContatosOptions {
   search?: string;
 }
 
+// TODAS as 12 categorias oficiais com cores do design
 const CATEGORIA_CONFIG: Record<string, { title: string; color: string; bgColor: string }> = {
-  lead: { title: 'Lead', color: 'text-green-700', bgColor: 'bg-green-500' },
-  anunciante: { title: 'Anunciante', color: 'text-blue-700', bgColor: 'bg-blue-500' },
-  sindico_exa: { title: 'Síndico EXA', color: 'text-blue-700', bgColor: 'bg-blue-600' },
-  sindico_lead: { title: 'Síndico Lead', color: 'text-yellow-700', bgColor: 'bg-yellow-400' },
-  parceiro_exa: { title: 'Parceiro EXA', color: 'text-amber-700', bgColor: 'bg-amber-500' },
-  parceiro_lead: { title: 'Parceiro Lead', color: 'text-emerald-700', bgColor: 'bg-emerald-400' },
-  prestador_elevador: { title: 'Prestador', color: 'text-orange-700', bgColor: 'bg-orange-400' },
-  eletricista: { title: 'Eletricista', color: 'text-gray-700', bgColor: 'bg-gray-500' },
-  provedor: { title: 'Provedor', color: 'text-purple-700', bgColor: 'bg-purple-500' },
-  equipe_exa: { title: 'Equipe EXA', color: 'text-indigo-700', bgColor: 'bg-indigo-500' },
-  outros: { title: 'Outros', color: 'text-gray-600', bgColor: 'bg-gray-400' },
+  lead: { title: 'LEAD', color: '#facc15', bgColor: '#facc15' },
+  anunciante: { title: 'ANUNCIANTE', color: '#f59e0b', bgColor: '#f59e0b' },
+  sindico_exa: { title: 'SÍNDICO EXA', color: '#0ea5e9', bgColor: '#0ea5e9' },
+  sindico_lead: { title: 'SÍNDICO LEAD', color: '#8b5cf6', bgColor: '#8b5cf6' },
+  prestador_elevador: { title: 'PRESTADOR ELEVADOR', color: '#f97316', bgColor: '#f97316' },
+  eletricista: { title: 'ELETRICISTAS', color: '#64748b', bgColor: '#64748b' },
+  provedor: { title: 'PROVEDORES', color: '#a855f7', bgColor: '#a855f7' },
+  equipe_exa: { title: 'EQUIPE EXA', color: '#6366f1', bgColor: '#6366f1' },
+  parceiro_exa: { title: 'PARCEIRO EXA', color: '#14b8a6', bgColor: '#14b8a6' },
+  parceiro_lead: { title: 'PARCEIRO LEAD', color: '#10b981', bgColor: '#10b981' },
+  outros: { title: 'OUTROS', color: '#94a3b8', bgColor: '#94a3b8' },
+  ocultar: { title: 'OCULTAR', color: '#cbd5e1', bgColor: '#cbd5e1' },
 };
+
+// Ordem oficial das 12 categorias
+const CATEGORIA_ORDER = [
+  'lead', 
+  'anunciante', 
+  'sindico_exa', 
+  'sindico_lead',
+  'prestador_elevador',
+  'eletricista',
+  'provedor',
+  'equipe_exa', 
+  'parceiro_exa', 
+  'parceiro_lead', 
+  'outros',
+  'ocultar'
+];
 
 const TEMPERATURA_CONFIG: Record<string, { title: string; color: string; bgColor: string }> = {
   frio: { title: '❄️ Frio', color: 'text-blue-700', bgColor: 'bg-blue-400' },
@@ -103,19 +121,20 @@ export const useKanbanContatos = (options: UseKanbanContatosOptions = {}) => {
         break;
       case 'categoria':
       default:
-        orderedKeys = ['lead', 'anunciante', 'sindico_exa', 'sindico_lead', 'parceiro_exa', 'parceiro_lead', 'outros'];
+        // TODAS as 12 categorias sempre visíveis
+        orderedKeys = CATEGORIA_ORDER;
         config = CATEGORIA_CONFIG;
         break;
     }
 
+    // Mostrar TODAS as colunas, mesmo as vazias (para categoria)
     return orderedKeys
-      .filter(key => grouped[key]?.length > 0 || ['lead', 'anunciante'].includes(key))
       .map(key => {
         const contactsInColumn = grouped[key] || [];
         const columnConfig = config[key] || { 
-          title: key, 
-          color: 'text-gray-600', 
-          bgColor: 'bg-gray-400' 
+          title: key.toUpperCase(), 
+          color: '#94a3b8', 
+          bgColor: '#94a3b8' 
         };
 
         return {
