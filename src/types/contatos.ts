@@ -580,10 +580,10 @@ export const ORIGEM_CONFIG: Record<OrigemContato, {
   color: string;
 }> = {
   checkout_site: { label: 'Checkout Site', icon: 'ShoppingCart', color: 'text-green-600' },
-  pedido_criado: { label: 'Pedido Criado', icon: 'Package', color: 'text-blue-600' },
-  conversa_whatsapp_sofia: { label: 'WhatsApp (Sofia)', icon: 'Bot', color: 'text-purple-600' },
-  conversa_whatsapp_vendedor: { label: 'WhatsApp (Vendedor)', icon: 'MessageCircle', color: 'text-green-600' },
-  conversa_whatsapp_exa_alert: { label: 'EXA Alert', icon: 'Bot', color: 'text-orange-600' },
+  pedido_criado: { label: 'Pedido', icon: 'Package', color: 'text-blue-600' },
+  conversa_whatsapp_sofia: { label: 'Sofia (WhatsApp)', icon: 'Bot', color: 'text-purple-600' },
+  conversa_whatsapp_vendedor: { label: 'Eduardo (WhatsApp)', icon: 'MessageCircle', color: 'text-green-600' },
+  conversa_whatsapp_exa_alert: { label: 'EXA Alert (WhatsApp)', icon: 'Bot', color: 'text-orange-600' },
   cadastro_manual: { label: 'Cadastro Manual', icon: 'UserPlus', color: 'text-gray-600' },
   proposta: { label: 'Proposta', icon: 'FileText', color: 'text-amber-600' },
   contrato: { label: 'Contrato', icon: 'FileCheck', color: 'text-blue-600' },
@@ -594,10 +594,10 @@ export const ORIGEM_CONFIG: Record<OrigemContato, {
   instagram: { label: 'Instagram', icon: 'Instagram', color: 'text-pink-500' },
   maps: { label: 'Google Maps', icon: 'MapPin', color: 'text-green-600' },
   rua: { label: 'Prospecção Rua', icon: 'Footprints', color: 'text-orange-600' },
-  site: { label: 'Site', icon: 'Globe', color: 'text-blue-500' },
+  site: { label: 'Cadastro Site', icon: 'Globe', color: 'text-blue-500' },
   telefone: { label: 'Telefone', icon: 'Phone', color: 'text-gray-600' },
   email: { label: 'Email', icon: 'Mail', color: 'text-amber-500' },
-  site_crm: { label: 'Site CRM', icon: 'Globe', color: 'text-indigo-500' },
+  site_crm: { label: 'Lead Site', icon: 'Globe', color: 'text-indigo-500' },
   outros: { label: 'Outros', icon: 'MoreHorizontal', color: 'text-gray-400' }
 };
 
