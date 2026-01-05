@@ -2546,7 +2546,7 @@ export type Database = {
           bairro?: string | null
           bloqueado?: boolean | null
           cargo_tomador?: string | null
-          categoria: string
+          categoria?: string
           cep?: string | null
           cidade?: string | null
           cnpj?: string | null
