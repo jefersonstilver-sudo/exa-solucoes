@@ -41,11 +41,11 @@ export const TabConversas: React.FC<TabConversasProps> = ({ contact }) => {
       setLoading(true);
       const phone = contact.telefone.replace(/\D/g, '');
       
-      // Buscar conversas pelo telefone
+      // Buscar conversas pelo telefone (coluna correta: contact_phone)
       const { data, error } = await supabase
         .from('conversations')
         .select('id, agent_key, created_at, status')
-        .or(`phone.eq.${phone},phone.eq.55${phone},phone.ilike.%${phone}`)
+        .or(`contact_phone.eq.${phone},contact_phone.eq.55${phone},contact_phone.ilike.%${phone}`)
         .order('created_at', { ascending: false })
         .limit(20);
 
