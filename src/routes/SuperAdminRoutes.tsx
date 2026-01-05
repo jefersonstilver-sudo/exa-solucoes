@@ -52,7 +52,9 @@ const PaineisPage = lazy(() => import('@/modules/monitoramento-ia/pages/Paineis'
 const AgentKnowledge = lazy(() => import('@/modules/monitoramento-ia/pages/agents/AgentKnowledge').then(m => ({ default: m.AgentKnowledge })));
 
 // Lazy imports para Contatos & Inteligência Comercial
+// Lazy imports para Contatos & Inteligência Comercial
 const ContatosPage = lazy(() => import('@/pages/admin/contatos/ContatosPage'));
+const ContatosKanbanPage = lazy(() => import('@/pages/admin/contatos/ContatosKanbanPage'));
 const ContatoDetalhePage = lazy(() => import('@/pages/admin/contatos/ContatoDetalhePage'));
 const NovoContatoPage = lazy(() => import('@/pages/admin/contatos/NovoContatoPage'));
 const PontuacaoConfigPage = lazy(() => import('@/pages/admin/contatos/PontuacaoConfigPage'));
@@ -108,6 +110,11 @@ const SuperAdminRoutes = () => {
       <Route path="contatos" element={
         <Suspense fallback={<GlobalLoadingPage message="Carregando Contatos..." />}>
           <ContatosPage />
+        </Suspense>
+      } />
+      <Route path="contatos-kanban" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando Kanban..." />}>
+          <ContatosKanbanPage />
         </Suspense>
       } />
       <Route path="contatos/novo" element={

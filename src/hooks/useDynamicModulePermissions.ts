@@ -21,6 +21,7 @@ export const MODULE_KEYS = {
   cupons: 'cupons',
   beneficios: 'beneficios',
   contatos: 'contatos',
+  contatos_kanban: 'contatos_kanban',
   crm_site: 'crm_site',
   crm_chat: 'crm_chat',
   escalacoes: 'escalacoes',

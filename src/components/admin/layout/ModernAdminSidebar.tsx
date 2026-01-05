@@ -34,7 +34,8 @@ import {
   Landmark,
   Calendar,
   Network,
-  Contact
+  Contact,
+  LayoutGrid
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -221,6 +222,12 @@ export function ModernAdminSidebar() {
           href: buildPath('contatos'),
           icon: Contact,
           moduleKey: MODULE_KEYS.contatos
+        },
+        {
+          title: 'Kanban',
+          href: buildPath('contatos-kanban'),
+          icon: LayoutGrid,
+          moduleKey: MODULE_KEYS.contatos_kanban
         },
         {
           title: 'CRM Site',
