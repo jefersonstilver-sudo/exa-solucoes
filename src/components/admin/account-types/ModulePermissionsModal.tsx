@@ -203,6 +203,36 @@ export default function ModulePermissionsModal({ role, onClose }: ModulePermissi
     return MODULE_SECTIONS.reduce((acc, s) => acc + s.modules.length, 0);
   };
 
+  // Ativar TODOS os módulos de uma vez
+  const enableAllModules = () => {
+    if (role.key === 'super_admin') return;
+    
+    const newPerms: Record<string, boolean> = {};
+    MODULE_SECTIONS.forEach(section => {
+      section.modules.forEach(m => {
+        newPerms[m.key] = true;
+      });
+    });
+    setLocalPermissions(newPerms);
+    setHasChanges(true);
+    toast.success('Todos os módulos foram ativados');
+  };
+
+  // Desativar TODOS os módulos de uma vez
+  const disableAllModules = () => {
+    if (role.key === 'super_admin') return;
+    
+    const newPerms: Record<string, boolean> = {};
+    MODULE_SECTIONS.forEach(section => {
+      section.modules.forEach(m => {
+        newPerms[m.key] = false;
+      });
+    });
+    setLocalPermissions(newPerms);
+    setHasChanges(true);
+    toast.success('Todos os módulos foram desativados');
+  };
+
   return (
     <AnimatePresence>
       <motion.div
@@ -256,6 +286,26 @@ export default function ModulePermissionsModal({ role, onClose }: ModulePermissi
               </div>
             )}
           </div>
+
+          {/* Botões Globais - Ativar/Desativar Todos */}
+          {role.key !== 'super_admin' && (
+            <div className="flex gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50/50">
+              <button
+                onClick={enableAllModules}
+                className="flex-1 text-xs py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Check className="h-3.5 w-3.5" />
+                Ativar Todos
+              </button>
+              <button
+                onClick={disableAllModules}
+                className="flex-1 text-xs py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5"
+              >
+                <X className="h-3.5 w-3.5" />
+                Desativar Todos
+              </button>
+            </div>
+          )}
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto overscroll-contain p-2 space-y-1.5">
