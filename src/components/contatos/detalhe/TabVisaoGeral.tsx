@@ -7,7 +7,8 @@ import {
   Building2, Phone, Mail, MapPin, Calendar, Clock, 
   MessageCircle, FileText, Package, DollarSign, User
 } from 'lucide-react';
-import { Contact, CATEGORIAS_CONFIG, ORIGEM_CONFIG } from '@/types/contatos';
+import { Contact, CATEGORIAS_CONFIG } from '@/types/contatos';
+import { OrigemBadge } from '@/components/contatos/common/OrigemBadge';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -254,9 +255,7 @@ export const TabVisaoGeral: React.FC<TabVisaoGeralProps> = ({
             <div>
               <p className="text-xs text-muted-foreground">Origem</p>
               {contact.origem ? (
-                <Badge variant="outline" className="mt-1 text-xs">
-                  {ORIGEM_CONFIG[contact.origem]?.label || contact.origem}
-                </Badge>
+                <OrigemBadge origem={contact.origem} size="md" showIcon />
               ) : (
                 <p className="text-muted-foreground">-</p>
               )}
