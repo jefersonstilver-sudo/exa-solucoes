@@ -90,7 +90,9 @@ const ContatoDetalhePage = () => {
       'proximos_passos', 'objecoes_registradas', 'data_ultimo_contato',
       // Campos da TabInteligencia
       'tomador_decisao', 'tipo_negocio', 'ticket_estimado', 'instagram',
-      'publico_alvo', 'dores_identificadas', 'observacoes_estrategicas'
+      'publico_alvo', 'dores_identificadas', 'observacoes_estrategicas',
+      // Telefones adicionais
+      'telefones_adicionais'
     ] as const;
 
     for (const field of fieldsToCheck) {

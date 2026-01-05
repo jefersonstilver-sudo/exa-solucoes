@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { User, Target, Briefcase, Instagram, DollarSign, Globe } from 'lucide-react';
-import { Contact } from '@/types/contatos';
+import { Button } from '@/components/ui/button';
+import { User, Target, Briefcase, Instagram, DollarSign, Globe, Phone, MessageCircle, Plus, X, Lock } from 'lucide-react';
+import { Contact, isWhatsAppOrigin } from '@/types/contatos';
 
 interface TabInteligenciaProps {
   contact: Contact;
@@ -74,6 +75,89 @@ export const TabInteligencia: React.FC<TabInteligenciaProps> = ({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* WhatsApp Principal */}
+            <div className="space-y-2">
+              <Label className="text-xs flex items-center gap-1">
+                <MessageCircle className="w-3 h-3 text-green-600" />
+                WhatsApp Principal
+                {isWhatsAppOrigin(contact.origem) && (
+                  <Lock className="w-3 h-3 text-muted-foreground ml-1" />
+                )}
+              </Label>
+              <div className="relative">
+                <Input
+                  value={editing && !isWhatsAppOrigin(contact.origem) ? formData.telefone || '' : contact.telefone || ''}
+                  onChange={(e) => handleChange('telefone', e.target.value)}
+                  readOnly={!editing || isWhatsAppOrigin(contact.origem)}
+                  className={(!editing || isWhatsAppOrigin(contact.origem)) ? 'bg-muted pl-8' : 'pl-8'}
+                  placeholder="(00) 00000-0000"
+                />
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-green-600">📱</span>
+              </div>
+              {isWhatsAppOrigin(contact.origem) && (
+                <Badge variant="secondary" className="text-xs font-normal">
+                  Origem WhatsApp - não editável
+                </Badge>
+              )}
+            </div>
+
+            {/* Telefones Adicionais */}
+            <div className="space-y-2">
+              <Label className="text-xs flex items-center gap-1">
+                <Phone className="w-3 h-3" />
+                Telefones Adicionais
+              </Label>
+              <div className="space-y-2">
+                {(editing ? formData.telefones_adicionais : contact.telefones_adicionais)?.map((tel, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Input
+                      value={tel}
+                      onChange={(e) => {
+                        const newTels = [...(formData.telefones_adicionais || [])];
+                        newTels[idx] = e.target.value;
+                        handleChange('telefones_adicionais', newTels);
+                      }}
+                      readOnly={!editing}
+                      className={!editing ? 'bg-muted flex-1' : 'flex-1'}
+                      placeholder="(00) 00000-0000"
+                    />
+                    {editing && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => {
+                          const newTels = (formData.telefones_adicionais || []).filter((_, i) => i !== idx);
+                          handleChange('telefones_adicionais', newTels);
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {editing && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      const currentTels = formData.telefones_adicionais || [];
+                      handleChange('telefones_adicionais', [...currentTels, '']);
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Adicionar telefone
+                  </Button>
+                )}
+                {!editing && (!contact.telefones_adicionais || contact.telefones_adicionais.length === 0) && (
+                  <p className="text-sm text-muted-foreground">Nenhum telefone adicional</p>
+                )}
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label className="text-xs">Tipo de Negócio</Label>
               <Input

@@ -107,9 +107,21 @@ export interface Contact {
   logo_url?: string;
   total_investido?: number;
   dias_sem_contato?: number;
+  // Telefones adicionais
+  telefones_adicionais?: string[];
   // Completude calculada (não persiste no banco)
   completude?: number;
 }
+
+// Helper para verificar se origem é WhatsApp (bloqueia edição do telefone principal)
+export const isWhatsAppOrigin = (origem?: string): boolean => {
+  const whatsappOrigins = [
+    'conversa_whatsapp_sofia',
+    'conversa_whatsapp_vendedor',
+    'conversa_whatsapp_exa_alert'
+  ];
+  return origem ? whatsappOrigins.includes(origem) : false;
+};
 
 // Função utilitária para calcular completude de um contato
 export const calcularCompletude = (contact: Partial<Contact>): number => {
