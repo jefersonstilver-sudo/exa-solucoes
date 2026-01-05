@@ -2487,6 +2487,9 @@ export type Database = {
       }
       contacts: {
         Row: {
+          agent_sources: string[] | null
+          ai_categoria_confianca: number | null
+          ai_categoria_sugerida: string | null
           bairro: string | null
           bloqueado: boolean | null
           cargo_tomador: string | null
@@ -2507,6 +2510,7 @@ export type Database = {
           instagram: string | null
           last_action: string | null
           last_contact_at: string | null
+          last_interaction_at: string | null
           logo_url: string | null
           metadata: Json | null
           motivo_bloqueio: string | null
@@ -2530,8 +2534,12 @@ export type Database = {
           total_investido: number | null
           updated_at: string | null
           website: string | null
+          whatsapp_external_id: string | null
         }
         Insert: {
+          agent_sources?: string[] | null
+          ai_categoria_confianca?: number | null
+          ai_categoria_sugerida?: string | null
           bairro?: string | null
           bloqueado?: boolean | null
           cargo_tomador?: string | null
@@ -2552,6 +2560,7 @@ export type Database = {
           instagram?: string | null
           last_action?: string | null
           last_contact_at?: string | null
+          last_interaction_at?: string | null
           logo_url?: string | null
           metadata?: Json | null
           motivo_bloqueio?: string | null
@@ -2575,8 +2584,12 @@ export type Database = {
           total_investido?: number | null
           updated_at?: string | null
           website?: string | null
+          whatsapp_external_id?: string | null
         }
         Update: {
+          agent_sources?: string[] | null
+          ai_categoria_confianca?: number | null
+          ai_categoria_sugerida?: string | null
           bairro?: string | null
           bloqueado?: boolean | null
           cargo_tomador?: string | null
@@ -2597,6 +2610,7 @@ export type Database = {
           instagram?: string | null
           last_action?: string | null
           last_contact_at?: string | null
+          last_interaction_at?: string | null
           logo_url?: string | null
           metadata?: Json | null
           motivo_bloqueio?: string | null
@@ -2620,8 +2634,17 @@ export type Database = {
           total_investido?: number | null
           updated_at?: string | null
           website?: string | null
+          whatsapp_external_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contacts_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contrato_signatarios: {
         Row: {
@@ -3357,6 +3380,7 @@ export type Database = {
           audit_sync_issue: boolean | null
           avg_response_time: unknown
           awaiting_response: boolean | null
+          contact_id: string | null
           contact_name: string | null
           contact_phone: string
           contact_type: string | null
@@ -3395,6 +3419,7 @@ export type Database = {
           audit_sync_issue?: boolean | null
           avg_response_time?: unknown
           awaiting_response?: boolean | null
+          contact_id?: string | null
           contact_name?: string | null
           contact_phone: string
           contact_type?: string | null
@@ -3433,6 +3458,7 @@ export type Database = {
           audit_sync_issue?: boolean | null
           avg_response_time?: unknown
           awaiting_response?: boolean | null
+          contact_id?: string | null
           contact_name?: string | null
           contact_phone?: string
           contact_type?: string | null
@@ -3462,7 +3488,15 @@ export type Database = {
           status?: string | null
           urgency_level?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "conversations_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cortesia_codes: {
         Row: {
@@ -11212,6 +11246,7 @@ export type Database = {
       migrate_orphaned_payments: { Args: never; Returns: Json }
       monitor_coupon_security: { Args: never; Returns: Json }
       monitor_system_health: { Args: never; Returns: Json }
+      normalize_phone: { Args: { phone: string }; Returns: string }
       notify_contracts_expiring_soon: { Args: never; Returns: Json }
       process_mercadopago_webhook: {
         Args: { webhook_data: Json }

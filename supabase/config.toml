@@ -572,3 +572,6 @@ verify_jwt = false
 [[cron]]
 function_name = "relatorio-operacional-scheduled"
 schedule = "* * * * *"
+
+[functions.sync-contacts-unified]
+verify_jwt = true
