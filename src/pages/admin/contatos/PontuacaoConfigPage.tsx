@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Save, RotateCcw, BookOpen, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { useScoringRules } from '@/hooks/contatos';
-import { CATEGORIAS_CONFIG } from '@/types/contatos';
+import { CATEGORIAS_CONFIG, CATEGORIAS_ORDER } from '@/types/contatos';
 import { toast } from 'sonner';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
+import CategoriaProtocoloCard from '@/components/contatos/config/CategoriaProtocoloCard';
 
 const PontuacaoConfigPage = () => {
   const navigate = useNavigate();
@@ -109,6 +110,51 @@ const PontuacaoConfigPage = () => {
         </div>
       </div>
 
+      {/* Section 0: Tipos de Contato Oficiais */}
+      <section>
+        <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm flex items-center justify-center font-bold">
+            <BookOpen className="w-3.5 h-3.5" />
+          </span>
+          Tipos de Contato Oficiais do Sistema
+        </h3>
+        <p className="text-sm text-muted-foreground mb-6">
+          Passe o mouse sobre cada categoria para ver a definição completa, critérios, exemplos e regras operacionais do protocolo oficial.
+        </p>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {CATEGORIAS_ORDER.map((cat) => (
+            <CategoriaProtocoloCard key={cat} categoria={cat} />
+          ))}
+        </div>
+
+        {/* Regras Gerais de Uso */}
+        <div className="mt-6 p-5 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl">
+          <h4 className="font-semibold text-red-800 dark:text-red-300 mb-3 flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4" />
+            Regras Gerais de Uso
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h5 className="text-sm font-medium text-red-700 dark:text-red-400 mb-2">⛔ É proibido:</h5>
+              <ul className="text-sm text-red-700 dark:text-red-300 space-y-1">
+                <li>• Abordar contato fora da categoria correta</li>
+                <li>• Mover contato para "Lead" sem critérios</li>
+                <li>• Criar categorias não oficiais</li>
+              </ul>
+            </div>
+            <div>
+              <h5 className="text-sm font-medium text-red-700 dark:text-red-400 mb-2">✓ Responsabilidades:</h5>
+              <ul className="text-sm text-red-700 dark:text-red-300 space-y-1">
+                <li>• Todo colaborador é responsável pela classificação correta</li>
+                <li>• Auditorias podem reclassificar contatos</li>
+                <li>• Correções de processo podem ser aplicadas</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Section 1: Field Weights */}
       <section>
         <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
@@ -183,7 +229,7 @@ const PontuacaoConfigPage = () => {
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <span className={`w-3 h-3 rounded-full ${catConfig?.bgColor || 'bg-gray-500'}`} />
+                      <span className="text-lg">{catConfig?.emoji}</span>
                       <span className="font-medium text-foreground">{catConfig?.label || config.categoria}</span>
                     </div>
                     <Switch

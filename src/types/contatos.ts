@@ -192,102 +192,317 @@ export interface ContactNote {
   updated_at: string;
 }
 
-// Configuração das categorias
-export const CATEGORIAS_CONFIG: Record<CategoriaContato, {
+// Interface expandida para configuração de categorias com protocolo oficial
+export interface CategoriaConfigCompleta {
   label: string;
+  emoji: string;
   color: string;
   bgColor: string;
   icon: string;
   hasPontuacao: boolean;
   description: string;
-}> = {
+  // Campos do protocolo oficial
+  definicao: string;
+  criterios?: string[];
+  exemplos?: string[];
+  regras: string[];
+  temperaturas?: boolean;
+  alerta?: string;
+}
+
+// Configuração das categorias com protocolo oficial completo
+export const CATEGORIAS_CONFIG: Record<CategoriaContato, CategoriaConfigCompleta> = {
   lead: { 
-    label: 'Lead', 
+    label: 'Lead (Anunciante)', 
+    emoji: '🟢',
     color: 'text-green-700', 
     bgColor: 'bg-green-500', 
     icon: 'Target',
     hasPontuacao: true,
-    description: 'Potencial cliente comercial'
+    description: 'Potencial cliente comercial',
+    definicao: 'Empresas com potencial de se tornarem clientes pagantes da EXA Mídia.',
+    criterios: [
+      'Empresa ativa',
+      'Capacidade financeira',
+      'Interesse potencial em mídia',
+      'Atuação local ou regional',
+      'Enquadramento no ICP definido'
+    ],
+    exemplos: [
+      'Clínicas',
+      'Restaurantes',
+      'Imobiliárias',
+      'Construtoras',
+      'Academias',
+      'Empresas que já anunciam em mídia offline'
+    ],
+    regras: [
+      'Obrigatório sistema de pontuação',
+      'Contato bloqueado até atingir pontuação mínima',
+      'Classificação obrigatória: Quente/Morno/Frio',
+      'Apenas vendedores podem interagir'
+    ],
+    temperaturas: true
   },
   anunciante: { 
     label: 'Anunciante', 
+    emoji: '🔵',
     color: 'text-blue-700', 
     bgColor: 'bg-blue-500', 
     icon: 'CheckCircle',
-    hasPontuacao: false,
-    description: 'Cliente ativo com contrato'
+    hasPontuacao: true,
+    description: 'Cliente ativo com contrato vigente',
+    definicao: 'Empresas que já são clientes da EXA Mídia com contrato ativo e campanhas em veiculação.',
+    criterios: [
+      'Contrato vigente',
+      'Pagamentos em dia',
+      'Campanha ativa'
+    ],
+    exemplos: [
+      'Empresas com anúncios ativos na rede',
+      'Clientes renovados',
+      'Clientes com múltiplas campanhas'
+    ],
+    regras: [
+      'Acompanhamento de satisfação obrigatório',
+      'Comunicação regular sobre performance',
+      'Prioridade no atendimento',
+      'Monitoramento de renovação'
+    ]
   },
   sindico_exa: { 
     label: 'Síndico EXA', 
+    emoji: '🟦',
     color: 'text-blue-700', 
     bgColor: 'bg-blue-600', 
     icon: 'Building',
     hasPontuacao: false,
-    description: 'Síndico de prédio ativo na rede EXA'
+    description: 'Síndico de prédio ativo na rede EXA',
+    definicao: 'Síndicos de condomínios com painel EXA já instalado e contrato vigente.',
+    criterios: [
+      'Painel instalado no condomínio',
+      'Contrato de parceria vigente'
+    ],
+    exemplos: [
+      'Síndicos profissionais',
+      'Síndicos moradores',
+      'Administradoras parceiras'
+    ],
+    regras: [
+      'Não é lead comercial',
+      'Não entra em fluxo de vendas',
+      'Comunicação recorrente permitida',
+      'Foco em relacionamento e retenção'
+    ]
   },
   sindico_lead: { 
     label: 'Síndico Lead', 
+    emoji: '🟨',
     color: 'text-yellow-700', 
     bgColor: 'bg-yellow-400', 
     icon: 'UserCheck',
     hasPontuacao: true,
-    description: 'Síndico potencial para expansão'
+    description: 'Síndico potencial para expansão',
+    definicao: 'Síndicos de condomínios sem painel instalado, mas com potencial de adesão.',
+    criterios: [
+      'Condomínio sem painel EXA',
+      'Perfil compatível com a rede',
+      'Localização estratégica'
+    ],
+    exemplos: [
+      'Síndicos de prédios comerciais',
+      'Síndicos de residenciais premium',
+      'Administradoras em prospecção'
+    ],
+    regras: [
+      'Não é anunciante comercial',
+      'Fluxo específico de expansão',
+      'Pode migrar para "Síndico EXA" após instalação',
+      'Pontuação para priorização'
+    ],
+    temperaturas: true
   },
   parceiro_exa: { 
     label: 'Parceiro EXA', 
+    emoji: '🤝',
     color: 'text-amber-700', 
     bgColor: 'bg-amber-200', 
     icon: 'Handshake',
     hasPontuacao: false,
-    description: 'Parceiro ativo sem troca financeira'
+    description: 'Parceiro ativo com acordo formal',
+    definicao: 'Empresas com acordo formal de parceria, sem troca financeira direta.',
+    criterios: [
+      'Acordo ou contrato registrado',
+      'Benefício mútuo identificado'
+    ],
+    exemplos: [
+      'Permutas de serviços',
+      'Co-marketing',
+      'Acordos institucionais',
+      'Parcerias de indicação'
+    ],
+    regras: [
+      'Contrato ou acordo registrado',
+      'Não é cliente pagante',
+      'Não é lead comercial',
+      'Relacionamento institucional'
+    ]
   },
   parceiro_lead: { 
     label: 'Parceiro Lead', 
+    emoji: '🌱',
     color: 'text-emerald-700', 
     bgColor: 'bg-emerald-400', 
     icon: 'Sprout',
     hasPontuacao: false,
-    description: 'Potencial parceria estratégica'
+    description: 'Potencial parceria em avaliação',
+    definicao: 'Empresas com potencial de parceria futura em fase de avaliação.',
+    criterios: [
+      'Sinergia potencial identificada',
+      'Interesse mútuo em parceria'
+    ],
+    exemplos: [
+      'Empresas em conversas iniciais',
+      'Potenciais co-marketings',
+      'Indicações de parceiros'
+    ],
+    regras: [
+      'Não gera faturamento',
+      'Não entra em vendas comerciais',
+      'Pode migrar para "Parceiro EXA" após acordo',
+      'Análise estratégica contínua'
+    ]
   },
   prestador_elevador: { 
     label: 'Prestador Elevador', 
+    emoji: '🟧',
     color: 'text-orange-700', 
     bgColor: 'bg-orange-400', 
     icon: 'Building2',
     hasPontuacao: false,
-    description: 'Empresa de manutenção de elevadores'
+    description: 'Empresa de manutenção de elevadores',
+    definicao: 'Empresas e técnicos responsáveis por elevadores dos condomínios.',
+    criterios: [
+      'Empresa de manutenção cadastrada',
+      'Técnicos identificados'
+    ],
+    exemplos: [
+      'Atlas Schindler',
+      'Thyssenkrupp',
+      'Otis',
+      'Técnicos autônomos especializados'
+    ],
+    regras: [
+      'Contato estritamente operacional',
+      'Nunca entra em fluxo de vendas',
+      'Registro obrigatório de empresa e técnico',
+      'Usado para agendamento de instalação'
+    ]
   },
   eletricista: { 
     label: 'Eletricista', 
+    emoji: '⚡',
     color: 'text-gray-100', 
     bgColor: 'bg-gray-700', 
     icon: 'Zap',
     hasPontuacao: false,
-    description: 'Prestador de serviços elétricos'
+    description: 'Prestador de serviços elétricos',
+    definicao: 'Eletricistas terceirizados acionados conforme demanda operacional.',
+    criterios: [
+      'Cadastro técnico atualizado',
+      'Disponibilidade verificada'
+    ],
+    exemplos: [
+      'Eletricistas autônomos',
+      'Empresas de manutenção elétrica',
+      'Técnicos de instalação'
+    ],
+    regras: [
+      'EXA possui eletricista CLT (Daher)',
+      'Terceiros são backup operacional',
+      'Não é fornecedor fixo',
+      'Registro técnico obrigatório'
+    ]
   },
   provedor: { 
     label: 'Provedor', 
+    emoji: '🟪',
     color: 'text-purple-100', 
     bgColor: 'bg-purple-500', 
     icon: 'Wifi',
     hasPontuacao: false,
-    description: 'Fornecedor de tecnologia/serviços'
+    description: 'Fornecedor de infraestrutura',
+    definicao: 'Empresas que fornecem serviços essenciais à operação da EXA.',
+    criterios: [
+      'Contrato de fornecimento ativo',
+      'Serviço essencial à operação'
+    ],
+    exemplos: [
+      'Internet (Vivo, Claro)',
+      'Tecnologia (AWS, Google)',
+      'Hardware (Dell, HP)',
+      'Software (Adobe, Microsoft)',
+      'Logística (Correios, transportadoras)'
+    ],
+    regras: [
+      'Uso institucional apenas',
+      'Sem abordagem comercial de vendas',
+      'Registro administrativo obrigatório',
+      'Gestão de contratos dedicada'
+    ]
   },
   equipe_exa: { 
     label: 'Equipe EXA', 
+    emoji: '👥',
     color: 'text-indigo-100', 
     bgColor: 'bg-indigo-500', 
     icon: 'Users',
     hasPontuacao: false,
-    description: 'Funcionário ou colaborador interno'
+    description: 'Funcionário ou colaborador interno',
+    definicao: 'Pessoas que atuam direta ou indiretamente na EXA Mídia.',
+    criterios: [
+      'Vínculo com a empresa (CLT, PJ, ou prestador)',
+      'Atuação recorrente'
+    ],
+    exemplos: [
+      'Funcionários CLT',
+      'Diretores e sócios',
+      'Prestadores recorrentes',
+      'Consultores externos'
+    ],
+    regras: [
+      'Uso interno exclusivo',
+      'Não é lead comercial',
+      'Não entra em processos de vendas',
+      'Gestão de RH aplicável'
+    ]
   },
   outros: { 
     label: 'Outros', 
+    emoji: '⚪',
     color: 'text-gray-700', 
     bgColor: 'bg-gray-200', 
     icon: 'MoreHorizontal',
     hasPontuacao: false,
-    description: 'Outros tipos de contato'
+    description: 'Contato temporário aguardando classificação',
+    definicao: 'Contatos que não se enquadram em nenhuma categoria acima, mas precisam ser registrados.',
+    criterios: [
+      'Não se encaixa em outras categorias',
+      'Necessita de revisão'
+    ],
+    exemplos: [
+      'Contatos pontuais',
+      'Instituições diversas',
+      'Pessoas físicas sem relação clara',
+      'Leads genéricos sem qualificação'
+    ],
+    regras: [
+      'Categoria TEMPORÁRIA apenas',
+      'Deve ser revisada periodicamente',
+      'Não permite abordagem comercial',
+      'Deve ser reclassificada assim que houver clareza'
+    ],
+    alerta: '"Outros" não é destino final. É estado provisório que deve ser reclassificado!'
   }
 };
 
