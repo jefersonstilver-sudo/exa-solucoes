@@ -1508,11 +1508,11 @@ const PropostaPublicaPage = () => {
       <header className="bg-gradient-to-r from-[#4a0f0f] to-[#7D1818] text-white p-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-16 h-12 bg-white/10 rounded-lg flex items-center justify-center">
+            <div className="w-48 h-36 bg-white/10 rounded-lg flex items-center justify-center">
               <UnifiedLogo 
                 size="custom" 
                 variant="light"
-                className="w-12 h-12"
+                className="w-36 h-36"
               />
             </div>
             <div className="flex-1">
