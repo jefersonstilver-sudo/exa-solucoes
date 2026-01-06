@@ -439,7 +439,7 @@ export class ProposalPDFExporter {
     this.yPosition = startY + 35;
   }
 
-  private async drawProductShowcase(specs: ProductSpecs, tipo: 'horizontal' | 'vertical_premium'): Promise<void> {
+  private async drawProductShowcase(specs: ProductSpecs, tipo: 'horizontal' | 'vertical_premium', totalPanels: number = 1): Promise<void> {
     this.checkPageBreak(65);
     
     this.drawSectionTitle('PRODUTO ESCOLHIDO');
@@ -531,7 +531,7 @@ export class ProposalPDFExporter {
       { label: 'Exibicoes/mes', value: specs.exibicoesMes.toLocaleString('pt-BR') },
       { label: 'Empresas/predio', value: `Ate ${specs.maxClientes}` },
       { label: 'Proporcao', value: specs.proporcao },
-      { label: 'Vezes/dia', value: specs.exibicoesDia.toLocaleString('pt-BR') },
+      { label: 'Vezes/dia (total)', value: (specs.exibicoesDia * totalPanels).toLocaleString('pt-BR') },
     ];
     
     const specColWidth = 55;
@@ -551,6 +551,12 @@ export class ProposalPDFExporter {
       this.doc.setFont('helvetica', 'bold');
       this.doc.text(item.value, x, y + 5);
     });
+    
+    // Indicador de audiência minimalista
+    this.setColor(this.colors.mediumGray);
+    this.doc.setFontSize(6);
+    this.doc.setFont('helvetica', 'italic');
+    this.doc.text('Em media, moradores utilizam o elevador 40x por semana', specsX, specsY + 48);
     
     this.yPosition += 58;
   }
@@ -981,11 +987,12 @@ export class ProposalPDFExporter {
     // Dados do cliente
     this.drawClientInfo(proposal, isCortesia);
     
-    // MÓDULO DE PRODUTO - NOVO
-    await this.drawProductShowcase(specs, tipoProduto);
-    
     // Tabela de prédios
     const buildings = proposal.selected_buildings || [];
+    const totalPanels = buildings.reduce((sum: number, b: any) => sum + (b.quantidade_telas || 1), 0);
+    
+    // MÓDULO DE PRODUTO - NOVO
+    await this.drawProductShowcase(specs, tipoProduto, totalPanels);
     this.drawBuildingsTable(buildings);
     
     // Condições comerciais (com destaque no valor à vista)
