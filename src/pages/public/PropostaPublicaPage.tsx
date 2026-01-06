@@ -1922,6 +1922,15 @@ const PropostaPublicaPage = () => {
               Quem Somos
               <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
             </Button>
+            <Button 
+              variant="outline" 
+              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
+              onClick={() => window.open('https://drive.google.com/drive/folders/1GgZwyYLZdlqvCqElaaWJQ9BEbYPNMkmR?usp=sharing', '_blank')}
+            >
+              <Video className="h-4 w-4 mr-2 text-[#9C1E1E]" />
+              Mais Vídeos da EXA
+              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+            </Button>
           </div>
         </Card>
 
