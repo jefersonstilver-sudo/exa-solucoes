@@ -2,6 +2,10 @@ import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import { supabase } from '@/integrations/supabase/client';
 
+// Mockups (mesmos usados na página pública)
+import mockupHorizontal from '@/assets/mockups/mockup-horizontal.png';
+import mockupVertical from '@/assets/mockups/mockup-vertical.png';
+
 interface ProposalData {
   id: string;
   number: string;
@@ -426,12 +430,9 @@ export class ProposalPDFExporter {
     this.setColor(this.colors.white, 'fill');
     this.doc.roundedRect(mockupX, mockupY, mockupWidth, mockupHeight, 2, 2, 'F');
     
-    // Tentar carregar mockup (URLs públicas sem expiração)
+    // Tentar carregar mockup (arquivo correto conforme o produto)
     try {
-      const mockupUrl = isVertical 
-        ? 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/mockup/mockup-vertical.png'
-        : 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/mockup/mockup-horizontal.png';
-      
+      const mockupUrl = isVertical ? mockupVertical : mockupHorizontal;
       const mockupDataUrl = await this.loadImageAsDataURL(mockupUrl);
       
       // Ajustar proporção do mockup
