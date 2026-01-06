@@ -231,7 +231,7 @@ export const useContatos = (options: UseContatosOptions = {}) => {
     }
   };
 
-  const updateContact = async (id: string, updates: Partial<Contact>) => {
+  const updateContact = async (id: string, updates: Partial<Contact>, skipRefetch = false) => {
     try {
       // Validação: não pode remover categoria
       if (updates.categoria === null || updates.categoria === undefined) {
@@ -249,12 +249,37 @@ export const useContatos = (options: UseContatosOptions = {}) => {
         .single();
 
       if (error) throw error;
-      toast.success('Contato atualizado com sucesso');
-      fetchContacts();
+      
+      // Se skipRefetch, não mostra toast nem recarrega (usado para drag-drop otimista)
+      if (!skipRefetch) {
+        toast.success('Contato atualizado com sucesso');
+        fetchContacts();
+      }
+      
       return data as Contact;
     } catch (error: any) {
       console.error('Erro ao atualizar contato:', error);
       toast.error(error.message || 'Erro ao atualizar contato');
+      throw error;
+    }
+  };
+
+  // Atualização otimista para drag-and-drop (atualiza estado local imediatamente)
+  const updateContactOptimistic = async (id: string, updates: Partial<Contact>) => {
+    // Salvar estado anterior para rollback
+    const previousContacts = [...contacts];
+    
+    // Atualizar estado local imediatamente
+    setContacts(prev => prev.map(c => 
+      c.id === id ? { ...c, ...updates, updated_at: new Date().toISOString() } : c
+    ));
+
+    try {
+      await updateContact(id, updates, true);
+      return true;
+    } catch (error) {
+      // Rollback em caso de erro
+      setContacts(previousContacts);
       throw error;
     }
   };
@@ -358,6 +383,7 @@ export const useContatos = (options: UseContatosOptions = {}) => {
     fetchCounts,
     createContact,
     updateContact,
+    updateContactOptimistic,
     deleteContact,
     archiveContact,
     unarchiveContact,
