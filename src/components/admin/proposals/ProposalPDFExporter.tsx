@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 // Mockups (mesmos usados na página pública)
 import mockupHorizontal from '@/assets/mockup-horizontal-new.png';
 import mockupVertical from '@/assets/mockups/mockup-vertical.png';
+import verticalPremiumShowcase from '@/assets/vertical-premium-showcase.png';
 
 interface ProposalData {
   id: string;
@@ -632,6 +633,31 @@ export class ProposalPDFExporter {
     this.yPosition += 14;
   }
 
+  private async drawVerticalPremiumShowcase(): Promise<void> {
+    try {
+      const imgData = await this.loadImageAsDataURL(verticalPremiumShowcase);
+      
+      // Calcular dimensões mantendo proporção - largura total da página
+      const imgWidth = this.contentWidth;
+      
+      // Estimar altura baseado em proporção típica (ajustar conforme necessário)
+      const img = new Image();
+      img.src = verticalPremiumShowcase;
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+      const aspectRatio = img.height / img.width;
+      const imgHeight = imgWidth * aspectRatio;
+      
+      this.checkPageBreak(imgHeight + 10);
+      
+      this.doc.addImage(imgData, 'PNG', this.margin, this.yPosition, imgWidth, imgHeight);
+      this.yPosition += imgHeight + 8;
+    } catch (error) {
+      console.error('Erro ao carregar imagem Vertical Premium:', error);
+    }
+  }
+
   private drawCommercialConditions(proposal: ProposalData, isCortesia: boolean = false, baseTotalValue: number = 0): void {
     this.checkPageBreak(110);
     
@@ -994,6 +1020,11 @@ export class ProposalPDFExporter {
     // MÓDULO DE PRODUTO - NOVO
     await this.drawProductShowcase(specs, tipoProduto, totalPanels);
     this.drawBuildingsTable(buildings);
+    
+    // Imagem Vertical Premium Showcase (apenas para vertical_premium)
+    if (tipoProduto === 'vertical_premium') {
+      await this.drawVerticalPremiumShowcase();
+    }
     
     // Condições comerciais (com destaque no valor à vista)
     this.drawCommercialConditions(proposal, isCortesia, baseTotalValue);
