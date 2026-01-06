@@ -1632,9 +1632,6 @@ const PropostaPublicaPage = () => {
         </Card>
         </div>
 
-        {/* Módulo do Produto Escolhido - NEW */}
-        <ProductShowcaseCard tipo={proposal.tipo_produto || 'horizontal'} totalPanels={totalPanels} />
-
         {/* Módulo de Período da Campanha - NOVO */}
         {(() => {
           const startDate = new Date(proposal.created_at);
@@ -1673,6 +1670,9 @@ const PropostaPublicaPage = () => {
             </Card>
           );
         })()}
+
+        {/* Módulo do Produto Escolhido - NEW */}
+        <ProductShowcaseCard tipo={proposal.tipo_produto || 'horizontal'} totalPanels={totalPanels} />
 
         {/* Lista de Prédios */}
         <Card className="p-4 bg-white/80 backdrop-blur-sm">
