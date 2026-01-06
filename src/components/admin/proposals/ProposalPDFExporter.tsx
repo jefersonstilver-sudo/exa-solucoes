@@ -426,11 +426,11 @@ export class ProposalPDFExporter {
     this.setColor(this.colors.white, 'fill');
     this.doc.roundedRect(mockupX, mockupY, mockupWidth, mockupHeight, 2, 2, 'F');
     
-    // Tentar carregar mockup
+    // Tentar carregar mockup (URLs públicas sem expiração)
     try {
       const mockupUrl = isVertical 
-        ? 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/mockup/mockup-vertical.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9tb2NrdXAvbW9ja3VwLXZlcnRpY2FsLnBuZyIsImlhdCI6MTc1MTY2Mjk3MiwiZXhwIjozMTcwODM2MDk3Mn0.rFiKMNhWvvmfOO8FTLbHJ8GmhWAZQQhXfOHc7jPxlJM'
-        : 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/mockup/mockup-horizontal.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9tb2NrdXAvbW9ja3VwLWhvcml6b250YWwucG5nIiwiaWF0IjoxNzUxNjYyOTQ5LCJleHAiOjMxNzA4MzYwOTQ5fQ.q5eFN0qyKFHTHTKYdg8VGCy7Y1MFwfqHWEqDKPqhbhU';
+        ? 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/mockup/mockup-vertical.png'
+        : 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/mockup/mockup-horizontal.png';
       
       const mockupDataUrl = await this.loadImageAsDataURL(mockupUrl);
       
