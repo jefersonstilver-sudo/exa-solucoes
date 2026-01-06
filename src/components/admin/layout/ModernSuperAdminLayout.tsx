@@ -55,7 +55,7 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
           <div className="relative z-30"><ModernAdminSidebar /></div>
           
           {/* Botão 3D vermelho elegante na interseção sidebar/header */}
-          {!isFullscreenMode && <SidebarTriggerPositioned isTablet={isTablet} />}
+          <SidebarTriggerPositioned isTablet={isTablet} />
           
           <SidebarInset className="flex flex-col w-full overflow-x-hidden">
             {/* Header com logo EXA - oculto em modo fullscreen */}
