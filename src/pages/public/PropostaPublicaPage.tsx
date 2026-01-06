@@ -15,6 +15,8 @@ import { PaymentSuccessModal } from '@/components/public/PaymentSuccessModal';
 import { ContractDataModal } from '@/components/public/ContractDataModal';
 import { ContractFullPreview } from '@/components/public/ContractFullPreview';
 import { ContractLoadingScreen } from '@/components/public/ContractLoadingScreen';
+import { ProductShowcaseCard } from '@/components/public/proposal/ProductShowcaseCard';
+import { TechnicalSpecsGrid } from '@/components/public/proposal/TechnicalSpecsGrid';
 
 // Contract flow type
 type ContractFlowStep = 'idle' | 'loading' | 'collecting' | 'generating' | 'previewing' | 'accepted';
@@ -1624,6 +1626,10 @@ const PropostaPublicaPage = () => {
             </div>
         </Card>
         </div>
+
+        {/* Módulo do Produto Escolhido - NEW */}
+        <ProductShowcaseCard tipo={proposal.tipo_produto || 'horizontal'} />
+        <TechnicalSpecsGrid tipo={proposal.tipo_produto || 'horizontal'} />
 
         {/* Módulo de Período da Campanha - NOVO */}
         {(() => {
