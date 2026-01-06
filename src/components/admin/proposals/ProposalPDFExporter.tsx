@@ -78,17 +78,25 @@ export class ProposalPDFExporter {
     });
   }
 
-  private async loadImageAsDataURL(url: string): Promise<string> {
+  // Método otimizado para imagens genéricas: redimensiona e comprime
+  private async loadImageAsDataURL(url: string, maxWidth: number = 400, maxHeight: number = 600): Promise<string> {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
+        // Calcular escala mantendo proporção
+        const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+        const targetWidth = img.width * scale;
+        const targetHeight = img.height * scale;
+        
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx?.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
+        
+        // Usar JPEG com qualidade 0.7 para reduzir tamanho drasticamente
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
       img.onerror = reject;
       img.src = url;
@@ -130,17 +138,22 @@ export class ProposalPDFExporter {
     });
   }
 
-  // FASE 1: Método para carregar logo em preto para impressão
-  private async loadImageAsDataURLBlack(url: string): Promise<string> {
+  // FASE 1: Método para carregar logo em preto para impressão (otimizado)
+  private async loadImageAsDataURLBlack(url: string, maxSize: number = 100): Promise<string> {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
+        // Redimensionar para tamanho máximo mantendo proporção
+        const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+        const targetWidth = img.width * scale;
+        const targetHeight = img.height * scale;
+        
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx?.drawImage(img, 0, 0);
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
         
         // Aplicar filtro preto/escala de cinza para impressão
         const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
@@ -158,6 +171,7 @@ export class ProposalPDFExporter {
           ctx?.putImageData(imageData, 0, 0);
         }
         
+        // Usar PNG para manter transparência do logo, mas com tamanho reduzido
         resolve(canvas.toDataURL('image/png'));
       };
       img.onerror = reject;
@@ -635,23 +649,17 @@ export class ProposalPDFExporter {
 
   private async drawVerticalPremiumShowcase(): Promise<void> {
     try {
-      const imgData = await this.loadImageAsDataURL(verticalPremiumShowcase);
+      // Usar loadMockupOptimized para compressão JPEG com qualidade reduzida
+      const { dataUrl, aspectRatio } = await this.loadMockupOptimized(verticalPremiumShowcase, 400, 600);
       
       // Calcular dimensões mantendo proporção - largura total da página
       const imgWidth = this.contentWidth;
-      
-      // Estimar altura baseado em proporção típica (ajustar conforme necessário)
-      const img = new Image();
-      img.src = verticalPremiumShowcase;
-      await new Promise((resolve) => {
-        img.onload = resolve;
-      });
-      const aspectRatio = img.height / img.width;
-      const imgHeight = imgWidth * aspectRatio;
+      const imgHeight = imgWidth / aspectRatio;
       
       this.checkPageBreak(imgHeight + 10);
       
-      this.doc.addImage(imgData, 'PNG', this.margin, this.yPosition, imgWidth, imgHeight);
+      // Usar JPEG em vez de PNG para tamanho muito menor
+      this.doc.addImage(dataUrl, 'JPEG', this.margin, this.yPosition, imgWidth, imgHeight);
       this.yPosition += imgHeight + 8;
     } catch (error) {
       console.error('Erro ao carregar imagem Vertical Premium:', error);
