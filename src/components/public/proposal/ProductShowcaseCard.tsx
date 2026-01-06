@@ -9,6 +9,7 @@ import mockupVertical from '@/assets/mockups/mockup-vertical.png';
 
 interface ProductShowcaseCardProps {
   tipo: 'horizontal' | 'vertical_premium';
+  totalPanels?: number;
 }
 
 interface FeatureItemProps {
@@ -28,7 +29,7 @@ const FeatureItem = ({ icon: Icon, text, boldText }: FeatureItemProps) => (
   </div>
 );
 
-export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo }) => {
+export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, totalPanels = 1 }) => {
   const { specifications, isLoading } = useVideoSpecifications();
   
   const isVertical = tipo === 'vertical_premium';
@@ -110,8 +111,16 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo }
             <FeatureItem 
               icon={TrendingUp} 
               text="" 
-              boldText={`${specs.exibicoesDia.toLocaleString('pt-BR')} vezes por dia`} 
+              boldText={`${(specs.exibicoesDia * totalPanels).toLocaleString('pt-BR')} vezes por dia`} 
             />
+          </div>
+
+          {/* Minimalist audience indicator */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <p className="text-xs text-muted-foreground italic flex items-center gap-2">
+              <Users className="w-3.5 h-3.5" />
+              Em média, moradores utilizam o elevador 40× por semana
+            </p>
           </div>
         </div>
       </div>
