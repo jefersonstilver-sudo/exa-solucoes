@@ -400,23 +400,15 @@ const PropostaPublicaPage = () => {
           }
         }
 
-        // Buscar dados do vendedor (nome, telefone, email)
-        if (data.created_by) {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('nome, telefone, email')
-            .eq('id', data.created_by)
-            .single();
-          
-          if (userData?.nome) {
-            setSellerName(userData.nome);
-          }
-          if (userData?.telefone) {
-            setSellerPhone(userData.telefone);
-          }
-          if (userData?.email) {
-            setSellerEmail(userData.email);
-          }
+        // Usar dados do vendedor salvos na proposta
+        if (data.seller_name) {
+          setSellerName(data.seller_name);
+        }
+        if (data.seller_phone) {
+          setSellerPhone(data.seller_phone);
+        }
+        if (data.seller_email) {
+          setSellerEmail(data.seller_email);
         }
 
       } catch (err) {
