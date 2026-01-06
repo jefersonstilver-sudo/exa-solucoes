@@ -1887,61 +1887,6 @@ const PropostaPublicaPage = () => {
           </div>
         )}
 
-        {/* Seção de Vídeos - Conheça a EXA */}
-        <Card className="p-4 bg-white/80 backdrop-blur-sm border border-gray-200">
-          <h3 className="font-semibold text-sm mb-3 flex items-center gap-2 text-[#9C1E1E]">
-            <Video className="h-4 w-4" />
-            Conheça a EXA Mídia
-          </h3>
-          <div className="flex flex-col gap-2">
-            <Button 
-              variant="outline" 
-              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
-              onClick={() => window.open('https://drive.google.com/file/d/19g-1y4dzi60ydc5yXJKDD6sW6MPpyCaZ/view?usp=drive_link', '_blank')}
-            >
-              <Video className="h-4 w-4 mr-2 text-[#9C1E1E]" />
-              Assistir Vídeo Institucional
-              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
-              onClick={() => window.open('https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view?usp=drive_link', '_blank')}
-            >
-              <FileText className="h-4 w-4 mr-2 text-[#9C1E1E]" />
-              Ver Mídia Kit
-              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
-              onClick={() => window.open('https://examidia.com.br', '_blank')}
-            >
-              <Globe className="h-4 w-4 mr-2 text-[#9C1E1E]" />
-              Visitar Nosso Site
-              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
-              onClick={() => window.open('https://examidia.com.br/quem-somos', '_blank')}
-            >
-              <Users className="h-4 w-4 mr-2 text-[#9C1E1E]" />
-              Quem Somos
-              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
-              onClick={() => window.open('https://drive.google.com/drive/folders/1GgZwyYLZdlqvCqElaaWJQ9BEbYPNMkmR?usp=sharing', '_blank')}
-            >
-              <Video className="h-4 w-4 mr-2 text-[#9C1E1E]" />
-              Mais Vídeos da EXA
-              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
-            </Button>
-          </div>
-        </Card>
-
         {/* Botões de Ação - SÓ aparecem se proposta ainda pode ser respondida */}
         {!['aceita', 'recusada', 'expirada'].includes(proposal.status) && (
           <div className="space-y-3 pt-4">
@@ -2096,6 +2041,61 @@ const PropostaPublicaPage = () => {
             )}
           </div>
         )}
+
+        {/* Seção de Vídeos - Conheça a EXA */}
+        <Card className="p-4 bg-white/80 backdrop-blur-sm border border-gray-200">
+          <h3 className="font-semibold text-sm mb-3 flex items-center gap-2 text-[#9C1E1E]">
+            <Video className="h-4 w-4" />
+            Conheça a EXA Mídia
+          </h3>
+          <div className="flex flex-col gap-2">
+            <Button 
+              variant="outline" 
+              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
+              onClick={() => window.open('https://drive.google.com/file/d/19g-1y4dzi60ydc5yXJKDD6sW6MPpyCaZ/view?usp=drive_link', '_blank')}
+            >
+              <Video className="h-4 w-4 mr-2 text-[#9C1E1E]" />
+              Assistir Vídeo Institucional
+              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
+              onClick={() => window.open('https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view?usp=drive_link', '_blank')}
+            >
+              <FileText className="h-4 w-4 mr-2 text-[#9C1E1E]" />
+              Ver Mídia Kit
+              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
+              onClick={() => window.open('https://examidia.com.br', '_blank')}
+            >
+              <Globe className="h-4 w-4 mr-2 text-[#9C1E1E]" />
+              Visitar Nosso Site
+              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
+              onClick={() => window.open('https://examidia.com.br/quem-somos', '_blank')}
+            >
+              <Users className="h-4 w-4 mr-2 text-[#9C1E1E]" />
+              Quem Somos
+              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
+              onClick={() => window.open('https://drive.google.com/drive/folders/1GgZwyYLZdlqvCqElaaWJQ9BEbYPNMkmR?usp=sharing', '_blank')}
+            >
+              <Video className="h-4 w-4 mr-2 text-[#9C1E1E]" />
+              Mais Vídeos da EXA
+              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+            </Button>
+          </div>
+        </Card>
 
         {/* Botão de baixar PDF - sempre visível */}
         <Button
