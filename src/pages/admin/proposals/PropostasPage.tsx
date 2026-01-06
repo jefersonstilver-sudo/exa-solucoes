@@ -23,6 +23,7 @@ import { ProposalPreviewModal } from '@/components/admin/proposals/ProposalPrevi
 import { ProposalsPeriodSelector, getDefaultPeriod, type PeriodRange } from '@/components/admin/proposals/ProposalsPeriodSelector';
 import { SellerStatsPanel } from '@/components/admin/proposals/SellerStatsPanel';
 import { ProposalReminderIndicator } from '@/components/admin/proposals/ProposalReminderIndicator';
+import { ProposalTimeIndicator } from '@/components/admin/proposals/ProposalTimeIndicator';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Proposal {
@@ -844,6 +845,12 @@ const PropostasPage = () => {
                             {proposal.number}
                           </span>
                           {getStatusBadge(proposal.status, proposal)}
+                          <ProposalTimeIndicator 
+                            createdAt={proposal.created_at}
+                            expiresAt={proposal.expires_at}
+                            status={proposal.status}
+                            compact
+                          />
                           {proposal.status === 'expirada' && (
                             <ProposalReminderIndicator 
                               proposalId={proposal.id} 

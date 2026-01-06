@@ -8,6 +8,7 @@ import { ptBR } from 'date-fns/locale';
 import { useLongPress } from '@/hooks/useLongPress';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { ProposalTimeIndicator } from './ProposalTimeIndicator';
 
 interface CustomInstallment {
   installment: number;
@@ -29,6 +30,7 @@ interface Proposal {
   duration_months: number;
   status: string;
   created_at: string;
+  expires_at: string | null;
   view_count: number | null;
   total_time_spent_seconds: number | null;
   is_viewing?: boolean;
@@ -121,6 +123,13 @@ export const ProposalMobileCard: React.FC<ProposalMobileCardProps> = ({
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-mono text-muted-foreground">{proposal.number}</span>
         <div className="flex items-center gap-1.5">
+          {/* Time indicator */}
+          <ProposalTimeIndicator 
+            createdAt={proposal.created_at}
+            expiresAt={proposal.expires_at}
+            status={proposal.status}
+            compact
+          />
           {/* Live indicator - só mostra quando heartbeat real < 45s */}
           {statusConfig.isLive && (
             <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-green-50 border border-green-200">
