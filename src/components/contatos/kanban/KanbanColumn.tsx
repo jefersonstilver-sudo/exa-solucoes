@@ -51,7 +51,12 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       </div>
 
       {/* Cards Container - área de drop deve cobrir todo o espaço */}
-      <div className="flex-1 overflow-y-auto p-1.5 min-h-[200px]">
+      <div className="flex-1 overflow-y-auto p-1.5 min-h-[200px] scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent hover:scrollbar-thumb-gray-300 scrollbar-thumb-rounded-full"
+        style={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(0,0,0,0.08) transparent'
+        }}
+      >
         <SortableContext 
           items={contacts.map(c => c.id)} 
           strategy={verticalListSortingStrategy}
