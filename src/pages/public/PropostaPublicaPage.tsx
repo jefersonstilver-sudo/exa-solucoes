@@ -1705,16 +1705,14 @@ const PropostaPublicaPage = () => {
           </div>
         </Card>
 
-        {/* Imagem Vertical Premium Showcase */}
-        {proposal.tipo_produto === 'vertical_premium' && (
-          <div className="w-full">
-            <img 
-              src="/vertical-premium-showcase.png" 
-              alt="Vertical Premium Showcase" 
-              className="w-full h-auto"
-            />
-          </div>
-        )}
+        {/* Infográfico EXA - Espaço é Posição */}
+        <div className="w-full">
+          <img 
+            src="/vertical-premium-showcase.png" 
+            alt="Na EXA, Espaço é Posição - Infográfico" 
+            className="w-full h-auto"
+          />
+        </div>
 
         {/* Card Especial para Cortesia - EXA Red Theme */}
         {isCortesia && (

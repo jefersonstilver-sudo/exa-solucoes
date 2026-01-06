@@ -1021,10 +1021,8 @@ export class ProposalPDFExporter {
     await this.drawProductShowcase(specs, tipoProduto, totalPanels);
     this.drawBuildingsTable(buildings);
     
-    // Imagem Vertical Premium Showcase (apenas para vertical_premium)
-    if (tipoProduto === 'vertical_premium') {
-      await this.drawVerticalPremiumShowcase();
-    }
+    // Infográfico EXA - Espaço é Posição
+    await this.drawVerticalPremiumShowcase();
     
     // Condições comerciais (com destaque no valor à vista)
     this.drawCommercialConditions(proposal, isCortesia, baseTotalValue);
