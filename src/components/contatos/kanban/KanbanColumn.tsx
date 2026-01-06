@@ -50,13 +50,13 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         </span>
       </div>
 
-      {/* Cards Container */}
-      <div className="flex-1 overflow-y-auto p-1.5">
+      {/* Cards Container - área de drop deve cobrir todo o espaço */}
+      <div className="flex-1 overflow-y-auto p-1.5 min-h-[200px]">
         <SortableContext 
           items={contacts.map(c => c.id)} 
           strategy={verticalListSortingStrategy}
         >
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 min-h-full">
             {contacts.map(contact => (
               <KanbanCard
                 key={contact.id}
@@ -69,8 +69,12 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
             ))}
             
             {contacts.length === 0 && (
-              <div className="text-center py-6 text-gray-400 text-xs">
-                <p>Nenhum contato</p>
+              <div className={cn(
+                "flex-1 min-h-[150px] flex items-center justify-center text-gray-400 text-xs rounded-lg border-2 border-dashed border-transparent",
+                "transition-all duration-200",
+                isOver && "border-purple-300 bg-purple-50/50"
+              )}>
+                <p>Solte aqui</p>
               </div>
             )}
           </div>
