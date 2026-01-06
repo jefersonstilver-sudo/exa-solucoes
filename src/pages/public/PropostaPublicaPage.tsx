@@ -1633,7 +1633,7 @@ const PropostaPublicaPage = () => {
         </div>
 
         {/* Módulo do Produto Escolhido - NEW */}
-        <ProductShowcaseCard tipo={proposal.tipo_produto || 'horizontal'} />
+        <ProductShowcaseCard tipo={proposal.tipo_produto || 'horizontal'} totalPanels={totalPanels} />
         <TechnicalSpecsGrid tipo={proposal.tipo_produto || 'horizontal'} />
 
         {/* Módulo de Período da Campanha - NOVO */}
