@@ -140,6 +140,7 @@ const NovaPropostaPage = () => {
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sendViaWhatsApp, setSendViaWhatsApp] = useState(true);
   const [sendViaEmail, setSendViaEmail] = useState(false);
+  const [onlyGenerateLink, setOnlyGenerateLink] = useState(false);
 
   // Estados para Cortesia
   const [cortesiaConfirmDialogOpen, setCortesiaConfirmDialogOpen] = useState(false);
@@ -516,7 +517,7 @@ const NovaPropostaPage = () => {
 
   // Mutation para salvar proposta
   const createProposalMutation = useMutation({
-    mutationFn: async (sendOptions: { whatsapp: boolean; email: boolean }) => {
+    mutationFn: async (sendOptions: { whatsapp: boolean; email: boolean; onlyLink?: boolean }) => {
       const { data: { user } } = await supabase.auth.getUser();
       
       const buildingsData = selectedBuildingsData.map(b => ({
@@ -663,9 +664,11 @@ const NovaPropostaPage = () => {
         }
       }
 
-      return proposal;
+      return { proposal, onlyLink: sendOptions.onlyLink };
     },
-    onSuccess: (proposal) => {
+    onSuccess: (result) => {
+      const { proposal, onlyLink } = result;
+      
       // Salvar dados do cliente no histórico de autocomplete
       saveAutocomplete({
         firstName: clientData.firstName,
@@ -678,7 +681,19 @@ const NovaPropostaPage = () => {
       });
       
       queryClient.invalidateQueries({ queryKey: ['proposals'] });
-      toast.success(`Proposta ${proposal.number} criada e enviada!`);
+      
+      if (onlyLink) {
+        // Copiar link para clipboard
+        const proposalUrl = `${window.location.origin}/proposta/${proposal.id}`;
+        navigator.clipboard.writeText(proposalUrl).then(() => {
+          toast.success(`Proposta ${proposal.number} criada! Link copiado para área de transferência.`);
+        }).catch(() => {
+          toast.success(`Proposta ${proposal.number} criada! URL: ${proposalUrl}`);
+        });
+      } else {
+        toast.success(`Proposta ${proposal.number} criada e enviada!`);
+      }
+      
       setSendDialogOpen(false);
       navigate(buildPath('propostas'));
     },
@@ -734,15 +749,43 @@ const NovaPropostaPage = () => {
     setSendDialogOpen(true);
   };
 
+  // Handlers para seleção mutuamente exclusiva de "Apenas Gerar Link"
+  const handleOnlyLinkChange = (checked: boolean) => {
+    if (checked) {
+      setSendViaWhatsApp(false);
+      setSendViaEmail(false);
+    }
+    setOnlyGenerateLink(checked);
+  };
+
+  const handleWhatsAppChange = (checked: boolean) => {
+    if (checked && onlyGenerateLink) {
+      setOnlyGenerateLink(false);
+    }
+    setSendViaWhatsApp(checked);
+  };
+
+  const handleEmailChange = (checked: boolean) => {
+    if (checked && onlyGenerateLink) {
+      setOnlyGenerateLink(false);
+    }
+    setSendViaEmail(checked);
+  };
+
   const handleSendProposal = () => {
-    if (!sendViaWhatsApp && !sendViaEmail) {
+    if (!sendViaWhatsApp && !sendViaEmail && !onlyGenerateLink) {
       toast.error('Selecione ao menos uma forma de envio');
       return;
     }
-    // REGRA: Se email está selecionado, SEMPRE enviar também por WhatsApp (se tiver telefone)
-    // Isso garante que o cliente receba por ambos os canais
-    const shouldSendWhatsApp = sendViaWhatsApp || (sendViaEmail && !!clientData.phone);
-    createProposalMutation.mutate({ whatsapp: shouldSendWhatsApp, email: sendViaEmail });
+    
+    if (onlyGenerateLink) {
+      // Apenas gerar link, sem notificações
+      createProposalMutation.mutate({ whatsapp: false, email: false, onlyLink: true });
+    } else {
+      // REGRA: Se email está selecionado, SEMPRE enviar também por WhatsApp (se tiver telefone)
+      const shouldSendWhatsApp = sendViaWhatsApp || (sendViaEmail && !!clientData.phone);
+      createProposalMutation.mutate({ whatsapp: shouldSendWhatsApp, email: sendViaEmail });
+    }
   };
 
   // Handler para abrir dialog de confirmação de cortesia
@@ -1899,11 +1942,11 @@ const NovaPropostaPage = () => {
               className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
                 sendViaWhatsApp ? 'border-[#25D366] bg-[#25D366]/5' : 'border-gray-200'
               } ${!clientData.phone ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => clientData.phone && setSendViaWhatsApp(!sendViaWhatsApp)}
+              onClick={() => clientData.phone && handleWhatsAppChange(!sendViaWhatsApp)}
             >
               <Checkbox 
                 checked={sendViaWhatsApp} 
-                onCheckedChange={(checked) => clientData.phone && setSendViaWhatsApp(!!checked)}
+                onCheckedChange={(checked) => clientData.phone && handleWhatsAppChange(!!checked)}
                 disabled={!clientData.phone}
               />
               <MessageSquare className="h-5 w-5 text-[#25D366]" />
@@ -1920,11 +1963,11 @@ const NovaPropostaPage = () => {
               className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
                 sendViaEmail ? 'border-primary bg-primary/5' : 'border-gray-200'
               } ${!clientData.email ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => clientData.email && setSendViaEmail(!sendViaEmail)}
+              onClick={() => clientData.email && handleEmailChange(!sendViaEmail)}
             >
               <Checkbox 
                 checked={sendViaEmail} 
-                onCheckedChange={(checked) => clientData.email && setSendViaEmail(!!checked)}
+                onCheckedChange={(checked) => clientData.email && handleEmailChange(!!checked)}
                 disabled={!clientData.email}
               />
               <Mail className="h-5 w-5 text-primary" />
@@ -1932,6 +1975,26 @@ const NovaPropostaPage = () => {
                 <div className="font-medium text-sm">E-mail</div>
                 <div className="text-xs text-muted-foreground">
                   {clientData.email || 'E-mail não informado'}
+                </div>
+              </div>
+            </div>
+
+            {/* Apenas Gerar Link */}
+            <div 
+              className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                onlyGenerateLink ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+              }`}
+              onClick={() => handleOnlyLinkChange(!onlyGenerateLink)}
+            >
+              <Checkbox 
+                checked={onlyGenerateLink} 
+                onCheckedChange={(checked) => handleOnlyLinkChange(!!checked)}
+              />
+              <Link2 className="h-5 w-5 text-blue-500" />
+              <div className="flex-1">
+                <div className="font-medium text-sm">Apenas Gerar Link</div>
+                <div className="text-xs text-muted-foreground">
+                  Copiar URL sem notificar o cliente
                 </div>
               </div>
             </div>
@@ -2000,13 +2063,18 @@ const NovaPropostaPage = () => {
             </Button>
             <Button 
               onClick={handleSendProposal}
-              disabled={(!sendViaWhatsApp && !sendViaEmail) || createProposalMutation.isPending}
+              disabled={(!sendViaWhatsApp && !sendViaEmail && !onlyGenerateLink) || createProposalMutation.isPending}
               className="gap-2"
             >
               {createProposalMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Enviando...
+                  {onlyGenerateLink ? 'Criando...' : 'Enviando...'}
+                </>
+              ) : onlyGenerateLink ? (
+                <>
+                  <Link2 className="h-4 w-4" />
+                  Criar e Copiar Link
                 </>
               ) : (
                 <>
