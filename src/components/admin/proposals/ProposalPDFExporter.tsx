@@ -90,8 +90,44 @@ export class ProposalPDFExporter {
     });
   }
 
+  // FASE 1: Método para carregar logo em preto para impressão
+  private async loadImageAsDataURLBlack(url: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx?.drawImage(img, 0, 0);
+        
+        // Aplicar filtro preto/escala de cinza para impressão
+        const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+        if (imageData) {
+          const data = imageData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            // Manter alpha, converter RGB para preto
+            const alpha = data[i + 3];
+            if (alpha > 0) {
+              data[i] = 0;     // R -> preto
+              data[i + 1] = 0; // G -> preto
+              data[i + 2] = 0; // B -> preto
+            }
+          }
+          ctx?.putImageData(imageData, 0, 0);
+        }
+        
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
   private async generateValidationQRCode(proposalId: string): Promise<string> {
-    const validationUrl = `https://64f6806c-c0e0-422b-b85f-955fd5719544.lovableproject.com/propostacomercial/${proposalId}`;
+    // FASE 2: URL correta do domínio examidia.com.br
+    const validationUrl = `https://examidia.com.br/propostacomercial/${proposalId}`;
     return await QRCode.toDataURL(validationUrl, {
       width: 100,
       margin: 1,
@@ -184,14 +220,14 @@ export class ProposalPDFExporter {
     this.setColor(this.colors.white, 'fill');
     this.doc.rect(0, 0, this.pageWidth, 42, 'F');
     
-    // Logo EXA - carrega da URL e mantém proporção original
+    // FASE 1: Logo EXA em PRETO para impressão profissional
     try {
       const logoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
-      const dataUrl = await this.loadImageAsDataURL(logoUrl);
+      const dataUrl = await this.loadImageAsDataURLBlack(logoUrl);
       this.doc.addImage(dataUrl, 'PNG', this.margin, 10, 35, 22);
     } catch {
-      // Fallback: texto EXA estilizado
-      this.setColor(this.colors.exaRed);
+      // Fallback: texto EXA em preto
+      this.setColor(this.colors.darkGray);
       this.doc.setFontSize(24);
       this.doc.setFont('helvetica', 'bold');
       this.doc.text('EXA', this.margin + 5, 26);
@@ -707,29 +743,59 @@ export class ProposalPDFExporter {
     }
   }
 
+  // FASE 3: Seção "Conheça a EXA" com 4 botões CLICÁVEIS (interativos)
   private drawVideoLinksSection(): void {
-    this.checkPageBreak(28);
+    this.checkPageBreak(52);
     
     this.drawSectionTitle('CONHECA A EXA MIDIA');
     
-    // Box com links - SEM EMOJIS
-    this.setColor(this.colors.lightGray, 'fill');
-    this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, 20, 2, 2, 'F');
+    const links = [
+      { 
+        label: 'Assistir Video Institucional', 
+        url: 'https://drive.google.com/file/d/19g-1y4dzi60ydc5yXJKDD6sW6MPpyCaZ/view?usp=drive_link'
+      },
+      { 
+        label: 'Ver Midia Kit Completo', 
+        url: 'https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view?usp=drive_link'
+      },
+      { 
+        label: 'Visitar Nosso Site', 
+        url: 'https://examidia.com.br'
+      },
+      { 
+        label: 'Quem Somos', 
+        url: 'https://examidia.com.br/quem-somos'
+      }
+    ];
     
-    this.setColor(this.colors.darkGray);
-    this.doc.setFontSize(8);
-    this.doc.setFont('helvetica', 'normal');
+    links.forEach((link, index) => {
+      const y = this.yPosition + (index * 10);
+      
+      // Desenhar botão com fundo cinza claro
+      this.setColor(this.colors.lightGray, 'fill');
+      this.doc.roundedRect(this.margin, y, this.contentWidth, 9, 2, 2, 'F');
+      
+      // Borda sutil
+      this.setColor({ r: 200, g: 200, b: 200 }, 'draw');
+      this.doc.setLineWidth(0.2);
+      this.doc.roundedRect(this.margin, y, this.contentWidth, 9, 2, 2);
+      
+      // Texto do link em azul (indica clicável)
+      this.setColor({ r: 59, g: 130, b: 246 }); // Azul
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text(link.label, this.margin + 5, y + 6);
+      
+      // Adicionar link CLICÁVEL (interativo no PDF)
+      this.doc.link(this.margin, y, this.contentWidth, 9, { url: link.url });
+      
+      // Seta indicativa no lado direito
+      this.setColor(this.colors.mediumGray);
+      this.doc.setFontSize(10);
+      this.doc.text('>', this.pageWidth - this.margin - 8, y + 6);
+    });
     
-    this.doc.text('Video Institucional:', this.margin + 5, this.yPosition + 7);
-    this.setColor({ r: 59, g: 130, b: 246 });
-    this.doc.text('drive.google.com/file/d/19g-1y4dzi60ydc5yXJKDD6sW6MPpyCaZ', this.margin + 42, this.yPosition + 7);
-    
-    this.setColor(this.colors.darkGray);
-    this.doc.text('Midia Kit:', this.margin + 5, this.yPosition + 14);
-    this.setColor({ r: 59, g: 130, b: 246 });
-    this.doc.text('drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz', this.margin + 42, this.yPosition + 14);
-    
-    this.yPosition += 26;
+    this.yPosition += links.length * 10 + 6;
   }
 
   private drawGeneralConditions(specs: ProductSpecs): void {
@@ -875,16 +941,15 @@ export class ProposalPDFExporter {
     this.drawCommercialConditions(proposal, isCortesia, baseTotalValue);
     
     // PÁGINA 2 (se necessário, adiciona automaticamente)
-    // Links de vídeo
+    // Links de vídeo com botões CLICÁVEIS
     this.drawVideoLinksSection();
     
     // Condições gerais - DINÂMICAS
     this.drawGeneralConditions(specs);
     
-    // Área de assinaturas
-    this.drawSignatureArea();
+    // FASE 4: Removida área de assinaturas (this.drawSignatureArea())
     
-    // Footer com QR Code e contatos
+    // Footer com QR Code e contatos (FASE 5: mantido)
     await this.drawFooter(proposal, sellerName, sellerPhone, isCortesia);
     
     // Salvar
