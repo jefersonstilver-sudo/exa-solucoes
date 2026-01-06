@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DndContext, DragOverlay, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, defaultDropAnimationSideEffects } from '@dnd-kit/core';
+import { DndContext, DragOverlay, pointerWithin, KeyboardSensor, PointerSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, defaultDropAnimationSideEffects } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { Plus } from 'lucide-react';
 import { KanbanColumn } from './KanbanColumn';
@@ -106,7 +106,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       </div>;
   }
   return <>
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex gap-3 p-4 overflow-x-auto h-full">
           {columns.map(column => <KanbanColumn key={column.id} id={column.id} title={column.title} color={column.color} contacts={column.contacts} count={column.count} onOpenChat={handleOpenChat} onOpenSchedule={handleOpenSchedule} onOpenProfile={handleOpenProfile} />)}
         </div>
