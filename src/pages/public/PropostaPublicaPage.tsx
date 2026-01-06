@@ -410,6 +410,24 @@ const PropostaPublicaPage = () => {
         if (data.seller_email) {
           setSellerEmail(data.seller_email);
         }
+        
+        // Se phone ou email estão vazios, buscar do usuário created_by
+        if ((!data.seller_phone || !data.seller_email) && data.created_by) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('telefone, email')
+            .eq('id', data.created_by)
+            .maybeSingle();
+          
+          if (userData) {
+            if (!data.seller_phone && userData.telefone) {
+              setSellerPhone(userData.telefone);
+            }
+            if (!data.seller_email && userData.email) {
+              setSellerEmail(userData.email);
+            }
+          }
+        }
 
       } catch (err) {
         console.error('Erro ao carregar proposta:', err);
