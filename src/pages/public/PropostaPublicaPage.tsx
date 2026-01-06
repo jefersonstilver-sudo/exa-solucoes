@@ -847,10 +847,15 @@ const PropostaPublicaPage = () => {
       const exporter = new ProposalPDFExporter();
       // Pass enriched buildings and cortesia info
       await exporter.generateProposalPDF(
-        { ...proposal, selected_buildings: enrichedBuildings.length > 0 ? enrichedBuildings : proposal.selected_buildings },
+        { 
+          ...proposal, 
+          selected_buildings: enrichedBuildings.length > 0 ? enrichedBuildings : proposal.selected_buildings,
+          tipo_produto: proposal.tipo_produto || 'horizontal'
+        },
         sellerName,
         isCortesia,
-        baseTotalValue
+        baseTotalValue,
+        sellerPhone
       );
       toast.success('PDF baixado com sucesso!');
     } catch (err) {
