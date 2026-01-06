@@ -10,7 +10,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Contact, CATEGORIAS_CONFIG } from '@/types/contatos';
-import { CategoriaBadge, TemperaturaBadge, ScoreIndicator } from '@/components/contatos/common';
+import { CategoriaBadge, TemperaturaBadge, ScoreIndicator, OrigemBadge } from '@/components/contatos/common';
 import { useScoringRules } from '@/hooks/contatos';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { useActivityLogger } from '@/hooks/useActivityLogger';
@@ -232,6 +232,11 @@ const ContatoDetalhePage = () => {
                     </>
                   )}
                 </div>
+                {contact.origem && (
+                  <div className="mt-1.5">
+                    <OrigemBadge origem={contact.origem} size="sm" />
+                  </div>
+                )}
               </div>
 
               {/* Score / Satisfação */}
