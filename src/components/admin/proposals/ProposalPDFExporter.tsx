@@ -78,25 +78,44 @@ export class ProposalPDFExporter {
     });
   }
 
-  private async loadImageAsDataURL(url: string): Promise<string> {
+  // Constante para controlar tamanho do PDF (17-22MB target)
+  private readonly IMAGE_QUALITY = 0.55; // Qualidade JPEG para manter entre 17-22MB
+  private readonly MAX_IMAGE_WIDTH = 400; // Largura máxima de imagens
+  private readonly MAX_IMAGE_HEIGHT = 500; // Altura máxima de imagens
+
+  private async loadImageAsDataURL(url: string, maxWidth: number = this.MAX_IMAGE_WIDTH, maxHeight: number = this.MAX_IMAGE_HEIGHT): Promise<string> {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
+        // Calcular dimensões otimizadas mantendo proporção
+        let targetWidth = img.width;
+        let targetHeight = img.height;
+        
+        if (targetWidth > maxWidth) {
+          targetHeight = (maxWidth / targetWidth) * targetHeight;
+          targetWidth = maxWidth;
+        }
+        if (targetHeight > maxHeight) {
+          targetWidth = (maxHeight / targetHeight) * targetWidth;
+          targetHeight = maxHeight;
+        }
+        
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx?.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
+        // Usar JPEG com qualidade controlada para reduzir tamanho
+        resolve(canvas.toDataURL('image/jpeg', this.IMAGE_QUALITY));
       };
       img.onerror = reject;
       img.src = url;
     });
   }
 
-  // Método otimizado para mockups: redimensiona e comprime para PDF leve
-  private async loadMockupOptimized(url: string, maxWidth: number = 200, maxHeight: number = 300): Promise<{ dataUrl: string; aspectRatio: number }> {
+  // Método otimizado para mockups: redimensiona e comprime para PDF leve (17-22MB target)
+  private async loadMockupOptimized(url: string, maxWidth: number = 180, maxHeight: number = 280): Promise<{ dataUrl: string; aspectRatio: number }> {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -104,9 +123,9 @@ export class ProposalPDFExporter {
         // Calcular proporção original
         const aspectRatio = img.width / img.height;
         
-        // Calcular dimensões finais mantendo proporção
-        let targetWidth = maxWidth;
-        let targetHeight = maxWidth / aspectRatio;
+        // Calcular dimensões finais mantendo proporção (reduzidas para menor tamanho)
+        let targetWidth = Math.min(maxWidth, img.width);
+        let targetHeight = targetWidth / aspectRatio;
         
         if (targetHeight > maxHeight) {
           targetHeight = maxHeight;
@@ -121,8 +140,8 @@ export class ProposalPDFExporter {
         // Desenhar imagem redimensionada
         ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
         
-        // Usar JPEG com qualidade 0.7 para reduzir tamanho drasticamente
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        // Usar JPEG com qualidade controlada (0.55 para target 17-22MB)
+        const dataUrl = canvas.toDataURL('image/jpeg', this.IMAGE_QUALITY);
         resolve({ dataUrl, aspectRatio });
       };
       img.onerror = reject;
@@ -130,17 +149,32 @@ export class ProposalPDFExporter {
     });
   }
 
-  // FASE 1: Método para carregar logo em preto para impressão
+  // FASE 1: Método para carregar logo em preto para impressão (otimizado para tamanho)
   private async loadImageAsDataURLBlack(url: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
+        // Limitar tamanho do logo para reduzir tamanho do PDF
+        const maxLogoWidth = 150;
+        const maxLogoHeight = 100;
+        let targetWidth = img.width;
+        let targetHeight = img.height;
+        
+        if (targetWidth > maxLogoWidth) {
+          targetHeight = (maxLogoWidth / targetWidth) * targetHeight;
+          targetWidth = maxLogoWidth;
+        }
+        if (targetHeight > maxLogoHeight) {
+          targetWidth = (maxLogoHeight / targetHeight) * targetWidth;
+          targetHeight = maxLogoHeight;
+        }
+        
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx?.drawImage(img, 0, 0);
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
         
         // Aplicar filtro preto/escala de cinza para impressão
         const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
@@ -158,6 +192,7 @@ export class ProposalPDFExporter {
           ctx?.putImageData(imageData, 0, 0);
         }
         
+        // Usar PNG para manter transparência do logo, mas com tamanho reduzido
         resolve(canvas.toDataURL('image/png'));
       };
       img.onerror = reject;
@@ -167,9 +202,10 @@ export class ProposalPDFExporter {
 
   private async generateValidationQRCode(proposalId: string): Promise<string> {
     // FASE 2: URL correta do domínio examidia.com.br
+    // QR Code menor para reduzir tamanho do PDF (era 100, agora 80)
     const validationUrl = `https://examidia.com.br/propostacomercial/${proposalId}`;
     return await QRCode.toDataURL(validationUrl, {
-      width: 100,
+      width: 80,
       margin: 1,
       color: { dark: '#1F2937', light: '#FFFFFF' }
     });
@@ -635,7 +671,11 @@ export class ProposalPDFExporter {
 
   private async drawVerticalPremiumShowcase(): Promise<void> {
     try {
-      const imgData = await this.loadImageAsDataURL(verticalPremiumShowcase);
+      // Limitar dimensões máximas para controlar tamanho do PDF (17-22MB target)
+      const maxShowcaseWidth = 500; // Reduzido de full resolution
+      const maxShowcaseHeight = 600;
+      
+      const imgData = await this.loadImageAsDataURL(verticalPremiumShowcase, maxShowcaseWidth, maxShowcaseHeight);
       
       // Calcular dimensões mantendo proporção - largura total da página
       const imgWidth = this.contentWidth;
@@ -651,7 +691,8 @@ export class ProposalPDFExporter {
       
       this.checkPageBreak(imgHeight + 10);
       
-      this.doc.addImage(imgData, 'PNG', this.margin, this.yPosition, imgWidth, imgHeight);
+      // Usar JPEG para reduzir tamanho significativamente
+      this.doc.addImage(imgData, 'JPEG', this.margin, this.yPosition, imgWidth, imgHeight);
       this.yPosition += imgHeight + 8;
     } catch (error) {
       console.error('Erro ao carregar imagem Vertical Premium:', error);
