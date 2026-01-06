@@ -1504,38 +1504,40 @@ const PropostaPublicaPage = () => {
       )}
 
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
-      {/* Header - Always EXA Red */}
-      <header className="bg-gradient-to-r from-[#4a0f0f] to-[#7D1818] text-white p-4">
+      {/* Header - Always EXA Red - Mobile Optimized */}
+      <header className="bg-gradient-to-r from-[#4a0f0f] to-[#7D1818] text-white px-3 py-4 sm:p-4">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-48 h-36 bg-white/10 rounded-lg flex items-center justify-center">
+          {/* Mobile: Logo centralizada no topo */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+            {/* Logo - Responsiva: menor no mobile, maior no desktop */}
+            <div className="w-20 h-16 sm:w-32 md:w-48 sm:h-24 md:h-36 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0">
               <UnifiedLogo 
                 size="custom" 
                 variant="light"
-                className="w-36 h-36"
+                className="w-16 h-16 sm:w-24 sm:h-24 md:w-36 md:h-36"
               />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 text-center sm:text-left">
             {isCortesia ? (
-                <div className="flex items-center gap-2">
-                  <Gift className="h-5 w-5" />
-                  <h1 className="text-lg font-bold">Presente Cortesia • EXA Mídia</h1>
-                  <PartyPopper className="h-5 w-5" />
+                <div className="flex items-center justify-center sm:justify-start gap-2">
+                  <Gift className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <h1 className="text-sm sm:text-lg font-bold">Presente Cortesia • EXA Mídia</h1>
+                  <PartyPopper className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
               ) : (
                 <div>
-                  <h1 className="text-lg font-bold">Proposta Comercial EXA Mídia</h1>
-                  <span className="inline-flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded text-xs mt-1">
-                    <Video className="h-3 w-3" />
+                  <h1 className="text-sm sm:text-lg font-bold">Proposta Comercial EXA Mídia</h1>
+                  <span className="inline-flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded text-[10px] sm:text-xs mt-1">
+                    <Video className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                     {proposal.tipo_produto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal Tradicional'}
                   </span>
                 </div>
               )}
-              <div className="flex flex-wrap gap-2 mt-2">
-                <span className="bg-white/10 px-3 py-1 rounded-full text-xs font-medium">
+              <div className="flex flex-wrap justify-center sm:justify-start gap-1.5 sm:gap-2 mt-2">
+                <span className="bg-white/10 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium">
                   {proposal.number}
                 </span>
-                <span className="bg-white/10 px-3 py-1 rounded-full text-xs">
+                <span className="bg-white/10 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs">
                   {new Date(proposal.created_at).toLocaleDateString('pt-BR')}
                 </span>
                 {(() => {
@@ -1548,23 +1550,23 @@ const PropostaPublicaPage = () => {
                   };
                   const config = statusConfig[proposal.status] || { bg: 'bg-gray-500', text: proposal.status };
                   return (
-                    <span className={`${config.bg} px-3 py-1 rounded-full text-xs font-medium`}>
+                    <span className={`${config.bg} px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium`}>
                       {config.text}
                     </span>
                   );
                 })()}
                 {isCortesia && (
-                  <span className="bg-white text-[#9C1E1E] px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                  <span className="bg-white text-[#9C1E1E] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold animate-pulse">
                     🎁 CORTESIA
                   </span>
                 )}
               </div>
             </div>
           </div>
-          <div className="text-sm opacity-90 space-y-1">
+          <div className="text-xs sm:text-sm opacity-90 space-y-0.5 sm:space-y-1 text-center sm:text-left">
             {/* Nome da Empresa - destacado */}
             {proposal.client_company_name && (
-              <div className="text-base font-bold">
+              <div className="text-sm sm:text-base font-bold">
                 🏢 {proposal.client_company_name}
               </div>
             )}
@@ -1576,7 +1578,7 @@ const PropostaPublicaPage = () => {
               <div>CNPJ: <strong>{proposal.client_cnpj}</strong></div>
             )}
             {proposal.client_address && (
-              <div className="flex items-center gap-1 text-xs opacity-80 mt-1">
+              <div className="flex items-center justify-center sm:justify-start gap-1 text-[10px] sm:text-xs opacity-80 mt-1">
                 📍 {proposal.client_address}
               </div>
             )}
@@ -1584,16 +1586,16 @@ const PropostaPublicaPage = () => {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto p-4 space-y-4">
+      <div className="max-w-4xl mx-auto px-3 py-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* Banner Cortesia Especial - EXA Red Theme */}
         {isCortesia && !['aceita', 'recusada', 'expirada'].includes(proposal.status) && (
-          <Card className="p-4 bg-gradient-to-r from-red-50 to-red-100 border-2 border-[#9C1E1E] text-center">
+          <Card className="p-3 sm:p-4 bg-gradient-to-r from-red-50 to-red-100 border-2 border-[#9C1E1E] text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Gift className="h-6 w-6 text-[#9C1E1E]" />
-              <span className="text-xl font-bold text-[#7D1818]">VOCÊ GANHOU UM PRESENTE!</span>
-              <PartyPopper className="h-6 w-6 text-[#9C1E1E]" />
+              <Gift className="h-5 w-5 sm:h-6 sm:w-6 text-[#9C1E1E]" />
+              <span className="text-base sm:text-xl font-bold text-[#7D1818]">VOCÊ GANHOU UM PRESENTE!</span>
+              <PartyPopper className="h-5 w-5 sm:h-6 sm:w-6 text-[#9C1E1E]" />
             </div>
-            <p className="text-sm text-[#7D1818]">
+            <p className="text-xs sm:text-sm text-[#7D1818]">
               A EXA Mídia está oferecendo <strong>{proposal.is_custom_days ? `${proposal.custom_days} ${proposal.custom_days === 1 ? 'dia' : 'dias'}` : `${proposal.duration_months} ${proposal.duration_months === 1 ? 'mês' : 'meses'}`}</strong> de publicidade gratuita para você!
             </p>
           </Card>
@@ -1601,18 +1603,18 @@ const PropostaPublicaPage = () => {
 
         {/* Banner de Status Destacado - para propostas já respondidas */}
         {(proposal.status === 'aceita' || proposal.status === 'recusada') && (
-          <Card className={`p-4 text-center ${
+          <Card className={`p-3 sm:p-4 text-center ${
             proposal.status === 'aceita' 
               ? 'bg-emerald-50 border-emerald-300' 
               : 'bg-red-50 border-red-300'
           }`}>
             <div className="flex items-center justify-center gap-2">
               {proposal.status === 'aceita' ? (
-                <Check className="h-6 w-6 text-emerald-600" />
+                <Check className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
               ) : (
-                <X className="h-6 w-6 text-red-600" />
+                <X className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
               )}
-              <span className={`text-lg font-semibold ${
+              <span className={`text-sm sm:text-lg font-semibold ${
                 proposal.status === 'aceita' ? 'text-emerald-700' : 'text-red-700'
               }`}>
                 {isCortesia 
@@ -1621,7 +1623,7 @@ const PropostaPublicaPage = () => {
                 }
               </span>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               {proposal.status === 'aceita' 
                 ? 'Agradecemos pela confiança! Nossa equipe entrará em contato.' 
                 : 'Caso mude de ideia, entre em contato conosco.'}
@@ -1631,39 +1633,39 @@ const PropostaPublicaPage = () => {
 
         {/* Aviso de Validade */}
         {proposal.expires_at && !['aceita', 'recusada'].includes(proposal.status) && (
-          <Card className="p-3 bg-amber-50 border-amber-200 flex items-center gap-2">
-            <Clock className="h-4 w-4 text-amber-600" />
-            <span className="text-sm text-amber-800">
-              Esta proposta é válida até <strong>{new Date(proposal.expires_at).toLocaleString('pt-BR')}</strong>
+          <Card className="p-2.5 sm:p-3 bg-amber-50 border-amber-200 flex items-center gap-2">
+            <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-600 flex-shrink-0" />
+            <span className="text-xs sm:text-sm text-amber-800">
+              Válida até <strong>{new Date(proposal.expires_at).toLocaleString('pt-BR')}</strong>
             </span>
           </Card>
         )}
 
-        {/* Resumo Rápido */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card className="p-3 text-center bg-white/80 backdrop-blur-sm">
-            <div className="text-2xl font-bold text-[#9C1E1E]">{buildings.length}</div>
-            <div className="text-xs text-muted-foreground">Prédios</div>
+        {/* Resumo Rápido - Grid 2x2 no mobile */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+          <Card className="p-2.5 sm:p-3 text-center bg-white/80 backdrop-blur-sm">
+            <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">{buildings.length}</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">Prédios</div>
           </Card>
-          <Card className="p-3 text-center bg-white/80 backdrop-blur-sm">
-            <div className="text-2xl font-bold text-[#9C1E1E]">{totalPanels}</div>
-            <div className="text-xs text-muted-foreground">Telas</div>
+          <Card className="p-2.5 sm:p-3 text-center bg-white/80 backdrop-blur-sm">
+            <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">{totalPanels}</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">Telas</div>
           </Card>
-          <Card className="p-3 text-center bg-white/80 backdrop-blur-sm">
-            <div className="text-2xl font-bold text-[#9C1E1E]">{(totalImpressions / 1000).toFixed(0)}k</div>
-            <div className="text-xs text-muted-foreground">Exibições/mês</div>
+          <Card className="p-2.5 sm:p-3 text-center bg-white/80 backdrop-blur-sm">
+            <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">{(totalImpressions / 1000).toFixed(0)}k</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">Exibições/mês</div>
           </Card>
-          <Card className="p-3 text-center bg-white/80 backdrop-blur-sm">
-            <div className="text-2xl font-bold text-[#9C1E1E]">
+          <Card className="p-2.5 sm:p-3 text-center bg-white/80 backdrop-blur-sm">
+            <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">
               {proposal.is_custom_days ? proposal.custom_days : proposal.duration_months}
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-[10px] sm:text-xs text-muted-foreground">
               {proposal.is_custom_days ? 'Dias' : 'Meses'}
             </div>
         </Card>
         </div>
 
-        {/* Módulo de Período da Campanha - NOVO */}
+        {/* Módulo de Período da Campanha - Mobile Optimized */}
         {(() => {
           const startDate = new Date(proposal.created_at);
           const endDate = proposal.is_custom_days && proposal.custom_days
@@ -1674,28 +1676,28 @@ const PropostaPublicaPage = () => {
             : differenceInDays(endDate, startDate);
           
           return (
-            <Card className="p-4 bg-white/80 backdrop-blur-sm border border-gray-200">
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar className="h-4 w-4 text-[#9C1E1E]" />
-                <h2 className="font-semibold">Período da Campanha</h2>
+            <Card className="p-3 sm:p-4 bg-white/80 backdrop-blur-sm border border-gray-200">
+              <div className="flex items-center gap-2 mb-2.5 sm:mb-3">
+                <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#9C1E1E]" />
+                <h2 className="font-semibold text-sm sm:text-base">Período da Campanha</h2>
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-1">Início</p>
-                  <p className="font-semibold text-sm text-[#9C1E1E]">
-                    {format(startDate, "dd/MM/yyyy", { locale: ptBR })}
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="text-center p-2 sm:p-3 bg-gray-50 rounded-lg">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">Início</p>
+                  <p className="font-semibold text-[11px] sm:text-sm text-[#9C1E1E]">
+                    {format(startDate, "dd/MM/yy", { locale: ptBR })}
                   </p>
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-1">Término</p>
-                  <p className="font-semibold text-sm text-[#9C1E1E]">
-                    {format(endDate, "dd/MM/yyyy", { locale: ptBR })}
+                <div className="text-center p-2 sm:p-3 bg-gray-50 rounded-lg">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">Término</p>
+                  <p className="font-semibold text-[11px] sm:text-sm text-[#9C1E1E]">
+                    {format(endDate, "dd/MM/yy", { locale: ptBR })}
                   </p>
                 </div>
-                <div className="text-center p-3 bg-gradient-to-br from-[#9C1E1E] to-[#7D1818] rounded-lg">
-                  <p className="text-xs text-white/80 mb-1">Total</p>
-                  <p className="font-bold text-lg text-white">{totalDays}</p>
-                  <p className="text-xs text-white/80">dias</p>
+                <div className="text-center p-2 sm:p-3 bg-gradient-to-br from-[#9C1E1E] to-[#7D1818] rounded-lg">
+                  <p className="text-[10px] sm:text-xs text-white/80 mb-0.5 sm:mb-1">Total</p>
+                  <p className="font-bold text-base sm:text-lg text-white">{totalDays}</p>
+                  <p className="text-[10px] sm:text-xs text-white/80">dias</p>
                 </div>
               </div>
             </Card>
@@ -1705,13 +1707,13 @@ const PropostaPublicaPage = () => {
         {/* Módulo do Produto Escolhido - NEW */}
         <ProductShowcaseCard tipo={proposal.tipo_produto || 'horizontal'} totalPanels={totalPanels} />
 
-        {/* Lista de Prédios */}
-        <Card className="p-4 bg-white/80 backdrop-blur-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <Building2 className="h-4 w-4 text-[#9C1E1E]" />
-            <h2 className="font-semibold">Prédios Incluídos</h2>
+        {/* Lista de Prédios - Mobile Optimized */}
+        <Card className="p-3 sm:p-4 bg-white/80 backdrop-blur-sm">
+          <div className="flex items-center gap-2 mb-2.5 sm:mb-3">
+            <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#9C1E1E]" />
+            <h2 className="font-semibold text-sm sm:text-base">Prédios Incluídos</h2>
           </div>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
+          <div className="space-y-1.5 sm:space-y-2 max-h-40 sm:max-h-48 overflow-y-auto scrollbar-hide">
             {buildings.map((building: any, index: number) => {
               // Cálculo dinâmico: 11.610 exibições por tela/mês (Manual v3.0)
               const exibicoesPorTela = 11610;
@@ -1720,15 +1722,15 @@ const PropostaPublicaPage = () => {
               
               return (
                 <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
-                  <div>
-                    <div className="font-medium text-sm">{building.building_name || building.nome}</div>
-                    <div className="text-xs text-muted-foreground">
+                  <div className="flex-1 min-w-0 pr-2">
+                    <div className="font-medium text-xs sm:text-sm truncate">{building.building_name || building.nome}</div>
+                    <div className="text-[10px] sm:text-xs text-muted-foreground">
                       {building.bairro} • {telas} tela(s)
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium">{exibicoesCalculadas.toLocaleString()}</div>
-                    <div className="text-xs text-muted-foreground">exib/mês</div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-xs sm:text-sm font-medium">{exibicoesCalculadas.toLocaleString()}</div>
+                    <div className="text-[10px] sm:text-xs text-muted-foreground">exib/mês</div>
                   </div>
                 </div>
               );
@@ -1745,23 +1747,23 @@ const PropostaPublicaPage = () => {
           />
         </div>
 
-        {/* Card Especial para Cortesia - EXA Red Theme */}
+        {/* Card Especial para Cortesia - Mobile Optimized */}
         {isCortesia && (
-          <Card className="p-6 bg-gradient-to-br from-red-50 to-white border-2 border-[#9C1E1E] shadow-lg">
-            <div className="text-center space-y-4">
+          <Card className="p-4 sm:p-6 bg-gradient-to-br from-red-50 to-white border-2 border-[#9C1E1E] shadow-lg">
+            <div className="text-center space-y-3 sm:space-y-4">
               <div className="flex items-center justify-center gap-2">
-                <Gift className="h-8 w-8 text-[#9C1E1E]" />
-                <span className="text-2xl font-bold text-[#7D1818]">CORTESIA</span>
-                <PartyPopper className="h-8 w-8 text-[#9C1E1E]" />
+                <Gift className="h-6 w-6 sm:h-8 sm:w-8 text-[#9C1E1E]" />
+                <span className="text-xl sm:text-2xl font-bold text-[#7D1818]">CORTESIA</span>
+                <PartyPopper className="h-6 w-6 sm:h-8 sm:w-8 text-[#9C1E1E]" />
               </div>
               
               {/* Valor que seria cobrado */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-sm text-muted-foreground mb-2">Se fosse pago, custaria:</p>
-                <div className="text-xl text-muted-foreground line-through">
+              <div className="bg-gray-50 rounded-xl p-3 sm:p-4">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-1 sm:mb-2">Se fosse pago, custaria:</p>
+                <div className="text-lg sm:text-xl text-muted-foreground line-through">
                   {baseTotalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                   ({proposal.is_custom_days 
                     ? `${proposal.custom_days} ${proposal.custom_days === 1 ? 'dia' : 'dias'}` 
                     : `${proposal.duration_months} ${proposal.duration_months === 1 ? 'mês' : 'meses'} × ${baseMonthlyTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês`})
@@ -1769,59 +1771,59 @@ const PropostaPublicaPage = () => {
               </div>
               
               {/* Valor da cortesia */}
-              <div className="bg-gradient-to-r from-[#9C1E1E] to-[#7D1818] rounded-xl p-4">
-                <p className="text-sm text-white/80 font-medium mb-1">Seu presente:</p>
-                <div className="text-4xl font-bold text-white">
+              <div className="bg-gradient-to-r from-[#9C1E1E] to-[#7D1818] rounded-xl p-3 sm:p-4">
+                <p className="text-xs sm:text-sm text-white/80 font-medium mb-1">Seu presente:</p>
+                <div className="text-3xl sm:text-4xl font-bold text-white">
                   R$ 0,00
                 </div>
-                <p className="text-sm text-white/80 mt-2">🎁 Presente especial da EXA Mídia</p>
+                <p className="text-xs sm:text-sm text-white/80 mt-1 sm:mt-2">🎁 Presente especial da EXA Mídia</p>
               </div>
               
               {/* Badge de economia */}
-              <div className="flex items-center justify-center gap-2">
-                <span className="bg-[#9C1E1E] text-white text-sm font-bold px-4 py-2 rounded-full">
-                  💰 Economia de 100% — {baseTotalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              <div className="flex items-center justify-center">
+                <span className="bg-[#9C1E1E] text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full">
+                  💰 100% OFF — {baseTotalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </span>
               </div>
             </div>
           </Card>
         )}
 
-        {/* Planos - NÃO APARECEM para cortesia */}
+        {/* Planos - NÃO APARECEM para cortesia - Mobile Optimized */}
         {!isCortesia && (
-          <div className="space-y-3">
-            <h2 className="font-semibold flex items-center gap-2">
-              <Eye className="h-4 w-4 text-[#9C1E1E]" />
+          <div className="space-y-2.5 sm:space-y-3">
+            <h2 className="font-semibold text-sm sm:text-base flex items-center gap-2">
+              <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#9C1E1E]" />
               {proposal.payment_type === 'custom' ? 'Condição Personalizada' : 'Escolha sua condição'}
             </h2>
 
             {/* PAGAMENTO PERSONALIZADO */}
             {proposal.payment_type === 'custom' && proposal.custom_installments ? (
-              <Card className="p-4 border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg">
-                <div className="space-y-4">
+              <Card className="p-3 sm:p-4 border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg">
+                <div className="space-y-3 sm:space-y-4">
                   <div className="flex items-center gap-2">
-                    <span className="bg-[#9C1E1E] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    <span className="bg-[#9C1E1E] text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full">
                       💳 PAGAMENTO PERSONALIZADO
                     </span>
                   </div>
                   
                   {/* Lista de Parcelas */}
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 sm:space-y-2">
                     {(Array.isArray(proposal.custom_installments) ? proposal.custom_installments : []).map((installment: CustomInstallment, index: number) => (
-                      <div key={installment.installment || index} className="flex justify-between items-center p-3 bg-white rounded-lg border">
+                      <div key={installment.installment || index} className="flex justify-between items-center p-2 sm:p-3 bg-white rounded-lg border">
                         <div className="flex items-center gap-2">
-                          <span className="w-6 h-6 bg-[#9C1E1E]/10 text-[#9C1E1E] rounded-full flex items-center justify-center text-xs font-bold">
+                          <span className="w-5 h-5 sm:w-6 sm:h-6 bg-[#9C1E1E]/10 text-[#9C1E1E] rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold">
                             {index + 1}
                           </span>
                           <div>
-                            <div className="font-medium text-sm">Parcela {index + 1}</div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="font-medium text-xs sm:text-sm">Parcela {index + 1}</div>
+                            <div className="text-[10px] sm:text-xs text-muted-foreground">
                               Venc: {new Date(installment.due_date + 'T00:00:00').toLocaleDateString('pt-BR')}
                             </div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-lg font-bold text-[#9C1E1E]">
+                          <div className="text-sm sm:text-lg font-bold text-[#9C1E1E]">
                             {Number(installment.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </div>
                         </div>
@@ -1830,16 +1832,16 @@ const PropostaPublicaPage = () => {
                   </div>
                   
                   {/* Total */}
-                  <div className="border-t pt-3 mt-3">
+                  <div className="border-t pt-2.5 sm:pt-3 mt-2.5 sm:mt-3">
                     <div className="flex justify-between items-center">
-                      <span className="font-semibold">Total ({(Array.isArray(proposal.custom_installments) ? proposal.custom_installments : []).length} parcelas)</span>
-                      <span className="text-xl font-bold text-[#9C1E1E]">
+                      <span className="font-semibold text-xs sm:text-base">Total ({(Array.isArray(proposal.custom_installments) ? proposal.custom_installments : []).length}x)</span>
+                      <span className="text-lg sm:text-xl font-bold text-[#9C1E1E]">
                         {(Array.isArray(proposal.custom_installments) ? proposal.custom_installments : [])
                           .reduce((sum: number, inst: CustomInstallment) => sum + Number(inst.amount), 0)
                           .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                       Período: {proposal.is_custom_days 
                         ? `${proposal.custom_days} ${proposal.custom_days === 1 ? 'dia' : 'dias'}` 
                         : `${proposal.duration_months} ${proposal.duration_months === 1 ? 'mês' : 'meses'}`}
@@ -1849,64 +1851,64 @@ const PropostaPublicaPage = () => {
               </Card>
             ) : (
               <>
-                {/* Plano À Vista - TOTAL em destaque + equivalência mensal */}
+                {/* Plano À Vista - Mobile Optimized */}
                 <Card 
-                  className={`p-4 cursor-pointer transition-all ${
+                  className={`p-3 sm:p-4 cursor-pointer transition-all ${
                     selectedPlan === 'avista' 
                       ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
                       : 'border hover:border-gray-300'
                   }`}
                   onClick={() => setSelectedPlan('avista')}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="bg-[#9C1E1E] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+                        <span className="bg-[#9C1E1E] text-white text-[9px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full">
                           MELHOR OFERTA
                         </span>
-                        <span className="font-bold">PIX À Vista</span>
+                        <span className="font-bold text-xs sm:text-base">PIX À Vista</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">Pagamento único • 10% OFF</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Pagamento único • 10% OFF</p>
                     </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-[#9C1E1E]">
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-lg sm:text-2xl font-bold text-[#9C1E1E]">
                         {proposal.cash_total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </div>
                       {!proposal.is_custom_days && proposal.duration_months > 0 && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          (equivale {(proposal.cash_total_value / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês)
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                          (equiv. {(proposal.cash_total_value / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês)
                         </p>
                       )}
                       <div className="mt-1">
-                        <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
-                          💰 Economia de 10%
+                        <span className="text-[9px] sm:text-[10px] bg-emerald-100 text-emerald-700 px-1.5 sm:px-2 py-0.5 rounded-full">
+                          💰 10% OFF
                         </span>
                       </div>
                     </div>
                   </div>
                 </Card>
 
-                {/* Plano Fidelidade - Valor mensal + total - NÃO APARECE para período em dias */}
+                {/* Plano Fidelidade - Mobile Optimized */}
                 {!proposal.is_custom_days && (
                   <Card 
-                    className={`p-4 cursor-pointer transition-all ${
+                    className={`p-3 sm:p-4 cursor-pointer transition-all ${
                       selectedPlan === 'fidelidade' 
                         ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
                         : 'border hover:border-gray-300'
                     }`}
                     onClick={() => setSelectedPlan('fidelidade')}
                   >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="font-bold mb-1">Plano Fidelidade</div>
-                        <p className="text-xs text-muted-foreground">Pagamento mensal • {proposal.duration_months} meses</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs sm:text-base mb-0.5 sm:mb-1">Plano Fidelidade</div>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Mensal • {proposal.duration_months}x</p>
                       </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold">
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-lg sm:text-2xl font-bold">
                           {proposal.fidel_monthly_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          <span className="text-sm font-normal text-muted-foreground">/mês</span>
+                          <span className="text-xs sm:text-sm font-normal text-muted-foreground">/mês</span>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
                           Total: {(proposal.fidel_monthly_value * proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </p>
                       </div>
@@ -1918,16 +1920,16 @@ const PropostaPublicaPage = () => {
           </div>
         )}
 
-        {/* Botões de Ação - SÓ aparecem se proposta ainda pode ser respondida */}
+        {/* Botões de Ação - Mobile Optimized */}
         {!['aceita', 'recusada', 'expirada'].includes(proposal.status) && (
-          <div className="space-y-3 pt-4">
+          <div className="space-y-2.5 sm:space-y-3 pt-3 sm:pt-4">
             {isCortesia ? (
               <>
                 {/* Badge de contrato aceito - Cortesia */}
                 {contractFlow === 'accepted' && (
-                  <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl mb-2">
-                    <Check className="h-5 w-5 text-emerald-600" />
-                    <span className="text-sm text-emerald-700 font-medium">
+                  <div className="flex items-center gap-2 p-2.5 sm:p-3 bg-emerald-50 border border-emerald-200 rounded-xl mb-2">
+                    <Check className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
+                    <span className="text-xs sm:text-sm text-emerald-700 font-medium">
                       ✅ Contrato visualizado e aceito
                     </span>
                   </div>
