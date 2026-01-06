@@ -507,12 +507,16 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
           text-align: center;
           border-radius: 0 0 6px 6px;
           border-bottom: 3px solid #5a0f0f;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
         }
         
         .header-logo {
           max-height: 50px;
           width: auto;
-          margin-bottom: 5px;
+          margin-bottom: 10px;
         }
         
         .header-subtitle {
