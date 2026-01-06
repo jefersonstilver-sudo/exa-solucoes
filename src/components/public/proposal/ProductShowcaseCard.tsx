@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { useVideoSpecifications } from '@/hooks/useVideoSpecifications';
 
 // Import mockup images
-import mockupHorizontal from '@/assets/mockups/mockup-horizontal.png';
+import mockupHorizontal from '@/assets/mockup-horizontal-new.png';
 import mockupVertical from '@/assets/mockups/mockup-vertical.png';
 
 interface ProductShowcaseCardProps {

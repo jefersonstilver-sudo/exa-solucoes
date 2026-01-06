@@ -3,7 +3,7 @@ import QRCode from 'qrcode';
 import { supabase } from '@/integrations/supabase/client';
 
 // Mockups (mesmos usados na página pública)
-import mockupHorizontal from '@/assets/mockups/mockup-horizontal.png';
+import mockupHorizontal from '@/assets/mockup-horizontal-new.png';
 import mockupVertical from '@/assets/mockups/mockup-vertical.png';
 
 interface ProposalData {
