@@ -309,6 +309,8 @@ const NovaPropostaPage = () => {
     { value: 24, label: '24 horas', icon: '⚡' },
     { value: 72, label: '72 horas', icon: '🕐' },
     { value: 168, label: '7 dias', icon: '📅' },
+    { value: -1, label: 'Personalizado', icon: '🗓️' },
+    { value: 0, label: 'Indeterminada', icon: '∞' },
   ];
 
   // Buscar prédios ativos do banco de dados (incluindo preços por plano)
@@ -1700,7 +1702,7 @@ const NovaPropostaPage = () => {
             <h2 className="font-semibold">Validade da Proposta</h2>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-5 gap-2">
             {validityOptions.map((option) => (
               <button
                 key={option.value}
