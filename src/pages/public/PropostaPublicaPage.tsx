@@ -411,20 +411,34 @@ const PropostaPublicaPage = () => {
           setSellerEmail(data.seller_email);
         }
         
-        // Se phone ou email estão vazios, buscar do usuário created_by
+        // Se phone ou email estão vazios e o usuário está autenticado, buscar e gravar na proposta
         if ((!data.seller_phone || !data.seller_email) && data.created_by) {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('telefone, email')
-            .eq('id', data.created_by)
-            .maybeSingle();
-          
-          if (userData) {
-            if (!data.seller_phone && userData.telefone) {
-              setSellerPhone(userData.telefone);
-            }
-            if (!data.seller_email && userData.email) {
-              setSellerEmail(userData.email);
+          const { data: authData } = await supabase.auth.getUser();
+          if (authData?.user) {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('nome, telefone, email')
+              .eq('id', data.created_by)
+              .maybeSingle();
+
+            if (userData) {
+              const nextSellerName = data.seller_name || userData.nome || undefined;
+              const nextSellerPhone = data.seller_phone || userData.telefone || undefined;
+              const nextSellerEmail = data.seller_email || userData.email || undefined;
+
+              if (!data.seller_name && nextSellerName) setSellerName(nextSellerName);
+              if (!data.seller_phone && nextSellerPhone) setSellerPhone(nextSellerPhone);
+              if (!data.seller_email && nextSellerEmail) setSellerEmail(nextSellerEmail);
+
+              // Persistir na proposta para o link/PDF público ficarem corretos para todos
+              await supabase
+                .from('proposals')
+                .update({
+                  seller_name: nextSellerName ?? null,
+                  seller_phone: nextSellerPhone ?? null,
+                  seller_email: nextSellerEmail ?? null,
+                })
+                .eq('id', id);
             }
           }
         }

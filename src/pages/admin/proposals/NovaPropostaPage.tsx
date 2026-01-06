@@ -569,7 +569,9 @@ const NovaPropostaPage = () => {
               ? customDateRange.to.toISOString()
               : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
           created_by: selectedSellerId || user?.id,
-          seller_name: selectedSeller?.nome || selectedSeller?.email || currentUser?.nome || 'Vendedor',
+          seller_name: selectedSeller?.nome || currentUser?.nome || selectedSeller?.email || 'Vendedor',
+          seller_phone: selectedSeller?.telefone || currentUser?.telefone || null,
+          seller_email: selectedSeller?.email || currentUser?.email || null,
           payment_type: isCustomDays ? 'days' : (isCustomPayment ? 'custom' : 'standard'),
           tipo_produto: tipoProduto,
           client_address: clientData.address || null,
