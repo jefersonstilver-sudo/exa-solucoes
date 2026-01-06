@@ -94,6 +94,41 @@ export class ProposalPDFExporter {
     });
   }
 
+  // Método otimizado para mockups: redimensiona e comprime para PDF leve
+  private async loadMockupOptimized(url: string, maxWidth: number = 200, maxHeight: number = 300): Promise<{ dataUrl: string; aspectRatio: number }> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        // Calcular proporção original
+        const aspectRatio = img.width / img.height;
+        
+        // Calcular dimensões finais mantendo proporção
+        let targetWidth = maxWidth;
+        let targetHeight = maxWidth / aspectRatio;
+        
+        if (targetHeight > maxHeight) {
+          targetHeight = maxHeight;
+          targetWidth = maxHeight * aspectRatio;
+        }
+        
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        
+        // Desenhar imagem redimensionada
+        ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
+        
+        // Usar JPEG com qualidade 0.7 para reduzir tamanho drasticamente
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        resolve({ dataUrl, aspectRatio });
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
   // FASE 1: Método para carregar logo em preto para impressão
   private async loadImageAsDataURLBlack(url: string): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -430,27 +465,38 @@ export class ProposalPDFExporter {
     this.setColor(this.colors.white, 'fill');
     this.doc.roundedRect(mockupX, mockupY, mockupWidth, mockupHeight, 2, 2, 'F');
     
-    // Tentar carregar mockup (arquivo correto conforme o produto)
+    // Tentar carregar mockup otimizado (comprimido e com proporção correta)
     try {
       const mockupUrl = isVertical ? mockupVertical : mockupHorizontal;
-      const mockupDataUrl = await this.loadImageAsDataURL(mockupUrl);
+      const { dataUrl, aspectRatio } = await this.loadMockupOptimized(mockupUrl, 200, 300);
       
-      // Ajustar proporção do mockup
-      if (isVertical) {
-        // Vertical: mais alto que largo
-        const imgWidth = 25;
-        const imgHeight = 38;
-        const imgX = mockupX + (mockupWidth - imgWidth) / 2;
-        const imgY = mockupY + 2;
-        this.doc.addImage(mockupDataUrl, 'PNG', imgX, imgY, imgWidth, imgHeight);
+      // Calcular dimensões mantendo proporção original dentro do espaço disponível
+      let imgWidth: number;
+      let imgHeight: number;
+      
+      if (aspectRatio > 1) {
+        // Imagem mais larga que alta (horizontal)
+        imgWidth = mockupWidth - 6;
+        imgHeight = imgWidth / aspectRatio;
+        if (imgHeight > mockupHeight - 4) {
+          imgHeight = mockupHeight - 4;
+          imgWidth = imgHeight * aspectRatio;
+        }
       } else {
-        // Horizontal: mais largo que alto
-        const imgWidth = 40;
-        const imgHeight = 30;
-        const imgX = mockupX + (mockupWidth - imgWidth) / 2;
-        const imgY = mockupY + (mockupHeight - imgHeight) / 2;
-        this.doc.addImage(mockupDataUrl, 'PNG', imgX, imgY, imgWidth, imgHeight);
+        // Imagem mais alta que larga (vertical)
+        imgHeight = mockupHeight - 4;
+        imgWidth = imgHeight * aspectRatio;
+        if (imgWidth > mockupWidth - 6) {
+          imgWidth = mockupWidth - 6;
+          imgHeight = imgWidth / aspectRatio;
+        }
       }
+      
+      // Centralizar no espaço do mockup
+      const imgX = mockupX + (mockupWidth - imgWidth) / 2;
+      const imgY = mockupY + (mockupHeight - imgHeight) / 2;
+      
+      this.doc.addImage(dataUrl, 'JPEG', imgX, imgY, imgWidth, imgHeight);
     } catch {
       // Fallback: texto do produto
       this.setColor(this.colors.exaRed);
