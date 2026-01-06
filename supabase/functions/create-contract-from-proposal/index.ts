@@ -510,10 +510,9 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
         }
         
         .header-logo {
-          font-size: 28px;
-          font-weight: bold;
-          letter-spacing: 4px;
-          margin-bottom: 3px;
+          max-height: 50px;
+          width: auto;
+          margin-bottom: 5px;
         }
         
         .header-subtitle {
@@ -792,8 +791,7 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
           }
           
           .header-logo {
-            font-size: 22px;
-            letter-spacing: 2px;
+            max-height: 40px;
           }
           
           .header-subtitle {
@@ -889,7 +887,7 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
           }
           
           .header-logo {
-            font-size: 18px;
+            max-height: 32px;
           }
           
           .contract-title h1 {
@@ -911,7 +909,7 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
     <body>
       <!-- HEADER COM GRADIENTE EXA -->
       <div class="header">
-        <div class="header-logo">EXA MÍDIA</div>
+        <img src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos%20exa/Videos%20Site/Logo%20Branca%20-%20Exa.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcyBleGEvVmlkZW9zIFNpdGUvTG9nbyBCcmFuY2EgLSBFeGEucG5nIiwiaWF0IjoxNzY0MjcxNTgwLCJleHAiOjMxNTUzMzI3MzU1ODB9.Re62vBPxmFdoOTCd6maWctMCukPMPv0AEVqKdZubahU" alt="EXA Mídia" class="header-logo" />
         <div class="header-subtitle">Publicidade em Elevadores</div>
       </div>
 
