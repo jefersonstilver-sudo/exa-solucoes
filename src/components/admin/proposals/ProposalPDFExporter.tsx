@@ -461,8 +461,8 @@ export class ProposalPDFExporter {
     const mockupX = this.margin + 5;
     const mockupY = this.yPosition + 5;
     
-    // Fundo do mockup
-    this.setColor(this.colors.white, 'fill');
+    // Fundo do mockup (sem borda visível)
+    this.setColor(this.colors.lightGray, 'fill');
     this.doc.roundedRect(mockupX, mockupY, mockupWidth, mockupHeight, 2, 2, 'F');
     
     // Tentar carregar mockup otimizado (comprimido e com proporção correta)
@@ -812,6 +812,10 @@ export class ProposalPDFExporter {
       { 
         label: 'Quem Somos', 
         url: 'https://examidia.com.br/quem-somos'
+      },
+      { 
+        label: 'Mais Videos da EXA', 
+        url: 'https://drive.google.com/drive/folders/1GgZwyYLZdlqvCqElaaWJQ9BEbYPNMkmR?usp=sharing'
       }
     ];
     
