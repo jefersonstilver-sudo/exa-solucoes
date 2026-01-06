@@ -70,7 +70,7 @@ export const useKanbanContatos = (options: UseKanbanContatosOptions = {}) => {
   const { groupBy = 'categoria', search } = options;
   const [movingContact, setMovingContact] = useState<string | null>(null);
   
-  const { contacts, loading, updateContact, refetch } = useContatos({
+  const { contacts, loading, updateContactOptimistic, refetch } = useContatos({
     search,
     orderBy: 'created_at',
     orderDirection: 'desc'
@@ -175,33 +175,30 @@ export const useKanbanContatos = (options: UseKanbanContatosOptions = {}) => {
           break;
       }
 
-      await updateContact(contactId, updates);
+      // Atualização otimista - UI atualiza instantaneamente
+      await updateContactOptimistic(contactId, updates);
       
-      // Log audit
-      await supabase.from('contact_audit_logs').insert({
+      // Log audit (não bloqueia)
+      supabase.from('contact_audit_logs').insert({
         contact_id: contactId,
         action: 'updated',
         changed_fields: [groupBy],
         new_values: { [groupBy]: targetColumnId }
-      });
+      }).then(() => {});
 
-      toast.success('Contato movido com sucesso', {
-        action: {
-          label: 'Desfazer',
-          onClick: () => {
-            // Implementar undo se necessário
-          }
-        }
+      toast.success('Contato movido!', {
+        duration: 2000,
       });
       
-      refetch();
     } catch (error) {
       console.error('Erro ao mover contato:', error);
       toast.error('Erro ao mover contato');
+      // Rollback já é feito pelo updateContactOptimistic
+      refetch();
     } finally {
       setMovingContact(null);
     }
-  }, [groupBy, updateContact, refetch]);
+  }, [groupBy, updateContactOptimistic, refetch]);
 
   const getColumnMetrics = useCallback((columnId: string) => {
     const column = columns.find(c => c.id === columnId);
