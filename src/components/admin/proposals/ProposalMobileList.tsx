@@ -18,6 +18,7 @@ interface Proposal {
   duration_months: number;
   status: string;
   created_at: string;
+  expires_at: string | null;
   view_count: number | null;
   total_time_spent_seconds: number | null;
   is_viewing?: boolean;

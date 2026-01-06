@@ -1,7 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell } from 'lucide-react';
+import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon } from 'lucide-react';
+import { format, differenceInDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { DateRange } from 'react-day-picker';
+import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -129,7 +133,8 @@ const NovaPropostaPage = () => {
   
   // Validade da proposta
   const [validityHours, setValidityHours] = useState(24);
-  const [customValidityHours, setCustomValidityHours] = useState(48);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
   
   // Dialog de envio
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
@@ -559,7 +564,9 @@ const NovaPropostaPage = () => {
           sent_at: new Date().toISOString(),
           expires_at: validityHours === 0 
             ? null 
-            : new Date(Date.now() + (validityHours === -1 ? customValidityHours : validityHours) * 60 * 60 * 1000).toISOString(),
+            : validityHours === -1 && customDateRange?.to
+              ? customDateRange.to.toISOString()
+              : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
           created_by: selectedSellerId || user?.id,
           seller_name: selectedSeller?.nome || selectedSeller?.email || currentUser?.nome || 'Vendedor',
           payment_type: isCustomDays ? 'days' : (isCustomPayment ? 'custom' : 'standard'),
@@ -1709,7 +1716,12 @@ const NovaPropostaPage = () => {
             {validityOptions.map((option) => (
               <button
                 key={option.value}
-                onClick={() => setValidityHours(option.value)}
+                onClick={() => {
+                  setValidityHours(option.value);
+                  if (option.value === -1) {
+                    setShowCalendarModal(true);
+                  }
+                }}
                 className={`p-3 rounded-lg border-2 text-center transition-all ${
                   validityHours === option.value
                     ? 'border-primary bg-primary/5'
@@ -1722,21 +1734,32 @@ const NovaPropostaPage = () => {
             ))}
           </div>
 
-          {/* Input para horas personalizadas */}
+          {/* Botão para abrir calendário quando Personalizado está selecionado */}
           {validityHours === -1 && (
-            <div className="mt-3 flex items-center gap-2">
-              <Input
-                type="number"
-                min={1}
-                max={720}
-                value={customValidityHours}
-                onChange={(e) => setCustomValidityHours(Number(e.target.value))}
-                className="w-24"
-              />
-              <span className="text-sm text-muted-foreground">horas</span>
-              <span className="text-xs text-muted-foreground">
-                ({(customValidityHours / 24).toFixed(1)} dias)
-              </span>
+            <div className="mt-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowCalendarModal(true)}
+                className="w-full justify-start text-left h-11 bg-white/60 backdrop-blur-sm border-gray-200"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                {customDateRange?.from && customDateRange?.to ? (
+                  <span className="flex items-center gap-2">
+                    <span className="font-medium">
+                      {format(customDateRange.from, "dd/MM/yyyy", { locale: ptBR })}
+                    </span>
+                    <span className="text-muted-foreground">até</span>
+                    <span className="font-medium">
+                      {format(customDateRange.to, "dd/MM/yyyy", { locale: ptBR })}
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      ({differenceInDays(customDateRange.to, customDateRange.from)} dias)
+                    </span>
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">Selecionar período de validade</span>
+                )}
+              </Button>
             </div>
           )}
 
@@ -1749,6 +1772,51 @@ const NovaPropostaPage = () => {
               </p>
             </div>
           )}
+
+          {/* Modal de Calendário Glassmorphism */}
+          <Dialog open={showCalendarModal} onOpenChange={setShowCalendarModal}>
+            <DialogContent className="max-w-fit p-0 bg-white/95 backdrop-blur-xl border-white/20 shadow-2xl rounded-2xl overflow-hidden">
+              <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-primary/5 to-primary/10">
+                <DialogTitle className="text-center text-lg font-semibold">
+                  Período de Validade
+                </DialogTitle>
+                <DialogDescription className="text-center text-sm text-muted-foreground">
+                  Selecione de qual dia até qual dia a proposta será válida
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="p-4 flex justify-center">
+                <Calendar
+                  mode="range"
+                  selected={customDateRange}
+                  onSelect={setCustomDateRange}
+                  numberOfMonths={isMobile ? 1 : 2}
+                  disabled={{ before: new Date() }}
+                  locale={ptBR}
+                  className="rounded-xl border bg-white/60 backdrop-blur-sm pointer-events-auto"
+                />
+              </div>
+
+              <div className="p-4 pt-0 space-y-3">
+                {customDateRange?.from && customDateRange?.to && (
+                  <div className="p-3 bg-green-50/80 rounded-xl border border-green-200/50 backdrop-blur-sm">
+                    <p className="text-sm text-green-700 text-center font-medium flex items-center justify-center gap-2">
+                      <CheckCircle className="h-4 w-4" />
+                      Válida por {differenceInDays(customDateRange.to, customDateRange.from)} dias
+                    </p>
+                  </div>
+                )}
+                
+                <Button 
+                  onClick={() => setShowCalendarModal(false)}
+                  disabled={!customDateRange?.from || !customDateRange?.to}
+                  className="w-full bg-[#9C1E1E] hover:bg-[#7A1818] text-white h-11"
+                >
+                  Confirmar Período
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </Card>
 
         {/* Métricas Resumo */}
