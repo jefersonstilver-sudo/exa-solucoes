@@ -1705,6 +1705,17 @@ const PropostaPublicaPage = () => {
           </div>
         </Card>
 
+        {/* Imagem Vertical Premium Showcase */}
+        {proposal.tipo_produto === 'vertical_premium' && (
+          <div className="w-full">
+            <img 
+              src="/vertical-premium-showcase.png" 
+              alt="Vertical Premium Showcase" 
+              className="w-full h-auto"
+            />
+          </div>
+        )}
+
         {/* Card Especial para Cortesia - EXA Red Theme */}
         {isCortesia && (
           <Card className="p-6 bg-gradient-to-br from-red-50 to-white border-2 border-[#9C1E1E] shadow-lg">
