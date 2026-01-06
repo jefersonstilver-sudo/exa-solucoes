@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DndContext, DragOverlay, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, defaultDropAnimationSideEffects } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { Plus } from 'lucide-react';
 import { KanbanColumn } from './KanbanColumn';
@@ -10,6 +10,19 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import type { Contact } from '@/types/contatos';
 import type { KanbanColumn as KanbanColumnType } from '@/hooks/contatos/useKanbanContatos';
+
+// Animação fluida de drop
+const dropAnimation = {
+  sideEffects: defaultDropAnimationSideEffects({
+    styles: {
+      active: {
+        opacity: '0.5',
+      },
+    },
+  }),
+  duration: 250,
+  easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+};
 interface KanbanBoardProps {
   columns: KanbanColumnType[];
   onMoveContact: (contactId: string, targetColumnId: string) => Promise<void>;
@@ -98,10 +111,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           {columns.map(column => <KanbanColumn key={column.id} id={column.id} title={column.title} color={column.color} contacts={column.contacts} count={column.count} onOpenChat={handleOpenChat} onOpenSchedule={handleOpenSchedule} onOpenProfile={handleOpenProfile} />)}
         </div>
 
-        <DragOverlay>
-          {activeContact && <div className="rotate-3 opacity-90">
+        <DragOverlay dropAnimation={dropAnimation}>
+          {activeContact && (
+            <div className="rotate-3 scale-105 shadow-2xl animate-scale-in">
               <KanbanCard contact={activeContact} isDragging />
-            </div>}
+            </div>
+          )}
         </DragOverlay>
       </DndContext>
 

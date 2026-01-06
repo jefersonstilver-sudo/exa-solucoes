@@ -78,7 +78,7 @@ export const KanbanCard = memo(({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: transition || 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1)',
   };
 
   const ContextIcon = getContextualIcon(contact);
@@ -101,8 +101,8 @@ export const KanbanCard = memo(({
       className={cn(
         "group bg-white p-2.5 rounded-lg border border-gray-100 cursor-grab active:cursor-grabbing relative touch-none",
         "shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]",
-        "transition-shadow duration-200",
-        (isDragging || isSortableDragging) && "opacity-50 shadow-lg scale-105 rotate-2"
+        "transition-all duration-200 ease-out",
+        (isDragging || isSortableDragging) && "opacity-40 shadow-2xl scale-105 rotate-3 z-50 ring-2 ring-purple-400/50"
       )}
       onClick={handleCardClick}
     >

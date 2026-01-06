@@ -33,7 +33,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       ref={setNodeRef}
       className={cn(
         "flex flex-col w-[240px] h-full rounded-xl bg-[#f5f5f5] shrink-0 border border-gray-100/50 shadow-inner",
-        isOver && "ring-2 ring-purple-400/50 bg-purple-50/30"
+        "transition-all duration-300 ease-out",
+        isOver && "ring-2 ring-purple-400/60 bg-purple-50/40 scale-[1.01] shadow-lg"
       )}
     >
       {/* Header com borda colorida no topo */}
