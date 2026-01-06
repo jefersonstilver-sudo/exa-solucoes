@@ -2044,16 +2044,31 @@ const PropostaPublicaPage = () => {
                 
                 {/* Botão principal: Aceitar e Pagar */}
                 <Button
-                  className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="w-full h-10 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
                   onClick={handleAccept}
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                   ) : (
-                    <Check className="h-4 w-4 mr-2" />
+                    <Check className="h-3.5 w-3.5 mr-1.5" />
                   )}
                   Aceitar e Pagar ({selectedPlan === 'avista' ? 'À Vista' : 'Fidelidade'})
+                </Button>
+
+                {/* Botão secundário: Apenas Aceitar */}
+                <Button
+                  variant="outline"
+                  className="w-full h-10 text-sm border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E]/5 rounded-xl"
+                  onClick={() => {
+                    console.log('[PropostaPublica] Aceitar e aguardar pagamento - plano:', selectedPlan);
+                    // TODO: Implementar lógica de aceitar sem pagamento imediato
+                    toast.info('Proposta aceita! Aguardando dados de pagamento.');
+                  }}
+                  disabled={isSubmitting}
+                >
+                  <Clock className="h-3.5 w-3.5 mr-1.5" />
+                  Aceitar e Aguardar Pagamento
                 </Button>
 
                 {/* Botão secundário: Ver Contrato antes */}
