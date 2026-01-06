@@ -78,8 +78,8 @@ export class ProposalPDFExporter {
     });
   }
 
-  // Método otimizado para imagens genéricas: redimensiona e comprime
-  private async loadImageAsDataURL(url: string, maxWidth: number = 400, maxHeight: number = 600): Promise<string> {
+  // Método otimizado para imagens genéricas: redimensiona e comprime (qualidade alta para ~20MB)
+  private async loadImageAsDataURL(url: string, maxWidth: number = 1200, maxHeight: number = 1600): Promise<string> {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -95,16 +95,16 @@ export class ProposalPDFExporter {
         canvas.height = targetHeight;
         ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
         
-        // Usar JPEG com qualidade 0.7 para reduzir tamanho drasticamente
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
+        // Usar JPEG com qualidade 0.92 para manter boa qualidade (~20MB final)
+        resolve(canvas.toDataURL('image/jpeg', 0.92));
       };
       img.onerror = reject;
       img.src = url;
     });
   }
 
-  // Método otimizado para mockups: redimensiona e comprime para PDF leve
-  private async loadMockupOptimized(url: string, maxWidth: number = 200, maxHeight: number = 300): Promise<{ dataUrl: string; aspectRatio: number }> {
+  // Método otimizado para mockups: redimensiona e comprime para PDF (~20MB)
+  private async loadMockupOptimized(url: string, maxWidth: number = 800, maxHeight: number = 1000): Promise<{ dataUrl: string; aspectRatio: number }> {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -129,8 +129,8 @@ export class ProposalPDFExporter {
         // Desenhar imagem redimensionada
         ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
         
-        // Usar JPEG com qualidade 0.7 para reduzir tamanho drasticamente
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        // Usar JPEG com qualidade 0.92 para manter boa qualidade
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
         resolve({ dataUrl, aspectRatio });
       };
       img.onerror = reject;
@@ -138,8 +138,8 @@ export class ProposalPDFExporter {
     });
   }
 
-  // FASE 1: Método para carregar logo em preto para impressão (otimizado)
-  private async loadImageAsDataURLBlack(url: string, maxSize: number = 100): Promise<string> {
+  // FASE 1: Método para carregar logo em preto para impressão (qualidade alta)
+  private async loadImageAsDataURLBlack(url: string, maxSize: number = 300): Promise<string> {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
