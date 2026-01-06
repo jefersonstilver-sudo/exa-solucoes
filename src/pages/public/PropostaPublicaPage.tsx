@@ -1851,64 +1851,73 @@ const PropostaPublicaPage = () => {
               </Card>
             ) : (
               <>
-                {/* Plano À Vista - Mobile Optimized */}
+                {/* Plano À Vista - Compact Mobile */}
                 <Card 
-                  className={`p-3 sm:p-4 cursor-pointer transition-all ${
+                  className={`p-2.5 sm:p-3 cursor-pointer transition-all rounded-xl ${
                     selectedPlan === 'avista' 
-                      ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
-                      : 'border hover:border-gray-300'
+                      ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50/80 to-white shadow-md' 
+                      : 'border border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                   onClick={() => setSelectedPlan('avista')}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
-                        <span className="bg-[#9C1E1E] text-white text-[9px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full">
-                          MELHOR OFERTA
-                        </span>
-                        <span className="font-bold text-xs sm:text-base">PIX À Vista</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                        selectedPlan === 'avista' ? 'border-[#9C1E1E] bg-[#9C1E1E]' : 'border-gray-300'
+                      }`}>
+                        {selectedPlan === 'avista' && <Check className="h-2.5 w-2.5 text-white" />}
                       </div>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">Pagamento único • 10% OFF</p>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="bg-[#9C1E1E] text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
+                            MELHOR
+                          </span>
+                          <span className="font-semibold text-xs">PIX À Vista</span>
+                        </div>
+                        <p className="text-[9px] text-muted-foreground">Pagamento único • 10% OFF</p>
+                      </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="text-lg sm:text-2xl font-bold text-[#9C1E1E]">
+                      <div className="text-sm sm:text-base font-bold text-[#9C1E1E]">
                         {proposal.cash_total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </div>
                       {!proposal.is_custom_days && proposal.duration_months > 0 && (
-                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                          (equiv. {(proposal.cash_total_value / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês)
+                        <p className="text-[8px] sm:text-[9px] text-muted-foreground">
+                          {(proposal.cash_total_value / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
                         </p>
                       )}
-                      <div className="mt-1">
-                        <span className="text-[9px] sm:text-[10px] bg-emerald-100 text-emerald-700 px-1.5 sm:px-2 py-0.5 rounded-full">
-                          💰 10% OFF
-                        </span>
-                      </div>
                     </div>
                   </div>
                 </Card>
 
-                {/* Plano Fidelidade - Mobile Optimized */}
+                {/* Plano Fidelidade - Compact Mobile */}
                 {!proposal.is_custom_days && (
                   <Card 
-                    className={`p-3 sm:p-4 cursor-pointer transition-all ${
+                    className={`p-2.5 sm:p-3 cursor-pointer transition-all rounded-xl ${
                       selectedPlan === 'fidelidade' 
-                        ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
-                        : 'border hover:border-gray-300'
+                        ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50/80 to-white shadow-md' 
+                        : 'border border-gray-200 hover:border-gray-300 bg-white'
                     }`}
                     onClick={() => setSelectedPlan('fidelidade')}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="font-bold text-xs sm:text-base mb-0.5 sm:mb-1">Plano Fidelidade</div>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground">Mensal • {proposal.duration_months}x</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                          selectedPlan === 'fidelidade' ? 'border-[#9C1E1E] bg-[#9C1E1E]' : 'border-gray-300'
+                        }`}>
+                          {selectedPlan === 'fidelidade' && <Check className="h-2.5 w-2.5 text-white" />}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-semibold text-xs">Plano Fidelidade</span>
+                          <p className="text-[9px] text-muted-foreground">Mensal • {proposal.duration_months}x</p>
+                        </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <div className="text-lg sm:text-2xl font-bold">
+                        <div className="text-sm sm:text-base font-bold">
                           {proposal.fidel_monthly_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          <span className="text-xs sm:text-sm font-normal text-muted-foreground">/mês</span>
+                          <span className="text-[9px] font-normal text-muted-foreground">/mês</span>
                         </div>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                        <p className="text-[8px] sm:text-[9px] text-muted-foreground">
                           Total: {(proposal.fidel_monthly_value * proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </p>
                       </div>
