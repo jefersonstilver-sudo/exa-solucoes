@@ -2007,11 +2007,25 @@ const PropostaPublicaPage = () => {
                   ✅ Aceitar e Pagar Primeira Parcela ({Number(proposal.custom_installments[0].amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})
                 </Button>
 
+                {/* Botão secundário: Apenas Aceitar - Pagamento Personalizado */}
+                <Button
+                  variant="outline"
+                  className="w-full h-10 text-sm border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E]/5 rounded-xl"
+                  onClick={() => {
+                    console.log('[PropostaPublica] Aceitar e aguardar pagamento (custom)');
+                    toast.info('Proposta aceita! Aguardando dados de pagamento.');
+                  }}
+                  disabled={isSubmitting}
+                >
+                  <Clock className="h-3.5 w-3.5 mr-1.5" />
+                  Aceitar e Aguardar Pagamento
+                </Button>
+
                 {/* Botão Ver Contrato - Pagamento Personalizado */}
                 {contractFlow !== 'accepted' && (
                   <Button
                     variant="outline"
-                    className="w-full h-10 text-sm border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
+                    className="w-full h-10 text-sm border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5 rounded-xl"
                     onClick={handleViewContract}
                     disabled={isSubmitting}
                   >
@@ -2021,8 +2035,8 @@ const PropostaPublicaPage = () => {
                 )}
 
                 <Button
-                  variant="outline"
-                  className="w-full h-12 border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
+                  variant="ghost"
+                  className="w-full h-10 text-sm text-muted-foreground hover:text-destructive"
                   onClick={handleReject}
                   disabled={isSubmitting}
                 >
