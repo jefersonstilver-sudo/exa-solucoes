@@ -129,6 +129,7 @@ const NovaPropostaPage = () => {
   
   // Validade da proposta
   const [validityHours, setValidityHours] = useState(24);
+  const [customValidityHours, setCustomValidityHours] = useState(48);
   
   // Dialog de envio
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
@@ -556,7 +557,9 @@ const NovaPropostaPage = () => {
           duration_months: isCustomDays ? 0 : durationMonths,
           status: 'enviada',
           sent_at: new Date().toISOString(),
-          expires_at: new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
+          expires_at: validityHours === 0 
+            ? null 
+            : new Date(Date.now() + (validityHours === -1 ? customValidityHours : validityHours) * 60 * 60 * 1000).toISOString(),
           created_by: selectedSellerId || user?.id,
           seller_name: selectedSeller?.nome || selectedSeller?.email || currentUser?.nome || 'Vendedor',
           payment_type: isCustomDays ? 'days' : (isCustomPayment ? 'custom' : 'standard'),
@@ -1718,6 +1721,34 @@ const NovaPropostaPage = () => {
               </button>
             ))}
           </div>
+
+          {/* Input para horas personalizadas */}
+          {validityHours === -1 && (
+            <div className="mt-3 flex items-center gap-2">
+              <Input
+                type="number"
+                min={1}
+                max={720}
+                value={customValidityHours}
+                onChange={(e) => setCustomValidityHours(Number(e.target.value))}
+                className="w-24"
+              />
+              <span className="text-sm text-muted-foreground">horas</span>
+              <span className="text-xs text-muted-foreground">
+                ({(customValidityHours / 24).toFixed(1)} dias)
+              </span>
+            </div>
+          )}
+
+          {/* Feedback para validade indeterminada */}
+          {validityHours === 0 && (
+            <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-700 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Esta proposta não terá data de expiração
+              </p>
+            </div>
+          )}
         </Card>
 
         {/* Métricas Resumo */}
