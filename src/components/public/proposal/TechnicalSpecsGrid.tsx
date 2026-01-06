@@ -42,5 +42,16 @@ export const TechnicalSpecsGrid: React.FC<TechnicalSpecsGridProps> = ({
     exibicoesMes: specifications?.exibicoes.porMes ?? 11610,
     exibicoesDia: specifications?.exibicoes.porDia ?? 387
   };
-  return;
+  return (
+    <Card className="p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <SpecItem icon={Clock} text={`${specs.duracao}s de duração`} />
+        <SpecItem icon={Monitor} text={specs.resolucao} />
+        <SpecItem icon={Users} text={`Até ${specs.maxClientes} empresas`} />
+        <SpecItem icon={Triangle} text={`Proporção ${specs.proporcao}`} />
+        <SpecItem icon={TrendingUp} text={`${specs.exibicoesMes.toLocaleString('pt-BR')} exib./mês`} />
+        <SpecItem icon={Maximize} text={`${specs.exibicoesDia.toLocaleString('pt-BR')}x/dia`} />
+      </div>
+    </Card>
+  );
 };

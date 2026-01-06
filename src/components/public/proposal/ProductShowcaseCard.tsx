@@ -105,7 +105,7 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo }
             <FeatureItem 
               icon={BarChart3} 
               text="" 
-              boldText={`${specs.exibicoesMes.toLocaleString('pt-BR')} exibições por mês`} 
+              boldText={`${specs.exibicoesMes.toLocaleString('pt-BR')} exibições por mês em cada painel.`} 
             />
             <FeatureItem 
               icon={TrendingUp} 
