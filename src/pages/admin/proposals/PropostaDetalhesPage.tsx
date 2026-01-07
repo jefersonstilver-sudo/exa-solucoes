@@ -856,7 +856,7 @@ const PropostaDetalhesPage = () => {
                 className="w-full h-10 text-xs gap-2"
                 onClick={async () => {
                   const exporter = new ProposalPDFExporter();
-                  await exporter.generateProposalPDF(proposal as any, sellerName, sellerPhone);
+                  await exporter.generateProposalPDF(proposal as any, sellerName, false, 0, sellerPhone);
                 }}
               >
                 <Download className="h-4 w-4" />
@@ -1014,7 +1014,7 @@ const PropostaDetalhesPage = () => {
           open={showEditPaymentDialog}
           onOpenChange={setShowEditPaymentDialog}
           currentPaymentType={proposal.payment_type || 'cash'}
-          currentInstallments={Array.isArray(proposal.custom_installments) ? (proposal.custom_installments as Installment[]) : []}
+          currentInstallments={Array.isArray(proposal.custom_installments) ? (proposal.custom_installments as unknown as Installment[]) : []}
           totalValue={proposal.cash_total_value}
           onSave={handleSavePayment}
           isSubmitting={isSubmitting}
