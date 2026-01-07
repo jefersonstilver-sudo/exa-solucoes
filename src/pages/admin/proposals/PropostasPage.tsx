@@ -196,10 +196,10 @@ const PropostasPage = () => {
         const sellerProposals = proposalsData?.filter(p => p.created_by === userId) || [];
         
         const enviadas = sellerProposals.filter(p => 
-          ['enviada', 'atualizada', 'visualizada'].includes(p.status)
+          ['enviada', 'atualizada', 'visualizada', 'visualizando'].includes(p.status)
         ).length;
         const pendentes = sellerProposals.filter(p => 
-          ['pendente', 'enviada', 'visualizada', 'atualizada'].includes(p.status)
+          ['pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status)
         ).length;
         const aceitas = sellerProposals.filter(p => 
           ['aceita', 'paga', 'convertida'].includes(p.status)
@@ -404,19 +404,19 @@ const PropostasPage = () => {
       .filter(p => ['paga', 'convertida'].includes(p.status))
       .reduce((sum, p) => sum + (p.cash_total_value || 0), 0);
     
-    // Propostas aceitas mas ainda não pagas + pendentes/enviadas = a receber
+    // Propostas aceitas mas ainda não pagas + pendentes/enviadas/visualizando = a receber
     const valorAReceber = proposals
-      .filter(p => ['aceita', 'pendente', 'enviada', 'visualizada', 'atualizada'].includes(p.status))
+      .filter(p => ['aceita', 'pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status))
       .reduce((sum, p) => sum + (p.cash_total_value || 0), 0);
 
     return {
       proposalsToday: proposals.filter(p => isToday(new Date(p.created_at))).length,
-      pendentes: proposals.filter(p => ['pendente', 'enviada', 'visualizada', 'atualizada'].includes(p.status)).length,
-      enviadas: proposals.filter(p => ['enviada', 'atualizada'].includes(p.status)).length,
+      pendentes: proposals.filter(p => ['pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status)).length,
+      enviadas: proposals.filter(p => ['enviada', 'atualizada', 'visualizada', 'visualizando'].includes(p.status)).length,
       valorRecebido,
       valorAReceber,
       valorPotencial: proposals
-        .filter(p => ['pendente', 'enviada', 'visualizada', 'atualizada'].includes(p.status))
+        .filter(p => ['pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status))
         .reduce((sum, p) => sum + (p.fidel_monthly_value * p.duration_months), 0),
       aceitas: proposals.filter(p => ['aceita', 'paga', 'convertida'].includes(p.status)).length,
       vencidas: proposals.filter(p => ['expirada', 'cancelada'].includes(p.status)).length
