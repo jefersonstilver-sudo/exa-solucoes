@@ -397,18 +397,33 @@ const PropostasPage = () => {
     return Array.from(sellersMap.values()).sort((a, b) => b.proposalsSent - a.proposalsSent);
   }, [proposalsInPeriod]);
 
-  const stats = {
-    proposalsToday: proposals.filter(p => isToday(new Date(p.created_at))).length,
-    pendentes: proposals.filter(p => ['pendente', 'enviada', 'visualizada', 'atualizada'].includes(p.status)).length,
-    enviadas: proposals.filter(p => ['enviada', 'atualizada'].includes(p.status)).length,
-    valorRecebido: financialData?.valorRecebido || 0,
-    valorAReceber: financialData?.valorAReceber || 0,
-    valorPotencial: proposals
-      .filter(p => ['pendente', 'enviada', 'visualizada', 'atualizada'].includes(p.status))
-      .reduce((sum, p) => sum + (p.fidel_monthly_value * p.duration_months), 0)
-  };
+  // Calcular valores das propostas diretamente
+  const stats = useMemo(() => {
+    // Propostas aceitas/pagas/convertidas = valor recebido
+    const valorRecebido = proposals
+      .filter(p => ['paga', 'convertida'].includes(p.status))
+      .reduce((sum, p) => sum + (p.cash_total_value || 0), 0);
+    
+    // Propostas aceitas mas ainda não pagas + pendentes/enviadas = a receber
+    const valorAReceber = proposals
+      .filter(p => ['aceita', 'pendente', 'enviada', 'visualizada', 'atualizada'].includes(p.status))
+      .reduce((sum, p) => sum + (p.cash_total_value || 0), 0);
 
-  const expiredCount = proposals.filter(p => ['expirada', 'cancelada'].includes(p.status)).length;
+    return {
+      proposalsToday: proposals.filter(p => isToday(new Date(p.created_at))).length,
+      pendentes: proposals.filter(p => ['pendente', 'enviada', 'visualizada', 'atualizada'].includes(p.status)).length,
+      enviadas: proposals.filter(p => ['enviada', 'atualizada'].includes(p.status)).length,
+      valorRecebido,
+      valorAReceber,
+      valorPotencial: proposals
+        .filter(p => ['pendente', 'enviada', 'visualizada', 'atualizada'].includes(p.status))
+        .reduce((sum, p) => sum + (p.fidel_monthly_value * p.duration_months), 0),
+      aceitas: proposals.filter(p => ['aceita', 'paga', 'convertida'].includes(p.status)).length,
+      vencidas: proposals.filter(p => ['expirada', 'cancelada'].includes(p.status)).length
+    };
+  }, [proposals]);
+
+  const expiredCount = stats.vencidas;
   
   const filters = [
     { id: 'todas', label: 'Todas', count: proposals.filter(p => !['expirada', 'cancelada'].includes(p.status)).length },
@@ -605,7 +620,7 @@ const PropostasPage = () => {
             </div>
             <div className="text-sm font-bold text-amber-600">{formatCurrencyCompact(stats.valorAReceber)}</div>
           </Card>
-          {/* Card combinado Pendentes + Aceitas */}
+          {/* Card combinado Pendentes + Aceitas + Vencidas */}
           <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
             <div className="flex items-center justify-between">
               <div className="text-center flex-1">
@@ -621,9 +636,15 @@ const PropostasPage = () => {
                   <Check className="h-3 w-3 text-green-600" />
                   <span className="text-[9px] text-muted-foreground">Aceitas</span>
                 </div>
-                <div className="text-sm font-bold text-green-600">
-                  {proposals.filter(p => ['aceita', 'paga', 'convertida'].includes(p.status)).length}
+                <div className="text-sm font-bold text-green-600">{stats.aceitas}</div>
+              </div>
+              <div className="w-px h-8 bg-gray-200" />
+              <div className="text-center flex-1">
+                <div className="flex items-center justify-center gap-1">
+                  <X className="h-3 w-3 text-red-500" />
+                  <span className="text-[9px] text-muted-foreground">Venc</span>
                 </div>
+                <div className="text-sm font-bold text-red-500">{stats.vencidas}</div>
               </div>
             </div>
           </Card>
