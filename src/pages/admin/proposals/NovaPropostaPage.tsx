@@ -32,6 +32,7 @@ import { useCNPJConsult } from '@/hooks/useCNPJConsult';
 import { ProposalAlertRecipients, type AlertRecipient } from '@/components/admin/proposals/ProposalAlertRecipients';
 import { calculateBuildingsPrice, type PlanDuration } from '@/utils/buildingPriceUtils';
 import { CCEmailsInput } from '@/components/ui/cc-emails-input';
+import { createContactFromProposal } from '@/services/contactAutoCreator';
 
 interface Building {
   id: string;
@@ -593,6 +594,31 @@ const NovaPropostaPage = () => {
         .single();
 
       if (error) throw error;
+
+      // 📇 CRIAR CONTATO AUTOMATICAMENTE NO CRM
+      // Garante que todos os leads de propostas vão para a tabela contacts
+      try {
+        const contactResult = await createContactFromProposal({
+          clientName: fullName,
+          clientFirstName: clientData.firstName.trim(),
+          clientLastName: clientData.lastName.trim(),
+          clientCompanyName: clientData.companyName || undefined,
+          clientCnpj: clientData.document || undefined,
+          clientPhone: clientData.phoneFullNumber || clientData.phone || undefined,
+          clientEmail: clientData.email || undefined,
+          clientAddress: clientData.address || undefined,
+          createdBy: selectedSellerId || user?.id
+        });
+        
+        if (contactResult.success) {
+          console.log(`📇 Contato ${contactResult.isNew ? 'criado' : 'atualizado'} automaticamente:`, contactResult.contactId);
+        } else {
+          console.warn('⚠️ Não foi possível criar contato:', contactResult.error);
+        }
+      } catch (contactErr) {
+        console.error('⚠️ Erro ao criar contato (não crítico):', contactErr);
+        // Não falha a criação da proposta se contato falhar
+      }
 
       // Salvar destinatários de notificações EXA Alerts
       if (alertRecipients.length > 0) {
