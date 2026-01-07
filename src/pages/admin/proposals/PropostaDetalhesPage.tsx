@@ -856,13 +856,12 @@ const PropostaDetalhesPage = () => {
                 className="w-full h-10 text-xs gap-2"
                 onClick={async () => {
                   const exporter = new ProposalPDFExporter();
-                  await exporter.generateProposalPDF(proposal, sellerName, sellerPhone);
+                  await exporter.generateProposalPDF(proposal as any, sellerName, sellerPhone);
                 }}
               >
                 <Download className="h-4 w-4" />
                 Baixar PDF
               </Button>
-            </div>
             </div>
           </Card>
         </motion.div>
