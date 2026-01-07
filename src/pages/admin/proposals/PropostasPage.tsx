@@ -399,27 +399,60 @@ const PropostasPage = () => {
 
   // Calcular valores das propostas diretamente
   const stats = useMemo(() => {
+    // Helper para verificar se proposta está expirada (mesmo que status não reflita)
+    const isExpiredProposal = (p: Proposal): boolean => {
+      if (!p.expires_at) return false;
+      return new Date(p.expires_at) < new Date();
+    };
+
     // Propostas aceitas/pagas/convertidas = valor recebido
     const valorRecebido = proposals
       .filter(p => ['paga', 'convertida'].includes(p.status))
       .reduce((sum, p) => sum + (p.cash_total_value || 0), 0);
     
     // Propostas aceitas mas ainda não pagas + pendentes/enviadas/visualizando = a receber
+    // CRÍTICO: Excluir propostas expiradas do "A Receber"
     const valorAReceber = proposals
-      .filter(p => ['aceita', 'pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status))
+      .filter(p => 
+        ['aceita', 'pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status) &&
+        !isExpiredProposal(p) // Excluir expiradas
+      )
       .reduce((sum, p) => sum + (p.cash_total_value || 0), 0);
+
+    // Propostas pendentes (não expiradas)
+    const pendentes = proposals.filter(p => 
+      ['pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status) &&
+      !isExpiredProposal(p)
+    ).length;
+
+    // Propostas enviadas (não expiradas)
+    const enviadas = proposals.filter(p => 
+      ['enviada', 'atualizada', 'visualizada', 'visualizando'].includes(p.status) &&
+      !isExpiredProposal(p)
+    ).length;
+
+    // Valor potencial (não expiradas)
+    const valorPotencial = proposals
+      .filter(p => 
+        ['pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status) &&
+        !isExpiredProposal(p)
+      )
+      .reduce((sum, p) => sum + (p.fidel_monthly_value * p.duration_months), 0);
+
+    // Vencidas = status expirada/cancelada OU data expirada
+    const vencidas = proposals.filter(p => 
+      ['expirada', 'cancelada'].includes(p.status) || isExpiredProposal(p)
+    ).length;
 
     return {
       proposalsToday: proposals.filter(p => isToday(new Date(p.created_at))).length,
-      pendentes: proposals.filter(p => ['pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status)).length,
-      enviadas: proposals.filter(p => ['enviada', 'atualizada', 'visualizada', 'visualizando'].includes(p.status)).length,
+      pendentes,
+      enviadas,
       valorRecebido,
       valorAReceber,
-      valorPotencial: proposals
-        .filter(p => ['pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status))
-        .reduce((sum, p) => sum + (p.fidel_monthly_value * p.duration_months), 0),
+      valorPotencial,
       aceitas: proposals.filter(p => ['aceita', 'paga', 'convertida'].includes(p.status)).length,
-      vencidas: proposals.filter(p => ['expirada', 'cancelada'].includes(p.status)).length
+      vencidas
     };
   }, [proposals]);
 

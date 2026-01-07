@@ -181,25 +181,9 @@ export const useLoginForm = (redirectPath: string = '/') => {
         description: `Bem-vindo(a) de volta, ${data.user.email}`
       });
 
-      // FASE 1: REDIRECIONAMENTO SEGURO COM FALLBACK
-      // Aguardar um pouco para garantir que o estado seja atualizado
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Tentar usar navigate primeiro
-      try {
-        navigate(targetPath, { replace: true });
-        
-        // Se depois de 1 segundo ainda estiver na página de login, forçar com window.location
-        setTimeout(() => {
-          if (window.location.pathname === '/login') {
-            console.log('⚠️ [LOGIN] Navigate falhou, usando window.location.href');
-            window.location.href = targetPath;
-          }
-        }, 1000);
-      } catch (navError) {
-        console.error('❌ [LOGIN] Erro no navigate, usando window.location:', navError);
-        window.location.href = targetPath;
-      }
+      // O redirecionamento será tratado automaticamente pelo Login.tsx
+      // quando isLoggedIn mudar para true via AuthContext
+      console.log('✅ [LOGIN] Login concluído, aguardando redirecionamento automático pelo Login.tsx');
       
     } catch (error: any) {
       console.error('❌ [LOGIN] Erro geral:', error);
