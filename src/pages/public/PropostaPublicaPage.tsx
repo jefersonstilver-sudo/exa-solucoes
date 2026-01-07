@@ -1993,7 +1993,7 @@ const PropostaPublicaPage = () => {
                   </div>
                 )}
 
-                {/* Botões especiais para Pagamento Personalizado */}
+                {/* Botão principal: Aceitar Proposta */}
                 <Button
                   className="w-full h-14 text-lg bg-gradient-to-r from-[#9C1E1E] to-[#7D1818] hover:from-[#7D1818] hover:to-[#5a1212] text-white shadow-lg"
                   onClick={handleAcceptCustom}
@@ -2004,21 +2004,7 @@ const PropostaPublicaPage = () => {
                   ) : (
                     <Check className="h-5 w-5 mr-2" />
                   )}
-                  ✅ Aceitar e Pagar Primeira Parcela ({Number(proposal.custom_installments[0].amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})
-                </Button>
-
-                {/* Botão secundário: Apenas Aceitar - Pagamento Personalizado */}
-                <Button
-                  variant="outline"
-                  className="w-full h-10 text-sm border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E]/5 rounded-xl"
-                  onClick={() => {
-                    console.log('[PropostaPublica] Aceitar e aguardar pagamento (custom)');
-                    toast.info('Proposta aceita! Aguardando dados de pagamento.');
-                  }}
-                  disabled={isSubmitting}
-                >
-                  <Clock className="h-3.5 w-3.5 mr-1.5" />
-                  Aceitar e Aguardar Pagamento
+                  ✅ Aceitar Proposta
                 </Button>
 
                 {/* Botão Ver Contrato - Pagamento Personalizado */}
@@ -2056,33 +2042,18 @@ const PropostaPublicaPage = () => {
                   </div>
                 )}
                 
-                {/* Botão principal: Aceitar e Pagar */}
+                {/* Botão principal: Aceitar Proposta */}
                 <Button
-                  className="w-full h-10 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
+                  className="w-full h-14 text-lg bg-gradient-to-r from-[#9C1E1E] to-[#7D1818] hover:from-[#7D1818] hover:to-[#5a1212] text-white shadow-lg"
                   onClick={handleAccept}
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
-                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                   ) : (
-                    <Check className="h-3.5 w-3.5 mr-1.5" />
+                    <Check className="h-5 w-5 mr-2" />
                   )}
-                  Aceitar e Pagar ({selectedPlan === 'avista' ? 'À Vista' : 'Fidelidade'})
-                </Button>
-
-                {/* Botão secundário: Apenas Aceitar */}
-                <Button
-                  variant="outline"
-                  className="w-full h-10 text-sm border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E]/5 rounded-xl"
-                  onClick={() => {
-                    console.log('[PropostaPublica] Aceitar e aguardar pagamento - plano:', selectedPlan);
-                    // TODO: Implementar lógica de aceitar sem pagamento imediato
-                    toast.info('Proposta aceita! Aguardando dados de pagamento.');
-                  }}
-                  disabled={isSubmitting}
-                >
-                  <Clock className="h-3.5 w-3.5 mr-1.5" />
-                  Aceitar e Aguardar Pagamento
+                  ✅ Aceitar Proposta
                 </Button>
 
                 {/* Botão secundário: Ver Contrato antes */}
