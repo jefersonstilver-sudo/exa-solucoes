@@ -24,10 +24,12 @@ import {
   Eye,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  Plus
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { CreateClientFromProposalModal } from './CreateClientFromProposalModal';
 
 interface User {
   id: string;
@@ -48,6 +50,7 @@ interface ClientsSectionProps {
 
 const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefresh }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Filter clients - role now comes from users_with_role view (secure)
   const clients = users.filter(user => user.role === 'client');
@@ -213,14 +216,25 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
     <div className="space-y-6">
       {/* Header da Seção */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 flex items-center">
-            <Users className="h-6 w-6 mr-2 text-blue-600" />
-            Base de Clientes
-          </h2>
-          <p className="text-gray-600 mt-1">
-            Usuários finais e clientes do sistema EXA
-          </p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 flex items-center">
+              <Users className="h-6 w-6 mr-2 text-blue-600" />
+              Base de Clientes
+            </h2>
+            <p className="text-gray-600 mt-1">
+              Usuários finais e clientes do sistema EXA
+            </p>
+          </div>
+          
+          {/* Botão + elegante */}
+          <Button
+            onClick={() => setIsCreateModalOpen(true)}
+            size="icon"
+            className="ml-4 h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-600/40 transition-all duration-200 hover:scale-105"
+          >
+            <Plus className="h-5 w-5" />
+          </Button>
         </div>
         <Button 
           variant="outline" 
@@ -232,6 +246,13 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
           Atualizar
         </Button>
       </div>
+
+      {/* Modal de criação */}
+      <CreateClientFromProposalModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onSuccess={onRefresh}
+      />
 
       {/* Estatísticas de Clientes */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
