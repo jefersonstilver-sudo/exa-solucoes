@@ -9485,6 +9485,107 @@ export type Database = {
           },
         ]
       }
+      tarefa_regras: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          evento: string
+          id: string
+          nome: string
+          prioridade: string | null
+          tabela_origem: string
+          template_descricao: string | null
+          template_titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          evento: string
+          id?: string
+          nome: string
+          prioridade?: string | null
+          tabela_origem: string
+          template_descricao?: string | null
+          template_titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          evento?: string
+          id?: string
+          nome?: string
+          prioridade?: string | null
+          tabela_origem?: string
+          template_descricao?: string | null
+          template_titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tarefas_geradas: {
+        Row: {
+          cliente_id: string | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          metadata: Json | null
+          origem: string
+          origem_id: string | null
+          prazo: string | null
+          prioridade: string | null
+          regra_id: string | null
+          responsavel_id: string | null
+          status: string | null
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          metadata?: Json | null
+          origem: string
+          origem_id?: string | null
+          prazo?: string | null
+          prioridade?: string | null
+          regra_id?: string | null
+          responsavel_id?: string | null
+          status?: string | null
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          metadata?: Json | null
+          origem?: string
+          origem_id?: string | null
+          prazo?: string | null
+          prioridade?: string | null
+          regra_id?: string | null
+          responsavel_id?: string | null
+          status?: string | null
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarefas_geradas_regra_id_fkey"
+            columns: ["regra_id"]
+            isOneToOne: false
+            referencedRelation: "tarefa_regras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_alert_logs: {
         Row: {
           alert_type: string

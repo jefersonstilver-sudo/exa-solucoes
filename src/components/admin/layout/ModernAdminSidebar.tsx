@@ -130,6 +130,12 @@ export function ModernAdminSidebar() {
       icon: Sunrise,
       items: [
         {
+          title: 'Central de Tarefas',
+          href: buildPath('minha-manha'),
+          icon: Sunrise,
+          moduleKey: MODULE_KEYS.dashboard
+        },
+        {
           title: 'Dashboard',
           href: basePath,
           icon: LayoutDashboard,
@@ -149,6 +155,12 @@ export function ModernAdminSidebar() {
           badge: escalacoesPendentes > 0 ? escalacoesPendentes : undefined,
           badgeColor: 'bg-[#9C1E1E]',
           badgeTooltip: 'Escalações pendentes de resolução'
+        },
+        {
+          title: 'Agenda',
+          href: buildPath('agenda'),
+          icon: CalendarDays,
+          moduleKey: MODULE_KEYS.dashboard
         }
       ]
     },
