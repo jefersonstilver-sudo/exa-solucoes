@@ -152,11 +152,20 @@ export function ModernAdminSidebar() {
         }
       ]
     },
-    // 2. RELACIONAMENTO - Tudo sobre pessoas
+    // 2. RELACIONAMENTO - Tudo sobre pessoas (CRM UNIFICADO)
     {
       label: 'Relacionamento',
       icon: Users,
       items: [
+        {
+          title: 'CRM Hub',
+          href: buildPath('crm-hub'),
+          icon: UsersRound,
+          moduleKey: MODULE_KEYS.crm_site,
+          badge: unreadCount > 0 ? unreadCount : undefined,
+          badgeColor: 'bg-[#9C1E1E]',
+          badgeTooltip: 'Mensagens não lidas'
+        },
         {
           title: 'Contatos',
           href: buildPath('contatos'),
@@ -168,33 +177,6 @@ export function ModernAdminSidebar() {
           href: buildPath('contatos-kanban'),
           icon: LayoutGrid,
           moduleKey: MODULE_KEYS.contatos_kanban
-        },
-        {
-          title: 'CRM Chat',
-          href: buildPath('crm-chat'),
-          icon: MessageSquare,
-          moduleKey: MODULE_KEYS.crm_chat,
-          badge: unreadCount > 0 ? unreadCount : undefined,
-          badgeColor: 'bg-[#9C1E1E]',
-          badgeTooltip: 'Mensagens não lidas'
-        },
-        {
-          title: 'CRM Site',
-          href: buildPath('crm'),
-          icon: UsersRound,
-          moduleKey: MODULE_KEYS.crm_site
-        },
-        {
-          title: 'Leads EXA',
-          href: buildPath('leads-exa'),
-          icon: Zap,
-          moduleKey: MODULE_KEYS.leads
-        },
-        {
-          title: 'Síndicos',
-          href: buildPath('sindicos-interessados'),
-          icon: UserCheck,
-          moduleKey: MODULE_KEYS.sindicos
         }
       ]
     },

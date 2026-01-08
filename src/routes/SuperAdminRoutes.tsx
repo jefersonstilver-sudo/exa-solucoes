@@ -60,6 +60,7 @@ const NovoContatoPage = lazy(() => import('@/pages/admin/contatos/NovoContatoPag
 const PontuacaoConfigPage = lazy(() => import('@/pages/admin/contatos/PontuacaoConfigPage'));
 const BloqueiosPage = lazy(() => import('@/pages/admin/contatos/BloqueiosPage'));
 const ContactsLogsPage = lazy(() => import('@/pages/admin/contatos/ContactsLogsPage'));
+const CRMHubPage = lazy(() => import('@/pages/admin/crm/CRMHubPage'));
 
 // Lazy imports para Processos & Operação
 const ProcessosPage = lazy(() => import('@/pages/admin/processos/ProcessosPage'));
@@ -94,6 +95,11 @@ const SuperAdminRoutes = () => {
       <Route path="financeiro-mp" element={<FinanceiroCompleto />} />
       
       {/* ============ CRM ============ */}
+      <Route path="crm-hub" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando CRM Hub..." />}>
+          <CRMHubPage />
+        </Suspense>
+      } />
       <Route path="crm" element={<CRMClients />} />
       <Route path="crm-chat" element={
         <Suspense fallback={<GlobalLoadingPage message="Carregando CRM Chat..." />}>

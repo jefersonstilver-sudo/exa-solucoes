@@ -2507,6 +2507,7 @@ export type Database = {
           empresa: string | null
           endereco: string | null
           estado: string | null
+          funil_status: string | null
           id: string
           instagram: string | null
           is_potential_duplicate: boolean | null
@@ -2560,6 +2561,7 @@ export type Database = {
           empresa?: string | null
           endereco?: string | null
           estado?: string | null
+          funil_status?: string | null
           id?: string
           instagram?: string | null
           is_potential_duplicate?: boolean | null
@@ -2613,6 +2615,7 @@ export type Database = {
           empresa?: string | null
           endereco?: string | null
           estado?: string | null
+          funil_status?: string | null
           id?: string
           instagram?: string | null
           is_potential_duplicate?: boolean | null
