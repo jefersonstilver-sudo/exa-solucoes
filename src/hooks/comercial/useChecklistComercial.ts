@@ -155,7 +155,6 @@ export const useChecklistComercial = () => {
           }
         }
       }
-      }
 
       // 5. Follow-ups agendados para hoje (tarefas do Notion)
       const { data: followups, error: errFollowups } = await supabase
