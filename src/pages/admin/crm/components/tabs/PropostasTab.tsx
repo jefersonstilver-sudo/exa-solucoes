@@ -47,7 +47,7 @@ const PropostasTab: React.FC<PropostasTabProps> = ({ clients }) => {
         .limit(100);
 
       if (error) throw error;
-      setPropostas((data as Proposta[]) || []);
+      setPropostas((data as unknown as Proposta[]) || []);
     } catch (err) {
       console.error('Erro ao buscar propostas:', err);
     } finally {
