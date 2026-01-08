@@ -65,8 +65,10 @@ const CRMHubPage = lazy(() => import('@/pages/admin/crm/CRMHubPage'));
 // Lazy import para Vendas (FASE 2)
 const VendasPage = lazy(() => import('@/pages/admin/vendas/VendasPage'));
 
-// Lazy import para Financeiro (FASE 3)
+// Lazy imports para Financeiro (FASE 3)
 const FinanceiroDashboard = lazy(() => import('@/pages/admin/financeiro/FinanceiroDashboard'));
+const FluxoCaixaPage = lazy(() => import('@/pages/admin/financeiro/FluxoCaixaPage'));
+const InadimplenciaPage = lazy(() => import('@/pages/admin/financeiro/InadimplenciaPage'));
 
 // Lazy import para Central de Tarefas (FASE 3)
 const MinhaManha = lazy(() => import('@/pages/admin/tarefas/MinhaManha'));
@@ -104,6 +106,8 @@ const SuperAdminRoutes = () => {
       <Route path="relatorios-financeiros" element={<FinancialReports />} />
       <Route path="financeiro-mp" element={<FinanceiroCompleto />} />
       <Route path="financeiro" element={<Suspense fallback={<GlobalLoadingPage />}><FinanceiroDashboard /></Suspense>} />
+      <Route path="financeiro/fluxo-caixa" element={<Suspense fallback={<GlobalLoadingPage />}><FluxoCaixaPage /></Suspense>} />
+      <Route path="financeiro/inadimplencia" element={<Suspense fallback={<GlobalLoadingPage />}><InadimplenciaPage /></Suspense>} />
       
       {/* ============ CRM ============ */}
       <Route path="crm-hub" element={

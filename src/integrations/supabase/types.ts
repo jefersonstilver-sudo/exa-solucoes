@@ -653,6 +653,8 @@ export type Database = {
           id: string
           metodo_pagamento: string | null
           pedido_id: string | null
+          proxima_cobranca: string | null
+          recorrencia: string | null
           status: string
           tipo: string
           updated_at: string | null
@@ -668,6 +670,8 @@ export type Database = {
           id?: string
           metodo_pagamento?: string | null
           pedido_id?: string | null
+          proxima_cobranca?: string | null
+          recorrencia?: string | null
           status?: string
           tipo?: string
           updated_at?: string | null
@@ -683,6 +687,8 @@ export type Database = {
           id?: string
           metodo_pagamento?: string | null
           pedido_id?: string | null
+          proxima_cobranca?: string | null
+          recorrencia?: string | null
           status?: string
           tipo?: string
           updated_at?: string | null
@@ -5648,6 +5654,51 @@ export type Database = {
           table_name?: string
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      fluxo_caixa: {
+        Row: {
+          categoria: string | null
+          created_at: string
+          data_prevista: string
+          data_real: string | null
+          descricao: string
+          id: string
+          origem: string
+          origem_id: string | null
+          status: string
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string
+          data_prevista: string
+          data_real?: string | null
+          descricao: string
+          id?: string
+          origem: string
+          origem_id?: string | null
+          status?: string
+          tipo: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string
+          data_prevista?: string
+          data_real?: string | null
+          descricao?: string
+          id?: string
+          origem?: string
+          origem_id?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+          valor?: number
         }
         Relationships: []
       }
@@ -11176,6 +11227,7 @@ export type Database = {
         Returns: boolean
       }
       archive_expired_proposals: { Args: never; Returns: number }
+      atualizar_dias_atraso_cobrancas: { Args: never; Returns: undefined }
       audit_unauthorized_uploads: { Args: never; Returns: Json }
       auto_cancel_expired_orders: { Args: never; Returns: number }
       auto_cancel_orders_5h: { Args: never; Returns: number }
@@ -11199,6 +11251,10 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: Json
+      }
+      calcular_impostos_mes: {
+        Args: { p_competencia?: string }
+        Returns: undefined
       }
       calcular_multa_juros: {
         Args: { p_data_vencimento: string; p_valor_original: number }
@@ -11291,6 +11347,8 @@ export type Database = {
       generate_developer_token: { Args: never; Returns: string }
       generate_proposal_number: { Args: never; Returns: string }
       generate_secure_temp_password: { Args: never; Returns: string }
+      gerar_cobrancas_mensais: { Args: never; Returns: undefined }
+      gerar_fluxo_despesas_fixas: { Args: never; Returns: undefined }
       get_active_videos_for_panel: {
         Args: { p_panel_id: string }
         Returns: {
