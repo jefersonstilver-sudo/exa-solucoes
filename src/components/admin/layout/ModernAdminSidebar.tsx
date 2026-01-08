@@ -439,33 +439,34 @@ export function ModernAdminSidebar() {
 
   return (
     <Sidebar 
-      className="h-screen bg-white border-r border-gray-200 shadow-sm overscroll-contain"
+      className="h-screen bg-gradient-to-b from-[#7D1818] via-[#9C1E1E] to-[#5C1515] border-r border-white/10 shadow-2xl overscroll-contain backdrop-blur-xl"
       collapsible={isMobile ? "offcanvas" : "icon"}
       variant={isMobile ? "sidebar" : isTablet ? "sidebar" : "sidebar"}
       style={{ 
         height: '100dvh',
-        paddingTop: 'env(safe-area-inset-top)'
+        paddingTop: 'env(safe-area-inset-top)',
+        boxShadow: '4px 0 30px rgba(156, 30, 30, 0.3), inset 0 1px 0 rgba(255,255,255,0.1)'
       }}
     >
-      {/* Header - Tema Claro */}
-      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-gray-200 bg-white`}>
+      {/* Header - Red Glass Elevado */}
+      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-white/10 bg-white/5 backdrop-blur-sm`}>
         <div className="flex items-center justify-center mb-3">
           <UnifiedLogo 
             size="custom" 
             linkTo="/" 
-            variant="dark"
+            variant="light"
             className={collapsed ? "w-10 h-10" : "w-14 h-14 md:w-20 md:h-20"}
           />
         </div>
         
         {!collapsed && (
           <div className="text-center">
-            <div className="text-gray-900 font-semibold text-sm">
+            <div className="text-white/90 font-semibold text-sm tracking-wide">
               Painel Administrativo
             </div>
             <div className="flex items-center justify-center space-x-1 mt-1">
-              <Crown className={`h-3 w-3 ${getAdminBadgeColor()}`} />
-              <span className={`text-[10px] font-medium ${getAdminBadgeColor()}`}>
+              <Crown className="h-3 w-3 text-amber-300" />
+              <span className="text-[10px] font-medium text-amber-300/90">
                 {getAdminTitle()}
               </span>
             </div>
@@ -474,7 +475,7 @@ export function ModernAdminSidebar() {
       </SidebarHeader>
 
       <SidebarContent 
-        className={`${collapsed ? 'px-2' : 'px-3'} py-4 space-y-2 overflow-y-auto admin-sidebar-scroll touch-pan-y overscroll-contain bg-white`}
+        className={`${collapsed ? 'px-2' : 'px-3'} py-4 space-y-2 overflow-y-auto admin-sidebar-scroll touch-pan-y overscroll-contain`}
         style={{ 
           WebkitOverflowScrolling: 'touch',
           scrollBehavior: 'smooth',
@@ -486,7 +487,7 @@ export function ModernAdminSidebar() {
           return (
             <SidebarGroup key={group.label}>
               {!collapsed && (
-                <SidebarGroupLabel className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 px-2 flex items-center gap-2">
+                <SidebarGroupLabel className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2 px-2 flex items-center gap-2">
                   <GroupIcon className="h-3 w-3" />
                   {group.label}
                 </SidebarGroupLabel>
@@ -508,10 +509,10 @@ export function ModernAdminSidebar() {
                     const linkContent = (
                       <NavLink
                         to={item.href}
-                        className={`flex items-center ${collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2 gap-3'} rounded-lg transition-all duration-200 font-medium group relative h-10 ${
+                        className={`flex items-center ${collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2 gap-3'} rounded-xl transition-all duration-300 font-medium group relative h-10 ${
                           isActive 
-                            ? "bg-red-50 text-[#9C1E1E] border-l-[3px] border-[#9C1E1E] rounded-l-none" 
-                            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 active:scale-[0.98]"
+                            ? "bg-white/20 text-white shadow-lg shadow-black/10 backdrop-blur-sm border border-white/20" 
+                            : "text-white/70 hover:bg-white/10 hover:text-white hover:backdrop-blur-sm active:scale-[0.98]"
                         } touch-manipulation`}
                         style={{
                           WebkitTapHighlightColor: 'transparent',
@@ -532,11 +533,11 @@ export function ModernAdminSidebar() {
                               <TooltipProvider delayDuration={0}>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <span className={`${badgeColor} text-white text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center cursor-help shadow-sm ${badgePulse ? 'animate-pulse ring-2 ring-red-300/50' : ''}`}>
+                                    <span className={`bg-white/25 text-white text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center cursor-help shadow-lg backdrop-blur-sm ${badgePulse ? 'animate-pulse ring-2 ring-white/30' : ''}`}>
                                       {badge}
                                     </span>
                                   </TooltipTrigger>
-                                  <TooltipContent side="top" className="bg-gray-900 text-white border-gray-700 text-xs max-w-[200px]">
+                                  <TooltipContent side="top" className="bg-[#2D0A0A] text-white border-white/10 text-xs max-w-[200px] backdrop-blur-lg">
                                     {badgeTooltip || item.title}
                                   </TooltipContent>
                                 </Tooltip>
@@ -545,7 +546,7 @@ export function ModernAdminSidebar() {
                           </>
                         )}
                         {collapsed && badge !== undefined && (
-                          <span className={`absolute -top-1 -right-1 ${badgeColor} text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm ${badgePulse ? 'animate-pulse ring-2 ring-red-300/50' : ''}`}>
+                          <span className={`absolute -top-1 -right-1 bg-white/30 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm ${badgePulse ? 'animate-pulse ring-2 ring-white/30' : ''}`}>
                             {typeof badge === 'number' && badge > 9 ? '9+' : badge}
                           </span>
                         )}
@@ -561,14 +562,14 @@ export function ModernAdminSidebar() {
                                 <TooltipTrigger asChild>
                                   {linkContent}
                                 </TooltipTrigger>
-                                <TooltipContent side="right" className="bg-gray-900 text-white border-gray-700 font-medium">
+                              <TooltipContent side="right" className="bg-[#2D0A0A] text-white border-white/10 font-medium backdrop-blur-lg">
                                   <div className="flex flex-col gap-1">
                                     <p className="font-semibold">{item.title}</p>
                                     {badge !== undefined && badgeTooltip && (
                                       <p className="text-[10px] text-white/70">{badgeTooltip}</p>
                                     )}
                                     {badge !== undefined && (
-                                      <span className={`${badgeColor} text-white text-[11px] font-bold px-2 py-0.5 rounded-full w-fit shadow-sm`}>
+                                      <span className="bg-white/20 text-white text-[11px] font-bold px-2 py-0.5 rounded-full w-fit">
                                         {badge}
                                       </span>
                                     )}
@@ -590,21 +591,21 @@ export function ModernAdminSidebar() {
         })}
       </SidebarContent>
       
-      {/* Footer - Tema Claro */}
-      <SidebarFooter className="p-3 border-t border-gray-200 bg-white">
+      {/* Footer - Red Glass */}
+      <SidebarFooter className="p-3 border-t border-white/10 bg-black/10 backdrop-blur-sm">
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
-          <Avatar className="h-9 w-9 ring-2 ring-[#9C1E1E]/20">
-            <AvatarFallback className="bg-gradient-to-br from-[#9C1E1E] to-[#7A1818] text-white font-semibold text-sm">
+          <Avatar className="h-9 w-9 ring-2 ring-white/30 shadow-lg">
+            <AvatarFallback className="bg-white/20 text-white font-semibold text-sm backdrop-blur-sm">
               {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
             </AvatarFallback>
           </Avatar>
           
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
+              <p className="text-sm font-medium text-white truncate">
                 {userProfile?.email?.split('@')[0] || 'Admin'}
               </p>
-              <p className="text-[10px] text-gray-500">
+              <p className="text-[10px] text-white/50">
                 {getAdminTitle()}
               </p>
             </div>
@@ -618,12 +619,12 @@ export function ModernAdminSidebar() {
                     variant="ghost" 
                     size="icon" 
                     onClick={handleSignOut}
-                    className="h-8 w-8 text-gray-500 hover:text-[#9C1E1E] hover:bg-red-50"
+                    className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10"
                   >
                     <LogOut className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="bg-gray-900 text-white border-gray-700">
+                <TooltipContent side="top" className="bg-[#2D0A0A] text-white border-white/10 backdrop-blur-lg">
                   Sair
                 </TooltipContent>
               </Tooltip>
@@ -639,12 +640,12 @@ export function ModernAdminSidebar() {
                   variant="ghost" 
                   size="icon" 
                   onClick={handleSignOut}
-                  className="h-8 w-8 text-gray-500 hover:text-[#9C1E1E] hover:bg-red-50 mt-2"
+                  className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10 mt-2"
                 >
                   <LogOut className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right" className="bg-gray-900 text-white border-gray-700">
+              <TooltipContent side="right" className="bg-[#2D0A0A] text-white border-white/10 backdrop-blur-lg">
                 Sair
               </TooltipContent>
             </Tooltip>
