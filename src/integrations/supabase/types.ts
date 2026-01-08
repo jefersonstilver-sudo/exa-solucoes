@@ -645,7 +645,10 @@ export type Database = {
       }
       assinaturas: {
         Row: {
+          client_id: string | null
           created_at: string | null
+          data_fim: string | null
+          data_inicio: string | null
           dia_vencimento: number | null
           id: string
           metodo_pagamento: string | null
@@ -653,10 +656,14 @@ export type Database = {
           status: string
           tipo: string
           updated_at: string | null
+          valor_mensal: number | null
           venda_id: string | null
         }
         Insert: {
+          client_id?: string | null
           created_at?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
           dia_vencimento?: number | null
           id?: string
           metodo_pagamento?: string | null
@@ -664,10 +671,14 @@ export type Database = {
           status?: string
           tipo?: string
           updated_at?: string | null
+          valor_mensal?: number | null
           venda_id?: string | null
         }
         Update: {
+          client_id?: string | null
           created_at?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
           dia_vencimento?: number | null
           id?: string
           metodo_pagamento?: string | null
@@ -675,6 +686,7 @@ export type Database = {
           status?: string
           tipo?: string
           updated_at?: string | null
+          valor_mensal?: number | null
           venda_id?: string | null
         }
         Relationships: [
@@ -1586,6 +1598,36 @@ export type Database = {
         }
         Relationships: []
       }
+      categorias_despesas: {
+        Row: {
+          ativo: boolean | null
+          cor: string | null
+          created_at: string | null
+          icone: string | null
+          id: string
+          nome: string
+          tipo: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          cor?: string | null
+          created_at?: string | null
+          icone?: string | null
+          id?: string
+          nome: string
+          tipo: string
+        }
+        Update: {
+          ativo?: boolean | null
+          cor?: string | null
+          created_at?: string | null
+          icone?: string | null
+          id?: string
+          nome?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       client_activity_events: {
         Row: {
           created_at: string | null
@@ -1941,6 +1983,59 @@ export type Database = {
             columns: ["pedido_id"]
             isOneToOne: false
             referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cobrancas: {
+        Row: {
+          assinatura_id: string | null
+          client_id: string | null
+          competencia: string
+          created_at: string | null
+          data_emissao: string | null
+          data_vencimento: string
+          dias_atraso: number | null
+          id: string
+          observacao: string | null
+          status: string
+          updated_at: string | null
+          valor: number
+        }
+        Insert: {
+          assinatura_id?: string | null
+          client_id?: string | null
+          competencia: string
+          created_at?: string | null
+          data_emissao?: string | null
+          data_vencimento: string
+          dias_atraso?: number | null
+          id?: string
+          observacao?: string | null
+          status?: string
+          updated_at?: string | null
+          valor: number
+        }
+        Update: {
+          assinatura_id?: string | null
+          client_id?: string | null
+          competencia?: string
+          created_at?: string | null
+          data_emissao?: string | null
+          data_vencimento?: string
+          dias_atraso?: number | null
+          id?: string
+          observacao?: string | null
+          status?: string
+          updated_at?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cobrancas_assinatura_id_fkey"
+            columns: ["assinatura_id"]
+            isOneToOne: false
+            referencedRelation: "assinaturas"
             referencedColumns: ["id"]
           },
         ]
@@ -4121,6 +4216,90 @@ export type Database = {
         }
         Relationships: []
       }
+      despesas_fixas: {
+        Row: {
+          ativo: boolean | null
+          categoria: string
+          created_at: string | null
+          descricao: string
+          dia_vencimento: number | null
+          id: string
+          observacao: string | null
+          periodicidade: string
+          updated_at: string | null
+          valor: number
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria: string
+          created_at?: string | null
+          descricao: string
+          dia_vencimento?: number | null
+          id?: string
+          observacao?: string | null
+          periodicidade?: string
+          updated_at?: string | null
+          valor: number
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria?: string
+          created_at?: string | null
+          descricao?: string
+          dia_vencimento?: number | null
+          id?: string
+          observacao?: string | null
+          periodicidade?: string
+          updated_at?: string | null
+          valor?: number
+        }
+        Relationships: []
+      }
+      despesas_variaveis: {
+        Row: {
+          categoria: string
+          comprovante_url: string | null
+          created_at: string | null
+          data: string
+          data_pagamento: string | null
+          descricao: string
+          id: string
+          observacao: string | null
+          pago: boolean | null
+          registrado_por: string | null
+          updated_at: string | null
+          valor: number
+        }
+        Insert: {
+          categoria: string
+          comprovante_url?: string | null
+          created_at?: string | null
+          data: string
+          data_pagamento?: string | null
+          descricao: string
+          id?: string
+          observacao?: string | null
+          pago?: boolean | null
+          registrado_por?: string | null
+          updated_at?: string | null
+          valor: number
+        }
+        Update: {
+          categoria?: string
+          comprovante_url?: string | null
+          created_at?: string | null
+          data?: string
+          data_pagamento?: string | null
+          descricao?: string
+          id?: string
+          observacao?: string | null
+          pago?: boolean | null
+          registrado_por?: string | null
+          updated_at?: string | null
+          valor?: number
+        }
+        Relationships: []
+      }
       developer_auth_tokens: {
         Row: {
           created_at: string
@@ -5413,6 +5592,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      impostos: {
+        Row: {
+          base_calculo: number
+          competencia: string
+          created_at: string | null
+          data_pagamento: string | null
+          data_vencimento: string | null
+          id: string
+          observacao: string | null
+          pago: boolean | null
+          percentual: number
+          tipo: string
+          updated_at: string | null
+          valor_estimado: number
+          valor_pago: number | null
+        }
+        Insert: {
+          base_calculo: number
+          competencia: string
+          created_at?: string | null
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          id?: string
+          observacao?: string | null
+          pago?: boolean | null
+          percentual: number
+          tipo: string
+          updated_at?: string | null
+          valor_estimado: number
+          valor_pago?: number | null
+        }
+        Update: {
+          base_calculo?: number
+          competencia?: string
+          created_at?: string | null
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          id?: string
+          observacao?: string | null
+          pago?: boolean | null
+          percentual?: number
+          tipo?: string
+          updated_at?: string | null
+          valor_estimado?: number
+          valor_pago?: number | null
+        }
+        Relationships: []
       }
       iris_authorized_directors: {
         Row: {
@@ -8495,6 +8722,59 @@ export type Database = {
           usage_count?: number | null
         }
         Relationships: []
+      }
+      recebimentos: {
+        Row: {
+          client_id: string | null
+          cobranca_id: string | null
+          comprovante_url: string | null
+          created_at: string | null
+          data_pagamento: string
+          id: string
+          metodo: string
+          observacao: string | null
+          origem: string
+          registrado_por: string | null
+          updated_at: string | null
+          valor_pago: number
+        }
+        Insert: {
+          client_id?: string | null
+          cobranca_id?: string | null
+          comprovante_url?: string | null
+          created_at?: string | null
+          data_pagamento: string
+          id?: string
+          metodo: string
+          observacao?: string | null
+          origem?: string
+          registrado_por?: string | null
+          updated_at?: string | null
+          valor_pago: number
+        }
+        Update: {
+          client_id?: string | null
+          cobranca_id?: string | null
+          comprovante_url?: string | null
+          created_at?: string | null
+          data_pagamento?: string
+          id?: string
+          metodo?: string
+          observacao?: string | null
+          origem?: string
+          registrado_por?: string | null
+          updated_at?: string | null
+          valor_pago?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recebimentos_cobranca_id_fkey"
+            columns: ["cobranca_id"]
+            isOneToOne: false
+            referencedRelation: "cobrancas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       replay_audit: {
         Row: {

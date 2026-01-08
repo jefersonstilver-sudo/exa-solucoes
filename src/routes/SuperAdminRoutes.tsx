@@ -65,6 +65,8 @@ const CRMHubPage = lazy(() => import('@/pages/admin/crm/CRMHubPage'));
 // Lazy import para Vendas (FASE 2)
 const VendasPage = lazy(() => import('@/pages/admin/vendas/VendasPage'));
 
+// Lazy import para Financeiro (FASE 3)
+const FinanceiroDashboard = lazy(() => import('@/pages/admin/financeiro/FinanceiroDashboard'));
 // Lazy imports para Processos & Operação
 const ProcessosPage = lazy(() => import('@/pages/admin/processos/ProcessosPage'));
 const DepartmentProcessesPage = lazy(() => import('@/pages/admin/processos/DepartmentProcessesPage'));
@@ -96,6 +98,7 @@ const SuperAdminRoutes = () => {
       <Route path="gerenciar-beneficios" element={<BenefitManagement />} />
       <Route path="relatorios-financeiros" element={<FinancialReports />} />
       <Route path="financeiro-mp" element={<FinanceiroCompleto />} />
+      <Route path="financeiro" element={<Suspense fallback={<GlobalLoadingPage />}><FinanceiroDashboard /></Suspense>} />
       
       {/* ============ CRM ============ */}
       <Route path="crm-hub" element={
