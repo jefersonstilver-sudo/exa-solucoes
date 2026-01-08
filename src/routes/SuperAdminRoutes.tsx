@@ -62,6 +62,9 @@ const BloqueiosPage = lazy(() => import('@/pages/admin/contatos/BloqueiosPage'))
 const ContactsLogsPage = lazy(() => import('@/pages/admin/contatos/ContactsLogsPage'));
 const CRMHubPage = lazy(() => import('@/pages/admin/crm/CRMHubPage'));
 
+// Lazy import para Vendas (FASE 2)
+const VendasPage = lazy(() => import('@/pages/admin/vendas/VendasPage'));
+
 // Lazy imports para Processos & Operação
 const ProcessosPage = lazy(() => import('@/pages/admin/processos/ProcessosPage'));
 const DepartmentProcessesPage = lazy(() => import('@/pages/admin/processos/DepartmentProcessesPage'));
@@ -180,6 +183,13 @@ const SuperAdminRoutes = () => {
       <Route path="exa-alerts" element={
         <Suspense fallback={<GlobalLoadingPage message="Carregando EXA Alerts..." />}>
           <AlertasPage />
+        </Suspense>
+      } />
+      
+      {/* ============ VENDAS (FASE 2) ============ */}
+      <Route path="vendas" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando Vendas..." />}>
+          <VendasPage />
         </Suspense>
       } />
       
