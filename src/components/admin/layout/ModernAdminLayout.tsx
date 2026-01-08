@@ -58,11 +58,11 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
           <SidebarTriggerPositioned isTablet={isTablet} />
           
           <SidebarInset className="flex flex-col w-full overflow-x-hidden">
-            {/* Header - Apple-like clean design */}
+            {/* Header - Tema Claro Corporativo */}
             <header className={`sticky top-0 z-10 flex items-center px-3 md:px-4 ${
               isMobile 
-                ? 'h-12 mobile-header-clean' 
-                : 'h-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border'
+                ? 'h-12 bg-white border-b border-gray-200 shadow-sm' 
+                : 'h-16 bg-white border-b border-gray-200 shadow-sm'
             }`}>
               {/* Trigger mobile dentro do header */}
               <SidebarTrigger className="md:hidden mr-2" />

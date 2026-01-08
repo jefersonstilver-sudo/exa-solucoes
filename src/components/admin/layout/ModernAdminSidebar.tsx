@@ -35,7 +35,13 @@ import {
   Calendar,
   Network,
   Contact,
-  LayoutGrid
+  LayoutGrid,
+  Sunrise,
+  TrendingUp,
+  Cog,
+  MessageCircle,
+  CalendarDays,
+  Lock
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -80,6 +86,7 @@ import { usePropostasAguardando } from '@/hooks/usePropostasAguardando';
 import { useContratosPendentes } from '@/hooks/useContratosPendentes';
 import { useBeneficiosAcaoNecessaria } from '@/hooks/useBeneficiosAcaoNecessaria';
 import { usePendingVideosCount } from '@/hooks/usePendingVideosCount';
+
 export function ModernAdminSidebar() {
   const { state, open, setOpen, setOpenMobile, isMobile: isSidebarMobile } = useSidebar();
   const location = useLocation();
@@ -100,7 +107,6 @@ export function ModernAdminSidebar() {
   const { count: contratosPendentes } = useContratosPendentes();
   const { count: beneficiosAcao } = useBeneficiosAcaoNecessaria();
   const { pendingCount: videosParaAprovar } = usePendingVideosCount();
-  
 
   const handleSignOut = async () => {
     try {
@@ -116,10 +122,12 @@ export function ModernAdminSidebar() {
   // Dynamic module permissions hook
   const { hasModuleAccess, isMasterAccount, isLoading: permissionsLoading } = useDynamicModulePermissions();
 
-  // 7 SEÇÕES REORGANIZADAS conforme especificação - com moduleKey para permissões dinâmicas
+  // FASE 1: 6 SEÇÕES POR PROCESSO DE NEGÓCIO
   const navigationGroups = [
+    // 1. MINHA MANHÃ - Painel inicial do dia
     {
-      label: 'Gestão Principal',
+      label: 'Minha Manhã',
+      icon: Sunrise,
       items: [
         {
           title: 'Dashboard',
@@ -128,94 +136,26 @@ export function ModernAdminSidebar() {
           moduleKey: MODULE_KEYS.dashboard
         },
         {
-          title: 'Posições',
-          href: buildPath('posicoes'),
-          icon: BarChart3,
-          moduleKey: MODULE_KEYS.posicoes,
-          badgeTooltip: 'Controle de estoque de posições disponíveis'
+          title: 'EXA Alerts',
+          href: buildPath('exa-alerts'),
+          icon: Brain,
+          moduleKey: MODULE_KEYS.exa_alerts
         },
         {
-          title: 'Agenda Técnica',
-          href: buildPath('sync-notion'),
-          icon: Building2,
-          moduleKey: MODULE_KEYS.sync_notion,
-        },
-        {
-          title: 'Agenda',
-          href: buildPath('agenda'),
-          icon: Calendar,
-          moduleKey: MODULE_KEYS.agenda,
-          badge: '📅',
-          badgeColor: 'bg-blue-600'
-        },
-        {
-          title: 'Pedidos',
-          href: buildPath('pedidos'),
-          icon: ShoppingBag,
-          moduleKey: MODULE_KEYS.pedidos,
-          badge: pedidosSemVideo > 0 ? pedidosSemVideo : undefined,
+          title: 'Escalações',
+          href: buildPath('escalacoes'),
+          icon: AlertTriangle,
+          moduleKey: MODULE_KEYS.escalacoes,
+          badge: escalacoesPendentes > 0 ? escalacoesPendentes : undefined,
           badgeColor: 'bg-[#9C1E1E]',
-          badgeTooltip: 'Pedidos ativos aguardando envio de vídeo'
-        },
-        {
-          title: 'Produtos',
-          href: buildPath('produtos'),
-          icon: MonitorPlay,
-          moduleKey: MODULE_KEYS.produtos
-        },
-        {
-          title: 'Propostas',
-          href: buildPath('propostas'),
-          icon: FileText,
-          moduleKey: MODULE_KEYS.propostas,
-          badge: propostasAguardando > 0 ? propostasAguardando : undefined,
-          badgeColor: 'bg-[#9C1E1E]',
-          badgeTooltip: 'Propostas enviadas aguardando resposta do cliente'
-        },
-        {
-          title: 'Jurídico',
-          href: buildPath('juridico'),
-          icon: Scale,
-          moduleKey: MODULE_KEYS.juridico,
-          badge: contratosPendentes > 0 ? contratosPendentes : undefined,
-          badgeColor: 'bg-[#9C1E1E]',
-          badgeTooltip: 'Contratos enviados aguardando assinatura'
-        },
-        {
-          title: 'Assinaturas',
-          href: buildPath('assinaturas'),
-          icon: CreditCard,
-          moduleKey: MODULE_KEYS.assinaturas
-        },
-        {
-          title: 'Aprovações',
-          href: buildPath('aprovacoes'),
-          icon: CheckSquare,
-          moduleKey: MODULE_KEYS.aprovacoes,
-          badge: videosParaAprovar > 0 ? videosParaAprovar : undefined,
-          badgeColor: 'bg-[#9C1E1E]',
-          badgeTooltip: 'Vídeos aguardando aprovação do cliente'
-        },
-        {
-          title: 'Cupons',
-          href: buildPath('cupons'),
-          icon: Ticket,
-          moduleKey: MODULE_KEYS.cupons
-        },
-        {
-          title: 'Benefícios Prestadores',
-          href: buildPath('beneficio-prestadores'),
-          icon: Gift,
-          moduleKey: MODULE_KEYS.beneficios,
-          badge: beneficiosAcao > 0 ? beneficiosAcao : undefined,
-          badgeColor: 'bg-[#9C1E1E]',
-          badgePulse: beneficiosAcao > 0,
-          badgeTooltip: 'Benefícios com ação necessária'
+          badgeTooltip: 'Escalações pendentes de resolução'
         }
       ]
     },
+    // 2. RELACIONAMENTO - Tudo sobre pessoas
     {
-      label: 'CRM',
+      label: 'Relacionamento',
+      icon: Users,
       items: [
         {
           title: 'Contatos',
@@ -230,12 +170,6 @@ export function ModernAdminSidebar() {
           moduleKey: MODULE_KEYS.contatos_kanban
         },
         {
-          title: 'CRM Site',
-          href: buildPath('crm'),
-          icon: UsersRound,
-          moduleKey: MODULE_KEYS.crm_site
-        },
-        {
           title: 'CRM Chat',
           href: buildPath('crm-chat'),
           icon: MessageSquare,
@@ -245,43 +179,87 @@ export function ModernAdminSidebar() {
           badgeTooltip: 'Mensagens não lidas'
         },
         {
-          title: 'Escalações',
-          href: buildPath('escalacoes'),
-          icon: AlertTriangle,
-          moduleKey: MODULE_KEYS.escalacoes,
-          badge: escalacoesPendentes > 0 ? escalacoesPendentes : undefined,
-          badgeColor: 'bg-[#9C1E1E]',
-          badgeTooltip: 'Escalações pendentes de resolução'
+          title: 'CRM Site',
+          href: buildPath('crm'),
+          icon: UsersRound,
+          moduleKey: MODULE_KEYS.crm_site
         },
         {
-          title: 'Processos',
-          href: buildPath('processos'),
-          icon: Network,
-          moduleKey: MODULE_KEYS.processos,
-          badge: '🆕',
-          badgeColor: 'bg-indigo-600'
+          title: 'Leads EXA',
+          href: buildPath('leads-exa'),
+          icon: Zap,
+          moduleKey: MODULE_KEYS.leads
+        },
+        {
+          title: 'Síndicos',
+          href: buildPath('sindicos-interessados'),
+          icon: UserCheck,
+          moduleKey: MODULE_KEYS.sindicos
         }
       ]
     },
+    // 3. VENDAS - Funil comercial
     {
-      label: 'Inteligência',
+      label: 'Vendas',
+      icon: TrendingUp,
       items: [
         {
-          title: 'Agentes Sofia',
-          href: buildPath('agentes-sofia'),
-          icon: Bot,
-          moduleKey: MODULE_KEYS.agentes_sofia
+          title: 'Propostas',
+          href: buildPath('propostas'),
+          icon: FileText,
+          moduleKey: MODULE_KEYS.propostas,
+          badge: propostasAguardando > 0 ? propostasAguardando : undefined,
+          badgeColor: 'bg-[#9C1E1E]',
+          badgeTooltip: 'Propostas enviadas aguardando resposta'
         },
         {
-          title: 'EXA Alerts',
-          href: buildPath('exa-alerts'),
-          icon: Brain,
-          moduleKey: MODULE_KEYS.exa_alerts
+          title: 'Pedidos',
+          href: buildPath('pedidos'),
+          icon: ShoppingBag,
+          moduleKey: MODULE_KEYS.pedidos,
+          badge: pedidosSemVideo > 0 ? pedidosSemVideo : undefined,
+          badgeColor: 'bg-[#9C1E1E]',
+          badgeTooltip: 'Pedidos aguardando envio de vídeo'
+        },
+        {
+          title: 'Jurídico',
+          href: buildPath('juridico'),
+          icon: Scale,
+          moduleKey: MODULE_KEYS.juridico,
+          badge: contratosPendentes > 0 ? contratosPendentes : undefined,
+          badgeColor: 'bg-[#9C1E1E]',
+          badgeTooltip: 'Contratos aguardando assinatura'
+        },
+        {
+          title: 'Assinaturas',
+          href: buildPath('assinaturas'),
+          icon: CreditCard,
+          moduleKey: MODULE_KEYS.assinaturas
+        },
+        {
+          title: 'Posições',
+          href: buildPath('posicoes'),
+          icon: BarChart3,
+          moduleKey: MODULE_KEYS.posicoes
+        },
+        {
+          title: 'Produtos',
+          href: buildPath('produtos'),
+          icon: MonitorPlay,
+          moduleKey: MODULE_KEYS.produtos
+        },
+        {
+          title: 'Cupons',
+          href: buildPath('cupons'),
+          icon: Ticket,
+          moduleKey: MODULE_KEYS.cupons
         }
       ]
     },
+    // 4. OPERAÇÃO - Execução diária
     {
-      label: 'Ativos',
+      label: 'Operação',
+      icon: Cog,
       items: [
         {
           title: 'Prédios',
@@ -297,29 +275,19 @@ export function ModernAdminSidebar() {
           badge: offlineCount > 0 ? offlineCount : undefined,
           badgeColor: 'bg-[#9C1E1E]',
           badgeTooltip: 'Painéis offline'
-        }
-      ]
-    },
-    {
-      label: 'Leads & Clientes',
-      items: [
-        {
-          title: 'Síndicos Interessados',
-          href: buildPath('sindicos-interessados'),
-          icon: UserCheck,
-          moduleKey: MODULE_KEYS.sindicos
         },
         {
-          title: 'Leads EXA',
-          href: buildPath('leads-exa'),
-          icon: Zap,
-          moduleKey: MODULE_KEYS.leads
-        }
-      ]
-    },
-    {
-      label: 'Conteúdo',
-      items: [
+          title: 'Agenda Técnica',
+          href: buildPath('sync-notion'),
+          icon: Calendar,
+          moduleKey: MODULE_KEYS.sync_notion
+        },
+        {
+          title: 'Agenda',
+          href: buildPath('agenda'),
+          icon: CalendarDays,
+          moduleKey: MODULE_KEYS.agenda
+        },
         {
           title: 'Vídeos Anunciantes',
           href: buildPath('videos'),
@@ -327,10 +295,42 @@ export function ModernAdminSidebar() {
           moduleKey: MODULE_KEYS.videos_anunciantes
         },
         {
-          title: 'Vídeos Site EXA',
-          href: buildPath('videos-site'),
-          icon: Film,
-          moduleKey: MODULE_KEYS.videos_site
+          title: 'Aprovações',
+          href: buildPath('aprovacoes'),
+          icon: CheckSquare,
+          moduleKey: MODULE_KEYS.aprovacoes,
+          badge: videosParaAprovar > 0 ? videosParaAprovar : undefined,
+          badgeColor: 'bg-[#9C1E1E]',
+          badgeTooltip: 'Vídeos aguardando aprovação'
+        },
+        {
+          title: 'Benefícios Prestadores',
+          href: buildPath('beneficio-prestadores'),
+          icon: Gift,
+          moduleKey: MODULE_KEYS.beneficios,
+          badge: beneficiosAcao > 0 ? beneficiosAcao : undefined,
+          badgeColor: 'bg-[#9C1E1E]',
+          badgePulse: beneficiosAcao > 0,
+          badgeTooltip: 'Benefícios com ação necessária'
+        },
+        {
+          title: 'Processos',
+          href: buildPath('processos'),
+          icon: Network,
+          moduleKey: MODULE_KEYS.processos
+        }
+      ]
+    },
+    // 5. COMUNICAÇÃO - Canais e conteúdo
+    {
+      label: 'Comunicação',
+      icon: MessageCircle,
+      items: [
+        {
+          title: 'Emails',
+          href: buildPath('comunicacoes'),
+          icon: Mail,
+          moduleKey: MODULE_KEYS.emails
         },
         {
           title: 'Ticker',
@@ -339,36 +339,42 @@ export function ModernAdminSidebar() {
           moduleKey: MODULE_KEYS.ticker
         },
         {
+          title: 'Vídeos Site EXA',
+          href: buildPath('videos-site'),
+          icon: Film,
+          moduleKey: MODULE_KEYS.videos_site
+        },
+        {
           title: 'Editor de Vídeos',
           href: buildPath('editor-video-controle'),
           icon: Clapperboard,
-          moduleKey: MODULE_KEYS.editor_videos,
-          badge: 'BETA',
-          badgeColor: 'bg-[#9C1E1E]'
+          moduleKey: MODULE_KEYS.editor_videos
         },
         {
-          title: 'Emails',
-          href: buildPath('comunicacoes'),
-          icon: Mail,
-          moduleKey: MODULE_KEYS.emails
+          title: 'Agentes Sofia',
+          href: buildPath('agentes-sofia'),
+          icon: Bot,
+          moduleKey: MODULE_KEYS.agentes_sofia
         }
       ]
     },
+    // 6. GOVERNANÇA - Sistema e controle
     {
-      label: 'Financeiro MP',
+      label: 'Governança',
+      icon: Shield,
       items: [
         {
-          title: 'Financeiro Completo',
+          title: 'Financeiro MP',
           href: buildPath('financeiro-mp'),
           icon: Landmark,
-          moduleKey: MODULE_KEYS.financeiro_mp,
-          badgeTooltip: 'Módulo integrado Mercado Pago com anti-fraude'
-        }
-      ]
-    },
-    {
-      label: 'Sistema',
-      items: [
+          moduleKey: MODULE_KEYS.financeiro_mp
+        },
+        {
+          title: 'Relatórios',
+          href: buildPath('relatorios-financeiros'),
+          icon: FileBarChart,
+          moduleKey: MODULE_KEYS.relatorios
+        },
         {
           title: 'Usuários',
           href: buildPath('usuarios'),
@@ -382,15 +388,9 @@ export function ModernAdminSidebar() {
           moduleKey: MODULE_KEYS.notificacoes
         },
         {
-          title: 'Relatórios Financeiros',
-          href: buildPath('relatorios-financeiros'),
-          icon: FileBarChart,
-          moduleKey: MODULE_KEYS.relatorios
-        },
-        {
           title: 'Segurança',
           href: buildPath('seguranca'),
-          icon: Shield,
+          icon: Lock,
           moduleKey: MODULE_KEYS.seguranca
         },
         {
@@ -415,15 +415,13 @@ export function ModernAdminSidebar() {
     })
   })).filter(group => group.items.length > 0);
 
-  // Get favorite items from all groups
-
   const getAdminBadgeColor = () => {
     switch (userInfo.role) {
-      case 'super_admin': return 'text-amber-200';
-      case 'admin': return 'text-blue-300';
-      case 'admin_marketing': return 'text-orange-300';
-      case 'admin_financeiro': return 'text-green-300';
-      default: return 'text-indexa-mint';
+      case 'super_admin': return 'text-[#9C1E1E]';
+      case 'admin': return 'text-blue-600';
+      case 'admin_marketing': return 'text-orange-600';
+      case 'admin_financeiro': return 'text-green-600';
+      default: return 'text-gray-600';
     }
   };
 
@@ -441,7 +439,7 @@ export function ModernAdminSidebar() {
 
   return (
     <Sidebar 
-      className="h-screen bg-gradient-to-b from-[#3D0C0C]/95 via-[#2A0808]/95 to-[#1A0505]/95 backdrop-blur-2xl border-r border-red-500/20 shadow-2xl overscroll-contain"
+      className="h-screen bg-white border-r border-gray-200 shadow-sm overscroll-contain"
       collapsible={isMobile ? "offcanvas" : "icon"}
       variant={isMobile ? "sidebar" : isTablet ? "sidebar" : "sidebar"}
       style={{ 
@@ -449,20 +447,20 @@ export function ModernAdminSidebar() {
         paddingTop: 'env(safe-area-inset-top)'
       }}
     >
-      {/* Header com glassmorphism */}
-      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-red-500/20 bg-red-950/30 backdrop-blur-xl`}>
+      {/* Header - Tema Claro */}
+      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-gray-200 bg-white`}>
         <div className="flex items-center justify-center mb-3">
           <UnifiedLogo 
             size="custom" 
             linkTo="/" 
-            variant="light"
+            variant="dark"
             className={collapsed ? "w-10 h-10" : "w-14 h-14 md:w-20 md:h-20"}
           />
         </div>
         
         {!collapsed && (
           <div className="text-center">
-            <div className="text-white font-medium text-sm">
+            <div className="text-gray-900 font-semibold text-sm">
               Painel Administrativo
             </div>
             <div className="flex items-center justify-center space-x-1 mt-1">
@@ -476,55 +474,55 @@ export function ModernAdminSidebar() {
       </SidebarHeader>
 
       <SidebarContent 
-        className={`${collapsed ? 'px-2' : 'px-3'} py-4 space-y-3 overflow-y-auto admin-sidebar-scroll touch-pan-y overscroll-contain bg-red-950/20 backdrop-blur-xl`}
+        className={`${collapsed ? 'px-2' : 'px-3'} py-4 space-y-2 overflow-y-auto admin-sidebar-scroll touch-pan-y overscroll-contain bg-white`}
         style={{ 
           WebkitOverflowScrolling: 'touch',
           scrollBehavior: 'smooth',
           paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)'
         }}
       >
+        {filteredGroups.map((group) => {
+          const GroupIcon = group.icon;
+          return (
+            <SidebarGroup key={group.label}>
+              {!collapsed && (
+                <SidebarGroupLabel className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 px-2 flex items-center gap-2">
+                  <GroupIcon className="h-3 w-3" />
+                  {group.label}
+                </SidebarGroupLabel>
+              )}
+              
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const isExactMatch = location.pathname === item.href;
+                    const isSubRoute = item.href !== basePath && 
+                      location.pathname.startsWith(item.href + '/');
+                    const isActive = isExactMatch || isSubRoute;
+                    const Icon = item.icon;
+                    const badge = (item as any).badge;
+                    const badgeColor = (item as any).badgeColor || 'bg-red-500';
+                    const badgePulse = (item as any).badgePulse || false;
+                    const badgeTooltip = (item as any).badgeTooltip;
 
-        {filteredGroups.map((group) => (
-          <SidebarGroup key={group.label}>
-            {!collapsed && (
-              <SidebarGroupLabel className="text-[9px] font-bold text-red-300/50 uppercase tracking-widest mb-2 px-2">
-                {group.label}
-              </SidebarGroupLabel>
-            )}
-            
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-0.5">
-              {group.items.map((item) => {
-                  // Lógica melhorada para evitar seleção dupla
-                  // Ex: /super_admin/crm-chat NÃO deve ativar /super_admin/crm
-                  const isExactMatch = location.pathname === item.href;
-                  const isSubRoute = item.href !== basePath && 
-                    location.pathname.startsWith(item.href + '/');
-                  const isActive = isExactMatch || isSubRoute;
-                  const Icon = item.icon;
-                  const badge = (item as any).badge;
-                  const badgeColor = (item as any).badgeColor || 'bg-red-500';
-                  const badgePulse = (item as any).badgePulse || false;
-                  const badgeTooltip = (item as any).badgeTooltip;
-
-                  const linkContent = (
-                    <NavLink
-                      to={item.href}
-                      className={`flex items-center ${collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2 gap-3'} rounded-lg transition-all duration-200 font-medium group relative h-10 ${
-                        isActive 
-                          ? "bg-red-500/10 text-white border-l-[3px] border-red-500 rounded-l-none" 
-                          : "text-red-100/80 hover:bg-red-500/10 hover:text-white active:scale-[0.98]"
-                      } touch-manipulation`}
-                      style={{
-                        WebkitTapHighlightColor: 'transparent',
-                      }}
-                      onClick={() => {
-                        if (isMobile || isSidebarMobile) {
-                          setOpenMobile(false);
-                        }
-                      }}
-                    >
-                      <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4'} flex-shrink-0 transition-transform duration-200`} />
+                    const linkContent = (
+                      <NavLink
+                        to={item.href}
+                        className={`flex items-center ${collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2 gap-3'} rounded-lg transition-all duration-200 font-medium group relative h-10 ${
+                          isActive 
+                            ? "bg-red-50 text-[#9C1E1E] border-l-[3px] border-[#9C1E1E] rounded-l-none" 
+                            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 active:scale-[0.98]"
+                        } touch-manipulation`}
+                        style={{
+                          WebkitTapHighlightColor: 'transparent',
+                        }}
+                        onClick={() => {
+                          if (isMobile || isSidebarMobile) {
+                            setOpenMobile(false);
+                          }
+                        }}
+                      >
+                        <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4'} flex-shrink-0 transition-transform duration-200`} />
                         {!collapsed && (
                           <>
                             <span className="text-sm font-medium truncate flex-1">
@@ -538,7 +536,7 @@ export function ModernAdminSidebar() {
                                       {badge}
                                     </span>
                                   </TooltipTrigger>
-                                  <TooltipContent side="top" className="bg-[#1A1A1A] text-white border-white/10 text-xs max-w-[200px]">
+                                  <TooltipContent side="top" className="bg-gray-900 text-white border-gray-700 text-xs max-w-[200px]">
                                     {badgeTooltip || item.title}
                                   </TooltipContent>
                                 </Tooltip>
@@ -546,66 +544,67 @@ export function ModernAdminSidebar() {
                             )}
                           </>
                         )}
-                      {collapsed && badge !== undefined && (
-                        <span className={`absolute -top-1 -right-1 ${badgeColor} text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm ${badgePulse ? 'animate-pulse ring-2 ring-red-300/50' : ''}`}>
-                          {typeof badge === 'number' && badge > 9 ? '9+' : badge}
-                        </span>
-                      )}
-                    </NavLink>
-                  );
-
-                  return (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton asChild>
-                        {collapsed ? (
-                          <TooltipProvider delayDuration={0}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                {linkContent}
-                              </TooltipTrigger>
-                              <TooltipContent side="right" className="bg-[#1A1A1A] text-white border-white/10 font-medium">
-                                <div className="flex flex-col gap-1">
-                                  <p className="font-semibold">{item.title}</p>
-                                  {badge !== undefined && badgeTooltip && (
-                                    <p className="text-[10px] text-white/70">{badgeTooltip}</p>
-                                  )}
-                                  {badge !== undefined && (
-                                    <span className={`${badgeColor} text-white text-[11px] font-bold px-2 py-0.5 rounded-full w-fit shadow-sm`}>
-                                      {badge}
-                                    </span>
-                                  )}
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ) : (
-                          linkContent
+                        {collapsed && badge !== undefined && (
+                          <span className={`absolute -top-1 -right-1 ${badgeColor} text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm ${badgePulse ? 'animate-pulse ring-2 ring-red-300/50' : ''}`}>
+                            {typeof badge === 'number' && badge > 9 ? '9+' : badge}
+                          </span>
                         )}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+                      </NavLink>
+                    );
+
+                    return (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton asChild>
+                          {collapsed ? (
+                            <TooltipProvider delayDuration={0}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  {linkContent}
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="bg-gray-900 text-white border-gray-700 font-medium">
+                                  <div className="flex flex-col gap-1">
+                                    <p className="font-semibold">{item.title}</p>
+                                    {badge !== undefined && badgeTooltip && (
+                                      <p className="text-[10px] text-white/70">{badgeTooltip}</p>
+                                    )}
+                                    {badge !== undefined && (
+                                      <span className={`${badgeColor} text-white text-[11px] font-bold px-2 py-0.5 rounded-full w-fit shadow-sm`}>
+                                        {badge}
+                                      </span>
+                                    )}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            linkContent
+                          )}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
       
-      {/* Footer com perfil do usuário - estilo glassmorphism */}
-      <SidebarFooter className="p-3 border-t border-red-500/20 bg-red-950/30 backdrop-blur-xl">
+      {/* Footer - Tema Claro */}
+      <SidebarFooter className="p-3 border-t border-gray-200 bg-white">
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
-          <Avatar className="h-9 w-9 ring-2 ring-red-500/30">
-            <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white font-semibold text-sm">
+          <Avatar className="h-9 w-9 ring-2 ring-[#9C1E1E]/20">
+            <AvatarFallback className="bg-gradient-to-br from-[#9C1E1E] to-[#7A1818] text-white font-semibold text-sm">
               {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
             </AvatarFallback>
           </Avatar>
           
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
+              <p className="text-sm font-medium text-gray-900 truncate">
                 {userProfile?.email?.split('@')[0] || 'Admin'}
               </p>
-              <p className="text-[10px] text-white/50">
+              <p className="text-[10px] text-gray-500">
                 {getAdminTitle()}
               </p>
             </div>
@@ -619,12 +618,12 @@ export function ModernAdminSidebar() {
                     variant="ghost" 
                     size="icon" 
                     onClick={handleSignOut}
-                    className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10"
+                    className="h-8 w-8 text-gray-500 hover:text-[#9C1E1E] hover:bg-red-50"
                   >
                     <LogOut className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="bg-[#1A1A1A] text-white border-white/10">
+                <TooltipContent side="top" className="bg-gray-900 text-white border-gray-700">
                   Sair
                 </TooltipContent>
               </Tooltip>
@@ -640,12 +639,12 @@ export function ModernAdminSidebar() {
                   variant="ghost" 
                   size="icon" 
                   onClick={handleSignOut}
-                  className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10 mt-2"
+                  className="h-8 w-8 text-gray-500 hover:text-[#9C1E1E] hover:bg-red-50 mt-2"
                 >
                   <LogOut className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right" className="bg-[#1A1A1A] text-white border-white/10">
+              <TooltipContent side="right" className="bg-gray-900 text-white border-gray-700">
                 Sair
               </TooltipContent>
             </Tooltip>
