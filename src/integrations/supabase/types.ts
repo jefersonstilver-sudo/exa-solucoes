@@ -643,6 +643,50 @@ export type Database = {
         }
         Relationships: []
       }
+      assinaturas: {
+        Row: {
+          created_at: string | null
+          dia_vencimento: number | null
+          id: string
+          metodo_pagamento: string | null
+          pedido_id: string | null
+          status: string
+          tipo: string
+          updated_at: string | null
+          venda_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dia_vencimento?: number | null
+          id?: string
+          metodo_pagamento?: string | null
+          pedido_id?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string | null
+          venda_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dia_vencimento?: number | null
+          id?: string
+          metodo_pagamento?: string | null
+          pedido_id?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string | null
+          venda_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assinaturas_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auth_detailed_logs: {
         Row: {
           browser: string | null
@@ -1455,6 +1499,53 @@ export type Database = {
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campanhas_exa: {
+        Row: {
+          created_at: string | null
+          id: string
+          lista_paineis: string[] | null
+          lista_predios: string[] | null
+          pedido_id: string | null
+          periodo_fim: string
+          periodo_inicio: string
+          status_operacional: string
+          updated_at: string | null
+          venda_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lista_paineis?: string[] | null
+          lista_predios?: string[] | null
+          pedido_id?: string | null
+          periodo_fim: string
+          periodo_inicio: string
+          status_operacional?: string
+          updated_at?: string | null
+          venda_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lista_paineis?: string[] | null
+          lista_predios?: string[] | null
+          pedido_id?: string | null
+          periodo_fim?: string
+          periodo_inicio?: string
+          status_operacional?: string
+          updated_at?: string | null
+          venda_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campanhas_exa_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
         ]
@@ -9793,6 +9884,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vendas: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          cupom_id: string | null
+          data_fechamento: string | null
+          id: string
+          pedido_id: string | null
+          plano_meses: number
+          proposta_id: string | null
+          responsavel_id: string | null
+          status_venda: string
+          updated_at: string | null
+          valor_total: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          cupom_id?: string | null
+          data_fechamento?: string | null
+          id?: string
+          pedido_id?: string | null
+          plano_meses?: number
+          proposta_id?: string | null
+          responsavel_id?: string | null
+          status_venda?: string
+          updated_at?: string | null
+          valor_total?: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          cupom_id?: string | null
+          data_fechamento?: string | null
+          id?: string
+          pedido_id?: string | null
+          plano_meses?: number
+          proposta_id?: string | null
+          responsavel_id?: string | null
+          status_venda?: string
+          updated_at?: string | null
+          valor_total?: number
+        }
+        Relationships: []
       }
       video_editor_access_logs: {
         Row: {

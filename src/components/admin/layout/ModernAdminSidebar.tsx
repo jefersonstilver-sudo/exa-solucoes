@@ -180,11 +180,17 @@ export function ModernAdminSidebar() {
         }
       ]
     },
-    // 3. VENDAS - Funil comercial
+    // 3. VENDAS - Funil comercial (FASE 2: Nova arquitetura)
     {
       label: 'Vendas',
       icon: TrendingUp,
       items: [
+        {
+          title: 'Vendas',
+          href: buildPath('vendas'),
+          icon: TrendingUp,
+          moduleKey: MODULE_KEYS.pedidos
+        },
         {
           title: 'Propostas',
           href: buildPath('propostas'),
@@ -195,7 +201,7 @@ export function ModernAdminSidebar() {
           badgeTooltip: 'Propostas enviadas aguardando resposta'
         },
         {
-          title: 'Pedidos',
+          title: 'Pedidos (Legado)',
           href: buildPath('pedidos'),
           icon: ShoppingBag,
           moduleKey: MODULE_KEYS.pedidos,
