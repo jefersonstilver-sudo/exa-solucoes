@@ -4699,6 +4699,42 @@ export type Database = {
         }
         Relationships: []
       }
+      email_sync_status: {
+        Row: {
+          account_email: string
+          created_at: string | null
+          error_message: string | null
+          id: string
+          last_message_id: string | null
+          last_sync_at: string | null
+          messages_synced: number | null
+          sync_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_email: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          last_message_id?: string | null
+          last_sync_at?: string | null
+          messages_synced?: number | null
+          sync_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_email?: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          last_message_id?: string | null
+          last_sync_at?: string | null
+          messages_synced?: number | null
+          sync_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       email_template_customizations: {
         Row: {
           created_at: string | null
@@ -4797,6 +4833,171 @@ export type Database = {
           version?: string
         }
         Relationships: []
+      }
+      email_threads: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          id: string
+          is_archived: boolean | null
+          last_message_at: string | null
+          message_count: number | null
+          participants: string[] | null
+          subject: string
+          updated_at: string | null
+          zoho_thread_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_archived?: boolean | null
+          last_message_at?: string | null
+          message_count?: number | null
+          participants?: string[] | null
+          subject: string
+          updated_at?: string | null
+          zoho_thread_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_archived?: boolean | null
+          last_message_at?: string | null
+          message_count?: number | null
+          participants?: string[] | null
+          subject?: string
+          updated_at?: string | null
+          zoho_thread_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_threads_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emails: {
+        Row: {
+          attachments: Json | null
+          bcc: string[] | null
+          body_html: string | null
+          body_preview: string | null
+          body_text: string | null
+          campanha_id: string | null
+          categoria: string | null
+          cc: string[] | null
+          client_id: string | null
+          created_at: string | null
+          direction: string
+          from_email: string
+          from_name: string | null
+          has_attachments: boolean | null
+          id: string
+          is_archived: boolean | null
+          is_read: boolean | null
+          is_starred: boolean | null
+          labels: string[] | null
+          received_at: string | null
+          sent_at: string | null
+          subject: string
+          thread_id: string | null
+          to_email: string
+          to_name: string | null
+          updated_at: string | null
+          usuario_origem_id: string | null
+          venda_id: string | null
+          zoho_message_id: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          bcc?: string[] | null
+          body_html?: string | null
+          body_preview?: string | null
+          body_text?: string | null
+          campanha_id?: string | null
+          categoria?: string | null
+          cc?: string[] | null
+          client_id?: string | null
+          created_at?: string | null
+          direction: string
+          from_email: string
+          from_name?: string | null
+          has_attachments?: boolean | null
+          id?: string
+          is_archived?: boolean | null
+          is_read?: boolean | null
+          is_starred?: boolean | null
+          labels?: string[] | null
+          received_at?: string | null
+          sent_at?: string | null
+          subject: string
+          thread_id?: string | null
+          to_email: string
+          to_name?: string | null
+          updated_at?: string | null
+          usuario_origem_id?: string | null
+          venda_id?: string | null
+          zoho_message_id?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          bcc?: string[] | null
+          body_html?: string | null
+          body_preview?: string | null
+          body_text?: string | null
+          campanha_id?: string | null
+          categoria?: string | null
+          cc?: string[] | null
+          client_id?: string | null
+          created_at?: string | null
+          direction?: string
+          from_email?: string
+          from_name?: string | null
+          has_attachments?: boolean | null
+          id?: string
+          is_archived?: boolean | null
+          is_read?: boolean | null
+          is_starred?: boolean | null
+          labels?: string[] | null
+          received_at?: string | null
+          sent_at?: string | null
+          subject?: string
+          thread_id?: string | null
+          to_email?: string
+          to_name?: string | null
+          updated_at?: string | null
+          usuario_origem_id?: string | null
+          venda_id?: string | null
+          zoho_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emails_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emails_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "email_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emails_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       escalacao_vendedores: {
         Row: {
