@@ -5451,6 +5451,57 @@ export type Database = {
           },
         ]
       }
+      extrato_bancario: {
+        Row: {
+          codigo_barras: string | null
+          codigo_transacao: string | null
+          conciliado: boolean | null
+          conta_id: string | null
+          created_at: string | null
+          data_transacao: string
+          descricao: string | null
+          id: string
+          origem_id: string | null
+          origem_tipo: string | null
+          tipo: string
+          tipo_transacao: string | null
+          txid: string | null
+          valor: number
+        }
+        Insert: {
+          codigo_barras?: string | null
+          codigo_transacao?: string | null
+          conciliado?: boolean | null
+          conta_id?: string | null
+          created_at?: string | null
+          data_transacao: string
+          descricao?: string | null
+          id?: string
+          origem_id?: string | null
+          origem_tipo?: string | null
+          tipo?: string
+          tipo_transacao?: string | null
+          txid?: string | null
+          valor: number
+        }
+        Update: {
+          codigo_barras?: string | null
+          codigo_transacao?: string | null
+          conciliado?: boolean | null
+          conta_id?: string | null
+          created_at?: string | null
+          data_transacao?: string
+          descricao?: string | null
+          id?: string
+          origem_id?: string | null
+          origem_tipo?: string | null
+          tipo?: string
+          tipo_transacao?: string | null
+          txid?: string | null
+          valor?: number
+        }
+        Relationships: []
+      }
       financial_access_logs: {
         Row: {
           action: string
