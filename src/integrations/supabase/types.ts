@@ -8063,6 +8063,54 @@ export type Database = {
         }
         Relationships: []
       }
+      price_validation_logs: {
+        Row: {
+          building_ids: string[] | null
+          client_price: number
+          coupon_code: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          is_potential_fraud: boolean
+          is_valid: boolean
+          plan_months: number
+          price_difference: number
+          server_price: number
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          building_ids?: string[] | null
+          client_price: number
+          coupon_code?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          is_potential_fraud?: boolean
+          is_valid?: boolean
+          plan_months: number
+          price_difference: number
+          server_price: number
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          building_ids?: string[] | null
+          client_price?: number
+          coupon_code?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          is_potential_fraud?: boolean
+          is_valid?: boolean
+          plan_months?: number
+          price_difference?: number
+          server_price?: number
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       process_departments: {
         Row: {
           color: string
