@@ -6,10 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Dados da empresa EXA
+// Dados da empresa jurídica (Indexa Midia opera a marca ExaMídia)
 const EXA_COMPANY_DATA = {
-  razao_social: 'EXA Soluções Digitais LTDA',
-  cnpj: '62.878.193/0001-35',
+  razao_social: 'Indexa Midia LTDA',
+  cnpj: '38.142.638/0001-30',
   endereco: 'Avenida Paraná, 974 - Sala 301',
   bairro: 'Centro',
   cidade: 'Foz do Iguaçu',

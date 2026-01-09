@@ -472,7 +472,7 @@ export class ContractPDFExporter {
       doc.setFontSize(8);
       doc.setTextColor(colors.mediumGray.r, colors.mediumGray.g, colors.mediumGray.b);
       doc.text(
-        `Página ${i} de ${pageCount} | EXA Mídia - CNPJ: 62.878.193/0001-35`,
+        `Página ${i} de ${pageCount} | ExaMídia - Indexa Midia LTDA - CNPJ: 38.142.638/0001-30`,
         pageWidth / 2,
         290,
         { align: 'center' }

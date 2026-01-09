@@ -499,10 +499,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, on
             ) : (
               <>
                 <p style={{ margin: '6px 0 0 0', fontSize: '10px', color: '#555' }}>
-                  Jeferson S. R. Encina<br />Sócio Administrador<br />CPF: 055.031.279-00
-                </p>
-                <p style={{ margin: '6px 0 0 0', fontSize: '10px', color: '#555' }}>
-                  Natália K. G. Dantas<br />Sócia Administradora<br />CPF: 116.228.359-99
+                  Jeferson Stilver R. Encina<br />Representante Legal<br />CPF: 055.031.279-00
                 </p>
               </>
             )}

@@ -1999,8 +1999,9 @@ async function handleCompanyInfo(): Promise<{ text: string; data: any }> {
   console.log('[Sofia JARVIS] Getting company info...');
   
   const companyData = {
-    razaoSocial: 'EXA Soluções Digitais LTDA',
-    cnpj: '62.878.193/0001-35',
+    marca: 'ExaMídia',
+    razaoSocial: 'Indexa Midia LTDA',
+    cnpj: '38.142.638/0001-30',
     endereco: 'Avenida Paraná, 974 – Sala 301, Centro, Foz do Iguaçu – PR',
     cep: '85852-000',
     cidade: 'Foz do Iguaçu',
@@ -2015,7 +2016,7 @@ async function handleCompanyInfo(): Promise<{ text: string; data: any }> {
     missao: 'Conectar administradores, síndicos e moradores com comunicação não invasiva'
   };
   
-  const text = `A EXA Soluções Digitais é uma empresa de publicidade inteligente em elevadores, sediada em Foz do Iguaçu, Paraná. ` +
+  const text = `A ExaMídia é uma plataforma de publicidade inteligente em elevadores, operada pela Indexa Midia LTDA, sediada em Foz do Iguaçu, Paraná. ` +
     `CNPJ ${companyData.cnpj}. Endereço: ${companyData.endereco}. ` +
     `WhatsApp: ${companyData.whatsapp}. Email: ${companyData.email}. ` +
     `Site: ${companyData.site}. Horário: ${companyData.horarioFuncionamento}. ` +

@@ -82,7 +82,7 @@ serve(async (req) => {
         user_metadata: {
           ...targetUser.user_metadata,
           role: dbUser.role,
-          name: targetUser.user_metadata?.name || 'Jefferson Silver',
+          name: targetUser.user_metadata?.name || 'Jeferson Stilver',
         },
       }
     )

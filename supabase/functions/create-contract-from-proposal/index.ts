@@ -324,10 +324,10 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
     return clean.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
   };
 
-  // Dados da EXA - Conforme página "Quem Somos"
+  // Dados da empresa jurídica (Indexa Midia opera a marca ExaMídia)
   const exaData = {
-    razaoSocial: 'EXA Soluções Digitais LTDA',
-    cnpj: '62.878.193/0001-35',
+    razaoSocial: 'Indexa Midia LTDA',
+    cnpj: '38.142.638/0001-30',
     endereco: 'Avenida Paraná, 974 – Sala 301, Centro',
     cidade: 'Foz do Iguaçu',
     estado: 'PR',
@@ -1306,7 +1306,7 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
             <div class="signature-box">
               <div class="signature-line">
                 <div class="signature-name">${sig.nome}</div>
-                <div class="signature-role">${sig.cargo || 'Sócio(a)'} - EXA Soluções Digitais LTDA</div>
+                <div class="signature-role">${sig.cargo || 'Representante Legal'} - Indexa Midia LTDA (ExaMídia)</div>
                 <div class="signature-doc">CPF: ${formatCPF(sig.cpf)}</div>
                 <div style="margin-top: 5px; font-weight: 600; color: #8B1A1A;">CONTRATADA</div>
               </div>
@@ -1315,7 +1315,7 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
             <div class="signature-box">
               <div class="signature-line">
                 <div class="signature-name">Representante Legal</div>
-                <div class="signature-role">EXA Soluções Digitais LTDA</div>
+                <div class="signature-role">Indexa Midia LTDA (ExaMídia)</div>
                 <div class="signature-doc">CNPJ: ${exaData.cnpj}</div>
                 <div style="margin-top: 5px; font-weight: 600; color: #8B1A1A;">CONTRATADA</div>
               </div>
@@ -1357,7 +1357,7 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
 
       <!-- RODAPÉ -->
       <div class="footer">
-        <div class="footer-company">EXA Soluções Digitais LTDA</div>
+        <div class="footer-company">Indexa Midia LTDA (ExaMídia)</div>
         <div class="footer-info">
           CNPJ: ${exaData.cnpj}<br>
           ${exaData.endereco} - ${exaData.cidade}/${exaData.estado} - CEP: ${exaData.cep}<br>
