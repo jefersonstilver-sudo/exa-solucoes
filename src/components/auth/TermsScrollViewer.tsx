@@ -126,7 +126,7 @@ const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
               </h2>
               <p className="text-gray-600 text-xs">Última atualização: 14/08/2025</p>
               <div className="text-xs text-gray-600 mt-1">
-                <p><strong>Exa - Soluções Digitais LTDA</strong> – 62.878.193/0001-35</p>
+                <p><strong>Indexa Midia LTDA</strong> – 38.142.638/0001-30</p>
                 <p>comercial@exapublicidade.com.br</p>
               </div>
             </div>
@@ -294,7 +294,7 @@ const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
             </section>
 
             <div className="border-t pt-6 mt-8 text-center text-xs text-gray-500">
-              <p>Exa - Soluções Digitais LTDA – 62.878.193/0001-35</p>
+              <p>Indexa Midia LTDA – 38.142.638/0001-30</p>
               <p>Todos os direitos reservados</p>
             </div>
             <div ref={bottomRef} className="h-1 w-full" />

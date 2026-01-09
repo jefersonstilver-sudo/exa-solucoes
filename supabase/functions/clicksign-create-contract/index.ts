@@ -869,14 +869,8 @@ function generateContractHtml(contrato: any, signatariosExa: any[], produtosExa:
     }
   };
 
-  // Signatários EXA com RG/CPF
-  const signatariaExa1 = signatariosExa.find(s => s.cpf === '116.228.359-99') || {
-    nome: 'Natália Krause Guimarães Dantas',
-    rg: '13.038.569-9',
-    cpf: '116.228.359-99'
-  };
-  
-  const signatarioExa2 = signatariosExa.find(s => s.cpf === '055.031.279-00') || {
+  // Signatário EXA ÚNICO - Jeferson Stilver (sem fallback de Natália)
+  const signatarioExa = signatariosExa.find(s => s.cpf === '055.031.279-00') || {
     nome: 'Jeferson Stilver Rodrigues Encina',
     rg: '8.812.269-0',
     cpf: '055.031.279-00'
@@ -884,7 +878,7 @@ function generateContractHtml(contrato: any, signatariosExa: any[], produtosExa:
 
   // Template para contrato de síndico (Comodato)
   if (contrato.tipo_contrato === 'sindico') {
-    return generateSindicoContractHtml(contrato, signatariaExa1, signatarioExa2, dataAtual, totalPaineis);
+    return generateSindicoContractHtml(contrato, signatarioExa, dataAtual, totalPaineis);
   }
 
   // Template para contrato de anunciante (Publicidade) - COM 12 CLÁUSULAS COMPLETAS
@@ -1218,7 +1212,7 @@ function generateContractHtml(contrato: any, signatariosExa: any[], produtosExa:
           <div class="party">
             <div class="party-label">CONTRATADA</div>
             <div class="party-content">
-              <strong>INDEXA MIDIA LTDA</strong> (marca ExaMídia), pessoa jurídica inscrita no CNPJ nº 38.142.638/0001-30, com sede à Avenida Paraná, 974 — Sala 301 — Centro — Foz do Iguaçu/PR. Representante legal: <strong>${signatarioExa2.nome}</strong> (RG ${signatarioExa2.rg || '8.812.269-0'} / CPF ${signatarioExa2.cpf}).
+              <strong>INDEXA MIDIA LTDA</strong> (marca ExaMídia), pessoa jurídica inscrita no CNPJ nº 38.142.638/0001-30, com sede à Avenida Paraná, 974 — Sala 301 — Centro — Foz do Iguaçu/PR. Representante legal: <strong>${signatarioExa.nome}</strong> (RG ${signatarioExa.rg || '8.812.269-0'} / CPF ${signatarioExa.cpf}).
             </div>
           </div>
           <div class="party">
@@ -1423,8 +1417,8 @@ function generateContractHtml(contrato: any, signatariosExa: any[], produtosExa:
             <div class="exa-reps-grid">
               <div class="exa-rep-box">
                 <div class="signature-line">
-                  <div class="signature-name">${signatarioExa2.nome}</div>
-                  <div class="signature-docs">RG ${signatarioExa2.rg || '8.812.269-0'} / CPF ${signatarioExa2.cpf}</div>
+                  <div class="signature-name">${signatarioExa.nome}</div>
+                  <div class="signature-docs">RG ${signatarioExa.rg || '8.812.269-0'} / CPF ${signatarioExa.cpf}</div>
                 </div>
               </div>
             </div>
@@ -1443,8 +1437,8 @@ function generateContractHtml(contrato: any, signatariosExa: any[], produtosExa:
   `;
 }
 
-// Template para contrato de síndico (Comodato)
-function generateSindicoContractHtml(contrato: any, signatariaExa1: any, signatarioExa2: any, dataAtual: string, totalPaineis: number): string {
+// Template para contrato de síndico (Comodato) - ÚNICO SIGNATÁRIO EXA
+function generateSindicoContractHtml(contrato: any, signatarioExa: any, dataAtual: string, totalPaineis: number): string {
   return `
     <!DOCTYPE html>
     <html lang="pt-BR">
@@ -1668,7 +1662,7 @@ function generateSindicoContractHtml(contrato: any, signatariaExa1: any, signata
           <div class="party">
             <div class="party-label">CESSIONÁRIA</div>
             <div class="party-content">
-              <strong>INDEXA MIDIA LTDA</strong> (marca ExaMídia), pessoa jurídica de direito privado, inscrita no CNPJ sob nº 38.142.638/0001-30, com sede na Avenida Paraná, 974 — Sala 301 — Centro — Foz do Iguaçu/PR. Representante legal: <strong>${signatarioExa2.nome}</strong> (RG ${signatarioExa2.rg || '8.812.269-0'} / CPF ${signatarioExa2.cpf}).
+              <strong>INDEXA MIDIA LTDA</strong> (marca ExaMídia), pessoa jurídica de direito privado, inscrita no CNPJ sob nº 38.142.638/0001-30, com sede na Avenida Paraná, 974 — Sala 301 — Centro — Foz do Iguaçu/PR. Representante legal: <strong>${signatarioExa.nome}</strong> (RG ${signatarioExa.rg || '8.812.269-0'} / CPF ${signatarioExa.cpf}).
             </div>
           </div>
         </div>
@@ -1737,19 +1731,11 @@ function generateSindicoContractHtml(contrato: any, signatariaExa1: any, signata
           </div>
           
           <div class="exa-representatives">
-            <div class="exa-rep-title">Representantes Legais da CESSIONÁRIA:</div>
-            <div class="exa-reps-grid">
-              <div style="text-align: center; min-width: 200px;">
-                <div class="signature-line">
-                  <div class="signature-name">${signatariaExa1.nome}</div>
-                  <div class="signature-docs">RG ${signatariaExa1.rg || '13.038.569-9'} / CPF ${signatariaExa1.cpf}</div>
-                </div>
-              </div>
-              <div style="text-align: center; min-width: 200px;">
-                <div class="signature-line">
-                  <div class="signature-name">${signatarioExa2.nome}</div>
-                  <div class="signature-docs">RG ${signatarioExa2.rg || '8.812.269-0'} / CPF ${signatarioExa2.cpf}</div>
-                </div>
+            <div class="exa-rep-title">Representante Legal da COMODANTE:</div>
+            <div style="text-align: center; margin-top: 20px;">
+              <div class="signature-line">
+                <div class="signature-name">${signatarioExa.nome}</div>
+                <div class="signature-docs">RG ${signatarioExa.rg || '8.812.269-0'} / CPF ${signatarioExa.cpf}</div>
               </div>
             </div>
           </div>
