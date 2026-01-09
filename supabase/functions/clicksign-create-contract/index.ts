@@ -1218,7 +1218,7 @@ function generateContractHtml(contrato: any, signatariosExa: any[], produtosExa:
           <div class="party">
             <div class="party-label">CONTRATADA</div>
             <div class="party-content">
-              <strong>EXA — Soluções Digitais / Publicidade Inteligente</strong>, pessoa jurídica inscrita no CNPJ nº 62.878.193/0001-35, com sede à Rua Sílvio Sotomaior, 187 — Bairro Três Bandeiras — Foz do Iguaçu/PR. Representantes legais: <strong>${signatariaExa1.nome}</strong> (RG ${signatariaExa1.rg || '13.038.569-9'} / CPF ${signatariaExa1.cpf}) e <strong>${signatarioExa2.nome}</strong> (RG ${signatarioExa2.rg || '8.812.269-0'} / CPF ${signatarioExa2.cpf}).
+              <strong>INDEXA MIDIA LTDA</strong> (marca ExaMídia), pessoa jurídica inscrita no CNPJ nº 38.142.638/0001-30, com sede à Avenida Paraná, 974 — Sala 301 — Centro — Foz do Iguaçu/PR. Representante legal: <strong>${signatarioExa2.nome}</strong> (RG ${signatarioExa2.rg || '8.812.269-0'} / CPF ${signatarioExa2.cpf}).
             </div>
           </div>
           <div class="party">
@@ -1410,23 +1410,17 @@ function generateContractHtml(contrato: any, signatariosExa: any[], produtosExa:
             <!-- CONTRATADA (EXA) -->
             <div class="signature-box">
               <div class="signature-line">
-                <div class="signature-name">EXA — Soluções Digitais</div>
+                <div class="signature-name">INDEXA MIDIA LTDA (ExaMídia)</div>
                 <div class="signature-role">CONTRATADA</div>
-                <div class="signature-docs">CNPJ: 62.878.193/0001-35</div>
+                <div class="signature-docs">CNPJ: 38.142.638/0001-30</div>
               </div>
             </div>
           </div>
           
-          <!-- REPRESENTANTES LEGAIS EXA -->
+          <!-- REPRESENTANTE LEGAL EXA -->
           <div class="exa-representatives">
-            <div class="exa-rep-title">Representantes Legais da CONTRATADA:</div>
+            <div class="exa-rep-title">Representante Legal da CONTRATADA:</div>
             <div class="exa-reps-grid">
-              <div class="exa-rep-box">
-                <div class="signature-line">
-                  <div class="signature-name">${signatariaExa1.nome}</div>
-                  <div class="signature-docs">RG ${signatariaExa1.rg || '13.038.569-9'} / CPF ${signatariaExa1.cpf}</div>
-                </div>
-              </div>
               <div class="exa-rep-box">
                 <div class="signature-line">
                   <div class="signature-name">${signatarioExa2.nome}</div>
@@ -1439,8 +1433,8 @@ function generateContractHtml(contrato: any, signatariosExa: any[], produtosExa:
         
         <!-- FOOTER -->
         <div class="footer">
-          <p>EXA — Soluções Digitais / Publicidade Inteligente</p>
-          <p>Rua Sílvio Sotomaior, 187 — Três Bandeiras — Foz do Iguaçu/PR — CNPJ 62.878.193/0001-35</p>
+          <p>ExaMídia — Operada por Indexa Midia LTDA</p>
+          <p>Avenida Paraná, 974 — Sala 301 — Centro — Foz do Iguaçu/PR — CNPJ 38.142.638/0001-30</p>
           <p>www.examidia.com.br | contato@examidia.com.br</p>
         </div>
       </div>
@@ -1674,7 +1668,7 @@ function generateSindicoContractHtml(contrato: any, signatariaExa1: any, signata
           <div class="party">
             <div class="party-label">CESSIONÁRIA</div>
             <div class="party-content">
-              <strong>EXA SOLUÇÕES DIGITAIS LTDA</strong>, pessoa jurídica de direito privado, inscrita no CNPJ sob nº 62.878.193/0001-35, com sede na Rua Sílvio Sotomaior, 187 — Três Bandeiras — Foz do Iguaçu/PR. Representantes legais: <strong>${signatariaExa1.nome}</strong> (RG ${signatariaExa1.rg || '13.038.569-9'} / CPF ${signatariaExa1.cpf}) e <strong>${signatarioExa2.nome}</strong> (RG ${signatarioExa2.rg || '8.812.269-0'} / CPF ${signatarioExa2.cpf}).
+              <strong>INDEXA MIDIA LTDA</strong> (marca ExaMídia), pessoa jurídica de direito privado, inscrita no CNPJ sob nº 38.142.638/0001-30, com sede na Avenida Paraná, 974 — Sala 301 — Centro — Foz do Iguaçu/PR. Representante legal: <strong>${signatarioExa2.nome}</strong> (RG ${signatarioExa2.rg || '8.812.269-0'} / CPF ${signatarioExa2.cpf}).
             </div>
           </div>
         </div>
@@ -1735,9 +1729,9 @@ function generateSindicoContractHtml(contrato: any, signatariaExa1: any, signata
             </div>
             <div class="signature-box">
               <div class="signature-line">
-                <div class="signature-name">EXA SOLUÇÕES DIGITAIS LTDA</div>
+                <div class="signature-name">INDEXA MIDIA LTDA (ExaMídia)</div>
                 <div class="signature-role">CESSIONÁRIA</div>
-                <div class="signature-docs">CNPJ: 62.878.193/0001-35</div>
+                <div class="signature-docs">CNPJ: 38.142.638/0001-30</div>
               </div>
             </div>
           </div>

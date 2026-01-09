@@ -84,7 +84,7 @@ serve(async (req) => {
         email_confirm: true,
         user_metadata: {
           role: 'super_admin',
-          name: 'Jefferson Silver',
+          name: 'Jeferson Stilver',
         },
       }
     )

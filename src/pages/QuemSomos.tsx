@@ -12,10 +12,10 @@ const QuemSomos = () => {
   const companySchema = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "name": "EXA Soluções Digitais LTDA",
+    "name": "ExaMídia",
     "image": "https://www.examidia.com.br/og-image.png",
-    "legalName": "EXA Soluções Digitais LTDA",
-    "taxID": "52.499.450/0001-60",
+    "legalName": "Indexa Midia LTDA",
+    "taxID": "38.142.638/0001-30",
     "@id": "https://www.examidia.com.br",
     "url": "https://www.examidia.com.br",
     "telephone": "+554591415856",
@@ -49,7 +49,7 @@ const QuemSomos = () => {
       "https://www.instagram.com/exa.publicidade",
       "https://wa.me/554591415856"
     ],
-    "description": "EXA Soluções Digitais LTDA - Publicidade inteligente em elevadores de Foz do Iguaçu. Conectamos tecnologia, informação e pessoas com comunicação não invasiva e ética."
+    "description": "ExaMídia - Publicidade inteligente em elevadores de Foz do Iguaçu. Operada pela Indexa Midia LTDA. Conectamos tecnologia, informação e pessoas com comunicação não invasiva e ética."
   };
 
   return (

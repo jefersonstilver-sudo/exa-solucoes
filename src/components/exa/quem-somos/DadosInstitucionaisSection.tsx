@@ -7,13 +7,13 @@ const dadosEmpresa = [
   {
     icon: Building2,
     label: 'Razão Social',
-    value: 'EXA Soluções Digitais LTDA',
+    value: 'Indexa Midia LTDA',
     link: null
   },
   {
     icon: FileText,
     label: 'CNPJ',
-    value: '62.878.193/0001-35',
+    value: '38.142.638/0001-30',
     link: null
   },
   {

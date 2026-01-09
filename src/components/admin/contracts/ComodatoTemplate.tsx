@@ -99,8 +99,8 @@ const ComodatoTemplate: React.FC<ComodatoTemplateProps> = ({ data }) => {
         <div className="bg-gray-50 p-4 rounded border border-gray-200">
           <p className="text-xs text-gray-500 uppercase font-semibold mb-2">COMODANTE (quem empresta)</p>
           <p>
-            <strong>EXA SOLUÇÕES DIGITAIS LTDA</strong>, pessoa jurídica de direito privado, 
-            inscrita no CNPJ sob nº <strong>62.878.193/0001-35</strong>, com sede na 
+            <strong>INDEXA MIDIA LTDA</strong> (marca ExaMídia), pessoa jurídica de direito privado, 
+            inscrita no CNPJ sob nº <strong>38.142.638/0001-30</strong>, com sede na 
             Av. Paraná, nº 974, Sala 301, Centro, Foz do Iguaçu - PR, CEP 85852-000, 
             neste ato representada por seus representantes legais, doravante denominada 
             simplesmente <strong>"COMODANTE"</strong>.
@@ -285,7 +285,7 @@ const ComodatoTemplate: React.FC<ComodatoTemplateProps> = ({ data }) => {
       <div className="grid grid-cols-2 gap-8 mt-16">
         <div className="text-center">
           <div className="border-t border-gray-400 pt-2 mx-4">
-            <p className="font-bold">EXA SOLUÇÕES DIGITAIS LTDA</p>
+            <p className="font-bold">INDEXA MIDIA LTDA</p>
             <p className="text-sm text-gray-600">COMODANTE</p>
           </div>
         </div>
