@@ -12008,6 +12008,7 @@ export type Database = {
         }[]
       }
       get_video_current_status: { Args: { p_video_id: string }; Returns: Json }
+      has_any_admin_role: { Args: never; Returns: boolean }
       has_permission: {
         Args: { _permission_key: string; _user_id: string }
         Returns: boolean
@@ -12043,9 +12044,11 @@ export type Database = {
         Args: { p_amount: number; p_email: string }
         Returns: Json
       }
+      is_admin_or_super: { Args: never; Returns: boolean }
       is_admin_user: { Args: never; Returns: boolean }
       is_current_user_super_admin: { Args: never; Returns: boolean }
       is_emergency_mode: { Args: never; Returns: boolean }
+      is_finance_admin: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       is_super_admin_for_sessions: { Args: never; Returns: boolean }
       is_super_admin_secure: { Args: never; Returns: boolean }
