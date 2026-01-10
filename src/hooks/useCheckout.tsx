@@ -147,6 +147,8 @@ export const useCheckout = () => {
     couponId: validationResult?.couponId, // EXPORTAR couponId
     couponDiscount: validationResult?.discountPercent || 0, // GARANTIR que sempre retorna número
     couponCategoria: validationResult?.categoria, // EXPORTAR categoria
+    tipoDesconto, // EXPORTAR tipo de desconto
+    precoFinal, // EXPORTAR preço final
     
     // Estados do checkout
     isCreatingPayment,

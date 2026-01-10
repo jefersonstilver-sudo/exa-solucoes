@@ -58,7 +58,9 @@ const CheckoutSummary = () => {
     couponId,
     couponDiscount,
     couponCode,
-    couponCategoria
+    couponCategoria,
+    tipoDesconto,
+    precoFinal
   } = useCheckout();
   
   const { isCreatingPayment, processPayment } = usePaymentFlow();
@@ -141,12 +143,15 @@ const CheckoutSummary = () => {
   // 🎁 DETECTAR CUPOM CORTESIA - Usar categoria do cupom
   const isCortesia = couponCategoria === 'cortesia' || (couponCode?.toUpperCase().trim() === 'CORTESIA_ADMIN' && baseTotal === 0);
   
-  // 💰 Calcular valor com desconto PIX à vista (5%)
+  // 💰 CUPOM PREÇO FINAL: Não aplica desconto PIX, valor é fixo
+  const isPrecoFinal = tipoDesconto === 'preco_final';
+  
+  // 💰 Calcular valor com desconto PIX à vista (5%) - NÃO aplicar se preço final
   const pixAvistaDiscount = 0.05;
   const totalAfterCoupon = baseTotal;
   
-  // Aplicar desconto PIX à vista se selecionado
-  const totalWithPixDiscount = paymentMethod === 'pix_avista' 
+  // Aplicar desconto PIX à vista se selecionado - EXCETO para cupom preço final
+  const totalWithPixDiscount = (paymentMethod === 'pix_avista' && !isPrecoFinal)
     ? totalAfterCoupon * (1 - pixAvistaDiscount) 
     : totalAfterCoupon;
   
@@ -382,6 +387,7 @@ const CheckoutSummary = () => {
               totalAmount={baseTotal}
               selectedPlan={selectedPlan || 1}
               couponCode={couponCode}
+              tipoDesconto={tipoDesconto}
             />
           )}
           
