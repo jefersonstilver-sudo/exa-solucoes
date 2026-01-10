@@ -38,6 +38,7 @@ interface AsaasWebhookPayment {
   description?: string;
   invoiceUrl?: string;
   transactionReceiptUrl?: string;
+  subscription?: string; // ID da assinatura, se for pagamento de assinatura
 }
 
 interface AsaasWebhookEvent {
@@ -197,11 +198,13 @@ serve(async (req) => {
       log('info', '💰 Processando pagamento confirmado', {
         paymentId: event.payment.id,
         value: event.payment.value,
-        status: event.payment.status
+        status: event.payment.status,
+        subscription: event.payment.subscription
       });
 
       const payment = event.payment;
       const pedidoId = payment.externalReference;
+      const isSubscriptionPayment = !!payment.subscription;
 
       if (!pedidoId) {
         log('warn', '⚠️ Pagamento sem external_reference (pedido_id)', { paymentId: payment.id });
@@ -226,7 +229,7 @@ serve(async (req) => {
       // Buscar pedido pelo ID
       const { data: pedido, error: pedidoError } = await supabase
         .from('pedidos')
-        .select('id, status, client_id, valor_total')
+        .select('id, status, client_id, valor_total, is_subscription, asaas_subscription_id')
         .eq('id', pedidoId)
         .maybeSingle();
 
@@ -253,85 +256,196 @@ serve(async (req) => {
         pedidoId, 
         statusAtual: pedido.status,
         valorPedido: pedido.valor_total,
-        valorPago: payment.value
+        valorPago: payment.value,
+        isSubscription: pedido.is_subscription,
+        isSubscriptionPayment
       });
 
-      // Atualizar status do pedido para "pago"
-      // Usar colunas existentes: transaction_id e log_pagamento
-      const { error: updateError } = await supabase
-        .from('pedidos')
-        .update({
-          status: 'pago',
-          payment_status: 'approved',
-          metodo_pagamento: 'pix_asaas',
-          transaction_id: payment.id,
-          log_pagamento: {
-            provider: 'asaas',
-            payment_id: payment.id,
-            payment_status: 'approved',
-            payment_date: payment.paymentDate || payment.confirmedDate || new Date().toISOString(),
-            value: payment.value,
-            net_value: payment.netValue,
-            billing_type: payment.billingType,
-            confirmed_at: new Date().toISOString()
-          },
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', pedidoId);
+      // ============================================================
+      // PAGAMENTO DE ASSINATURA (parcela recorrente)
+      // ============================================================
+      if (isSubscriptionPayment || pedido.is_subscription) {
+        log('info', '📅 Processando pagamento de assinatura/parcela', {
+          subscriptionId: payment.subscription,
+          paymentValue: payment.value
+        });
 
-      if (updateError) {
-        log('error', '❌ Erro ao atualizar pedido', { pedidoId, error: updateError.message });
-        throw new Error(`Erro ao atualizar pedido: ${updateError.message}`);
-      }
-
-      log('info', '✅ Pedido atualizado para PAGO', { pedidoId });
-
-      // Atualizar parcelas relacionadas (se existirem)
-      const { data: parcelas, error: parcelasQueryError } = await supabase
-        .from('parcelas')
-        .select('id, status')
-        .eq('pedido_id', pedidoId)
-        .in('status', ['pendente', 'aguardando_pagamento', 'atrasado'])
-        .order('numero_parcela', { ascending: true })
-        .limit(1);
-
-      if (!parcelasQueryError && parcelas && parcelas.length > 0) {
-        const parcelaId = parcelas[0].id;
-        
-        const { error: parcelaUpdateError } = await supabase
+        // Buscar próxima parcela pendente
+        const { data: parcelas, error: parcelasQueryError } = await supabase
           .from('parcelas')
+          .select('id, numero_parcela, status, valor')
+          .eq('pedido_id', pedidoId)
+          .in('status', ['pendente', 'aguardando_pagamento', 'atrasado'])
+          .order('numero_parcela', { ascending: true })
+          .limit(1);
+
+        if (!parcelasQueryError && parcelas && parcelas.length > 0) {
+          const parcela = parcelas[0];
+          
+          log('info', '✅ Parcela encontrada para atualizar', { 
+            parcelaId: parcela.id, 
+            numeroParcela: parcela.numero_parcela 
+          });
+
+          // Atualizar parcela como paga
+          const { error: parcelaUpdateError } = await supabase
+            .from('parcelas')
+            .update({
+              status: 'pago',
+              data_pagamento: payment.paymentDate || payment.confirmedDate || new Date().toISOString(),
+              mercadopago_payment_id: payment.id,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', parcela.id);
+
+          if (parcelaUpdateError) {
+            log('warn', '⚠️ Erro ao atualizar parcela', { parcelaId: parcela.id, error: parcelaUpdateError.message });
+          } else {
+            log('info', '✅ Parcela atualizada para PAGO', { parcelaId: parcela.id, numeroParcela: parcela.numero_parcela });
+          }
+
+          // Verificar se é a primeira parcela (ativa o pedido)
+          if (parcela.numero_parcela === 1 && pedido.status !== 'pago') {
+            await supabase
+              .from('pedidos')
+              .update({
+                status: 'pago',
+                payment_status: 'approved',
+                transaction_id: payment.id,
+                log_pagamento: {
+                  provider: 'asaas',
+                  payment_id: payment.id,
+                  payment_status: 'approved',
+                  payment_date: payment.paymentDate || payment.confirmedDate || new Date().toISOString(),
+                  value: payment.value,
+                  is_subscription: true,
+                  confirmed_at: new Date().toISOString()
+                },
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', pedidoId);
+
+            log('info', '✅ Pedido ativado após primeira parcela', { pedidoId });
+          }
+
+          // Verificar se todas as parcelas foram pagas
+          const { data: parcelasPendentes } = await supabase
+            .from('parcelas')
+            .select('id')
+            .eq('pedido_id', pedidoId)
+            .neq('status', 'pago');
+
+          if (!parcelasPendentes || parcelasPendentes.length === 0) {
+            // Todas as parcelas pagas - marcar assinatura como concluída
+            await supabase
+              .from('assinaturas')
+              .update({
+                status: 'concluida',
+                updated_at: new Date().toISOString()
+              })
+              .eq('pedido_id', pedidoId);
+
+            log('info', '🎉 Todas as parcelas pagas - assinatura concluída', { pedidoId });
+          }
+        } else {
+          // Sem parcelas pendentes - criar registro ou é pagamento avulso de assinatura
+          log('info', '⚠️ Nenhuma parcela pendente encontrada, registrando pagamento direto');
+        }
+
+        // Registrar log do evento
+        await supabase
+          .from('log_eventos_sistema')
+          .insert({
+            tipo_evento: 'subscription_payment_confirmed',
+            descricao: `Pagamento de assinatura confirmado - R$ ${payment.value.toFixed(2)}`,
+            detalhes: {
+              pedido_id: pedidoId,
+              payment_id: payment.id,
+              subscription_id: payment.subscription,
+              event_type: event.event,
+              valor: payment.value,
+              data_pagamento: payment.paymentDate || payment.confirmedDate,
+              timestamp: new Date().toISOString()
+            }
+          });
+
+      } else {
+        // ============================================================
+        // PAGAMENTO AVULSO (único)
+        // ============================================================
+        
+        // Atualizar status do pedido para "pago"
+        const { error: updateError } = await supabase
+          .from('pedidos')
           .update({
             status: 'pago',
-            data_pagamento: payment.paymentDate || payment.confirmedDate || new Date().toISOString(),
-            mercadopago_payment_id: payment.id, // Campo genérico para payment_id
+            payment_status: 'approved',
+            metodo_pagamento: 'pix_asaas',
+            transaction_id: payment.id,
+            log_pagamento: {
+              provider: 'asaas',
+              payment_id: payment.id,
+              payment_status: 'approved',
+              payment_date: payment.paymentDate || payment.confirmedDate || new Date().toISOString(),
+              value: payment.value,
+              net_value: payment.netValue,
+              billing_type: payment.billingType,
+              confirmed_at: new Date().toISOString()
+            },
             updated_at: new Date().toISOString()
           })
-          .eq('id', parcelaId);
+          .eq('id', pedidoId);
 
-        if (parcelaUpdateError) {
-          log('warn', '⚠️ Erro ao atualizar parcela', { parcelaId, error: parcelaUpdateError.message });
-        } else {
+        if (updateError) {
+          log('error', '❌ Erro ao atualizar pedido', { pedidoId, error: updateError.message });
+          throw new Error(`Erro ao atualizar pedido: ${updateError.message}`);
+        }
+
+        log('info', '✅ Pedido atualizado para PAGO', { pedidoId });
+
+        // Atualizar parcela se existir (pagamento único também pode ter parcela)
+        const { data: parcelas, error: parcelasQueryError } = await supabase
+          .from('parcelas')
+          .select('id, status')
+          .eq('pedido_id', pedidoId)
+          .in('status', ['pendente', 'aguardando_pagamento', 'atrasado'])
+          .order('numero_parcela', { ascending: true })
+          .limit(1);
+
+        if (!parcelasQueryError && parcelas && parcelas.length > 0) {
+          const parcelaId = parcelas[0].id;
+          
+          await supabase
+            .from('parcelas')
+            .update({
+              status: 'pago',
+              data_pagamento: payment.paymentDate || payment.confirmedDate || new Date().toISOString(),
+              mercadopago_payment_id: payment.id,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', parcelaId);
+
           log('info', '✅ Parcela atualizada para PAGO', { parcelaId });
         }
-      }
 
-      // Registrar log do evento de sistema
-      await supabase
-        .from('log_eventos_sistema')
-        .insert({
-          tipo_evento: 'payment_confirmed_asaas_webhook',
-          descricao: `Pagamento confirmado via webhook Asaas`,
-          detalhes: {
-            pedido_id: pedidoId,
-            payment_id: payment.id,
-            event_type: event.event,
-            valor: payment.value,
-            valor_liquido: payment.netValue,
-            data_pagamento: payment.paymentDate || payment.confirmedDate,
-            billing_type: payment.billingType,
-            timestamp: new Date().toISOString()
-          }
-        });
+        // Registrar log do evento de sistema
+        await supabase
+          .from('log_eventos_sistema')
+          .insert({
+            tipo_evento: 'payment_confirmed_asaas_webhook',
+            descricao: `Pagamento confirmado via webhook Asaas`,
+            detalhes: {
+              pedido_id: pedidoId,
+              payment_id: payment.id,
+              event_type: event.event,
+              valor: payment.value,
+              valor_liquido: payment.netValue,
+              data_pagamento: payment.paymentDate || payment.confirmedDate,
+              billing_type: payment.billingType,
+              timestamp: new Date().toISOString()
+            }
+          });
+      }
 
       // Atualizar log do webhook como processado
       await supabase
@@ -346,7 +460,8 @@ serve(async (req) => {
       log('info', '🎉 Webhook processado com sucesso', { 
         eventId: event.id,
         pedidoId,
-        paymentId: payment.id
+        paymentId: payment.id,
+        isSubscription: isSubscriptionPayment || pedido.is_subscription
       });
 
       return new Response(
@@ -354,7 +469,8 @@ serve(async (req) => {
           success: true, 
           message: 'Payment processed successfully',
           pedidoId,
-          paymentId: payment.id
+          paymentId: payment.id,
+          isSubscriptionPayment
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
