@@ -364,10 +364,10 @@ export function ModernAdminSidebar() {
       icon: Shield,
       items: [
         {
-          title: 'Financeiro MP',
-          href: buildPath('financeiro-mp'),
+          title: 'Financeiro',
+          href: buildPath('financeiro'),
           icon: Landmark,
-          moduleKey: MODULE_KEYS.financeiro_mp
+          moduleKey: MODULE_KEYS.financeiro
         },
         {
           title: 'Relatórios',
