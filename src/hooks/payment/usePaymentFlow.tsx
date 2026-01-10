@@ -74,7 +74,9 @@ export const usePaymentFlow = () => {
       if (options.paymentMethod === 'pix') {
         const { data, error } = await supabase.functions.invoke('process-payment', {
           body: {
-            pedidoId: pedido.id
+            pedido_id: pedido.id,
+            payment_method: 'pix',
+            total_amount: options.totalPrice
           }
         });
         
