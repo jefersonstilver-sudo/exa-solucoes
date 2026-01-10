@@ -41,7 +41,7 @@ export const MODULE_KEYS = {
   relatorios: 'relatorios',
   seguranca: 'seguranca',
   configuracoes: 'configuracoes',
-  financeiro_mp: 'financeiro_mp',
+  financeiro: 'financeiro',
   processos: 'processos',
 } as const;
 

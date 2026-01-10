@@ -139,7 +139,7 @@ export const MobileMoreMenu: React.FC<MobileMoreMenuProps> = ({ trigger }) => {
     {
       section: 'Governança',
       items: [
-        { icon: Landmark, label: 'Financeiro MP', path: buildPath('financeiro-mp'), moduleKey: MODULE_KEYS.financeiro_mp },
+        { icon: Landmark, label: 'Financeiro', path: buildPath('financeiro'), moduleKey: MODULE_KEYS.financeiro },
         { icon: FileBarChart, label: 'Relatórios', path: buildPath('relatorios-financeiros'), moduleKey: MODULE_KEYS.relatorios },
         { icon: Users, label: 'Usuários', path: buildPath('usuarios'), moduleKey: MODULE_KEYS.usuarios },
         { icon: Bell, label: 'Notificações', path: buildPath('notificacoes'), moduleKey: MODULE_KEYS.notificacoes },

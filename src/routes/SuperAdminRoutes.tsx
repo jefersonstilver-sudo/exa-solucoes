@@ -25,7 +25,6 @@ import BenefitManagement from '@/pages/admin/BenefitManagement';
 import CRMClients from '@/pages/admin/CRMClients';
 import SecurityDashboard from '@/pages/admin/SecurityDashboard';
 import FinancialReports from '@/pages/admin/FinancialReports';
-import FinanceiroCompleto from '@/pages/admin/FinanceiroCompleto';
 import ZApiDiagnostics from '@/pages/admin/ZApiDiagnostics';
 import AssinaturasPage from '@/pages/admin/AssinaturasPage';
 import EmailLogs from '@/pages/admin/EmailLogs';
@@ -65,10 +64,13 @@ const CRMHubPage = lazy(() => import('@/pages/admin/crm/CRMHubPage'));
 // Lazy import para Vendas (FASE 2)
 const VendasPage = lazy(() => import('@/pages/admin/vendas/VendasPage'));
 
-// Lazy imports para Financeiro (FASE 3)
-const FinanceiroDashboard = lazy(() => import('@/pages/admin/financeiro/FinanceiroDashboard'));
+// Lazy imports para Financeiro (100% ASAAS)
+const FinanceiroDashboard = lazy(() => import('@/pages/admin/financeiro/FinanceiroVisaoGeral'));
 const FluxoCaixaPage = lazy(() => import('@/pages/admin/financeiro/FluxoCaixaPage'));
 const InadimplenciaPage = lazy(() => import('@/pages/admin/financeiro/InadimplenciaPage'));
+const ContasPagarPage = lazy(() => import('@/pages/admin/financeiro/ContasPagarPage'));
+const ContasReceberPage = lazy(() => import('@/pages/admin/financeiro/ContasReceberPage'));
+const DREPage = lazy(() => import('@/pages/admin/financeiro/DREPage'));
 
 // Lazy import para Central de Tarefas (FASE 3)
 const MinhaManha = lazy(() => import('@/pages/admin/tarefas/MinhaManha'));
@@ -104,9 +106,11 @@ const SuperAdminRoutes = () => {
       <Route path="instrucoes-compra-vales" element={<BenefitPurchaseInstructions />} />
       <Route path="gerenciar-beneficios" element={<BenefitManagement />} />
       <Route path="relatorios-financeiros" element={<FinancialReports />} />
-      <Route path="financeiro-mp" element={<FinanceiroCompleto />} />
       <Route path="financeiro" element={<Suspense fallback={<GlobalLoadingPage />}><FinanceiroDashboard /></Suspense>} />
+      <Route path="financeiro/contas-pagar" element={<Suspense fallback={<GlobalLoadingPage />}><ContasPagarPage /></Suspense>} />
+      <Route path="financeiro/contas-receber" element={<Suspense fallback={<GlobalLoadingPage />}><ContasReceberPage /></Suspense>} />
       <Route path="financeiro/fluxo-caixa" element={<Suspense fallback={<GlobalLoadingPage />}><FluxoCaixaPage /></Suspense>} />
+      <Route path="financeiro/dre" element={<Suspense fallback={<GlobalLoadingPage />}><DREPage /></Suspense>} />
       <Route path="financeiro/inadimplencia" element={<Suspense fallback={<GlobalLoadingPage />}><InadimplenciaPage /></Suspense>} />
       
       {/* ============ CRM ============ */}
