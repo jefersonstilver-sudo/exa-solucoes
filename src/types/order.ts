@@ -12,6 +12,7 @@ export interface CreatePaymentOrderParams {
   selectedPlan: number;
   totalPrice: number;
   couponId: string | null;
+  couponCode?: string | null;  // Required for server-side price validation with coupons
   startDate: Date;
   endDate: Date;
   paymentMethod?: string;

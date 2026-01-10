@@ -220,6 +220,7 @@ const CheckoutSummary = () => {
         selectedPlan: selectedPlan || 1,
         totalPrice: finalTotal,
         couponId: couponValid ? couponId : null,
+        couponCode: couponValid ? couponCode : null,  // Pass couponCode for server-side price validation
         paymentMethod: 'pix', // Legacy format for processPayment
         startDate,
         endDate,
@@ -261,6 +262,7 @@ const CheckoutSummary = () => {
       selectedPlan: selectedPlan || 1,
       totalPrice: finalTotal,
       couponId: couponValid ? couponId : null,
+      couponCode: couponValid ? couponCode : null,  // Pass couponCode for server-side price validation
       startDate,
       endDate
     });

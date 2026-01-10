@@ -183,7 +183,7 @@ const AdvertiserOrders = () => {
       const {
         data: pedido,
         error: pedidoError
-      } = await supabase.from('pedidos').select('*').eq('id', orderId).single();
+      } = await supabase.from('pedidos').select('*, cupons:cupom_id(codigo)').eq('id', orderId).single();
       if (pedidoError || !pedido) {
         throw new Error('Pedido não encontrado');
       }
@@ -197,6 +197,9 @@ const AdvertiserOrders = () => {
         throw new Error('Erro ao buscar dados dos prédios');
       }
 
+      // Obter código do cupom se existir
+      const couponCode = (pedido as any).cupons?.codigo || null;
+
       // Criar sessão de checkout no Mercado Pago
       const result = await createCheckoutProSession({
         sessionUser: userProfile,
@@ -207,6 +210,7 @@ const AdvertiserOrders = () => {
         selectedPlan: pedido.plano_meses,
         totalPrice: pedido.valor_total,
         couponId: pedido.cupom_id || null,
+        couponCode,  // Pass couponCode for server-side price validation
         startDate: pedido.data_inicio ? new Date(pedido.data_inicio) : new Date(),
         endDate: pedido.data_fim ? new Date(pedido.data_fim) : new Date()
       });

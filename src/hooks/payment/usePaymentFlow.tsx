@@ -19,6 +19,7 @@ interface ProcessPaymentOptions {
   startDate: Date;
   endDate: Date;
   couponId: string | null;
+  couponCode?: string | null;  // Required for server-side price validation with coupons
   acceptTerms: boolean;
   unavailablePanels: string[];
   sessionUser: any;
@@ -59,6 +60,7 @@ export const usePaymentFlow = () => {
         selectedPlan: options.selectedPlan,
         totalPrice: options.totalPrice,
         couponId: options.couponId,
+        couponCode: options.couponCode,  // Pass couponCode for server-side price validation
         startDate: options.startDate,
         endDate: options.endDate,
         paymentMethod: options.paymentMethod

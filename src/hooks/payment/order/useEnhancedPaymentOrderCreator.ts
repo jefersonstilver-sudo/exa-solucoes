@@ -60,8 +60,7 @@ export const useEnhancedPaymentOrderCreator = () => {
   const { saveCompletePurchaseAttempt } = useCheckoutDataPersistence();
   
   const createPaymentOrder = async (params: CreatePaymentOrderParams) => {
-    const { sessionUser, cartItems, selectedPlan, totalPrice, couponId, startDate, endDate, paymentMethod } = params;
-    const couponCode = (params as any).couponCode;
+    const { sessionUser, cartItems, selectedPlan, totalPrice, couponId, couponCode, startDate, endDate, paymentMethod } = params;
 
     try {
       console.log('🚀 [ENHANCED_ORDER_CREATOR] Iniciando criação do pedido...');
