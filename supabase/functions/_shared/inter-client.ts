@@ -315,16 +315,56 @@ export async function getInterToken(): Promise<string> {
     throw new Error('Missing Inter API credentials. Required: INTER_CLIENT_ID, INTER_CLIENT_SECRET, INTER_CERTIFICATE_BASE64, INTER_PRIVATE_KEY_BASE64');
   }
 
-  // Decodificar e formatar certificados PEM
-  const cert = formatPemCertificate(atob(certBase64));
-  const key = formatPemPrivateKey(atob(keyBase64));
+  // Decodificar certificados Base64
+  let certDecoded: string;
+  let keyDecoded: string;
+  
+  try {
+    certDecoded = atob(certBase64);
+    log('info', 'Certificate decoded successfully', { 
+      length: certDecoded.length,
+      preview: certDecoded.substring(0, 50) + '...'
+    });
+  } catch (e) {
+    log('error', 'Failed to decode certificate Base64', { error: e.message });
+    throw new Error(`Certificate Base64 decode failed: ${e.message}`);
+  }
+  
+  try {
+    keyDecoded = atob(keyBase64);
+    log('info', 'Private key decoded successfully', { 
+      length: keyDecoded.length,
+      preview: keyDecoded.substring(0, 50) + '...'
+    });
+  } catch (e) {
+    log('error', 'Failed to decode private key Base64', { error: e.message });
+    throw new Error(`Private key Base64 decode failed: ${e.message}`);
+  }
+
+  // Formatar certificados PEM
+  const cert = formatPemCertificate(certDecoded);
+  const key = formatPemPrivateKey(keyDecoded);
+  
+  log('info', 'PEM certificates formatted', {
+    certHasBeginEnd: cert.includes('-----BEGIN CERTIFICATE-----') && cert.includes('-----END CERTIFICATE-----'),
+    keyHasBeginEnd: key.includes('-----BEGIN') && key.includes('-----END'),
+    certLines: cert.split('\n').length,
+    keyLines: key.split('\n').length
+  });
 
   // Criar cliente HTTP com certificado mTLS
-  const httpClient = Deno.createHttpClient({
-    caCerts: [cert],
-    certChain: cert,
-    privateKey: key,
-  });
+  let httpClient;
+  try {
+    httpClient = Deno.createHttpClient({
+      caCerts: [cert],
+      certChain: cert,
+      privateKey: key,
+    });
+    log('info', 'HTTP client with mTLS created successfully');
+  } catch (e) {
+    log('error', 'Failed to create HTTP client with mTLS', { error: e.message });
+    throw new Error(`mTLS client creation failed: ${e.message}`);
+  }
 
   const tokenUrl = `${INTER_API_URL}/oauth/v2/token`;
   
@@ -336,6 +376,8 @@ export async function getInterToken(): Promise<string> {
   });
 
   try {
+    log('info', 'Sending OAuth token request', { url: tokenUrl, clientIdPrefix: clientId.substring(0, 8) + '...' });
+    
     const response = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
@@ -346,9 +388,25 @@ export async function getInterToken(): Promise<string> {
       client: httpClient,
     });
 
+    const responseHeaders: Record<string, string> = {};
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value;
+    });
+    
+    log('info', 'OAuth response received', { 
+      status: response.status, 
+      statusText: response.statusText,
+      headers: responseHeaders
+    });
+
     if (!response.ok) {
       const errorText = await response.text();
-      log('error', 'Failed to get Inter token', { status: response.status, error: errorText });
+      log('error', 'Failed to get Inter token', { 
+        status: response.status, 
+        statusText: response.statusText,
+        error: errorText,
+        headers: responseHeaders
+      });
       throw new Error(`Inter auth failed: ${response.status} - ${errorText}`);
     }
 
@@ -364,7 +422,7 @@ export async function getInterToken(): Promise<string> {
     
     return data.access_token;
   } catch (error) {
-    log('error', 'Inter authentication error', { error: error.message });
+    log('error', 'Inter authentication error', { error: error.message, stack: error.stack });
     throw error;
   } finally {
     httpClient.close();
