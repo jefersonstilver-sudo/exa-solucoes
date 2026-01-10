@@ -576,6 +576,148 @@ export async function createPixSubscription(
 }
 
 // ========================================
+// PIX AUTOMÁTICO - DÉBITO RECORRENTE DO BANCO CENTRAL
+// ========================================
+
+export interface DirectAuthorizationConfig {
+  recurrenceFrequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+  maxPayments: number;
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD  
+  description: string;
+  allowUpdate?: boolean;
+  txId?: string;
+}
+
+export interface PixAutomaticoResponse {
+  id: string;
+  encodedImage: string;
+  payload: string;
+  expirationDate: string;
+  externalReference?: string;
+  directAuthorization?: {
+    id: string;
+    status: string;
+  };
+}
+
+/**
+ * Cria QR Code PIX com autorização de débito automático recorrente
+ * Usa o endpoint /v3/pix/qrCodes/immediate com directAuthorization
+ * 
+ * IMPORTANTE: Requer ASAAS_PIX_KEY configurada (chave PIX cadastrada no Asaas)
+ */
+export async function createPixAutomaticoCharge(
+  customer: AsaasCustomer,
+  amount: number,
+  totalMonths: number,
+  description?: string,
+  externalReference?: string
+): Promise<{
+  paymentId: string;
+  qrCodeBase64: string;
+  pixCopiaECola: string;
+  expiresAt: string;
+  directAuthorizationId?: string;
+}> {
+  const pixKey = Deno.env.get('ASAAS_PIX_KEY');
+  
+  if (!pixKey) {
+    throw new Error('ASAAS_PIX_KEY não configurada. Configure nas secrets do Supabase para habilitar PIX Automático.');
+  }
+
+  log('info', 'Creating PIX Automático charge with direct authorization', { 
+    customerName: customer.name, 
+    amount,
+    totalMonths
+  });
+
+  // Obter ou criar cliente
+  const customerId = await getOrCreateCustomer(customer);
+
+  // Calcular datas
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() + 1); // Começa amanhã
+  
+  const endDate = new Date(startDate);
+  endDate.setMonth(endDate.getMonth() + totalMonths);
+
+  // Configurar autorização de débito automático
+  const directAuthorization: DirectAuthorizationConfig = {
+    recurrenceFrequency: 'MONTHLY',
+    maxPayments: totalMonths,
+    startDate: startDate.toISOString().split('T')[0],
+    endDate: endDate.toISOString().split('T')[0],
+    description: description || `Assinatura EXA Mídia - ${totalMonths} meses`,
+    allowUpdate: false
+  };
+
+  log('info', 'Direct Authorization config', { directAuthorization });
+
+  // Criar QR Code PIX com autorização de débito automático
+  // Endpoint: POST /v3/pix/qrCodes/immediate
+  const payload = {
+    addressKey: pixKey,
+    description: description || `Pagamento EXA Mídia - ${totalMonths}x R$ ${amount.toFixed(2)}`,
+    value: amount,
+    format: 'ALL',
+    expirationSeconds: 3600, // 1 hora para escanear e autorizar
+    externalReference: externalReference,
+    allowsMultiplePayments: false,
+    directAuthorization: directAuthorization
+  };
+
+  log('info', 'PIX Automático request payload', { payload });
+
+  const response = await asaasRequest<PixAutomaticoResponse>(
+    'POST',
+    '/pix/qrCodes/immediate',
+    payload
+  );
+
+  log('info', 'PIX Automático QR Code created', { 
+    id: response.id,
+    hasDirectAuth: !!response.directAuthorization,
+    directAuthId: response.directAuthorization?.id,
+    directAuthStatus: response.directAuthorization?.status
+  });
+
+  return {
+    paymentId: response.id,
+    qrCodeBase64: response.encodedImage,
+    pixCopiaECola: response.payload,
+    expiresAt: response.expirationDate,
+    directAuthorizationId: response.directAuthorization?.id
+  };
+}
+
+/**
+ * Consulta status de uma autorização de débito automático
+ */
+export async function getDirectAuthorizationStatus(authorizationId: string): Promise<{
+  id: string;
+  status: string;
+  createdAt: string;
+  customer?: string;
+}> {
+  log('info', 'Getting direct authorization status', { authorizationId });
+  
+  const response = await asaasRequest<{
+    id: string;
+    status: string;
+    createdAt: string;
+    customer?: string;
+  }>('GET', `/pix/directAuthorizations/${authorizationId}`);
+  
+  log('info', 'Direct authorization status retrieved', { 
+    authorizationId, 
+    status: response.status 
+  });
+  
+  return response;
+}
+
+// ========================================
 // UTILITÁRIOS
 // ========================================
 
