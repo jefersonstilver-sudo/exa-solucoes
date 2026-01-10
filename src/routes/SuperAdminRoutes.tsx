@@ -71,6 +71,10 @@ const InadimplenciaPage = lazy(() => import('@/pages/admin/financeiro/Inadimplen
 const ContasPagarPage = lazy(() => import('@/pages/admin/financeiro/ContasPagarPage'));
 const ContasReceberPage = lazy(() => import('@/pages/admin/financeiro/ContasReceberPage'));
 const DREPage = lazy(() => import('@/pages/admin/financeiro/DREPage'));
+const InvestimentosPage = lazy(() => import('@/pages/admin/financeiro/InvestimentosPage'));
+const AportesPage = lazy(() => import('@/pages/admin/financeiro/AportesPage'));
+const AlertasFinanceirosPage = lazy(() => import('@/pages/admin/financeiro/AlertasFinanceirosPage'));
+const RelatoriosFinanceirosPage = lazy(() => import('@/pages/admin/financeiro/RelatoriosFinanceirosPage'));
 
 // Lazy import para Central de Tarefas (FASE 3)
 const MinhaManha = lazy(() => import('@/pages/admin/tarefas/MinhaManha'));
@@ -112,6 +116,10 @@ const SuperAdminRoutes = () => {
       <Route path="financeiro/fluxo-caixa" element={<Suspense fallback={<GlobalLoadingPage />}><FluxoCaixaPage /></Suspense>} />
       <Route path="financeiro/dre" element={<Suspense fallback={<GlobalLoadingPage />}><DREPage /></Suspense>} />
       <Route path="financeiro/inadimplencia" element={<Suspense fallback={<GlobalLoadingPage />}><InadimplenciaPage /></Suspense>} />
+      <Route path="financeiro/investimentos" element={<Suspense fallback={<GlobalLoadingPage />}><InvestimentosPage /></Suspense>} />
+      <Route path="financeiro/aportes" element={<Suspense fallback={<GlobalLoadingPage />}><AportesPage /></Suspense>} />
+      <Route path="financeiro/alertas" element={<Suspense fallback={<GlobalLoadingPage />}><AlertasFinanceirosPage /></Suspense>} />
+      <Route path="financeiro/relatorios" element={<Suspense fallback={<GlobalLoadingPage />}><RelatoriosFinanceirosPage /></Suspense>} />
       
       {/* ============ CRM ============ */}
       <Route path="crm-hub" element={
