@@ -59,19 +59,23 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
     );
   }
 
-  // Calcular valores
-  const baseTotal = calculateTotalPrice(selectedPlan, cartItems, 0, false, undefined, couponCategoria);
-  const couponDiscountAmount = couponValid && couponDiscount > 0 ? baseTotal * couponDiscount / 100 : 0;
-  const totalAfterCoupon = baseTotal - couponDiscountAmount;
+  // Calcular valores - CORREÇÃO: Valor base SEM desconto de cupom
+  const baseTotal = calculateTotalPrice(selectedPlan, cartItems, 0, false, undefined, undefined, undefined, undefined);
   
-  // Calcular desconto PIX à vista
+  // Calcular desconto do cupom corretamente
+  const couponDiscountAmount = couponValid && couponDiscount > 0 ? baseTotal * couponDiscount / 100 : 0;
+  const totalAfterCoupon = couponValid && couponDiscount > 0 
+    ? baseTotal - couponDiscountAmount 
+    : baseTotal;
+  
+  // Calcular desconto PIX à vista (sobre o valor após cupom)
   const pixDiscountAmount = isPixAvista ? totalAfterCoupon * pixAvistaDiscount : 0;
   const totalWithPixDiscount = totalAfterCoupon - pixDiscountAmount;
   
   // Valor final (usar externo se disponível, senão calcular)
   const finalTotal = isCortesia ? 0 : (externalFinalTotal ?? Math.max(totalWithPixDiscount, MINIMUM_ORDER_VALUE));
   
-  // Valor da parcela para fidelidade
+  // Valor da parcela para fidelidade (baseado no total COM desconto de cupom, SEM PIX)
   const monthlyAmount = isFidelidade ? totalAfterCoupon / selectedPlan : 0;
   
   // Total de economia
