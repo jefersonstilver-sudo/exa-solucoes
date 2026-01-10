@@ -7721,6 +7721,7 @@ export type Database = {
       }
       pedidos: {
         Row: {
+          asaas_subscription_id: string | null
           blocked_at: string | null
           blocked_by: string | null
           blocked_reason: string | null
@@ -7752,6 +7753,7 @@ export type Database = {
           id: string
           ip_origem: string | null
           is_fidelidade: boolean | null
+          is_subscription: boolean | null
           is_test_order: boolean | null
           lista_paineis: string[] | null
           lista_predios: string[] | null
@@ -7778,6 +7780,7 @@ export type Database = {
           valor_total: number | null
         }
         Insert: {
+          asaas_subscription_id?: string | null
           blocked_at?: string | null
           blocked_by?: string | null
           blocked_reason?: string | null
@@ -7809,6 +7812,7 @@ export type Database = {
           id?: string
           ip_origem?: string | null
           is_fidelidade?: boolean | null
+          is_subscription?: boolean | null
           is_test_order?: boolean | null
           lista_paineis?: string[] | null
           lista_predios?: string[] | null
@@ -7835,6 +7839,7 @@ export type Database = {
           valor_total?: number | null
         }
         Update: {
+          asaas_subscription_id?: string | null
           blocked_at?: string | null
           blocked_by?: string | null
           blocked_reason?: string | null
@@ -7866,6 +7871,7 @@ export type Database = {
           id?: string
           ip_origem?: string | null
           is_fidelidade?: boolean | null
+          is_subscription?: boolean | null
           is_test_order?: boolean | null
           lista_paineis?: string[] | null
           lista_predios?: string[] | null

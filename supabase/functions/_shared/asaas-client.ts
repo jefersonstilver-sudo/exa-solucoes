@@ -46,6 +46,7 @@ export interface AsaasPaymentResponse {
   bankSlipUrl?: string;
   deleted: boolean;
   externalReference?: string;
+  subscription?: string; // ID da assinatura, se for pagamento de assinatura
 }
 
 export interface AsaasPixQrCodeResponse {
@@ -61,6 +62,33 @@ export interface AsaasCustomerResponse {
   email?: string;
   cpfCnpj?: string;
   phone?: string;
+}
+
+// ========================================
+// TIPOS DE ASSINATURA
+// ========================================
+
+export interface AsaasSubscriptionRequest {
+  customer: string;
+  billingType: 'PIX' | 'BOLETO' | 'CREDIT_CARD';
+  value: number;
+  nextDueDate: string; // YYYY-MM-DD
+  cycle: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'BIMONTHLY' | 'QUARTERLY' | 'SEMIANNUALLY' | 'YEARLY';
+  description?: string;
+  externalReference?: string;
+  maxInstallmentCount?: number; // Total de parcelas
+}
+
+export interface AsaasSubscriptionResponse {
+  id: string;
+  customer: string;
+  value: number;
+  nextDueDate: string;
+  cycle: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'EXPIRED';
+  billingType: string;
+  description?: string;
+  externalReference?: string;
 }
 
 // ========================================
@@ -373,4 +401,144 @@ export async function listPaymentsByExternalReference(
   );
   
   return response.data || [];
+}
+
+// ========================================
+// ASSINATURAS RECORRENTES
+// ========================================
+
+/**
+ * Cria uma assinatura recorrente no Asaas
+ */
+export async function createSubscription(
+  customerId: string,
+  value: number,
+  totalMonths: number,
+  description?: string,
+  externalReference?: string
+): Promise<AsaasSubscriptionResponse> {
+  // Próximo vencimento = amanhã
+  const nextDueDate = new Date();
+  nextDueDate.setDate(nextDueDate.getDate() + 1);
+  const dueDateStr = nextDueDate.toISOString().split('T')[0];
+  
+  log('info', 'Creating subscription', { customerId, value, totalMonths, nextDueDate: dueDateStr });
+  
+  const subscription = await asaasRequest<AsaasSubscriptionResponse>('POST', '/subscriptions', {
+    customer: customerId,
+    billingType: 'PIX',
+    value: value,
+    nextDueDate: dueDateStr,
+    cycle: 'MONTHLY',
+    maxInstallmentCount: totalMonths,
+    description: description || `Assinatura EXA - ${totalMonths} meses`,
+    externalReference: externalReference
+  });
+  
+  log('info', 'Subscription created', { subscriptionId: subscription.id, status: subscription.status });
+  return subscription;
+}
+
+/**
+ * Lista pagamentos de uma assinatura
+ */
+export async function listPaymentsBySubscription(
+  subscriptionId: string
+): Promise<AsaasPaymentResponse[]> {
+  log('info', 'Listing payments by subscription', { subscriptionId });
+  
+  const response = await asaasRequest<{ data: AsaasPaymentResponse[] }>(
+    'GET',
+    `/payments?subscription=${subscriptionId}`
+  );
+  
+  return response.data || [];
+}
+
+/**
+ * Fluxo completo: Cria assinatura recorrente + retorna primeira cobrança PIX
+ */
+export async function createPixSubscription(
+  customer: AsaasCustomer,
+  monthlyValue: number,
+  totalMonths: number,
+  description?: string,
+  externalReference?: string
+): Promise<{
+  subscriptionId: string;
+  firstPaymentId: string;
+  qrCodeBase64: string;
+  pixCopiaECola: string;
+  expiresAt: string;
+  invoiceUrl: string;
+  status: string;
+}> {
+  log('info', 'Creating complete PIX subscription', { 
+    customerName: customer.name, 
+    monthlyValue,
+    totalMonths
+  });
+  
+  // 1. Obter ou criar cliente
+  const customerId = await getOrCreateCustomer(customer);
+  
+  // 2. Criar assinatura
+  const subscription = await createSubscription(
+    customerId,
+    monthlyValue,
+    totalMonths,
+    description,
+    externalReference
+  );
+  
+  // 3. Aguardar um pouco para a primeira cobrança ser gerada
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // 4. Buscar a primeira cobrança gerada pela assinatura
+  const payments = await listPaymentsBySubscription(subscription.id);
+  
+  if (!payments || payments.length === 0) {
+    // Se não encontrou pagamentos, criar um manualmente
+    log('warn', 'No payments found for subscription, creating manual payment', { subscriptionId: subscription.id });
+    
+    const manualPayment = await createPixPayment(
+      customerId,
+      monthlyValue,
+      description,
+      externalReference
+    );
+    
+    const qrCode = await getPixQrCode(manualPayment.id);
+    
+    return {
+      subscriptionId: subscription.id,
+      firstPaymentId: manualPayment.id,
+      qrCodeBase64: qrCode.encodedImage,
+      pixCopiaECola: qrCode.payload,
+      expiresAt: qrCode.expirationDate,
+      invoiceUrl: manualPayment.invoiceUrl,
+      status: manualPayment.status,
+    };
+  }
+  
+  const firstPayment = payments[0];
+  
+  // 5. Obter QR Code da primeira cobrança
+  const qrCode = await getPixQrCode(firstPayment.id);
+  
+  log('info', 'PIX subscription created successfully', { 
+    subscriptionId: subscription.id,
+    paymentId: firstPayment.id,
+    customerId
+  });
+  
+  return {
+    subscriptionId: subscription.id,
+    firstPaymentId: firstPayment.id,
+    qrCodeBase64: qrCode.encodedImage,
+    pixCopiaECola: qrCode.payload,
+    expiresAt: qrCode.expirationDate,
+    invoiceUrl: firstPayment.invoiceUrl,
+    status: firstPayment.status,
+  };
 }
