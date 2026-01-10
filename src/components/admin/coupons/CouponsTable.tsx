@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { MoreHorizontal, Edit, Trash, Eye, Copy, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { MoreHorizontal, Edit, Trash, Eye, Copy, ToggleLeft, ToggleRight, X } from 'lucide-react';
 import { Coupon, CouponUsageDetail } from '@/types/coupon';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -37,6 +38,45 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [usageDetails, setUsageDetails] = useState<CouponUsageDetail[]>([]);
   const [loadingUsage, setLoadingUsage] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
+
+  // Seleção em massa
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(coupons.map(c => c.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(i => i !== id));
+    }
+  };
+
+  const isAllSelected = coupons.length > 0 && selectedIds.length === coupons.length;
+  const isSomeSelected = selectedIds.length > 0 && selectedIds.length < coupons.length;
+
+  const handleBulkToggle = async (newStatus: boolean) => {
+    if (selectedIds.length === 0) return;
+    
+    setBulkLoading(true);
+    try {
+      for (const id of selectedIds) {
+        await onToggleStatus(id, newStatus);
+      }
+      toast.success(`${selectedIds.length} cupom(ns) ${newStatus ? 'ativado(s)' : 'desativado(s)'} com sucesso!`);
+      setSelectedIds([]);
+    } catch (error) {
+      toast.error('Erro ao atualizar cupons');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
 
   const getStatusBadge = (coupon: Coupon) => {
     const now = new Date();
@@ -278,10 +318,67 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
   // Desktop: Table layout
   return (
     <>
+      {/* Toolbar de ações em massa */}
+      {selectedIds.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Badge variant="default" className="bg-blue-600">
+                {selectedIds.length} cupom(ns) selecionado(s)
+              </Badge>
+              <span className="text-sm text-blue-700">
+                Ações em massa disponíveis
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedIds([])}
+                disabled={bulkLoading}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Limpar Seleção
+              </Button>
+
+              <Button
+                onClick={() => handleBulkToggle(true)}
+                disabled={bulkLoading}
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                <ToggleRight className="h-4 w-4 mr-1" />
+                Ativar Selecionados
+              </Button>
+
+              <Button
+                onClick={() => handleBulkToggle(false)}
+                disabled={bulkLoading}
+                variant="destructive"
+                size="sm"
+              >
+                <ToggleLeft className="h-4 w-4 mr-1" />
+                Desativar Selecionados
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={isAllSelected}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Selecionar todos"
+                  className={isSomeSelected ? 'data-[state=checked]:bg-blue-600' : ''}
+                />
+              </TableHead>
               <TableHead>Código</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead>Desconto</TableHead>
@@ -294,13 +391,20 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
           <TableBody>
             {coupons.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   Nenhum cupom encontrado
                 </TableCell>
               </TableRow>
             ) : (
               coupons.map((coupon) => (
-                <TableRow key={coupon.id}>
+                <TableRow key={coupon.id} className={selectedIds.includes(coupon.id) ? 'bg-blue-50/50' : ''}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.includes(coupon.id)}
+                      onCheckedChange={(checked) => handleSelectOne(coupon.id, !!checked)}
+                      aria-label={`Selecionar ${coupon.codigo}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-mono font-medium">
                     <div className="flex items-center gap-2">
                       <CouponDetailsHoverCard coupon={coupon}>
