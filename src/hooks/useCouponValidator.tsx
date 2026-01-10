@@ -9,6 +9,8 @@ interface CouponValidationResult {
   couponId: string | null;
   discountPercent: number;
   categoria?: 'geral' | 'especial' | 'primeiro_pedido' | 'fidelidade' | 'promocional' | 'parceiro' | 'cortesia';
+  tipo_desconto?: 'percentual' | 'valor_fixo' | 'preco_final';
+  preco_final?: number; // Valor final fixo quando tipo_desconto = 'preco_final'
 }
 
 export function useCouponValidator() {
@@ -104,6 +106,7 @@ export function useCouponValidator() {
         error?: string; 
         id?: string; 
         desconto_percentual?: number;
+        tipo_desconto?: 'percentual' | 'valor_fixo' | 'preco_final';
         categoria?: 'geral' | 'especial' | 'primeiro_pedido' | 'fidelidade' | 'promocional' | 'parceiro' | 'cortesia';
       };
       
@@ -115,12 +118,20 @@ export function useCouponValidator() {
         console.log('[useCouponValidator] ✅ Cupom válido - código salvo:', code);
       }
       
+      // 💰 Determinar o preço final se tipo_desconto = 'preco_final'
+      const tipoDesconto = isValid ? couponData.tipo_desconto : undefined;
+      const precoFinal = (isValid && tipoDesconto === 'preco_final') 
+        ? couponData.desconto_percentual 
+        : undefined;
+      
       const validationResult = {
         valid: isValid,
         message: isValid ? 'Cupom aplicado com sucesso!' : (couponData.error || 'Cupom inválido'),
         couponId: isValid ? (couponData.id || null) : null,
         discountPercent: isValid ? (couponData.desconto_percentual || 0) : 0,
-        categoria: isValid ? couponData.categoria : undefined
+        categoria: isValid ? couponData.categoria : undefined,
+        tipo_desconto: tipoDesconto,
+        preco_final: precoFinal
       };
       
       console.log('[useCouponValidator] Resultado da validação:', validationResult);
@@ -184,6 +195,8 @@ export function useCouponValidator() {
     couponId: validationResult.couponId,
     isValidatingCoupon: isValidating,
     couponMessage: validationResult.message,
-    couponValid: validationResult.valid
+    couponValid: validationResult.valid,
+    tipoDesconto: validationResult.tipo_desconto,
+    precoFinal: validationResult.preco_final
   };
 }
