@@ -107,24 +107,21 @@ export const useAportes = () => {
     }
   }, [user?.id, fetchAportes]);
 
-  // Totais
+  // Totais - tipos válidos: capital, emprestimo, reinvestimento
   const totais = {
     total: aportes.reduce((acc, a) => acc + a.valor, 0),
-    entradas: aportes.filter(a => a.tipo === 'capital' || a.tipo === 'reinvestimento').reduce((acc, a) => acc + a.valor, 0),
-    saidas: aportes.filter(a => a.tipo === 'saida').reduce((acc, a) => acc + a.valor, 0)
+    capital: aportes.filter(a => a.tipo === 'capital').reduce((acc, a) => acc + a.valor, 0),
+    emprestimo: aportes.filter(a => a.tipo === 'emprestimo').reduce((acc, a) => acc + a.valor, 0),
+    reinvestimento: aportes.filter(a => a.tipo === 'reinvestimento').reduce((acc, a) => acc + a.valor, 0)
   };
 
   // Agrupado por sócio
   const porSocio = aportes.reduce((acc, a) => {
     const key = a.socio_nome || 'Não identificado';
-    if (!acc[key]) acc[key] = { entradas: 0, saidas: 0 };
-    if (a.tipo === 'entrada') {
-      acc[key].entradas += a.valor;
-    } else {
-      acc[key].saidas += a.valor;
-    }
+    if (!acc[key]) acc[key] = { capital: 0, emprestimo: 0, reinvestimento: 0 };
+    acc[key][a.tipo] += a.valor;
     return acc;
-  }, {} as Record<string, { entradas: number; saidas: number }>);
+  }, {} as Record<string, { capital: number; emprestimo: number; reinvestimento: number }>);
 
   return {
     aportes,

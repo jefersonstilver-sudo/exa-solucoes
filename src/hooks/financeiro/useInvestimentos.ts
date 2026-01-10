@@ -9,18 +9,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 
+export type InvestimentoTipo = 'capex' | 'infraestrutura' | 'marketing' | 'tecnologia' | 'outros';
+export type InvestimentoStatus = 'planejado' | 'em_execucao' | 'concluido' | 'cancelado';
+
 export interface Investimento {
   id: string;
   descricao: string;
   valor: number;
   data: string;
   categoria_id?: string;
-  tipo?: string;
+  tipo?: InvestimentoTipo;
   building_id?: string;
   fornecedor_id?: string;
   previsao_retorno?: string;
   retorno_esperado?: number;
-  status?: 'planejado' | 'em_execucao' | 'concluido' | 'cancelado';
+  status?: InvestimentoStatus;
   comprovante_url?: string;
   observacao?: string;
   created_by?: string;
@@ -35,7 +38,7 @@ export interface NovoInvestimento {
   valor: number;
   data: string;
   categoria_id?: string;
-  tipo?: string;
+  tipo?: InvestimentoTipo;
   building_id?: string;
   fornecedor_id?: string;
   previsao_retorno?: string;
@@ -75,10 +78,7 @@ export const useInvestimentos = () => {
     try {
       const { data, error: insertError } = await supabase
         .from('investimentos')
-        .insert({
-          ...investimento,
-          created_by: user?.id
-        })
+        .insert([investimento])
         .select()
         .single();
 
@@ -92,7 +92,7 @@ export const useInvestimentos = () => {
       toast.error('Erro ao registrar investimento');
       return null;
     }
-  }, [user?.id]);
+  }, []);
 
   const atualizarInvestimento = useCallback(async (id: string, updates: Partial<Omit<Investimento, 'id' | 'created_at' | 'updated_at'>>, motivo?: string) => {
     try {
@@ -120,11 +120,11 @@ export const useInvestimentos = () => {
     }
   }, [user?.id]);
 
-  // Totais
+  // Totais - status válidos: planejado, em_execucao, concluido, cancelado
   const totais = {
     total: investimentos.reduce((acc, inv) => acc + inv.valor, 0),
     planejado: investimentos.filter(i => i.status === 'planejado').reduce((acc, inv) => acc + inv.valor, 0),
-    emAndamento: investimentos.filter(i => i.status === 'em_andamento').reduce((acc, inv) => acc + inv.valor, 0),
+    emExecucao: investimentos.filter(i => i.status === 'em_execucao').reduce((acc, inv) => acc + inv.valor, 0),
     concluido: investimentos.filter(i => i.status === 'concluido').reduce((acc, inv) => acc + inv.valor, 0),
     retornoEsperado: investimentos.reduce((acc, inv) => acc + (inv.retorno_esperado || 0), 0)
   };
