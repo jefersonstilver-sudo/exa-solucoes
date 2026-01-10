@@ -17,6 +17,7 @@ interface CheckoutProParams {
   selectedPlan: number;
   totalPrice: number;
   couponId: string | null;
+  couponCode?: string | null;  // Required for server-side price validation with coupons
   startDate: Date;
   endDate: Date;
 }
@@ -60,6 +61,7 @@ export const useCheckoutPro = () => {
         selectedPlan: params.selectedPlan,
         totalPrice: params.totalPrice,
         couponId: params.couponId,
+        couponCode: params.couponCode,  // Pass couponCode for server-side price validation
         startDate: params.startDate,
         endDate: params.endDate,
         paymentMethod: 'credit_card'
