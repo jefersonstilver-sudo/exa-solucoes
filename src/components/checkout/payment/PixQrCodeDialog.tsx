@@ -19,6 +19,12 @@ interface PixQrCodeDialogProps {
   pix_base64?: string;
   userId?: string;
   pedidoId?: string;
+  // Props para PIX parcelado/assinatura
+  isSubscription?: boolean;
+  valorMensal?: number;
+  valorTotal?: number;
+  totalMeses?: number;
+  infoMessage?: string;
 }
 
 const PixQrCodeDialog = ({
@@ -30,7 +36,12 @@ const PixQrCodeDialog = ({
   pix_url,
   pix_base64,
   userId,
-  pedidoId
+  pedidoId,
+  isSubscription,
+  valorMensal,
+  valorTotal,
+  totalMeses,
+  infoMessage
 }: PixQrCodeDialogProps) => {
   const navigate = useNavigate();
   const [copied, setCopied] = React.useState(false);
@@ -143,8 +154,15 @@ const PixQrCodeDialog = ({
               <div className="w-14 h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/20">
                 <Smartphone className="h-7 w-7 text-white" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">Pague com PIX</h2>
-              <p className="text-sm text-gray-500 mt-1">Escaneie o QR Code ou copie o código</p>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {isSubscription ? 'Primeira Parcela PIX' : 'Pague com PIX'}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {isSubscription 
+                  ? `Pague R$ ${valorMensal?.toFixed(2)} agora • ${totalMeses}x mensais`
+                  : 'Escaneie o QR Code ou copie o código'
+                }
+              </p>
             </div>
           </div>
 
@@ -192,6 +210,17 @@ const PixQrCodeDialog = ({
                     </>
                   )}
                 </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Info Message para PIX parcelado */}
+          {isSubscription && infoMessage && (
+            <div className="px-6 pb-4">
+              <div className="bg-blue-50/80 rounded-2xl p-4 border border-blue-100">
+                <p className="text-xs text-blue-700 text-center">
+                  ℹ️ {infoMessage}
+                </p>
               </div>
             </div>
           )}

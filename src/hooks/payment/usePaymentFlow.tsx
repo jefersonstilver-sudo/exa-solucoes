@@ -25,7 +25,16 @@ interface ProcessPaymentOptions {
   sessionUser: any;
   handleClearCart: () => void;
   paymentMethod?: string;
-  onPixGenerated?: (pixData: { qrCodeBase64: string; qrCodeText: string; pedidoId: string }) => void;
+  onPixGenerated?: (pixData: { 
+    qrCodeBase64: string; 
+    qrCodeText: string; 
+    pedidoId: string;
+    isSubscription?: boolean;
+    valorMensal?: number;
+    valorTotal?: number;
+    totalMeses?: number;
+    infoMessage?: string;
+  }) => void;
 }
 
 export const usePaymentFlow = () => {
@@ -120,7 +129,12 @@ export const usePaymentFlow = () => {
           options.onPixGenerated({
             qrCodeBase64: data.qrCodeBase64 || '',
             qrCodeText: data.qrCode || '',
-            pedidoId: pedido.id
+            pedidoId: pedido.id,
+            isSubscription: data.isSubscription || data.isPixParcelado || false,
+            valorMensal: data.valor,
+            valorTotal: data.valorTotal,
+            totalMeses: data.totalMeses,
+            infoMessage: data.infoMessage
           });
         }
       }

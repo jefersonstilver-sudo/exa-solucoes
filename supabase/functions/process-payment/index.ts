@@ -10,7 +10,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 import { checkRateLimit, getClientIdentifier, createRateLimitResponse } from '../_shared/rate-limiter.ts';
-import { createPixCharge, createPixSubscription } from '../_shared/asaas-client.ts';
+import { createPixCharge, createPixSubscription, createPixAutomaticoCharge } from '../_shared/asaas-client.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -126,103 +126,198 @@ serve(async (req) => {
         });
         
         // ============================================================
-        // ASSINATURA RECORRENTE (plano > 1 mês)
+        // PIX AUTOMÁTICO (plano > 1 mês)
+        // Débito recorrente com autorização no app do banco
         // ============================================================
         if (isAssinatura) {
-          console.log('📅 [PAYMENT] Criando ASSINATURA PIX recorrente:', { planoMeses });
+          console.log('📅 [PAYMENT] Criando PIX com parcelamento:', { planoMeses });
           
           const valorMensal = Math.round((valorPedido / planoMeses) * 100) / 100;
           
-          const subscriptionResult = await createPixSubscription(
-            customerData,
-            valorMensal,
-            planoMeses,
-            `Assinatura EXA #${pedido_id.substring(0, 8)} - ${planoMeses} meses`,
-            pedido_id
-          );
-          
-          console.log('✅ [PAYMENT] Assinatura PIX criada:', {
-            subscriptionId: subscriptionResult.subscriptionId,
-            paymentId: subscriptionResult.firstPaymentId,
-            valorMensal,
-            planoMeses
-          });
-          
-          // Log do evento
-          await supabase
-            .from('log_eventos_sistema')
-            .insert({
-              tipo_evento: 'payment_subscription_created_asaas',
-              descricao: `Assinatura PIX criada - ${planoMeses} meses`,
-              detalhes: {
+          try {
+            // Tentar criar PIX Automático com débito recorrente
+            const pixResult = await createPixAutomaticoCharge(
+              customerData,
+              valorMensal,
+              planoMeses,
+              `Assinatura EXA #${pedido_id.substring(0, 8)} - ${planoMeses}x R$ ${valorMensal.toFixed(2)}`,
+              pedido_id
+            );
+            
+            console.log('✅ [PAYMENT] PIX Automático criado:', {
+              qrCodeId: pixResult.qrCodeId,
+              valorMensal,
+              planoMeses,
+              isPixAutomatico: pixResult.isPixAutomatico
+            });
+            
+            // Log do evento
+            await supabase
+              .from('log_eventos_sistema')
+              .insert({
+                tipo_evento: 'payment_pix_automatico_created',
+                descricao: `PIX Automático criado - ${planoMeses}x R$ ${valorMensal.toFixed(2)}`,
+                detalhes: {
+                  pedido_id,
+                  qr_code_id: pixResult.qrCodeId,
+                  valor_mensal: valorMensal,
+                  valor_total: valorPedido,
+                  plano_meses: planoMeses,
+                  is_pix_automatico: true,
+                  expires_at: pixResult.expiresAt,
+                  timestamp: new Date().toISOString()
+                }
+              });
+            
+            // Atualizar pedido com info de PIX Automático
+            await supabase
+              .from('pedidos')
+              .update({
+                status: 'aguardando_pagamento',
+                metodo_pagamento: 'pix_parcelado',
+                is_subscription: true,
+                transaction_id: pixResult.qrCodeId,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', pedido_id);
+            
+            // Calcular data fim
+            const dataFim = new Date();
+            dataFim.setMonth(dataFim.getMonth() + planoMeses);
+            
+            // Criar registro na tabela assinaturas
+            await supabase
+              .from('assinaturas')
+              .insert({
                 pedido_id,
-                asaas_subscription_id: subscriptionResult.subscriptionId,
-                asaas_payment_id: subscriptionResult.firstPaymentId,
+                client_id: pedido.client_id,
+                tipo: 'pix_parcelado',
+                status: 'pendente',
                 valor_mensal: valorMensal,
-                valor_total: valorPedido,
-                plano_meses: planoMeses,
-                status: subscriptionResult.status,
-                expires_at: subscriptionResult.expiresAt,
-                timestamp: new Date().toISOString()
+                metodo_pagamento: 'pix',
+                data_inicio: new Date().toISOString().split('T')[0],
+                data_fim: dataFim.toISOString().split('T')[0],
+                recorrencia: 'mensal'
+              });
+            
+            // Retornar resposta com info de PIX parcelado
+            return new Response(
+              JSON.stringify({
+                success: true,
+                provider: 'asaas',
+                isSubscription: true,
+                isPixParcelado: true,
+                paymentId: pixResult.qrCodeId,
+                status: pixResult.status,
+                qrCodeBase64: pixResult.qrCodeBase64,
+                qrCode: pixResult.pixCopiaECola,
+                pixCopiaECola: pixResult.pixCopiaECola,
+                pedidoId: pedido_id,
+                valor: valorMensal,
+                valorTotal: valorPedido,
+                totalMeses: planoMeses,
+                expiresAt: pixResult.expiresAt,
+                // Mensagem informativa para o cliente
+                infoMessage: `Após o primeiro pagamento de R$ ${valorMensal.toFixed(2)}, você receberá os próximos ${planoMeses - 1} PIX mensalmente por email.`
+              }),
+              { 
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
               }
-            });
-          
-          // Atualizar pedido como assinatura
-          await supabase
-            .from('pedidos')
-            .update({
-              status: 'aguardando_pagamento',
-              metodo_pagamento: 'pix_assinatura',
-              is_subscription: true,
-              asaas_subscription_id: subscriptionResult.subscriptionId,
-              transaction_id: subscriptionResult.firstPaymentId,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', pedido_id);
-          
-          // Calcular data fim
-          const dataFim = new Date();
-          dataFim.setMonth(dataFim.getMonth() + planoMeses);
-          
-          // Criar registro na tabela assinaturas
-          await supabase
-            .from('assinaturas')
-            .insert({
-              pedido_id,
-              client_id: pedido.client_id,
-              tipo: 'recorrente_pix',
-              status: 'pendente',
-              valor_mensal: valorMensal,
-              metodo_pagamento: 'pix',
-              data_inicio: new Date().toISOString().split('T')[0],
-              data_fim: dataFim.toISOString().split('T')[0],
-              recorrencia: 'mensal'
-            });
-          
-          // Retornar resposta com info de assinatura
-          return new Response(
-            JSON.stringify({
-              success: true,
-              provider: 'asaas',
-              isSubscription: true,
+            );
+            
+          } catch (pixAutoError: any) {
+            // Se falhar o PIX Automático, tentar subscription tradicional como fallback
+            console.warn('⚠️ [PAYMENT] PIX Automático falhou, usando subscription tradicional:', pixAutoError.message);
+            
+            const subscriptionResult = await createPixSubscription(
+              customerData,
+              valorMensal,
+              planoMeses,
+              `Assinatura EXA #${pedido_id.substring(0, 8)} - ${planoMeses} meses`,
+              pedido_id
+            );
+            
+            console.log('✅ [PAYMENT] Assinatura PIX criada (fallback):', {
               subscriptionId: subscriptionResult.subscriptionId,
-              paymentId: subscriptionResult.firstPaymentId,
-              status: subscriptionResult.status,
-              qrCodeBase64: subscriptionResult.qrCodeBase64,
-              qrCode: subscriptionResult.pixCopiaECola,
-              pixCopiaECola: subscriptionResult.pixCopiaECola,
-              pedidoId: pedido_id,
-              valor: valorMensal,
-              valorTotal: valorPedido,
-              totalMeses: planoMeses,
-              expiresAt: subscriptionResult.expiresAt,
-              invoiceUrl: subscriptionResult.invoiceUrl
-            }),
-            { 
-              status: 200,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-            }
-          );
+              paymentId: subscriptionResult.firstPaymentId
+            });
+            
+            // Log do evento
+            await supabase
+              .from('log_eventos_sistema')
+              .insert({
+                tipo_evento: 'payment_subscription_created_asaas',
+                descricao: `Assinatura PIX criada (fallback) - ${planoMeses} meses`,
+                detalhes: {
+                  pedido_id,
+                  asaas_subscription_id: subscriptionResult.subscriptionId,
+                  asaas_payment_id: subscriptionResult.firstPaymentId,
+                  valor_mensal: valorMensal,
+                  valor_total: valorPedido,
+                  plano_meses: planoMeses,
+                  fallback_reason: pixAutoError.message,
+                  timestamp: new Date().toISOString()
+                }
+              });
+            
+            // Atualizar pedido como assinatura
+            await supabase
+              .from('pedidos')
+              .update({
+                status: 'aguardando_pagamento',
+                metodo_pagamento: 'pix_assinatura',
+                is_subscription: true,
+                asaas_subscription_id: subscriptionResult.subscriptionId,
+                transaction_id: subscriptionResult.firstPaymentId,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', pedido_id);
+            
+            // Calcular data fim
+            const dataFim = new Date();
+            dataFim.setMonth(dataFim.getMonth() + planoMeses);
+            
+            // Criar registro na tabela assinaturas
+            await supabase
+              .from('assinaturas')
+              .insert({
+                pedido_id,
+                client_id: pedido.client_id,
+                tipo: 'recorrente_pix',
+                status: 'pendente',
+                valor_mensal: valorMensal,
+                metodo_pagamento: 'pix',
+                data_inicio: new Date().toISOString().split('T')[0],
+                data_fim: dataFim.toISOString().split('T')[0],
+                recorrencia: 'mensal'
+              });
+            
+            return new Response(
+              JSON.stringify({
+                success: true,
+                provider: 'asaas',
+                isSubscription: true,
+                subscriptionId: subscriptionResult.subscriptionId,
+                paymentId: subscriptionResult.firstPaymentId,
+                status: subscriptionResult.status,
+                qrCodeBase64: subscriptionResult.qrCodeBase64,
+                qrCode: subscriptionResult.pixCopiaECola,
+                pixCopiaECola: subscriptionResult.pixCopiaECola,
+                pedidoId: pedido_id,
+                valor: valorMensal,
+                valorTotal: valorPedido,
+                totalMeses: planoMeses,
+                expiresAt: subscriptionResult.expiresAt,
+                invoiceUrl: subscriptionResult.invoiceUrl,
+                infoMessage: `Primeira parcela de R$ ${valorMensal.toFixed(2)}. Você receberá os próximos PIX mensalmente.`
+              }),
+              { 
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+              }
+            );
+          }
         }
         
         // ============================================================

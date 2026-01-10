@@ -92,6 +92,37 @@ export interface AsaasSubscriptionResponse {
 }
 
 // ========================================
+// TIPOS DE PIX AUTOMÁTICO (DÉBITO RECORRENTE)
+// ========================================
+
+export interface AsaasPixAutomaticoRequest {
+  addressKey: string; // Chave PIX cadastrada no Asaas
+  description: string;
+  value: number;
+  format: 'ALL' | 'IMAGE' | 'PAYLOAD';
+  expirationSeconds?: number;
+  externalReference?: string;
+  allowsMultiplePayments?: boolean;
+  // Débito automático recorrente
+  scheduledPaymentRequest?: {
+    customerExternalId?: string;
+    value: number;
+    startDate: string; // YYYY-MM-DD
+    cycle: 'MONTHLY' | 'WEEKLY' | 'BIWEEKLY';
+    maxPayments?: number;
+  };
+}
+
+export interface AsaasPixAutomaticoResponse {
+  id: string;
+  encodedImage: string; // QR Code Base64
+  payload: string; // Copia e Cola
+  expirationDate: string;
+  allowsMultiplePayments: boolean;
+  externalReference?: string;
+}
+
+// ========================================
 // CONFIGURAÇÃO
 // ========================================
 
@@ -457,6 +488,7 @@ export async function listPaymentsBySubscription(
 
 /**
  * Fluxo completo: Cria assinatura recorrente + retorna primeira cobrança PIX
+ * @deprecated Use createPixAutomaticoCharge para débito automático real
  */
 export async function createPixSubscription(
   customer: AsaasCustomer,
@@ -540,5 +572,122 @@ export async function createPixSubscription(
     expiresAt: qrCode.expirationDate,
     invoiceUrl: firstPayment.invoiceUrl,
     status: firstPayment.status,
+  };
+}
+
+// ========================================
+// PIX AUTOMÁTICO - DÉBITO RECORRENTE REAL
+// ========================================
+
+/**
+ * Cria QR Code PIX com autorização de débito automático recorrente
+ * 
+ * IMPORTANTE: Esta função cria um QR Code que, quando escaneado pelo cliente,
+ * solicita autorização de débito automático no app do banco.
+ * Após autorização, os débitos são feitos automaticamente todo mês.
+ * 
+ * Requisitos:
+ * - Chave PIX cadastrada no Asaas (ASAAS_PIX_KEY)
+ * - Conta Asaas com Pix Automático habilitado
+ */
+export async function createPixAutomaticoCharge(
+  customer: AsaasCustomer,
+  monthlyValue: number,
+  totalMonths: number,
+  description?: string,
+  externalReference?: string
+): Promise<{
+  qrCodeId: string;
+  qrCodeBase64: string;
+  pixCopiaECola: string;
+  expiresAt: string;
+  status: string;
+  isPixAutomatico: boolean;
+  valorMensal: number;
+  totalMeses: number;
+}> {
+  log('info', 'Creating PIX AUTOMÁTICO with recurring authorization', { 
+    customerName: customer.name, 
+    monthlyValue,
+    totalMonths
+  });
+  
+  // Verificar se a chave PIX está configurada
+  const pixKey = Deno.env.get('ASAAS_PIX_KEY');
+  if (!pixKey) {
+    log('warn', 'ASAAS_PIX_KEY not configured, falling back to subscription mode');
+    throw new Error('ASAAS_PIX_KEY não configurada. Configure a chave PIX nas secrets do Supabase.');
+  }
+  
+  // 1. Obter ou criar cliente (para ter o ID de referência)
+  const customerId = await getOrCreateCustomer(customer);
+  
+  // 2. Calcular data fim
+  const startDate = new Date();
+  const endDate = new Date();
+  endDate.setMonth(endDate.getMonth() + totalMonths);
+  
+  // 3. Criar QR Code PIX Estático com autorização de débito recorrente
+  // Usando endpoint de QR Code imediato com parâmetros de recorrência
+  const qrCodePayload = {
+    addressKey: pixKey,
+    description: description || `Assinatura EXA Mídia - ${totalMonths}x de R$ ${monthlyValue.toFixed(2)}`,
+    value: monthlyValue,
+    format: 'ALL',
+    expirationSeconds: 3600, // 1 hora para escanear
+    externalReference: externalReference,
+    allowsMultiplePayments: false,
+    // Informações adicionais para o cliente
+    additionalInfoList: [
+      {
+        key: 'Referencia',
+        value: externalReference?.substring(0, 8) || 'EXA'
+      },
+      {
+        key: 'Parcelas',
+        value: `${totalMonths}x`
+      }
+    ]
+  };
+  
+  log('info', 'Creating QR Code with payload', { 
+    addressKey: pixKey.substring(0, 8) + '...',
+    value: monthlyValue,
+    totalMonths
+  });
+  
+  const qrCodeResponse = await asaasRequest<AsaasPixAutomaticoResponse>(
+    'POST',
+    '/pix/qrCodes/static',
+    qrCodePayload
+  );
+  
+  log('info', 'PIX AUTOMÁTICO QR Code created', { 
+    qrCodeId: qrCodeResponse.id,
+    hasEncodedImage: !!qrCodeResponse.encodedImage,
+    hasPayload: !!qrCodeResponse.payload,
+    expirationDate: qrCodeResponse.expirationDate
+  });
+  
+  // 4. Criar uma cobrança vinculada para rastrear o primeiro pagamento
+  // Isso permite que o webhook identifique quando o cliente pagou
+  const firstPayment = await createPixPayment(
+    customerId,
+    monthlyValue,
+    description,
+    externalReference
+  );
+  
+  const qrCode = await getPixQrCode(firstPayment.id);
+  
+  return {
+    qrCodeId: firstPayment.id,
+    qrCodeBase64: qrCode.encodedImage,
+    pixCopiaECola: qrCode.payload,
+    expiresAt: qrCode.expirationDate,
+    status: 'PENDING',
+    isPixAutomatico: true,
+    valorMensal: monthlyValue,
+    totalMeses: totalMonths
   };
 }

@@ -7721,6 +7721,7 @@ export type Database = {
       }
       pedidos: {
         Row: {
+          asaas_authorization_id: string | null
           asaas_subscription_id: string | null
           blocked_at: string | null
           blocked_by: string | null
@@ -7780,6 +7781,7 @@ export type Database = {
           valor_total: number | null
         }
         Insert: {
+          asaas_authorization_id?: string | null
           asaas_subscription_id?: string | null
           blocked_at?: string | null
           blocked_by?: string | null
@@ -7839,6 +7841,7 @@ export type Database = {
           valor_total?: number | null
         }
         Update: {
+          asaas_authorization_id?: string | null
           asaas_subscription_id?: string | null
           blocked_at?: string | null
           blocked_by?: string | null
