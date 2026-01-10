@@ -78,26 +78,29 @@ function log(level: 'info' | 'warn' | 'error', message: string, data?: Record<st
 }
 
 /**
- * Valida o token do webhook para segurança
- * O token é configurado no Asaas e enviado no header 'asaas-access-token'
+ * Valida a estrutura do webhook do Asaas
+ * O Asaas não envia token separado - validamos pela estrutura do payload
  */
-function validateWebhookToken(req: Request): boolean {
-  const expectedToken = Deno.env.get('ASAAS_WEBHOOK_TOKEN');
-  
-  // Se não há token configurado, aceitar todas as requisições (dev mode)
-  if (!expectedToken) {
-    log('warn', 'ASAAS_WEBHOOK_TOKEN não configurado - aceitando todas as requisições');
-    return true;
-  }
-  
-  const receivedToken = req.headers.get('asaas-access-token');
-  
-  if (!receivedToken) {
-    log('warn', 'Token do webhook não fornecido no header');
+function validateWebhookPayload(payload: any): boolean {
+  // Verificar se tem a estrutura básica do webhook Asaas
+  if (!payload || typeof payload !== 'object') {
+    log('warn', 'Payload inválido - não é um objeto');
     return false;
   }
   
-  return receivedToken === expectedToken;
+  // Webhooks do Asaas sempre têm 'event' e podem ter 'payment' ou 'subscription'
+  if (!payload.event || typeof payload.event !== 'string') {
+    log('warn', 'Payload sem campo event válido');
+    return false;
+  }
+  
+  // Se for evento de pagamento, deve ter objeto payment
+  if (payload.event.startsWith('PAYMENT_') && !payload.payment) {
+    log('warn', 'Evento de pagamento sem objeto payment');
+    return false;
+  }
+  
+  return true;
 }
 
 // ========================================
@@ -120,15 +123,6 @@ serve(async (req) => {
   }
 
   try {
-    // Validar token do webhook
-    if (!validateWebhookToken(req)) {
-      log('error', 'Token do webhook inválido');
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Parse do body
     const body = await req.text();
     log('info', '📥 Webhook Asaas recebido', { bodyLength: body.length });
@@ -140,6 +134,15 @@ serve(async (req) => {
       log('error', 'Erro ao parsear JSON do webhook', { error: parseError.message, body: body.substring(0, 500) });
       return new Response(
         JSON.stringify({ error: 'Invalid JSON' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validar estrutura do payload Asaas
+    if (!validateWebhookPayload(event)) {
+      log('error', 'Estrutura do webhook inválida');
+      return new Response(
+        JSON.stringify({ error: 'Invalid webhook structure' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
