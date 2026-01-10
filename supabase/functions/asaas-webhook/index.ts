@@ -55,6 +55,15 @@ const PAYMENT_CONFIRMED_EVENTS = [
   'PAYMENT_RECEIVED_IN_CASH_UNDONE',
 ];
 
+// Eventos de PIX Automático (Débito Recorrente)
+const DIRECT_AUTHORIZATION_EVENTS = [
+  'DIRECT_AUTHORIZATION_CREATED',      // Cliente autorizou débito automático
+  'DIRECT_AUTHORIZATION_REJECTED',     // Cliente rejeitou autorização
+  'DIRECT_AUTHORIZATION_PAYMENT_RECEIVED', // Parcela debitada automaticamente
+  'DIRECT_AUTHORIZATION_PAYMENT_FAILED',   // Falha no débito automático
+  'DIRECT_AUTHORIZATION_CANCELLED',    // Autorização cancelada
+];
+
 // ========================================
 // FUNÇÕES AUXILIARES
 // ========================================
@@ -472,6 +481,95 @@ serve(async (req) => {
           paymentId: payment.id,
           isSubscriptionPayment
         }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ========================================
+    // EVENTOS DE PIX AUTOMÁTICO (DÉBITO RECORRENTE)
+    // ========================================
+    
+    if (DIRECT_AUTHORIZATION_EVENTS.includes(event.event)) {
+      log('info', '🔄 Processando evento de PIX Automático', { eventType: event.event });
+
+      const eventData = event as any;
+      const pedidoId = eventData.externalReference || eventData.payment?.externalReference;
+
+      if (event.event === 'DIRECT_AUTHORIZATION_CREATED') {
+        log('info', '✅ Cliente AUTORIZOU débito automático recorrente', { 
+          authId: eventData.id,
+          pedidoId 
+        });
+        
+        if (pedidoId) {
+          await supabase.from('pedidos').update({
+            pix_automatico_autorizado: true,
+            pix_automatico_auth_id: eventData.id,
+            updated_at: new Date().toISOString()
+          }).eq('id', pedidoId);
+        }
+
+        await supabase.from('log_eventos_sistema').insert({
+          tipo_evento: 'pix_automatico_autorizado',
+          descricao: 'Cliente autorizou débito automático PIX',
+          detalhes: { pedido_id: pedidoId, auth_id: eventData.id, event: event.event }
+        });
+      }
+
+      if (event.event === 'DIRECT_AUTHORIZATION_REJECTED') {
+        log('warn', '❌ Cliente REJEITOU débito automático', { pedidoId });
+        
+        await supabase.from('log_eventos_sistema').insert({
+          tipo_evento: 'pix_automatico_rejeitado',
+          descricao: 'Cliente rejeitou autorização de débito automático PIX',
+          detalhes: { pedido_id: pedidoId, event: event.event }
+        });
+      }
+
+      if (event.event === 'DIRECT_AUTHORIZATION_PAYMENT_RECEIVED' && event.payment) {
+        log('info', '💰 Parcela debitada automaticamente via PIX Automático', {
+          paymentId: event.payment.id,
+          value: event.payment.value
+        });
+        
+        // Processar como pagamento normal (reutilizar lógica existente)
+        // O fluxo de PAYMENT_CONFIRMED_EVENTS já trata isso
+      }
+
+      if (event.event === 'DIRECT_AUTHORIZATION_PAYMENT_FAILED') {
+        log('error', '❌ Falha no débito automático PIX', { pedidoId });
+        
+        await supabase.from('log_eventos_sistema').insert({
+          tipo_evento: 'pix_automatico_falha',
+          descricao: 'Falha no débito automático PIX - saldo insuficiente ou conta encerrada',
+          detalhes: { pedido_id: pedidoId, event: event.event, payload: eventData }
+        });
+      }
+
+      if (event.event === 'DIRECT_AUTHORIZATION_CANCELLED') {
+        log('warn', '🚫 Autorização PIX Automático cancelada', { pedidoId });
+        
+        if (pedidoId) {
+          await supabase.from('pedidos').update({
+            pix_automatico_autorizado: false,
+            updated_at: new Date().toISOString()
+          }).eq('id', pedidoId);
+        }
+
+        await supabase.from('log_eventos_sistema').insert({
+          tipo_evento: 'pix_automatico_cancelado',
+          descricao: 'Autorização de débito automático PIX foi cancelada',
+          detalhes: { pedido_id: pedidoId, event: event.event }
+        });
+      }
+
+      await supabase.from('webhook_logs').update({ 
+        status: 'processed',
+        processed_at: new Date().toISOString()
+      }).eq('webhook_id', event.id).eq('provider', 'asaas');
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Direct authorization event processed' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
