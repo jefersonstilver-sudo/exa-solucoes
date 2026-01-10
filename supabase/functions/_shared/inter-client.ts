@@ -390,20 +390,30 @@ export async function getInterToken(): Promise<string> {
 
   const tokenUrl = `${INTER_API_URL}/oauth/v2/token`;
   
+  // ✅ CORREÇÃO: Usar Authorization Basic no header (conforme documentação Inter)
+  // O Inter exige: Authorization: Basic base64(client_id:client_secret)
+  const credentials = btoa(`${clientId}:${clientSecret}`);
+  
+  // Body apenas com grant_type e scope (sem client_id/secret)
   const body = new URLSearchParams({
-    client_id: clientId,
-    client_secret: clientSecret,
     grant_type: 'client_credentials',
-    scope: 'extrato.read boleto-cobranca.read boleto-cobranca.write pix.read pix.write cob.read cob.write cobv.read cobv.write'
+    scope: 'pix.read pix.write'  // Escopo mínimo para teste inicial
   });
 
   try {
-    log('info', 'Sending OAuth token request', { url: tokenUrl, clientIdPrefix: clientId.substring(0, 8) + '...' });
+    log('info', 'Sending OAuth token request with Basic Auth', { 
+      url: tokenUrl, 
+      clientIdPrefix: clientId.substring(0, 8) + '...',
+      scope: 'pix.read pix.write',
+      grantType: 'client_credentials',
+      hasAuthHeader: true
+    });
     
     const response = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${credentials}`,  // ✅ Authorization Basic
       },
       body: body.toString(),
       // @ts-ignore - Deno specific
@@ -418,18 +428,34 @@ export async function getInterToken(): Promise<string> {
     log('info', 'OAuth response received', { 
       status: response.status, 
       statusText: response.statusText,
-      headers: responseHeaders
+      headers: responseHeaders,
+      contentLength: response.headers.get('content-length')
     });
 
     if (!response.ok) {
       const errorText = await response.text();
+      
+      // Tentar parsear como JSON para mensagem de erro mais detalhada
+      let errorJson = null;
+      try {
+        errorJson = JSON.parse(errorText);
+      } catch {
+        // Não é JSON, usar texto raw
+      }
+      
       log('error', 'Failed to get Inter token', { 
         status: response.status, 
         statusText: response.statusText,
-        error: errorText,
-        headers: responseHeaders
+        errorText: errorText || '(empty response)',
+        errorJson,
+        headers: responseHeaders,
+        hint: response.status === 400 
+          ? 'Verifique se os escopos pix.read e pix.write estão habilitados no painel Inter' 
+          : undefined
       });
-      throw new Error(`Inter auth failed: ${response.status} - ${errorText}`);
+      
+      const errorMessage = errorJson?.error_description || errorJson?.message || errorText || 'Unknown error';
+      throw new Error(`Inter auth failed: ${response.status} - ${errorMessage}`);
     }
 
     const data: InterTokenResponse = await response.json();
