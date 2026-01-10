@@ -8,10 +8,11 @@ interface CouponValidationResult {
   id?: string;
   codigo?: string;
   desconto_percentual?: number;
-  tipo_desconto?: string;
+  tipo_desconto?: 'percentual' | 'valor_fixo' | 'preco_final';
   min_meses?: number;
   valor_minimo_pedido?: number;
   descricao?: string;
+  preco_final?: number; // Valor final fixo quando tipo_desconto = 'preco_final'
 }
 
 interface CouponApplicationResult {

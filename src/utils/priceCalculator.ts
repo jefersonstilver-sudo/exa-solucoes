@@ -37,14 +37,16 @@ export const calculatePrice = (
   cartItems: CartItem[],
   couponDiscountPercent: number = 0,
   applyPixDiscount: boolean = true,
-  couponCode?: string
+  couponCode?: string,
+  couponType?: 'percentual' | 'valor_fixo' | 'preco_final'
 ): PriceCalculationResult => {
   console.log('💰 [calculatePrice] INÍCIO:', { 
     selectedPlan, 
     cartItemsLength: cartItems?.length, 
     couponDiscountPercent, 
     applyPixDiscount,
-    couponCode: couponCode || 'SEM CÓDIGO'
+    couponCode: couponCode || 'SEM CÓDIGO',
+    couponType: couponType || 'percentual'
   });
   
   if (!selectedPlan || !cartItems || cartItems.length === 0) {
@@ -112,10 +114,31 @@ export const calculatePrice = (
     subtotal
   });
   
-  // Aplicar desconto de cupom se houver
+  // 🎯 CUPOM PREÇO FINAL: Força o valor exato independente do pedido
+  if (couponType === 'preco_final') {
+    const precoFinal = couponDiscountPercent; // O campo armazena o valor final
+    console.log('💰💰💰 [CUPOM PREÇO FINAL] ATIVADO! Forçando valor final para R$', precoFinal, {
+      subtotalOriginal: subtotal,
+      precoFinalDefinido: precoFinal
+    });
+    return {
+      subtotal: Math.round(subtotal * 100) / 100,
+      pixDiscount: 0, // Não aplica desconto PIX em preço final
+      finalPrice: Math.max(precoFinal, MINIMUM_ORDER_VALUE),
+      calculation: `CUPOM PREÇO FINAL: R$ ${precoFinal.toFixed(2)} (subtotal original: R$ ${subtotal.toFixed(2)})`
+    };
+  }
+  
+  // Aplicar desconto de cupom se houver (percentual ou valor fixo)
   let afterCoupon = subtotal;
   if (couponDiscountPercent > 0) {
-    afterCoupon = subtotal * (1 - couponDiscountPercent / 100);
+    if (couponType === 'valor_fixo') {
+      // Valor fixo: subtrai o valor do subtotal
+      afterCoupon = Math.max(subtotal - couponDiscountPercent, MINIMUM_ORDER_VALUE);
+    } else {
+      // Percentual: aplica a porcentagem
+      afterCoupon = subtotal * (1 - couponDiscountPercent / 100);
+    }
   }
   
   // Aplicar desconto PIX se solicitado

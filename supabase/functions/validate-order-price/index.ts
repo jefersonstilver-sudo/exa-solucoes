@@ -268,21 +268,46 @@ serve(async (req) => {
         } else if (coupon.min_meses && planMonths < coupon.min_meses) {
           console.warn('⚠️ [VALIDATE_PRICE] Plan too short for coupon:', { planMonths, minRequired: coupon.min_meses });
         } else {
-          couponDiscount = coupon.desconto_percentual || 0;
-          afterCoupon = subtotal * (1 - couponDiscount / 100);
           couponValid = true;
-          couponDetails = {
-            code: coupon.codigo,
-            discount: couponDiscount,
-            type: 'percentage'
-          };
+          
+          // Handle different coupon types
+          if (coupon.tipo_desconto === 'preco_final') {
+            // PREÇO FINAL: O valor é o preço final exato
+            console.log('💰 [VALIDATE_PRICE] Coupon tipo PREÇO FINAL:', coupon.desconto_percentual);
+            afterCoupon = coupon.desconto_percentual;
+            couponDiscount = 100; // Display purpose
+            couponDetails = {
+              code: coupon.codigo,
+              discount: coupon.desconto_percentual,
+              type: 'preco_final'
+            };
+          } else if (coupon.tipo_desconto === 'valor_fixo') {
+            // VALOR FIXO: Subtrai do subtotal
+            couponDiscount = coupon.desconto_percentual || 0;
+            afterCoupon = Math.max(subtotal - couponDiscount, 0.05);
+            couponDetails = {
+              code: coupon.codigo,
+              discount: couponDiscount,
+              type: 'valor_fixo'
+            };
+          } else {
+            // PERCENTUAL: Aplica porcentagem
+            couponDiscount = coupon.desconto_percentual || 0;
+            afterCoupon = subtotal * (1 - couponDiscount / 100);
+            couponDetails = {
+              code: coupon.codigo,
+              discount: couponDiscount,
+              type: 'percentage'
+            };
+          }
         }
       }
     }
 
-    // Apply PIX discount if requested
+    // Apply PIX discount if requested (but NOT for preco_final coupons)
     let pixDiscountAmount = 0;
-    if (applyPixDiscount) {
+    const isPrecoFinal = couponDetails?.type === 'preco_final';
+    if (applyPixDiscount && !isPrecoFinal) {
       pixDiscountAmount = afterCoupon * PIX_DISCOUNT;
     }
 

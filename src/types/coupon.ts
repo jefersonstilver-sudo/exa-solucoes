@@ -11,7 +11,7 @@ export interface Coupon {
   created_by?: string;
   expira_em?: string;
   descricao?: string;
-  tipo_desconto: 'percentual' | 'valor_fixo';
+  tipo_desconto: 'percentual' | 'valor_fixo' | 'preco_final';
   valor_minimo_pedido?: number;
   uso_por_usuario?: number;
   data_inicio?: string;
@@ -47,7 +47,7 @@ export interface CreateCouponData {
   min_meses: number;
   expira_em?: string;
   descricao?: string;
-  tipo_desconto: 'percentual' | 'valor_fixo';
+  tipo_desconto: 'percentual' | 'valor_fixo' | 'preco_final';
   valor_minimo_pedido?: number;
   uso_por_usuario?: number;
   categoria: 'geral' | 'especial' | 'primeiro_pedido' | 'fidelidade' | 'promocional' | 'parceiro' | 'cortesia';
