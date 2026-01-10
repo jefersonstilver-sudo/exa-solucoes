@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createPixCharge } from '../_shared/asaas-client.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,9 +24,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const MERCADOPAGO_ACCESS_TOKEN = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
-    if (!MERCADOPAGO_ACCESS_TOKEN) {
-      throw new Error('MERCADO_PAGO_ACCESS_TOKEN não configurado');
+    // Verificar se Asaas está configurado
+    const asaasApiKey = Deno.env.get('ASAAS_API_KEY');
+    if (!asaasApiKey) {
+      throw new Error('ASAAS_API_KEY não configurada');
     }
 
     const body: PixParcelaRequest = await req.json();
@@ -39,7 +41,7 @@ serve(async (req) => {
     // Buscar parcela e pedido
     const { data: parcela, error: parcelaError } = await supabase
       .from('parcelas')
-      .select('*, pedidos(*)')
+      .select('*, pedidos(*, users:client_id(nome, email, cpf, empresa_documento, telefone))')
       .eq('id', body.parcela_id)
       .single();
 
@@ -50,56 +52,37 @@ serve(async (req) => {
 
     console.log('[GENERATE-PIX-PARCELA] Parcela encontrada:', parcela);
 
-    // Gerar external_reference único
-    const externalReference = `PIX_PARCELA_${body.parcela_id}_${Date.now()}`;
-
-    // Criar pagamento PIX no Mercado Pago
-    const paymentData = {
-      transaction_amount: body.valor,
-      description: body.descricao || `Parcela ${parcela.numero_parcela} - EXA Painéis Digitais`,
-      payment_method_id: 'pix',
-      external_reference: externalReference,
-      payer: {
-        email: parcela.pedidos?.client_email || 'cliente@exa.com.br'
-      }
+    // Preparar dados do cliente
+    const user = parcela.pedidos?.users;
+    const cpfCnpj = (user?.cpf || user?.empresa_documento)?.replace(/\D/g, '');
+    
+    const customerData = {
+      name: user?.nome || 'Cliente EXA',
+      email: user?.email || undefined,
+      cpfCnpj: cpfCnpj || undefined,
+      mobilePhone: user?.telefone?.replace(/\D/g, '') || undefined,
     };
 
-    console.log('[GENERATE-PIX-PARCELA] Enviando para MP:', JSON.stringify(paymentData, null, 2));
+    // Criar cobrança PIX via Asaas
+    const pixResult = await createPixCharge(
+      customerData,
+      body.valor,
+      body.descricao || `Parcela ${parcela.numero_parcela} - EXA Painéis Digitais`,
+      body.parcela_id // external reference
+    );
 
-    const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${MERCADOPAGO_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-        'X-Idempotency-Key': externalReference
-      },
-      body: JSON.stringify(paymentData)
+    console.log('[GENERATE-PIX-PARCELA] PIX gerado via Asaas:', {
+      paymentId: pixResult.paymentId,
+      hasQrCode: !!pixResult.qrCodeBase64
     });
-
-    const mpData = await mpResponse.json();
-    console.log('[GENERATE-PIX-PARCELA] Resposta MP:', JSON.stringify(mpData, null, 2));
-
-    if (!mpResponse.ok) {
-      throw new Error(`Erro Mercado Pago: ${JSON.stringify(mpData)}`);
-    }
-
-    // Extrair dados do PIX
-    const qrCode = mpData.point_of_interaction?.transaction_data?.qr_code;
-    const qrCodeBase64 = mpData.point_of_interaction?.transaction_data?.qr_code_base64;
-    const ticketUrl = mpData.point_of_interaction?.transaction_data?.ticket_url;
-
-    if (!qrCode || !qrCodeBase64) {
-      throw new Error('Dados do PIX não retornados pelo Mercado Pago');
-    }
 
     // Atualizar parcela com dados do PIX
     const { error: updateError } = await supabase
       .from('parcelas')
       .update({
-        mercadopago_payment_id: String(mpData.id),
-        mercadopago_external_reference: externalReference,
-        pix_qr_code: qrCodeBase64,
-        pix_copia_cola: qrCode,
+        asaas_payment_id: pixResult.paymentId,
+        pix_qr_code: pixResult.qrCodeBase64,
+        pix_copia_cola: pixResult.pixCopiaECola,
         status: 'aguardando_pagamento',
         metodo_pagamento: 'pix',
         updated_at: new Date().toISOString()
@@ -110,19 +93,16 @@ serve(async (req) => {
       console.error('[GENERATE-PIX-PARCELA] Erro ao atualizar parcela:', updateError);
     }
 
-    console.log('[GENERATE-PIX-PARCELA] PIX gerado com sucesso:', {
-      payment_id: mpData.id,
-      has_qr_code: !!qrCode
-    });
+    console.log('[GENERATE-PIX-PARCELA] PIX gerado com sucesso');
 
     return new Response(JSON.stringify({
       success: true,
-      payment_id: mpData.id,
-      qrCode: qrCode,
-      qrCodeBase64: qrCodeBase64,
-      ticketUrl: ticketUrl,
-      external_reference: externalReference,
-      status: mpData.status
+      payment_id: pixResult.paymentId,
+      qrCode: pixResult.pixCopiaECola,
+      qrCodeBase64: pixResult.qrCodeBase64,
+      ticketUrl: pixResult.invoiceUrl,
+      external_reference: body.parcela_id,
+      status: pixResult.status
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
