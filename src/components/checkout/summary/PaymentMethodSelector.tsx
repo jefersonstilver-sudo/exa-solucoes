@@ -13,6 +13,7 @@ interface PaymentMethodSelectorProps {
   totalAmount: number;
   selectedPlan: number;
   couponCode?: string;
+  tipoDesconto?: 'percentual' | 'valor_fixo' | 'preco_final';
 }
 
 const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
@@ -20,14 +21,18 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   onMethodChange,
   totalAmount,
   selectedPlan,
-  couponCode
+  couponCode,
+  tipoDesconto
 }) => {
   // Cupom teste especial
   const isCupom573040 = couponCode === '573040';
   
-  // Calcular valores
-  const pixDiscount = 0.10; // 10% desconto PIX à vista
-  const pixAvistaAmount = isCupom573040 ? 0.05 : totalAmount * (1 - pixDiscount);
+  // 💰 Cupom preço final - NÃO aplica desconto PIX
+  const isPrecoFinal = tipoDesconto === 'preco_final';
+  
+  // Calcular valores - DESATIVAR desconto PIX se preço final
+  const pixDiscount = isPrecoFinal ? 0 : 0.05; // 5% desconto PIX à vista (exceto preço final)
+  const pixAvistaAmount = isCupom573040 ? 0.05 : (isPrecoFinal ? totalAmount : totalAmount * (1 - pixDiscount));
   const monthlyAmount = totalAmount / selectedPlan;
   
   // Plano de 1 mês = apenas PIX à vista e Cartão
@@ -42,10 +47,10 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       iconBg: 'bg-emerald-100',
       iconColor: 'text-emerald-600',
       mainValue: pixAvistaAmount,
-      originalValue: isCupom573040 ? null : totalAmount,
-      badge: '-5% OFF',
+      originalValue: (isCupom573040 || isPrecoFinal) ? null : totalAmount, // Não mostrar original se preço final
+      badge: isPrecoFinal ? null : '-5% OFF', // Não mostrar badge se preço final
       badgeColor: 'bg-emerald-500',
-      description: 'Desconto aplicado automaticamente',
+      description: isPrecoFinal ? 'Valor fixo do cupom' : 'Desconto aplicado automaticamente',
       available: true
     },
     {
