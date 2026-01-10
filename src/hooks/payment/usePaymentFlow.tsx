@@ -87,10 +87,10 @@ export const usePaymentFlow = () => {
           // Check if it's the "provider not configured" error
           if (error.message?.includes('PAYMENT_PROVIDER_NOT_CONFIGURED') || 
               error.message?.includes('Provedor de pagamento não configurado')) {
-            sonnerToast.error('Sistema de pagamentos em manutenção. Dados de pagamento serão enviados por e-mail.');
-            // Order was created successfully, just payment processing is pending
-            options.handleClearCart();
-            return { success: true, pedidoId: pedido.id, paymentPending: true };
+              sonnerToast.error('Sistema de pagamentos em manutenção. Dados de pagamento serão enviados por e-mail.');
+              // Pedido foi criado com sucesso; não limpamos o carrinho aqui para evitar tela em branco
+              // e para permitir que a página atual continue renderizando normalmente.
+              return { success: true, pedidoId: pedido.id, paymentPending: true };
           }
           
           throw error;
@@ -100,7 +100,6 @@ export const usePaymentFlow = () => {
         if (data?.success === false) {
           if (data.error === 'PAYMENT_PROVIDER_NOT_CONFIGURED') {
             sonnerToast.error('Sistema de pagamentos em manutenção. Dados de pagamento serão enviados por e-mail.');
-            options.handleClearCart();
             return { success: true, pedidoId: pedido.id, paymentPending: true };
           }
           throw new Error(data.message || 'Erro ao processar pagamento');
