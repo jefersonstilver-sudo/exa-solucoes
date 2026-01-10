@@ -214,29 +214,39 @@ const CheckoutSummary = () => {
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + (selectedPlan || 1));
 
-      await processPayment({
+      const clearCart = () => {
+        localStorage.removeItem('checkout_cart');
+        localStorage.removeItem('checkout_plan');
+        localStorage.removeItem('checkout_coupon');
+      };
+
+      const result = await processPayment({
         sessionUser: user,
         cartItems,
         selectedPlan: selectedPlan || 1,
         totalPrice: finalTotal,
         couponId: couponValid ? couponId : null,
-        couponCode: couponValid ? couponCode : null,  // Pass couponCode for server-side price validation
+        couponCode: couponValid ? couponCode : null, // Pass couponCode for server-side price validation
         paymentMethod: 'pix', // Legacy format for processPayment
         startDate,
         endDate,
         acceptTerms: true,
         unavailablePanels: [],
-        handleClearCart: () => {
-          localStorage.removeItem('checkout_cart');
-          localStorage.removeItem('checkout_plan');
-          localStorage.removeItem('checkout_coupon');
-        },
+        handleClearCart: clearCart,
         onPixGenerated: (pixResponse) => {
           console.log('[CheckoutSummary] QR Code PIX gerado:', pixResponse);
           setPixData(pixResponse);
           setIsPixDialogOpen(true);
         }
       });
+
+      // Se o provedor não estiver configurado, a edge function retorna 503 propositalmente.
+      // Nesse caso, tratamos como pedido criado (pagamento pendente) e saímos da tela de checkout
+      // para evitar estado inconsistente/tela em branco.
+      if (result?.success && (result as any).paymentPending) {
+        clearCart();
+        navigate('/anunciante/pedidos');
+      }
     } catch (error: any) {
       console.error('[CheckoutSummary] Erro no pagamento:', error);
       toast.error(error.message || 'Erro ao processar pagamento');
