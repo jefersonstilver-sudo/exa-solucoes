@@ -530,6 +530,75 @@ export type Database = {
         }
         Relationships: []
       }
+      alertas_financeiros: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          data_referencia: string | null
+          entidade_id: string | null
+          entidade_tipo: string | null
+          id: string
+          mensagem: string
+          metadata: Json | null
+          nivel: Database["public"]["Enums"]["alerta_nivel"]
+          notificacao_erro: string | null
+          notificacao_whatsapp: boolean
+          notificado_em: string | null
+          resolucao_nota: string | null
+          resolvido: boolean
+          resolvido_em: string | null
+          resolvido_por: string | null
+          tipo: Database["public"]["Enums"]["alerta_financeiro_tipo"]
+          titulo: string
+          updated_at: string
+          valor_referencia: number | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          data_referencia?: string | null
+          entidade_id?: string | null
+          entidade_tipo?: string | null
+          id?: string
+          mensagem: string
+          metadata?: Json | null
+          nivel?: Database["public"]["Enums"]["alerta_nivel"]
+          notificacao_erro?: string | null
+          notificacao_whatsapp?: boolean
+          notificado_em?: string | null
+          resolucao_nota?: string | null
+          resolvido?: boolean
+          resolvido_em?: string | null
+          resolvido_por?: string | null
+          tipo: Database["public"]["Enums"]["alerta_financeiro_tipo"]
+          titulo: string
+          updated_at?: string
+          valor_referencia?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          data_referencia?: string | null
+          entidade_id?: string | null
+          entidade_tipo?: string | null
+          id?: string
+          mensagem?: string
+          metadata?: Json | null
+          nivel?: Database["public"]["Enums"]["alerta_nivel"]
+          notificacao_erro?: string | null
+          notificacao_whatsapp?: boolean
+          notificado_em?: string | null
+          resolucao_nota?: string | null
+          resolvido?: boolean
+          resolvido_em?: string | null
+          resolvido_por?: string | null
+          tipo?: Database["public"]["Enums"]["alerta_financeiro_tipo"]
+          titulo?: string
+          updated_at?: string
+          valor_referencia?: number | null
+        }
+        Relationships: []
+      }
       analyses: {
         Row: {
           analysis_at: string | null
@@ -6942,6 +7011,63 @@ export type Database = {
         }
         Relationships: []
       }
+      log_financeiro: {
+        Row: {
+          created_at: string
+          dados_antes: Json | null
+          dados_depois: Json | null
+          descricao: string
+          entidade_id: string | null
+          entidade_tipo: string
+          evento_tipo: Database["public"]["Enums"]["log_financeiro_evento"]
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          origem: Database["public"]["Enums"]["log_financeiro_origem"]
+          referencia_externa: string | null
+          usuario_id: string | null
+          usuario_nome: string | null
+          valor_antes: number | null
+          valor_depois: number | null
+        }
+        Insert: {
+          created_at?: string
+          dados_antes?: Json | null
+          dados_depois?: Json | null
+          descricao: string
+          entidade_id?: string | null
+          entidade_tipo: string
+          evento_tipo: Database["public"]["Enums"]["log_financeiro_evento"]
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          origem: Database["public"]["Enums"]["log_financeiro_origem"]
+          referencia_externa?: string | null
+          usuario_id?: string | null
+          usuario_nome?: string | null
+          valor_antes?: number | null
+          valor_depois?: number | null
+        }
+        Update: {
+          created_at?: string
+          dados_antes?: Json | null
+          dados_depois?: Json | null
+          descricao?: string
+          entidade_id?: string | null
+          entidade_tipo?: string
+          evento_tipo?: Database["public"]["Enums"]["log_financeiro_evento"]
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          origem?: Database["public"]["Enums"]["log_financeiro_origem"]
+          referencia_externa?: string | null
+          usuario_id?: string | null
+          usuario_nome?: string | null
+          valor_antes?: number | null
+          valor_depois?: number | null
+        }
+        Relationships: []
+      }
       logos: {
         Row: {
           color_variant: string
@@ -12048,6 +12174,21 @@ export type Database = {
       cleanup_old_logs: { Args: never; Returns: undefined }
       cleanup_orphaned_users: { Args: never; Returns: Json }
       cleanup_unauthorized_uploads: { Args: never; Returns: Json }
+      criar_alerta_financeiro: {
+        Args: {
+          p_data_referencia?: string
+          p_entidade_id?: string
+          p_entidade_tipo?: string
+          p_mensagem: string
+          p_metadata?: Json
+          p_nivel: Database["public"]["Enums"]["alerta_nivel"]
+          p_notificar_whatsapp?: boolean
+          p_tipo: Database["public"]["Enums"]["alerta_financeiro_tipo"]
+          p_titulo: string
+          p_valor_referencia?: number
+        }
+        Returns: string
+      }
       daily_financial_reconciliation: { Args: never; Returns: Json }
       detect_duplicate_payments: {
         Args: never
@@ -12804,6 +12945,24 @@ export type Database = {
         }
         Returns: string
       }
+      registrar_log_financeiro: {
+        Args: {
+          p_dados_antes?: Json
+          p_dados_depois?: Json
+          p_descricao: string
+          p_entidade_id: string
+          p_entidade_tipo: string
+          p_evento_tipo: Database["public"]["Enums"]["log_financeiro_evento"]
+          p_metadata?: Json
+          p_origem: Database["public"]["Enums"]["log_financeiro_origem"]
+          p_referencia_externa?: string
+          p_usuario_id?: string
+          p_usuario_nome?: string
+          p_valor_antes?: number
+          p_valor_depois?: number
+        }
+        Returns: string
+      }
       reject_video: {
         Args: {
           p_approved_by: string
@@ -12817,6 +12976,10 @@ export type Database = {
         Returns: undefined
       }
       resolve_email_conflicts: { Args: never; Returns: Json }
+      resolver_alerta_financeiro: {
+        Args: { p_alerta_id: string; p_nota?: string; p_usuario_id: string }
+        Returns: boolean
+      }
       revert_suspicious_payment: {
         Args: { p_pedido_id: string; p_reason?: string }
         Returns: Json
@@ -13000,6 +13163,16 @@ export type Database = {
       }
     }
     Enums: {
+      alerta_financeiro_tipo:
+        | "inadimplencia"
+        | "vencimento_proximo"
+        | "caixa_minimo"
+        | "contrato_vencendo"
+        | "despesa_vencendo"
+        | "meta_receita"
+        | "reconciliacao_pendente"
+        | "divergencia_valor"
+      alerta_nivel: "info" | "warning" | "critical"
       aporte_tipo: "capital" | "emprestimo" | "reinvestimento"
       app_role:
         | "client"
@@ -13030,6 +13203,28 @@ export type Database = {
         | "tecnologia"
         | "infraestrutura"
         | "outros"
+      log_financeiro_evento:
+        | "pagamento_recebido"
+        | "pagamento_estornado"
+        | "baixa_manual"
+        | "cobranca_criada"
+        | "cobranca_cancelada"
+        | "despesa_registrada"
+        | "despesa_paga"
+        | "contrato_ativado"
+        | "contrato_encerrado"
+        | "aporte_registrado"
+        | "caixa_ajuste"
+        | "reconciliacao_automatica"
+        | "reconciliacao_manual"
+        | "inadimplencia_detectada"
+        | "alerta_gerado"
+      log_financeiro_origem:
+        | "asaas_webhook"
+        | "sistema"
+        | "admin"
+        | "cron"
+        | "reconciliacao"
       tipo_despesa: "fixa" | "variavel"
     }
     CompositeTypes: {
@@ -13158,6 +13353,17 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      alerta_financeiro_tipo: [
+        "inadimplencia",
+        "vencimento_proximo",
+        "caixa_minimo",
+        "contrato_vencendo",
+        "despesa_vencendo",
+        "meta_receita",
+        "reconciliacao_pendente",
+        "divergencia_valor",
+      ],
+      alerta_nivel: ["info", "warning", "critical"],
       aporte_tipo: ["capital", "emprestimo", "reinvestimento"],
       app_role: [
         "client",
@@ -13190,6 +13396,30 @@ export const Constants = {
         "tecnologia",
         "infraestrutura",
         "outros",
+      ],
+      log_financeiro_evento: [
+        "pagamento_recebido",
+        "pagamento_estornado",
+        "baixa_manual",
+        "cobranca_criada",
+        "cobranca_cancelada",
+        "despesa_registrada",
+        "despesa_paga",
+        "contrato_ativado",
+        "contrato_encerrado",
+        "aporte_registrado",
+        "caixa_ajuste",
+        "reconciliacao_automatica",
+        "reconciliacao_manual",
+        "inadimplencia_detectada",
+        "alerta_gerado",
+      ],
+      log_financeiro_origem: [
+        "asaas_webhook",
+        "sistema",
+        "admin",
+        "cron",
+        "reconciliacao",
       ],
       tipo_despesa: ["fixa", "variavel"],
     },
