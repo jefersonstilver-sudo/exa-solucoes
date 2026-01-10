@@ -134,7 +134,8 @@ const CheckoutSummary = () => {
   const baseTotal = calculateTotalPrice();
   
   // Map legacy payment methods for minimum value calculation
-  const legacyPaymentMethod = paymentMethod === 'credit_card' ? 'credit_card' : 'pix';
+  // 🚫 Cartão de crédito desativado temporariamente
+  const legacyPaymentMethod = 'pix';
   const minimumValue = getMinimumOrderValue(legacyPaymentMethod);
   
   // 🎯 DETECTAR CUPOM 573040 (teste)
@@ -204,12 +205,12 @@ const CheckoutSummary = () => {
       return;
     }
 
-    // 💳 Abrir modal para cartão de crédito
-    if (paymentMethod === 'credit_card') {
-      console.log('[CheckoutSummary] Abrindo modal de cartão');
-      setIsCardModalOpen(true);
-      return;
-    }
+    // 🚫 Cartão de crédito desativado temporariamente
+    // if (paymentMethod === 'credit_card') {
+    //   console.log('[CheckoutSummary] Abrindo modal de cartão');
+    //   setIsCardModalOpen(true);
+    //   return;
+    // }
 
     // 🎯 PIX à Vista: Continua com o fluxo normal (gera QR code)
     console.log('[CheckoutSummary] Processando pagamento PIX à Vista');
