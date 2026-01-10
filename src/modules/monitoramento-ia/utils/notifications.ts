@@ -163,49 +163,36 @@ const formatNotificationMessage = (content: any, options: NotificationOptions): 
 /**
  * Send WhatsApp notification (stub - requires actual service integration)
  */
+/**
+ * Send WhatsApp notification using secure Edge Function (no exposed API keys)
+ */
 export const sendWhatsAppNotificationStub = async (
   toNumber: string,
   text: string,
   metadata?: any
 ): Promise<void> => {
-  const notificationServiceKey = import.meta.env.VITE_NOTIFICATION_SERVICE_API_KEY;
-
-  if (!notificationServiceKey) {
-    console.warn('⚠️ [NOTIFICATIONS] NOTIFICATION_SERVICE_API_KEY not configured, logging only');
-    console.log(`📱 [NOTIFICATIONS] Would send to ${toNumber}:`, text);
-    
-    // Save to audit log
-    await saveNotificationLog({
-      recipient: toNumber,
-      message: text,
-      channel: 'whatsapp',
-      status: 'simulated',
-      metadata
-    });
-    
-    return;
-  }
+  console.log(`📱 [NOTIFICATIONS] Sending WhatsApp to ${toNumber} via secure proxy...`);
 
   try {
-    // Example using Twilio API (adjust based on actual service)
-    const response = await fetch('https://api.twilio.com/2010-04-01/Accounts/YOUR_ACCOUNT_SID/Messages.json', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${notificationServiceKey}`,
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
-        From: 'whatsapp:+14155238886', // Twilio sandbox or your number
-        To: `whatsapp:${toNumber}`,
-        Body: text
-      })
+    // Use secure Edge Function instead of direct API call
+    const { data, error } = await supabase.functions.invoke('exa-messaging-proxy', {
+      body: {
+        channel: 'whatsapp',
+        to: toNumber,
+        message: text,
+        metadata
+      }
     });
 
-    if (!response.ok) {
-      throw new Error(`Notification service error: ${response.status}`);
+    if (error) {
+      throw new Error(`Messaging proxy error: ${error.message}`);
     }
 
-    console.log('✅ [NOTIFICATIONS] WhatsApp sent successfully');
+    if (!data?.success) {
+      throw new Error(data?.error || 'Unknown error from messaging proxy');
+    }
+
+    console.log('✅ [NOTIFICATIONS] WhatsApp sent successfully via secure proxy');
     
     await saveNotificationLog({
       recipient: toNumber,

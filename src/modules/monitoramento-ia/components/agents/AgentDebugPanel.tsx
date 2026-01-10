@@ -72,36 +72,40 @@ export const AgentDebugPanel = ({ agentKey, displayName, open, onClose }: AgentD
         console.log('✅ [DEBUG PANEL] Resposta edge function:', edgeData);
       }
 
-      // 4. Se for Z-API, testar endpoint direto
+      // 4. Se for Z-API, testar via Edge Function segura (não expor credenciais no frontend)
       let zapiResponse = null;
       if (dbAgent?.whatsapp_provider === 'zapi' && dbAgent?.zapi_config) {
         const config = dbAgent.zapi_config as any;
         if (config.instance_id && config.token) {
           try {
-            console.log('🌐 [DEBUG PANEL] Testando Z-API direto...');
-            const zapiUrl = `https://api.z-api.io/instances/${config.instance_id}/token/${config.token}/me`;
-            const response = await fetch(zapiUrl);
-            const data = await response.json();
+            console.log('🌐 [DEBUG PANEL] Testando Z-API via Edge Function segura...');
             
-            zapiResponse = {
-              url: zapiUrl,
-              httpStatus: response.status,
-              ok: response.ok,
-              data
-            };
+            // Usar Edge Function segura ao invés de chamada direta
+            const { data: zapiData, error: zapiError } = await supabase.functions.invoke('check-zapi-status', {
+              body: { 
+                instanceId: config.instance_id,
+                instanceToken: config.token,
+                clientToken: config.client_token
+              }
+            });
             
-            console.log('✅ [DEBUG PANEL] Resposta Z-API:', zapiResponse);
-            
-            // Adicionar erro específico se credenciais inválidas
-            if (!response.ok) {
-              if (data.error?.includes('client-token is not configured')) {
-                errors.push('❌ CREDENCIAIS Z-API INVÁLIDAS - Instance ID ou Token incorretos');
-              } else if (response.status === 401) {
-                errors.push('❌ TOKEN Z-API INVÁLIDO');
-              } else if (response.status === 404) {
-                errors.push('❌ INSTÂNCIA Z-API NÃO ENCONTRADA');
-              } else {
-                errors.push(`Erro Z-API (${response.status}): ${data.error || data.message || 'Erro desconhecido'}`);
+            if (zapiError) {
+              errors.push(`Erro ao verificar Z-API: ${zapiError.message}`);
+              console.error('❌ [DEBUG PANEL] Erro na Edge Function Z-API:', zapiError);
+            } else {
+              zapiResponse = {
+                source: 'secure-edge-function',
+                ok: zapiData?.success,
+                data: zapiData
+              };
+              
+              console.log('✅ [DEBUG PANEL] Resposta Z-API (segura):', zapiResponse);
+              
+              // Verificar erros específicos
+              if (!zapiData?.success) {
+                errors.push(`Erro Z-API: ${zapiData?.error || 'Falha na verificação'}`);
+              } else if (!zapiData?.status?.connected) {
+                errors.push('⚠️ Instância Z-API desconectada - Escaneie o QR Code');
               }
             }
           } catch (error: any) {
