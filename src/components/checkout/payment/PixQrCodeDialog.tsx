@@ -1,13 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Copy, CheckCircle, X, AlertCircle } from 'lucide-react';
-import { QRCodeDisplay } from '@/components/checkout/payment/QRCodeDisplay';
+import { Copy, CheckCircle, X, AlertCircle, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { clearAllCarts } from '@/utils/cartUtils';
 import { useRealtimePaymentStatus } from '@/hooks/payment/useRealtimePaymentStatus';
+import { motion } from 'framer-motion';
+
 interface PixQrCodeDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -19,6 +20,7 @@ interface PixQrCodeDialogProps {
   userId?: string;
   pedidoId?: string;
 }
+
 const PixQrCodeDialog = ({
   isOpen,
   onClose,
@@ -31,183 +33,189 @@ const PixQrCodeDialog = ({
   pedidoId
 }: PixQrCodeDialogProps) => {
   const navigate = useNavigate();
+  const [copied, setCopied] = React.useState(false);
 
   // Sistema unificado para dados PIX
   const finalQrCodeBase64 = pix_base64 || qrCodeBase64;
   const finalQrCodeText = pix_url || qrCodeText;
-  const isTestMode = finalQrCodeText?.includes('teste') || finalQrCodeBase64?.includes('test');
 
   // Integração com monitoramento de pagamento em tempo real
-  const {
-    isListening
-  } = useRealtimePaymentStatus({
+  const { isListening } = useRealtimePaymentStatus({
     userId,
     pedidoId,
     onPaymentApproved: () => {
-      console.log("🎉 [PixQrCodeDialog] Pagamento aprovado automaticamente!");
       toast.success("🎉 Pagamento aprovado!", {
         description: "Redirecionando para seus pedidos...",
         duration: 3000
       });
 
-      // Limpar carrinhos e redirecionar após breve delay
       setTimeout(() => {
         clearAllCarts();
-        console.log("🔄 [PixQrCodeDialog] Redirecionando para pedidos após aprovação automática");
         navigate('/anunciante/pedidos');
       }, 2000);
     }
   });
-  console.log("🖼️ [PixQrCodeDialog] SISTEMA UNIFICADO - Dados recebidos:", {
-    isOpen,
-    hasQrCodeBase64: !!finalQrCodeBase64,
-    hasQrCodeText: !!finalQrCodeText,
-    hasPaymentLink: !!paymentLink,
-    isTestMode,
-    userId,
-    pedidoId,
-    isListening,
-    qrTextPreview: finalQrCodeText?.substring(0, 50) + '...'
-  });
-  const handleCopyQrCode = () => {
+
+  const handleCopyQrCode = async () => {
     if (finalQrCodeText) {
-      navigator.clipboard.writeText(finalQrCodeText).then(() => {
-        console.log("📋 [PixQrCodeDialog] Código PIX copiado");
+      try {
+        await navigator.clipboard.writeText(finalQrCodeText);
+        setCopied(true);
         toast.success("Código PIX copiado!");
-        logCheckoutEvent(CheckoutEvent.USER_ACTION, LogLevel.INFO, "Código PIX copiado pelo usuário", {
-          isTestMode,
+        logCheckoutEvent(CheckoutEvent.USER_ACTION, LogLevel.INFO, "Código PIX copiado", {
           timestamp: new Date().toISOString()
         });
-      }).catch(error => {
-        console.error("❌ [PixQrCodeDialog] Erro ao copiar:", error);
+        setTimeout(() => setCopied(false), 3000);
+      } catch (error) {
         toast.error("Erro ao copiar código PIX");
-      });
-    } else {
-      toast.error("Código PIX não disponível");
+      }
     }
   };
-  const redirectToOrders = () => {
-    console.log("🔄 [PixQrCodeDialog] SISTEMA UNIFICADO - Redirecionando para pedidos");
-    logCheckoutEvent(CheckoutEvent.NAVIGATION_EVENT, LogLevel.INFO, "Redirecionamento para pedidos após PIX", {
-      isTestMode,
+
+  const handlePaymentConfirmed = () => {
+    logCheckoutEvent(CheckoutEvent.PAYMENT_EVENT, LogLevel.SUCCESS, "Usuário confirmou pagamento PIX", {
       timestamp: new Date().toISOString()
     });
-
-    // Limpar todos os carrinhos
     clearAllCarts();
     toast.success("Redirecionando para seus pedidos...");
     navigate('/anunciante/pedidos');
   };
-  const handleClose = () => {
-    console.log("❌ [PixQrCodeDialog] Modal fechado");
-    onClose();
-  };
-  const handlePaymentConfirmed = () => {
-    console.log("✅ [PixQrCodeDialog] Pagamento confirmado pelo usuário");
-    logCheckoutEvent(CheckoutEvent.PAYMENT_EVENT, LogLevel.SUCCESS, "Usuário confirmou pagamento PIX", {
-      isTestMode,
-      timestamp: new Date().toISOString()
-    });
-    redirectToOrders();
+
+  // Processar imagem QR Code
+  const getQrCodeSrc = () => {
+    if (!finalQrCodeBase64) return null;
+    if (finalQrCodeBase64.startsWith('data:')) return finalQrCodeBase64;
+    return `data:image/png;base64,${finalQrCodeBase64}`;
   };
 
-  // Se não há dados do QR Code, mostrar erro com opções
+  // Estado de erro - sem dados PIX
   if (!finalQrCodeBase64 && !finalQrCodeText) {
-    console.error("❌ [PixQrCodeDialog] Dados PIX não disponíveis");
-    return <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-md fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] border-0 bg-white rounded-3xl shadow-2xl">
-          <DialogHeader className="text-center pb-6">
-            <DialogTitle className="text-2xl font-bold text-red-600 flex items-center justify-center gap-3">
-              <AlertCircle className="h-8 w-8" />
-              Erro ao Gerar PIX
-            </DialogTitle>
-          </DialogHeader>
-          <div className="text-center space-y-6">
-            <p className="text-gray-600 text-lg">
-              Não foi possível gerar o QR Code PIX no momento.
-            </p>
-            <div className="bg-blue-50 p-6 rounded-2xl border border-blue-200">
-              <p className="text-blue-700 font-medium">
-                Seu pedido foi criado com sucesso! Você pode acompanhar o status na área de pedidos.
-              </p>
-            </div>
-            <div className="flex flex-col gap-4">
-              <Button onClick={() => window.location.reload()} variant="outline" className="h-12 rounded-2xl border-2 hover:bg-gray-50 font-semibold">
-                Tentar Novamente
-              </Button>
-              <Button onClick={redirectToOrders} className="h-12 bg-blue-600 hover:bg-blue-700 rounded-2xl font-semibold">
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md p-0 border-0 bg-transparent shadow-none">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20"
+          >
+            <div className="text-center space-y-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                <AlertCircle className="h-8 w-8 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Erro ao gerar PIX</h3>
+                <p className="text-gray-500 mt-2 text-sm">
+                  Seu pedido foi criado. Acompanhe na área de pedidos.
+                </p>
+              </div>
+              <Button 
+                onClick={() => navigate('/anunciante/pedidos')}
+                className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl font-medium"
+              >
                 Ver Meus Pedidos
               </Button>
             </div>
-          </div>
+          </motion.div>
         </DialogContent>
-      </Dialog>;
+      </Dialog>
+    );
   }
-  return <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-2xl w-full bg-white border-0 rounded-3xl shadow-2xl fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] max-h-[90vh] overflow-y-auto">
-        {/* Header moderno e clean */}
-        <DialogHeader className="relative text-center pb-8">
-          <Button variant="ghost" size="icon" onClick={handleClose} className="absolute -right-3 -top-3 h-10 w-10 rounded-full hover:bg-gray-100">
-            <X className="h-5 w-5" />
-          </Button>
-          
-          <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <svg viewBox="0 0 512 512" className="h-10 w-10 text-white" fill="currentColor">
-              <path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C353.7 383.7 372.6 391.5 392.6 391.5H407.7L310.6 294.4C300.7 284.5 300.7 268.5 310.6 258.6L407.7 161.5H392.6C372.6 161.5 353.7 169.3 339.5 183.5L262.5 260.5C257.1 265.9 247.8 265.9 242.4 260.5L165.4 183.5C151.2 169.3 132.3 161.5 112.3 161.5H97.2L194.3 258.6C204.2 268.5 204.2 284.5 194.3 294.4L97.2 391.5H112.3C132.3 391.5 151.2 383.7 165.4 369.5L242.4 292.5z" />
-            </svg>
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md p-0 border-0 bg-transparent shadow-none gap-0">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+          className="bg-white/90 backdrop-blur-2xl rounded-3xl overflow-hidden shadow-2xl border border-white/30"
+        >
+          {/* Header minimalista */}
+          <div className="relative px-6 pt-6 pb-4">
+            <button
+              onClick={onClose}
+              className="absolute right-4 top-4 w-8 h-8 rounded-full bg-gray-100/80 hover:bg-gray-200/80 flex items-center justify-center transition-colors"
+            >
+              <X className="h-4 w-4 text-gray-500" />
+            </button>
+            
+            <div className="text-center">
+              <div className="w-14 h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/20">
+                <Smartphone className="h-7 w-7 text-white" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900">Pague com PIX</h2>
+              <p className="text-sm text-gray-500 mt-1">Escaneie o QR Code ou copie o código</p>
+            </div>
           </div>
-          
-          <DialogTitle className="text-3xl font-bold text-gray-900 mb-2">
-            Pagamento PIX
-          </DialogTitle>
-          
-          
-          
-          {/* Indicadores de status limpos */}
-          {isTestMode && <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mt-4">
-              <div className="flex items-center justify-center gap-2 text-amber-700">
-                <AlertCircle className="h-5 w-5" />
-                <span className="font-medium">Modo de Teste</span>
-              </div>
-            </div>}
 
-          {isListening}
-        </DialogHeader>
-        
-        <div className="space-y-8 pb-6">
-          {/* QR Code Display - destaque principal */}
-          {finalQrCodeBase64 && <div className="flex justify-center">
-              <div className="bg-white p-8 rounded-3xl border-2 border-gray-100 shadow-xl">
-                <QRCodeDisplay qrCodeBase64={finalQrCodeBase64} />
+          {/* QR Code - destaque central */}
+          {getQrCodeSrc() && (
+            <div className="px-6 pb-4">
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mx-auto w-fit">
+                <img 
+                  src={getQrCodeSrc()!} 
+                  alt="QR Code PIX" 
+                  className="w-48 h-48 object-contain"
+                />
               </div>
-            </div>}
+            </div>
+          )}
 
-          {/* Código PIX para copiar - design moderno */}
-          {finalQrCodeText && <div className="space-y-4">
-              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
-                <p className="text-sm font-medium text-gray-700 mb-3">Código PIX:</p>
-                <div className="text-xs text-gray-600 break-all font-mono bg-white p-4 rounded-xl border border-gray-200 max-h-20 overflow-y-auto">
-                  {finalQrCodeText}
+          {/* Código PIX + Botão copiar */}
+          {finalQrCodeText && (
+            <div className="px-6 pb-4">
+              <div className="bg-gray-50/80 rounded-2xl p-4 border border-gray-100">
+                <p className="text-xs font-medium text-gray-500 mb-2">Código PIX</p>
+                <div className="bg-white rounded-xl p-3 border border-gray-200 mb-3 max-h-16 overflow-y-auto">
+                  <p className="text-xs text-gray-600 font-mono break-all leading-relaxed">
+                    {finalQrCodeText}
+                  </p>
                 </div>
+                <Button
+                  onClick={handleCopyQrCode}
+                  variant="outline"
+                  className={`w-full h-11 rounded-xl font-medium transition-all duration-200 ${
+                    copied 
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
+                      : 'bg-white hover:bg-gray-50 border-gray-200'
+                  }`}
+                >
+                  {copied ? (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Copiado!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copiar código
+                    </>
+                  )}
+                </Button>
               </div>
-              
-              <Button onClick={handleCopyQrCode} className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold text-lg shadow-lg transition-all duration-200 hover:shadow-xl">
-                <Copy className="h-5 w-5 mr-3" />
-                Copiar Código PIX
-              </Button>
-            </div>}
+            </div>
+          )}
 
-          {/* Botão principal - design premium */}
-          <div className="pt-4">
-            <Button onClick={handlePaymentConfirmed} className="w-full h-16 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-2xl font-bold text-xl shadow-2xl transition-all duration-300 hover:shadow-3xl transform hover:scale-[1.02]">
-              <CheckCircle className="h-7 w-7 mr-3" />
-              {isListening ? "Confirmar Pagamento" : "Já Paguei"}
+          {/* Botão confirmar pagamento */}
+          <div className="px-6 pb-6">
+            <Button
+              onClick={handlePaymentConfirmed}
+              className="w-full h-14 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-2xl font-semibold text-base shadow-lg shadow-emerald-500/25 transition-all duration-200 hover:shadow-xl hover:shadow-emerald-500/30"
+            >
+              <CheckCircle className="h-5 w-5 mr-2" />
+              Já realizei o pagamento
             </Button>
             
-            
+            {isListening && (
+              <p className="text-center text-xs text-gray-400 mt-3">
+                Aguardando confirmação automática...
+              </p>
+            )}
           </div>
-        </div>
+        </motion.div>
       </DialogContent>
-    </Dialog>;
+    </Dialog>
+  );
 };
+
 export default PixQrCodeDialog;

@@ -1,11 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
-import { Zap, CalendarCheck, FileText, CreditCard, Check, Shield } from 'lucide-react';
+import { Zap, CalendarCheck, FileText, Check, Shield } from 'lucide-react';
 import { formatCurrency } from '@/utils/priceUtils';
 import { cn } from '@/lib/utils';
 
-export type PaymentMethodType = 'pix_avista' | 'pix_fidelidade' | 'boleto_fidelidade' | 'credit_card';
+// 🚫 credit_card removido temporariamente do tipo
+export type PaymentMethodType = 'pix_avista' | 'pix_fidelidade' | 'boleto_fidelidade';
 
 interface PaymentMethodSelectorProps {
   selectedMethod: PaymentMethodType;
@@ -38,6 +39,7 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   // Plano de 1 mês = apenas PIX à vista e Cartão
   const is1MonthPlan = selectedPlan === 1;
   
+  // 🚫 Cartão de crédito temporariamente desativado
   const paymentOptions = [
     {
       id: 'pix_avista' as PaymentMethodType,
@@ -47,8 +49,8 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       iconBg: 'bg-emerald-100',
       iconColor: 'text-emerald-600',
       mainValue: pixAvistaAmount,
-      originalValue: (isCupom573040 || isPrecoFinal) ? null : totalAmount, // Não mostrar original se preço final
-      badge: isPrecoFinal ? null : '-5% OFF', // Não mostrar badge se preço final
+      originalValue: (isCupom573040 || isPrecoFinal) ? null : totalAmount,
+      badge: isPrecoFinal ? null : '-5% OFF',
       badgeColor: 'bg-emerald-500',
       description: isPrecoFinal ? 'Valor fixo do cupom' : 'Desconto aplicado automaticamente',
       available: true
@@ -82,18 +84,13 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       badgeColor: 'bg-violet-500',
       description: 'Boletos enviados por email',
       available: !is1MonthPlan
-    },
-    {
-      id: 'credit_card' as PaymentMethodType,
-      title: 'Cartão de Crédito',
-      subtitle: 'Pagamento único',
-      icon: CreditCard,
-      iconBg: 'bg-slate-100',
-      iconColor: 'text-slate-600',
-      mainValue: totalAmount,
-      description: 'Visa, Mastercard, Elo, Amex',
-      available: true
     }
+    // 🚫 Cartão de crédito removido temporariamente
+    // {
+    //   id: 'credit_card' as PaymentMethodType,
+    //   title: 'Cartão de Crédito',
+    //   ...
+    // }
   ];
 
   const availableOptions = paymentOptions.filter(opt => opt.available);
