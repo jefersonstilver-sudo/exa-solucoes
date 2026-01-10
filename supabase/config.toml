@@ -446,6 +446,13 @@ schedule = "* * * * *"
 function_name = "billing-scheduler"
 schedule = "0 8 * * *"
 
+[functions.generate-pix-automatico-parcelas]
+verify_jwt = false
+
+[[cron]]
+function_name = "generate-pix-automatico-parcelas"
+schedule = "0 6 * * *"
+
 [[cron]]
 function_name = "sync-notion-buildings"
 schedule = "* * * * *"
