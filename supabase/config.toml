@@ -446,12 +446,12 @@ schedule = "* * * * *"
 function_name = "billing-scheduler"
 schedule = "0 8 * * *"
 
-[functions.generate-pix-automatico-parcelas]
+[functions.notify-upcoming-pix]
 verify_jwt = false
 
 [[cron]]
-function_name = "generate-pix-automatico-parcelas"
-schedule = "0 6 * * *"
+function_name = "notify-upcoming-pix"
+schedule = "0 12 * * *"
 
 [[cron]]
 function_name = "sync-notion-buildings"
