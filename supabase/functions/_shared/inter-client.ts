@@ -250,10 +250,16 @@ function formatPemCertificate(rawCert: string): string {
  * Formata uma string de chave privada PEM para garantir estrutura correta
  */
 function formatPemPrivateKey(rawKey: string): string {
+  log('info', 'Formatting private key', { 
+    rawLength: rawKey.length,
+    hasBeginPrivate: rawKey.includes('BEGIN PRIVATE KEY'),
+    hasBeginRsa: rawKey.includes('BEGIN RSA PRIVATE KEY'),
+    hasBeginEc: rawKey.includes('BEGIN EC PRIVATE KEY')
+  });
+  
   // Detectar tipo de chave (RSA ou EC)
   const isRsa = rawKey.includes('RSA PRIVATE KEY');
   const isEc = rawKey.includes('EC PRIVATE KEY');
-  const isGeneric = rawKey.includes('PRIVATE KEY') && !isRsa && !isEc;
   
   let header: string;
   let footer: string;
@@ -269,9 +275,16 @@ function formatPemPrivateKey(rawKey: string): string {
     footer = '-----END PRIVATE KEY-----';
   }
   
-  // Se já está formatado corretamente, retornar como está
-  if (rawKey.includes(header + '\n')) {
-    return rawKey.trim();
+  // Normalizar quebras de linha e remover espaços extras
+  const normalized = rawKey
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .trim();
+  
+  // Se já está formatado corretamente com headers, apenas normalizar
+  if (normalized.includes(header) && normalized.includes(footer)) {
+    log('info', 'Key already has correct headers, normalizing');
+    return normalized;
   }
   
   // Remover headers/footers existentes e espaços
@@ -280,13 +293,22 @@ function formatPemPrivateKey(rawKey: string): string {
     .replace(/-----END [A-Z ]+-----/g, '')
     .replace(/\s/g, '');
   
+  log('info', 'Key content extracted', { contentLength: content.length });
+  
   // Reformatar com quebras de linha a cada 64 caracteres
   const lines: string[] = [];
   for (let i = 0; i < content.length; i += 64) {
     lines.push(content.substring(i, i + 64));
   }
   
-  return `${header}\n${lines.join('\n')}\n${footer}`;
+  const result = `${header}\n${lines.join('\n')}\n${footer}`;
+  log('info', 'Key formatted', { 
+    resultLength: result.length,
+    lineCount: lines.length,
+    hasCorrectHeaders: result.includes(header) && result.includes(footer)
+  });
+  
+  return result;
 }
 
 // ========================================
