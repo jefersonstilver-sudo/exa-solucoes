@@ -80,12 +80,36 @@ export const usePaymentFlow = () => {
           }
         });
         
-        if (error) throw error;
+        // Handle payment provider not configured error gracefully
+        if (error) {
+          console.error('❌ [PAYMENT_FLOW] Erro no process-payment:', error);
+          
+          // Check if it's the "provider not configured" error
+          if (error.message?.includes('PAYMENT_PROVIDER_NOT_CONFIGURED') || 
+              error.message?.includes('Provedor de pagamento não configurado')) {
+            sonnerToast.error('Sistema de pagamentos em manutenção. Dados de pagamento serão enviados por e-mail.');
+            // Order was created successfully, just payment processing is pending
+            options.handleClearCart();
+            return { success: true, pedidoId: pedido.id, paymentPending: true };
+          }
+          
+          throw error;
+        }
+        
+        // Check for error in response body
+        if (data?.success === false) {
+          if (data.error === 'PAYMENT_PROVIDER_NOT_CONFIGURED') {
+            sonnerToast.error('Sistema de pagamentos em manutenção. Dados de pagamento serão enviados por e-mail.');
+            options.handleClearCart();
+            return { success: true, pedidoId: pedido.id, paymentPending: true };
+          }
+          throw new Error(data.message || 'Erro ao processar pagamento');
+        }
         
         options.handleClearCart();
-        sonnerToast.success("QR Code PIX gerado!");
+        sonnerToast.success("Pedido criado! Dados de pagamento serão enviados por e-mail.");
         
-        if (options.onPixGenerated && data) {
+        if (options.onPixGenerated && data?.qrCodeBase64) {
           options.onPixGenerated({
             qrCodeBase64: data.qrCodeBase64 || '',
             qrCodeText: data.qrCode || '',
