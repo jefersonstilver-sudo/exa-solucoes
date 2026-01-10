@@ -45,11 +45,12 @@ serve(async (req) => {
       try {
         console.log(`🔍 [AUTO_RECONCILIATION] Verificando pedido ${pedido.id}`);
 
-        // Verificar se existe webhook relacionado
+        // Verificar se existe webhook ASAAS relacionado (não Mercado Pago)
         const { data: webhooks, error: webhookError } = await supabase
           .from('webhook_logs')
           .select('*')
-          .eq('origem', 'mercadopago-pix-completo')
+          .eq('provider', 'asaas')
+          .eq('status', 'processed')
           .gte('created_at', pedido.created_at)
           .order('created_at', { ascending: false })
           .limit(5);
