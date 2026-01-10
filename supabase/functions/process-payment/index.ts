@@ -59,7 +59,7 @@ serve(async (req) => {
     // Buscar dados do pedido
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
-      .select('*, users:client_id(nome, email, cpf_cnpj)')
+      .select('*, users:client_id(nome, email, cpf, empresa_documento)')
       .eq('id', pedido_id)
       .single();
 
@@ -182,7 +182,8 @@ serve(async (req) => {
           // Add devedor info if available
           if (pedido.users) {
             const user = pedido.users;
-            const cpfCnpj = user.cpf_cnpj?.replace(/\D/g, '');
+            // Use cpf for individuals or empresa_documento for companies
+            const cpfCnpj = (user.cpf || user.empresa_documento)?.replace(/\D/g, '');
             
             if (cpfCnpj) {
               cobrancaRequest.devedor = {
