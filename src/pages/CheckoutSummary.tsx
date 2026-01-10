@@ -38,7 +38,16 @@ const CheckoutSummary = () => {
   
   // Estados para o popup PIX
   const [isPixDialogOpen, setIsPixDialogOpen] = useState(false);
-  const [pixData, setPixData] = useState<{ qrCodeBase64: string; qrCodeText: string; pedidoId: string } | null>(null);
+  const [pixData, setPixData] = useState<{ 
+    qrCodeBase64: string; 
+    qrCodeText: string; 
+    pedidoId: string;
+    isSubscription?: boolean;
+    valorMensal?: number;
+    valorTotal?: number;
+    totalMeses?: number;
+    infoMessage?: string;
+  } | null>(null);
   
   // Estados para o modal de cartão
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
@@ -464,6 +473,11 @@ const CheckoutSummary = () => {
         qrCodeText={pixData?.qrCodeText}
         userId={user?.id}
         pedidoId={pixData?.pedidoId}
+        isSubscription={pixData?.isSubscription}
+        valorMensal={pixData?.valorMensal}
+        valorTotal={pixData?.valorTotal}
+        totalMeses={pixData?.totalMeses}
+        infoMessage={pixData?.infoMessage}
       />
       
       {/* Modal de Cartão - checkout direto com Mercado Pago */}
