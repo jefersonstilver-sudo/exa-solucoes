@@ -80,17 +80,29 @@ export const usePaymentFlow = () => {
           }
         });
         
-        // Handle payment provider not configured error gracefully
+        // Handle payment errors gracefully
         if (error) {
           console.error('❌ [PAYMENT_FLOW] Erro no process-payment:', error);
           
-          // Check if it's the "provider not configured" error
-          if (error.message?.includes('PAYMENT_PROVIDER_NOT_CONFIGURED') || 
-              error.message?.includes('Provedor de pagamento não configurado')) {
-              sonnerToast.error('Sistema de pagamentos em manutenção. Dados de pagamento serão enviados por e-mail.');
-              // Pedido foi criado com sucesso; não limpamos o carrinho aqui para evitar tela em branco
-              // e para permitir que a página atual continue renderizando normalmente.
-              return { success: true, pedidoId: pedido.id, paymentPending: true };
+          const errorMessage = error.message || '';
+          
+          // Provider not configured - maintenance mode
+          if (errorMessage.includes('PAYMENT_PROVIDER_NOT_CONFIGURED') || 
+              errorMessage.includes('Provedor de pagamento não configurado')) {
+            sonnerToast.error('Sistema de pagamentos em manutenção. Dados de pagamento serão enviados por e-mail.');
+            return { success: true, pedidoId: pedido.id, paymentPending: true };
+          }
+          
+          // Inter credentials missing
+          if (errorMessage.includes('INTER_CREDENTIALS_MISSING')) {
+            sonnerToast.error('Configuração de pagamento incompleta. Entre em contato com o suporte.');
+            return { success: true, pedidoId: pedido.id, paymentPending: true };
+          }
+          
+          // Inter API error
+          if (errorMessage.includes('INTER_API_ERROR') || errorMessage.includes('Inter')) {
+            sonnerToast.error('Erro temporário no sistema de pagamentos. Tente novamente em alguns minutos.');
+            return { success: false, pedidoId: pedido.id, error: errorMessage };
           }
           
           throw error;
@@ -98,10 +110,18 @@ export const usePaymentFlow = () => {
         
         // Check for error in response body
         if (data?.success === false) {
-          if (data.error === 'PAYMENT_PROVIDER_NOT_CONFIGURED') {
+          const errorCode = data.error || '';
+          
+          if (errorCode === 'PAYMENT_PROVIDER_NOT_CONFIGURED') {
             sonnerToast.error('Sistema de pagamentos em manutenção. Dados de pagamento serão enviados por e-mail.');
             return { success: true, pedidoId: pedido.id, paymentPending: true };
           }
+          
+          if (errorCode === 'INTER_CREDENTIALS_MISSING' || errorCode === 'INTER_API_ERROR') {
+            sonnerToast.error(data.support_message || 'Erro no sistema de pagamentos. Tente novamente.');
+            return { success: false, pedidoId: pedido.id, error: data.message };
+          }
+          
           throw new Error(data.message || 'Erro ao processar pagamento');
         }
         
