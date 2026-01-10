@@ -221,6 +221,74 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * Formata uma string de certificado PEM para garantir estrutura correta
+ * O certificado pode vir sem newlines após o Base64 decode
+ */
+function formatPemCertificate(rawCert: string): string {
+  // Se já está formatado corretamente, retornar como está
+  if (rawCert.includes('-----BEGIN CERTIFICATE-----\n')) {
+    return rawCert.trim();
+  }
+  
+  // Remover headers/footers existentes e espaços
+  let content = rawCert
+    .replace(/-----BEGIN CERTIFICATE-----/g, '')
+    .replace(/-----END CERTIFICATE-----/g, '')
+    .replace(/\s/g, '');
+  
+  // Reformatar com quebras de linha a cada 64 caracteres
+  const lines: string[] = [];
+  for (let i = 0; i < content.length; i += 64) {
+    lines.push(content.substring(i, i + 64));
+  }
+  
+  return `-----BEGIN CERTIFICATE-----\n${lines.join('\n')}\n-----END CERTIFICATE-----`;
+}
+
+/**
+ * Formata uma string de chave privada PEM para garantir estrutura correta
+ */
+function formatPemPrivateKey(rawKey: string): string {
+  // Detectar tipo de chave (RSA ou EC)
+  const isRsa = rawKey.includes('RSA PRIVATE KEY');
+  const isEc = rawKey.includes('EC PRIVATE KEY');
+  const isGeneric = rawKey.includes('PRIVATE KEY') && !isRsa && !isEc;
+  
+  let header: string;
+  let footer: string;
+  
+  if (isRsa) {
+    header = '-----BEGIN RSA PRIVATE KEY-----';
+    footer = '-----END RSA PRIVATE KEY-----';
+  } else if (isEc) {
+    header = '-----BEGIN EC PRIVATE KEY-----';
+    footer = '-----END EC PRIVATE KEY-----';
+  } else {
+    header = '-----BEGIN PRIVATE KEY-----';
+    footer = '-----END PRIVATE KEY-----';
+  }
+  
+  // Se já está formatado corretamente, retornar como está
+  if (rawKey.includes(header + '\n')) {
+    return rawKey.trim();
+  }
+  
+  // Remover headers/footers existentes e espaços
+  let content = rawKey
+    .replace(/-----BEGIN [A-Z ]+-----/g, '')
+    .replace(/-----END [A-Z ]+-----/g, '')
+    .replace(/\s/g, '');
+  
+  // Reformatar com quebras de linha a cada 64 caracteres
+  const lines: string[] = [];
+  for (let i = 0; i < content.length; i += 64) {
+    lines.push(content.substring(i, i + 64));
+  }
+  
+  return `${header}\n${lines.join('\n')}\n${footer}`;
+}
+
 // ========================================
 // AUTENTICAÇÃO OAUTH2 + mTLS
 // ========================================
@@ -247,9 +315,9 @@ export async function getInterToken(): Promise<string> {
     throw new Error('Missing Inter API credentials. Required: INTER_CLIENT_ID, INTER_CLIENT_SECRET, INTER_CERTIFICATE_BASE64, INTER_PRIVATE_KEY_BASE64');
   }
 
-  // Decodificar certificados
-  const cert = atob(certBase64);
-  const key = atob(keyBase64);
+  // Decodificar e formatar certificados PEM
+  const cert = formatPemCertificate(atob(certBase64));
+  const key = formatPemPrivateKey(atob(keyBase64));
 
   // Criar cliente HTTP com certificado mTLS
   const httpClient = Deno.createHttpClient({
@@ -328,8 +396,8 @@ export async function interRequest<T>(options: InterRequestOptions): Promise<T> 
     throw new Error('Missing Inter certificates');
   }
 
-  const cert = atob(certBase64);
-  const key = atob(keyBase64);
+  const cert = formatPemCertificate(atob(certBase64));
+  const key = formatPemPrivateKey(atob(keyBase64));
 
   const httpClient = Deno.createHttpClient({
     caCerts: [cert],
