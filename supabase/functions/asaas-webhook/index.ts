@@ -257,13 +257,24 @@ serve(async (req) => {
       });
 
       // Atualizar status do pedido para "pago"
+      // Usar colunas existentes: transaction_id e log_pagamento
       const { error: updateError } = await supabase
         .from('pedidos')
         .update({
           status: 'pago',
+          payment_status: 'approved',
           metodo_pagamento: 'pix_asaas',
-          asaas_payment_id: payment.id,
-          data_pagamento: payment.paymentDate || payment.confirmedDate || new Date().toISOString(),
+          transaction_id: payment.id,
+          log_pagamento: {
+            provider: 'asaas',
+            payment_id: payment.id,
+            payment_status: 'approved',
+            payment_date: payment.paymentDate || payment.confirmedDate || new Date().toISOString(),
+            value: payment.value,
+            net_value: payment.netValue,
+            billing_type: payment.billingType,
+            confirmed_at: new Date().toISOString()
+          },
           updated_at: new Date().toISOString()
         })
         .eq('id', pedidoId);
