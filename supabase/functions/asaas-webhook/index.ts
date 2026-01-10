@@ -302,7 +302,7 @@ serve(async (req) => {
             .update({
               status: 'pago',
               data_pagamento: payment.paymentDate || payment.confirmedDate || new Date().toISOString(),
-              mercadopago_payment_id: payment.id,
+              transaction_id: payment.id,
               updated_at: new Date().toISOString()
             })
             .eq('id', parcela.id);
@@ -429,7 +429,7 @@ serve(async (req) => {
             .update({
               status: 'pago',
               data_pagamento: payment.paymentDate || payment.confirmedDate || new Date().toISOString(),
-              mercadopago_payment_id: payment.id,
+              transaction_id: payment.id,
               updated_at: new Date().toISOString()
             })
             .eq('id', parcelaId);
