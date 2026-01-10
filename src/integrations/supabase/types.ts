@@ -643,6 +643,74 @@ export type Database = {
         }
         Relationships: []
       }
+      aportes_socios: {
+        Row: {
+          comprovante_url: string | null
+          created_at: string
+          created_by: string | null
+          data: string
+          descricao: string
+          id: string
+          motivo: string
+          socio_id: string | null
+          tipo: Database["public"]["Enums"]["aporte_tipo"]
+          valor: number
+        }
+        Insert: {
+          comprovante_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          descricao: string
+          id?: string
+          motivo: string
+          socio_id?: string | null
+          tipo?: Database["public"]["Enums"]["aporte_tipo"]
+          valor: number
+        }
+        Update: {
+          comprovante_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          descricao?: string
+          id?: string
+          motivo?: string
+          socio_id?: string | null
+          tipo?: Database["public"]["Enums"]["aporte_tipo"]
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aportes_socios_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aportes_socios_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aportes_socios_socio_id_fkey"
+            columns: ["socio_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aportes_socios_socio_id_fkey"
+            columns: ["socio_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assinaturas: {
         Row: {
           client_id: string | null
@@ -1266,6 +1334,80 @@ export type Database = {
           },
         ]
       }
+      caixa_manual: {
+        Row: {
+          building_id: string | null
+          categoria_id: string | null
+          comprovante_url: string | null
+          created_at: string
+          created_by: string | null
+          data_movimentacao: string
+          descricao: string
+          id: string
+          motivo: string
+          origem: Database["public"]["Enums"]["caixa_origem"]
+          tipo: Database["public"]["Enums"]["caixa_tipo"]
+          valor: number
+        }
+        Insert: {
+          building_id?: string | null
+          categoria_id?: string | null
+          comprovante_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_movimentacao?: string
+          descricao: string
+          id?: string
+          motivo: string
+          origem?: Database["public"]["Enums"]["caixa_origem"]
+          tipo?: Database["public"]["Enums"]["caixa_tipo"]
+          valor: number
+        }
+        Update: {
+          building_id?: string | null
+          categoria_id?: string | null
+          comprovante_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_movimentacao?: string
+          descricao?: string
+          id?: string
+          motivo?: string
+          origem?: Database["public"]["Enums"]["caixa_origem"]
+          tipo?: Database["public"]["Enums"]["caixa_tipo"]
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caixa_manual_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caixa_manual_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_despesas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caixa_manual_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caixa_manual_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_events: {
         Row: {
           contact_id: string | null
@@ -1611,8 +1753,10 @@ export type Database = {
           created_at: string | null
           icone: string | null
           id: string
+          inclui_investimentos: boolean | null
           nome: string
           tipo: string
+          updated_at: string | null
         }
         Insert: {
           ativo?: boolean | null
@@ -1620,8 +1764,10 @@ export type Database = {
           created_at?: string | null
           icone?: string | null
           id?: string
+          inclui_investimentos?: boolean | null
           nome: string
           tipo: string
+          updated_at?: string | null
         }
         Update: {
           ativo?: boolean | null
@@ -1629,8 +1775,10 @@ export type Database = {
           created_at?: string | null
           icone?: string | null
           id?: string
+          inclui_investimentos?: boolean | null
           nome?: string
           tipo?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -2307,6 +2455,51 @@ export type Database = {
         }
         Relationships: []
       }
+      configuracoes_financeiro: {
+        Row: {
+          ativo: boolean
+          chave: string
+          descricao: string | null
+          id: string
+          updated_at: string
+          updated_by: string | null
+          valor: Json
+        }
+        Insert: {
+          ativo?: boolean
+          chave: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+          valor?: Json
+        }
+        Update: {
+          ativo?: boolean
+          chave?: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+          valor?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "configuracoes_financeiro_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "configuracoes_financeiro_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       configuracoes_sindico: {
         Row: {
           condominio_ticker_names: string[] | null
@@ -2962,6 +3155,115 @@ export type Database = {
             columns: ["pedido_id"]
             isOneToOne: false
             referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contratos_fornecedores: {
+        Row: {
+          building_id: string | null
+          created_at: string
+          created_by: string | null
+          data_fim: string | null
+          data_inicio: string
+          descricao: string
+          dia_vencimento: number | null
+          documento_url: string | null
+          fornecedor_id: string
+          id: string
+          motivo_alteracao: string | null
+          observacao: string | null
+          periodicidade: string | null
+          status: Database["public"]["Enums"]["contrato_status"]
+          tipo_despesa: Database["public"]["Enums"]["tipo_despesa"]
+          updated_at: string
+          updated_by: string | null
+          valor_mensal: number | null
+          valor_total: number | null
+        }
+        Insert: {
+          building_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_fim?: string | null
+          data_inicio: string
+          descricao: string
+          dia_vencimento?: number | null
+          documento_url?: string | null
+          fornecedor_id: string
+          id?: string
+          motivo_alteracao?: string | null
+          observacao?: string | null
+          periodicidade?: string | null
+          status?: Database["public"]["Enums"]["contrato_status"]
+          tipo_despesa?: Database["public"]["Enums"]["tipo_despesa"]
+          updated_at?: string
+          updated_by?: string | null
+          valor_mensal?: number | null
+          valor_total?: number | null
+        }
+        Update: {
+          building_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          descricao?: string
+          dia_vencimento?: number | null
+          documento_url?: string | null
+          fornecedor_id?: string
+          id?: string
+          motivo_alteracao?: string | null
+          observacao?: string | null
+          periodicidade?: string | null
+          status?: Database["public"]["Enums"]["contrato_status"]
+          tipo_despesa?: Database["public"]["Enums"]["tipo_despesa"]
+          updated_at?: string
+          updated_by?: string | null
+          valor_mensal?: number | null
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_fornecedores_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_fornecedores_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_fornecedores_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_fornecedores_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_fornecedores_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_fornecedores_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -4225,86 +4527,215 @@ export type Database = {
       despesas_fixas: {
         Row: {
           ativo: boolean | null
+          building_id: string | null
           categoria: string
+          categoria_id: string | null
+          contrato_id: string | null
           created_at: string | null
+          created_by: string | null
           descricao: string
           dia_vencimento: number | null
+          fornecedor_id: string | null
           id: string
+          motivo_alteracao: string | null
           observacao: string | null
           periodicidade: string
           updated_at: string | null
+          updated_by: string | null
           valor: number
         }
         Insert: {
           ativo?: boolean | null
+          building_id?: string | null
           categoria: string
+          categoria_id?: string | null
+          contrato_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           descricao: string
           dia_vencimento?: number | null
+          fornecedor_id?: string | null
           id?: string
+          motivo_alteracao?: string | null
           observacao?: string | null
           periodicidade?: string
           updated_at?: string | null
+          updated_by?: string | null
           valor: number
         }
         Update: {
           ativo?: boolean | null
+          building_id?: string | null
           categoria?: string
+          categoria_id?: string | null
+          contrato_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           descricao?: string
           dia_vencimento?: number | null
+          fornecedor_id?: string | null
           id?: string
+          motivo_alteracao?: string | null
           observacao?: string | null
           periodicidade?: string
           updated_at?: string | null
+          updated_by?: string | null
           valor?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "despesas_fixas_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_fixas_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_despesas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_fixas_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos_fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_fixas_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_fixas_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_fixas_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_fixas_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_fixas_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       despesas_variaveis: {
         Row: {
+          building_id: string | null
           categoria: string
+          categoria_id: string | null
           comprovante_url: string | null
           created_at: string | null
           data: string
           data_pagamento: string | null
           descricao: string
+          fornecedor_id: string | null
           id: string
+          motivo_alteracao: string | null
           observacao: string | null
           pago: boolean | null
           registrado_por: string | null
           updated_at: string | null
+          updated_by: string | null
           valor: number
         }
         Insert: {
+          building_id?: string | null
           categoria: string
+          categoria_id?: string | null
           comprovante_url?: string | null
           created_at?: string | null
           data: string
           data_pagamento?: string | null
           descricao: string
+          fornecedor_id?: string | null
           id?: string
+          motivo_alteracao?: string | null
           observacao?: string | null
           pago?: boolean | null
           registrado_por?: string | null
           updated_at?: string | null
+          updated_by?: string | null
           valor: number
         }
         Update: {
+          building_id?: string | null
           categoria?: string
+          categoria_id?: string | null
           comprovante_url?: string | null
           created_at?: string | null
           data?: string
           data_pagamento?: string | null
           descricao?: string
+          fornecedor_id?: string | null
           id?: string
+          motivo_alteracao?: string | null
           observacao?: string | null
           pago?: boolean | null
           registrado_por?: string | null
           updated_at?: string | null
+          updated_by?: string | null
           valor?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "despesas_variaveis_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_variaveis_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_despesas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_variaveis_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_variaveis_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_variaveis_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       developer_auth_tokens: {
         Row: {
@@ -5753,6 +6184,89 @@ export type Database = {
         }
         Relationships: []
       }
+      fornecedores: {
+        Row: {
+          ativo: boolean
+          cnpj: string
+          created_at: string
+          created_by: string | null
+          email: string | null
+          endereco: string | null
+          id: string
+          motivo_alteracao: string | null
+          nome_fantasia: string | null
+          observacao: string | null
+          razao_social: string
+          telefone: string | null
+          tipo: Database["public"]["Enums"]["fornecedor_tipo"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          cnpj: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          motivo_alteracao?: string | null
+          nome_fantasia?: string | null
+          observacao?: string | null
+          razao_social: string
+          telefone?: string | null
+          tipo?: Database["public"]["Enums"]["fornecedor_tipo"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          cnpj?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          motivo_alteracao?: string | null
+          nome_fantasia?: string | null
+          observacao?: string | null
+          razao_social?: string
+          telefone?: string | null
+          tipo?: Database["public"]["Enums"]["fornecedor_tipo"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fornecedores_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fornecedores_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fornecedores_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fornecedores_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       generated_reports: {
         Row: {
           agent_key: string | null
@@ -5943,6 +6457,119 @@ export type Database = {
           valor_pago?: number | null
         }
         Relationships: []
+      }
+      investimentos: {
+        Row: {
+          building_id: string | null
+          categoria_id: string | null
+          comprovante_url: string | null
+          created_at: string
+          created_by: string | null
+          data: string
+          descricao: string
+          fornecedor_id: string | null
+          id: string
+          motivo_alteracao: string | null
+          observacao: string | null
+          previsao_retorno: string | null
+          retorno_esperado: number | null
+          status: Database["public"]["Enums"]["investimento_status"]
+          tipo: Database["public"]["Enums"]["investimento_tipo"]
+          updated_at: string
+          updated_by: string | null
+          valor: number
+        }
+        Insert: {
+          building_id?: string | null
+          categoria_id?: string | null
+          comprovante_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          descricao: string
+          fornecedor_id?: string | null
+          id?: string
+          motivo_alteracao?: string | null
+          observacao?: string | null
+          previsao_retorno?: string | null
+          retorno_esperado?: number | null
+          status?: Database["public"]["Enums"]["investimento_status"]
+          tipo?: Database["public"]["Enums"]["investimento_tipo"]
+          updated_at?: string
+          updated_by?: string | null
+          valor: number
+        }
+        Update: {
+          building_id?: string | null
+          categoria_id?: string | null
+          comprovante_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          descricao?: string
+          fornecedor_id?: string | null
+          id?: string
+          motivo_alteracao?: string | null
+          observacao?: string | null
+          previsao_retorno?: string | null
+          retorno_esperado?: number | null
+          status?: Database["public"]["Enums"]["investimento_status"]
+          tipo?: Database["public"]["Enums"]["investimento_tipo"]
+          updated_at?: string
+          updated_by?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investimentos_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investimentos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_despesas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investimentos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investimentos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investimentos_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investimentos_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investimentos_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       iris_authorized_directors: {
         Row: {
