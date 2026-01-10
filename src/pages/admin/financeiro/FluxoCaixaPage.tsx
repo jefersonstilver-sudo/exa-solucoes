@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, TrendingUp, TrendingDown, Wallet, Target } from 'lucide-react';
+import { ArrowLeft, RefreshCw, TrendingUp, TrendingDown, Wallet, Target } from 'lucide-react';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { useFluxoCaixa } from '@/hooks/financeiro/useFluxoCaixa';
 import { useFinanceiroPermissions } from '@/hooks/financeiro/useFinanceiroPermissions';
 import { formatCurrency } from '@/utils/format';
 
 const FluxoCaixaPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { buildPath } = useAdminBasePath();
   const { loading, resumo, projecao30d, projecao60d, projecao90d, fetchFluxoCaixa, gerarFluxoDespesasFixas } = useFluxoCaixa();
   const permissions = useFinanceiroPermissions();
   const [periodo, setPeriodo] = useState<'30' | '60' | '90'>('30');
@@ -28,9 +32,19 @@ const FluxoCaixaPage: React.FC = () => {
         
         {/* Header Minimalista */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">Fluxo de Caixa</h1>
-            <p className="text-sm text-gray-500">Projeção de entradas e saídas</p>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(buildPath('financeiro'))}
+              className="h-9 w-9 rounded-xl bg-white/60 hover:bg-white border border-gray-200/50"
+            >
+              <ArrowLeft className="h-4 w-4 text-gray-600" />
+            </Button>
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">Fluxo de Caixa</h1>
+              <p className="text-sm text-gray-500">Projeção de entradas e saídas</p>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button 
