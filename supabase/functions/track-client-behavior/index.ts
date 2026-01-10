@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
+import { ZodError } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -218,6 +219,18 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('💥 Error in track-client-behavior:', error);
+    
+    // Handle Zod validation errors separately
+    if (error instanceof ZodError) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Validation error', details: error.errors }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       { 
