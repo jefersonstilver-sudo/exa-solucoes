@@ -12017,7 +12017,9 @@ export type Database = {
         }[]
       }
       get_video_current_status: { Args: { p_video_id: string }; Returns: Json }
-      has_any_admin_role: { Args: never; Returns: boolean }
+      has_any_admin_role:
+        | { Args: never; Returns: boolean }
+        | { Args: { _user_id: string }; Returns: boolean }
       has_permission: {
         Args: { _permission_key: string; _user_id: string }
         Returns: boolean
@@ -12371,6 +12373,7 @@ export type Database = {
       }
     }
     Enums: {
+      aporte_tipo: "capital" | "emprestimo" | "reinvestimento"
       app_role:
         | "client"
         | "admin"
@@ -12384,6 +12387,23 @@ export type Database = {
         | "porteiro"
         | "tecnico"
         | "operacional"
+      caixa_origem: "dinheiro" | "cheque" | "vale" | "ajuste" | "outros"
+      caixa_tipo: "entrada" | "saida"
+      categoria_tipo: "fixa" | "variavel" | "ambos" | "investimento"
+      contrato_status: "ativo" | "pausado" | "encerrado" | "cancelado"
+      fornecedor_tipo: "servico" | "produto" | "ambos"
+      investimento_status:
+        | "planejado"
+        | "em_execucao"
+        | "concluido"
+        | "cancelado"
+      investimento_tipo:
+        | "capex"
+        | "marketing"
+        | "tecnologia"
+        | "infraestrutura"
+        | "outros"
+      tipo_despesa: "fixa" | "variavel"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -12511,6 +12531,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      aporte_tipo: ["capital", "emprestimo", "reinvestimento"],
       app_role: [
         "client",
         "admin",
@@ -12525,6 +12546,25 @@ export const Constants = {
         "tecnico",
         "operacional",
       ],
+      caixa_origem: ["dinheiro", "cheque", "vale", "ajuste", "outros"],
+      caixa_tipo: ["entrada", "saida"],
+      categoria_tipo: ["fixa", "variavel", "ambos", "investimento"],
+      contrato_status: ["ativo", "pausado", "encerrado", "cancelado"],
+      fornecedor_tipo: ["servico", "produto", "ambos"],
+      investimento_status: [
+        "planejado",
+        "em_execucao",
+        "concluido",
+        "cancelado",
+      ],
+      investimento_tipo: [
+        "capex",
+        "marketing",
+        "tecnologia",
+        "infraestrutura",
+        "outros",
+      ],
+      tipo_despesa: ["fixa", "variavel"],
     },
   },
 } as const
