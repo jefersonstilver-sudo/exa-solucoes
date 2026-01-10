@@ -134,10 +134,17 @@ export interface MetricasFinanceiras {
   despesas_variaveis_mes: number;
   despesas_total: number;
   
-  // Impostos
+  // Impostos (calculados no backend)
   impostos_estimados: number;
   impostos_pagos: number;
   impostos_pendentes: number;
+  impostos_mes: number; // Total de impostos do mês
+  
+  // Custos operacionais
+  custos_operacionais_mes: number;
+  
+  // Resultado líquido (calculado no backend)
+  resultado_liquido_mes: number;
   
   // Fluxo de Caixa
   saldo_atual: number;
@@ -146,6 +153,16 @@ export interface MetricasFinanceiras {
   // Indicadores
   margem_liquida: number;
   taxa_inadimplencia: number;
+  
+  // Mês anterior (para comparação)
+  mes_anterior?: {
+    receita: number;
+    impostos: number;
+    custos_operacionais: number;
+    despesas_fixas: number;
+    despesas_variaveis: number;
+    resultado: number;
+  };
 }
 
 // Cliente Inadimplente

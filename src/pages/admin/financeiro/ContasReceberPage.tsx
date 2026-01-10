@@ -166,13 +166,13 @@ const ContasReceberPage: React.FC = () => {
   const getStatusConfig = (status: ContaReceber['status']) => {
     switch (status) {
       case 'pago':
-        return { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'Recebido' };
+        return { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-white border border-emerald-200', label: 'Recebido' };
       case 'pendente':
-        return { icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10', label: 'Aguardando' };
+        return { icon: Clock, color: 'text-amber-600', bg: 'bg-white border border-amber-200', label: 'Aguardando' };
       case 'atrasado':
-        return { icon: AlertTriangle, color: 'text-destructive', bg: 'bg-destructive/10 animate-pulse', label: 'Atrasado' };
+        return { icon: AlertTriangle, color: 'text-red-600', bg: 'bg-white border border-red-200', label: 'Atrasado' };
       default:
-        return { icon: Clock, color: 'text-muted-foreground', bg: 'bg-muted', label: status };
+        return { icon: Clock, color: 'text-gray-500', bg: 'bg-white border border-gray-200', label: status };
     }
   };
 
@@ -193,12 +193,12 @@ const ContasReceberPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-emerald-500/10">
-            <ArrowUpCircle className="h-6 w-6 text-emerald-500" />
+          <div className="p-2 rounded-xl bg-gray-100">
+            <ArrowUpCircle className="h-6 w-6 text-gray-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Contas a Receber</h1>
-            <p className="text-muted-foreground text-sm">Parcelas e cobranças via Asaas</p>
+            <h1 className="text-2xl font-bold text-gray-900">Contas a Receber</h1>
+            <p className="text-gray-500 text-sm">Parcelas e cobranças via Asaas</p>
           </div>
         </div>
         <Button onClick={fetchContas} disabled={loading} variant="outline" size="sm">
@@ -215,22 +215,22 @@ const ContasReceberPage: React.FC = () => {
             <p className="text-xl font-bold">{formatCurrency(totais.total)}</p>
           </CardContent>
         </Card>
-        <Card className="bg-emerald-500/10 border-emerald-500/20">
+        <Card className="bg-white border-l-4 border-l-emerald-500">
           <CardContent className="p-4">
-            <p className="text-xs text-emerald-600 mb-1">Recebido</p>
-            <p className="text-xl font-bold text-emerald-600">{formatCurrency(totais.pago)}</p>
+            <p className="text-xs text-gray-500 mb-1">Recebido</p>
+            <p className="text-xl font-bold text-gray-900">{formatCurrency(totais.pago)}</p>
           </CardContent>
         </Card>
-        <Card className="bg-amber-500/10 border-amber-500/20">
+        <Card className="bg-white border-l-4 border-l-amber-500">
           <CardContent className="p-4">
-            <p className="text-xs text-amber-600 mb-1">Aguardando</p>
-            <p className="text-xl font-bold text-amber-600">{formatCurrency(totais.pendente)}</p>
+            <p className="text-xs text-gray-500 mb-1">Aguardando</p>
+            <p className="text-xl font-bold text-gray-900">{formatCurrency(totais.pendente)}</p>
           </CardContent>
         </Card>
-        <Card className="bg-destructive/10 border-destructive/20">
+        <Card className="bg-white border-l-4 border-l-red-500">
           <CardContent className="p-4">
-            <p className="text-xs text-destructive mb-1">Em Atraso</p>
-            <p className="text-xl font-bold text-destructive">{formatCurrency(totais.atrasado)}</p>
+            <p className="text-xs text-gray-500 mb-1">Em Atraso</p>
+            <p className="text-xl font-bold text-gray-900">{formatCurrency(totais.atrasado)}</p>
           </CardContent>
         </Card>
       </div>

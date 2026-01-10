@@ -34,43 +34,43 @@ const FinanceiroQuickNav: React.FC = () => {
     {
       id: 'receber',
       title: 'Contas a Receber',
-      icon: <ArrowUpCircle className="h-5 w-5 text-emerald-600" />,
+      icon: <ArrowUpCircle className="h-5 w-5 text-gray-600" />,
       href: buildPath('financeiro/contas-receber')
     },
     {
       id: 'pagar',
       title: 'Contas a Pagar',
-      icon: <ArrowDownCircle className="h-5 w-5 text-orange-600" />,
+      icon: <ArrowDownCircle className="h-5 w-5 text-gray-600" />,
       href: buildPath('financeiro/contas-pagar')
     },
     {
       id: 'fluxo',
       title: 'Fluxo de Caixa',
-      icon: <TrendingUp className="h-5 w-5 text-blue-600" />,
+      icon: <TrendingUp className="h-5 w-5 text-gray-600" />,
       href: buildPath('financeiro/fluxo-caixa')
     },
     {
       id: 'dre',
       title: 'DRE Gerencial',
-      icon: <FileText className="h-5 w-5 text-purple-600" />,
+      icon: <FileText className="h-5 w-5 text-gray-600" />,
       href: buildPath('financeiro/dre')
     },
     {
       id: 'investimentos',
       title: 'Investimentos',
-      icon: <Wallet className="h-5 w-5 text-indigo-600" />,
+      icon: <Wallet className="h-5 w-5 text-gray-600" />,
       href: buildPath('financeiro/investimentos')
     },
     {
       id: 'aportes',
       title: 'Aportes',
-      icon: <Users className="h-5 w-5 text-teal-600" />,
+      icon: <Users className="h-5 w-5 text-gray-600" />,
       href: buildPath('financeiro/aportes')
     },
     {
       id: 'alertas',
       title: 'Alertas',
-      icon: <Bell className="h-5 w-5 text-red-600" />,
+      icon: <Bell className="h-5 w-5 text-gray-600" />,
       href: buildPath('financeiro/alertas')
     },
     {
