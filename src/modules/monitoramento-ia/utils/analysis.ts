@@ -98,15 +98,11 @@ const performAnalysis = async (
   text: string,
   recentMessages: any[]
 ): Promise<AnalysisResult> => {
-  // Try OpenAI first
-  const openaiKey = import.meta.env.VITE_OPENAI_API_KEY;
-  
-  if (openaiKey) {
-    try {
-      return await performOpenAIAnalysis(text, recentMessages, openaiKey);
-    } catch (error) {
-      console.warn('⚠️ [ANALYSIS] OpenAI failed, falling back to heuristics:', error);
-    }
+  // Try secure Edge Function first
+  try {
+    return await performSecureAIAnalysis(text, recentMessages);
+  } catch (error) {
+    console.warn('⚠️ [ANALYSIS] Edge Function failed, falling back to heuristics:', error);
   }
 
   // Fallback to heuristics
@@ -114,12 +110,11 @@ const performAnalysis = async (
 };
 
 /**
- * Perform analysis using OpenAI
+ * Perform analysis using secure Edge Function (no exposed API keys)
  */
-const performOpenAIAnalysis = async (
+const performSecureAIAnalysis = async (
   text: string,
-  recentMessages: any[],
-  apiKey: string
+  recentMessages: any[]
 ): Promise<AnalysisResult> => {
   const conversationContext = recentMessages
     .reverse()
@@ -136,29 +131,23 @@ Analise a mensagem e retorne um JSON com:
 - response_quality_score: 0-100
 - sla_violations: array de violações detectadas`;
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
+  // Use secure Edge Function instead of direct API call
+  const { data, error } = await supabase.functions.invoke('generate-ai-response', {
+    body: {
+      systemPrompt,
+      userMessage: `Contexto da conversa:\n${conversationContext}\n\nNova mensagem: "${text}"`,
       model: 'gpt-4',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Contexto da conversa:\n${conversationContext}\n\nNova mensagem: "${text}"` }
-      ],
-      temperature: 0.7,
-      response_format: { type: 'json_object' }
-    })
+      responseFormat: 'json'
+    }
   });
 
-  if (!response.ok) {
-    throw new Error(`OpenAI API error: ${response.status}`);
+  if (error) {
+    throw new Error(`Edge Function error: ${error.message}`);
   }
 
-  const data = await response.json();
-  const result = JSON.parse(data.choices[0].message.content);
+  const result = typeof data.response === 'string' 
+    ? JSON.parse(data.response) 
+    : data.response;
 
   return {
     contact_type: result.contact_type || 'unknown',
