@@ -30,7 +30,9 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { pedido_id, payment_method, total_amount, create_preference } = body;
+    // Accept both camelCase (pedidoId) and snake_case (pedido_id) for compatibility
+    const pedido_id = body.pedido_id || body.pedidoId;
+    const { payment_method, total_amount, create_preference } = body;
     
     console.log('🎯 [PAYMENT] Iniciando processamento:', { pedido_id, payment_method, create_preference });
     
