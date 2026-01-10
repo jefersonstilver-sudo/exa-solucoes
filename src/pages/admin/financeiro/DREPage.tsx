@@ -1,25 +1,30 @@
-import React, { useState, useEffect, useMemo } from 'react';
+/**
+ * DREPage - Demonstrativo de Resultado do Exercício
+ * 
+ * CRÍTICO: Todos os cálculos vêm do backend (calculate-financial-metrics)
+ * Frontend APENAS exibe dados - ZERO cálculos locais
+ */
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   RefreshCw, 
   TrendingUp, 
-  TrendingDown,
   Receipt,
   FileText,
-  DollarSign,
   Minus,
   Equal,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  DollarSign
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/utils/format';
-import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useFinanceiroPermissions } from '@/hooks/financeiro/useFinanceiroPermissions';
-import { toast } from 'sonner';
+import { useFinanceiroData } from '@/hooks/financeiro/useFinanceiroData';
 
 interface DREData {
   receita_bruta: number;
@@ -32,102 +37,34 @@ interface DREData {
 
 const DREPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [mesAtual, setMesAtual] = useState<DREData | null>(null);
-  const [mesAnterior, setMesAnterior] = useState<DREData | null>(null);
   const permissions = useFinanceiroPermissions();
-
-  const fetchDRE = async () => {
-    setLoading(true);
-    try {
-      const hoje = new Date();
-      const inicioMesAtual = startOfMonth(hoje);
-      const fimMesAtual = endOfMonth(hoje);
-      const inicioMesAnterior = startOfMonth(subMonths(hoje, 1));
-      const fimMesAnterior = endOfMonth(subMonths(hoje, 1));
-
-      // Buscar dados do mês atual
-      const [parcelasAtual, despesasFixasAtual, despesasVariaveisAtual] = await Promise.all([
-        supabase
-          .from('parcelas')
-          .select('valor_final')
-          .eq('status', 'pago')
-          .gte('data_pagamento', inicioMesAtual.toISOString())
-          .lte('data_pagamento', fimMesAtual.toISOString()),
-        supabase
-          .from('despesas_fixas')
-          .select('valor')
-          .gte('data_vencimento', inicioMesAtual.toISOString())
-          .lte('data_vencimento', fimMesAtual.toISOString()),
-        supabase
-          .from('despesas_variaveis')
-          .select('valor')
-          .gte('data_vencimento', inicioMesAtual.toISOString())
-          .lte('data_vencimento', fimMesAtual.toISOString())
-      ]);
-
-      // Buscar dados do mês anterior
-      const [parcelasAnterior, despesasFixasAnterior, despesasVariaveisAnterior] = await Promise.all([
-        supabase
-          .from('parcelas')
-          .select('valor_final')
-          .eq('status', 'pago')
-          .gte('data_pagamento', inicioMesAnterior.toISOString())
-          .lte('data_pagamento', fimMesAnterior.toISOString()),
-        supabase
-          .from('despesas_fixas')
-          .select('valor')
-          .gte('data_vencimento', inicioMesAnterior.toISOString())
-          .lte('data_vencimento', fimMesAnterior.toISOString()),
-        supabase
-          .from('despesas_variaveis')
-          .select('valor')
-          .gte('data_vencimento', inicioMesAnterior.toISOString())
-          .lte('data_vencimento', fimMesAnterior.toISOString())
-      ]);
-
-      // Calcular DRE mês atual
-      const receitaAtual = (parcelasAtual.data || []).reduce((acc: number, p: any) => acc + (p.valor_final || 0), 0);
-      const fixasAtual = (despesasFixasAtual.data || []).reduce((acc: number, d: any) => acc + (d.valor || 0), 0);
-      const variaveisAtual = (despesasVariaveisAtual.data || []).reduce((acc: number, d: any) => acc + (d.valor || 0), 0);
-      const impostosAtual = receitaAtual * 0.0693; // Simples Nacional estimado
-      const custosOpAtual = receitaAtual * 0.05; // 5% custos operacionais estimados
-      
-      setMesAtual({
-        receita_bruta: receitaAtual,
-        impostos: impostosAtual,
-        custos_operacionais: custosOpAtual,
-        despesas_fixas: fixasAtual,
-        despesas_variaveis: variaveisAtual,
-        resultado_periodo: receitaAtual - impostosAtual - custosOpAtual - fixasAtual - variaveisAtual
-      });
-
-      // Calcular DRE mês anterior
-      const receitaAnterior = (parcelasAnterior.data || []).reduce((acc: number, p: any) => acc + (p.valor_final || 0), 0);
-      const fixasAnterior = (despesasFixasAnterior.data || []).reduce((acc: number, d: any) => acc + (d.valor || 0), 0);
-      const variaveisAnterior = (despesasVariaveisAnterior.data || []).reduce((acc: number, d: any) => acc + (d.valor || 0), 0);
-      const impostosAnterior = receitaAnterior * 0.0693;
-      const custosOpAnterior = receitaAnterior * 0.05;
-      
-      setMesAnterior({
-        receita_bruta: receitaAnterior,
-        impostos: impostosAnterior,
-        custos_operacionais: custosOpAnterior,
-        despesas_fixas: fixasAnterior,
-        despesas_variaveis: variaveisAnterior,
-        resultado_periodo: receitaAnterior - impostosAnterior - custosOpAnterior - fixasAnterior - variaveisAnterior
-      });
-
-    } catch (error) {
-      console.error('Erro ao buscar DRE:', error);
-      toast.error('Erro ao carregar DRE');
-    } finally {
-      setLoading(false);
-    }
-  };
+  
+  // Consumir dados do backend - ZERO cálculos locais
+  const { metricas, refetch, loading: financeiroLoading, temPermissaoFinanceira } = useFinanceiroData();
 
   useEffect(() => {
-    fetchDRE();
-  }, []);
+    setLoading(financeiroLoading);
+  }, [financeiroLoading]);
+
+  // DRE calculado pelo backend
+  const mesAtual: DREData | null = metricas ? {
+    receita_bruta: metricas.receita_realizada || 0,
+    impostos: metricas.impostos_mes || 0,
+    custos_operacionais: metricas.custos_operacionais_mes || 0,
+    despesas_fixas: metricas.despesas_fixas_mes || 0,
+    despesas_variaveis: metricas.despesas_variaveis_mes || 0,
+    resultado_periodo: metricas.resultado_liquido_mes || 0
+  } : null;
+
+  // Dados do mês anterior (se disponível no backend)
+  const mesAnterior: DREData | null = metricas?.mes_anterior ? {
+    receita_bruta: metricas.mes_anterior.receita || 0,
+    impostos: metricas.mes_anterior.impostos || 0,
+    custos_operacionais: metricas.mes_anterior.custos_operacionais || 0,
+    despesas_fixas: metricas.mes_anterior.despesas_fixas || 0,
+    despesas_variaveis: metricas.mes_anterior.despesas_variaveis || 0,
+    resultado_periodo: metricas.mes_anterior.resultado || 0
+  } : null;
 
   const calcularVariacao = (atual: number, anterior: number) => {
     if (anterior === 0) return atual > 0 ? 100 : 0;
@@ -146,26 +83,26 @@ const DREPage: React.FC = () => {
     const variacaoPositiva = isPositive ? variacao >= 0 : variacao <= 0;
 
     return (
-      <div className={`flex items-center justify-between py-4 ${isTotal ? 'border-t-2 border-primary/20 pt-6' : 'border-b border-border/50'}`}>
+      <div className={`flex items-center justify-between py-4 ${isTotal ? 'border-t-2 border-gray-200 pt-6' : 'border-b border-gray-100'}`}>
         <div className="flex items-center gap-3">
           {icon}
-          <span className={`${isTotal ? 'font-bold text-lg' : 'font-medium'}`}>{label}</span>
+          <span className={`${isTotal ? 'font-bold text-lg text-gray-900' : 'font-medium text-gray-700'}`}>{label}</span>
         </div>
         <div className="flex items-center gap-6">
           <div className="text-right min-w-[120px]">
             <p className={`${isTotal ? 'text-xl font-bold' : 'text-base font-semibold'} ${
-              isTotal && valorAtual >= 0 ? 'text-emerald-600' : isTotal && valorAtual < 0 ? 'text-destructive' : ''
+              isTotal && valorAtual >= 0 ? 'text-emerald-600' : isTotal && valorAtual < 0 ? 'text-red-600' : 'text-gray-900'
             }`}>
               {formatCurrency(valorAtual)}
             </p>
-            <p className="text-xs text-muted-foreground">Mês atual</p>
+            <p className="text-xs text-gray-500">Mês atual</p>
           </div>
           <div className="text-right min-w-[120px] opacity-60">
-            <p className="text-sm">{formatCurrency(valorAnterior)}</p>
-            <p className="text-xs text-muted-foreground">Mês anterior</p>
+            <p className="text-sm text-gray-600">{formatCurrency(valorAnterior)}</p>
+            <p className="text-xs text-gray-400">Mês anterior</p>
           </div>
           <div className="min-w-[80px]">
-            <Badge className={`${variacaoPositiva ? 'bg-emerald-500/10 text-emerald-600' : 'bg-destructive/10 text-destructive'}`}>
+            <Badge className={`bg-white border ${variacaoPositiva ? 'border-emerald-300 text-emerald-600' : 'border-red-300 text-red-600'}`}>
               {variacaoPositiva ? <ArrowUpRight className="h-3 w-3 mr-1" /> : <ArrowDownRight className="h-3 w-3 mr-1" />}
               {Math.abs(variacao).toFixed(1)}%
             </Badge>
@@ -178,10 +115,10 @@ const DREPage: React.FC = () => {
   if (!permissions.canView) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[60vh]">
-        <Card className="p-8 text-center">
-          <Receipt className="h-16 w-16 mx-auto text-destructive mb-4" />
-          <h2 className="text-xl font-bold mb-2">Acesso Restrito</h2>
-          <p className="text-muted-foreground">Você não tem permissão para acessar o DRE.</p>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Receipt className="h-16 w-16 mx-auto text-red-500 mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Acesso Restrito</h2>
+          <p className="text-gray-500">Você não tem permissão para acessar o DRE.</p>
         </Card>
       </div>
     );
@@ -189,37 +126,37 @@ const DREPage: React.FC = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
+      {/* Header - Design neutro */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-purple-500/10">
-            <Receipt className="h-6 w-6 text-purple-500" />
+          <div className="p-2 rounded-xl bg-gray-100">
+            <Receipt className="h-6 w-6 text-gray-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">DRE Gerencial</h1>
-            <p className="text-muted-foreground text-sm">
+            <h1 className="text-2xl font-bold text-gray-900">DRE Gerencial</h1>
+            <p className="text-gray-500 text-sm">
               Demonstrativo de Resultado • {format(new Date(), 'MMMM yyyy', { locale: ptBR })}
             </p>
           </div>
         </div>
-        <Button onClick={fetchDRE} disabled={loading} variant="outline" size="sm">
+        <Button onClick={refetch} disabled={loading} variant="outline" size="sm">
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Atualizar
         </Button>
       </div>
 
-      {/* DRE Card */}
-      <Card className="bg-card/80 backdrop-blur-sm">
+      {/* DRE Card - Design neutro */}
+      <Card className="bg-white shadow-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-gray-900">
+            <FileText className="h-5 w-5 text-gray-600" />
             Demonstrativo de Resultado do Exercício
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+              <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
             </div>
           ) : (
             <div className="space-y-2">
@@ -229,7 +166,7 @@ const DREPage: React.FC = () => {
                 mesAnterior?.receita_bruta || 0,
                 true,
                 false,
-                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                <TrendingUp className="h-4 w-4 text-gray-600" />
               )}
               {renderLinha(
                 '(-) Impostos',
@@ -237,7 +174,7 @@ const DREPage: React.FC = () => {
                 mesAnterior?.impostos || 0,
                 false,
                 false,
-                <Minus className="h-4 w-4 text-orange-500" />
+                <Minus className="h-4 w-4 text-gray-600" />
               )}
               {renderLinha(
                 '(-) Custos Operacionais',
@@ -245,7 +182,7 @@ const DREPage: React.FC = () => {
                 mesAnterior?.custos_operacionais || 0,
                 false,
                 false,
-                <Minus className="h-4 w-4 text-orange-500" />
+                <Minus className="h-4 w-4 text-gray-600" />
               )}
               {renderLinha(
                 '(-) Despesas Fixas',
@@ -253,7 +190,7 @@ const DREPage: React.FC = () => {
                 mesAnterior?.despesas_fixas || 0,
                 false,
                 false,
-                <Minus className="h-4 w-4 text-orange-500" />
+                <Minus className="h-4 w-4 text-gray-600" />
               )}
               {renderLinha(
                 '(-) Despesas Variáveis',
@@ -261,7 +198,7 @@ const DREPage: React.FC = () => {
                 mesAnterior?.despesas_variaveis || 0,
                 false,
                 false,
-                <Minus className="h-4 w-4 text-orange-500" />
+                <Minus className="h-4 w-4 text-gray-600" />
               )}
               {renderLinha(
                 '(=) Resultado do Período',
@@ -269,48 +206,48 @@ const DREPage: React.FC = () => {
                 mesAnterior?.resultado_periodo || 0,
                 true,
                 true,
-                <Equal className="h-5 w-5 text-primary" />
+                <Equal className="h-5 w-5 text-gray-900" />
               )}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Cards de Margem */}
+      {/* Cards de Margem - Design neutro com bordas semânticas */}
       <div className="grid md:grid-cols-3 gap-4">
-        <Card className="bg-card/80 backdrop-blur-sm">
+        <Card className="bg-white shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="h-4 w-4 text-emerald-500" />
-              <span className="text-xs text-muted-foreground">Margem Bruta</span>
+              <DollarSign className="h-4 w-4 text-gray-600" />
+              <span className="text-xs text-gray-500">Margem Bruta</span>
             </div>
-            <p className="text-2xl font-bold">
+            <p className="text-2xl font-bold text-gray-900">
               {mesAtual?.receita_bruta 
                 ? (((mesAtual.receita_bruta - mesAtual.custos_operacionais) / mesAtual.receita_bruta) * 100).toFixed(1)
                 : '0'}%
             </p>
           </CardContent>
         </Card>
-        <Card className="bg-card/80 backdrop-blur-sm">
+        <Card className="bg-white shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-4 w-4 text-blue-500" />
-              <span className="text-xs text-muted-foreground">Margem Operacional</span>
+              <TrendingUp className="h-4 w-4 text-gray-600" />
+              <span className="text-xs text-gray-500">Margem Operacional</span>
             </div>
-            <p className="text-2xl font-bold">
+            <p className="text-2xl font-bold text-gray-900">
               {mesAtual?.receita_bruta 
                 ? (((mesAtual.receita_bruta - mesAtual.custos_operacionais - mesAtual.despesas_fixas - mesAtual.despesas_variaveis) / mesAtual.receita_bruta) * 100).toFixed(1)
                 : '0'}%
             </p>
           </CardContent>
         </Card>
-        <Card className={`backdrop-blur-sm ${mesAtual?.resultado_periodo && mesAtual.resultado_periodo >= 0 ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-destructive/10 border-destructive/20'}`}>
+        <Card className={`bg-white shadow-sm ${mesAtual?.resultado_periodo && mesAtual.resultado_periodo >= 0 ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-red-500'}`}>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Receipt className="h-4 w-4 text-purple-500" />
-              <span className="text-xs text-muted-foreground">Margem Líquida</span>
+              <Receipt className="h-4 w-4 text-gray-600" />
+              <span className="text-xs text-gray-500">Margem Líquida</span>
             </div>
-            <p className={`text-2xl font-bold ${mesAtual?.resultado_periodo && mesAtual.resultado_periodo >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+            <p className={`text-2xl font-bold ${mesAtual?.resultado_periodo && mesAtual.resultado_periodo >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
               {mesAtual?.receita_bruta 
                 ? ((mesAtual.resultado_periodo / mesAtual.receita_bruta) * 100).toFixed(1)
                 : '0'}%
