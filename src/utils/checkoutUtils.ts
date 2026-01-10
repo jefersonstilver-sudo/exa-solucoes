@@ -47,7 +47,9 @@ export const calculateTotalPrice = (
   couponDiscount: number = 0,
   couponValid: boolean = false,
   couponCode?: string,
-  couponCategoria?: string
+  couponCategoria?: string,
+  tipoDesconto?: 'percentual' | 'valor_fixo' | 'preco_final',
+  precoFinal?: number
 ): number => {
   // 🎁 CUPOM CORTESIA: Força R$ 0,00 SEMPRE
   if (couponCategoria === 'cortesia' || couponCode?.toUpperCase().trim() === 'CORTESIA_ADMIN') {
@@ -59,6 +61,13 @@ export const calculateTotalPrice = (
   if (couponCode === '573040') {
     console.log("🎯🎯🎯 [CheckoutUtils] CUPOM 573040 DETECTADO - Forçando R$ 0,05");
     return 0.05;
+  }
+  
+  // 💰 CUPOM PREÇO FINAL: Força o valor exato definido no cupom
+  if (couponValid && tipoDesconto === 'preco_final' && precoFinal !== undefined) {
+    const finalValue = Math.max(precoFinal, MINIMUM_ORDER_VALUE);
+    console.log("💰💰💰 [CheckoutUtils] CUPOM PREÇO FINAL DETECTADO - Forçando R$", finalValue);
+    return Math.round(finalValue * 100) / 100;
   }
   
   if (!selectedPlan || !cartItems || cartItems.length === 0) {
@@ -141,16 +150,33 @@ export const calculateTotalPrice = (
   // Aplicar desconto se válido
   let finalPrice = totalWithPlan;
   if (couponValid && couponDiscount > 0) {
-    const discountAmount = (totalWithPlan * couponDiscount) / 100;
-    finalPrice = totalWithPlan - discountAmount;
+    let discountAmount: number;
     
-    console.log("💰 [CheckoutUtils] DESCONTO APLICADO:", {
-      totalWithPlan,
-      couponDiscount: `${couponDiscount}%`,
-      discountAmount,
-      finalPrice,
-      calculation: `R$ ${totalWithPlan} - (${couponDiscount}% = R$ ${discountAmount}) = R$ ${finalPrice}`
-    });
+    if (tipoDesconto === 'valor_fixo') {
+      // Desconto valor fixo: subtrai o valor direto do total
+      discountAmount = couponDiscount;
+      finalPrice = totalWithPlan - discountAmount;
+      
+      console.log("💰 [CheckoutUtils] DESCONTO VALOR FIXO APLICADO:", {
+        totalWithPlan,
+        valorDesconto: `R$ ${couponDiscount}`,
+        discountAmount,
+        finalPrice,
+        calculation: `R$ ${totalWithPlan} - R$ ${discountAmount} = R$ ${finalPrice}`
+      });
+    } else {
+      // Desconto percentual: calcula porcentagem do total
+      discountAmount = (totalWithPlan * couponDiscount) / 100;
+      finalPrice = totalWithPlan - discountAmount;
+      
+      console.log("💰 [CheckoutUtils] DESCONTO PERCENTUAL APLICADO:", {
+        totalWithPlan,
+        couponDiscount: `${couponDiscount}%`,
+        discountAmount,
+        finalPrice,
+        calculation: `R$ ${totalWithPlan} - (${couponDiscount}% = R$ ${discountAmount}) = R$ ${finalPrice}`
+      });
+    }
   }
 
   // CORREÇÃO CRÍTICA: Aplicar valor mínimo (nunca menos que R$ 0,05)
