@@ -86,21 +86,14 @@ export const usePaymentFlow = () => {
           
           const errorMessage = error.message || '';
           
-          // Provider not configured - maintenance mode
-          if (errorMessage.includes('PAYMENT_PROVIDER_NOT_CONFIGURED') || 
-              errorMessage.includes('Provedor de pagamento não configurado')) {
-            sonnerToast.error('Sistema de pagamentos em manutenção. Dados de pagamento serão enviados por e-mail.');
-            return { success: true, pedidoId: pedido.id, paymentPending: true };
-          }
-          
-          // Inter credentials missing
-          if (errorMessage.includes('INTER_CREDENTIALS_MISSING')) {
+          // Asaas credentials missing
+          if (errorMessage.includes('ASAAS_CREDENTIALS_MISSING')) {
             sonnerToast.error('Configuração de pagamento incompleta. Entre em contato com o suporte.');
             return { success: true, pedidoId: pedido.id, paymentPending: true };
           }
           
-          // Inter API error
-          if (errorMessage.includes('INTER_API_ERROR') || errorMessage.includes('Inter')) {
+          // Asaas API error
+          if (errorMessage.includes('ASAAS_API_ERROR') || errorMessage.includes('Asaas')) {
             sonnerToast.error('Erro temporário no sistema de pagamentos. Tente novamente em alguns minutos.');
             return { success: false, pedidoId: pedido.id, error: errorMessage };
           }
@@ -112,12 +105,7 @@ export const usePaymentFlow = () => {
         if (data?.success === false) {
           const errorCode = data.error || '';
           
-          if (errorCode === 'PAYMENT_PROVIDER_NOT_CONFIGURED') {
-            sonnerToast.error('Sistema de pagamentos em manutenção. Dados de pagamento serão enviados por e-mail.');
-            return { success: true, pedidoId: pedido.id, paymentPending: true };
-          }
-          
-          if (errorCode === 'INTER_CREDENTIALS_MISSING' || errorCode === 'INTER_API_ERROR') {
+          if (errorCode === 'ASAAS_CREDENTIALS_MISSING' || errorCode === 'ASAAS_API_ERROR') {
             sonnerToast.error(data.support_message || 'Erro no sistema de pagamentos. Tente novamente.');
             return { success: false, pedidoId: pedido.id, error: data.message };
           }
