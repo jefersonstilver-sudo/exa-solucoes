@@ -780,6 +780,63 @@ export type Database = {
           },
         ]
       }
+      asaas_saidas: {
+        Row: {
+          asaas_id: string
+          asaas_tipo: string
+          cliente: string | null
+          created_at: string
+          data: string
+          descricao: string | null
+          external_reference: string | null
+          id: string
+          metodo_pagamento: string | null
+          raw_data: Json | null
+          status: string | null
+          status_original: string | null
+          synced_at: string
+          updated_at: string
+          valor: number
+          valor_liquido: number | null
+        }
+        Insert: {
+          asaas_id: string
+          asaas_tipo: string
+          cliente?: string | null
+          created_at?: string
+          data: string
+          descricao?: string | null
+          external_reference?: string | null
+          id?: string
+          metodo_pagamento?: string | null
+          raw_data?: Json | null
+          status?: string | null
+          status_original?: string | null
+          synced_at?: string
+          updated_at?: string
+          valor: number
+          valor_liquido?: number | null
+        }
+        Update: {
+          asaas_id?: string
+          asaas_tipo?: string
+          cliente?: string | null
+          created_at?: string
+          data?: string
+          descricao?: string | null
+          external_reference?: string | null
+          id?: string
+          metodo_pagamento?: string | null
+          raw_data?: Json | null
+          status?: string | null
+          status_original?: string | null
+          synced_at?: string
+          updated_at?: string
+          valor?: number
+          valor_liquido?: number | null
+        }
+        Relationships: []
+      }
       assinaturas: {
         Row: {
           client_id: string | null
