@@ -4,7 +4,6 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import ModernSuperAdminLayout from '@/components/admin/layout/ModernSuperAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +26,7 @@ import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 
 const InvestimentosPage = () => {
   const navigate = useNavigate();
-  const basePath = useAdminBasePath();
+  const { buildPath } = useAdminBasePath();
   const { investimentos, loading, totais, fetchInvestimentos } = useInvestimentos();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
@@ -65,18 +64,17 @@ const InvestimentosPage = () => {
   });
 
   return (
-    <ModernSuperAdminLayout>
-      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(`${basePath}/financeiro`)}
-            className="h-10 w-10"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(buildPath('financeiro'))}
+          className="h-9 w-9 rounded-xl bg-white/60 hover:bg-white border border-gray-200/50"
+        >
+          <ArrowLeft className="h-4 w-4 text-gray-600" />
+        </Button>
           <div>
             <h1 className="text-lg font-semibold text-gray-900">Investimentos</h1>
             <p className="text-sm text-gray-500">Gestão de CAPEX e investimentos estratégicos</p>
@@ -199,7 +197,6 @@ const InvestimentosPage = () => {
           </CardContent>
         </Card>
       </div>
-    </ModernSuperAdminLayout>
   );
 };
 

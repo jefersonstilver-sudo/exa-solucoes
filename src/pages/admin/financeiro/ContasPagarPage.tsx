@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
+  ArrowLeft,
   RefreshCw, 
   Plus, 
   Search,
@@ -15,6 +17,7 @@ import {
   AlertTriangle,
   XCircle
 } from 'lucide-react';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/utils/format';
 import { format, differenceInDays, addDays } from 'date-fns';
@@ -43,6 +46,8 @@ interface ContaPagar {
 }
 
 const ContasPagarPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { buildPath } = useAdminBasePath();
   const [contas, setContas] = useState<ContaPagar[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -180,11 +185,16 @@ const ContasPagarPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gray-100">
-            <ArrowDownCircle className="h-6 w-6 text-gray-600" />
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(buildPath('financeiro'))}
+            className="h-9 w-9 rounded-xl bg-white/60 hover:bg-white border border-gray-200/50"
+          >
+            <ArrowLeft className="h-4 w-4 text-gray-600" />
+          </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Contas a Pagar</h1>
+            <h1 className="text-xl font-semibold text-gray-900">Contas a Pagar</h1>
             <p className="text-gray-500 text-sm">Gestão de despesas fixas e variáveis</p>
           </div>
         </div>

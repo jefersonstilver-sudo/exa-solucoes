@@ -5,7 +5,6 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import ModernSuperAdminLayout from '@/components/admin/layout/ModernSuperAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +24,7 @@ import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 
 const AportesPage = () => {
   const navigate = useNavigate();
-  const basePath = useAdminBasePath();
+  const { buildPath } = useAdminBasePath();
   const { aportes, loading, totais, porSocio, fetchAportes } = useAportes();
   const [tipoFilter, setTipoFilter] = useState<string>('todos');
 
@@ -74,18 +73,17 @@ const AportesPage = () => {
   });
 
   return (
-    <ModernSuperAdminLayout>
-      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(`${basePath}/financeiro`)}
-            className="h-10 w-10"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(buildPath('financeiro'))}
+          className="h-9 w-9 rounded-xl bg-white/60 hover:bg-white border border-gray-200/50"
+        >
+          <ArrowLeft className="h-4 w-4 text-gray-600" />
+        </Button>
           <div>
             <h1 className="text-lg font-semibold text-gray-900">Aportes de Sócios</h1>
             <p className="text-sm text-gray-500">Histórico imutável de capital investido</p>
@@ -223,11 +221,10 @@ const AportesPage = () => {
         </Card>
 
         {/* Nota de Imutabilidade */}
-        <p className="text-xs text-gray-400 text-center mt-4">
-          Aportes são registros imutáveis e não podem ser editados ou excluídos após criação.
-        </p>
-      </div>
-    </ModernSuperAdminLayout>
+      <p className="text-xs text-gray-400 text-center mt-4">
+        Aportes são registros imutáveis e não podem ser editados ou excluídos após criação.
+      </p>
+    </div>
   );
 };
 

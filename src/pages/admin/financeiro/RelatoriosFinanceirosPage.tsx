@@ -5,7 +5,6 @@
  */
 
 import React, { useState } from 'react';
-import ModernSuperAdminLayout from '@/components/admin/layout/ModernSuperAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -94,7 +93,7 @@ const REPORTS: ReportType[] = [
 
 const RelatoriosFinanceirosPage = () => {
   const navigate = useNavigate();
-  const basePath = useAdminBasePath();
+  const { buildPath } = useAdminBasePath();
   const [categoryFilter, setCategoryFilter] = useState<string>('todos');
   const [generating, setGenerating] = useState<string | null>(null);
 
@@ -129,18 +128,17 @@ const RelatoriosFinanceirosPage = () => {
   );
 
   return (
-    <ModernSuperAdminLayout>
-      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(`${basePath}/financeiro`)}
-            className="h-10 w-10"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(buildPath('financeiro'))}
+          className="h-9 w-9 rounded-xl bg-white/60 hover:bg-white border border-gray-200/50"
+        >
+          <ArrowLeft className="h-4 w-4 text-gray-600" />
+        </Button>
           <div>
             <h1 className="text-lg font-semibold text-gray-900">Relatórios Financeiros</h1>
             <p className="text-sm text-gray-500">Geração de relatórios em PDF e Excel</p>
@@ -226,7 +224,6 @@ const RelatoriosFinanceirosPage = () => {
           </CardContent>
         </Card>
       </div>
-    </ModernSuperAdminLayout>
   );
 };
 
