@@ -784,17 +784,24 @@ export type Database = {
         Row: {
           asaas_id: string
           asaas_tipo: string
+          categoria_id: string | null
+          centro_custo_id: string | null
           cliente: string | null
+          conciliado: boolean | null
+          conciliado_at: string | null
+          conciliado_by: string | null
           created_at: string
           data: string
           descricao: string | null
           external_reference: string | null
           id: string
           metodo_pagamento: string | null
+          observacao: string | null
           raw_data: Json | null
           status: string | null
           status_original: string | null
           synced_at: string
+          tags: string[] | null
           updated_at: string
           valor: number
           valor_liquido: number | null
@@ -802,17 +809,24 @@ export type Database = {
         Insert: {
           asaas_id: string
           asaas_tipo: string
+          categoria_id?: string | null
+          centro_custo_id?: string | null
           cliente?: string | null
+          conciliado?: boolean | null
+          conciliado_at?: string | null
+          conciliado_by?: string | null
           created_at?: string
           data: string
           descricao?: string | null
           external_reference?: string | null
           id?: string
           metodo_pagamento?: string | null
+          observacao?: string | null
           raw_data?: Json | null
           status?: string | null
           status_original?: string | null
           synced_at?: string
+          tags?: string[] | null
           updated_at?: string
           valor: number
           valor_liquido?: number | null
@@ -820,22 +834,51 @@ export type Database = {
         Update: {
           asaas_id?: string
           asaas_tipo?: string
+          categoria_id?: string | null
+          centro_custo_id?: string | null
           cliente?: string | null
+          conciliado?: boolean | null
+          conciliado_at?: string | null
+          conciliado_by?: string | null
           created_at?: string
           data?: string
           descricao?: string | null
           external_reference?: string | null
           id?: string
           metodo_pagamento?: string | null
+          observacao?: string | null
           raw_data?: Json | null
           status?: string | null
           status_original?: string | null
           synced_at?: string
+          tags?: string[] | null
           updated_at?: string
           valor?: number
           valor_liquido?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "asaas_saidas_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_despesas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_saidas_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_saidas_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "vw_custo_por_centro"
+            referencedColumns: ["centro_custo_id"]
+          },
+        ]
       }
       assinaturas: {
         Row: {
