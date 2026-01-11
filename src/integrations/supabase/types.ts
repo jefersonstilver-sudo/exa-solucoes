@@ -6654,14 +6654,19 @@ export type Database = {
         Row: {
           ativo: boolean | null
           cargo: string
+          centro_custo_id: string | null
           created_at: string | null
           created_by: string | null
           data_admissao: string | null
           data_demissao: string | null
           departamento: string
+          despesa_fixa_id: string | null
           id: string
+          nome_completo: string | null
           observacoes: string | null
+          periodicidade_pagamento: string | null
           salario_mensal: number | null
+          status: Database["public"]["Enums"]["funcionario_status"] | null
           tipo_contrato: string
           updated_at: string | null
           updated_by: string | null
@@ -6671,14 +6676,19 @@ export type Database = {
         Insert: {
           ativo?: boolean | null
           cargo: string
+          centro_custo_id?: string | null
           created_at?: string | null
           created_by?: string | null
           data_admissao?: string | null
           data_demissao?: string | null
           departamento: string
+          despesa_fixa_id?: string | null
           id?: string
+          nome_completo?: string | null
           observacoes?: string | null
+          periodicidade_pagamento?: string | null
           salario_mensal?: number | null
+          status?: Database["public"]["Enums"]["funcionario_status"] | null
           tipo_contrato: string
           updated_at?: string | null
           updated_by?: string | null
@@ -6688,14 +6698,19 @@ export type Database = {
         Update: {
           ativo?: boolean | null
           cargo?: string
+          centro_custo_id?: string | null
           created_at?: string | null
           created_by?: string | null
           data_admissao?: string | null
           data_demissao?: string | null
           departamento?: string
+          despesa_fixa_id?: string | null
           id?: string
+          nome_completo?: string | null
           observacoes?: string | null
+          periodicidade_pagamento?: string | null
           salario_mensal?: number | null
+          status?: Database["public"]["Enums"]["funcionario_status"] | null
           tipo_contrato?: string
           updated_at?: string | null
           updated_by?: string | null
@@ -6704,6 +6719,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "funcionarios_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionarios_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "vw_custo_por_centro"
+            referencedColumns: ["centro_custo_id"]
+          },
+          {
             foreignKeyName: "funcionarios_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -6715,6 +6744,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionarios_despesa_fixa_id_fkey"
+            columns: ["despesa_fixa_id"]
+            isOneToOne: false
+            referencedRelation: "despesas_fixas"
             referencedColumns: ["id"]
           },
           {
@@ -6743,6 +6779,160 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funcionarios_documentos: {
+        Row: {
+          arquivo_url: string
+          created_at: string | null
+          created_by: string | null
+          data_validade: string | null
+          funcionario_id: string
+          id: string
+          nome_arquivo: string
+          obrigatorio: boolean | null
+          observacao: string | null
+          ocr_processado_em: string | null
+          ocr_texto: string | null
+          status: string | null
+          tipo_documento: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          arquivo_url: string
+          created_at?: string | null
+          created_by?: string | null
+          data_validade?: string | null
+          funcionario_id: string
+          id?: string
+          nome_arquivo: string
+          obrigatorio?: boolean | null
+          observacao?: string | null
+          ocr_processado_em?: string | null
+          ocr_texto?: string | null
+          status?: string | null
+          tipo_documento: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          arquivo_url?: string
+          created_at?: string | null
+          created_by?: string | null
+          data_validade?: string | null
+          funcionario_id?: string
+          id?: string
+          nome_arquivo?: string
+          obrigatorio?: boolean | null
+          observacao?: string | null
+          ocr_processado_em?: string | null
+          ocr_texto?: string | null
+          status?: string | null
+          tipo_documento?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funcionarios_documentos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionarios_documentos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionarios_documentos_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionarios_documentos_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionarios_documentos_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funcionarios_status_historico: {
+        Row: {
+          alterado_por: string | null
+          created_at: string | null
+          data_fim: string | null
+          data_inicio: string
+          funcionario_id: string
+          id: string
+          motivo: string | null
+          status_anterior:
+            | Database["public"]["Enums"]["funcionario_status"]
+            | null
+          status_novo: Database["public"]["Enums"]["funcionario_status"]
+        }
+        Insert: {
+          alterado_por?: string | null
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          funcionario_id: string
+          id?: string
+          motivo?: string | null
+          status_anterior?:
+            | Database["public"]["Enums"]["funcionario_status"]
+            | null
+          status_novo: Database["public"]["Enums"]["funcionario_status"]
+        }
+        Update: {
+          alterado_por?: string | null
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          funcionario_id?: string
+          id?: string
+          motivo?: string | null
+          status_anterior?:
+            | Database["public"]["Enums"]["funcionario_status"]
+            | null
+          status_novo?: Database["public"]["Enums"]["funcionario_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funcionarios_status_historico_alterado_por_fkey"
+            columns: ["alterado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionarios_status_historico_alterado_por_fkey"
+            columns: ["alterado_por"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionarios_status_historico_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
             referencedColumns: ["id"]
           },
         ]
@@ -14048,6 +14238,7 @@ export type Database = {
         | "diretoria"
         | "ti"
       fornecedor_tipo: "servico" | "produto" | "ambos"
+      funcionario_status: "ativo" | "ferias" | "suspenso" | "encerrado"
       investimento_status:
         | "planejado"
         | "em_execucao"
@@ -14259,6 +14450,7 @@ export const Constants = {
         "ti",
       ],
       fornecedor_tipo: ["servico", "produto", "ambos"],
+      funcionario_status: ["ativo", "ferias", "suspenso", "encerrado"],
       investimento_status: [
         "planejado",
         "em_execucao",
