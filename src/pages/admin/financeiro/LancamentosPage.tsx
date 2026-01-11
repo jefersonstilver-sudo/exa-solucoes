@@ -27,7 +27,7 @@ import {
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/utils/format';
-import { format } from 'date-fns';
+import { format, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import LancamentoDetalheDialog from '@/components/admin/financeiro/LancamentoDetalheDialog';
@@ -96,12 +96,18 @@ const LancamentosPage: React.FC = () => {
   const fetchLancamentos = async () => {
     setLoading(true);
     try {
+      // Janela de dados ampla o suficiente para incluir lançamentos do caixa + ASAAS (realizados e agendados)
+      const start = format(subMonths(new Date(), 12), 'yyyy-MM-dd');
+      const end = format(addMonths(new Date(), 12), 'yyyy-MM-dd');
+
       // Buscar da VIEW unificada
       const { data: viewData, error: viewError } = await supabase
         .from('vw_fluxo_caixa_real')
         .select('*')
+        .gte('data', start)
+        .lte('data', end)
         .order('data', { ascending: false })
-        .limit(200);
+        .limit(5000);
 
       if (viewError) throw viewError;
 
