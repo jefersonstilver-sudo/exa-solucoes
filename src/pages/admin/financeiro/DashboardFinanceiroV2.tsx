@@ -149,10 +149,13 @@ const DashboardFinanceiroV2: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
-        {/* Header Simples */}
-        <div className="mb-2">
-          <h1 className="text-2xl font-bold text-gray-900">Financeiro</h1>
-          <p className="text-sm text-gray-500">Visão executiva em tempo real</p>
+        {/* Header + Navegação Rápida */}
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Financeiro</h1>
+            <p className="text-sm text-gray-500">Visão executiva em tempo real</p>
+          </div>
+          <FinanceiroQuickNav />
         </div>
 
         {/* CAMADA 1: Situação Atual */}
@@ -175,9 +178,6 @@ const DashboardFinanceiroV2: React.FC = () => {
 
         {/* CAMADA 5: Performance */}
         <PerformanceMetrics {...performanceData} />
-
-        {/* Navegação Rápida */}
-        <FinanceiroQuickNav />
       </div>
     </div>
   );
