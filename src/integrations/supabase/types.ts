@@ -2041,6 +2041,7 @@ export type Database = {
           ativo: boolean | null
           cor: string | null
           created_at: string | null
+          fluxo: string
           icone: string | null
           id: string
           inclui_investimentos: boolean | null
@@ -2055,6 +2056,7 @@ export type Database = {
           ativo?: boolean | null
           cor?: string | null
           created_at?: string | null
+          fluxo?: string
           icone?: string | null
           id?: string
           inclui_investimentos?: boolean | null
@@ -2069,6 +2071,7 @@ export type Database = {
           ativo?: boolean | null
           cor?: string | null
           created_at?: string | null
+          fluxo?: string
           icone?: string | null
           id?: string
           inclui_investimentos?: boolean | null

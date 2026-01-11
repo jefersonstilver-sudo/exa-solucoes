@@ -2,17 +2,17 @@
  * CategoriasFinanceirasPage - Gestão Hierárquica de Categorias
  * 
  * Estrutura oficial simplificada EXA:
- * - 3 categorias-mãe fixas (Custos Fixos, Custos Variáveis, Investimentos)
- * - 8 subcategorias oficiais
+ * - SAÍDAS: 3 categorias-mãe fixas (Custos Fixos, Custos Variáveis, Investimentos)
+ * - ENTRADAS: 4 categorias-mãe fixas (Receita Operacional, Receita Recorrente, Receita Financeira, Aportes & Capital)
  * - Suporte a subcategorias multinível
  */
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, ChevronDown, ChevronUp, Lock, Info } from 'lucide-react';
+import { Loader2, ArrowLeft, ChevronDown, ChevronUp, Lock, Info, TrendingDown, TrendingUp } from 'lucide-react';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
-import { useCategoriaHierarchy } from '@/hooks/useCategoriaHierarchy';
+import { useCategoriaHierarchy, type FluxoType } from '@/hooks/useCategoriaHierarchy';
 import { 
   CategoriaTree, 
   CategoriaFormModal, 
@@ -23,9 +23,11 @@ import {
   Alert,
   AlertDescription,
 } from "@/components/ui/alert";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { cn } from '@/lib/utils';
 
-// Descrições oficiais das subcategorias
-const SUBCATEGORIA_DESCRIPTIONS: Record<string, string> = {
+// Descrições oficiais das subcategorias de SAÍDA
+const SUBCATEGORIA_DESCRIPTIONS_SAIDA: Record<string, string> = {
   'Sistema / Infraestrutura': 'AWS, Supabase, Lovable, OpenAI, APIs, hospedagem, banco de dados',
   'Salários & Estrutura': 'CLT, pró-labore, estagiários, funcionários fixos, encargos',
   'Estrutura Administrativa': 'Aluguel, energia, internet, água, escritório, contabilidade',
@@ -36,12 +38,21 @@ const SUBCATEGORIA_DESCRIPTIONS: Record<string, string> = {
   'Crescimento & Estratégia': 'Projetos novos, testes de mercado, parcerias, expansões',
 };
 
+// Descrições oficiais das subcategorias de ENTRADA
+const SUBCATEGORIA_DESCRIPTIONS_ENTRADA: Record<string, string> = {
+  'Vendas Avulsas': 'Vendas pontuais, serviços uma vez, projetos fechados sem recorrência',
+  'Assinaturas': 'Planos mensais, cobranças recorrentes ASAAS, MRR, clientes ativos',
+  'Rendimentos Financeiros': 'Juros, rendimentos de conta, cashback, ajustes positivos',
+  'Aportes dos Sócios': 'Aporte pessoal, capitalização, reforço de caixa',
+  'Empréstimos': 'Empréstimos bancários, empréstimos de sócios, crédito tomado',
+};
+
 const CategoriasFinanceirasPage: React.FC = () => {
   const navigate = useNavigate();
   const { buildPath } = useAdminBasePath();
+  const [activeTab, setActiveTab] = useState<FluxoType>('saida');
   
   const {
-    tree,
     isLoading,
     expandedIds,
     toggleExpanded,
@@ -51,6 +62,7 @@ const CategoriasFinanceirasPage: React.FC = () => {
     updateCategoria,
     deleteCategoria,
     isFixedCategory,
+    getTreeByFluxo,
   } = useCategoriaHierarchy();
 
   // Modal states
@@ -59,6 +71,9 @@ const CategoriasFinanceirasPage: React.FC = () => {
   const [editingCategoria, setEditingCategoria] = useState<CategoriaNode | null>(null);
   const [parentIdForNew, setParentIdForNew] = useState<string | null>(null);
   const [categoriaToDelete, setCategoriaToDelete] = useState<CategoriaNode | null>(null);
+
+  // Get filtered tree based on active tab
+  const currentTree = getTreeByFluxo(activeTab);
 
   // Handlers
   const handleAddChild = (parentId: string) => {
@@ -105,6 +120,7 @@ const CategoriasFinanceirasPage: React.FC = () => {
         icone: data.icone,
         parent_id: parentIdForNew,
         ativo: data.ativo,
+        fluxo: activeTab,
       });
     }
     setShowFormModal(false);
@@ -135,7 +151,7 @@ const CategoriasFinanceirasPage: React.FC = () => {
           </Button>
           <div>
             <h1 className="text-xl font-semibold text-foreground">Categorias Financeiras</h1>
-            <p className="text-sm text-muted-foreground">Estrutura oficial de classificação de despesas</p>
+            <p className="text-sm text-muted-foreground">Estrutura oficial de classificação financeira</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -160,64 +176,150 @@ const CategoriasFinanceirasPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Info Alert */}
-      <Alert className="mb-6 bg-muted/50 border-muted">
-        <Info className="h-4 w-4" />
-        <AlertDescription className="text-sm">
-          <span className="font-medium">Estrutura oficial EXA:</span> As 3 categorias-mãe 
-          <span className="inline-flex items-center gap-1 mx-1">
-            <Lock className="h-3 w-3" />
-          </span>
-          são fixas e imutáveis. Você pode adicionar subcategorias dentro de qualquer nível.
-        </AlertDescription>
-      </Alert>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as FluxoType)} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+          <TabsTrigger 
+            value="saida" 
+            className={cn(
+              "gap-2 data-[state=active]:bg-destructive/10 data-[state=active]:text-destructive"
+            )}
+          >
+            <TrendingDown className="h-4 w-4" />
+            Saídas (Despesas)
+          </TabsTrigger>
+          <TabsTrigger 
+            value="entrada" 
+            className={cn(
+              "gap-2 data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-600"
+            )}
+          >
+            <TrendingUp className="h-4 w-4" />
+            Entradas (Receitas)
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Categories Tree */}
-      <div className="bg-card rounded-xl border shadow-sm p-4">
-        <CategoriaTree
-          tree={tree}
-          expandedIds={expandedIds}
-          isLoading={isLoading}
-          onToggleExpand={toggleExpanded}
-          onAddChild={handleAddChild}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-      </div>
+        {/* Info Alert - Dynamic based on tab */}
+        <Alert className="mb-6 bg-muted/50 border-muted">
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            <span className="font-medium">Estrutura oficial EXA:</span> As {activeTab === 'saida' ? '3' : '4'} categorias-mãe 
+            <span className="inline-flex items-center gap-1 mx-1">
+              <Lock className="h-3 w-3" />
+            </span>
+            são fixas e imutáveis. Você pode adicionar subcategorias dentro de qualquer nível.
+          </AlertDescription>
+        </Alert>
 
-      {/* Legenda */}
-      <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-        <h3 className="text-sm font-medium text-foreground mb-3">Regras de Classificação</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full bg-blue-500" />
-              <span className="font-medium text-foreground">Custos Fixos</span>
-            </div>
-            <p className="text-muted-foreground text-xs pl-5">
-              Gastos mensais independentes de vendas
-            </p>
+        {/* Saídas Content */}
+        <TabsContent value="saida" className="mt-0">
+          {/* Categories Tree */}
+          <div className="bg-card rounded-xl border shadow-sm p-4">
+            <CategoriaTree
+              tree={currentTree}
+              expandedIds={expandedIds}
+              isLoading={isLoading}
+              onToggleExpand={toggleExpanded}
+              onAddChild={handleAddChild}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
           </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full bg-amber-500" />
-              <span className="font-medium text-foreground">Custos Variáveis</span>
+
+          {/* Legenda Saídas */}
+          <div className="mt-6 p-4 bg-muted/30 rounded-lg">
+            <h3 className="text-sm font-medium text-foreground mb-3">Regras de Classificação - Saídas</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-blue-500" />
+                  <span className="font-medium text-foreground">Custos Fixos</span>
+                </div>
+                <p className="text-muted-foreground text-xs pl-5">
+                  Gastos mensais independentes de vendas
+                </p>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-amber-500" />
+                  <span className="font-medium text-foreground">Custos Variáveis</span>
+                </div>
+                <p className="text-muted-foreground text-xs pl-5">
+                  Dependem da operação ou volume
+                </p>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-emerald-500" />
+                  <span className="font-medium text-foreground">Investimentos</span>
+                </div>
+                <p className="text-muted-foreground text-xs pl-5">
+                  Gastos para crescer ou estruturar
+                </p>
+              </div>
             </div>
-            <p className="text-muted-foreground text-xs pl-5">
-              Dependem da operação ou volume
-            </p>
           </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full bg-emerald-500" />
-              <span className="font-medium text-foreground">Investimentos</span>
+        </TabsContent>
+
+        {/* Entradas Content */}
+        <TabsContent value="entrada" className="mt-0">
+          {/* Categories Tree */}
+          <div className="bg-card rounded-xl border shadow-sm p-4">
+            <CategoriaTree
+              tree={currentTree}
+              expandedIds={expandedIds}
+              isLoading={isLoading}
+              onToggleExpand={toggleExpanded}
+              onAddChild={handleAddChild}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          </div>
+
+          {/* Legenda Entradas */}
+          <div className="mt-6 p-4 bg-muted/30 rounded-lg">
+            <h3 className="text-sm font-medium text-foreground mb-3">Regras de Classificação - Entradas</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-green-500" />
+                  <span className="font-medium text-foreground">Receita Operacional</span>
+                </div>
+                <p className="text-muted-foreground text-xs pl-5">
+                  Vendas diretas, pontuais
+                </p>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-blue-500" />
+                  <span className="font-medium text-foreground">Receita Recorrente</span>
+                </div>
+                <p className="text-muted-foreground text-xs pl-5">
+                  MRR, assinaturas, planos mensais
+                </p>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-purple-500" />
+                  <span className="font-medium text-foreground">Receita Financeira</span>
+                </div>
+                <p className="text-muted-foreground text-xs pl-5">
+                  Juros, rendimentos, cashback
+                </p>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-amber-500" />
+                  <span className="font-medium text-foreground">Aportes & Capital</span>
+                </div>
+                <p className="text-muted-foreground text-xs pl-5">
+                  Aportes, empréstimos (não é receita)
+                </p>
+              </div>
             </div>
-            <p className="text-muted-foreground text-xs pl-5">
-              Gastos para crescer ou estruturar
-            </p>
           </div>
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Form Modal */}
       <CategoriaFormModal
