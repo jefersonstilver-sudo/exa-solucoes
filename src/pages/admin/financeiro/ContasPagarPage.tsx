@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from 'sonner';
+import { NovaDespesaModal } from '@/components/admin/financeiro/NovaDespesaModal';
 
 interface ContaPagar {
   id: string;
@@ -53,6 +54,7 @@ const ContasPagarPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
   const [tipoFilter, setTipoFilter] = useState<string>('todos');
+  const [showNovaDespesaModal, setShowNovaDespesaModal] = useState(false);
   const permissions = useFinanceiroPermissions();
 
   const fetchContas = async () => {
@@ -204,7 +206,7 @@ const ContasPagarPage: React.FC = () => {
             Atualizar
           </Button>
           {permissions.canCreate && (
-            <Button size="sm" className="shadow-sm">
+            <Button size="sm" className="shadow-sm" onClick={() => setShowNovaDespesaModal(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Nova Conta
             </Button>
@@ -359,6 +361,13 @@ const ContasPagarPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal Nova Despesa */}
+      <NovaDespesaModal
+        open={showNovaDespesaModal}
+        onOpenChange={setShowNovaDespesaModal}
+        onSuccess={fetchContas}
+      />
     </div>
   );
 };
