@@ -7121,6 +7121,213 @@ export type Database = {
         }
         Relationships: []
       }
+      lancamento_audios: {
+        Row: {
+          audio_url: string
+          created_at: string | null
+          duracao_segundos: number | null
+          gravado_por: string | null
+          id: string
+          lancamento_id: string
+          lancamento_tipo: string
+          transcricao: string | null
+          transcricao_editada: string | null
+        }
+        Insert: {
+          audio_url: string
+          created_at?: string | null
+          duracao_segundos?: number | null
+          gravado_por?: string | null
+          id?: string
+          lancamento_id: string
+          lancamento_tipo: string
+          transcricao?: string | null
+          transcricao_editada?: string | null
+        }
+        Update: {
+          audio_url?: string
+          created_at?: string | null
+          duracao_segundos?: number | null
+          gravado_por?: string | null
+          id?: string
+          lancamento_id?: string
+          lancamento_tipo?: string
+          transcricao?: string | null
+          transcricao_editada?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lancamento_audios_gravado_por_fkey"
+            columns: ["gravado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamento_audios_gravado_por_fkey"
+            columns: ["gravado_por"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lancamento_comprovantes: {
+        Row: {
+          arquivo_nome: string | null
+          arquivo_tamanho_kb: number | null
+          arquivo_url: string
+          created_at: string | null
+          id: string
+          lancamento_id: string
+          lancamento_tipo: string
+          observacao: string | null
+          tipo_comprovante: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          arquivo_nome?: string | null
+          arquivo_tamanho_kb?: number | null
+          arquivo_url: string
+          created_at?: string | null
+          id?: string
+          lancamento_id: string
+          lancamento_tipo: string
+          observacao?: string | null
+          tipo_comprovante: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          arquivo_nome?: string | null
+          arquivo_tamanho_kb?: number | null
+          arquivo_url?: string
+          created_at?: string | null
+          id?: string
+          lancamento_id?: string
+          lancamento_tipo?: string
+          observacao?: string | null
+          tipo_comprovante?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lancamento_comprovantes_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamento_comprovantes_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lancamento_historico: {
+        Row: {
+          acao: string
+          campo_alterado: string | null
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          lancamento_id: string
+          lancamento_tipo: string
+          usuario_id: string | null
+          usuario_nome: string | null
+          valor_anterior: Json | null
+          valor_novo: Json | null
+        }
+        Insert: {
+          acao: string
+          campo_alterado?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          lancamento_id: string
+          lancamento_tipo: string
+          usuario_id?: string | null
+          usuario_nome?: string | null
+          valor_anterior?: Json | null
+          valor_novo?: Json | null
+        }
+        Update: {
+          acao?: string
+          campo_alterado?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          lancamento_id?: string
+          lancamento_tipo?: string
+          usuario_id?: string | null
+          usuario_nome?: string | null
+          valor_anterior?: Json | null
+          valor_novo?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lancamento_historico_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamento_historico_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lancamento_observacoes: {
+        Row: {
+          autor_id: string | null
+          autor_nome: string | null
+          conteudo: string
+          created_at: string | null
+          id: string
+          lancamento_id: string
+          lancamento_tipo: string
+        }
+        Insert: {
+          autor_id?: string | null
+          autor_nome?: string | null
+          conteudo: string
+          created_at?: string | null
+          id?: string
+          lancamento_id: string
+          lancamento_tipo: string
+        }
+        Update: {
+          autor_id?: string | null
+          autor_nome?: string | null
+          conteudo?: string
+          created_at?: string | null
+          id?: string
+          lancamento_id?: string
+          lancamento_tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lancamento_observacoes_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamento_observacoes_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_data_access_logs: {
         Row: {
           created_at: string
