@@ -31,6 +31,7 @@ export interface LancamentoDossie {
   conciliado?: boolean;
   conciliado_at?: string;
   conciliado_by?: string;
+  observacao?: string;
   
   // Classificações específicas ASAAS
   tipo_receita?: 'fixa' | 'variavel';

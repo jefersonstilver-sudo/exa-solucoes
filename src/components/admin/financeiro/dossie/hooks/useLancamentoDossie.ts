@@ -186,6 +186,20 @@ export const useLancamentoDossie = ({ lancamentoId, lancamentoTipo }: UseLancame
         await logHistorico(updates.conciliado ? 'conciliado' : 'reconciliado', 'conciliado', currentData.conciliado, updates.conciliado);
       }
       
+      if (updates.centro_custo_id !== undefined) {
+        updateObj.centro_custo_id = updates.centro_custo_id || null;
+        await logHistorico('centro_custo_alterado', 'centro_custo_id', currentData.centro_custo_id, updates.centro_custo_id);
+      }
+      
+      if (updates.tags !== undefined) {
+        updateObj.tags = updates.tags && updates.tags.length > 0 ? updates.tags : null;
+        await logHistorico('tags_alteradas', 'tags', currentData.tags, updates.tags);
+      }
+      
+      if (updates.observacao !== undefined) {
+        updateObj.observacao = updates.observacao || null;
+      }
+      
       if (updates.tipo_receita !== undefined && lancamentoTipo === 'asaas') {
         updateObj.tipo_receita = updates.tipo_receita || null;
         await logHistorico('tipo_receita_alterado', 'tipo_receita', currentData.tipo_receita, updates.tipo_receita);
