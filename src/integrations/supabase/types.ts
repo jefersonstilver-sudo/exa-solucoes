@@ -6374,11 +6374,11 @@ export type Database = {
           created_by: string | null
           data_admissao: string | null
           data_demissao: string | null
-          departamento: Database["public"]["Enums"]["departamento_funcionario"]
+          departamento: string
           id: string
           observacoes: string | null
           salario_mensal: number | null
-          tipo_contrato: Database["public"]["Enums"]["tipo_contrato_funcionario"]
+          tipo_contrato: string
           updated_at: string | null
           updated_by: string | null
           user_id: string
@@ -6391,11 +6391,11 @@ export type Database = {
           created_by?: string | null
           data_admissao?: string | null
           data_demissao?: string | null
-          departamento: Database["public"]["Enums"]["departamento_funcionario"]
+          departamento: string
           id?: string
           observacoes?: string | null
           salario_mensal?: number | null
-          tipo_contrato: Database["public"]["Enums"]["tipo_contrato_funcionario"]
+          tipo_contrato: string
           updated_at?: string | null
           updated_by?: string | null
           user_id: string
@@ -6408,11 +6408,11 @@ export type Database = {
           created_by?: string | null
           data_admissao?: string | null
           data_demissao?: string | null
-          departamento?: Database["public"]["Enums"]["departamento_funcionario"]
+          departamento?: string
           id?: string
           observacoes?: string | null
           salario_mensal?: number | null
-          tipo_contrato?: Database["public"]["Enums"]["tipo_contrato_funcionario"]
+          tipo_contrato?: string
           updated_at?: string | null
           updated_by?: string | null
           user_id?: string
