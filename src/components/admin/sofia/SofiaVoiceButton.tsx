@@ -15,11 +15,11 @@ interface SofiaVoiceButtonProps {
 export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className }) => {
   const [sofiaAtiva, setSofiaAtiva] = useState<boolean | null>(null);
   const { userProfile } = useAuth();
-  const { 
-    state, 
-    isSpeaking, 
-    error, 
-    startCall, 
+  const {
+    state,
+    isSpeaking,
+    error,
+    startCall,
     endCall,
   } = useSofia();
 
@@ -28,36 +28,45 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
   const userEmail = userProfile?.email?.toLowerCase();
   const isMasterAccount = userEmail === MASTER_ACCOUNT_EMAIL.toLowerCase();
 
-  // Se não for o master, não renderizar NADA - botão não existe no DOM
-  if (!isMasterAccount) {
-    return null;
-  }
-
-  // Buscar configuração sofia_ativa
+  // Buscar configuração sofia_ativa (apenas para o master)
   useEffect(() => {
+    if (!isMasterAccount) return;
+
+    let isActive = true;
+
     const fetchConfig = async () => {
       const { data } = await supabase
         .from('configuracoes_adicionais')
         .select('sofia_ativa')
         .limit(1)
         .single();
-      
+
+      if (!isActive) return;
       setSofiaAtiva(data?.sofia_ativa ?? true);
     };
-    
+
     fetchConfig();
-    
+
     // Ouvir mudanças em tempo real
     const channel = supabase
       .channel('sofia-config-changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'configuracoes_adicionais' }, 
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'configuracoes_adicionais' },
         () => fetchConfig()
       )
       .subscribe();
-    
-    return () => { supabase.removeChannel(channel); };
-  }, []);
+
+    return () => {
+      isActive = false;
+      supabase.removeChannel(channel);
+    };
+  }, [isMasterAccount]);
+
+  // Se não for o master, não renderizar NADA - botão não existe no DOM
+  if (!isMasterAccount) {
+    return null;
+  }
 
   // Se sofia_ativa não é true (carregando ou desativado), não renderizar o botão
   if (sofiaAtiva !== true) {
