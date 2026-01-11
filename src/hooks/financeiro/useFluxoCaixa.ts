@@ -26,22 +26,30 @@ export const useFluxoCaixa = () => {
       const fim = dataFim || format(addDays(new Date(), 90), 'yyyy-MM-dd');
 
       const { data, error } = await supabase
-        .from('fluxo_caixa')
+        // v1.4: Fluxo de Caixa Real é derivado da VIEW unificada (ASAAS + despesas)
+        .from('vw_fluxo_caixa_real')
         .select('*')
-        .gte('data_prevista', inicio)
-        .lte('data_prevista', fim)
-        .order('data_prevista', { ascending: true });
+        .gte('data', inicio)
+        .lte('data', fim)
+        .order('data', { ascending: true });
 
       if (error) throw error;
 
-      const items: FluxoCaixaItem[] = (data || []).map((fc: any) => ({
-        data: fc.data_real || fc.data_prevista,
-        tipo: fc.tipo as 'entrada' | 'saida',
-        descricao: fc.descricao,
-        valor: Number(fc.valor),
-        categoria: fc.categoria || 'outros',
-        status: fc.status as 'realizado' | 'projetado'
-      }));
+      const items: FluxoCaixaItem[] = (data || []).map((fc: any) => {
+        const statusView = String(fc.status || '').toLowerCase();
+        const status: FluxoCaixaItem['status'] =
+          statusView === 'realizado' ? 'realizado' : 'projetado';
+
+        return {
+          data: String(fc.data),
+          tipo: fc.tipo as 'entrada' | 'saida',
+          descricao: fc.descricao,
+          valor: Number(fc.valor),
+          // A VIEW não garante categoria (mantemos compatibilidade com UI atual)
+          categoria: fc.categoria || fc.origem || 'outros',
+          status,
+        };
+      });
 
       setFluxoCaixa(items);
       calcularProjecoes(items);
