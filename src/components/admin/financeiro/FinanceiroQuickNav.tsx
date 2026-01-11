@@ -14,7 +14,8 @@ import {
   Wallet, 
   Users,
   Bell,
-  FileBarChart
+  FileBarChart,
+  Settings
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
@@ -78,6 +79,12 @@ const FinanceiroQuickNav: React.FC = () => {
       title: 'Relatórios',
       icon: <FileBarChart className="h-5 w-5 text-gray-600" />,
       href: buildPath('financeiro/relatorios')
+    },
+    {
+      id: 'categorias',
+      title: 'Categorias',
+      icon: <Settings className="h-5 w-5 text-gray-600" />,
+      href: buildPath('financeiro/categorias')
     }
   ];
 

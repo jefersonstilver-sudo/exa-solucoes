@@ -153,36 +153,8 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
     }
   };
 
-  const gerarParcelasFixas = async (despesaFixaId: string, valor: number, periodicidade: Periodicidade, diaVencimento: number) => {
-    const hoje = new Date();
-    const periodicidadeInfo = PERIODICIDADE_OPTIONS.find(p => p.value === periodicidade);
-    const intervalMeses = periodicidadeInfo?.meses || 1;
-    
-    // Gerar 12 parcelas a partir do próximo mês
-    const parcelas = [];
-    for (let i = 0; i < 12; i++) {
-      const dataVencimento = setDate(addMonths(hoje, (i * intervalMeses) + 1), diaVencimento);
-      const competencia = format(dataVencimento, 'yyyy-MM');
-      
-      parcelas.push({
-        despesa_fixa_id: despesaFixaId,
-        competencia,
-        valor,
-        data_vencimento: format(dataVencimento, 'yyyy-MM-dd'),
-        status: 'pendente',
-      });
-    }
-
-    const { error } = await supabase
-      .from('parcelas_despesas')
-      .insert(parcelas);
-
-    if (error) {
-      console.error('Erro ao gerar parcelas:', error);
-      // Não vamos fazer throw aqui, a despesa já foi criada
-      toast.warning('Despesa criada, mas houve erro ao gerar parcelas automáticas');
-    }
-  };
+  // Parcelas são geradas automaticamente via trigger no banco de dados
+  // Função removida do frontend para evitar duplicidade
 
   const handleSubmitFixa = async () => {
     // Validações
@@ -222,14 +194,7 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
 
       if (error) throw error;
 
-      // Gerar parcelas automaticamente
-      await gerarParcelasFixas(
-        despesa.id, 
-        valorNumerico, 
-        fixaForm.periodicidade, 
-        fixaForm.dia_vencimento
-      );
-
+      // Parcelas são geradas automaticamente via trigger no banco de dados
       toast.success('Despesa fixa criada com sucesso!');
       resetForms();
       onSuccess();

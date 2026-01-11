@@ -178,6 +178,16 @@ serve(async (req) => {
       log('warn', 'Erro ao buscar despesas fixas', { error: despesasFixasError.message });
     }
 
+    // 3.1 Parcelas de despesas do mês (NOVA BUSCA)
+    const { data: parcelasDespesasData, error: parcelasDespesasError } = await supabase
+      .from('parcelas_despesas')
+      .select('*')
+      .eq('competencia', competencia);
+
+    if (parcelasDespesasError) {
+      log('warn', 'Erro ao buscar parcelas de despesas', { error: parcelasDespesasError.message });
+    }
+
     // 4. Despesas variáveis do mês
     const { data: despesasVariaveisData, error: despesasVariaveisError } = await supabase
       .from('despesas_variaveis')
@@ -239,6 +249,7 @@ serve(async (req) => {
     const cobrancas = cobrancasData || [];
     const recebimentos = recebimentosData || [];
     const despesasFixas = despesasFixasData || [];
+    const parcelasDespesas = parcelasDespesasData || [];
     const despesasVariaveis = despesasVariaveisData || [];
     const impostos = impostosData || [];
     const inadimplencia = inadimplenciaData || [];
@@ -311,10 +322,18 @@ serve(async (req) => {
       ? (inadimplencia_total / receita_esperada) * 100 
       : 0;
 
-    // Despesas
-    const despesas_fixas_mes = despesasFixas
-      .filter((d: any) => d.periodicidade === 'mensal')
-      .reduce((sum: number, d: any) => sum + (Number(d.valor) || 0), 0);
+    // Despesas - Priorizar parcelas_despesas para despesas fixas
+    // Se tiver parcelas do mês, usa parcelas; senão, fallback para despesas_fixas mensais
+    let despesas_fixas_mes: number;
+    if (parcelasDespesas.length > 0) {
+      // Soma parcelas pendentes ou pagas do mês
+      despesas_fixas_mes = parcelasDespesas.reduce((sum: number, p: any) => sum + (Number(p.valor) || 0), 0);
+    } else {
+      // Fallback: soma despesas fixas mensais
+      despesas_fixas_mes = despesasFixas
+        .filter((d: any) => d.periodicidade === 'mensal')
+        .reduce((sum: number, d: any) => sum + (Number(d.valor) || 0), 0);
+    }
     const despesas_variaveis_mes = despesasVariaveis.reduce((sum: number, d: any) => sum + (Number(d.valor) || 0), 0);
     const despesas_total = despesas_fixas_mes + despesas_variaveis_mes;
 
