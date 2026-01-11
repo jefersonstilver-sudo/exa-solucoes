@@ -10,6 +10,7 @@ interface Props {
 interface State {
   hasError: boolean;
   error?: Error;
+  componentStack?: string;
 }
 
 class ErrorBoundary extends Component<Props, State> {
@@ -19,21 +20,24 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { hasError: true, error, componentStack: undefined };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('🔥 ErrorBoundary caught an error:', error);
     console.error('📍 Error Info:', errorInfo);
     console.error('📋 Component Stack:', errorInfo.componentStack);
-    
+
+    // Guardar stack para facilitar diagnóstico
+    this.setState({ componentStack: errorInfo.componentStack });
+
     if (this.props.onError) {
       this.props.onError(error);
     }
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: undefined });
+    this.setState({ hasError: false, error: undefined, componentStack: undefined });
   };
 
   render() {
@@ -57,6 +61,14 @@ class ErrorBoundary extends Component<Props, State> {
               <p className="font-mono text-xs break-all">
                 {this.state.error?.message}
               </p>
+              {this.state.componentStack && (
+                <details className="text-left mt-3">
+                  <summary className="cursor-pointer text-xs">Stack do componente</summary>
+                  <pre className="mt-2 whitespace-pre-wrap break-words text-[10px] leading-snug font-mono bg-muted/40 p-2 rounded">
+                    {this.state.componentStack}
+                  </pre>
+                </details>
+              )}
             </div>
             <div className="flex gap-2 justify-center">
               <button
