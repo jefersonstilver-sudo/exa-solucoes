@@ -50,9 +50,10 @@ interface NovaDespesaModalProps {
   onSuccess: () => void;
 }
 
-type Periodicidade = 'mensal' | 'trimestral' | 'semestral' | 'anual';
+type Periodicidade = 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual';
 
-const PERIODICIDADE_OPTIONS: { value: Periodicidade; label: string; meses: number }[] = [
+const PERIODICIDADE_OPTIONS: { value: Periodicidade; label: string; meses: number; semanas?: number }[] = [
+  { value: 'semanal', label: 'Semanal', meses: 0.25, semanas: 1 },
   { value: 'mensal', label: 'Mensal', meses: 1 },
   { value: 'trimestral', label: 'Trimestral', meses: 3 },
   { value: 'semestral', label: 'Semestral', meses: 6 },
