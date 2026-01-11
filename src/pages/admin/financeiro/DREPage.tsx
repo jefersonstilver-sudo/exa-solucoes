@@ -6,10 +6,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
+  ArrowLeft,
   RefreshCw, 
   TrendingUp, 
   Receipt,
@@ -20,6 +22,7 @@ import {
   ArrowDownRight,
   DollarSign
 } from 'lucide-react';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { formatCurrency } from '@/utils/format';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -36,6 +39,8 @@ interface DREData {
 }
 
 const DREPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { buildPath } = useAdminBasePath();
   const [loading, setLoading] = useState(true);
   const permissions = useFinanceiroPermissions();
   
@@ -129,11 +134,16 @@ const DREPage: React.FC = () => {
       {/* Header - Design neutro */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gray-100">
-            <Receipt className="h-6 w-6 text-gray-600" />
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(buildPath('financeiro'))}
+            className="h-9 w-9 rounded-xl bg-white/60 hover:bg-white border border-gray-200/50"
+          >
+            <ArrowLeft className="h-4 w-4 text-gray-600" />
+          </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">DRE Gerencial</h1>
+            <h1 className="text-xl font-semibold text-gray-900">DRE Gerencial</h1>
             <p className="text-gray-500 text-sm">
               Demonstrativo de Resultado • {format(new Date(), 'MMMM yyyy', { locale: ptBR })}
             </p>
