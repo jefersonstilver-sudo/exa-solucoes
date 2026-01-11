@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   ArrowLeft,
   RefreshCw, 
@@ -11,7 +12,6 @@ import {
   Search,
   ArrowDownCircle,
   Calendar,
-  Filter,
   CheckCircle2,
   Clock,
   AlertTriangle,
@@ -20,7 +20,7 @@ import {
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/utils/format';
-import { format, differenceInDays, addDays } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useFinanceiroPermissions } from '@/hooks/financeiro/useFinanceiroPermissions';
 import {
@@ -32,6 +32,12 @@ import {
 } from "@/components/ui/select";
 import { toast } from 'sonner';
 import { NovaDespesaModal } from '@/components/admin/financeiro/NovaDespesaModal';
+import { 
+  BulkActionsBar, 
+  ContaDetalhesDrawer, 
+  PagarContaModal, 
+  EditarContaModal 
+} from '@/components/admin/financeiro/contas-pagar';
 
 interface ContaPagar {
   id: string;
@@ -57,16 +63,22 @@ const ContasPagarPage: React.FC = () => {
   const [showNovaDespesaModal, setShowNovaDespesaModal] = useState(false);
   const permissions = useFinanceiroPermissions();
 
+  // Estados para interatividade
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
+  const [showDetalhesDrawer, setShowDetalhesDrawer] = useState(false);
+  const [showPagarModal, setShowPagarModal] = useState(false);
+  const [showEditarModal, setShowEditarModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fetchContas = async () => {
     setLoading(true);
     try {
-      // Buscar despesas fixas
       const { data: fixas, error: fixasError } = await supabase
         .from('despesas_fixas')
         .select('*')
         .order('dia_vencimento', { ascending: true });
 
-      // Buscar despesas variáveis
       const { data: variaveis, error: variaveisError } = await supabase
         .from('despesas_variaveis')
         .select('*')
@@ -77,11 +89,8 @@ const ContasPagarPage: React.FC = () => {
 
       const hoje = new Date();
       
-      // Transformar para formato unificado
       const contasUnificadas: ContaPagar[] = [
         ...(fixas || []).map((d: any) => {
-          // Para despesas fixas, calcular data de vencimento baseado no dia_vencimento
-          // ou usar data_primeiro_lancamento se for semanal
           let dataVencimento: Date;
           if (d.periodicidade === 'semanal' && d.data_primeiro_lancamento) {
             dataVencimento = new Date(d.data_primeiro_lancamento);
@@ -98,7 +107,7 @@ const ContasPagarPage: React.FC = () => {
           
           if (d.status === 'pago') status = 'pago';
           else if (diasAtraso > 0) status = 'atrasado';
-          else if (diasAtraso >= -4) status = 'pendente'; // Vencendo em 4 dias
+          else if (diasAtraso >= -4) status = 'pendente';
           
           return {
             id: d.id,
@@ -114,7 +123,7 @@ const ContasPagarPage: React.FC = () => {
           };
         }),
         ...(variaveis || []).map((d: any) => {
-          const vencimento = new Date(d.data_prevista || d.data || new Date());
+          const vencimento = new Date(d.data || new Date());
           const diasAtraso = differenceInDays(hoje, vencimento);
           let status: ContaPagar['status'] = 'pendente';
           
@@ -180,6 +189,55 @@ const ContasPagarPage: React.FC = () => {
       default:
         return { icon: Clock, color: 'text-gray-500', bg: 'bg-white border border-gray-200', label: status };
     }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setIsDeleting(true);
+
+    try {
+      const fixasIds = contasFiltradas.filter(c => selectedIds.has(c.id) && c.tipo === 'fixa').map(c => c.id);
+      const variaveisIds = contasFiltradas.filter(c => selectedIds.has(c.id) && c.tipo === 'variavel').map(c => c.id);
+
+      if (fixasIds.length > 0) {
+        await supabase.from('despesas_fixas').delete().in('id', fixasIds);
+      }
+      if (variaveisIds.length > 0) {
+        await supabase.from('despesas_variaveis').delete().in('id', variaveisIds);
+      }
+
+      toast.success(`${selectedIds.size} conta(s) excluída(s)`);
+      setSelectedIds(new Set());
+      fetchContas();
+    } catch (error) {
+      console.error('Erro ao excluir contas:', error);
+      toast.error('Erro ao excluir contas');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleContaClick = (conta: ContaPagar) => {
+    setSelectedConta(conta);
+    setShowDetalhesDrawer(true);
+  };
+
+  const handlePagarClick = (e: React.MouseEvent, conta: ContaPagar) => {
+    e.stopPropagation();
+    setSelectedConta(conta);
+    setShowPagarModal(true);
   };
 
   if (!permissions.canViewDespesas) {
@@ -254,6 +312,15 @@ const ContasPagarPage: React.FC = () => {
         </Card>
       </div>
 
+      {/* Bulk Actions */}
+      <BulkActionsBar
+        selectedCount={selectedIds.size}
+        onClear={() => setSelectedIds(new Set())}
+        onDelete={handleBulkDelete}
+        canDelete={permissions.canDelete}
+        isDeleting={isDeleting}
+      />
+
       {/* Filtros */}
       <Card className="bg-white shadow-sm">
         <CardContent className="p-4">
@@ -315,12 +382,19 @@ const ContasPagarPage: React.FC = () => {
                 return (
                   <div 
                     key={conta.id} 
-                    className={`p-4 rounded-xl border transition-all hover:shadow-sm ${
-                      conta.status === 'atrasado' ? 'border-l-4 border-l-red-500 border-red-100' : 'border-gray-100 hover:border-gray-200'
-                    }`}
+                    onClick={() => handleContaClick(conta)}
+                    className={`p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md ${
+                      conta.status === 'atrasado' ? 'border-l-4 border-l-red-500 border-red-100' : 'border-gray-100 hover:border-blue-200'
+                    } ${selectedIds.has(conta.id) ? 'bg-blue-50 border-blue-200' : 'bg-white'}`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex items-start gap-3">
+                        <Checkbox
+                          checked={selectedIds.has(conta.id)}
+                          onCheckedChange={() => toggleSelect(conta.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1"
+                        />
                         <div className={`p-2 rounded-lg ${statusConfig.bg}`}>
                           <StatusIcon className={`h-4 w-4 ${statusConfig.color}`} />
                         </div>
@@ -360,7 +434,12 @@ const ContasPagarPage: React.FC = () => {
                         </div>
                         
                         {permissions.canEdit && conta.status !== 'pago' && (
-                          <Button size="sm" variant="outline" className="h-9 bg-white shadow-sm">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-9 bg-white shadow-sm"
+                            onClick={(e) => handlePagarClick(e, conta)}
+                          >
                             Pagar
                           </Button>
                         )}
@@ -374,10 +453,41 @@ const ContasPagarPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Modal Nova Despesa */}
+      {/* Modals */}
       <NovaDespesaModal
         open={showNovaDespesaModal}
         onOpenChange={setShowNovaDespesaModal}
+        onSuccess={fetchContas}
+      />
+
+      <ContaDetalhesDrawer
+        open={showDetalhesDrawer}
+        onOpenChange={setShowDetalhesDrawer}
+        conta={selectedConta}
+        onEdit={() => {
+          setShowDetalhesDrawer(false);
+          setShowEditarModal(true);
+        }}
+        onPagar={() => {
+          setShowDetalhesDrawer(false);
+          setShowPagarModal(true);
+        }}
+        onDelete={fetchContas}
+        canEdit={permissions.canEdit}
+        canDelete={permissions.canDelete}
+      />
+
+      <PagarContaModal
+        open={showPagarModal}
+        onOpenChange={setShowPagarModal}
+        conta={selectedConta}
+        onSuccess={fetchContas}
+      />
+
+      <EditarContaModal
+        open={showEditarModal}
+        onOpenChange={setShowEditarModal}
+        conta={selectedConta}
         onSuccess={fetchContas}
       />
     </div>
