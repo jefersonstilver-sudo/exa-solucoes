@@ -10,7 +10,6 @@ interface DespesaFixa {
   id: string;
   valor: number;
   periodicidade: string;
-  data_inicio: string;
   dia_vencimento: number;
   ativo: boolean;
 }
@@ -167,7 +166,7 @@ serve(async (req) => {
     // ============================================
     const { data: despesasAtivas, error: errorDespesas } = await supabase
       .from('despesas_fixas')
-      .select('id, valor, periodicidade, data_inicio, dia_vencimento, ativo')
+      .select('id, valor, periodicidade, dia_vencimento, ativo')
       .eq('ativo', true);
 
     if (errorDespesas) {
