@@ -77,13 +77,17 @@ const LancamentosPage: React.FC = () => {
   const handleSyncAsaas = async () => {
     setSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('sync-asaas-transactions', {
-        body: {}
-      });
-      
-      if (error) throw error;
-      
-      toast.success(`Sincronização concluída: ${data?.synced || 0} novos, ${data?.updated || 0} atualizados`);
+      const [{ data: inData, error: inError }, { data: outData, error: outError }] = await Promise.all([
+        supabase.functions.invoke('sync-asaas-transactions', { body: {} }),
+        supabase.functions.invoke('sync-asaas-outflows', { body: {} }),
+      ]);
+
+      if (inError) throw inError;
+      if (outError) throw outError;
+
+      toast.success(
+        `Sincronização concluída: Entradas ${inData?.synced || 0} novos, ${inData?.updated || 0} atualizados • Saídas ${outData?.synced || 0}`
+      );
       await fetchLancamentos();
     } catch (err) {
       console.error('Erro na sincronização:', err);
