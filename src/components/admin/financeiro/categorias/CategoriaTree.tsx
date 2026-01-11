@@ -47,19 +47,31 @@ export function CategoriaTree({
     );
   }
 
-  return (
-    <div className="space-y-1">
-      {tree.map((categoria) => (
+  // Recursive render function that passes expandedIds down
+  const renderTree = (nodes: CategoriaNode[], depth: number = 0) => {
+    return nodes.map((categoria) => (
+      <div key={categoria.id}>
         <CategoriaTreeItem
-          key={categoria.id}
           categoria={categoria}
           isExpanded={expandedIds.has(categoria.id)}
           onToggleExpand={onToggleExpand}
           onAddChild={onAddChild}
           onEdit={onEdit}
           onDelete={onDelete}
+          depth={depth}
         />
-      ))}
+        {expandedIds.has(categoria.id) && categoria.children.length > 0 && (
+          <div className="ml-2 border-l border-border/50">
+            {renderTree(categoria.children, depth + 1)}
+          </div>
+        )}
+      </div>
+    ));
+  };
+
+  return (
+    <div className="space-y-1">
+      {renderTree(tree)}
     </div>
   );
 }
