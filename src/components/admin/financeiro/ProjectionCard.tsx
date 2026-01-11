@@ -51,19 +51,19 @@ const ProjectionCard: React.FC<ProjectionCardProps> = ({
 
   const riskConfig = {
     safe: {
-      label: 'Seguro',
+      label: 'Projeção segura',
       bgColor: 'bg-emerald-50',
       textColor: 'text-emerald-700',
       borderColor: 'border-emerald-200'
     },
     attention: {
-      label: 'Atenção',
+      label: 'Requer atenção',
       bgColor: 'bg-amber-50',
       textColor: 'text-amber-700',
       borderColor: 'border-amber-200'
     },
     critical: {
-      label: 'Crítico',
+      label: 'Risco identificado',
       bgColor: 'bg-red-50',
       textColor: 'text-red-700',
       borderColor: 'border-red-200'
@@ -102,46 +102,53 @@ const ProjectionCard: React.FC<ProjectionCardProps> = ({
         </div>
       </CardHeader>
 
-      <CardContent>
-        {/* Grid de métricas */}
-        <div className="grid grid-cols-3 gap-6">
+      <CardContent className="space-y-6">
+        {/* Saldo Projetado - Destaque Principal */}
+        <div className={`text-center p-6 rounded-xl ${saldoProjetado >= 0 ? 'bg-gray-50' : 'bg-red-50'}`}>
+          <p className="text-sm text-gray-500 font-medium mb-2">
+            Você terá em {periodo} dias
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <p className={`text-3xl lg:text-4xl font-bold ${saldoProjetado >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
+              {formatCurrency(saldoProjetado)}
+            </p>
+            {saldoProjetado < saldoAtual && (
+              <ArrowDownRight className="h-5 w-5 text-amber-500" />
+            )}
+            {saldoProjetado >= saldoAtual && (
+              <ArrowUpRight className="h-5 w-5 text-emerald-500" />
+            )}
+          </div>
+        </div>
+
+        {/* Grid de métricas secundárias */}
+        <div className="grid grid-cols-2 gap-4">
           {/* Entradas */}
-          <div className="text-center p-4 rounded-lg bg-gray-50">
-            <div className="flex items-center justify-center gap-1 mb-2">
-              <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+          <div className="text-center p-3 rounded-lg bg-gray-50">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" />
               <span className="text-xs text-gray-500 font-medium">Entradas</span>
             </div>
-            <p className="text-xl font-bold text-emerald-600">
+            <p className="text-lg font-bold text-emerald-600">
               {formatCurrency(projecaoAtual.entradas)}
             </p>
           </div>
 
           {/* Saídas */}
-          <div className="text-center p-4 rounded-lg bg-gray-50">
-            <div className="flex items-center justify-center gap-1 mb-2">
-              <ArrowDownRight className="h-4 w-4 text-red-500" />
+          <div className="text-center p-3 rounded-lg bg-gray-50">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <ArrowDownRight className="h-3.5 w-3.5 text-red-500" />
               <span className="text-xs text-gray-500 font-medium">Saídas</span>
             </div>
-            <p className="text-xl font-bold text-red-600">
+            <p className="text-lg font-bold text-red-600">
               {formatCurrency(projecaoAtual.saidas)}
-            </p>
-          </div>
-
-          {/* Saldo Projetado */}
-          <div className={`text-center p-4 rounded-lg ${saldoProjetado >= 0 ? 'bg-gray-50' : 'bg-red-50'}`}>
-            <div className="flex items-center justify-center gap-1 mb-2">
-              <Minus className="h-4 w-4 text-gray-500" />
-              <span className="text-xs text-gray-500 font-medium">Saldo Final</span>
-            </div>
-            <p className={`text-xl font-bold ${saldoProjetado >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
-              {formatCurrency(saldoProjetado)}
             </p>
           </div>
         </div>
 
         {/* Nota explicativa */}
-        <p className="text-xs text-gray-400 text-center mt-4">
-          Projeção baseada em cobranças pendentes e despesas agendadas para os próximos {periodo} dias
+        <p className="text-xs text-gray-400 text-center">
+          Projeção baseada em cobranças e despesas agendadas
         </p>
       </CardContent>
     </Card>

@@ -49,19 +49,22 @@ const CashHealthHero: React.FC<CashHealthHeroProps> = ({
       borderColor: 'border-l-emerald-500',
       dotColor: 'bg-emerald-500',
       textColor: 'text-emerald-600',
-      label: 'Saudável'
+      label: 'Caixa confortável',
+      sublabel: `Autonomia de ${diasOperacao} dias`
     },
     warning: {
       borderColor: 'border-l-amber-500',
       dotColor: 'bg-amber-500',
       textColor: 'text-amber-600',
-      label: 'Atenção'
+      label: 'Atenção recomendada',
+      sublabel: `${diasOperacao} dias de operação`
     },
     critical: {
       borderColor: 'border-l-red-500',
       dotColor: 'bg-red-500',
       textColor: 'text-red-600',
-      label: 'Crítico'
+      label: 'Ação necessária',
+      sublabel: `Apenas ${diasOperacao} dias restantes`
     }
   };
 
@@ -72,43 +75,40 @@ const CashHealthHero: React.FC<CashHealthHeroProps> = ({
       <CardContent className="p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           {/* Seção Principal */}
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-lg bg-gray-100">
-                <Wallet className="h-5 w-5 text-gray-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 font-medium">Caixa Disponível</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className={`w-2 h-2 rounded-full ${config.dotColor}`} />
-                  <span className={`text-xs font-medium ${config.textColor}`}>{config.label}</span>
-                </div>
+          <div className="flex-1 space-y-4">
+            {/* Label e Status */}
+            <div>
+              <p className="text-sm text-gray-500 font-medium mb-1">Caixa Disponível</p>
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${config.dotColor}`} />
+                <span className={`text-sm font-medium ${config.textColor}`}>
+                  {config.label} • {config.sublabel}
+                </span>
               </div>
             </div>
 
-            {/* Valor Principal */}
-            <div className="mb-4">
+            {/* Valor Principal - Dominante */}
+            <div>
               {loading ? (
-                <div className="h-12 w-48 bg-gray-100 animate-pulse rounded" />
+                <div className="h-16 w-64 bg-gray-100 animate-pulse rounded" />
               ) : (
-                <p className="text-4xl font-bold text-gray-900 tracking-tight">
+                <p className="text-5xl lg:text-6xl font-bold text-gray-900 tracking-tight">
                   {formatCurrency(caixaDisponivel)}
                 </p>
               )}
             </div>
 
-            {/* Frase Contextual */}
+            {/* Frase Contextual Executiva */}
             <p className="text-sm text-gray-500">
-              No ritmo atual, o caixa sustenta{' '}
+              Se nada mudar, você opera por mais{' '}
               <span className={`font-semibold ${config.textColor}`}>
                 {diasOperacao} dias
-              </span>{' '}
-              de operação
+              </span>
             </p>
 
             {/* Última atualização */}
             {lastUpdated && (
-              <p className="text-xs text-gray-400 mt-2">
+              <p className="text-xs text-gray-400">
                 Atualizado: {new Date(lastUpdated).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
               </p>
             )}
