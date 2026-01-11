@@ -5,7 +5,7 @@
  * Permite categorização, marcação de recorrência e conciliação
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,11 +27,13 @@ import {
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/utils/format';
-import { format, addMonths, subMonths } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import LancamentoDossieDrawer from '@/components/admin/financeiro/dossie/LancamentoDossieDrawer';
 import { LancamentoDossie } from '@/components/admin/financeiro/dossie/types';
+import FinancialPeriodSelector from '@/components/admin/financeiro/common/FinancialPeriodSelector';
+import { FinancialPeriodType, getFinancialPeriodDates } from '@/components/admin/financeiro/common/financialPeriodUtils';
 
 interface Lancamento {
   id: string;
@@ -74,6 +76,16 @@ const LancamentosPage: React.FC = () => {
   const [busca, setBusca] = useState('');
   const [selectedLancamento, setSelectedLancamento] = useState<Lancamento | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  
+  // Estado do filtro de período
+  const [periodFilter, setPeriodFilter] = useState<FinancialPeriodType>('current_month');
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
+
+  const handleCustomDateChange = (start: Date | undefined, end: Date | undefined) => {
+    setCustomStartDate(start);
+    setCustomEndDate(end);
+  };
 
   const handleSyncAsaas = async () => {
     setSyncing(true);
@@ -98,21 +110,36 @@ const LancamentosPage: React.FC = () => {
     }
   };
 
-  const fetchLancamentos = async () => {
+  const fetchLancamentos = useCallback(async () => {
     setLoading(true);
     try {
-      // Janela de dados ampla o suficiente para incluir lançamentos do caixa + ASAAS (realizados e agendados)
-      const start = format(subMonths(new Date(), 12), 'yyyy-MM-dd');
-      const end = format(addMonths(new Date(), 12), 'yyyy-MM-dd');
+      // Calcular datas do período selecionado
+      const { start: periodStart, end: periodEnd } = getFinancialPeriodDates(
+        periodFilter,
+        customStartDate,
+        customEndDate
+      );
+      
+      // Formatar datas para query (se período for "all", não aplicar filtro de data)
+      const startStr = periodStart ? format(periodStart, 'yyyy-MM-dd') : undefined;
+      const endStr = periodEnd ? format(periodEnd, 'yyyy-MM-dd') : undefined;
 
       // Buscar da VIEW unificada
-      const { data: viewData, error: viewError } = await supabase
+      let query = supabase
         .from('vw_fluxo_caixa_real')
         .select('*')
-        .gte('data', start)
-        .lte('data', end)
         .order('data', { ascending: false })
         .limit(5000);
+      
+      // Aplicar filtro de data apenas se não for "all"
+      if (startStr) {
+        query = query.gte('data', startStr);
+      }
+      if (endStr) {
+        query = query.lte('data', endStr);
+      }
+
+      const { data: viewData, error: viewError } = await query;
 
       if (viewError) throw viewError;
 
@@ -171,7 +198,7 @@ const LancamentosPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [periodFilter, customStartDate, customEndDate]);
 
   const fetchCategorias = async () => {
     const { data } = await supabase
@@ -185,6 +212,9 @@ const LancamentosPage: React.FC = () => {
 
   useEffect(() => {
     fetchLancamentos();
+  }, [fetchLancamentos]);
+
+  useEffect(() => {
     fetchCategorias();
   }, []);
 
@@ -291,7 +321,15 @@ const LancamentosPage: React.FC = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <FinancialPeriodSelector
+              value={periodFilter}
+              onChange={setPeriodFilter}
+              customStartDate={customStartDate}
+              customEndDate={customEndDate}
+              onCustomDateChange={handleCustomDateChange}
+              variant="compact"
+            />
             <Button 
               onClick={handleSyncAsaas} 
               disabled={syncing} 
@@ -309,8 +347,7 @@ const LancamentosPage: React.FC = () => {
               size="sm"
               className="text-gray-600 hover:text-gray-900 hover:bg-white/60"
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Atualizar
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </div>
