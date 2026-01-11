@@ -101,7 +101,7 @@ const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
   };
 
   return (
-    <Card className="bg-white shadow-sm">
+    <Card className="bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
       <CardContent className="p-4 space-y-4">
         {/* Header Narrativo */}
         <div className="flex items-center justify-between">

@@ -115,12 +115,12 @@ const RiskCards: React.FC<RiskCardsProps> = ({
         return (
           <Card 
             key={card.id}
-            className={`bg-white border-l-4 ${card.borderColor} transition-all cursor-pointer ${
+            className={`bg-white/80 backdrop-blur-sm border-l-4 ${card.borderColor} transition-all duration-300 cursor-pointer border border-gray-100 ${
               isEmpty 
-                ? 'opacity-60 shadow-none hover:opacity-80' 
+                ? 'opacity-60 shadow-md hover:opacity-80 hover:shadow-lg' 
                 : critical 
-                  ? 'shadow-md hover:shadow-lg' 
-                  : 'shadow-sm hover:shadow-md'
+                  ? 'shadow-lg hover:shadow-xl' 
+                  : 'shadow-lg hover:shadow-xl'
             }`}
             onClick={() => navigate(card.href)}
           >

@@ -73,7 +73,7 @@ const ProjectionCard: React.FC<ProjectionCardProps> = ({
   const config = riskConfig[riskLevel];
 
   return (
-    <Card className="bg-white shadow-sm h-full">
+    <Card className="bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-shadow duration-300 h-full border border-gray-100">
       <CardHeader className="pb-3 pt-4 px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

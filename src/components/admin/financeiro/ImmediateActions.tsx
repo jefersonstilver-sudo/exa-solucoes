@@ -114,12 +114,12 @@ const ImmediateActions: React.FC<ImmediateActionsProps> = ({
         return (
           <Card 
             key={action.id}
-            className={`bg-white transition-all cursor-pointer group ${
+            className={`bg-white/80 backdrop-blur-sm transition-all duration-300 cursor-pointer group border border-gray-100 ${
               hasItems 
                 ? urgent 
-                  ? 'shadow-md hover:shadow-lg border-l-4 border-l-red-500' 
-                  : 'shadow-sm hover:shadow-md'
-                : 'shadow-none opacity-70 hover:opacity-90'
+                  ? 'shadow-lg hover:shadow-xl border-l-4 border-l-red-500' 
+                  : 'shadow-lg hover:shadow-xl'
+                : 'shadow-md opacity-70 hover:opacity-90 hover:shadow-lg'
             }`}
             onClick={() => navigate(action.href)}
           >

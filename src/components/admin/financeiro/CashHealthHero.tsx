@@ -75,7 +75,7 @@ const CashHealthHero: React.FC<CashHealthHeroProps> = ({
   const config = statusConfig[status];
 
   return (
-    <Card className={`bg-white border-l-4 ${config.borderColor} shadow-sm h-full`}>
+    <Card className={`bg-white/80 backdrop-blur-sm border-l-4 ${config.borderColor} shadow-lg hover:shadow-xl transition-shadow duration-300 h-full`}>
       <CardContent className="p-4">
         <div className="space-y-4">
           {/* Label e Status */}
