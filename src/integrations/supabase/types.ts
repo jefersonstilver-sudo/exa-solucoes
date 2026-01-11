@@ -11311,6 +11311,10 @@ export type Database = {
           boleto_barcode: string | null
           boleto_nosso_numero: string | null
           boleto_url: string | null
+          categoria_id: string | null
+          conciliado: boolean | null
+          conciliado_at: string | null
+          conciliado_by: string | null
           created_at: string | null
           customer_cpf_cnpj: string | null
           customer_email: string | null
@@ -11322,14 +11326,17 @@ export type Database = {
           description: string | null
           external_reference: string | null
           id: string
+          observacao: string | null
           payment_id: string
           pix_copy_paste: string | null
           pix_qr_code: string | null
           pix_transaction_id: string | null
           raw_data: Json | null
+          recorrente: boolean | null
           status: string
           synced_at: string | null
           taxa_asaas: number | null
+          tipo_receita: string | null
           updated_at: string | null
           valor: number
           valor_liquido: number | null
@@ -11339,6 +11346,10 @@ export type Database = {
           boleto_barcode?: string | null
           boleto_nosso_numero?: string | null
           boleto_url?: string | null
+          categoria_id?: string | null
+          conciliado?: boolean | null
+          conciliado_at?: string | null
+          conciliado_by?: string | null
           created_at?: string | null
           customer_cpf_cnpj?: string | null
           customer_email?: string | null
@@ -11350,14 +11361,17 @@ export type Database = {
           description?: string | null
           external_reference?: string | null
           id?: string
+          observacao?: string | null
           payment_id: string
           pix_copy_paste?: string | null
           pix_qr_code?: string | null
           pix_transaction_id?: string | null
           raw_data?: Json | null
+          recorrente?: boolean | null
           status: string
           synced_at?: string | null
           taxa_asaas?: number | null
+          tipo_receita?: string | null
           updated_at?: string | null
           valor: number
           valor_liquido?: number | null
@@ -11367,6 +11381,10 @@ export type Database = {
           boleto_barcode?: string | null
           boleto_nosso_numero?: string | null
           boleto_url?: string | null
+          categoria_id?: string | null
+          conciliado?: boolean | null
+          conciliado_at?: string | null
+          conciliado_by?: string | null
           created_at?: string | null
           customer_cpf_cnpj?: string | null
           customer_email?: string | null
@@ -11378,19 +11396,44 @@ export type Database = {
           description?: string | null
           external_reference?: string | null
           id?: string
+          observacao?: string | null
           payment_id?: string
           pix_copy_paste?: string | null
           pix_qr_code?: string | null
           pix_transaction_id?: string | null
           raw_data?: Json | null
+          recorrente?: boolean | null
           status?: string
           synced_at?: string | null
           taxa_asaas?: number | null
+          tipo_receita?: string | null
           updated_at?: string | null
           valor?: number
           valor_liquido?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transacoes_asaas_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_despesas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transacoes_asaas_conciliado_by_fkey"
+            columns: ["conciliado_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transacoes_asaas_conciliado_by_fkey"
+            columns: ["conciliado_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transaction_sessions: {
         Row: {
