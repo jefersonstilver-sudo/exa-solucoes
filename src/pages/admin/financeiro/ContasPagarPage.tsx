@@ -64,13 +64,13 @@ const ContasPagarPage: React.FC = () => {
       const { data: fixas, error: fixasError } = await supabase
         .from('despesas_fixas')
         .select('*')
-        .order('data_vencimento', { ascending: true });
+        .order('dia_vencimento', { ascending: true });
 
       // Buscar despesas variáveis
       const { data: variaveis, error: variaveisError } = await supabase
         .from('despesas_variaveis')
         .select('*')
-        .order('data_vencimento', { ascending: true });
+        .order('data_prevista', { ascending: true });
 
       if (fixasError) throw fixasError;
       if (variaveisError) throw variaveisError;
@@ -80,8 +80,20 @@ const ContasPagarPage: React.FC = () => {
       // Transformar para formato unificado
       const contasUnificadas: ContaPagar[] = [
         ...(fixas || []).map((d: any) => {
-          const vencimento = new Date(d.data_vencimento);
-          const diasAtraso = differenceInDays(hoje, vencimento);
+          // Para despesas fixas, calcular data de vencimento baseado no dia_vencimento
+          // ou usar data_primeiro_lancamento se for semanal
+          let dataVencimento: Date;
+          if (d.periodicidade === 'semanal' && d.data_primeiro_lancamento) {
+            dataVencimento = new Date(d.data_primeiro_lancamento);
+          } else if (d.dia_vencimento) {
+            const ano = hoje.getFullYear();
+            const mes = hoje.getMonth();
+            dataVencimento = new Date(ano, mes, d.dia_vencimento);
+          } else {
+            dataVencimento = new Date();
+          }
+          
+          const diasAtraso = differenceInDays(hoje, dataVencimento);
           let status: ContaPagar['status'] = 'pendente';
           
           if (d.status === 'pago') status = 'pago';
@@ -94,15 +106,15 @@ const ContasPagarPage: React.FC = () => {
             categoria: d.categoria || 'Fixas',
             valor_previsto: d.valor || 0,
             valor_pago: d.valor_pago || 0,
-            data_vencimento: d.data_vencimento,
+            data_vencimento: dataVencimento.toISOString(),
             status,
             tipo: 'fixa' as const,
             responsavel: d.responsavel,
-            observacoes: d.observacoes
+            observacoes: d.observacao
           };
         }),
         ...(variaveis || []).map((d: any) => {
-          const vencimento = new Date(d.data_vencimento);
+          const vencimento = new Date(d.data_prevista || d.data || new Date());
           const diasAtraso = differenceInDays(hoje, vencimento);
           let status: ContaPagar['status'] = 'pendente';
           
@@ -115,11 +127,11 @@ const ContasPagarPage: React.FC = () => {
             categoria: d.categoria || 'Variáveis',
             valor_previsto: d.valor || 0,
             valor_pago: d.valor_pago || 0,
-            data_vencimento: d.data_vencimento,
+            data_vencimento: vencimento.toISOString(),
             status,
             tipo: 'variavel' as const,
             responsavel: d.responsavel,
-            observacoes: d.observacoes
+            observacoes: d.observacao
           };
         })
       ].sort((a, b) => new Date(a.data_vencimento).getTime() - new Date(b.data_vencimento).getTime());
