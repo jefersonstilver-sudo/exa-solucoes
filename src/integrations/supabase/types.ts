@@ -2044,7 +2044,10 @@ export type Database = {
           icone: string | null
           id: string
           inclui_investimentos: boolean | null
+          nivel: number | null
           nome: string
+          ordem: number | null
+          parent_id: string | null
           tipo: string
           updated_at: string | null
         }
@@ -2055,7 +2058,10 @@ export type Database = {
           icone?: string | null
           id?: string
           inclui_investimentos?: boolean | null
+          nivel?: number | null
           nome: string
+          ordem?: number | null
+          parent_id?: string | null
           tipo: string
           updated_at?: string | null
         }
@@ -2066,11 +2072,22 @@ export type Database = {
           icone?: string | null
           id?: string
           inclui_investimentos?: boolean | null
+          nivel?: number | null
           nome?: string
+          ordem?: number | null
+          parent_id?: string | null
           tipo?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categorias_despesas_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_despesas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       centros_custo: {
         Row: {
@@ -13023,6 +13040,7 @@ export type Database = {
         Returns: boolean
       }
       cancel_expired_orders: { Args: never; Returns: Json }
+      categoria_has_children: { Args: { cat_id: string }; Returns: boolean }
       check_panel_availability: {
         Args: { p_end_date: string; p_panel_id: string; p_start_date: string }
         Returns: boolean
@@ -13262,6 +13280,10 @@ export type Database = {
           venue_type: string
           visualizacoes_mes: number
         }[]
+      }
+      get_categoria_children_count: {
+        Args: { cat_id: string }
+        Returns: number
       }
       get_coupon_stats: {
         Args: never
