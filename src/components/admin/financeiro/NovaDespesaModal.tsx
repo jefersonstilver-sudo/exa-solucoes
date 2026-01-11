@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,8 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Calendar,
   DollarSign,
@@ -25,18 +27,32 @@ import {
   FileText,
   Repeat,
   TrendingDown,
-  Loader2
+  Loader2,
+  Building2,
+  Wifi
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { CategoriaTreeSelect } from './categorias/CategoriaTreeSelect';
 import { useCategoriaHierarchy } from '@/hooks/useCategoriaHierarchy';
+import { useActiveBuildingNames } from '@/hooks/useActiveBuildingNames';
 
 interface NovaDespesaModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+}
+
+interface Fornecedor {
+  id: string;
+  nome_fantasia: string;
+  razao_social: string;
+}
+
+interface BuildingOption {
+  id: string;
+  nome: string;
 }
 
 type Periodicidade = 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual';
@@ -51,6 +67,9 @@ const PERIODICIDADE_OPTIONS: { value: Periodicidade; label: string; meses: numbe
 
 const DIAS_VENCIMENTO = [1, 5, 10, 15, 20, 25, 28];
 
+// Palavras-chave que exigem fornecedor obrigatório
+const INTERNET_KEYWORDS = ['internet', 'provedor', 'telecom', 'fibra', 'banda larga', 'wifi', 'conectividade'];
+
 export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
   open,
   onOpenChange,
@@ -58,6 +77,9 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'fixa' | 'variavel'>('fixa');
   const [loading, setLoading] = useState(false);
+  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+  const [buildings, setBuildings] = useState<BuildingOption[]>([]);
+  const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
   
   // Hook para obter nome da categoria
   const { getCategoriaPath } = useCategoriaHierarchy();
@@ -71,6 +93,7 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
     dia_vencimento: 10,
     data_primeiro_lancamento: format(new Date(), 'yyyy-MM-dd'),
     observacao: '',
+    fornecedor_id: '',
   });
   
   // Form state - Despesa Variável
@@ -82,7 +105,66 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
     data_vencimento: format(new Date(), 'yyyy-MM-dd'),
     pago: false,
     observacao: '',
+    fornecedor_id: '',
   });
+
+  // Buscar fornecedores e prédios ao abrir o modal
+  useEffect(() => {
+    if (open) {
+      fetchFornecedores();
+      fetchBuildings();
+    }
+  }, [open]);
+
+  const fetchFornecedores = async () => {
+    const { data, error } = await supabase
+      .from('fornecedores')
+      .select('id, nome_fantasia, razao_social')
+      .eq('ativo', true)
+      .order('nome_fantasia');
+    
+    if (!error && data) {
+      setFornecedores(data);
+    }
+  };
+
+  const fetchBuildings = async () => {
+    const { data, error } = await supabase
+      .from('buildings')
+      .select('id, nome')
+      .eq('status', 'ativo')
+      .order('nome');
+    
+    if (!error && data) {
+      setBuildings(data);
+    }
+  };
+
+  // Verificar se categoria selecionada exige fornecedor
+  const isFornecedorObrigatorio = (categoriaId: string, descricao: string): boolean => {
+    const categoriaPath = getCategoriaPath(categoriaId).toLowerCase();
+    const descricaoLower = descricao.toLowerCase();
+    
+    return INTERNET_KEYWORDS.some(keyword => 
+      categoriaPath.includes(keyword) || descricaoLower.includes(keyword)
+    );
+  };
+
+  const toggleBuilding = (buildingId: string) => {
+    setSelectedBuildings(prev => 
+      prev.includes(buildingId) 
+        ? prev.filter(id => id !== buildingId)
+        : [...prev, buildingId]
+    );
+  };
+
+  const selectAllBuildings = () => {
+    setSelectedBuildings(buildings.map(b => b.id));
+  };
+
+  const clearBuildings = () => {
+    setSelectedBuildings([]);
+  };
 
   const handleSubmitFixa = async () => {
     // Validações
@@ -96,6 +178,12 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
     }
     if (!fixaForm.categoria_id) {
       toast.error('Selecione uma categoria');
+      return;
+    }
+    
+    // Validar fornecedor se for categoria de Internet
+    if (isFornecedorObrigatorio(fixaForm.categoria_id, fixaForm.descricao) && !fixaForm.fornecedor_id) {
+      toast.error('Selecione um provedor de internet');
       return;
     }
 
@@ -113,6 +201,7 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
         periodicidade: fixaForm.periodicidade,
         observacao: fixaForm.observacao.trim() || null,
         ativo: true,
+        fornecedor_id: fixaForm.fornecedor_id || null,
       };
 
       // Para semanal, usa data_primeiro_lancamento; para outros, usa dia_vencimento
@@ -124,13 +213,32 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
         insertData.data_primeiro_lancamento = null;
       }
 
-      const { error } = await supabase
+      const { data: despesaCriada, error } = await supabase
         .from('despesas_fixas')
         .insert([insertData])
         .select()
         .single();
 
       if (error) throw error;
+
+      // Inserir vínculos com prédios se houver selecionados
+      if (selectedBuildings.length > 0 && despesaCriada) {
+        const prediosVinculos = selectedBuildings.map(buildingId => ({
+          despesa_fixa_id: despesaCriada.id,
+          building_id: buildingId,
+        }));
+        
+        // Usar any temporariamente até os tipos serem regenerados
+        const { error: vinculoError } = await (supabase as any)
+          .from('despesas_predios')
+          .insert(prediosVinculos);
+        
+        if (vinculoError) {
+          console.error('Erro ao vincular prédios:', vinculoError);
+          // Não falhar a operação, apenas avisar
+          toast.warning('Despesa criada, mas houve erro ao vincular prédios');
+        }
+      }
 
       // Parcelas são geradas automaticamente via trigger no banco de dados
       toast.success('Despesa fixa criada com sucesso!');
@@ -205,6 +313,7 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
       dia_vencimento: 10,
       data_primeiro_lancamento: format(new Date(), 'yyyy-MM-dd'),
       observacao: '',
+      fornecedor_id: '',
     });
     setVariavelForm({
       descricao: '',
@@ -214,7 +323,9 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
       data_vencimento: format(new Date(), 'yyyy-MM-dd'),
       pago: false,
       observacao: '',
+      fornecedor_id: '',
     });
+    setSelectedBuildings([]);
     setActiveTab('fixa');
   };
 
@@ -308,6 +419,79 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
                 allowCreate={true}
                 className="bg-gray-50 border-gray-200"
               />
+            </div>
+
+            {/* Fornecedor/Provedor - Obrigatório para Internet */}
+            {isFornecedorObrigatorio(fixaForm.categoria_id, fixaForm.descricao) && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                  <Wifi className="h-3.5 w-3.5" />
+                  Provedor de Internet *
+                </Label>
+                <Select 
+                  value={fixaForm.fornecedor_id} 
+                  onValueChange={(v) => setFixaForm(prev => ({ ...prev, fornecedor_id: v }))}
+                >
+                  <SelectTrigger className="bg-gray-50 border-gray-200">
+                    <SelectValue placeholder="Selecione o provedor..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fornecedores.map(f => (
+                      <SelectItem key={f.id} value={f.id}>
+                        {f.nome_fantasia || f.razao_social}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Prédios vinculados - Multi-select */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                  <Building2 className="h-3.5 w-3.5" />
+                  Prédios Vinculados
+                </Label>
+                <div className="flex gap-2 text-xs">
+                  <button 
+                    type="button" 
+                    onClick={selectAllBuildings}
+                    className="text-primary hover:underline"
+                  >
+                    Todos
+                  </button>
+                  <span className="text-gray-300">|</span>
+                  <button 
+                    type="button" 
+                    onClick={clearBuildings}
+                    className="text-muted-foreground hover:underline"
+                  >
+                    Limpar
+                  </button>
+                </div>
+              </div>
+              <ScrollArea className="h-32 border rounded-lg p-2 bg-gray-50">
+                <div className="grid grid-cols-2 gap-2">
+                  {buildings.map(b => (
+                    <label 
+                      key={b.id} 
+                      className="flex items-center gap-2 cursor-pointer hover:bg-white p-1.5 rounded transition-colors"
+                    >
+                      <Checkbox 
+                        checked={selectedBuildings.includes(b.id)} 
+                        onCheckedChange={() => toggleBuilding(b.id)}
+                      />
+                      <span className="text-sm text-gray-700 truncate">{b.nome}</span>
+                    </label>
+                  ))}
+                </div>
+              </ScrollArea>
+              {selectedBuildings.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {selectedBuildings.length} prédio(s) selecionado(s)
+                </p>
+              )}
             </div>
 
             {/* Dia de Vencimento ou Data do Primeiro Lançamento */}

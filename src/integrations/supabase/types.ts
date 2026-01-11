@@ -5067,6 +5067,52 @@ export type Database = {
           },
         ]
       }
+      despesas_predios: {
+        Row: {
+          building_id: string
+          created_at: string | null
+          despesa_fixa_id: string | null
+          despesa_variavel_id: string | null
+          id: string
+        }
+        Insert: {
+          building_id: string
+          created_at?: string | null
+          despesa_fixa_id?: string | null
+          despesa_variavel_id?: string | null
+          id?: string
+        }
+        Update: {
+          building_id?: string
+          created_at?: string | null
+          despesa_fixa_id?: string | null
+          despesa_variavel_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "despesas_predios_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_predios_despesa_fixa_id_fkey"
+            columns: ["despesa_fixa_id"]
+            isOneToOne: false
+            referencedRelation: "despesas_fixas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_predios_despesa_variavel_id_fkey"
+            columns: ["despesa_variavel_id"]
+            isOneToOne: false
+            referencedRelation: "despesas_variaveis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       despesas_variaveis: {
         Row: {
           building_id: string | null

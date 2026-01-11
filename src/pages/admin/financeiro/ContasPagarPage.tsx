@@ -70,7 +70,7 @@ const ContasPagarPage: React.FC = () => {
       const { data: variaveis, error: variaveisError } = await supabase
         .from('despesas_variaveis')
         .select('*')
-        .order('data_prevista', { ascending: true });
+        .order('data', { ascending: true });
 
       if (fixasError) throw fixasError;
       if (variaveisError) throw variaveisError;
