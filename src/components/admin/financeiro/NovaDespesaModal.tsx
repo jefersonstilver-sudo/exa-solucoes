@@ -69,6 +69,7 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
     categoria_id: '',
     periodicidade: 'mensal' as Periodicidade,
     dia_vencimento: 10,
+    data_primeiro_lancamento: format(new Date(), 'yyyy-MM-dd'),
     observacao: '',
   });
   
@@ -104,18 +105,28 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
       const categoriaNome = getCategoriaPath(fixaForm.categoria_id);
       
       // Inserir despesa fixa
+      const insertData: any = {
+        descricao: fixaForm.descricao.trim(),
+        valor: valorNumerico,
+        categoria: categoriaNome || 'Outros',
+        categoria_id: fixaForm.categoria_id,
+        periodicidade: fixaForm.periodicidade,
+        observacao: fixaForm.observacao.trim() || null,
+        ativo: true,
+      };
+
+      // Para semanal, usa data_primeiro_lancamento; para outros, usa dia_vencimento
+      if (fixaForm.periodicidade === 'semanal') {
+        insertData.data_primeiro_lancamento = fixaForm.data_primeiro_lancamento;
+        insertData.dia_vencimento = null;
+      } else {
+        insertData.dia_vencimento = fixaForm.dia_vencimento;
+        insertData.data_primeiro_lancamento = null;
+      }
+
       const { error } = await supabase
         .from('despesas_fixas')
-        .insert([{
-          descricao: fixaForm.descricao.trim(),
-          valor: valorNumerico,
-          categoria: categoriaNome || 'Outros',
-          categoria_id: fixaForm.categoria_id,
-          periodicidade: fixaForm.periodicidade,
-          dia_vencimento: fixaForm.dia_vencimento,
-          observacao: fixaForm.observacao.trim() || null,
-          ativo: true,
-        }])
+        .insert([insertData])
         .select()
         .single();
 
@@ -192,6 +203,7 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
       categoria_id: '',
       periodicidade: 'mensal',
       dia_vencimento: 10,
+      data_primeiro_lancamento: format(new Date(), 'yyyy-MM-dd'),
       observacao: '',
     });
     setVariavelForm({
@@ -298,29 +310,48 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
               />
             </div>
 
-            {/* Dia de Vencimento */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                <Calendar className="h-3.5 w-3.5" />
-                Dia de Vencimento
-              </Label>
-              <div className="flex gap-2 flex-wrap">
-                {DIAS_VENCIMENTO.map(dia => (
-                  <Badge
-                    key={dia}
-                    variant={fixaForm.dia_vencimento === dia ? 'default' : 'outline'}
-                    className={`cursor-pointer transition-all ${
-                      fixaForm.dia_vencimento === dia 
-                        ? 'bg-gray-900 text-white' 
-                        : 'bg-white hover:bg-gray-100 text-gray-700 border-gray-200'
-                    }`}
-                    onClick={() => setFixaForm(prev => ({ ...prev, dia_vencimento: dia }))}
-                  >
-                    Dia {dia}
-                  </Badge>
-                ))}
+            {/* Dia de Vencimento ou Data do Primeiro Lançamento */}
+            {fixaForm.periodicidade === 'semanal' ? (
+              <div className="space-y-2">
+                <Label htmlFor="fixa-data-inicial" className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Data do Primeiro Lançamento
+                </Label>
+                <Input
+                  id="fixa-data-inicial"
+                  type="date"
+                  value={fixaForm.data_primeiro_lancamento}
+                  onChange={(e) => setFixaForm(prev => ({ ...prev, data_primeiro_lancamento: e.target.value }))}
+                  className="bg-gray-50 border-gray-200"
+                />
+                <p className="text-xs text-gray-500">
+                  As próximas parcelas serão geradas a cada semana a partir desta data.
+                </p>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Dia de Vencimento
+                </Label>
+                <div className="flex gap-2 flex-wrap">
+                  {DIAS_VENCIMENTO.map(dia => (
+                    <Badge
+                      key={dia}
+                      variant={fixaForm.dia_vencimento === dia ? 'default' : 'outline'}
+                      className={`cursor-pointer transition-all ${
+                        fixaForm.dia_vencimento === dia 
+                          ? 'bg-gray-900 text-white' 
+                          : 'bg-white hover:bg-gray-100 text-gray-700 border-gray-200'
+                      }`}
+                      onClick={() => setFixaForm(prev => ({ ...prev, dia_vencimento: dia }))}
+                    >
+                      Dia {dia}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Observação */}
             <div className="space-y-2">
