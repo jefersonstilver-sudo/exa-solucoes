@@ -3,6 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, PhoneCall, Sparkles, AlertCircle } from 'lucide-react';
 import { useSofia } from '@/contexts/SofiaContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+
+// CRITICAL: Sofia Jarvis é EXCLUSIVA do CEO - JAMAIS alterar esta verificação
+const MASTER_ACCOUNT_EMAIL = 'jefersonstilver@gmail.com';
 
 interface SofiaVoiceButtonProps {
   className?: string;
@@ -10,6 +14,7 @@ interface SofiaVoiceButtonProps {
 
 export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className }) => {
   const [sofiaAtiva, setSofiaAtiva] = useState<boolean | null>(null);
+  const { userProfile } = useAuth();
   const { 
     state, 
     isSpeaking, 
@@ -17,6 +22,16 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
     startCall, 
     endCall,
   } = useSofia();
+
+  // VERIFICAÇÃO CRÍTICA: Sofia Jarvis APENAS para o master
+  // Nenhum outro usuário administrativo ou cliente pode acessar
+  const userEmail = userProfile?.email?.toLowerCase();
+  const isMasterAccount = userEmail === MASTER_ACCOUNT_EMAIL.toLowerCase();
+
+  // Se não for o master, não renderizar NADA - botão não existe no DOM
+  if (!isMasterAccount) {
+    return null;
+  }
 
   // Buscar configuração sofia_ativa
   useEffect(() => {
