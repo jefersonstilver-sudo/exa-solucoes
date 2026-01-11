@@ -11305,6 +11305,93 @@ export type Database = {
         }
         Relationships: []
       }
+      transacoes_asaas: {
+        Row: {
+          billing_type: string
+          boleto_barcode: string | null
+          boleto_nosso_numero: string | null
+          boleto_url: string | null
+          created_at: string | null
+          customer_cpf_cnpj: string | null
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string | null
+          data_criacao: string
+          data_pagamento: string | null
+          data_vencimento: string | null
+          description: string | null
+          external_reference: string | null
+          id: string
+          payment_id: string
+          pix_copy_paste: string | null
+          pix_qr_code: string | null
+          pix_transaction_id: string | null
+          raw_data: Json | null
+          status: string
+          synced_at: string | null
+          taxa_asaas: number | null
+          updated_at: string | null
+          valor: number
+          valor_liquido: number | null
+        }
+        Insert: {
+          billing_type: string
+          boleto_barcode?: string | null
+          boleto_nosso_numero?: string | null
+          boleto_url?: string | null
+          created_at?: string | null
+          customer_cpf_cnpj?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          data_criacao: string
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          description?: string | null
+          external_reference?: string | null
+          id?: string
+          payment_id: string
+          pix_copy_paste?: string | null
+          pix_qr_code?: string | null
+          pix_transaction_id?: string | null
+          raw_data?: Json | null
+          status: string
+          synced_at?: string | null
+          taxa_asaas?: number | null
+          updated_at?: string | null
+          valor: number
+          valor_liquido?: number | null
+        }
+        Update: {
+          billing_type?: string
+          boleto_barcode?: string | null
+          boleto_nosso_numero?: string | null
+          boleto_url?: string | null
+          created_at?: string | null
+          customer_cpf_cnpj?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          data_criacao?: string
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          description?: string | null
+          external_reference?: string | null
+          id?: string
+          payment_id?: string
+          pix_copy_paste?: string | null
+          pix_qr_code?: string | null
+          pix_transaction_id?: string | null
+          raw_data?: Json | null
+          status?: string
+          synced_at?: string | null
+          taxa_asaas?: number | null
+          updated_at?: string | null
+          valor?: number
+          valor_liquido?: number | null
+        }
+        Relationships: []
+      }
       transaction_sessions: {
         Row: {
           calculated_price: number
@@ -12490,6 +12577,25 @@ export type Database = {
           headcount: number | null
           nome: string | null
           orcamento_mensal: number | null
+        }
+        Relationships: []
+      }
+      vw_fluxo_caixa_real: {
+        Row: {
+          cliente: string | null
+          created_at: string | null
+          data: string | null
+          descricao: string | null
+          external_reference: string | null
+          id: string | null
+          metodo_pagamento: string | null
+          origem: string | null
+          origem_id: string | null
+          status: string | null
+          status_original: string | null
+          tipo: string | null
+          valor: number | null
+          valor_liquido: number | null
         }
         Relationships: []
       }
