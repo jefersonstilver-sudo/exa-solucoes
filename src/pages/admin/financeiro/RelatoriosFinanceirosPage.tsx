@@ -128,102 +128,102 @@ const RelatoriosFinanceirosPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => navigate(buildPath('financeiro'))}
-          className="h-9 w-9 rounded-xl bg-white/60 hover:bg-white border border-gray-200/50"
+          className="h-9 w-9 rounded-xl bg-white/60 hover:bg-white border border-gray-200/50 shadow-sm"
         >
           <ArrowLeft className="h-4 w-4 text-gray-600" />
         </Button>
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">Relatórios Financeiros</h1>
-            <p className="text-sm text-gray-500">Geração de relatórios em PDF e Excel</p>
-          </div>
+        <div>
+          <h1 className="text-lg font-semibold text-gray-900">Relatórios Financeiros</h1>
+          <p className="text-sm text-gray-500">Geração de relatórios em PDF e Excel</p>
         </div>
-
-        {/* Filtros de Categoria */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
-          {['todos', 'financeiro', 'operacional', 'gerencial'].map((cat) => (
-            <Button
-              key={cat}
-              variant={categoryFilter === cat ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setCategoryFilter(cat)}
-              className="whitespace-nowrap"
-            >
-              {cat === 'todos' ? 'Todos' : getCategoryLabel(cat)}
-            </Button>
-          ))}
-        </div>
-
-        {/* Grid de Relatórios */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredReports.map((report) => {
-            const IconComponent = report.icon;
-            return (
-              <Card key={report.id} className="bg-white">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                        <IconComponent className="h-5 w-5 text-gray-600" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-base font-medium">{report.title}</CardTitle>
-                        <CardDescription className="text-sm">{report.description}</CardDescription>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className={getCategoryColor(report.category)}>
-                      {getCategoryLabel(report.category)}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-2">
-                    {report.formats.map((format) => (
-                      <Button
-                        key={format}
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        disabled={generating === `${report.id}-${format}`}
-                        onClick={() => handleGenerate(report.id, format)}
-                      >
-                        {generating === `${report.id}-${format}` ? (
-                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-900" />
-                        ) : (
-                          <Download className="h-3 w-3" />
-                        )}
-                        {format}
-                      </Button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Nota */}
-        <Card className="bg-white mt-6">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <Calendar className="h-5 w-5 text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-gray-900">Período de Geração</p>
-                <p className="text-sm text-gray-500">
-                  Por padrão, os relatórios são gerados com dados do mês corrente. 
-                  Períodos personalizados estarão disponíveis em breve.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
+
+      {/* Filtros de Categoria */}
+      <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+        {['todos', 'financeiro', 'operacional', 'gerencial'].map((cat) => (
+          <Button
+            key={cat}
+            variant={categoryFilter === cat ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setCategoryFilter(cat)}
+            className={`whitespace-nowrap h-9 ${categoryFilter !== cat ? 'bg-white' : ''}`}
+          >
+            {cat === 'todos' ? 'Todos' : getCategoryLabel(cat)}
+          </Button>
+        ))}
+      </div>
+
+      {/* Grid de Relatórios */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {filteredReports.map((report) => {
+          const IconComponent = report.icon;
+          return (
+            <Card key={report.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
+                      <IconComponent className="h-5 w-5 text-gray-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <CardTitle className="text-sm font-medium text-gray-900">{report.title}</CardTitle>
+                      <CardDescription className="text-xs text-gray-500">{report.description}</CardDescription>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className={`${getCategoryColor(report.category)} flex-shrink-0`}>
+                    {getCategoryLabel(report.category)}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2">
+                  {report.formats.map((format) => (
+                    <Button
+                      key={format}
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 h-9 bg-white shadow-sm"
+                      disabled={generating === `${report.id}-${format}`}
+                      onClick={() => handleGenerate(report.id, format)}
+                    >
+                      {generating === `${report.id}-${format}` ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-900" />
+                      ) : (
+                        <Download className="h-3 w-3" />
+                      )}
+                      {format}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Nota */}
+      <Card className="bg-white shadow-sm">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <Calendar className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-gray-900">Período de Geração</p>
+              <p className="text-xs text-gray-500">
+                Por padrão, os relatórios são gerados com dados do mês corrente. 
+                Períodos personalizados estarão disponíveis em breve.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
