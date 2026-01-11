@@ -78,14 +78,17 @@ const LancamentoDetalheDialog: React.FC<LancamentoDetalheDialogProps> = ({
 
   useEffect(() => {
     if (lancamento) {
-      setCategoriaId(lancamento.categoria_id || '');
+      setCategoriaId(lancamento.categoria_id || 'none');
       setTipoReceita(lancamento.tipo_receita || '');
       setRecorrente(lancamento.recorrente || false);
       setConciliado(lancamento.conciliado || false);
     }
   }, [lancamento]);
 
-  if (!lancamento) return null;
+  // Early return moved AFTER all hooks
+  if (!lancamento) {
+    return null;
+  }
 
   const isAsaas = lancamento.origem === 'asaas';
   const isEntrada = lancamento.tipo === 'entrada';
@@ -94,7 +97,7 @@ const LancamentoDetalheDialog: React.FC<LancamentoDetalheDialogProps> = ({
     setSaving(true);
     try {
       await onSave({
-        categoria_id: categoriaId || undefined,
+        categoria_id: categoriaId === 'none' ? undefined : categoriaId || undefined,
         tipo_receita: tipoReceita as 'fixa' | 'variavel' | undefined,
         recorrente,
         conciliado
@@ -174,8 +177,8 @@ const LancamentoDetalheDialog: React.FC<LancamentoDetalheDialogProps> = ({
                   <SelectTrigger id="categoria">
                     <SelectValue placeholder="Selecione uma categoria" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Sem categoria</SelectItem>
+              <SelectContent>
+                    <SelectItem value="none">Sem categoria</SelectItem>
                     {categorias.map(cat => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.nome}
