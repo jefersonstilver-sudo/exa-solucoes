@@ -4609,6 +4609,7 @@ export type Database = {
           motivo_alteracao: string | null
           observacao: string | null
           periodicidade: string
+          responsavel_id: string | null
           subcategoria_id: string | null
           updated_at: string | null
           updated_by: string | null
@@ -4629,6 +4630,7 @@ export type Database = {
           motivo_alteracao?: string | null
           observacao?: string | null
           periodicidade?: string
+          responsavel_id?: string | null
           subcategoria_id?: string | null
           updated_at?: string | null
           updated_by?: string | null
@@ -4649,6 +4651,7 @@ export type Database = {
           motivo_alteracao?: string | null
           observacao?: string | null
           periodicidade?: string
+          responsavel_id?: string | null
           subcategoria_id?: string | null
           updated_at?: string | null
           updated_by?: string | null
@@ -4695,6 +4698,13 @@ export type Database = {
             columns: ["fornecedor_id"]
             isOneToOne: false
             referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_fixas_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
             referencedColumns: ["id"]
           },
           {
@@ -6351,6 +6361,103 @@ export type Database = {
             foreignKeyName: "fornecedores_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funcionarios: {
+        Row: {
+          ativo: boolean | null
+          cargo: string
+          created_at: string | null
+          created_by: string | null
+          data_admissao: string | null
+          data_demissao: string | null
+          departamento: Database["public"]["Enums"]["departamento_funcionario"]
+          id: string
+          observacoes: string | null
+          salario_mensal: number | null
+          tipo_contrato: Database["public"]["Enums"]["tipo_contrato_funcionario"]
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string
+          valor_contrato: number | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          cargo: string
+          created_at?: string | null
+          created_by?: string | null
+          data_admissao?: string | null
+          data_demissao?: string | null
+          departamento: Database["public"]["Enums"]["departamento_funcionario"]
+          id?: string
+          observacoes?: string | null
+          salario_mensal?: number | null
+          tipo_contrato: Database["public"]["Enums"]["tipo_contrato_funcionario"]
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id: string
+          valor_contrato?: number | null
+        }
+        Update: {
+          ativo?: boolean | null
+          cargo?: string
+          created_at?: string | null
+          created_by?: string | null
+          data_admissao?: string | null
+          data_demissao?: string | null
+          departamento?: Database["public"]["Enums"]["departamento_funcionario"]
+          id?: string
+          observacoes?: string | null
+          salario_mensal?: number | null
+          tipo_contrato?: Database["public"]["Enums"]["tipo_contrato_funcionario"]
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string
+          valor_contrato?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funcionarios_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionarios_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionarios_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionarios_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionarios_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionarios_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "users_with_role"
             referencedColumns: ["id"]
           },
@@ -13302,6 +13409,14 @@ export type Database = {
       caixa_tipo: "entrada" | "saida"
       categoria_tipo: "fixa" | "variavel" | "ambos" | "investimento"
       contrato_status: "ativo" | "pausado" | "encerrado" | "cancelado"
+      departamento_funcionario:
+        | "comercial"
+        | "operacao"
+        | "financeiro"
+        | "marketing"
+        | "administrativo"
+        | "diretoria"
+        | "ti"
       fornecedor_tipo: "servico" | "produto" | "ambos"
       investimento_status:
         | "planejado"
@@ -13336,6 +13451,12 @@ export type Database = {
         | "admin"
         | "cron"
         | "reconciliacao"
+      tipo_contrato_funcionario:
+        | "clt"
+        | "pj"
+        | "freelancer"
+        | "estagiario"
+        | "socio"
       tipo_despesa: "fixa" | "variavel"
     }
     CompositeTypes: {
@@ -13494,6 +13615,15 @@ export const Constants = {
       caixa_tipo: ["entrada", "saida"],
       categoria_tipo: ["fixa", "variavel", "ambos", "investimento"],
       contrato_status: ["ativo", "pausado", "encerrado", "cancelado"],
+      departamento_funcionario: [
+        "comercial",
+        "operacao",
+        "financeiro",
+        "marketing",
+        "administrativo",
+        "diretoria",
+        "ti",
+      ],
       fornecedor_tipo: ["servico", "produto", "ambos"],
       investimento_status: [
         "planejado",
@@ -13531,6 +13661,13 @@ export const Constants = {
         "admin",
         "cron",
         "reconciliacao",
+      ],
+      tipo_contrato_funcionario: [
+        "clt",
+        "pj",
+        "freelancer",
+        "estagiario",
+        "socio",
       ],
       tipo_despesa: ["fixa", "variavel"],
     },
