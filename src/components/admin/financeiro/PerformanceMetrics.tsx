@@ -9,8 +9,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 import { formatCurrency } from '@/utils/format';
 
 interface MetricItem {
@@ -43,6 +42,19 @@ const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
   margemLiquida,
   margemLiquidaAnterior
 }) => {
+  // Header narrativo baseado na margem
+  const getHeaderNarrative = (): { text: string; color: string } => {
+    if (margemLiquida >= margemLiquidaAnterior) {
+      return { text: 'Mês positivo', color: 'text-emerald-600' };
+    }
+    if (margemLiquida >= 0) {
+      return { text: 'Mês estável', color: 'text-amber-600' };
+    }
+    return { text: 'Mês desafiador', color: 'text-red-600' };
+  };
+
+  const narrative = getHeaderNarrative();
+
   const metrics: MetricItem[] = [
     {
       id: 'receita',
@@ -90,35 +102,43 @@ const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
 
   return (
     <Card className="bg-white shadow-sm">
-      <CardContent className="p-4">
+      <CardContent className="p-4 space-y-4">
+        {/* Header Narrativo */}
+        <div className="flex items-center justify-between">
+          <p className={`text-sm font-semibold ${narrative.color}`}>
+            {narrative.text}
+          </p>
+          <p className="text-xs text-gray-400">vs mês anterior</p>
+        </div>
+
+        {/* Grid de métricas */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
           {metrics.map((metric) => {
             const variation = calcVariation(metric.value, metric.previousValue);
             const isPositive = variation >= 0;
             const isGood = metric.positiveIsGood ? isPositive : !isPositive;
+            const isMargin = metric.id === 'margem';
 
             return (
-              <div key={metric.id} className="text-center lg:text-left">
+              <div 
+                key={metric.id} 
+                className={`text-center lg:text-left ${isMargin ? 'border-l-4 border-l-blue-500 pl-3' : ''}`}
+              >
                 <p className="text-xs text-gray-500 font-medium mb-1">{metric.label}</p>
                 <div className="flex items-center justify-center lg:justify-start gap-2">
-                  <p className="text-lg font-bold text-gray-900">
+                  <p className={`font-bold ${isMargin ? 'text-lg' : 'text-base'} text-gray-900`}>
                     {formatValue(metric.value, metric.format)}
                   </p>
-                  <Badge 
-                    variant="outline"
-                    className={`text-xs font-medium ${
-                      isGood 
-                        ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
-                        : 'bg-red-50 text-red-600 border-red-200'
-                    }`}
-                  >
+                  <div className={`flex items-center gap-0.5 text-xs font-medium ${
+                    isGood ? 'text-emerald-600' : 'text-red-600'
+                  }`}>
                     {isPositive ? (
-                      <TrendingUp className="h-3 w-3 mr-0.5" />
+                      <TrendingUp className="h-3 w-3" />
                     ) : (
-                      <TrendingDown className="h-3 w-3 mr-0.5" />
+                      <TrendingDown className="h-3 w-3" />
                     )}
-                    {Math.abs(variation).toFixed(0)}%
-                  </Badge>
+                    <span>{Math.abs(variation).toFixed(0)}%</span>
+                  </div>
                 </div>
               </div>
             );
