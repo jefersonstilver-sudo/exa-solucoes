@@ -64,6 +64,7 @@ const LancamentosPage: React.FC = () => {
   const { buildPath } = useAdminBasePath();
   
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [filtroTipo, setFiltroTipo] = useState<'todos' | 'entrada' | 'saida'>('todos');
@@ -72,6 +73,25 @@ const LancamentosPage: React.FC = () => {
   const [busca, setBusca] = useState('');
   const [selectedLancamento, setSelectedLancamento] = useState<Lancamento | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleSyncAsaas = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-asaas-transactions', {
+        body: {}
+      });
+      
+      if (error) throw error;
+      
+      toast.success(`Sincronização concluída: ${data?.synced || 0} novos, ${data?.updated || 0} atualizados`);
+      await fetchLancamentos();
+    } catch (err) {
+      console.error('Erro na sincronização:', err);
+      toast.error('Erro ao sincronizar com ASAAS');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const fetchLancamentos = async () => {
     setLoading(true);
@@ -260,16 +280,28 @@ const LancamentosPage: React.FC = () => {
               </p>
             </div>
           </div>
-          <Button 
-            onClick={fetchLancamentos} 
-            disabled={loading} 
-            variant="ghost" 
-            size="sm"
-            className="text-gray-600 hover:text-gray-900 hover:bg-white/60"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Atualizar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={handleSyncAsaas} 
+              disabled={syncing} 
+              variant="outline" 
+              size="sm"
+              className="text-gray-600 hover:text-gray-900 bg-white/60"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+              Sincronizar ASAAS
+            </Button>
+            <Button 
+              onClick={fetchLancamentos} 
+              disabled={loading} 
+              variant="ghost" 
+              size="sm"
+              className="text-gray-600 hover:text-gray-900 hover:bg-white/60"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+          </div>
         </div>
 
         {/* Resumo Cards */}
