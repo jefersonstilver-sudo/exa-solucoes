@@ -10,6 +10,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { TrendingUp, ArrowRight, RefreshCw } from 'lucide-react';
 import { formatCurrency } from '@/utils/format';
 import { useNavigate } from 'react-router-dom';
@@ -54,21 +55,30 @@ const CashHealthHero: React.FC<CashHealthHeroProps> = ({
       dotColor: 'bg-emerald-500',
       textColor: 'text-emerald-600',
       label: 'Caixa confortável',
-      sublabel: `Autonomia de ${diasOperacao} dias`
+      sublabel: `Autonomia de ${diasOperacao} dias`,
+      explanation: 'Seu caixa atual cobre mais de 30 dias de operação. Situação financeira saudável.',
+      href: null as string | null,
+      hrefLabel: null as string | null
     },
     warning: {
       borderColor: 'border-l-amber-500',
       dotColor: 'bg-amber-500',
       textColor: 'text-amber-600',
       label: 'Atenção recomendada',
-      sublabel: `${diasOperacao} dias de operação`
+      sublabel: `${diasOperacao} dias de operação`,
+      explanation: `Seu caixa cobre apenas ${diasOperacao} dias. Considere acelerar recebimentos ou revisar despesas não essenciais.`,
+      href: buildPath('financeiro/fluxo-caixa'),
+      hrefLabel: 'Ver fluxo de caixa'
     },
     critical: {
       borderColor: 'border-l-red-500',
       dotColor: 'bg-red-500',
       textColor: 'text-red-600',
       label: 'Ação necessária',
-      sublabel: `Apenas ${diasOperacao} dias restantes`
+      sublabel: `Apenas ${diasOperacao} dias restantes`,
+      explanation: `Com apenas ${diasOperacao} dias de caixa, você precisa agir agora: cobrar clientes inadimplentes ou adiar pagamentos não críticos.`,
+      href: buildPath('financeiro/contas-receber'),
+      hrefLabel: 'Ver cobranças pendentes'
     }
   };
 
@@ -82,12 +92,31 @@ const CashHealthHero: React.FC<CashHealthHeroProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-500 font-medium mb-1">Caixa Disponível</p>
-              <div className="flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full ${config.dotColor}`} />
-                <span className={`text-xs font-medium ${config.textColor}`}>
-                  {config.label}
-                </span>
-              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1.5 cursor-help">
+                      <span className={`w-1.5 h-1.5 rounded-full ${config.dotColor}`} />
+                      <span className={`text-xs font-medium ${config.textColor}`}>
+                        {config.label}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs p-3 bg-popover border border-border shadow-lg">
+                    <p className="text-sm text-popover-foreground">{config.explanation}</p>
+                    {config.href && (
+                      <Button 
+                        variant="link" 
+                        size="sm" 
+                        className="mt-2 p-0 h-auto text-primary"
+                        onClick={() => navigate(config.href!)}
+                      >
+                        {config.hrefLabel} →
+                      </Button>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <Button 
               variant="ghost" 

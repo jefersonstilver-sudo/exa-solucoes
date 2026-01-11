@@ -11,14 +11,16 @@
  * Design: Minimalista, neutro, cores apenas para semântica
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { addDays, startOfDay, endOfDay } from 'date-fns';
 import { useFinanceiroData } from '@/hooks/financeiro/useFinanceiroData';
 import { useFinanceiroPermissions } from '@/hooks/financeiro/useFinanceiroPermissions';
 import { useAsaasBalance } from '@/hooks/financeiro/useAsaasBalance';
 import { useFluxoCaixa } from '@/hooks/financeiro/useFluxoCaixa';
 import { useAlertasFinanceiros } from '@/hooks/financeiro/useAlertasFinanceiros';
+import ElegantPeriodButton, { ElegantPeriodType } from '@/components/admin/dashboard/ElegantPeriodButton';
 
 // Componentes do Dashboard V2
 import CashHealthHero from '@/components/admin/financeiro/CashHealthHero';
@@ -31,9 +33,32 @@ import FinanceiroQuickNav from '@/components/admin/financeiro/FinanceiroQuickNav
 const DashboardFinanceiroV2: React.FC = () => {
   const { metricas, inadimplentes, loading: financeiroLoading, refetch, temPermissaoFinanceira } = useFinanceiroData();
   const { balance, summary, loading: balanceLoading, lastUpdated, fetchBalance } = useAsaasBalance();
-  const { projecao30d, projecao60d, projecao90d, resumo, fetchFluxoCaixa } = useFluxoCaixa();
+  const { projecao30d, projecao60d, projecao90d, resumo, fluxoCaixa, fetchFluxoCaixa } = useFluxoCaixa();
   const { alertas, fetchAlertas } = useAlertasFinanceiros();
   const permissions = useFinanceiroPermissions();
+
+  // Estado do seletor de período
+  const [periodFilter, setPeriodFilter] = useState<ElegantPeriodType>('current_month');
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
+  
+  // Calcular contas fixas da semana
+  const contasDaSemana = useMemo(() => {
+    const hoje = startOfDay(new Date());
+    const fimSemana = endOfDay(addDays(hoje, 7));
+    
+    const contasSemana = (fluxoCaixa || []).filter(item => {
+      const dataItem = new Date(item.data);
+      return item.tipo === 'saida' && 
+             dataItem >= hoje && 
+             dataItem <= fimSemana;
+    });
+    
+    return {
+      count: contasSemana.length,
+      value: contasSemana.reduce((sum, c) => sum + Math.abs(c.valor), 0)
+    };
+  }, [fluxoCaixa]);
 
   useEffect(() => {
     if (temPermissaoFinanceira && permissions.canView) {
@@ -67,10 +92,10 @@ const DashboardFinanceiroV2: React.FC = () => {
     cobrancasVencendoValor: 0,
     cobrancasAtrasadas: summary?.overdue_count || metricas?.inadimplencia_count || 0,
     cobrancasAtrasadasValor: summary?.total_overdue || metricas?.inadimplencia_total || 0,
-    contasProximas: 0, // TODO: Calcular do backend
-    contasProximasValor: 0,
+    contasProximas: contasDaSemana.count,
+    contasProximasValor: contasDaSemana.value,
     alertasAtivos: alertas.filter(a => a.ativo && !a.resolvido).length
-  }), [summary, metricas, alertas]);
+  }), [summary, metricas, alertas, contasDaSemana]);
 
   // Dados para ProjectionCard
   const projecaoData = useMemo(() => {
@@ -151,9 +176,21 @@ const DashboardFinanceiroV2: React.FC = () => {
       <div className="p-4 md:p-5 space-y-5 max-w-7xl mx-auto">
         {/* Header + Navegação Rápida */}
         <div className="space-y-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Financeiro</h1>
-            <p className="text-sm text-gray-500">Visão executiva em tempo real</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Financeiro</h1>
+              <p className="text-sm text-gray-500">Visão executiva em tempo real</p>
+            </div>
+            <ElegantPeriodButton 
+              value={periodFilter} 
+              onChange={setPeriodFilter} 
+              customStartDate={customStartDate}
+              customEndDate={customEndDate}
+              onCustomDateChange={(start, end) => {
+                setCustomStartDate(start);
+                setCustomEndDate(end);
+              }}
+            />
           </div>
           <FinanceiroQuickNav />
         </div>
