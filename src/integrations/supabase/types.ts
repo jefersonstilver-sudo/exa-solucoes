@@ -4927,6 +4927,7 @@ export type Database = {
           contrato_id: string | null
           created_at: string | null
           created_by: string | null
+          data_primeiro_lancamento: string | null
           descricao: string
           dia_vencimento: number | null
           fornecedor_id: string | null
@@ -4949,6 +4950,7 @@ export type Database = {
           contrato_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          data_primeiro_lancamento?: string | null
           descricao: string
           dia_vencimento?: number | null
           fornecedor_id?: string | null
@@ -4971,6 +4973,7 @@ export type Database = {
           contrato_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          data_primeiro_lancamento?: string | null
           descricao?: string
           dia_vencimento?: number | null
           fornecedor_id?: string | null
