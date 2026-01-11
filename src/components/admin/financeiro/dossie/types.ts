@@ -92,6 +92,7 @@ export interface Categoria {
   id: string;
   nome: string;
   tipo: string;
+  fluxo?: 'entrada' | 'saida';
 }
 
 export interface Subcategoria {

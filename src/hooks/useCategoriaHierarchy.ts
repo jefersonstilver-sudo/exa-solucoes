@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+export type FluxoType = 'entrada' | 'saida';
+
 export interface CategoriaNode {
   id: string;
   nome: string;
@@ -13,6 +15,7 @@ export interface CategoriaNode {
   nivel: number;
   ordem: number;
   ativo: boolean;
+  fluxo: FluxoType;
   children: CategoriaNode[];
   isFixed?: boolean; // Categorias-mãe fixas que não podem ser deletadas
 }
@@ -24,28 +27,44 @@ export interface CategoriaFormData {
   icone?: string;
   parent_id?: string | null;
   ativo?: boolean;
+  fluxo?: FluxoType;
 }
 
 // IDs fixos das categorias-mãe (não podem ser deletadas)
-const FIXED_CATEGORY_IDS = [
+const FIXED_CATEGORY_IDS_SAIDA = [
   '00000000-0000-0000-0000-000000000001', // Custos Fixos
   '00000000-0000-0000-0000-000000000002', // Custos Variáveis
   '00000000-0000-0000-0000-000000000003', // Investimentos
 ];
 
-export function useCategoriaHierarchy() {
+const FIXED_CATEGORY_IDS_ENTRADA = [
+  '00000000-0000-0000-0000-000000000010', // Receita Operacional
+  '00000000-0000-0000-0000-000000000011', // Receita Recorrente
+  '00000000-0000-0000-0000-000000000012', // Receita Financeira
+  '00000000-0000-0000-0000-000000000013', // Aportes & Capital
+];
+
+const FIXED_CATEGORY_IDS = [...FIXED_CATEGORY_IDS_SAIDA, ...FIXED_CATEGORY_IDS_ENTRADA];
+
+export function useCategoriaHierarchy(fluxoFilter?: FluxoType) {
   const queryClient = useQueryClient();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set(FIXED_CATEGORY_IDS));
 
   // Fetch todas as categorias
   const { data: categorias, isLoading, error } = useQuery({
-    queryKey: ['categorias-hierarchy'],
+    queryKey: ['categorias-hierarchy', fluxoFilter],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('categorias_despesas')
         .select('*')
         .order('ordem', { ascending: true })
         .order('nome', { ascending: true });
+
+      if (fluxoFilter) {
+        query = query.eq('fluxo', fluxoFilter);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data;
@@ -69,6 +88,7 @@ export function useCategoriaHierarchy() {
           nivel: cat.nivel ?? 0,
           ordem: cat.ordem ?? 0,
           ativo: cat.ativo ?? true,
+          fluxo: (cat.fluxo ?? 'saida') as FluxoType,
           children: buildTree(cat.id),
           isFixed: FIXED_CATEGORY_IDS.includes(cat.id),
         }))
@@ -77,6 +97,11 @@ export function useCategoriaHierarchy() {
 
     return buildTree(null);
   }, [categorias]);
+
+  // Obter árvore filtrada por fluxo
+  const getTreeByFluxo = useCallback((fluxo: FluxoType): CategoriaNode[] => {
+    return tree.filter(node => node.fluxo === fluxo);
+  }, [tree]);
 
   // Obter categoria por ID
   const getCategoriaById = useCallback((id: string): CategoriaNode | null => {
@@ -94,6 +119,7 @@ export function useCategoriaHierarchy() {
       nivel: cat.nivel ?? 0,
       ordem: cat.ordem ?? 0,
       ativo: cat.ativo ?? true,
+      fluxo: (cat.fluxo ?? 'saida') as FluxoType,
       children: [],
       isFixed: FIXED_CATEGORY_IDS.includes(cat.id),
     };
@@ -119,11 +145,14 @@ export function useCategoriaHierarchy() {
   // Criar categoria
   const createCategoria = useMutation({
     mutationFn: async (data: CategoriaFormData) => {
-      // Determinar o tipo baseado no parent
+      // Determinar o tipo e fluxo baseado no parent
       let tipo = data.tipo;
-      if (data.parent_id && !tipo) {
+      let fluxo = data.fluxo;
+      
+      if (data.parent_id) {
         const parent = categorias?.find(c => c.id === data.parent_id);
-        tipo = parent?.tipo as CategoriaFormData['tipo'];
+        if (!tipo) tipo = parent?.tipo as CategoriaFormData['tipo'];
+        if (!fluxo) fluxo = (parent?.fluxo ?? 'saida') as FluxoType;
       }
 
       // Calcular nível
@@ -150,6 +179,7 @@ export function useCategoriaHierarchy() {
           nivel,
           ordem,
           ativo: data.ativo ?? true,
+          fluxo: fluxo ?? 'saida',
         })
         .select()
         .single();
@@ -319,5 +349,8 @@ export function useCategoriaHierarchy() {
     getCategoriaById,
     getCategoriaPath,
     isFixedCategory,
+    getTreeByFluxo,
+    FIXED_CATEGORY_IDS_SAIDA,
+    FIXED_CATEGORY_IDS_ENTRADA,
   };
 }
