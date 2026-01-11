@@ -568,13 +568,18 @@ const LancamentosPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Dialog de Detalhe/Edição */}
-      <LancamentoDetalheDialog
+      {/* Dossiê Financeiro Drawer */}
+      <LancamentoDossieDrawer
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        lancamento={selectedLancamento}
-        categorias={categorias}
-        onSave={handleSaveClassificacao}
+        lancamento={selectedLancamento ? {
+          ...selectedLancamento,
+          origem: selectedLancamento.origem as LancamentoDossie['origem']
+        } : null}
+        onUpdate={() => {
+          // Refresh data after updates
+          setDialogOpen(false);
+        }}
       />
     </div>
   );
