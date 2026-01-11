@@ -61,6 +61,9 @@ const PontuacaoConfigPage = lazy(() => import('@/pages/admin/contatos/PontuacaoC
 const BloqueiosPage = lazy(() => import('@/pages/admin/contatos/BloqueiosPage'));
 const ContactsLogsPage = lazy(() => import('@/pages/admin/contatos/ContactsLogsPage'));
 
+// Financeiro
+const CategoriasFinanceirasPage = lazy(() => import('@/pages/admin/financeiro/CategoriasFinanceirasPage'));
+
 // Lazy imports para páginas do monitoramento-ia (agora integradas)
 const CRMUnificado = lazy(() => import('@/modules/monitoramento-ia/pages/CRMUnificado'));
 const EscalacoesComerciais = lazy(() => import('@/modules/monitoramento-ia/pages/EscalacoesComerciais'));
@@ -405,6 +408,14 @@ const AdminRoutes = () => {
         </ProtectedModuleRoute>
       } />
       
+      {/* ============ FINANCEIRO ============ */}
+      <Route path="financeiro/categorias" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Categorias..." />}>
+            <CategoriasFinanceirasPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
       
       {/* ============ REDIRECTS (rotas antigas) ============ */}
       <Route path="monitoramento-ia" element={<Navigate to="/admin/paineis-exa" replace />} />
