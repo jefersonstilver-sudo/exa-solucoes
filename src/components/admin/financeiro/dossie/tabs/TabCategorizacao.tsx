@@ -15,6 +15,9 @@ import { LancamentoDossie, Categoria, CentroCusto, Funcionario } from '../types'
 import { CategoriaTreeSelect } from '../../categorias/CategoriaTreeSelect';
 import type { FluxoType } from '@/hooks/useCategoriaHierarchy';
 
+// Constante para representar "sem seleção" no Select (Radix não aceita value="")
+const NONE_VALUE = '__none__';
+
 interface TabCategorizacaoProps {
   lancamento: LancamentoDossie;
   categorias: Categoria[];
@@ -106,12 +109,15 @@ const TabCategorizacao: React.FC<TabCategorizacaoProps> = ({
       {/* Centro de Custo */}
       <div className="space-y-2">
         <Label className="text-sm font-medium text-gray-700">Centro de Custo</Label>
-        <Select value={centroCustoId} onValueChange={setCentroCustoId}>
+        <Select 
+          value={centroCustoId || NONE_VALUE} 
+          onValueChange={(val) => setCentroCustoId(val === NONE_VALUE ? '' : val)}
+        >
           <SelectTrigger className="bg-white">
             <SelectValue placeholder="Selecione um centro de custo" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Sem centro de custo</SelectItem>
+            <SelectItem value={NONE_VALUE}>Sem centro de custo</SelectItem>
             {centrosCusto.map(cc => (
               <SelectItem key={cc.id} value={cc.id}>
                 {cc.codigo} - {cc.nome}
