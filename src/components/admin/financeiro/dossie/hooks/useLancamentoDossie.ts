@@ -13,7 +13,6 @@ import {
   AudioRecord, 
   HistoricoEntry,
   Categoria,
-  Subcategoria,
   CentroCusto,
   Funcionario,
   LancamentoTipo
@@ -36,7 +35,6 @@ export const useLancamentoDossie = ({ lancamentoId, lancamentoTipo }: UseLancame
   
   // Lookup data
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [centrosCusto, setCentrosCusto] = useState<CentroCusto[]>([]);
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
 
@@ -52,7 +50,6 @@ export const useLancamentoDossie = ({ lancamentoId, lancamentoTipo }: UseLancame
         { data: audioData },
         { data: histData },
         { data: catData },
-        { data: subData },
         { data: ccData },
         { data: funcData }
       ] = await Promise.all([
@@ -88,17 +85,10 @@ export const useLancamentoDossie = ({ lancamentoId, lancamentoTipo }: UseLancame
           .eq('lancamento_tipo', lancamentoTipo)
           .order('created_at', { ascending: false }),
         
-        // Categorias
+        // Categorias (hierárquicas)
         supabase
           .from('categorias_despesas')
-          .select('id, nome, tipo')
-          .eq('ativo', true)
-          .order('nome'),
-        
-        // Subcategorias
-        supabase
-          .from('subcategorias_despesas')
-          .select('id, nome, categoria_id')
+          .select('id, nome, tipo, fluxo, parent_id')
           .eq('ativo', true)
           .order('nome'),
         
@@ -120,8 +110,7 @@ export const useLancamentoDossie = ({ lancamentoId, lancamentoTipo }: UseLancame
       setObservacoes((obsData || []) as Observacao[]);
       setAudios((audioData || []) as AudioRecord[]);
       setHistorico((histData || []) as HistoricoEntry[]);
-      setCategorias(catData || []);
-      setSubcategorias(subData || []);
+      setCategorias((catData || []) as Categoria[]);
       setCentrosCusto(ccData || []);
       setFuncionarios((funcData || []).map((f: any) => ({ 
         id: f.id, 
@@ -283,7 +272,6 @@ export const useLancamentoDossie = ({ lancamentoId, lancamentoTipo }: UseLancame
     audios,
     historico,
     categorias,
-    subcategorias,
     centrosCusto,
     funcionarios,
     updateMetadata,

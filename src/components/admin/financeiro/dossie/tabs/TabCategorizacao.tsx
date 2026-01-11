@@ -11,13 +11,13 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X, Plus, Save, Repeat } from 'lucide-react';
-import { toast } from 'sonner';
-import { LancamentoDossie, Categoria, Subcategoria, CentroCusto, Funcionario } from '../types';
+import { LancamentoDossie, Categoria, CentroCusto, Funcionario } from '../types';
+import { CategoriaTreeSelect } from '../../categorias/CategoriaTreeSelect';
+import type { FluxoType } from '@/hooks/useCategoriaHierarchy';
 
 interface TabCategorizacaoProps {
   lancamento: LancamentoDossie;
   categorias: Categoria[];
-  subcategorias: Subcategoria[];
   centrosCusto: CentroCusto[];
   funcionarios: Funcionario[];
   onSave: (updates: Partial<LancamentoDossie>) => Promise<boolean>;
@@ -27,14 +27,12 @@ interface TabCategorizacaoProps {
 const TabCategorizacao: React.FC<TabCategorizacaoProps> = ({
   lancamento,
   categorias,
-  subcategorias,
   centrosCusto,
   funcionarios,
   onSave,
   saving
 }) => {
   const [categoriaId, setCategoriaId] = useState(lancamento.categoria_id || '');
-  const [subcategoriaId, setSubcategoriaId] = useState(lancamento.subcategoria_id || '');
   const [centroCustoId, setCentroCustoId] = useState(lancamento.centro_custo_id || '');
   const [tipoReceita, setTipoReceita] = useState<'fixa' | 'variavel' | ''>(lancamento.tipo_receita || '');
   const [recorrente, setRecorrente] = useState(lancamento.recorrente || false);
@@ -44,23 +42,20 @@ const TabCategorizacao: React.FC<TabCategorizacaoProps> = ({
 
   const isAsaas = lancamento.origem === 'asaas';
   const isEntrada = lancamento.tipo === 'entrada';
-
-  // Filter subcategories based on selected category
-  const filteredSubcategorias = subcategorias.filter(
-    sub => sub.categoria_id === categoriaId
-  );
+  
+  // Determinar o fluxo baseado no tipo do lançamento
+  const fluxo: FluxoType = isEntrada ? 'entrada' : 'saida';
 
   useEffect(() => {
     const changed = 
       categoriaId !== (lancamento.categoria_id || '') ||
-      subcategoriaId !== (lancamento.subcategoria_id || '') ||
       centroCustoId !== (lancamento.centro_custo_id || '') ||
       tipoReceita !== (lancamento.tipo_receita || '') ||
       recorrente !== (lancamento.recorrente || false) ||
       JSON.stringify(tags) !== JSON.stringify(lancamento.tags || []);
     
     setHasChanges(changed);
-  }, [categoriaId, subcategoriaId, centroCustoId, tipoReceita, recorrente, tags, lancamento]);
+  }, [categoriaId, centroCustoId, tipoReceita, recorrente, tags, lancamento]);
 
   const handleAddTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
@@ -76,7 +71,6 @@ const TabCategorizacao: React.FC<TabCategorizacaoProps> = ({
   const handleSave = async () => {
     const updates: Partial<LancamentoDossie> = {
       categoria_id: categoriaId || undefined,
-      subcategoria_id: subcategoriaId || undefined,
       centro_custo_id: centroCustoId || undefined,
       tags: tags.length > 0 ? tags : undefined
     };
@@ -94,46 +88,20 @@ const TabCategorizacao: React.FC<TabCategorizacaoProps> = ({
 
   return (
     <div className="p-6 space-y-6">
-      {/* Categoria */}
+      {/* Categoria - Usando TreeSelect hierárquico */}
       <div className="space-y-2">
         <Label className="text-sm font-medium text-gray-700">Categoria</Label>
-        <Select value={categoriaId} onValueChange={(v) => {
-          setCategoriaId(v);
-          setSubcategoriaId(''); // Reset subcategory when category changes
-        }}>
-          <SelectTrigger className="bg-white">
-            <SelectValue placeholder="Selecione uma categoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">Sem categoria</SelectItem>
-            {categorias.map(cat => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.nome}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <CategoriaTreeSelect
+          value={categoriaId}
+          onChange={setCategoriaId}
+          fluxo={fluxo}
+          placeholder="Selecione uma categoria"
+          allowCreate={true}
+        />
+        <p className="text-xs text-muted-foreground">
+          {isEntrada ? 'Categorias de receita' : 'Categorias de despesa'}
+        </p>
       </div>
-
-      {/* Subcategoria */}
-      {categoriaId && filteredSubcategorias.length > 0 && (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">Subcategoria</Label>
-          <Select value={subcategoriaId} onValueChange={setSubcategoriaId}>
-            <SelectTrigger className="bg-white">
-              <SelectValue placeholder="Selecione uma subcategoria" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Sem subcategoria</SelectItem>
-              {filteredSubcategorias.map(sub => (
-                <SelectItem key={sub.id} value={sub.id}>
-                  {sub.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
 
       {/* Centro de Custo */}
       <div className="space-y-2">
