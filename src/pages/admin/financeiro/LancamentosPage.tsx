@@ -34,6 +34,8 @@ import LancamentoDetalheDialog from '@/components/admin/financeiro/LancamentoDet
 
 interface Lancamento {
   id: string;
+  // origem_id é o identificador do registro na origem (ex: payment_id no ASAAS)
+  origem_id?: string;
   tipo: 'entrada' | 'saida';
   origem: string;
   descricao: string;
@@ -112,6 +114,7 @@ const LancamentosPage: React.FC = () => {
         const classif = classificacoes[l.origem_id] || {};
         return {
           id: l.id,
+          origem_id: l.origem_id,
           tipo: l.tipo as 'entrada' | 'saida',
           origem: l.origem,
           descricao: l.descricao || 'Sem descrição',
@@ -179,6 +182,8 @@ const LancamentosPage: React.FC = () => {
       return;
     }
 
+    const paymentId = selectedLancamento.origem_id || selectedLancamento.id;
+
     try {
       const { error } = await supabase
         .from('transacoes_asaas')
@@ -189,29 +194,30 @@ const LancamentosPage: React.FC = () => {
           conciliado: updates.conciliado ?? false,
           conciliado_at: updates.conciliado ? new Date().toISOString() : null
         })
-        .eq('payment_id', selectedLancamento.id.replace(/.*-/, '') || selectedLancamento.id);
+        .eq('payment_id', paymentId);
 
-      // Fallback: buscar pelo ID correto
+      // Fallback: tentar localizar o registro por id/payment_id (ambos aparecem em bases legadas)
       if (error) {
-        // Tentar pelo campo que temos
         const { data: asaasRecord } = await supabase
           .from('transacoes_asaas')
           .select('id, payment_id')
-          .or(`id.eq.${selectedLancamento.id},payment_id.eq.${selectedLancamento.id}`)
-          .single();
+          .or(`id.eq.${paymentId},payment_id.eq.${paymentId}`)
+          .maybeSingle();
 
-        if (asaasRecord) {
-          await supabase
-            .from('transacoes_asaas')
-            .update({
-              categoria_id: updates.categoria_id || null,
-              tipo_receita: updates.tipo_receita || null,
-              recorrente: updates.recorrente ?? false,
-              conciliado: updates.conciliado ?? false,
-              conciliado_at: updates.conciliado ? new Date().toISOString() : null
-            })
-            .eq('id', asaasRecord.id);
-        }
+        if (!asaasRecord) throw error;
+
+        const { error: error2 } = await supabase
+          .from('transacoes_asaas')
+          .update({
+            categoria_id: updates.categoria_id || null,
+            tipo_receita: updates.tipo_receita || null,
+            recorrente: updates.recorrente ?? false,
+            conciliado: updates.conciliado ?? false,
+            conciliado_at: updates.conciliado ? new Date().toISOString() : null
+          })
+          .eq('id', asaasRecord.id);
+
+        if (error2) throw error2;
       }
 
       toast.success('Classificação salva');

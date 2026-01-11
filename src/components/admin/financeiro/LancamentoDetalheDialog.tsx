@@ -70,7 +70,7 @@ const LancamentoDetalheDialog: React.FC<LancamentoDetalheDialogProps> = ({
   categorias,
   onSave
 }) => {
-  const [categoriaId, setCategoriaId] = useState<string>('');
+  const [categoriaId, setCategoriaId] = useState<string>('none');
   const [tipoReceita, setTipoReceita] = useState<'fixa' | 'variavel' | ''>('');
   const [recorrente, setRecorrente] = useState(false);
   const [conciliado, setConciliado] = useState(false);
