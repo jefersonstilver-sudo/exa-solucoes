@@ -73,82 +73,80 @@ const ProjectionCard: React.FC<ProjectionCardProps> = ({
   const config = riskConfig[riskLevel];
 
   return (
-    <Card className="bg-white shadow-sm">
-      <CardHeader className="pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <Card className="bg-white shadow-sm h-full">
+      <CardHeader className="pb-3 pt-4 px-4">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-gray-600" />
-            <CardTitle className="text-base font-semibold text-gray-900">
-              Projeção Financeira
+            <TrendingUp className="h-4 w-4 text-gray-500" />
+            <CardTitle className="text-sm font-semibold text-gray-900">
+              Projeção
             </CardTitle>
           </div>
           
-          <div className="flex items-center gap-3">
-            <Badge 
-              className={`${config.bgColor} ${config.textColor} ${config.borderColor} border font-medium`}
-              variant="outline"
-            >
-              {config.label}
-            </Badge>
-            
-            <Tabs value={periodo} onValueChange={(v) => setPeriodo(v as '30' | '60' | '90')}>
-              <TabsList className="h-8 bg-gray-100">
-                <TabsTrigger value="30" className="text-xs px-3 h-6">30d</TabsTrigger>
-                <TabsTrigger value="60" className="text-xs px-3 h-6">60d</TabsTrigger>
-                <TabsTrigger value="90" className="text-xs px-3 h-6">90d</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
+          <Tabs value={periodo} onValueChange={(v) => setPeriodo(v as '30' | '60' | '90')}>
+            <TabsList className="h-7 bg-gray-100">
+              <TabsTrigger value="30" className="text-[10px] px-2.5 h-5">30d</TabsTrigger>
+              <TabsTrigger value="60" className="text-[10px] px-2.5 h-5">60d</TabsTrigger>
+              <TabsTrigger value="90" className="text-[10px] px-2.5 h-5">90d</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className="px-4 pb-4 space-y-4">
         {/* Saldo Projetado - Destaque Principal */}
-        <div className={`text-center p-6 rounded-xl ${saldoProjetado >= 0 ? 'bg-gray-50' : 'bg-red-50'}`}>
-          <p className="text-sm text-gray-500 font-medium mb-2">
+        <div className={`text-center p-4 rounded-lg ${saldoProjetado >= 0 ? 'bg-gray-50' : 'bg-red-50'}`}>
+          <p className="text-xs text-gray-500 font-medium mb-1">
             Você terá em {periodo} dias
           </p>
-          <div className="flex items-center justify-center gap-3">
-            <p className={`text-3xl lg:text-4xl font-bold ${saldoProjetado >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
+          <div className="flex items-center justify-center gap-2">
+            <p className={`text-2xl lg:text-3xl font-bold ${saldoProjetado >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
               {formatCurrency(saldoProjetado)}
             </p>
-            {saldoProjetado < saldoAtual && (
-              <ArrowDownRight className="h-5 w-5 text-amber-500" />
-            )}
-            {saldoProjetado >= saldoAtual && (
-              <ArrowUpRight className="h-5 w-5 text-emerald-500" />
+            {saldoProjetado < saldoAtual ? (
+              <ArrowDownRight className="h-4 w-4 text-amber-500" />
+            ) : (
+              <ArrowUpRight className="h-4 w-4 text-emerald-500" />
             )}
           </div>
         </div>
 
+        {/* Badge de Risco */}
+        <div className="flex justify-center">
+          <Badge 
+            className={`${config.bgColor} ${config.textColor} ${config.borderColor} border text-[10px] font-medium`}
+            variant="outline"
+          >
+            {config.label}
+          </Badge>
+        </div>
+
         {/* Grid de métricas secundárias */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Entradas */}
-          <div className="text-center p-3 rounded-lg bg-gray-50">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-xs text-gray-500 font-medium">Entradas</span>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="text-center p-2 rounded-lg bg-gray-50">
+            <div className="flex items-center justify-center gap-1 mb-0.5">
+              <ArrowUpRight className="h-3 w-3 text-emerald-500" />
+              <span className="text-[10px] text-gray-500 font-medium">Entradas</span>
             </div>
-            <p className="text-lg font-bold text-emerald-600">
+            <p className="text-sm font-semibold text-emerald-600">
               {formatCurrency(projecaoAtual.entradas)}
             </p>
           </div>
 
-          {/* Saídas */}
-          <div className="text-center p-3 rounded-lg bg-gray-50">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <ArrowDownRight className="h-3.5 w-3.5 text-red-500" />
-              <span className="text-xs text-gray-500 font-medium">Saídas</span>
+          <div className="text-center p-2 rounded-lg bg-gray-50">
+            <div className="flex items-center justify-center gap-1 mb-0.5">
+              <ArrowDownRight className="h-3 w-3 text-red-500" />
+              <span className="text-[10px] text-gray-500 font-medium">Saídas</span>
             </div>
-            <p className="text-lg font-bold text-red-600">
+            <p className="text-sm font-semibold text-red-600">
               {formatCurrency(projecaoAtual.saidas)}
             </p>
           </div>
         </div>
 
         {/* Nota explicativa */}
-        <p className="text-xs text-gray-400 text-center">
-          Projeção baseada em cobranças e despesas agendadas
+        <p className="text-[10px] text-gray-400 text-center">
+          Baseado em cobranças e despesas agendadas
         </p>
       </CardContent>
     </Card>

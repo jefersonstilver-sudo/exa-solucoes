@@ -158,20 +158,22 @@ const DashboardFinanceiroV2: React.FC = () => {
           <FinanceiroQuickNav />
         </div>
 
-        {/* CAMADA 1: Situação Atual */}
-        <CashHealthHero
-          caixaDisponivel={balance?.available || 0}
-          diasOperacao={diasOperacao}
-          loading={loading}
-          onRefresh={handleRefresh}
-          lastUpdated={lastUpdated || undefined}
-        />
+        {/* CAMADA 1: Situação Atual + Projeção (Grid lado a lado) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <CashHealthHero
+            caixaDisponivel={balance?.available || 0}
+            diasOperacao={diasOperacao}
+            entradas={projecaoData.projecao30d.entradas}
+            saidas={projecaoData.projecao30d.saidas}
+            loading={loading}
+            onRefresh={handleRefresh}
+            lastUpdated={lastUpdated || undefined}
+          />
+          <ProjectionCard {...projecaoData} />
+        </div>
 
         {/* CAMADA 2: Riscos Próximos */}
         <RiskCards {...riskData} />
-
-        {/* CAMADA 3: Projeções */}
-        <ProjectionCard {...projecaoData} />
 
         {/* CAMADA 4: Ações Imediatas */}
         <ImmediateActions {...actionsData} />
