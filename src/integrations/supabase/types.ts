@@ -4919,6 +4919,7 @@ export type Database = {
       }
       despesas_fixas: {
         Row: {
+          asaas_saida_id: string | null
           ativo: boolean | null
           building_id: string | null
           categoria: string
@@ -4927,6 +4928,7 @@ export type Database = {
           contrato_id: string | null
           created_at: string | null
           created_by: string | null
+          data_pagamento: string | null
           data_primeiro_lancamento: string | null
           descricao: string
           dia_vencimento: number | null
@@ -4940,8 +4942,10 @@ export type Database = {
           updated_at: string | null
           updated_by: string | null
           valor: number
+          valor_pago: number | null
         }
         Insert: {
+          asaas_saida_id?: string | null
           ativo?: boolean | null
           building_id?: string | null
           categoria: string
@@ -4950,6 +4954,7 @@ export type Database = {
           contrato_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          data_pagamento?: string | null
           data_primeiro_lancamento?: string | null
           descricao: string
           dia_vencimento?: number | null
@@ -4963,8 +4968,10 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
           valor: number
+          valor_pago?: number | null
         }
         Update: {
+          asaas_saida_id?: string | null
           ativo?: boolean | null
           building_id?: string | null
           categoria?: string
@@ -4973,6 +4980,7 @@ export type Database = {
           contrato_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          data_pagamento?: string | null
           data_primeiro_lancamento?: string | null
           descricao?: string
           dia_vencimento?: number | null
@@ -4986,8 +4994,16 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
           valor?: number
+          valor_pago?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "despesas_fixas_asaas_saida_id_fkey"
+            columns: ["asaas_saida_id"]
+            isOneToOne: false
+            referencedRelation: "asaas_saidas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "despesas_fixas_building_id_fkey"
             columns: ["building_id"]
@@ -5115,6 +5131,7 @@ export type Database = {
       }
       despesas_variaveis: {
         Row: {
+          asaas_saida_id: string | null
           building_id: string | null
           categoria: string
           categoria_id: string | null
@@ -5133,8 +5150,10 @@ export type Database = {
           updated_at: string | null
           updated_by: string | null
           valor: number
+          valor_pago: number | null
         }
         Insert: {
+          asaas_saida_id?: string | null
           building_id?: string | null
           categoria: string
           categoria_id?: string | null
@@ -5153,8 +5172,10 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
           valor: number
+          valor_pago?: number | null
         }
         Update: {
+          asaas_saida_id?: string | null
           building_id?: string | null
           categoria?: string
           categoria_id?: string | null
@@ -5173,8 +5194,16 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
           valor?: number
+          valor_pago?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "despesas_variaveis_asaas_saida_id_fkey"
+            columns: ["asaas_saida_id"]
+            isOneToOne: false
+            referencedRelation: "asaas_saidas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "despesas_variaveis_building_id_fkey"
             columns: ["building_id"]
