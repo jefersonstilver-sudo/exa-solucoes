@@ -21,7 +21,7 @@ const SidebarTriggerPositioned = ({ isTablet }: { isTablet: boolean }) => {
   
   return (
     <SidebarTrigger 
-      className="absolute z-50 hidden md:flex transition-all duration-200"
+      className="absolute z-50 hidden md:flex transition-all duration-200 h-7 w-7 [&_svg]:h-3.5 [&_svg]:w-3.5"
       style={{
         left: `${currentWidth}px`,
         top: '150px',
