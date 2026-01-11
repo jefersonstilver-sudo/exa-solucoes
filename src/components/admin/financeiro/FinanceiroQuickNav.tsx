@@ -9,7 +9,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { 
   ArrowUpCircle, 
   ArrowDownCircle, 
-  TrendingUp, 
+  TrendingUp,
+  BarChart3, 
   FileText, 
   Wallet, 
   Users,
@@ -45,9 +46,15 @@ const FinanceiroQuickNav: React.FC = () => {
       href: buildPath('financeiro/contas-pagar')
     },
     {
-      id: 'fluxo',
-      title: 'Fluxo de Caixa',
+      id: 'lancamentos',
+      title: 'Lançamentos',
       icon: <TrendingUp className="h-5 w-5 text-gray-600" />,
+      href: buildPath('financeiro/lancamentos')
+    },
+    {
+      id: 'fluxo',
+      title: 'Projeções',
+      icon: <BarChart3 className="h-5 w-5 text-gray-600" />,
       href: buildPath('financeiro/fluxo-caixa')
     },
     {
