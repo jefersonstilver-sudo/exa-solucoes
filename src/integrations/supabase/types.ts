@@ -846,6 +846,7 @@ export type Database = {
         Row: {
           ativo: boolean | null
           categoria_id: string | null
+          centro_custo_id: string | null
           created_at: string | null
           created_by: string | null
           data_inicio: string
@@ -875,6 +876,7 @@ export type Database = {
         Insert: {
           ativo?: boolean | null
           categoria_id?: string | null
+          centro_custo_id?: string | null
           created_at?: string | null
           created_by?: string | null
           data_inicio: string
@@ -904,6 +906,7 @@ export type Database = {
         Update: {
           ativo?: boolean | null
           categoria_id?: string | null
+          centro_custo_id?: string | null
           created_at?: string | null
           created_by?: string | null
           data_inicio?: string
@@ -937,6 +940,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "categorias_despesas"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinaturas_operacionais_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinaturas_operacionais_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "vw_custo_por_centro"
+            referencedColumns: ["centro_custo_id"]
           },
           {
             foreignKeyName: "assinaturas_operacionais_created_by_fkey"
@@ -1997,6 +2014,53 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      centros_custo: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          created_at: string
+          departamento: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          orcamento_mensal: number | null
+          responsavel_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          created_at?: string
+          departamento?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          orcamento_mensal?: number | null
+          responsavel_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          created_at?: string
+          departamento?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          orcamento_mensal?: number | null
+          responsavel_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "centros_custo_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       client_activity_events: {
         Row: {
@@ -4746,6 +4810,7 @@ export type Database = {
           building_id: string | null
           categoria: string
           categoria_id: string | null
+          centro_custo_id: string | null
           contrato_id: string | null
           created_at: string | null
           created_by: string | null
@@ -4767,6 +4832,7 @@ export type Database = {
           building_id?: string | null
           categoria: string
           categoria_id?: string | null
+          centro_custo_id?: string | null
           contrato_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -4788,6 +4854,7 @@ export type Database = {
           building_id?: string | null
           categoria?: string
           categoria_id?: string | null
+          centro_custo_id?: string | null
           contrato_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -4818,6 +4885,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "categorias_despesas"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_fixas_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_fixas_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "vw_custo_por_centro"
+            referencedColumns: ["centro_custo_id"]
           },
           {
             foreignKeyName: "despesas_fixas_contrato_id_fkey"
@@ -12396,6 +12477,19 @@ export type Database = {
           telefone: string | null
           terms_accepted_at: string | null
           tipo_documento: string | null
+        }
+        Relationships: []
+      }
+      vw_custo_por_centro: {
+        Row: {
+          centro_custo_id: string | null
+          codigo: string | null
+          competencia: string | null
+          custo_pendente: number | null
+          custo_realizado: number | null
+          headcount: number | null
+          nome: string | null
+          orcamento_mensal: number | null
         }
         Relationships: []
       }
