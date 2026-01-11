@@ -109,12 +109,11 @@ export const useLancamentoDossie = ({ lancamentoId, lancamentoTipo }: UseLancame
           .eq('ativo', true)
           .order('nome'),
         
-        // Funcionários
+        // Funcionários (join with users for name)
         supabase
           .from('funcionarios')
-          .select('id, nome_completo, cargo')
+          .select('id, cargo, user_id, users!inner(nome)')
           .eq('ativo', true)
-          .order('nome_completo')
       ]);
 
       setComprovantes((compData || []) as Comprovante[]);
@@ -124,9 +123,9 @@ export const useLancamentoDossie = ({ lancamentoId, lancamentoTipo }: UseLancame
       setCategorias(catData || []);
       setSubcategorias(subData || []);
       setCentrosCusto(ccData || []);
-      setFuncionarios((funcData || []).map(f => ({ 
+      setFuncionarios((funcData || []).map((f: any) => ({ 
         id: f.id, 
-        nome: (f as any).nome_completo || '', 
+        nome: f.users?.nome || '', 
         cargo: f.cargo 
       })));
     } catch (error) {
@@ -156,9 +155,9 @@ export const useLancamentoDossie = ({ lancamentoId, lancamentoTipo }: UseLancame
       const { data: userData } = await supabase.auth.getUser();
       const { data: userProfile } = await supabase
         .from('users')
-        .select('name')
+        .select('nome')
         .eq('id', userData.user?.id)
-        .single();
+        .maybeSingle();
 
       await supabase.from('lancamento_historico').insert({
         lancamento_id: lancamentoId,
@@ -168,7 +167,7 @@ export const useLancamentoDossie = ({ lancamentoId, lancamentoTipo }: UseLancame
         valor_anterior: valorAnterior ? JSON.stringify(valorAnterior) : null,
         valor_novo: valorNovo ? JSON.stringify(valorNovo) : null,
         usuario_id: userData.user?.id,
-        usuario_nome: userProfile?.name || 'Sistema'
+        usuario_nome: userProfile?.nome || 'Sistema'
       });
     } catch (error) {
       console.error('Erro ao registrar histórico:', error);
@@ -246,16 +245,16 @@ export const useLancamentoDossie = ({ lancamentoId, lancamentoTipo }: UseLancame
       const { data: userData } = await supabase.auth.getUser();
       const { data: userProfile } = await supabase
         .from('users')
-        .select('name')
+        .select('nome')
         .eq('id', userData.user?.id)
-        .single();
+        .maybeSingle();
 
       const { error } = await supabase.from('lancamento_observacoes').insert({
         lancamento_id: lancamentoId,
         lancamento_tipo: lancamentoTipo,
         conteudo: conteudo.trim(),
         autor_id: userData.user?.id,
-        autor_nome: userProfile?.name || 'Usuário'
+        autor_nome: userProfile?.nome || 'Usuário'
       });
 
       if (error) throw error;
