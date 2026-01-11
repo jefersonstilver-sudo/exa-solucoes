@@ -9,9 +9,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 
+// Tipos de alerta suportados (incluindo assinaturas)
+export type AlertaTipo = 
+  | 'inadimplencia'
+  | 'vencimento_proximo'
+  | 'despesa_vencendo'
+  | 'fluxo_caixa_negativo'
+  | 'meta_nao_atingida'
+  | 'contrato_vencendo'
+  | 'assinatura_vencendo'
+  | 'assinatura_em_risco'
+  | 'assinatura_suspensa'
+  | 'assinatura_critica';
+
 export interface AlertaFinanceiro {
   id: string;
-  tipo: string;
+  tipo: AlertaTipo;
   nivel: 'info' | 'warning' | 'critical';
   titulo: string;
   mensagem: string;
@@ -126,12 +139,20 @@ export const useAlertasFinanceiros = () => {
     }
   }, [user?.id]);
 
-  // Contadores
+  // Contadores (incluindo assinaturas)
+  const alertasAtivos = alertas.filter(a => a.ativo && !a.resolvido);
   const contadores = {
-    ativos: alertas.filter(a => a.ativo && !a.resolvido).length,
+    ativos: alertasAtivos.length,
     resolvidos: alertas.filter(a => a.resolvido).length,
-    criticos: alertas.filter(a => a.ativo && !a.resolvido && a.nivel === 'critical').length,
-    warnings: alertas.filter(a => a.ativo && !a.resolvido && a.nivel === 'warning').length
+    criticos: alertasAtivos.filter(a => a.nivel === 'critical').length,
+    warnings: alertasAtivos.filter(a => a.nivel === 'warning').length,
+    // Contadores específicos de assinaturas
+    assinaturas_total: alertasAtivos.filter(a => 
+      ['assinatura_vencendo', 'assinatura_em_risco', 'assinatura_suspensa', 'assinatura_critica'].includes(a.tipo)
+    ).length,
+    assinaturas_criticas: alertasAtivos.filter(a => 
+      ['assinatura_suspensa', 'assinatura_critica'].includes(a.tipo)
+    ).length,
   };
 
   return {

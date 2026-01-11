@@ -842,6 +842,153 @@ export type Database = {
           },
         ]
       }
+      assinaturas_operacionais: {
+        Row: {
+          ativo: boolean | null
+          categoria_id: string | null
+          created_at: string | null
+          created_by: string | null
+          data_inicio: string
+          data_proximo_vencimento: string
+          descricao: string | null
+          dia_vencimento: number | null
+          fornecedor_id: string | null
+          fornecedor_nome: string | null
+          id: string
+          impacto_descricao: string
+          moeda: string | null
+          motivo_alteracao: string | null
+          nivel_criticidade: string
+          nome: string
+          periodicidade: string
+          responsavel_email: string | null
+          responsavel_id: string | null
+          sistemas_afetados: string[] | null
+          status_operacional: string | null
+          subcategoria_id: string | null
+          tempo_tolerancia_horas: number | null
+          updated_at: string | null
+          updated_by: string | null
+          url_acesso: string | null
+          valor: number
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data_inicio: string
+          data_proximo_vencimento: string
+          descricao?: string | null
+          dia_vencimento?: number | null
+          fornecedor_id?: string | null
+          fornecedor_nome?: string | null
+          id?: string
+          impacto_descricao: string
+          moeda?: string | null
+          motivo_alteracao?: string | null
+          nivel_criticidade: string
+          nome: string
+          periodicidade: string
+          responsavel_email?: string | null
+          responsavel_id?: string | null
+          sistemas_afetados?: string[] | null
+          status_operacional?: string | null
+          subcategoria_id?: string | null
+          tempo_tolerancia_horas?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          url_acesso?: string | null
+          valor: number
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data_inicio?: string
+          data_proximo_vencimento?: string
+          descricao?: string | null
+          dia_vencimento?: number | null
+          fornecedor_id?: string | null
+          fornecedor_nome?: string | null
+          id?: string
+          impacto_descricao?: string
+          moeda?: string | null
+          motivo_alteracao?: string | null
+          nivel_criticidade?: string
+          nome?: string
+          periodicidade?: string
+          responsavel_email?: string | null
+          responsavel_id?: string | null
+          sistemas_afetados?: string[] | null
+          status_operacional?: string | null
+          subcategoria_id?: string | null
+          tempo_tolerancia_horas?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          url_acesso?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assinaturas_operacionais_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_despesas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinaturas_operacionais_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinaturas_operacionais_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinaturas_operacionais_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinaturas_operacionais_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinaturas_operacionais_subcategoria_id_fkey"
+            columns: ["subcategoria_id"]
+            isOneToOne: false
+            referencedRelation: "subcategorias_despesas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinaturas_operacionais_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinaturas_operacionais_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auth_detailed_logs: {
         Row: {
           browser: string | null
@@ -8417,9 +8564,11 @@ export type Database = {
           created_at: string | null
           data_pagamento: string | null
           data_vencimento: string
-          despesa_fixa_id: string
+          despesa_fixa_id: string | null
           id: string
           observacao: string | null
+          origem: string | null
+          origem_id: string | null
           registrado_por: string | null
           status: string | null
           updated_at: string | null
@@ -8431,9 +8580,11 @@ export type Database = {
           created_at?: string | null
           data_pagamento?: string | null
           data_vencimento: string
-          despesa_fixa_id: string
+          despesa_fixa_id?: string | null
           id?: string
           observacao?: string | null
+          origem?: string | null
+          origem_id?: string | null
           registrado_por?: string | null
           status?: string | null
           updated_at?: string | null
@@ -8445,9 +8596,11 @@ export type Database = {
           created_at?: string | null
           data_pagamento?: string | null
           data_vencimento?: string
-          despesa_fixa_id?: string
+          despesa_fixa_id?: string | null
           id?: string
           observacao?: string | null
+          origem?: string | null
+          origem_id?: string | null
           registrado_por?: string | null
           status?: string | null
           updated_at?: string | null
@@ -13390,6 +13543,10 @@ export type Database = {
         | "meta_receita"
         | "reconciliacao_pendente"
         | "divergencia_valor"
+        | "assinatura_vencendo"
+        | "assinatura_em_risco"
+        | "assinatura_suspensa"
+        | "assinatura_critica"
       alerta_nivel: "info" | "warning" | "critical"
       aporte_tipo: "capital" | "emprestimo" | "reinvestimento"
       app_role:
@@ -13594,6 +13751,10 @@ export const Constants = {
         "meta_receita",
         "reconciliacao_pendente",
         "divergencia_valor",
+        "assinatura_vencendo",
+        "assinatura_em_risco",
+        "assinatura_suspensa",
+        "assinatura_critica",
       ],
       alerta_nivel: ["info", "warning", "critical"],
       aporte_tipo: ["capital", "emprestimo", "reinvestimento"],
