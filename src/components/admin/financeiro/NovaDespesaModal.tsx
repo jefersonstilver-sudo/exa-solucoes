@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -29,20 +29,9 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, addMonths, setDate } from 'date-fns';
-
-interface Categoria {
-  id: string;
-  nome: string;
-  tipo: string;
-}
-
-interface Subcategoria {
-  id: string;
-  categoria_id: string;
-  nome: string;
-  descricao?: string;
-}
+import { format } from 'date-fns';
+import { CategoriaTreeSelect } from './categorias/CategoriaTreeSelect';
+import { useCategoriaHierarchy } from '@/hooks/useCategoriaHierarchy';
 
 interface NovaDespesaModalProps {
   open: boolean;
@@ -69,19 +58,15 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'fixa' | 'variavel'>('fixa');
   const [loading, setLoading] = useState(false);
-  const [loadingCategorias, setLoadingCategorias] = useState(false);
   
-  // Categorias e subcategorias
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
-  const [subcategoriasFiltradas, setSubcategoriasFiltradas] = useState<Subcategoria[]>([]);
+  // Hook para obter nome da categoria
+  const { getCategoriaPath } = useCategoriaHierarchy();
   
   // Form state - Despesa Fixa
   const [fixaForm, setFixaForm] = useState({
     descricao: '',
     valor: '',
     categoria_id: '',
-    subcategoria_id: '',
     periodicidade: 'mensal' as Periodicidade,
     dia_vencimento: 10,
     observacao: '',
@@ -92,70 +77,11 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
     descricao: '',
     valor: '',
     categoria_id: '',
-    subcategoria_id: '',
     data: format(new Date(), 'yyyy-MM-dd'),
     data_vencimento: format(new Date(), 'yyyy-MM-dd'),
     pago: false,
     observacao: '',
   });
-
-  // Carregar categorias e subcategorias
-  useEffect(() => {
-    if (open) {
-      fetchCategoriasESubcategorias();
-    }
-  }, [open]);
-
-  // Filtrar subcategorias quando categoria muda
-  useEffect(() => {
-    const categoriaId = activeTab === 'fixa' ? fixaForm.categoria_id : variavelForm.categoria_id;
-    if (categoriaId) {
-      setSubcategoriasFiltradas(subcategorias.filter(s => s.categoria_id === categoriaId));
-    } else {
-      setSubcategoriasFiltradas([]);
-    }
-  }, [fixaForm.categoria_id, variavelForm.categoria_id, subcategorias, activeTab]);
-
-  const fetchCategoriasESubcategorias = async () => {
-    setLoadingCategorias(true);
-    try {
-      // Buscar categorias
-      const { data: cats, error: catsError } = await supabase
-        .from('categorias_despesas')
-        .select('id, nome, tipo')
-        .eq('ativo', true)
-        .order('nome');
-      
-      if (catsError) throw catsError;
-      setCategorias(cats || []);
-
-      // Buscar subcategorias
-      const { data: subs, error: subsError } = await supabase
-        .from('subcategorias_despesas')
-        .select('id, categoria_id, nome, descricao')
-        .eq('ativo', true)
-        .order('nome');
-      
-      if (subsError) throw subsError;
-      setSubcategorias(subs || []);
-    } catch (error) {
-      console.error('Erro ao buscar categorias:', error);
-      toast.error('Erro ao carregar categorias');
-    } finally {
-      setLoadingCategorias(false);
-    }
-  };
-
-  const handleCategoriaChange = (categoriaId: string, tipo: 'fixa' | 'variavel') => {
-    if (tipo === 'fixa') {
-      setFixaForm(prev => ({ ...prev, categoria_id: categoriaId, subcategoria_id: '' }));
-    } else {
-      setVariavelForm(prev => ({ ...prev, categoria_id: categoriaId, subcategoria_id: '' }));
-    }
-  };
-
-  // Parcelas são geradas automaticamente via trigger no banco de dados
-  // Função removida do frontend para evitar duplicidade
 
   const handleSubmitFixa = async () => {
     // Validações
@@ -175,16 +101,16 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
     setLoading(true);
     try {
       const valorNumerico = parseFloat(fixaForm.valor.replace(',', '.'));
+      const categoriaNome = getCategoriaPath(fixaForm.categoria_id);
       
       // Inserir despesa fixa
-      const { data: despesa, error } = await supabase
+      const { error } = await supabase
         .from('despesas_fixas')
         .insert([{
           descricao: fixaForm.descricao.trim(),
           valor: valorNumerico,
-          categoria: categorias.find(c => c.id === fixaForm.categoria_id)?.nome || 'Outros',
+          categoria: categoriaNome || 'Outros',
           categoria_id: fixaForm.categoria_id,
-          subcategoria_id: fixaForm.subcategoria_id || null,
           periodicidade: fixaForm.periodicidade,
           dia_vencimento: fixaForm.dia_vencimento,
           observacao: fixaForm.observacao.trim() || null,
@@ -230,15 +156,15 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
     setLoading(true);
     try {
       const valorNumerico = parseFloat(variavelForm.valor.replace(',', '.'));
+      const categoriaNome = getCategoriaPath(variavelForm.categoria_id);
       
       const { error } = await supabase
         .from('despesas_variaveis')
         .insert([{
           descricao: variavelForm.descricao.trim(),
           valor: valorNumerico,
-          categoria: categorias.find(c => c.id === variavelForm.categoria_id)?.nome || 'Outros',
+          categoria: categoriaNome || 'Outros',
           categoria_id: variavelForm.categoria_id,
-          subcategoria_id: variavelForm.subcategoria_id || null,
           data: variavelForm.data,
           data_vencimento: variavelForm.data_vencimento,
           pago: variavelForm.pago,
@@ -264,7 +190,6 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
       descricao: '',
       valor: '',
       categoria_id: '',
-      subcategoria_id: '',
       periodicidade: 'mensal',
       dia_vencimento: 10,
       observacao: '',
@@ -273,7 +198,6 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
       descricao: '',
       valor: '',
       categoria_id: '',
-      subcategoria_id: '',
       data: format(new Date(), 'yyyy-MM-dd'),
       data_vencimento: format(new Date(), 'yyyy-MM-dd'),
       pago: false,
@@ -358,45 +282,20 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
               </div>
             </div>
 
-            {/* Categoria e Subcategoria */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                  <Tag className="h-3.5 w-3.5" />
-                  Categoria
-                </Label>
-                <Select 
-                  value={fixaForm.categoria_id} 
-                  onValueChange={(v) => handleCategoriaChange(v, 'fixa')}
-                  disabled={loadingCategorias}
-                >
-                  <SelectTrigger className="bg-gray-50 border-gray-200">
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categorias.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>{cat.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">Subcategoria</Label>
-                <Select 
-                  value={fixaForm.subcategoria_id} 
-                  onValueChange={(v) => setFixaForm(prev => ({ ...prev, subcategoria_id: v }))}
-                  disabled={!fixaForm.categoria_id || subcategoriasFiltradas.length === 0}
-                >
-                  <SelectTrigger className="bg-gray-50 border-gray-200">
-                    <SelectValue placeholder={subcategoriasFiltradas.length === 0 ? 'Nenhuma' : 'Opcional'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subcategoriasFiltradas.map(sub => (
-                      <SelectItem key={sub.id} value={sub.id}>{sub.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Categoria (TreeSelect) */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                <Tag className="h-3.5 w-3.5" />
+                Categoria
+              </Label>
+              <CategoriaTreeSelect
+                value={fixaForm.categoria_id}
+                onChange={(v) => setFixaForm(prev => ({ ...prev, categoria_id: v }))}
+                fluxo="saida"
+                placeholder="Selecione uma categoria..."
+                allowCreate={true}
+                className="bg-gray-50 border-gray-200"
+              />
             </div>
 
             {/* Dia de Vencimento */}
@@ -508,45 +407,20 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
               </div>
             </div>
 
-            {/* Categoria e Subcategoria */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                  <Tag className="h-3.5 w-3.5" />
-                  Categoria
-                </Label>
-                <Select 
-                  value={variavelForm.categoria_id} 
-                  onValueChange={(v) => handleCategoriaChange(v, 'variavel')}
-                  disabled={loadingCategorias}
-                >
-                  <SelectTrigger className="bg-gray-50 border-gray-200">
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categorias.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>{cat.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">Subcategoria</Label>
-                <Select 
-                  value={variavelForm.subcategoria_id} 
-                  onValueChange={(v) => setVariavelForm(prev => ({ ...prev, subcategoria_id: v }))}
-                  disabled={!variavelForm.categoria_id || subcategoriasFiltradas.length === 0}
-                >
-                  <SelectTrigger className="bg-gray-50 border-gray-200">
-                    <SelectValue placeholder={subcategoriasFiltradas.length === 0 ? 'Nenhuma' : 'Opcional'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subcategoriasFiltradas.map(sub => (
-                      <SelectItem key={sub.id} value={sub.id}>{sub.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Categoria (TreeSelect) */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                <Tag className="h-3.5 w-3.5" />
+                Categoria
+              </Label>
+              <CategoriaTreeSelect
+                value={variavelForm.categoria_id}
+                onChange={(v) => setVariavelForm(prev => ({ ...prev, categoria_id: v }))}
+                fluxo="saida"
+                placeholder="Selecione uma categoria..."
+                allowCreate={true}
+                className="bg-gray-50 border-gray-200"
+              />
             </div>
 
             {/* Data de Vencimento e Status */}

@@ -1041,13 +1041,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "assinaturas_operacionais_subcategoria_id_fkey"
-            columns: ["subcategoria_id"]
-            isOneToOne: false
-            referencedRelation: "subcategorias_despesas"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "assinaturas_operacionais_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
@@ -5013,13 +5006,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "despesas_fixas_subcategoria_id_fkey"
-            columns: ["subcategoria_id"]
-            isOneToOne: false
-            referencedRelation: "subcategorias_despesas"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "despesas_fixas_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
@@ -5116,13 +5102,6 @@ export type Database = {
             columns: ["fornecedor_id"]
             isOneToOne: false
             referencedRelation: "fornecedores"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "despesas_variaveis_subcategoria_id_fkey"
-            columns: ["subcategoria_id"]
-            isOneToOne: false
-            referencedRelation: "subcategorias_despesas"
             referencedColumns: ["id"]
           },
           {
@@ -11173,44 +11152,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users_with_role"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      subcategorias_despesas: {
-        Row: {
-          ativo: boolean | null
-          categoria_id: string
-          created_at: string | null
-          descricao: string | null
-          id: string
-          nome: string
-          updated_at: string | null
-        }
-        Insert: {
-          ativo?: boolean | null
-          categoria_id: string
-          created_at?: string | null
-          descricao?: string | null
-          id?: string
-          nome: string
-          updated_at?: string | null
-        }
-        Update: {
-          ativo?: boolean | null
-          categoria_id?: string
-          created_at?: string | null
-          descricao?: string | null
-          id?: string
-          nome?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "subcategorias_despesas_categoria_id_fkey"
-            columns: ["categoria_id"]
-            isOneToOne: false
-            referencedRelation: "categorias_despesas"
             referencedColumns: ["id"]
           },
         ]

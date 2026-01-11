@@ -93,12 +93,7 @@ export interface Categoria {
   nome: string;
   tipo: string;
   fluxo?: 'entrada' | 'saida';
-}
-
-export interface Subcategoria {
-  id: string;
-  nome: string;
-  categoria_id: string;
+  parent_id?: string | null;
 }
 
 export interface CentroCusto {

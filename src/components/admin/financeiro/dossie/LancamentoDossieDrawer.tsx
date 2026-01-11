@@ -67,7 +67,6 @@ const LancamentoDossieDrawer: React.FC<LancamentoDossieDrawerProps> = ({
     audios,
     historico,
     categorias,
-    subcategorias,
     centrosCusto,
     funcionarios,
     updateMetadata,
@@ -199,7 +198,6 @@ const LancamentoDossieDrawer: React.FC<LancamentoDossieDrawerProps> = ({
               <TabCategorizacao
                 lancamento={localLancamento}
                 categorias={categorias}
-                subcategorias={subcategorias}
                 centrosCusto={centrosCusto}
                 funcionarios={funcionarios}
                 onSave={handleSaveCategorizacao}

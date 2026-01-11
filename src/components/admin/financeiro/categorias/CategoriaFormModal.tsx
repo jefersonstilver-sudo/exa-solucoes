@@ -17,16 +17,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { CategoriaNode, CategoriaFormData } from '@/hooks/useCategoriaHierarchy';
+import { useCategoriaHierarchy } from '@/hooks/useCategoriaHierarchy';
+import type { CategoriaNode, CategoriaFormData, FluxoType } from '@/hooks/useCategoriaHierarchy';
 
 interface CategoriaFormModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: CategoriaFormData) => void;
+  isOpen?: boolean;
+  open?: boolean;
+  onClose?: () => void;
+  onOpenChange?: (open: boolean) => void;
+  onSubmit?: (data: CategoriaFormData) => void;
+  onSuccess?: (newCategoria?: any) => void;
   categoria?: CategoriaNode | null;
   parentId?: string | null;
   parentNome?: string;
   isLoading?: boolean;
+  defaultFluxo?: FluxoType;
 }
 
 const CORES_DISPONIVEIS = [
@@ -57,19 +62,30 @@ const ICONES_DISPONIVEIS = [
 
 export function CategoriaFormModal({
   isOpen,
+  open,
   onClose,
+  onOpenChange,
   onSubmit,
+  onSuccess,
   categoria,
   parentId,
   parentNome,
   isLoading,
+  defaultFluxo,
 }: CategoriaFormModalProps) {
   const [nome, setNome] = useState('');
   const [cor, setCor] = useState('#6B7280');
   const [icone, setIcone] = useState('circle');
   const [ativo, setAtivo] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const { createCategoria, getCategoriaById } = useCategoriaHierarchy();
 
   const isEditing = !!categoria;
+  const isDialogOpen = isOpen ?? open ?? false;
+
+  // Get parent name if parentId is provided but parentNome is not
+  const displayParentNome = parentNome || (parentId ? getCategoriaById(parentId)?.nome : undefined);
 
   useEffect(() => {
     if (categoria) {
@@ -83,24 +99,48 @@ export function CategoriaFormModal({
       setIcone('circle');
       setAtivo(true);
     }
-  }, [categoria, isOpen]);
+  }, [categoria, isDialogOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleClose = () => {
+    onClose?.();
+    onOpenChange?.(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!nome.trim()) return;
 
-    onSubmit({
+    const formData: CategoriaFormData = {
       nome: nome.trim(),
       cor,
       icone,
       ativo,
       parent_id: parentId ?? undefined,
-    });
+      fluxo: defaultFluxo,
+    };
+
+    // If onSubmit is provided (legacy mode), use it
+    if (onSubmit) {
+      onSubmit(formData);
+      return;
+    }
+
+    // Otherwise, create directly and call onSuccess
+    setSaving(true);
+    try {
+      const result = await createCategoria.mutateAsync(formData);
+      onSuccess?.(result);
+      handleClose();
+    } catch (error) {
+      console.error('Erro ao criar categoria:', error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isDialogOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
@@ -110,10 +150,10 @@ export function CategoriaFormModal({
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           {/* Indicador de categoria pai */}
-          {parentNome && !isEditing && (
+          {displayParentNome && !isEditing && (
             <div className="p-3 bg-muted rounded-lg text-sm">
               <span className="text-muted-foreground">Subcategoria de: </span>
-              <span className="font-medium">{parentNome}</span>
+              <span className="font-medium">{displayParentNome}</span>
             </div>
           )}
 
@@ -181,11 +221,11 @@ export function CategoriaFormModal({
           )}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={!nome.trim() || isLoading}>
-              {isLoading ? 'Salvando...' : isEditing ? 'Salvar' : 'Criar'}
+            <Button type="submit" disabled={!nome.trim() || isLoading || saving}>
+              {(isLoading || saving) ? 'Salvando...' : isEditing ? 'Salvar' : 'Criar'}
             </Button>
           </DialogFooter>
         </form>
