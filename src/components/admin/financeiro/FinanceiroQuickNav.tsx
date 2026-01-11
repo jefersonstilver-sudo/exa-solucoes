@@ -86,7 +86,7 @@ const FinanceiroQuickNav: React.FC = () => {
       {navItems.map((item) => (
         <Card 
           key={item.id}
-          className="bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+          className="bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-100"
           onClick={() => navigate(item.href)}
         >
           <CardContent className="p-3 flex flex-col items-center justify-center gap-2">

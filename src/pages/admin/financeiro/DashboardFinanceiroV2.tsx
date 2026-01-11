@@ -147,8 +147,8 @@ const DashboardFinanceiroV2: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-white">
+      <div className="p-4 md:p-5 space-y-5 max-w-7xl mx-auto">
         {/* Header + Navegação Rápida */}
         <div className="space-y-4">
           <div>
