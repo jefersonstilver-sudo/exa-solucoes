@@ -74,6 +74,18 @@ export const EditarContaModal: React.FC<EditarContaModalProps> = ({
       if (conta) {
         loadContaData();
       }
+    } else {
+      // Reset form when modal closes
+      setFormData({
+        descricao: '',
+        valor: 0,
+        categoria_id: '',
+        observacao: '',
+        dia_vencimento: 10,
+        data: '',
+        data_primeiro_lancamento: '',
+        periodicidade: 'mensal'
+      });
     }
   }, [open, conta?.id]);
 
