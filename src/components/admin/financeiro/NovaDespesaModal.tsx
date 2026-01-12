@@ -285,7 +285,6 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
           categoria: categoriaNome || 'Outros',
           categoria_id: variavelForm.categoria_id,
           data: variavelForm.data,
-          data_vencimento: variavelForm.data_vencimento,
           pago: variavelForm.pago,
           observacao: variavelForm.observacao.trim() || null,
         }]);
