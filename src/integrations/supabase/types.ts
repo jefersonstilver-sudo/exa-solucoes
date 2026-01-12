@@ -3441,6 +3441,9 @@ export type Database = {
           accepted_at: string
           browser_fingerprint: string | null
           client_data: Json | null
+          client_document: string | null
+          client_email: string | null
+          client_name: string | null
           contrato_id: string | null
           created_at: string
           id: string
@@ -3453,6 +3456,9 @@ export type Database = {
           accepted_at?: string
           browser_fingerprint?: string | null
           client_data?: Json | null
+          client_document?: string | null
+          client_email?: string | null
+          client_name?: string | null
           contrato_id?: string | null
           created_at?: string
           id?: string
@@ -3465,6 +3471,9 @@ export type Database = {
           accepted_at?: string
           browser_fingerprint?: string | null
           client_data?: Json | null
+          client_document?: string | null
+          client_email?: string | null
+          client_name?: string | null
           contrato_id?: string | null
           created_at?: string
           id?: string

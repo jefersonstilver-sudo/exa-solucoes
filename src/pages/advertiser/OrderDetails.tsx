@@ -533,15 +533,19 @@ const OrderDetails = () => {
               </p>
             </div>
           </div>
-        ) : orderDetails.contrato_status === 'enviado' || orderDetails.contrato_status === 'pendente' ? (
+        ) : orderDetails.status === 'aguardando_contrato' || orderDetails.contrato_status === 'enviado' || orderDetails.contrato_status === 'pendente' || orderDetails.contrato_status === 'pendente_envio' ? (
           <div className="bg-amber-50 p-4 sm:p-6 rounded-lg border-2 border-dashed border-amber-300">
             <div className="text-center">
               <AlertCircle className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-2 text-amber-600" />
               <h3 className="text-sm sm:text-base font-medium mb-1 text-amber-800">
-                Assinatura de Contrato Pendente
+                {orderDetails.status === 'aguardando_contrato' 
+                  ? 'Contrato Aguardando Assinatura' 
+                  : 'Assinatura de Contrato Pendente'}
               </h3>
               <p className="text-xs sm:text-sm text-amber-700">
-                Verifique seu e-mail e assine o contrato para liberar o envio de vídeos.
+                {orderDetails.status === 'aguardando_contrato'
+                  ? 'Seu pagamento foi confirmado! Verifique seu e-mail para assinar o contrato e liberar o envio de vídeos.'
+                  : 'Verifique seu e-mail e assine o contrato para liberar o envio de vídeos.'}
               </p>
             </div>
           </div>
