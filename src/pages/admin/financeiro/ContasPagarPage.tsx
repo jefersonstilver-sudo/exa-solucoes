@@ -20,7 +20,7 @@ import {
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/utils/format';
-import { format, differenceInDays } from 'date-fns';
+import { format, differenceInDays, parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useFinanceiroPermissions } from '@/hooks/financeiro/useFinanceiroPermissions';
 import {
@@ -71,6 +71,14 @@ const ContasPagarPage: React.FC = () => {
   const [showEditarModal, setShowEditarModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Datas do tipo DATE no Postgres chegam como "YYYY-MM-DD".
+  // Usar `new Date('YYYY-MM-DD')` causa shift de timezone (vira o dia anterior em -03:00).
+  const toLocalDate = (value?: string | null) => {
+    if (!value) return null;
+    if (typeof value === 'string' && value.includes('T')) return new Date(value);
+    return parse(String(value), 'yyyy-MM-dd', new Date());
+  };
+
   const fetchContas = async () => {
     setLoading(true);
     try {
@@ -88,34 +96,38 @@ const ContasPagarPage: React.FC = () => {
       if (variaveisError) throw variaveisError;
 
       const hoje = new Date();
-      
       const contasUnificadas: ContaPagar[] = [
         ...(fixas || []).map((d: any) => {
           let dataVencimento: Date;
+          let dataVencimentoStr: string;
+
           if (d.periodicidade === 'semanal' && d.data_primeiro_lancamento) {
-            dataVencimento = new Date(d.data_primeiro_lancamento);
+            dataVencimentoStr = d.data_primeiro_lancamento;
+            dataVencimento = toLocalDate(d.data_primeiro_lancamento) ?? hoje;
           } else if (d.dia_vencimento) {
             const ano = hoje.getFullYear();
             const mes = hoje.getMonth();
             dataVencimento = new Date(ano, mes, d.dia_vencimento);
+            dataVencimentoStr = format(dataVencimento, 'yyyy-MM-dd');
           } else {
-            dataVencimento = new Date();
+            dataVencimento = hoje;
+            dataVencimentoStr = format(hoje, 'yyyy-MM-dd');
           }
-          
+
           const diasAtraso = differenceInDays(hoje, dataVencimento);
           let status: ContaPagar['status'] = 'pendente';
-          
+
           if (d.status === 'pago') status = 'pago';
           else if (diasAtraso > 0) status = 'atrasado';
           else if (diasAtraso >= -4) status = 'pendente';
-          
+
           return {
             id: d.id,
             nome: d.descricao || d.nome,
             categoria: d.categoria || 'Fixas',
             valor_previsto: d.valor || 0,
             valor_pago: d.valor_pago || 0,
-            data_vencimento: dataVencimento.toISOString(),
+            data_vencimento: dataVencimentoStr,
             status,
             tipo: 'fixa' as const,
             responsavel: d.responsavel,
@@ -123,27 +135,32 @@ const ContasPagarPage: React.FC = () => {
           };
         }),
         ...(variaveis || []).map((d: any) => {
-          const vencimento = new Date(d.data || new Date());
+          const dataVencimentoStr = d.data ? String(d.data) : format(hoje, 'yyyy-MM-dd');
+          const vencimento = toLocalDate(dataVencimentoStr) ?? hoje;
           const diasAtraso = differenceInDays(hoje, vencimento);
           let status: ContaPagar['status'] = 'pendente';
-          
+
           if (d.status === 'pago') status = 'pago';
           else if (diasAtraso > 0) status = 'atrasado';
-          
+
           return {
             id: d.id,
             nome: d.descricao || d.nome,
             categoria: d.categoria || 'Variáveis',
             valor_previsto: d.valor || 0,
             valor_pago: d.valor_pago || 0,
-            data_vencimento: vencimento.toISOString(),
+            data_vencimento: dataVencimentoStr,
             status,
             tipo: 'variavel' as const,
             responsavel: d.responsavel,
             observacoes: d.observacao
           };
         })
-      ].sort((a, b) => new Date(a.data_vencimento).getTime() - new Date(b.data_vencimento).getTime());
+      ].sort((a, b) => {
+        const da = toLocalDate(a.data_vencimento)?.getTime() ?? 0;
+        const db = toLocalDate(b.data_vencimento)?.getTime() ?? 0;
+        return da - db;
+      });
 
       setContas(contasUnificadas);
     } catch (error) {
@@ -376,7 +393,7 @@ const ContasPagarPage: React.FC = () => {
               {contasFiltradas.map((conta) => {
                 const statusConfig = getStatusConfig(conta.status);
                 const StatusIcon = statusConfig.icon;
-                const vencimento = new Date(conta.data_vencimento);
+                const vencimento = toLocalDate(conta.data_vencimento) ?? new Date();
                 const diasRestantes = differenceInDays(vencimento, new Date());
 
                 return (
