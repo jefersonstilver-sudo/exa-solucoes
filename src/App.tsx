@@ -45,6 +45,7 @@ import EmailNotConfirmed from './pages/EmailNotConfirmed';
 import EmailEnviado from './pages/EmailEnviado';
 import OrderConfirmation from './pages/OrderConfirmation';
 import PainelKiosk from './pages/PainelKiosk';
+import LoginERP from './pages/sistema/LoginERP';
 
 // Importações diretas para páginas principais (performance otimizada)
 import PaineisPublicitarios from './pages/PaineisPublicitarios';
@@ -470,6 +471,7 @@ const AppContent = () => {
 
           {/* Rotas de autenticação */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/sistema/login" element={<LoginERP />} />
           <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/email-not-confirmed" element={<EmailNotConfirmed />} />
           <Route path="/termos-uso" element={<TermosUso />} />
