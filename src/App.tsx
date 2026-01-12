@@ -95,6 +95,24 @@ const AdvertiserSettings = lazy(() => import('./pages/advertiser/AdvertiserSetti
 const CampaignDetails = lazy(() => import('./pages/advertiser/CampaignDetails'));
 const CompleteResponsiveLayout = lazy(() => import('@/components/advertiser/layout/CompleteResponsiveLayout'));
 
+// 🚨 SUBDOMAIN REDIRECT - Must run BEFORE React renders
+// Detecta se está acessando via sistema.examidia.com.br e redireciona para /sistema/login
+(() => {
+  const hostname = window.location.hostname;
+  const pathname = window.location.pathname;
+  
+  // Verifica se é o subdomínio do sistema ERP
+  const isERPSubdomain = hostname === 'sistema.examidia.com.br' || hostname.startsWith('sistema.');
+  
+  // Se for subdomínio ERP e NÃO estiver em uma rota /sistema/*, redirecionar
+  if (isERPSubdomain && !pathname.startsWith('/sistema')) {
+    console.log('🔄 [SUBDOMAIN] Detectado acesso via sistema.*, redirecionando para /sistema/login');
+    window.location.replace('/sistema/login');
+    // Não continua a execução
+    throw new Error('Redirecting to ERP login...');
+  }
+})();
+
 console.log('⚙️ Initializing QueryClient...');
 const queryClient = new QueryClient({
   defaultOptions: {
