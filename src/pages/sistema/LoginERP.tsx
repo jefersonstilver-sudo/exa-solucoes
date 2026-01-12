@@ -20,28 +20,33 @@ const LoginERP = () => {
         <ERPCircuitBackground />
         
         {/* Logo e Texto Central */}
-        <div className="relative z-10 flex flex-col items-center justify-center w-full px-12">
+        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full px-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="text-center"
+            className="flex flex-col items-center justify-center text-center"
           >
             {/* Logo EXA */}
-            <div className="mb-4">
+            <motion.div 
+              className="flex items-center justify-center mb-6"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
+            >
               <img 
                 src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0"
                 alt="EXA Logo"
-                className="h-20 w-auto filter brightness-0 invert"
+                className="h-24 w-auto filter brightness-0 invert object-contain"
               />
-            </div>
+            </motion.div>
             
             {/* ERP Badge */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5, duration: 0.4 }}
-              className="inline-block"
+              className="flex items-center justify-center"
             >
               <span 
                 className="text-white/90 font-semibold text-2xl tracking-[0.3em] uppercase"
@@ -56,7 +61,7 @@ const LoginERP = () => {
               initial={{ width: 0 }}
               animate={{ width: '80px' }}
               transition={{ delay: 0.7, duration: 0.5 }}
-              className="h-0.5 bg-white/30 mx-auto mt-8"
+              className="h-0.5 bg-white/30 mt-8"
             />
             
             {/* Subtítulo */}
@@ -64,7 +69,7 @@ const LoginERP = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.5 }}
-              className="text-white/60 text-sm mt-6 max-w-xs mx-auto"
+              className="text-white/60 text-sm mt-6 max-w-xs text-center"
             >
               Sistema de Gestão Empresarial
             </motion.p>

@@ -1,102 +1,195 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+
+interface Node {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  opacity: number;
+  pulseSpeed: number;
+  pulseOffset: number;
+}
 
 const ERPCircuitBackground = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const nodesRef = useRef<Node[]>([]);
+  const mouseRef = useRef({ x: 0, y: 0 });
+  const animationRef = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const resizeCanvas = () => {
+      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Create nodes
+    const nodeCount = 60;
+    const nodes: Node[] = [];
+    
+    for (let i = 0; i < nodeCount; i++) {
+      nodes.push({
+        x: Math.random() * canvas.offsetWidth,
+        y: Math.random() * canvas.offsetHeight,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        radius: Math.random() * 2 + 2,
+        opacity: Math.random() * 0.5 + 0.3,
+        pulseSpeed: Math.random() * 0.02 + 0.01,
+        pulseOffset: Math.random() * Math.PI * 2
+      });
+    }
+    
+    nodesRef.current = nodes;
+
+    // Mouse tracking
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseRef.current = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    };
+
+    canvas.addEventListener('mousemove', handleMouseMove);
+
+    // Animation loop
+    let time = 0;
+    
+    const animate = () => {
+      if (!ctx || !canvas) return;
+      
+      time += 0.01;
+      const width = canvas.offsetWidth;
+      const height = canvas.offsetHeight;
+      
+      ctx.clearRect(0, 0, width, height);
+      
+      // Update and draw nodes
+      nodes.forEach((node, i) => {
+        // Update position
+        node.x += node.vx;
+        node.y += node.vy;
+        
+        // Bounce off edges
+        if (node.x < 0 || node.x > width) node.vx *= -1;
+        if (node.y < 0 || node.y > height) node.vy *= -1;
+        
+        // Keep in bounds
+        node.x = Math.max(0, Math.min(width, node.x));
+        node.y = Math.max(0, Math.min(height, node.y));
+        
+        // Mouse interaction - attract nodes slightly
+        const dx = mouseRef.current.x - node.x;
+        const dy = mouseRef.current.y - node.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < 150 && dist > 0) {
+          const force = (150 - dist) / 150 * 0.02;
+          node.vx += dx / dist * force;
+          node.vy += dy / dist * force;
+        }
+        
+        // Speed limit
+        const speed = Math.sqrt(node.vx * node.vx + node.vy * node.vy);
+        if (speed > 0.8) {
+          node.vx = (node.vx / speed) * 0.8;
+          node.vy = (node.vy / speed) * 0.8;
+        }
+        
+        // Pulsing opacity
+        const pulse = Math.sin(time * node.pulseSpeed * 100 + node.pulseOffset) * 0.3 + 0.7;
+        
+        // Draw connections
+        nodes.slice(i + 1).forEach(other => {
+          const cx = other.x - node.x;
+          const cy = other.y - node.y;
+          const cdist = Math.sqrt(cx * cx + cy * cy);
+          
+          if (cdist < 120) {
+            const lineOpacity = (1 - cdist / 120) * 0.4 * pulse;
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(255, 255, 255, ${lineOpacity})`;
+            ctx.lineWidth = 0.5;
+            ctx.moveTo(node.x, node.y);
+            ctx.lineTo(other.x, other.y);
+            ctx.stroke();
+          }
+        });
+        
+        // Draw node
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(255, 255, 255, ${node.opacity * pulse})`;
+        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Outer glow for larger nodes
+        if (node.radius > 3) {
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(255, 255, 255, ${node.opacity * pulse * 0.3})`;
+          ctx.lineWidth = 1;
+          ctx.arc(node.x, node.y, node.radius + 4, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      });
+      
+      // Draw grid pattern (subtle)
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 0.5;
+      
+      const gridSize = 60;
+      for (let x = 0; x < width; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < height; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      
+      // Draw grid intersection points
+      for (let x = 0; x < width; x += gridSize) {
+        for (let y = 0; y < height; y += gridSize) {
+          const pointPulse = Math.sin(time * 2 + x * 0.01 + y * 0.01) * 0.3 + 0.7;
+          ctx.beginPath();
+          ctx.fillStyle = `rgba(255, 255, 255, ${0.15 * pointPulse})`;
+          ctx.arc(x, y, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      
+      animationRef.current = requestAnimationFrame(animate);
+    };
+    
+    animate();
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(animationRef.current);
+    };
+  }, []);
+
   return (
-    <div className="absolute inset-0 overflow-hidden opacity-20">
-      <svg
-        className="absolute w-full h-full"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 800 800"
-        preserveAspectRatio="xMidYMid slice"
-      >
-        <defs>
-          <pattern id="circuitPattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-            {/* Linhas horizontais */}
-            <line x1="0" y1="25" x2="100" y2="25" stroke="white" strokeWidth="0.5" />
-            <line x1="0" y1="75" x2="100" y2="75" stroke="white" strokeWidth="0.5" />
-            
-            {/* Linhas verticais */}
-            <line x1="25" y1="0" x2="25" y2="100" stroke="white" strokeWidth="0.5" />
-            <line x1="75" y1="0" x2="75" y2="100" stroke="white" strokeWidth="0.5" />
-            
-            {/* Nós */}
-            <circle cx="25" cy="25" r="3" fill="white" />
-            <circle cx="75" cy="25" r="3" fill="white" />
-            <circle cx="25" cy="75" r="3" fill="white" />
-            <circle cx="75" cy="75" r="3" fill="white" />
-            
-            {/* Conexões diagonais */}
-            <line x1="25" y1="25" x2="50" y2="50" stroke="white" strokeWidth="0.5" />
-            <line x1="75" y1="25" x2="50" y2="50" stroke="white" strokeWidth="0.5" />
-            <line x1="25" y1="75" x2="50" y2="50" stroke="white" strokeWidth="0.5" />
-            <line x1="75" y1="75" x2="50" y2="50" stroke="white" strokeWidth="0.5" />
-            
-            {/* Nó central */}
-            <circle cx="50" cy="50" r="4" fill="white" />
-            <circle cx="50" cy="50" r="6" fill="none" stroke="white" strokeWidth="0.5" />
-          </pattern>
-        </defs>
-        
-        <rect width="100%" height="100%" fill="url(#circuitPattern)" />
-        
-        {/* Elementos decorativos grandes */}
-        <g opacity="0.3">
-          {/* Círculo grande */}
-          <circle cx="600" cy="150" r="80" fill="none" stroke="white" strokeWidth="1" />
-          <circle cx="600" cy="150" r="60" fill="none" stroke="white" strokeWidth="0.5" />
-          <circle cx="600" cy="150" r="40" fill="none" stroke="white" strokeWidth="0.5" />
-          
-          {/* Linhas de conexão */}
-          <line x1="520" y1="150" x2="400" y2="150" stroke="white" strokeWidth="1" />
-          <line x1="600" y1="230" x2="600" y2="350" stroke="white" strokeWidth="1" />
-          
-          {/* Círculo médio */}
-          <circle cx="200" cy="500" r="60" fill="none" stroke="white" strokeWidth="1" />
-          <circle cx="200" cy="500" r="40" fill="none" stroke="white" strokeWidth="0.5" />
-          
-          {/* Linhas horizontais longas */}
-          <line x1="0" y1="400" x2="800" y2="400" stroke="white" strokeWidth="0.3" />
-          <line x1="0" y1="600" x2="800" y2="600" stroke="white" strokeWidth="0.3" />
-          
-          {/* Hexágono */}
-          <polygon 
-            points="500,600 540,575 540,525 500,500 460,525 460,575" 
-            fill="none" 
-            stroke="white" 
-            strokeWidth="0.5"
-          />
-          
-          {/* Nós de conexão maiores */}
-          <circle cx="400" cy="150" r="5" fill="white" />
-          <circle cx="600" cy="350" r="5" fill="white" />
-          <circle cx="260" cy="500" r="5" fill="white" />
-          <circle cx="140" cy="500" r="5" fill="white" />
-          
-          {/* Linhas de grade diagonal */}
-          <line x1="0" y1="200" x2="300" y2="0" stroke="white" strokeWidth="0.3" />
-          <line x1="0" y1="400" x2="500" y2="0" stroke="white" strokeWidth="0.3" />
-          <line x1="0" y1="600" x2="700" y2="0" stroke="white" strokeWidth="0.3" />
-          <line x1="100" y1="800" x2="800" y2="100" stroke="white" strokeWidth="0.3" />
-          <line x1="300" y1="800" x2="800" y2="300" stroke="white" strokeWidth="0.3" />
-        </g>
-        
-        {/* Pontos brilhantes animados */}
-        <g>
-          <circle cx="600" cy="150" r="2" fill="white">
-            <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite" />
-          </circle>
-          <circle cx="200" cy="500" r="2" fill="white">
-            <animate attributeName="opacity" values="0.3;1;0.3" dur="2.5s" repeatCount="indefinite" />
-          </circle>
-          <circle cx="500" cy="550" r="2" fill="white">
-            <animate attributeName="opacity" values="0.3;1;0.3" dur="3s" repeatCount="indefinite" />
-          </circle>
-          <circle cx="350" cy="300" r="2" fill="white">
-            <animate attributeName="opacity" values="0.3;1;0.3" dur="1.8s" repeatCount="indefinite" />
-          </circle>
-        </g>
-      </svg>
-    </div>
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full"
+      style={{ opacity: 0.4 }}
+    />
   );
 };
 
