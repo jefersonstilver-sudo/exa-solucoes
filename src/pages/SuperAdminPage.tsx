@@ -39,9 +39,9 @@ const SuperAdminPage = () => {
     console.log('🔍 INICIANDO VERIFICAÇÃO: Auth carregado, fazendo verificação de acesso');
 
     if (!isLoggedIn) {
-      console.log('❌ NÃO LOGADO: Redirecionando para login');
+      console.log('❌ NÃO LOGADO: Redirecionando para login ERP');
       toast.error('Você precisa estar logado para acessar esta área.');
-      navigate('/login?redirect=/super_admin', { replace: true });
+      navigate('/sistema/login', { replace: true });
       setHasChecked(true);
       return;
     }
@@ -66,15 +66,15 @@ const SuperAdminPage = () => {
         });
         navigate('/admin', { replace: true });
       } else {
-        // Para usuários não-admin, redirecionar para login
+        // Para usuários não-admin, redirecionar para login ERP
         toast.error('Acesso negado. Área restrita ao Super Administrador.', {
           duration: 5000,
           action: {
             label: 'Fazer Login',
-            onClick: () => navigate('/login')
+            onClick: () => navigate('/sistema/login')
           }
         });
-        navigate('/login', { replace: true });
+        navigate('/sistema/login', { replace: true });
       }
       
       setHasChecked(true);
@@ -143,7 +143,7 @@ const SuperAdminPage = () => {
             </div>
           </div>
           <button
-            onClick={() => navigate('/login', { replace: true })}
+            onClick={() => navigate('/sistema/login', { replace: true })}
             className="px-6 py-3 bg-indexa-purple text-white rounded-lg hover:bg-indexa-purple/90 transition-colors"
           >
             Voltar ao Login

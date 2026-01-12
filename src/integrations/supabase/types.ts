@@ -9214,6 +9214,7 @@ export type Database = {
       }
       parcelas_despesas: {
         Row: {
+          asaas_bill_id: string | null
           competencia: string
           comprovante_url: string | null
           created_at: string | null
@@ -9226,10 +9227,12 @@ export type Database = {
           origem_id: string | null
           registrado_por: string | null
           status: string | null
+          taxa_pagamento: number | null
           updated_at: string | null
           valor: number
         }
         Insert: {
+          asaas_bill_id?: string | null
           competencia: string
           comprovante_url?: string | null
           created_at?: string | null
@@ -9242,10 +9245,12 @@ export type Database = {
           origem_id?: string | null
           registrado_por?: string | null
           status?: string | null
+          taxa_pagamento?: number | null
           updated_at?: string | null
           valor: number
         }
         Update: {
+          asaas_bill_id?: string | null
           competencia?: string
           comprovante_url?: string | null
           created_at?: string | null
@@ -9258,6 +9263,7 @@ export type Database = {
           origem_id?: string | null
           registrado_por?: string | null
           status?: string | null
+          taxa_pagamento?: number | null
           updated_at?: string | null
           valor?: number
         }
