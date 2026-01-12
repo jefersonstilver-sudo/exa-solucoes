@@ -63,7 +63,9 @@ export const EditarContaModal: React.FC<EditarContaModalProps> = ({
     categoria_id: '',
     observacao: '',
     dia_vencimento: 10,
-    data: ''
+    data: '',
+    data_primeiro_lancamento: '',
+    periodicidade: 'mensal'
   });
 
   useEffect(() => {
@@ -111,7 +113,9 @@ export const EditarContaModal: React.FC<EditarContaModalProps> = ({
           categoria_id: data.categoria_id || '',
           observacao: data.observacao || '',
           dia_vencimento: data.dia_vencimento || 10,
-          data: data.data || ''
+          data: data.data || '',
+          data_primeiro_lancamento: data.data_primeiro_lancamento || '',
+          periodicidade: data.periodicidade || 'mensal'
         });
       }
     } catch (error) {
@@ -148,7 +152,12 @@ export const EditarContaModal: React.FC<EditarContaModalProps> = ({
       };
 
       if (conta.tipo === 'fixa') {
-        updateData.dia_vencimento = formData.dia_vencimento;
+        // Para despesas semanais, atualizar data_primeiro_lancamento
+        if (formData.periodicidade === 'semanal') {
+          updateData.data_primeiro_lancamento = formData.data_primeiro_lancamento || null;
+        } else {
+          updateData.dia_vencimento = formData.dia_vencimento;
+        }
       } else {
         updateData.data = formData.data || null;
       }
@@ -215,24 +224,37 @@ export const EditarContaModal: React.FC<EditarContaModalProps> = ({
               </div>
 
               {conta.tipo === 'fixa' ? (
-                <div className="space-y-2">
-                  <Label htmlFor="dia_vencimento">Dia do Vencimento</Label>
-                  <Select
-                    value={String(formData.dia_vencimento)}
-                    onValueChange={(v) => setFormData(prev => ({ ...prev, dia_vencimento: parseInt(v) }))}
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
-                        <SelectItem key={day} value={String(day)}>
-                          Dia {day}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                formData.periodicidade === 'semanal' ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="data_primeiro_lancamento">Data de Início</Label>
+                    <Input
+                      id="data_primeiro_lancamento"
+                      type="date"
+                      value={formData.data_primeiro_lancamento}
+                      onChange={(e) => setFormData(prev => ({ ...prev, data_primeiro_lancamento: e.target.value }))}
+                      className="bg-white"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="dia_vencimento">Dia do Vencimento</Label>
+                    <Select
+                      value={String(formData.dia_vencimento)}
+                      onValueChange={(v) => setFormData(prev => ({ ...prev, dia_vencimento: parseInt(v) }))}
+                    >
+                      <SelectTrigger className="bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
+                          <SelectItem key={day} value={String(day)}>
+                            Dia {day}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )
               ) : (
                 <div className="space-y-2">
                   <Label htmlFor="data">Data</Label>
