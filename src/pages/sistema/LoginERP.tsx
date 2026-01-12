@@ -29,9 +29,11 @@ const LoginERP = () => {
           >
             {/* Logo EXA */}
             <div className="mb-4">
-              <span className="text-white font-bold text-7xl tracking-tight" style={{ fontFamily: 'system-ui' }}>
-                exa
-              </span>
+              <img 
+                src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0"
+                alt="EXA Logo"
+                className="h-20 w-auto filter brightness-0 invert"
+              />
             </div>
             
             {/* ERP Badge */}
