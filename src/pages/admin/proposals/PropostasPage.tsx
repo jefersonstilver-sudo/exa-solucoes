@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone, Bell, BellOff } from 'lucide-react';
+import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone, Bell, BellOff, RefreshCcw, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -104,6 +104,10 @@ const PropostasPage = () => {
   const [showPhoneDialog, setShowPhoneDialog] = useState(false);
   const [customPhone, setCustomPhone] = useState('');
   const [proposalForResend, setProposalForResend] = useState<Proposal | null>(null);
+  const [showRevalidateDialog, setShowRevalidateDialog] = useState(false);
+  const [proposalToRevalidate, setProposalToRevalidate] = useState<Proposal | null>(null);
+  const [newExpirationDays, setNewExpirationDays] = useState<number>(7);
+  const [isRevalidating, setIsRevalidating] = useState(false);
 
   const { data: proposals = [], isLoading, refetch } = useQuery({
     queryKey: ['proposals'],
@@ -563,6 +567,52 @@ const PropostasPage = () => {
     }
   };
 
+  // Função para verificar se proposta está expirada
+  const isExpiredProposal = (proposal: Proposal): boolean => {
+    if (proposal.status === 'expirada') return true;
+    if (!proposal.expires_at) return false;
+    return new Date(proposal.expires_at) < new Date();
+  };
+
+  // Abrir modal de revalidação
+  const handleOpenRevalidate = (proposal: Proposal) => {
+    setProposalToRevalidate(proposal);
+    setNewExpirationDays(7);
+    setShowRevalidateDialog(true);
+  };
+
+  // Confirmar revalidação da proposta
+  const handleConfirmRevalidate = async () => {
+    if (!proposalToRevalidate) return;
+    
+    setIsRevalidating(true);
+    try {
+      const newExpiresAt = new Date();
+      newExpiresAt.setDate(newExpiresAt.getDate() + newExpirationDays);
+      
+      const { error } = await supabase
+        .from('proposals')
+        .update({ 
+          expires_at: newExpiresAt.toISOString(),
+          status: 'enviada', // Volta para enviada
+          sent_at: new Date().toISOString() // Atualiza data de envio
+        })
+        .eq('id', proposalToRevalidate.id);
+      
+      if (error) throw error;
+      
+      toast.success(`Proposta revalidada com sucesso! Novo prazo: ${newExpirationDays} dias`);
+      setShowRevalidateDialog(false);
+      setProposalToRevalidate(null);
+      refetch();
+    } catch (error) {
+      console.error('Erro ao revalidar proposta:', error);
+      toast.error('Erro ao revalidar proposta');
+    } finally {
+      setIsRevalidating(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 relative">
       {/* Live View Notifications */}
@@ -1001,6 +1051,15 @@ const PropostasPage = () => {
                             Copiar Link
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
+                          {isExpiredProposal(proposal) && (
+                            <DropdownMenuItem 
+                              onClick={() => handleOpenRevalidate(proposal)}
+                              className="text-emerald-600 focus:text-emerald-600"
+                            >
+                              <RefreshCcw className="h-4 w-4 mr-2" />
+                              Revalidar Proposta
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem onClick={() => handleResend(proposal, 'whatsapp')}>
                             <MessageSquare className="h-4 w-4 mr-2" />
                             Reenviar WhatsApp
@@ -1084,6 +1143,73 @@ const PropostasPage = () => {
             <AlertDialogAction onClick={handleConfirmResendToOtherNumber}>
               <MessageSquare className="h-4 w-4 mr-2" />
               Enviar WhatsApp
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog para Revalidar Proposta Expirada */}
+      <AlertDialog open={showRevalidateDialog} onOpenChange={setShowRevalidateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RefreshCcw className="h-5 w-5 text-emerald-600" />
+              Revalidar Proposta
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Defina um novo prazo de validade para a proposta{' '}
+              <strong>{proposalToRevalidate?.number}</strong> de{' '}
+              <strong>{proposalToRevalidate?.client_name}</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Novo prazo (dias)</label>
+              <div className="flex gap-2">
+                {[3, 5, 7, 15, 30].map((days) => (
+                  <Button
+                    key={days}
+                    variant={newExpirationDays === days ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setNewExpirationDays(days)}
+                    className={newExpirationDays === days ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                  >
+                    {days}d
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+              <Calendar className="h-4 w-4" />
+              <span>
+                Nova validade: {format(
+                  new Date(Date.now() + newExpirationDays * 24 * 60 * 60 * 1000), 
+                  "dd 'de' MMMM 'de' yyyy", 
+                  { locale: ptBR }
+                )}
+              </span>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setProposalToRevalidate(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmRevalidate}
+              disabled={isRevalidating}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              {isRevalidating ? (
+                <>
+                  <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
+                  Revalidando...
+                </>
+              ) : (
+                <>
+                  <RefreshCcw className="h-4 w-4 mr-2" />
+                  Revalidar
+                </>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
