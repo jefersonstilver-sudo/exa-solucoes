@@ -396,6 +396,91 @@ export async function createPixCharge(
 }
 
 // ========================================
+// PAGAMENTOS BOLETO
+// ========================================
+
+/**
+ * Cria uma cobrança de Boleto no Asaas
+ */
+export async function createBoletoPayment(
+  customerId: string,
+  value: number,
+  dueDate: string, // YYYY-MM-DD
+  description?: string,
+  externalReference?: string
+): Promise<AsaasPaymentResponse> {
+  log('info', 'Creating BOLETO payment', { customerId, value, dueDate });
+  
+  const payment = await asaasRequest<AsaasPaymentResponse>('POST', '/payments', {
+    customer: customerId,
+    billingType: 'BOLETO',
+    value: value,
+    dueDate: dueDate,
+    description: description || 'Pagamento EXA Mídia',
+    externalReference: externalReference,
+  });
+  
+  log('info', 'BOLETO payment created', { 
+    paymentId: payment.id, 
+    status: payment.status,
+    bankSlipUrl: payment.bankSlipUrl
+  });
+  
+  return payment;
+}
+
+/**
+ * Fluxo completo: Cria cobrança de Boleto e retorna URL
+ */
+export async function createBoletoCharge(
+  customer: AsaasCustomer,
+  amount: number,
+  dueDate: string,
+  description?: string,
+  externalReference?: string
+): Promise<{
+  paymentId: string;
+  bankSlipUrl: string;
+  invoiceUrl: string;
+  barcode: string;
+  dueDate: string;
+  status: string;
+}> {
+  log('info', 'Creating complete BOLETO charge', { 
+    customerName: customer.name, 
+    amount,
+    dueDate
+  });
+  
+  // 1. Obter ou criar cliente
+  const customerId = await getOrCreateCustomer(customer);
+  
+  // 2. Criar pagamento Boleto
+  const payment = await createBoletoPayment(
+    customerId, 
+    amount, 
+    dueDate,
+    description, 
+    externalReference
+  );
+  
+  log('info', 'BOLETO charge created successfully', { 
+    paymentId: payment.id,
+    customerId,
+    bankSlipUrl: payment.bankSlipUrl
+  });
+  
+  return {
+    paymentId: payment.id,
+    bankSlipUrl: payment.bankSlipUrl || '',
+    invoiceUrl: payment.invoiceUrl,
+    barcode: '', // ASAAS retorna o código de barras na URL do boleto
+    dueDate: payment.dueDate,
+    status: payment.status,
+  };
+}
+
+// ========================================
 // CONSULTAS
 // ========================================
 
