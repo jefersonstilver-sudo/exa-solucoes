@@ -2,6 +2,20 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    
+    <!-- 🚨 ERP SUBDOMAIN REDIRECT - Must run FIRST before anything else -->
+    <script>
+      (function() {
+        var h = window.location.hostname;
+        var p = window.location.pathname;
+        // Detecta sistema.examidia.com.br ou sistema.localhost
+        if ((h === 'sistema.examidia.com.br' || h.indexOf('sistema.') === 0) && p.indexOf('/sistema') !== 0) {
+          console.log('[SUBDOMAIN] Redirecionando para /sistema/login');
+          window.location.replace('/sistema/login');
+        }
+      })();
+    </script>
+    
     <title>EXA | Publicidade Inteligente em Elevadores - Foz do Iguaçu</title>
     <meta name="description" content="Transforme elevadores em mídia premium. Alcance milhares de moradores diariamente em prédios de alto padrão.">
     <meta name="author" content="EXA Publicidade Inteligente" />
