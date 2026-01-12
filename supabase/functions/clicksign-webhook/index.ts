@@ -61,13 +61,59 @@ serve(async (req) => {
     switch (event) {
       case "sign":
       case "signature":
-        // Documento assinado
+        // Documento assinado - PROPAGAR PARA PEDIDO
         updateData = {
           status: "assinado",
           assinado_em: new Date().toISOString()
         };
         logAcao = "assinado";
-        console.log("Contrato assinado!");
+        console.log("✅ Contrato assinado! Propagando para pedido...");
+        
+        // CRÍTICO: Atualizar status do PEDIDO para liberar upload
+        if (contrato.proposta_id) {
+          // Buscar pedido via proposta
+          const { data: proposal } = await supabase
+            .from("proposals")
+            .select("converted_order_id")
+            .eq("id", contrato.proposta_id)
+            .single();
+          
+          if (proposal?.converted_order_id) {
+            console.log("📦 Atualizando pedido:", proposal.converted_order_id);
+            const { error: pedidoError } = await supabase
+              .from("pedidos")
+              .update({
+                status: "aguardando_video",
+                contrato_id: contrato.id,
+                contrato_assinado_em: new Date().toISOString()
+              })
+              .eq("id", proposal.converted_order_id);
+            
+            if (pedidoError) {
+              console.error("❌ Erro ao atualizar pedido:", pedidoError);
+            } else {
+              console.log("✅ Pedido atualizado para aguardando_video - UPLOAD LIBERADO!");
+              
+              // Notificar cliente que pode enviar vídeo
+              try {
+                await supabase.functions.invoke("notify-exa-alert", {
+                  body: {
+                    type: "upload_enabled",
+                    title: "🎬 Upload Liberado!",
+                    message: `Contrato ${contrato.numero_contrato} assinado. Cliente pode enviar vídeos.`,
+                    priority: "high"
+                  }
+                });
+              } catch (notifyErr) {
+                console.warn("⚠️ Erro ao notificar (não crítico):", notifyErr);
+              }
+            }
+          } else {
+            console.warn("⚠️ Pedido não encontrado para proposta:", contrato.proposta_id);
+          }
+        } else {
+          console.warn("⚠️ Contrato sem proposta_id vinculada");
+        }
         break;
 
       case "auto_close":

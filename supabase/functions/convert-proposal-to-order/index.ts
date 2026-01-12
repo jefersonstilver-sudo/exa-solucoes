@@ -288,10 +288,11 @@ serve(async (req) => {
       metodoPagamento = paymentData.method;
     }
 
+    // FLUXO OPÇÃO B: Status inicial é aguardando_contrato (contrato é o gate, não pagamento)
     const orderData = {
       client_id: userId,
       client_name: proposal.client_name,
-      status: 'pago_pendente_video',
+      status: 'aguardando_contrato', // Upload bloqueado até contrato assinado
       valor_total: valorTotal,
       plano_meses: proposal.duration_months || 1,
       data_inicio: startDate.toISOString(),

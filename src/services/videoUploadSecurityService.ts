@@ -27,20 +27,48 @@ export const validateVideoUploadPermission = async (orderId: string): Promise<Se
       };
     }
 
-    const allowedStatuses = ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'];
+    // FLUXO OPÇÃO B: Upload só liberado após CONTRATO ASSINADO (não pagamento)
+    // Status aguardando_contrato = pago mas sem contrato = BLOQUEADO
+    // Status aguardando_video = contrato assinado = LIBERADO
+    const allowedStatuses = ['aguardando_video', 'video_enviado', 'video_aprovado', 'ativo'];
+    
+    // Manter retrocompatibilidade temporária com status legado
+    const legacyAllowed = ['pago', 'pago_pendente_video'];
+    const isLegacyStatus = legacyAllowed.includes(order.status);
+    
     const canUpload = allowedStatuses.includes(order.status);
 
     console.log('🔍 [VideoSecurity] Resultado da validação:', {
       orderId,
       status: order.status,
       canUpload,
+      isLegacyStatus,
       allowedStatuses
     });
+
+    // Status aguardando_contrato: Pagamento OK mas contrato pendente
+    if (order.status === 'aguardando_contrato') {
+      return {
+        canUpload: false,
+        reason: 'Contrato pendente de assinatura. Verifique seu email para assinar o contrato.',
+        orderStatus: order.status
+      };
+    }
+
+    // Status legado com aviso
+    if (isLegacyStatus && !canUpload) {
+      console.warn('⚠️ [VideoSecurity] Status legado detectado:', order.status);
+      return {
+        canUpload: false,
+        reason: 'Contrato pendente de assinatura. Entre em contato com o suporte.',
+        orderStatus: order.status
+      };
+    }
 
     if (!canUpload) {
       return {
         canUpload: false,
-        reason: 'Upload permitido apenas para pedidos pagos',
+        reason: 'Upload não permitido para este status de pedido',
         orderStatus: order.status
       };
     }
@@ -60,21 +88,31 @@ export const validateVideoUploadPermission = async (orderId: string): Promise<Se
 };
 
 export const getOrderSecurityStatus = (status: string) => {
-  const securityMap = {
+  const securityMap: Record<string, { level: string; message: string; description: string }> = {
     'pendente': {
       level: 'blocked',
       message: 'Aguardando pagamento',
-      description: 'Upload será liberado após confirmação do pagamento'
+      description: 'Upload será liberado após confirmação do pagamento e assinatura do contrato'
     },
-    'pago': {
-      level: 'allowed',
-      message: 'Upload liberado',
-      description: 'Pedido pago - você pode enviar vídeos'
+    'aguardando_contrato': {
+      level: 'blocked',
+      message: 'Contrato pendente',
+      description: 'Pagamento confirmado - aguardando assinatura do contrato. Verifique seu email.'
     },
-    'pago_pendente_video': {
+    'aguardando_video': {
       level: 'allowed',
       message: 'Aguardando vídeo',
-      description: 'Pagamento confirmado - envie seu vídeo'
+      description: 'Contrato assinado - envie seu vídeo para ativar a campanha'
+    },
+    'pago': {
+      level: 'blocked', // Legado - tratar como aguardando_contrato
+      message: 'Verificando contrato',
+      description: 'Aguardando verificação do contrato'
+    },
+    'pago_pendente_video': {
+      level: 'blocked', // Legado - tratar como aguardando_contrato
+      message: 'Verificando contrato',
+      description: 'Aguardando verificação do contrato'
     },
     'video_enviado': {
       level: 'allowed',

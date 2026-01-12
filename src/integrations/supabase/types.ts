@@ -3436,6 +3436,60 @@ export type Database = {
           },
         ]
       }
+      contract_acceptance_logs: {
+        Row: {
+          accepted_at: string
+          browser_fingerprint: string | null
+          client_data: Json | null
+          contrato_id: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          proposal_id: string | null
+          terms_version: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          accepted_at?: string
+          browser_fingerprint?: string | null
+          client_data?: Json | null
+          contrato_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          proposal_id?: string | null
+          terms_version?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          accepted_at?: string
+          browser_fingerprint?: string | null
+          client_data?: Json | null
+          contrato_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          proposal_id?: string | null
+          terms_version?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_acceptance_logs_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos_legais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptance_logs_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contrato_signatarios: {
         Row: {
           cargo: string | null
@@ -9483,6 +9537,7 @@ export type Database = {
           compliance_data: Json | null
           contrato_assinado_em: string | null
           contrato_enviado_em: string | null
+          contrato_id: string | null
           contrato_status: string | null
           created_at: string | null
           created_by_admin: string | null
@@ -9543,6 +9598,7 @@ export type Database = {
           compliance_data?: Json | null
           contrato_assinado_em?: string | null
           contrato_enviado_em?: string | null
+          contrato_id?: string | null
           contrato_status?: string | null
           created_at?: string | null
           created_by_admin?: string | null
@@ -9603,6 +9659,7 @@ export type Database = {
           compliance_data?: Json | null
           contrato_assinado_em?: string | null
           contrato_enviado_em?: string | null
+          contrato_id?: string | null
           contrato_status?: string | null
           created_at?: string | null
           created_by_admin?: string | null
@@ -9660,6 +9717,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos_legais"
             referencedColumns: ["id"]
           },
           {
@@ -10467,6 +10531,10 @@ export type Database = {
           client_name: string
           client_phone: string | null
           cobranca_futura: boolean | null
+          contract_accepted_at: string | null
+          contract_accepted_ip: string | null
+          contract_accepted_user_agent: string | null
+          contract_terms_version: string | null
           converted_order_id: string | null
           created_at: string | null
           created_by: string | null
@@ -10524,6 +10592,10 @@ export type Database = {
           client_name: string
           client_phone?: string | null
           cobranca_futura?: boolean | null
+          contract_accepted_at?: string | null
+          contract_accepted_ip?: string | null
+          contract_accepted_user_agent?: string | null
+          contract_terms_version?: string | null
           converted_order_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -10581,6 +10653,10 @@ export type Database = {
           client_name?: string
           client_phone?: string | null
           cobranca_futura?: boolean | null
+          contract_accepted_at?: string | null
+          contract_accepted_ip?: string | null
+          contract_accepted_user_agent?: string | null
+          contract_terms_version?: string | null
           converted_order_id?: string | null
           created_at?: string | null
           created_by?: string | null
