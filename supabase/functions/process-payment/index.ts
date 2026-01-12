@@ -14,7 +14,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 import { checkRateLimit, getClientIdentifier, createRateLimitResponse } from '../_shared/rate-limiter.ts';
-import { createPixCharge, createPixSubscription } from '../_shared/asaas-client.ts';
+import { createPixCharge, createPixSubscription, createBoletoCharge, type AsaasCustomer } from '../_shared/asaas-client.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -360,22 +360,142 @@ serve(async (req) => {
     }
     
     // ============================================================
-    // BOLETO PAYMENT VIA ASAAS (Future)
+    // BOLETO PAYMENT VIA ASAAS
     // ============================================================
     if (payment_method === 'boleto') {
-      console.log('📄 [PAYMENT] Boleto via Asaas - Em desenvolvimento');
-      
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'BOLETO_NOT_IMPLEMENTED',
-          message: 'Pagamento por boleto será implementado em breve. Use PIX por enquanto.'
-        }),
-        { 
-          status: 501,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      try {
+        // Preparar dados do cliente
+        const user = pedido.users;
+        const cpfCnpj = (user?.cpf || user?.empresa_documento)?.replace(/\D/g, '');
+        
+        const customerData: AsaasCustomer = {
+          name: user?.nome || 'Cliente EXA',
+          email: user?.email || undefined,
+          cpfCnpj: cpfCnpj || undefined,
+          mobilePhone: user?.telefone?.replace(/\D/g, '') || undefined,
+        };
+        
+        console.log('📄 [PAYMENT] Gerando Boleto via Asaas...');
+        
+        // Calcular data de vencimento (dia selecionado ou +5 dias)
+        const diaVencimento = pedido.dia_vencimento || 10;
+        const dataVencimento = new Date();
+        
+        // Se for fidelidade, usar dia de vencimento
+        if (pedido.is_fidelidade) {
+          dataVencimento.setDate(diaVencimento);
+          if (new Date().getDate() > diaVencimento) {
+            dataVencimento.setMonth(dataVencimento.getMonth() + 1);
+          }
+        } else {
+          // Para pagamento avulso, vencimento em 5 dias
+          dataVencimento.setDate(dataVencimento.getDate() + 5);
         }
-      );
+        
+        const dueDateStr = dataVencimento.toISOString().split('T')[0];
+        
+        const boletoResult = await createBoletoCharge(
+          customerData,
+          valorPedido,
+          dueDateStr,
+          `Pedido EXA #${pedido_id.substring(0, 8)}`,
+          pedido_id
+        );
+        
+        console.log('✅ [PAYMENT] Boleto gerado com sucesso:', {
+          paymentId: boletoResult.paymentId,
+          bankSlipUrl: boletoResult.bankSlipUrl,
+          dueDate: boletoResult.dueDate
+        });
+        
+        // Log do evento
+        await supabase
+          .from('log_eventos_sistema')
+          .insert({
+            tipo_evento: 'payment_boleto_created_asaas',
+            descricao: 'Boleto gerado via Asaas',
+            detalhes: {
+              pedido_id,
+              asaas_payment_id: boletoResult.paymentId,
+              valor: valorPedido,
+              status: boletoResult.status,
+              due_date: boletoResult.dueDate,
+              timestamp: new Date().toISOString()
+            }
+          });
+        
+        // Atualizar pedido com dados do Boleto
+        await supabase
+          .from('pedidos')
+          .update({
+            status: 'aguardando_pagamento',
+            metodo_pagamento: 'boleto_asaas',
+            transaction_id: boletoResult.paymentId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', pedido_id);
+        
+        // Criar parcela única (ou primeira parcela para fidelidade)
+        await supabase
+          .from('parcelas')
+          .insert({
+            pedido_id,
+            numero_parcela: 1,
+            valor: valorPedido,
+            data_vencimento: dueDateStr,
+            status: 'aguardando_pagamento',
+            asaas_payment_id: boletoResult.paymentId,
+            boleto_url: boletoResult.bankSlipUrl
+          });
+        
+        return new Response(
+          JSON.stringify({
+            success: true,
+            provider: 'asaas',
+            isSubscription: false,
+            paymentId: boletoResult.paymentId,
+            status: boletoResult.status,
+            bankSlipUrl: boletoResult.bankSlipUrl,
+            invoiceUrl: boletoResult.invoiceUrl,
+            dueDate: boletoResult.dueDate,
+            pedidoId: pedido_id,
+            valor: valorPedido
+          }),
+          { 
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+        
+      } catch (boletoError: any) {
+        console.error('❌ [PAYMENT] Erro ao gerar Boleto via Asaas:', boletoError);
+        
+        // Log do erro
+        await supabase
+          .from('log_eventos_sistema')
+          .insert({
+            tipo_evento: 'payment_boleto_error',
+            descricao: 'Erro ao gerar Boleto via Asaas',
+            detalhes: {
+              pedido_id,
+              error: boletoError.message,
+              timestamp: new Date().toISOString()
+            }
+          });
+        
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'ASAAS_BOLETO_ERROR',
+            message: `Erro ao gerar boleto: ${boletoError.message}`,
+            support_message: 'Verifique se os dados do cliente estão completos (CPF/CNPJ obrigatório para boleto).'
+          }),
+          { 
+            status: 502,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
     }
     
     // Unknown payment method

@@ -6,7 +6,7 @@ import {
   MessageSquare, Mail, Smartphone, Monitor, Copy, Download, 
   RefreshCw, Gift, Timer, Check, X, MoreVertical, Phone, ExternalLink,
   CreditCard, AlertTriangle, Calendar, TrendingUp, BarChart3, 
-  MapPin, Briefcase, Users, Triangle, RectangleHorizontal
+  MapPin, Briefcase, Users, Triangle, RectangleHorizontal, CheckCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -22,6 +22,7 @@ import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExp
 import { motion } from 'framer-motion';
 import { EditPaymentDialog } from '@/components/admin/proposals/EditPaymentDialog';
 import { CCEmailsCard } from '@/components/admin/proposals/CCEmailsCard';
+import { AdminCloseProposalModal } from '@/components/admin/proposals/AdminCloseProposalModal';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
 import {
   DropdownMenu,
@@ -66,6 +67,7 @@ const PropostaDetalhesPage = () => {
   const [showExtendDialog, setShowExtendDialog] = useState(false);
   const [showBetterOfferDialog, setShowBetterOfferDialog] = useState(false);
   const [showEditPaymentDialog, setShowEditPaymentDialog] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
   const [extensionHours, setExtensionHours] = useState(24);
   const [extraDiscount, setExtraDiscount] = useState(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -846,6 +848,17 @@ const PropostaDetalhesPage = () => {
                 <Gift className="h-4 w-4" />
                 Condição Especial
               </Button>
+              
+              {proposal.status !== 'convertida' && (
+                <Button
+                  size="sm"
+                  className="h-10 text-xs justify-start gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={() => setShowCloseModal(true)}
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Fechar Proposta
+                </Button>
+              )}
             </div>
             
             {/* PDF Export */}
@@ -1018,6 +1031,18 @@ const PropostaDetalhesPage = () => {
           totalValue={proposal.cash_total_value}
           onSave={handleSavePayment}
           isSubmitting={isSubmitting}
+        />
+      )}
+
+      {/* Admin Close Proposal Modal */}
+      {showCloseModal && proposal && (
+        <AdminCloseProposalModal
+          open={showCloseModal}
+          onOpenChange={setShowCloseModal}
+          proposal={proposal as any}
+          onSuccess={() => {
+            refetch();
+          }}
         />
       )}
     </div>
