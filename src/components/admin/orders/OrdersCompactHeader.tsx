@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Volume2, VolumeX, Play } from 'lucide-react';
+import { RefreshCw, Volume2, VolumeX, Play, Wrench, Settings2 } from 'lucide-react';
 import { OrderPeriodFilter, PeriodFilter } from './OrderPeriodFilter';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -23,7 +23,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useNotificationSound, SOUND_OPTIONS } from '@/hooks/useNotificationSound';
+import { useOrdersReconciliationComplete } from '@/hooks/useOrdersReconciliationComplete';
+import ReconciliationModal from './ReconciliationModal';
 
 interface OrdersCompactHeaderProps {
   onRefresh: () => void;
@@ -39,41 +48,57 @@ const OrdersCompactHeader: React.FC<OrdersCompactHeaderProps> = ({
   onPeriodChange
 }) => {
   const { enabled, volume, soundType, toggleSound, setVolume, setSoundType, playPreview } = useNotificationSound();
+  const { runReconciliation, isReconciling, result, clearResult } = useOrdersReconciliationComplete();
+  const [reconciliationModalOpen, setReconciliationModalOpen] = useState(false);
+
+  const handleReconcile = async () => {
+    await runReconciliation();
+  };
+
+  const handleOpenReconciliationModal = () => {
+    clearResult();
+    setReconciliationModalOpen(true);
+  };
 
   return (
-    <div className="flex items-center justify-between py-4">
-      {/* Title */}
-      <div className="flex items-center gap-3">
-        <div className="h-8 w-1 bg-gradient-to-b from-[#9C1E1E] to-[#DC2626] rounded-full" />
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] bg-clip-text text-transparent">
-          Pedidos
-        </h1>
-      </div>
-      
-      {/* Actions */}
-      <div className="flex items-center gap-2">
-        {/* Period Filter */}
-        <OrderPeriodFilter value={periodFilter} onChange={onPeriodChange} />
+    <>
+      <div className="flex items-center justify-between py-4">
+        {/* Title */}
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-1 bg-gradient-to-b from-[#9C1E1E] to-[#DC2626] rounded-full" />
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] bg-clip-text text-transparent">
+            Pedidos
+          </h1>
+        </div>
         
-        {/* Refresh Button */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          {/* Period Filter */}
+          <OrderPeriodFilter value={periodFilter} onChange={onPeriodChange} />
+          
+          {/* Actions Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={onRefresh} 
-                disabled={loading}
                 className="h-9 w-9 p-0 hover:bg-[#9C1E1E]/10 hover:text-[#9C1E1E] transition-all duration-200"
               >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <Settings2 className="h-4 w-4" />
               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Atualizar pedidos</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={onRefresh} disabled={loading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Atualizar Dados
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleOpenReconciliationModal}>
+                <Wrench className="h-4 w-4 mr-2 text-amber-600" />
+                <span className="text-amber-600 font-medium">Reconciliar Pagamentos</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         
         {/* Sound Control Popover */}
         <Popover>
@@ -165,8 +190,19 @@ const OrdersCompactHeader: React.FC<OrdersCompactHeaderProps> = ({
             </div>
           </PopoverContent>
         </Popover>
+        </div>
       </div>
-    </div>
+
+      {/* Reconciliation Modal */}
+      <ReconciliationModal
+        open={reconciliationModalOpen}
+        onOpenChange={setReconciliationModalOpen}
+        result={result}
+        isReconciling={isReconciling}
+        onReconcile={handleReconcile}
+        onRefresh={onRefresh}
+      />
+    </>
   );
 };
 
