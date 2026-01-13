@@ -74,7 +74,7 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
           data_fim,
           lista_predios
         `)
-        .in('status', ['ativo', 'video_aprovado', 'pago_pendente_video', 'video_enviado', 'pago'])
+        .in('status', ['ativo', 'video_aprovado', 'video_enviado', 'aguardando_video'])
         .filter('lista_predios', 'cs', `{${buildingId}}`);
 
       if (pedidosError) {
@@ -326,7 +326,7 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         const { data } = await supabase
           .from('pedidos')
           .select('id')
-          .in('status', ['ativo', 'video_aprovado', 'pago_pendente_video', 'video_enviado', 'pago'])
+          .in('status', ['ativo', 'video_aprovado', 'video_enviado', 'aguardando_video'])
           .filter('lista_predios', 'cs', `{${buildingId}}`);
         
         cachedPedidoIds = data?.map(p => p.id) || [];

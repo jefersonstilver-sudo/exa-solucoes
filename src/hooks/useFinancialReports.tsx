@@ -68,7 +68,7 @@ export function useFinancialReports(startDate?: Date, endDate?: Date) {
       let ordersQuery = supabase
         .from('pedidos')
         .select('*')
-        .in('status', ['pago', 'ativo', 'pago_pendente_video', 'video_aprovado', 'video_enviado']);
+        .in('status', ['aguardando_contrato', 'aguardando_video', 'video_enviado', 'video_aprovado', 'ativo']);
 
       if (startDate) {
         ordersQuery = ordersQuery.gte('created_at', startDate.toISOString());

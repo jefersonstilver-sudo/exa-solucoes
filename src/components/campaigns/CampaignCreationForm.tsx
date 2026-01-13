@@ -130,7 +130,7 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
           data_fim,
           valor_total
         `)
-        .in('status', ['pago', 'pago_pendente_video', 'video_aprovado']);
+        .in('status', ['aguardando_video', 'video_enviado', 'video_aprovado', 'ativo']);
 
       if (error) throw error;
 

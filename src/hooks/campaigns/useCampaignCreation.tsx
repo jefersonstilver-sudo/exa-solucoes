@@ -75,7 +75,7 @@ export const useCampaignCreation = () => {
         .from('pedidos')
         .select('id, lista_paineis, data_inicio, data_fim, valor_total')
         .eq('client_id', userProfile.id)
-        .in('status', ['pago', 'pago_pendente_video', 'video_aprovado']);
+        .in('status', ['aguardando_video', 'video_enviado', 'video_aprovado', 'ativo']);
 
       if (error) throw error;
 

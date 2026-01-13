@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { Package, Calendar, CreditCard, FileText, Clock, User, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { getStatusConfig, getStatusLabel, getStatusClassName } from '@/constants/pedidoStatus';
 
 interface RealOrderInfoCardProps {
   order: {
@@ -20,35 +20,8 @@ interface RealOrderInfoCardProps {
 }
 
 export const RealOrderInfoCard: React.FC<RealOrderInfoCardProps> = ({ order }) => {
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      'pago_pendente_video': 'bg-orange-100 text-orange-800 border-orange-200',
-      'video_enviado': 'bg-blue-100 text-blue-800 border-blue-200',
-      'video_aprovado': 'bg-green-100 text-green-800 border-green-200',
-      'video_rejeitado': 'bg-red-100 text-red-800 border-red-200',
-      'pago': 'bg-green-100 text-green-800 border-green-200',
-      'pendente': 'bg-gray-100 text-gray-800 border-gray-200',
-      'ativo': 'bg-green-100 text-green-800 border-green-200',
-      'cancelado': 'bg-red-100 text-red-800 border-red-200'
-    };
-    
-    return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
-  };
-
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      'pago_pendente_video': 'Aguardando Vídeo',
-      'video_enviado': 'Vídeo Enviado',
-      'video_aprovado': 'Vídeo Aprovado',
-      'video_rejeitado': 'Vídeo Rejeitado',
-      'pago': 'Pago',
-      'pendente': 'Pendente',
-      'ativo': 'Ativo',
-      'cancelado': 'Cancelado'
-    };
-    
-    return labels[status] || status;
-  };
+  // Usa o mapper central canônico
+  const statusConfig = getStatusConfig(order.status);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
@@ -121,8 +94,8 @@ export const RealOrderInfoCard: React.FC<RealOrderInfoCardProps> = ({ order }) =
       <CardContent className="p-6 space-y-5">
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-600 font-medium">Status Atual</p>
-          <Badge className={`${getStatusColor(order.status)} border font-medium`}>
-            {getStatusLabel(order.status)}
+          <Badge className={`${statusConfig.className} border font-medium`}>
+            {statusConfig.icon} {statusConfig.label}
           </Badge>
         </div>
         

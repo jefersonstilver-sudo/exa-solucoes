@@ -58,7 +58,7 @@ export const useDashboardMetrics = () => {
       const { count: pendingCount, error: pendingError } = await supabase
         .from('pedidos')
         .select('id', { count: 'exact', head: true })
-        .in('status', ['pendente', 'pago_pendente_video']);
+        .in('status', ['pendente', 'aguardando_contrato']);
 
       if (pendingError) throw pendingError;
 

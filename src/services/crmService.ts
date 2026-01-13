@@ -261,7 +261,7 @@ export const getAllClientsForCRM = async () => {
           .from('pedidos')
           .select('valor_total, created_at')
           .eq('client_id', user.id)
-          .in('status', ['pago', 'ativo', 'pago_pendente_video', 'video_aprovado', 'video_enviado'])
+          .in('status', ['aguardando_contrato', 'aguardando_video', 'video_enviado', 'video_aprovado', 'ativo'])
           .order('created_at', { ascending: false });
 
         const { data: attempts } = await supabase
