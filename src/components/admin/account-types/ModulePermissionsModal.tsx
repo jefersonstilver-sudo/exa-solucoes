@@ -6,13 +6,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Check, Loader2, ChevronDown, ChevronRight,
   LayoutDashboard, FileText, CreditCard, CheckCircle, Ticket, Gift,
-  Globe, MessageSquare, Users, Bot, Bell,
-  Building2, Monitor, UserCheck, Megaphone,
-  Video, Play, Type, Film, Mail,
-  Settings, Shield, BarChart3, RefreshCw
+  Globe, MessageSquare, Users, Bot, Bell, Sunrise, TrendingUp,
+  Building2, Monitor, UserCheck, Megaphone, Scale, Package, Calendar,
+  Video, Play, Type, Film, Mail, CalendarDays, Network, Home, Image,
+  Settings, Shield, BarChart3, RefreshCw, Landmark, UsersRound
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
+import { AppleSwitch } from '@/components/ui/apple-switch';
 import { Badge } from '@/components/ui/badge';
 
 interface RoleType {
@@ -31,74 +31,83 @@ interface ModulePermissionsModalProps {
   onClose: () => void;
 }
 
-// Module configuration with icons and labels organized by sidebar sections
+// AUDITORIA COMPLETA: Módulos organizados por fluxo de trabalho
+// Todos os módulos do sistema estão mapeados aqui
 const MODULE_SECTIONS = [
   {
-    title: 'Gestão Principal',
+    title: 'Minha Manhã',
+    color: '#F59E0B',
     modules: [
+      { key: 'minha_manha', label: 'Central de Tarefas', icon: Sunrise },
       { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { key: 'posicoes', label: 'Posições', icon: LayoutDashboard },
-      { key: 'sync_notion', label: 'Sync Notion', icon: RefreshCw },
-      { key: 'agenda', label: 'Agenda', icon: FileText },
-      { key: 'pedidos', label: 'Pedidos', icon: FileText },
-      { key: 'produtos', label: 'Produtos', icon: FileText },
-      { key: 'propostas', label: 'Propostas', icon: FileText },
-      { key: 'juridico', label: 'Jurídico', icon: FileText },
-      { key: 'assinaturas', label: 'Assinaturas', icon: CreditCard },
-      { key: 'aprovacoes', label: 'Aprovações', icon: CheckCircle },
-      { key: 'cupons', label: 'Cupons', icon: Ticket },
-      { key: 'beneficios', label: 'Benefícios', icon: Gift },
+      { key: 'exa_alerts', label: 'EXA Alerts', icon: Bot },
+      { key: 'escalacoes', label: 'Escalações', icon: Bell },
     ]
   },
   {
-    title: 'CRM',
+    title: 'Relacionamento',
+    color: '#8B5CF6',
     modules: [
+      { key: 'crm_hub', label: 'CRM Hub', icon: UsersRound },
       { key: 'contatos', label: 'Contatos', icon: Users },
-      { key: 'contatos_kanban', label: 'Contatos Kanban', icon: LayoutDashboard },
+      { key: 'contatos_kanban', label: 'Kanban', icon: LayoutDashboard },
       { key: 'crm_site', label: 'CRM Site', icon: Globe },
       { key: 'crm_chat', label: 'CRM Chat', icon: MessageSquare },
-      { key: 'escalacoes', label: 'Escalações', icon: Users },
-      { key: 'processos', label: 'Processos', icon: RefreshCw },
     ]
   },
   {
-    title: 'Inteligência',
+    title: 'Vendas',
+    color: '#10B981',
     modules: [
-      { key: 'agentes_sofia', label: 'Agentes Sofia', icon: Bot },
-      { key: 'exa_alerts', label: 'EXA Alerts', icon: Bell },
+      { key: 'vendas', label: 'Vendas', icon: TrendingUp },
+      { key: 'propostas', label: 'Propostas', icon: FileText },
+      { key: 'pedidos', label: 'Pedidos', icon: FileText },
+      { key: 'juridico', label: 'Jurídico', icon: Scale },
+      { key: 'assinaturas', label: 'Assinaturas', icon: CreditCard },
+      { key: 'posicoes', label: 'Posições', icon: BarChart3 },
+      { key: 'produtos', label: 'Produtos', icon: Package },
+      { key: 'cupons', label: 'Cupons', icon: Ticket },
     ]
   },
   {
-    title: 'Ativos',
+    title: 'Operação',
+    color: '#3B82F6',
     modules: [
       { key: 'predios', label: 'Prédios', icon: Building2 },
       { key: 'paineis', label: 'Painéis EXA', icon: Monitor },
+      { key: 'sync_notion', label: 'Agenda Técnica', icon: Calendar },
+      { key: 'agenda', label: 'Agenda', icon: CalendarDays },
+      { key: 'videos_anunciantes', label: 'Vídeos Anunc.', icon: Video },
+      { key: 'aprovacoes', label: 'Aprovações', icon: CheckCircle },
+      { key: 'beneficios', label: 'Benefícios', icon: Gift },
       { key: 'sindicos', label: 'Síndicos', icon: UserCheck },
       { key: 'leads', label: 'Leads EXA', icon: Megaphone },
+      { key: 'processos', label: 'Processos', icon: Network },
     ]
   },
   {
-    title: 'Conteúdo',
+    title: 'Comunicação',
+    color: '#EC4899',
     modules: [
-      { key: 'videos_anunciantes', label: 'Vídeos Anunc.', icon: Video },
-      { key: 'videos_site', label: 'Vídeos Site', icon: Play },
-      { key: 'ticker', label: 'Ticker', icon: Type },
-      { key: 'editor_videos', label: 'Editor', icon: Film },
       { key: 'emails', label: 'Emails', icon: Mail },
+      { key: 'ticker', label: 'Ticker', icon: Type },
+      { key: 'videos_site', label: 'Vídeos Site', icon: Film },
+      { key: 'editor_videos', label: 'Editor', icon: Play },
+      { key: 'agentes_sofia', label: 'Agentes Sofia', icon: Bot },
+      { key: 'homepage_config', label: 'Homepage', icon: Home },
+      { key: 'logos', label: 'Logos', icon: Image },
     ]
   },
   {
-    title: 'Financeiro',
+    title: 'Governança',
+    color: '#9C1E1E',
     modules: [
+      { key: 'financeiro', label: 'Financeiro', icon: Landmark },
       { key: 'financeiro_mp', label: 'Financeiro MP', icon: CreditCard },
-    ]
-  },
-  {
-    title: 'Sistema',
-    modules: [
-      { key: 'usuarios', label: 'Usuários', icon: Users },
-      { key: 'notificacoes', label: 'Notificações', icon: Bell },
       { key: 'relatorios', label: 'Relatórios', icon: BarChart3 },
+      { key: 'usuarios', label: 'Usuários', icon: Users },
+      { key: 'tipos_conta', label: 'Tipos de Conta', icon: Shield },
+      { key: 'notificacoes', label: 'Notificações', icon: Bell },
       { key: 'seguranca', label: 'Segurança', icon: Shield },
       { key: 'configuracoes', label: 'Config', icon: Settings },
     ]
@@ -309,19 +318,19 @@ export default function ModulePermissionsModal({ role, onClose }: ModulePermissi
             )}
           </div>
 
-          {/* Botões Globais - Ativar/Desativar Todos */}
+          {/* Botões Globais - Ativar/Desativar Todos - EXA Style */}
           {role.key !== 'super_admin' && (
-            <div className="flex gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50/50">
+            <div className="flex gap-2 px-3 py-2.5 border-b border-gray-100 bg-gradient-to-r from-gray-50/80 to-white">
               <button
                 onClick={enableAllModules}
-                className="flex-1 text-xs py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5"
+                className="flex-1 text-xs py-2.5 bg-gradient-to-r from-[#C7141A] to-[#9C1E1E] hover:from-[#B40D1A] hover:to-[#8A1A1A] text-white rounded-xl font-medium transition-all flex items-center justify-center gap-1.5 shadow-[0_2px_8px_rgba(199,20,26,0.25)]"
               >
                 <Check className="h-3.5 w-3.5" />
                 Ativar Todos
               </button>
               <button
                 onClick={disableAllModules}
-                className="flex-1 text-xs py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5"
+                className="flex-1 text-xs py-2.5 bg-white hover:bg-gray-50 text-gray-600 rounded-xl font-medium transition-all flex items-center justify-center gap-1.5 border border-gray-200 shadow-sm"
               >
                 <X className="h-3.5 w-3.5" />
                 Desativar Todos
@@ -341,28 +350,38 @@ export default function ModulePermissionsModal({ role, onClose }: ModulePermissi
                 const isExpanded = expandedSections.includes(section.title);
                 const allEnabled = enabledCount === section.modules.length;
                 const noneEnabled = enabledCount === 0;
+                const sectionColor = (section as any).color || '#9C1E1E';
 
                 return (
                   <div
                     key={section.title}
-                    className="bg-gray-50/80 rounded-xl border border-gray-100 overflow-hidden"
+                    className="bg-white/80 rounded-xl border border-gray-100 overflow-hidden shadow-sm"
                   >
-                    {/* Section Header - Compact */}
+                    {/* Section Header - Apple Style */}
                     <button
                       onClick={() => toggleSection(section.title)}
-                      className="w-full px-3 py-2 flex items-center justify-between hover:bg-gray-100/50 transition-colors"
+                      className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-gray-50/80 transition-colors"
                     >
                       <div className="flex items-center gap-2">
+                        <div 
+                          className="w-1 h-4 rounded-full"
+                          style={{ backgroundColor: sectionColor }}
+                        />
                         {isExpanded ? (
-                          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                          <ChevronDown className="h-3 w-3 text-gray-400" />
                         ) : (
-                          <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                          <ChevronRight className="h-3 w-3 text-gray-400" />
                         )}
-                        <span className="font-medium text-xs">{section.title}</span>
+                        <span className="font-semibold text-xs text-gray-800">{section.title}</span>
                       </div>
                       <Badge 
-                        variant={allEnabled ? 'default' : noneEnabled ? 'secondary' : 'outline'}
-                        className={`text-[9px] px-1.5 py-0 h-4 ${allEnabled ? 'bg-emerald-500' : ''}`}
+                        className={`text-[9px] px-2 py-0.5 h-5 border-0 font-medium ${
+                          allEnabled 
+                            ? 'bg-[#9C1E1E] text-white' 
+                            : noneEnabled 
+                              ? 'bg-gray-100 text-gray-500' 
+                              : 'bg-[#9C1E1E]/10 text-[#9C1E1E]'
+                        }`}
                       >
                         {enabledCount}/{section.modules.length}
                       </Badge>
@@ -378,25 +397,25 @@ export default function ModulePermissionsModal({ role, onClose }: ModulePermissi
                           transition={{ duration: 0.15 }}
                         >
                           <div className="px-2 pb-2 space-y-1">
-                            {/* Quick Actions - Ultra Compact */}
+                            {/* Quick Actions - EXA Style */}
                             {role.key !== 'super_admin' && (
-                              <div className="flex gap-1.5 mb-1.5">
+                              <div className="flex gap-1.5 mb-2 pl-1">
                                 <button
                                   onClick={() => toggleAllInSection(section, true)}
-                                  className="text-[9px] px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 transition-colors"
+                                  className="text-[9px] px-2.5 py-1 bg-[#9C1E1E]/10 text-[#9C1E1E] rounded-lg hover:bg-[#9C1E1E]/20 transition-colors font-medium"
                                 >
                                   Ativar todos
                                 </button>
                                 <button
                                   onClick={() => toggleAllInSection(section, false)}
-                                  className="text-[9px] px-2 py-0.5 bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition-colors"
+                                  className="text-[9px] px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                                 >
                                   Desativar
                                 </button>
                               </div>
                             )}
 
-                            {/* Module Items - Ultra Compact */}
+                            {/* Module Items - Apple Style */}
                             {section.modules.map(module => {
                               const Icon = module.icon;
                               const isEnabled = role.key === 'super_admin' ? true : localPermissions[module.key] ?? false;
@@ -411,24 +430,36 @@ export default function ModulePermissionsModal({ role, onClose }: ModulePermissi
                                   }`}
                                 >
                                   <div className="flex items-center gap-2">
-                                    <div className={`p-1 rounded ${isEnabled ? 'bg-emerald-50' : 'bg-gray-200/50'}`}>
-                                      <Icon className={`h-3 w-3 ${isEnabled ? 'text-emerald-600' : 'text-gray-400'}`} />
+                                    <div 
+                                      className={`p-1 rounded-md transition-colors ${
+                                        isEnabled 
+                                          ? 'bg-[#9C1E1E]/10' 
+                                          : 'bg-gray-200/50'
+                                      }`}
+                                    >
+                                      <Icon 
+                                        className={`h-3 w-3 transition-colors ${
+                                          isEnabled ? 'text-[#9C1E1E]' : 'text-gray-400'
+                                        }`} 
+                                      />
                                     </div>
-                                    <span className={`text-[11px] ${isEnabled ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+                                    <span className={`text-[11px] transition-colors ${isEnabled ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
                                       {module.label}
                                     </span>
                                   </div>
                                   
                                   {role.key === 'super_admin' ? (
-                                    <Badge variant="secondary" className="text-[8px] px-1 py-0 h-3.5">
+                                    <Badge 
+                                      variant="secondary" 
+                                      className="text-[8px] px-1.5 py-0.5 h-4 bg-[#9C1E1E]/10 text-[#9C1E1E] border-0"
+                                    >
                                       Ativo
                                     </Badge>
                                   ) : (
-                                    <Switch
+                                    <AppleSwitch
                                       checked={isEnabled}
                                       onCheckedChange={() => toggleModule(module.key)}
-                                      className="scale-75"
-                                      data-checkbox
+                                      size="sm"
                                     />
                                   )}
                                 </div>
