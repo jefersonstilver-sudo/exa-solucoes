@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, Clock, Building, User, Calendar } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
+import { getStatusConfig as getCanonicalStatusConfig } from '@/constants/pedidoStatus';
 
 interface MinimalOrderCardProps {
   item: OrderOrAttempt;
@@ -16,44 +17,23 @@ interface MinimalOrderCardProps {
   showCheckbox?: boolean;
 }
 
-// Mapeamento de status consolidado - Fluxo Opção B
-const getStatusConfig = (status: string, correctStatus?: string) => {
-  const targetStatus = correctStatus || status;
+// Usa o mapper central canônico para obter configuração de status
+const getStatusConfig = (status: string, type: 'order' | 'attempt') => {
+  // Tentativas têm configuração especial
+  if (type === 'attempt') {
+    return {
+      label: 'Tentativa',
+      className: 'bg-slate-100 text-slate-600 border-slate-200',
+      icon: '📝'
+    };
+  }
   
-  const statusConfigs: Record<string, { label: string; className: string; icon: string }> = {
-    // Ativos / Em Exibição
-    'ativo': { label: 'Em Exibição', className: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: '🟢' },
-    'video_aprovado': { label: 'Em Exibição', className: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: '🟢' },
-    'em_exibicao': { label: 'Em Exibição', className: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: '🟢' },
-    
-    // Processando
-    'aguardando_video': { label: 'Aguardando Vídeo', className: 'bg-blue-100 text-blue-800 border-blue-200', icon: '📹' },
-    'video_enviado': { label: 'Vídeo Enviado', className: 'bg-purple-100 text-purple-800 border-purple-200', icon: '📤' },
-    'aguardando_aprovacao': { label: 'Em Análise', className: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: '⏳' },
-    
-    // Aguardando Contrato - NOVO do Fluxo B
-    'aguardando_contrato': { label: 'Aguardando Contrato', className: 'bg-amber-100 text-amber-800 border-amber-200', icon: '📄' },
-    
-    // Aguardando Pagamento
-    'pendente': { label: 'Aguardando Pagamento', className: 'bg-orange-100 text-orange-800 border-orange-200', icon: '⏳' },
-    'aguardando_pagamento': { label: 'Aguardando Pagamento', className: 'bg-orange-100 text-orange-800 border-orange-200', icon: '⏳' },
-    
-    // Legados / Bloqueados
-    'pago_pendente_video': { label: 'Legado Bloqueado', className: 'bg-red-100 text-red-800 border-red-200', icon: '🔒' },
-    'bloqueado': { label: 'Bloqueado', className: 'bg-red-100 text-red-800 border-red-200', icon: '🔒' },
-    
-    // Cancelados
-    'cancelado': { label: 'Cancelado', className: 'bg-gray-100 text-gray-600 border-gray-200', icon: '❌' },
-    'cancelado_automaticamente': { label: 'Cancelado', className: 'bg-gray-100 text-gray-600 border-gray-200', icon: '⏰' },
-    
-    // Tentativas
-    'tentativa': { label: 'Tentativa', className: 'bg-slate-100 text-slate-600 border-slate-200', icon: '📝' },
-  };
-  
-  return statusConfigs[targetStatus] || { 
-    label: targetStatus, 
-    className: 'bg-gray-100 text-gray-600 border-gray-200', 
-    icon: '❓' 
+  // Usa o mapper central canônico
+  const config = getCanonicalStatusConfig(status);
+  return {
+    label: config.label,
+    className: config.className,
+    icon: config.icon
   };
 };
 
@@ -64,7 +44,7 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
   onViewOrderDetails,
   showCheckbox = true
 }) => {
-  const statusConfig = getStatusConfig(item.status, item.correct_status);
+  const statusConfig = getStatusConfig(item.status, item.type);
   
   // Calcular tempo relativo
   const timeAgo = formatDistanceToNow(new Date(item.created_at), { 

@@ -14,11 +14,11 @@ export const usePedidosSemVideo = () => {
 
       const pedidoIdsComVideo = pedidosComVideo?.map(pv => pv.pedido_id) || [];
 
-      // Buscar pedidos ativos/pagos que NÃO têm vídeo
+      // CANÔNICO: Buscar pedidos que precisam de vídeo
       let query = supabase
         .from('pedidos')
         .select('id', { count: 'exact', head: true })
-        .in('status', ['pago', 'pago_pendente_video', 'ativo']);
+        .in('status', ['aguardando_video', 'video_enviado', 'video_aprovado', 'ativo']);
 
       if (pedidoIdsComVideo.length > 0) {
         query = query.not('id', 'in', `(${pedidoIdsComVideo.join(',')})`);

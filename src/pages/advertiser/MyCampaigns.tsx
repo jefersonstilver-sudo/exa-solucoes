@@ -310,11 +310,12 @@ const MyCampaigns = () => {
     if (!userProfile?.id) return;
 
     try {
+      // CANÔNICO: Usa status que indicam pagamento confirmado
       const { data: pedidos, error } = await supabase
         .from('pedidos')
         .select('*')
         .eq('client_id', userProfile.id)
-        .in('status', ['pago', 'pago_pendente_video', 'video_aprovado']);
+        .in('status', ['aguardando_contrato', 'aguardando_video', 'video_enviado', 'video_aprovado', 'ativo']);
 
       if (error) throw error;
 

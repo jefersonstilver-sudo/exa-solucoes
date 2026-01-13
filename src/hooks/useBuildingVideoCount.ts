@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { PAID_STATUSES } from '@/constants/pedidoStatus';
 
 export function useBuildingVideoCount(buildingId: string): number {
   const [count, setCount] = useState(0);
@@ -12,10 +13,11 @@ export function useBuildingVideoCount(buildingId: string): number {
 
     try {
       // 1. Buscar pedidos ativos para este prédio
+      // CANÔNICO: Usa apenas status canônicos que indicam pagamento confirmado
       const { data: pedidos, error: pedidosError } = await supabase
         .from('pedidos')
         .select('id')
-        .in('status', ['ativo', 'video_aprovado', 'pago_pendente_video', 'video_enviado', 'pago'])
+        .in('status', PAID_STATUSES)
         .filter('lista_predios', 'cs', `{${buildingId}}`);
 
       if (pedidosError || !pedidos || pedidos.length === 0) {

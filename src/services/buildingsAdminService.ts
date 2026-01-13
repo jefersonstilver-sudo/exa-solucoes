@@ -81,7 +81,7 @@ export const fetchAllBuildingsForAdmin = async () => {
     const salesPromise = supabase
       .from('pedidos')
       .select('lista_predios')
-      .in('status', ['pago', 'video_aprovado', 'pago_pendente_video'])
+      .in('status', ['aguardando_contrato', 'aguardando_video', 'video_enviado', 'video_aprovado', 'ativo'])
       .gte('created_at', firstDayOfMonth.toISOString());
 
     // Implementar timeout de 10 segundos

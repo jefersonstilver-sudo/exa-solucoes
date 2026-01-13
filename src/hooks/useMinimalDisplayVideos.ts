@@ -55,7 +55,7 @@ export function useMinimalDisplayVideos(buildingId: string): UseMinimalDisplayVi
       const { data: pedidos, error: pedidosError } = await supabase
         .from('pedidos')
         .select('id')
-        .in('status', ['ativo', 'video_aprovado', 'pago_pendente_video', 'video_enviado', 'pago'])
+        .in('status', ['ativo', 'video_aprovado', 'video_enviado', 'aguardando_video'])
         .filter('lista_predios', 'cs', `{${buildingId}}`);
 
       if (pedidosError) throw pedidosError;

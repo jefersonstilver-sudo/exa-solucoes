@@ -1,10 +1,28 @@
-
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Clock, AlertTriangle, XCircle } from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, XCircle, Play, FileText, Video, Lock } from 'lucide-react';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
+import { getStatusConfig, PedidoStatusCanonical } from '@/constants/pedidoStatus';
+
+// Mapeamento de ícones Lucide para status canônicos
+const getStatusIcon = (status: string) => {
+  const icons: Record<string, React.ReactNode> = {
+    pendente: <Clock className="h-3 w-3 mr-1" />,
+    aguardando_contrato: <FileText className="h-3 w-3 mr-1" />,
+    aguardando_video: <Video className="h-3 w-3 mr-1" />,
+    video_enviado: <Video className="h-3 w-3 mr-1" />,
+    video_aprovado: <CheckCircle className="h-3 w-3 mr-1" />,
+    ativo: <Play className="h-3 w-3 mr-1" />,
+    finalizado: <CheckCircle className="h-3 w-3 mr-1" />,
+    cancelado: <XCircle className="h-3 w-3 mr-1" />,
+    cancelado_automaticamente: <Clock className="h-3 w-3 mr-1" />,
+    bloqueado: <Lock className="h-3 w-3 mr-1" />
+  };
+  return icons[status] || <AlertTriangle className="h-3 w-3 mr-1" />;
+};
 
 export const getStatusBadge = (item: OrderOrAttempt) => {
+  // Tentativas têm badge especial
   if (item.type === 'attempt') {
     return (
       <Badge className="bg-orange-100 text-orange-800 border-orange-300">
@@ -14,79 +32,15 @@ export const getStatusBadge = (item: OrderOrAttempt) => {
     );
   }
 
-  const status = item.status.toLowerCase();
-  switch (status) {
-    case 'pendente':
-      return (
-        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
-          <Clock className="h-3 w-3 mr-1" />
-          Pendente
-        </Badge>
-      );
-    case 'pago':
-    case 'pago_pendente_video':
-      return (
-        <Badge className="bg-blue-100 text-blue-800 border-blue-300">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Pago
-        </Badge>
-      );
-    case 'video_enviado':
-      return (
-        <Badge className="bg-purple-100 text-purple-800 border-purple-300">
-          <Clock className="h-3 w-3 mr-1" />
-          Vídeo Enviado
-        </Badge>
-      );
-    case 'video_aprovado':
-      return (
-        <Badge className="bg-green-100 text-green-800 border-green-300">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Aprovado
-        </Badge>
-      );
-    case 'ativo':
-      return (
-        <Badge className="bg-green-100 text-green-800 border-green-300">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Ativo
-        </Badge>
-      );
-    case 'video_rejeitado':
-      return (
-        <Badge className="bg-red-100 text-red-800 border-red-300">
-          <XCircle className="h-3 w-3 mr-1" />
-          Rejeitado
-        </Badge>
-      );
-    case 'bloqueado':
-      return (
-        <Badge className="bg-red-100 text-red-800 border-red-300">
-          <AlertTriangle className="h-3 w-3 mr-1" />
-          Bloqueado
-        </Badge>
-      );
-    case 'cancelado':
-      return (
-        <Badge className="bg-red-100 text-red-800 border-red-300">
-          <XCircle className="h-3 w-3 mr-1" />
-          Cancelado
-        </Badge>
-      );
-    case 'expirado':
-      return (
-        <Badge className="bg-gray-100 text-gray-800 border-gray-300">
-          <Clock className="h-3 w-3 mr-1" />
-          Expirado
-        </Badge>
-      );
-    default:
-      return (
-        <Badge variant="outline">
-          {status || 'Desconhecido'}
-        </Badge>
-      );
-  }
+  // Usa o mapper central canônico
+  const config = getStatusConfig(item.status);
+  
+  return (
+    <Badge className={config.className}>
+      {getStatusIcon(item.status)}
+      {config.label}
+    </Badge>
+  );
 };
 
 export const formatDate = (dateString: string) => {

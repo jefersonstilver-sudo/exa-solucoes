@@ -110,7 +110,7 @@ const ContratosPage = () => {
       const { data: pedidos, error: pedidosError } = await supabase
         .from('pedidos')
         .select('*')
-        .in('status', ['pago', 'ativo', 'pago_pendente_video', 'video_enviado', 'video_aprovado'])
+        .in('status', ['aguardando_contrato', 'aguardando_video', 'video_enviado', 'video_aprovado', 'ativo'])
         .order('created_at', { ascending: false });
 
       if (pedidosError) throw pedidosError;
