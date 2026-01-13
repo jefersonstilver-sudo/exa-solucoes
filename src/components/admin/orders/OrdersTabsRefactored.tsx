@@ -44,64 +44,81 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
-  // Filtrar pedidos por categoria - MÁQUINA DE ESTADOS CANÔNICA v1.0
-  // 6 abas consolidadas: Ativos, Processando, Pendentes, Bloqueados, Cancelados, Finalizados
+  // Filtrar pedidos por STATUS INDIVIDUAL - MÁQUINA DE ESTADOS CANÔNICA v1.0
+  // 9 abas: Pendente, Ag. Contrato, Ag. Vídeo, Vídeo Enviado, Vídeo Aprovado, Ativo, Finalizado, Cancelado, Bloqueado
   const filteredOrders = useMemo(() => {
     const now = new Date();
     
-    // 🟢 ATIVOS: Em exibição (status=ativo) E dentro do período contratado (data_fim > hoje)
-    const active = sortByNewest(
-      ordersAndAttempts.filter(item => 
-        item.type === 'order' && 
-        item.status === 'ativo' &&
-        item.data_fim && new Date(item.data_fim) > now
+    return {
+      // ⏳ PENDENTE: Aguardando pagamento (pedidos + tentativas)
+      pendente: sortByNewest(
+        ordersAndAttempts.filter(item => 
+          (item.type === 'order' && item.status === 'pendente') ||
+          item.type === 'attempt'
+        )
+      ),
+      
+      // 📄 AGUARDANDO CONTRATO
+      aguardando_contrato: sortByNewest(
+        ordersAndAttempts.filter(item => 
+          item.type === 'order' && item.status === 'aguardando_contrato'
+        )
+      ),
+      
+      // 📹 AGUARDANDO VÍDEO
+      aguardando_video: sortByNewest(
+        ordersAndAttempts.filter(item => 
+          item.type === 'order' && item.status === 'aguardando_video'
+        )
+      ),
+      
+      // 📤 VÍDEO ENVIADO
+      video_enviado: sortByNewest(
+        ordersAndAttempts.filter(item => 
+          item.type === 'order' && item.status === 'video_enviado'
+        )
+      ),
+      
+      // ✅ VÍDEO APROVADO
+      video_aprovado: sortByNewest(
+        ordersAndAttempts.filter(item => 
+          item.type === 'order' && item.status === 'video_aprovado'
+        )
+      ),
+      
+      // 🟢 ATIVO: Em exibição E dentro do período
+      ativo: sortByNewest(
+        ordersAndAttempts.filter(item => 
+          item.type === 'order' && 
+          item.status === 'ativo' &&
+          item.data_fim && new Date(item.data_fim) > now
+        )
+      ),
+      
+      // ✔️ FINALIZADO: Campanhas encerradas
+      finalizado: sortByNewest(
+        ordersAndAttempts.filter(item => 
+          item.type === 'order' && 
+          (item.status === 'finalizado' || 
+           (item.status === 'ativo' && item.data_fim && new Date(item.data_fim) <= now))
+        )
+      ),
+      
+      // ❌ CANCELADO: Cancelados manualmente ou automaticamente
+      cancelado: sortByNewest(
+        ordersAndAttempts.filter(item => 
+          item.type === 'order' && 
+          ['cancelado', 'cancelado_automaticamente'].includes(item.status)
+        )
+      ),
+      
+      // 🔒 BLOQUEADO
+      bloqueado: sortByNewest(
+        ordersAndAttempts.filter(item => 
+          item.type === 'order' && item.status === 'bloqueado'
+        )
       )
-    );
-    
-    // 📹 PROCESSANDO: Todo o pipeline de aprovação (contrato → vídeo → aprovação)
-    // Inclui: aguardando_contrato, aguardando_video, video_enviado, video_aprovado
-    const processing = sortByNewest(
-      ordersAndAttempts.filter(item => 
-        item.type === 'order' && 
-        ['aguardando_contrato', 'aguardando_video', 'video_enviado', 'video_aprovado'].includes(item.status)
-      )
-    );
-    
-    // ⏳ PENDENTES: Aguardando pagamento (pedidos pendentes + tentativas abandonadas)
-    const pending = sortByNewest(
-      ordersAndAttempts.filter(item => 
-        (item.type === 'order' && item.status === 'pendente') ||
-        item.type === 'attempt'
-      )
-    );
-    
-    // 🔒 BLOQUEADOS: Pedidos bloqueados por inadimplência ou outro motivo
-    const blocked = sortByNewest(
-      ordersAndAttempts.filter(item => 
-        item.type === 'order' && 
-        item.status === 'bloqueado'
-      )
-    );
-    
-    // ❌ CANCELADOS: Cancelados manualmente ou automaticamente
-    const canceled = sortByNewest(
-      ordersAndAttempts.filter(item => 
-        item.type === 'order' && 
-        ['cancelado', 'cancelado_automaticamente'].includes(item.status)
-      )
-    );
-    
-    // ✅ FINALIZADOS: Campanhas encerradas (data_fim <= hoje)
-    // Inclui tanto 'ativo' quanto 'finalizado' se data_fim passou
-    const completed = sortByNewest(
-      ordersAndAttempts.filter(item => 
-        item.type === 'order' && 
-        ['ativo', 'finalizado'].includes(item.status) &&
-        item.data_fim && new Date(item.data_fim) <= now
-      )
-    );
-    
-    return { active, processing, pending, blocked, canceled, completed };
+    };
   }, [ordersAndAttempts]);
 
   // Handlers
@@ -328,68 +345,98 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
         </div>
       </div>
       
-      <Tabs defaultValue="active" className="space-y-4">
+      <Tabs defaultValue="ativo" className="space-y-4">
         <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
-          <TabsTrigger value="active" className="flex-1 min-w-[100px]">
-            🟢 Em Exibição
+          <TabsTrigger value="pendente" className="min-w-[90px]">
+            ⏳ Pendente
             <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
-              {filteredOrders.active.length}
+              {filteredOrders.pendente.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="processing" className="flex-1 min-w-[110px]">
-            📹 Processando
+          <TabsTrigger value="aguardando_contrato" className="min-w-[100px]">
+            📄 Ag. Contrato
             <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
-              {filteredOrders.processing.length}
+              {filteredOrders.aguardando_contrato.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="pending" className="flex-1 min-w-[100px]">
-            ⏳ Pendentes
+          <TabsTrigger value="aguardando_video" className="min-w-[90px]">
+            📹 Ag. Vídeo
             <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
-              {filteredOrders.pending.length}
+              {filteredOrders.aguardando_video.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="blocked" className="flex-1 min-w-[100px]">
-            🔒 Bloqueados
+          <TabsTrigger value="video_enviado" className="min-w-[100px]">
+            📤 Vídeo Enviado
             <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
-              {filteredOrders.blocked.length}
+              {filteredOrders.video_enviado.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="canceled" className="flex-1 min-w-[100px]">
-            ❌ Cancelados
+          <TabsTrigger value="video_aprovado" className="min-w-[100px]">
+            ✅ Vídeo Aprovado
             <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
-              {filteredOrders.canceled.length}
+              {filteredOrders.video_aprovado.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="completed" className="flex-1 min-w-[100px]">
-            ✅ Finalizados
+          <TabsTrigger value="ativo" className="min-w-[80px]">
+            🟢 Ativo
             <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
-              {filteredOrders.completed.length}
+              {filteredOrders.ativo.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="finalizado" className="min-w-[90px]">
+            ✔️ Finalizado
+            <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
+              {filteredOrders.finalizado.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="cancelado" className="min-w-[90px]">
+            ❌ Cancelado
+            <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
+              {filteredOrders.cancelado.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="bloqueado" className="min-w-[90px]">
+            🔒 Bloqueado
+            <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
+              {filteredOrders.bloqueado.length}
             </Badge>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="active">
-          {renderOrdersList(filteredOrders.active, 'Nenhuma campanha em exibição.')}
+        <TabsContent value="pendente">
+          {renderOrdersList(filteredOrders.pendente, 'Nenhum pedido ou tentativa aguardando pagamento.')}
         </TabsContent>
         
-        <TabsContent value="processing">
-          {renderOrdersList(filteredOrders.processing, 'Nenhum pedido em processamento (contrato/vídeo/aprovação).')}
+        <TabsContent value="aguardando_contrato">
+          {renderOrdersList(filteredOrders.aguardando_contrato, 'Nenhum pedido aguardando contrato.')}
         </TabsContent>
         
-        <TabsContent value="pending">
-          {renderOrdersList(filteredOrders.pending, 'Nenhum pedido ou tentativa aguardando pagamento.')}
+        <TabsContent value="aguardando_video">
+          {renderOrdersList(filteredOrders.aguardando_video, 'Nenhum pedido aguardando vídeo.')}
         </TabsContent>
         
-        <TabsContent value="blocked">
-          {renderOrdersList(filteredOrders.blocked, 'Nenhum pedido bloqueado.')}
+        <TabsContent value="video_enviado">
+          {renderOrdersList(filteredOrders.video_enviado, 'Nenhum vídeo em análise.')}
         </TabsContent>
         
-        <TabsContent value="canceled">
-          {renderOrdersList(filteredOrders.canceled, 'Nenhum pedido cancelado.')}
+        <TabsContent value="video_aprovado">
+          {renderOrdersList(filteredOrders.video_aprovado, 'Nenhum vídeo aprovado aguardando ativação.')}
         </TabsContent>
         
-        <TabsContent value="completed">
-          {renderOrdersList(filteredOrders.completed, 'Nenhuma campanha finalizada.')}
+        <TabsContent value="ativo">
+          {renderOrdersList(filteredOrders.ativo, 'Nenhuma campanha em exibição.')}
+        </TabsContent>
+        
+        <TabsContent value="finalizado">
+          {renderOrdersList(filteredOrders.finalizado, 'Nenhuma campanha finalizada.')}
+        </TabsContent>
+        
+        <TabsContent value="cancelado">
+          {renderOrdersList(filteredOrders.cancelado, 'Nenhum pedido cancelado.')}
+        </TabsContent>
+        
+        <TabsContent value="bloqueado">
+          {renderOrdersList(filteredOrders.bloqueado, 'Nenhum pedido bloqueado.')}
         </TabsContent>
       </Tabs>
 
