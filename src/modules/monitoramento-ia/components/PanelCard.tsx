@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PanelCardProps {
-  device: Device & { building_id?: string | null };
+  device: Device & { building_id?: string | null; empresa_elevador_id?: string | null };
   onClick: () => void;
   periodEventsCount?: number;
   periodLabel?: string;
@@ -22,8 +22,9 @@ export const PanelCard = ({
   const hasCriticalAlert = (device as any).has_critical_alert === true;
   const offlineCounter = useRealTimeCounter(device.status === 'offline' ? device.last_online_at : null);
   const [assignedBuildingName, setAssignedBuildingName] = useState<string | null>(null);
+  const [elevatorCompanyName, setElevatorCompanyName] = useState<string | null>(null);
 
-  // Carregar nome do prédio atribuído
+  // Carregar nome do prédio atribuído e empresa de elevador
   useEffect(() => {
     const loadAssignedBuilding = async () => {
       if (!device.building_id) {
@@ -42,8 +43,26 @@ export const PanelCard = ({
       }
     };
 
+    const loadElevatorCompany = async () => {
+      if (!device.empresa_elevador_id) {
+        setElevatorCompanyName(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('fornecedores')
+        .select('nome_fantasia')
+        .eq('id', device.empresa_elevador_id)
+        .single();
+
+      if (!error && data) {
+        setElevatorCompanyName(data.nome_fantasia);
+      }
+    };
+
     loadAssignedBuilding();
-  }, [device.building_id]);
+    loadElevatorCompany();
+  }, [device.building_id, device.empresa_elevador_id]);
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'online':
@@ -153,7 +172,7 @@ export const PanelCard = ({
           </div>
         )}
 
-        {/* Badge: Eventos + Atribuição */}
+        {/* Badge: Eventos + Atribuição + Empresa Elevador */}
         <div className="flex flex-wrap gap-1 sm:gap-2 justify-center mb-2 sm:mb-3 lg:mb-4">
           <Badge variant="secondary" className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-gray-200 text-gray-900 border-gray-300 px-1.5 sm:px-2 py-0.5">
             <Activity className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
@@ -170,6 +189,17 @@ export const PanelCard = ({
             <Badge variant="outline" className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-gray-50 text-gray-500 border-gray-300 px-1.5 sm:px-2 py-0.5">
               <Unlink className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
               Não atribuído
+            </Badge>
+          )}
+
+          {/* Badge de Empresa de Elevador */}
+          {device.empresa_elevador_id && elevatorCompanyName ? (
+            <Badge className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-blue-100 text-blue-700 border-blue-300 px-1.5 sm:px-2 py-0.5">
+              🛗 <span className="truncate max-w-[60px] sm:max-w-[100px]">{elevatorCompanyName}</span>
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-gray-50 text-gray-400 border-gray-200 px-1.5 sm:px-2 py-0.5">
+              🛗 Sem empresa
             </Badge>
           )}
         </div>
