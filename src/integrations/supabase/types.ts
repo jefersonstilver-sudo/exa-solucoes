@@ -9466,6 +9466,50 @@ export type Database = {
           },
         ]
       }
+      pedido_status_log: {
+        Row: {
+          created_at: string
+          disparado_por: string | null
+          id: string
+          metadata: Json | null
+          motivo: string | null
+          origem: string
+          pedido_id: string
+          status_anterior: string
+          status_novo: string
+        }
+        Insert: {
+          created_at?: string
+          disparado_por?: string | null
+          id?: string
+          metadata?: Json | null
+          motivo?: string | null
+          origem: string
+          pedido_id: string
+          status_anterior: string
+          status_novo: string
+        }
+        Update: {
+          created_at?: string
+          disparado_por?: string | null
+          id?: string
+          metadata?: Json | null
+          motivo?: string | null
+          origem?: string
+          pedido_id?: string
+          status_anterior?: string
+          status_novo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_status_log_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedido_videos: {
         Row: {
           approval_status: string
