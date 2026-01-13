@@ -65,7 +65,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
       )
     );
     
-    // 📄 AGUARDANDO CONTRATO: Novo status do Fluxo B
+    // 📄 AGUARDANDO CONTRATO: Pedidos com pagamento confirmado aguardando assinatura
     const awaitingContract = sortByNewest(
       ordersAndAttempts.filter(item => 
         item.type === 'order' && 
@@ -73,10 +73,19 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
       )
     );
     
-    // ⏳ AGUARDANDO PAGAMENTO: Pendentes + Tentativas
+    // 💳 PAGOS: Pedidos que têm pagamento confirmado (qualquer status que não seja ativo/finalizado)
+    const paid = sortByNewest(
+      ordersAndAttempts.filter(item => 
+        item.type === 'order' && 
+        item.hasPaidInstallment &&
+        !['ativo', 'video_aprovado', 'cancelado', 'cancelado_automaticamente', 'bloqueado', 'pago_pendente_video'].includes(item.status)
+      )
+    );
+    
+    // ⏳ AGUARDANDO PAGAMENTO: Pendentes + Tentativas (SEM parcela paga)
     const awaitingPayment = sortByNewest(
       ordersAndAttempts.filter(item => 
-        (item.type === 'order' && item.status === 'pendente') ||
+        (item.type === 'order' && item.status === 'pendente' && !item.hasPaidInstallment) ||
         item.type === 'attempt'
       )
     );
@@ -106,7 +115,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
       )
     );
     
-    return { active, processing, awaitingContract, awaitingPayment, blocked, canceled, completed };
+    return { active, processing, awaitingContract, paid, awaitingPayment, blocked, canceled, completed };
   }, [ordersAndAttempts]);
 
   // Handlers
@@ -335,43 +344,49 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
       
       <Tabs defaultValue="active" className="space-y-4">
         <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
-          <TabsTrigger value="active" className="flex-1 min-w-[120px]">
+          <TabsTrigger value="active" className="flex-1 min-w-[100px]">
             🟢 Ativos
             <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
               {filteredOrders.active.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="processing" className="flex-1 min-w-[120px]">
+          <TabsTrigger value="processing" className="flex-1 min-w-[110px]">
             📹 Processando
             <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
               {filteredOrders.processing.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="contract" className="flex-1 min-w-[140px]">
-            📄 Aguardando Contrato
+          <TabsTrigger value="paid" className="flex-1 min-w-[90px]">
+            💳 Pagos
+            <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
+              {filteredOrders.paid.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="contract" className="flex-1 min-w-[130px]">
+            📄 Ag. Contrato
             <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
               {filteredOrders.awaitingContract.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="payment" className="flex-1 min-w-[160px]">
-            ⏳ Aguardando Pagamento
+          <TabsTrigger value="payment" className="flex-1 min-w-[140px]">
+            ⏳ Ag. Pagamento
             <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
               {filteredOrders.awaitingPayment.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="blocked" className="flex-1 min-w-[110px]">
+          <TabsTrigger value="blocked" className="flex-1 min-w-[100px]">
             🔒 Bloqueados
             <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
               {filteredOrders.blocked.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="canceled" className="flex-1 min-w-[110px]">
+          <TabsTrigger value="canceled" className="flex-1 min-w-[100px]">
             ❌ Cancelados
             <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
               {filteredOrders.canceled.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="completed" className="flex-1 min-w-[110px]">
+          <TabsTrigger value="completed" className="flex-1 min-w-[100px]">
             ✅ Finalizados
             <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
               {filteredOrders.completed.length}
@@ -385,6 +400,10 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
         
         <TabsContent value="processing">
           {renderOrdersList(filteredOrders.processing, 'Nenhum pedido aguardando vídeo ou aprovação.')}
+        </TabsContent>
+        
+        <TabsContent value="paid">
+          {renderOrdersList(filteredOrders.paid, 'Nenhum pedido com pagamento confirmado aguardando próximas etapas.')}
         </TabsContent>
         
         <TabsContent value="contract">

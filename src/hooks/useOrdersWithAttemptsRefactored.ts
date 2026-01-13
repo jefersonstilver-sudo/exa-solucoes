@@ -46,6 +46,14 @@ export const useOrdersWithAttemptsRefactored = () => {
       
       const pedidoIdsComVideo = new Set(pedidosComVideo?.map(pv => pv.pedido_id) || []);
       
+      // Buscar parcelas pagas para identificar pedidos com pagamento confirmado
+      const { data: parcelasPagas } = await supabase
+        .from('parcelas')
+        .select('pedido_id')
+        .eq('status', 'pago');
+      
+      const pedidoIdsComPagamento = new Set(parcelasPagas?.map(p => p.pedido_id) || []);
+      
       // Buscar tentativas normalmente
       const tentativas = await fetchAttemptsData();
       
@@ -72,7 +80,8 @@ export const useOrdersWithAttemptsRefactored = () => {
         is_fidelidade: pedido.is_fidelidade,
         contrato_status: pedido.contrato_status,
         contrato_assinado_em: pedido.contrato_assinado_em,
-        hasVideo: pedidoIdsComVideo.has(pedido.id)
+        hasVideo: pedidoIdsComVideo.has(pedido.id),
+        hasPaidInstallment: pedidoIdsComPagamento.has(pedido.id)
       }));
       
       const tentativasFormatadas = formatAttemptsData(tentativasComEmails);
