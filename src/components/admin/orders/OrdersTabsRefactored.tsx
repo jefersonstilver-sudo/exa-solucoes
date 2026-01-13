@@ -44,61 +44,46 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
-  // Filtrar pedidos por categoria - Lógica consolidada do Fluxo Opção B
+  // Filtrar pedidos por categoria - MÁQUINA DE ESTADOS CANÔNICA v1.0
+  // 6 abas consolidadas: Ativos, Processando, Pendentes, Bloqueados, Cancelados, Finalizados
   const filteredOrders = useMemo(() => {
     const now = new Date();
     
-    // 🟢 ATIVOS: Em exibição (ativo/video_aprovado) E data_fim > hoje
+    // 🟢 ATIVOS: Em exibição (status=ativo) E dentro do período contratado (data_fim > hoje)
     const active = sortByNewest(
       ordersAndAttempts.filter(item => 
         item.type === 'order' && 
-        ['ativo', 'video_aprovado'].includes(item.status) &&
+        item.status === 'ativo' &&
         item.data_fim && new Date(item.data_fim) > now
       )
     );
     
-    // 📹 PROCESSANDO: Aguardando vídeo/aprovação
+    // 📹 PROCESSANDO: Todo o pipeline de aprovação (contrato → vídeo → aprovação)
+    // Inclui: aguardando_contrato, aguardando_video, video_enviado, video_aprovado
     const processing = sortByNewest(
       ordersAndAttempts.filter(item => 
         item.type === 'order' && 
-        ['aguardando_video', 'video_enviado'].includes(item.status)
+        ['aguardando_contrato', 'aguardando_video', 'video_enviado', 'video_aprovado'].includes(item.status)
       )
     );
     
-    // 📄 AGUARDANDO CONTRATO: Pedidos com pagamento confirmado aguardando assinatura
-    const awaitingContract = sortByNewest(
+    // ⏳ PENDENTES: Aguardando pagamento (pedidos pendentes + tentativas abandonadas)
+    const pending = sortByNewest(
       ordersAndAttempts.filter(item => 
-        item.type === 'order' && 
-        item.status === 'aguardando_contrato'
-      )
-    );
-    
-    // 💳 PAGOS: Pedidos que têm pagamento confirmado (qualquer status que não seja ativo/finalizado)
-    const paid = sortByNewest(
-      ordersAndAttempts.filter(item => 
-        item.type === 'order' && 
-        item.hasPaidInstallment &&
-        !['ativo', 'video_aprovado', 'cancelado', 'cancelado_automaticamente', 'bloqueado', 'pago_pendente_video'].includes(item.status)
-      )
-    );
-    
-    // ⏳ AGUARDANDO PAGAMENTO: Pendentes + Tentativas (SEM parcela paga)
-    const awaitingPayment = sortByNewest(
-      ordersAndAttempts.filter(item => 
-        (item.type === 'order' && item.status === 'pendente' && !item.hasPaidInstallment) ||
+        (item.type === 'order' && item.status === 'pendente') ||
         item.type === 'attempt'
       )
     );
     
-    // 🔒 BLOQUEADOS: Bloqueados + Legados (pago_pendente_video)
+    // 🔒 BLOQUEADOS: Pedidos bloqueados por inadimplência ou outro motivo
     const blocked = sortByNewest(
       ordersAndAttempts.filter(item => 
         item.type === 'order' && 
-        ['bloqueado', 'pago_pendente_video'].includes(item.status)
+        item.status === 'bloqueado'
       )
     );
     
-    // ❌ CANCELADOS: Cancelados
+    // ❌ CANCELADOS: Cancelados manualmente ou automaticamente
     const canceled = sortByNewest(
       ordersAndAttempts.filter(item => 
         item.type === 'order' && 
@@ -106,16 +91,17 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
       )
     );
     
-    // ✅ FINALIZADOS: data_fim <= hoje (já expiraram)
+    // ✅ FINALIZADOS: Campanhas encerradas (data_fim <= hoje)
+    // Inclui tanto 'ativo' quanto 'finalizado' se data_fim passou
     const completed = sortByNewest(
       ordersAndAttempts.filter(item => 
         item.type === 'order' && 
-        ['ativo', 'video_aprovado'].includes(item.status) &&
+        ['ativo', 'finalizado'].includes(item.status) &&
         item.data_fim && new Date(item.data_fim) <= now
       )
     );
     
-    return { active, processing, awaitingContract, paid, awaitingPayment, blocked, canceled, completed };
+    return { active, processing, pending, blocked, canceled, completed };
   }, [ordersAndAttempts]);
 
   // Handlers
@@ -345,7 +331,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
       <Tabs defaultValue="active" className="space-y-4">
         <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
           <TabsTrigger value="active" className="flex-1 min-w-[100px]">
-            🟢 Ativos
+            🟢 Em Exibição
             <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
               {filteredOrders.active.length}
             </Badge>
@@ -356,22 +342,10 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
               {filteredOrders.processing.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="paid" className="flex-1 min-w-[90px]">
-            💳 Pagos
+          <TabsTrigger value="pending" className="flex-1 min-w-[100px]">
+            ⏳ Pendentes
             <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
-              {filteredOrders.paid.length}
-            </Badge>
-          </TabsTrigger>
-          <TabsTrigger value="contract" className="flex-1 min-w-[130px]">
-            📄 Ag. Contrato
-            <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
-              {filteredOrders.awaitingContract.length}
-            </Badge>
-          </TabsTrigger>
-          <TabsTrigger value="payment" className="flex-1 min-w-[140px]">
-            ⏳ Ag. Pagamento
-            <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
-              {filteredOrders.awaitingPayment.length}
+              {filteredOrders.pending.length}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="blocked" className="flex-1 min-w-[100px]">
@@ -395,23 +369,15 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
         </TabsList>
 
         <TabsContent value="active">
-          {renderOrdersList(filteredOrders.active, 'Nenhum pedido em exibição.')}
+          {renderOrdersList(filteredOrders.active, 'Nenhuma campanha em exibição.')}
         </TabsContent>
         
         <TabsContent value="processing">
-          {renderOrdersList(filteredOrders.processing, 'Nenhum pedido aguardando vídeo ou aprovação.')}
+          {renderOrdersList(filteredOrders.processing, 'Nenhum pedido em processamento (contrato/vídeo/aprovação).')}
         </TabsContent>
         
-        <TabsContent value="paid">
-          {renderOrdersList(filteredOrders.paid, 'Nenhum pedido com pagamento confirmado aguardando próximas etapas.')}
-        </TabsContent>
-        
-        <TabsContent value="contract">
-          {renderOrdersList(filteredOrders.awaitingContract, 'Nenhum pedido aguardando contrato.')}
-        </TabsContent>
-        
-        <TabsContent value="payment">
-          {renderOrdersList(filteredOrders.awaitingPayment, 'Nenhum pedido ou tentativa aguardando pagamento.')}
+        <TabsContent value="pending">
+          {renderOrdersList(filteredOrders.pending, 'Nenhum pedido ou tentativa aguardando pagamento.')}
         </TabsContent>
         
         <TabsContent value="blocked">
@@ -423,7 +389,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
         </TabsContent>
         
         <TabsContent value="completed">
-          {renderOrdersList(filteredOrders.completed, 'Nenhum pedido finalizado.')}
+          {renderOrdersList(filteredOrders.completed, 'Nenhuma campanha finalizada.')}
         </TabsContent>
       </Tabs>
 

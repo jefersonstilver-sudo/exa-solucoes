@@ -177,29 +177,33 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         .gt('valor_total', 0);
 
       const pedidos = pedidosData?.length || 0;
-      const paidStatuses = ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'];
+      // MÁQUINA DE ESTADOS CANÔNICA v1.0 - Status canônicos apenas
+      // Removidos status legados: 'pago', 'pago_pendente_video'
+      const paidStatuses = ['video_enviado', 'video_aprovado', 'ativo'];
       const pagos = pedidosData?.filter(p => paidStatuses.includes(p.status)).length || 0;
       const pendentes = pedidosData?.filter(p => !paidStatuses.includes(p.status)).length || 0;
       const ticketMedio = pedidosData?.length 
         ? pedidosData.reduce((sum, p) => sum + (p.valor_total || 0), 0) / pedidosData.length 
         : 0;
 
-      // 2.1. Pedidos Ativos (todos que estão funcionando) e sem contrato
+      // 2.1. Pedidos Ativos (campanhas em exibição) e sem contrato
+      // CANÔNICO: status = 'ativo' apenas
       const { data: pedidosAtivosData } = await supabase
         .from('pedidos')
         .select('id, status, contrato_status')
-        .in('status', paidStatuses);
+        .eq('status', 'ativo');
 
       const pedidosAtivos = pedidosAtivosData?.length || 0;
       const pedidosSemContrato = pedidosAtivosData?.filter(p => 
         p.contrato_status !== 'assinado'
       ).length || 0;
 
-      // 3. Vendas - Calcular baseado em PARCELAS PAGAS para pedidos parcelados
+      // 3. Vendas - Calcular baseado em PARCELAS PAGAS
+      // CANÔNICO: status canônicos apenas
       const { data: vendasData } = await supabase
         .from('pedidos')
         .select('id, valor_total, is_fidelidade, total_parcelas')
-        .in('status', ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'])
+        .in('status', ['video_enviado', 'video_aprovado', 'ativo'])
         .gte('created_at', start)
         .lte('created_at', end)
         .gt('valor_total', 0);
@@ -267,6 +271,7 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       const vendasProjetadas2025 = parcelas2025?.reduce((sum, p) => sum + (p.valor_final || 0), 0) || 0;
 
       // Buscar lista detalhada de vendas projetadas para hover
+      // CANÔNICO: status canônicos apenas
       const { data: vendasProjetadasDetalhe } = await supabase
         .from('pedidos')
         .select(`
@@ -277,7 +282,7 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
           lista_paineis,
           client:users!pedidos_client_id_fkey(nome)
         `)
-        .in('status', ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'])
+        .in('status', ['video_enviado', 'video_aprovado', 'ativo'])
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -324,10 +329,11 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       }
 
       // Período anterior (mantém cálculo simples para comparação)
+      // CANÔNICO: status canônicos apenas
       const { data: vendasAnteriores } = await supabase
         .from('pedidos')
         .select('valor_total')
-        .in('status', ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'])
+        .in('status', ['video_enviado', 'video_aprovado', 'ativo'])
         .gte('created_at', previousStart.toISOString())
         .lte('created_at', previousEnd.toISOString())
         .gt('valor_total', 0);

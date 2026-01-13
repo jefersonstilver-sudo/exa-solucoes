@@ -27,14 +27,11 @@ export const validateVideoUploadPermission = async (orderId: string): Promise<Se
       };
     }
 
-    // FLUXO OPÇÃO B: Upload só liberado após CONTRATO ASSINADO (não pagamento)
+    // MÁQUINA DE ESTADOS CANÔNICA v1.0
+    // Upload só liberado após CONTRATO ASSINADO (não pagamento)
     // Status aguardando_contrato = pago mas sem contrato = BLOQUEADO
     // Status aguardando_video = contrato assinado = LIBERADO
     const allowedStatuses = ['aguardando_video', 'video_enviado', 'video_aprovado', 'ativo'];
-    
-    // Manter retrocompatibilidade temporária com status legado
-    const legacyAllowed = ['pago', 'pago_pendente_video'];
-    const isLegacyStatus = legacyAllowed.includes(order.status);
     
     const canUpload = allowedStatuses.includes(order.status);
 
@@ -42,7 +39,6 @@ export const validateVideoUploadPermission = async (orderId: string): Promise<Se
       orderId,
       status: order.status,
       canUpload,
-      isLegacyStatus,
       allowedStatuses
     });
 
@@ -55,12 +51,11 @@ export const validateVideoUploadPermission = async (orderId: string): Promise<Se
       };
     }
 
-    // Status legado com aviso
-    if (isLegacyStatus && !canUpload) {
-      console.warn('⚠️ [VideoSecurity] Status legado detectado:', order.status);
+    // Bloqueados: Pedido foi bloqueado administrativamente
+    if (order.status === 'bloqueado') {
       return {
         canUpload: false,
-        reason: 'Contrato pendente de assinatura. Entre em contato com o suporte.',
+        reason: 'Pedido bloqueado. Entre em contato com o suporte para mais informações.',
         orderStatus: order.status
       };
     }
@@ -87,6 +82,7 @@ export const validateVideoUploadPermission = async (orderId: string): Promise<Se
   }
 };
 
+// MÁQUINA DE ESTADOS CANÔNICA v1.0 - Mapeamento de status para segurança
 export const getOrderSecurityStatus = (status: string) => {
   const securityMap: Record<string, { level: string; message: string; description: string }> = {
     'pendente': {
@@ -104,16 +100,6 @@ export const getOrderSecurityStatus = (status: string) => {
       message: 'Aguardando vídeo',
       description: 'Contrato assinado - envie seu vídeo para ativar a campanha'
     },
-    'pago': {
-      level: 'blocked', // Legado - tratar como aguardando_contrato
-      message: 'Verificando contrato',
-      description: 'Aguardando verificação do contrato'
-    },
-    'pago_pendente_video': {
-      level: 'blocked', // Legado - tratar como aguardando_contrato
-      message: 'Verificando contrato',
-      description: 'Aguardando verificação do contrato'
-    },
     'video_enviado': {
       level: 'allowed',
       message: 'Vídeo em análise',
@@ -129,10 +115,25 @@ export const getOrderSecurityStatus = (status: string) => {
       message: 'Campanha ativa',
       description: 'Campanha em execução nos painéis'
     },
+    'finalizado': {
+      level: 'completed',
+      message: 'Campanha finalizada',
+      description: 'Período de exibição encerrado'
+    },
+    'bloqueado': {
+      level: 'blocked',
+      message: 'Pedido bloqueado',
+      description: 'Pedido bloqueado administrativamente. Entre em contato com o suporte.'
+    },
     'cancelado': {
       level: 'blocked',
       message: 'Pedido cancelado',
       description: 'Este pedido foi cancelado'
+    },
+    'cancelado_automaticamente': {
+      level: 'blocked',
+      message: 'Pedido cancelado',
+      description: 'Este pedido foi cancelado automaticamente'
     }
   };
 
