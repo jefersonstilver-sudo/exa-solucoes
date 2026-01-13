@@ -40,12 +40,13 @@ export const formatAttemptsData = (tentativasComEmails: any[]): OrderOrAttempt[]
 };
 
 export const filterOrphanedAttempts = (tentativas: OrderOrAttempt[], pedidos: OrderOrAttempt[]): OrderOrAttempt[] => {
-  // Status que indicam pagamento confirmado
-  const PAID_STATUSES = ['ativo', 'pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'];
+  // Status que indicam pedido em andamento (NÃO significa necessariamente pago!)
+  // pago_pendente_video é LEGADO e NÃO deve contar como pago real
+  const ACTIVE_ORDER_STATUSES = ['ativo', 'video_aprovado', 'video_enviado', 'aguardando_video', 'aguardando_contrato'];
   
   // Criar mapa mais robusto de pedidos pagos com múltiplos critérios
   const paidOrdersData = pedidos
-    .filter(p => PAID_STATUSES.includes(p.status))
+    .filter(p => ACTIVE_ORDER_STATUSES.includes(p.status))
     .map(pedido => ({
       client_id: pedido.client_id,
       valor_total: pedido.valor_total,
@@ -108,37 +109,48 @@ export const combineAndSortData = (pedidos: OrderOrAttempt[], tentativas: OrderO
 };
 
 export const calculateStats = (pedidos: OrderOrAttempt[], tentativas: OrderOrAttempt[]): OrdersStats => {
-  // Status que indicam pagamento confirmado
-  const PAID_STATUSES = ['ativo', 'pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'];
+  // Status que indicam pedido REALMENTE ativo (exclui pago_pendente_video que é legado bloqueado)
+  const REAL_ACTIVE_STATUSES = ['ativo', 'video_aprovado', 'video_enviado', 'aguardando_video', 'aguardando_contrato'];
   
-  // Pedidos pagos = status "ativo" ou equivalentes
-  const paidOrders = pedidos.filter(p => PAID_STATUSES.includes(p.status));
+  // Status legados que NÃO devem contar como receita real
+  const LEGACY_BLOCKED_STATUSES = ['pago_pendente_video'];
+  
+  // Pedidos realmente ativos (excluindo legados)
+  const realActiveOrders = pedidos.filter(p => REAL_ACTIVE_STATUSES.includes(p.status));
+  
+  // Pedidos legados bloqueados
+  const legacyBlockedOrders = pedidos.filter(p => LEGACY_BLOCKED_STATUSES.includes(p.status));
   
   // Pedidos não pagos = "pendente", "cancelado", etc.
-  const unpaidOrders = pedidos.filter(p => !PAID_STATUSES.includes(p.status));
+  const unpaidOrders = pedidos.filter(p => 
+    !REAL_ACTIVE_STATUSES.includes(p.status) && 
+    !LEGACY_BLOCKED_STATUSES.includes(p.status) &&
+    p.status !== 'cancelado'
+  );
   
   const totalOrders = pedidos.length;
-  const totalPaidOrders = paidOrders.length;
+  const totalActiveOrders = realActiveOrders.length;
   
-  // Tentativas = tentativas_compra + pedidos não pagos
+  // Tentativas = tentativas_compra + pedidos pendentes
   const totalAttempts = tentativas.length + unpaidOrders.length;
   
-  // Receita real: APENAS pedidos com status "pago"
-  const totalRevenue = paidOrders.reduce((sum, p) => sum + (p.valor_total || 0), 0);
+  // Receita real: APENAS pedidos com status realmente ativo (NÃO inclui pago_pendente_video)
+  // NOTA: Isso é uma aproximação - a receita REAL vem da RPC get_orders_stats_real()
+  const totalRevenue = realActiveOrders.reduce((sum, p) => sum + (p.valor_total || 0), 0);
   
-  // Valor abandonado: tentativas + pedidos não pagos
-  const abandonedValue = tentativas.reduce((sum, t) => sum + (t.valor_total || 0), 0) +
-                         unpaidOrders.reduce((sum, p) => sum + (p.valor_total || 0), 0);
+  // Valor abandonado: tentativas apenas (legados bloqueados são contabilizados separadamente)
+  const abandonedValue = tentativas.reduce((sum, t) => sum + (t.valor_total || 0), 0);
   
-  // Taxa de conversão: pedidos pagos / (pedidos pagos + tentativas + pedidos não pagos) * 100
-  const totalInteractions = totalPaidOrders + tentativas.length + unpaidOrders.length;
+  // Taxa de conversão: pedidos ativos reais / (pedidos ativos + tentativas + pedidos pendentes) * 100
+  const totalInteractions = totalActiveOrders + tentativas.length + unpaidOrders.length;
   const conversionRate = totalInteractions > 0 
-    ? Number(((totalPaidOrders / totalInteractions) * 100).toFixed(1))
+    ? Number(((totalActiveOrders / totalInteractions) * 100).toFixed(1))
     : 0;
   
-  console.log('📊 Stats calculados:', {
+  console.log('📊 Stats calculados (frontend - para stats reais use RPC):', {
     totalOrders,
-    totalPaidOrders,
+    totalActiveOrders,
+    legacyBlocked: legacyBlockedOrders.length,
     totalAttempts,
     totalRevenue: totalRevenue.toFixed(2),
     conversionRate: `${conversionRate}%`,
