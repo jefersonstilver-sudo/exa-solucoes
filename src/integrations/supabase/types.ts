@@ -5418,6 +5418,7 @@ export type Database = {
           created_at: string | null
           deleted_at: string | null
           deleted_by: string | null
+          empresa_elevador_id: string | null
           id: string
           is_active: boolean | null
           is_deleted: boolean | null
@@ -5440,6 +5441,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          empresa_elevador_id?: string | null
           id?: string
           is_active?: boolean | null
           is_deleted?: boolean | null
@@ -5462,6 +5464,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          empresa_elevador_id?: string | null
           id?: string
           is_active?: boolean | null
           is_deleted?: boolean | null
@@ -5480,6 +5483,13 @@ export type Database = {
             columns: ["building_id"]
             isOneToOne: false
             referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devices_empresa_elevador_id_fkey"
+            columns: ["empresa_elevador_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
             referencedColumns: ["id"]
           },
         ]
@@ -14494,7 +14504,7 @@ export type Database = {
         | "administrativo"
         | "diretoria"
         | "ti"
-      fornecedor_tipo: "servico" | "produto" | "ambos"
+      fornecedor_tipo: "servico" | "produto" | "ambos" | "elevador"
       funcionario_status: "ativo" | "ferias" | "suspenso" | "encerrado"
       investimento_status:
         | "planejado"
@@ -14706,7 +14716,7 @@ export const Constants = {
         "diretoria",
         "ti",
       ],
-      fornecedor_tipo: ["servico", "produto", "ambos"],
+      fornecedor_tipo: ["servico", "produto", "ambos", "elevador"],
       funcionario_status: ["ativo", "ferias", "suspenso", "encerrado"],
       investimento_status: [
         "planejado",

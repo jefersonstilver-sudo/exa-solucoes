@@ -14,6 +14,8 @@ export interface Device {
   tags?: string[] | any;
   total_events?: number;
   offline_count?: number;
+  building_id?: string | null;
+  empresa_elevador_id?: string | null;
   metadata?: {
     torre?: string;
     elevador?: string;

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConnectionTimeline } from "./ConnectionTimeline";
 import { UptimeChart } from "./UptimeChart";
 import { AssignBuildingDialog } from "./AssignBuildingDialog";
+import { SelectElevatorCompanyDialog } from "./SelectElevatorCompanyDialog";
 import { Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell, Building2, Link2, Unlink, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,9 @@ export const ComputerDetailModal = ({
   });
   const [loading, setLoading] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [isElevatorDialogOpen, setIsElevatorDialogOpen] = useState(false);
   const [assignedBuilding, setAssignedBuilding] = useState<{ id: string; nome: string } | null>(null);
+  const [elevatorCompany, setElevatorCompany] = useState<{ id: string; nome_fantasia: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const offlineCounter = useRealTimeCounter(computer?.status === 'offline' ? computer?.last_online_at : null);
   const { isMasterAccount } = useDynamicModulePermissions();
@@ -59,6 +62,7 @@ export const ComputerDetailModal = ({
     if (computer?.id && isOpen) {
       loadAlertConfig();
       loadAssignedBuilding();
+      loadElevatorCompany();
     }
   }, [computer?.id, isOpen]);
 
@@ -110,8 +114,38 @@ export const ComputerDetailModal = ({
     }
   };
 
+  const loadElevatorCompany = async () => {
+    try {
+      if (!computer?.empresa_elevador_id) {
+        setElevatorCompany(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('fornecedores')
+        .select('id, nome_fantasia')
+        .eq('id', computer.empresa_elevador_id)
+        .single();
+
+      if (error) {
+        console.error('Error loading elevator company:', error);
+        setElevatorCompany(null);
+        return;
+      }
+
+      setElevatorCompany(data);
+    } catch (error) {
+      console.error('Error loading elevator company:', error);
+      setElevatorCompany(null);
+    }
+  };
+
   const handleBuildingAssigned = () => {
     loadAssignedBuilding();
+  };
+
+  const handleElevatorCompanySelected = () => {
+    loadElevatorCompany();
   };
 
   const saveAlertConfig = async () => {
@@ -408,7 +442,51 @@ export const ComputerDetailModal = ({
               </CardContent>
             </Card>
 
-            {/* ZONA DE PERIGO - Apenas Admin Master + Device Offline */}
+            {/* CARD 5: EMPRESA DE ELEVADOR */}
+            <Card className="bg-module-card border-module shadow-sm md:col-span-3">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
+                  🛗 Empresa de Elevador
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {elevatorCompany ? (
+                      <>
+                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                          <span className="text-xl">🛗</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-blue-700">{elevatorCompany.nome_fantasia}</p>
+                          <p className="text-xs text-module-secondary">Empresa responsável</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                          <span className="text-xl opacity-40">🛗</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Não definida</p>
+                          <p className="text-xs text-module-secondary">Clique para selecionar empresa</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <Button
+                    onClick={() => setIsElevatorDialogOpen(true)}
+                    variant={elevatorCompany ? "outline" : "default"}
+                    size="sm"
+                    className={elevatorCompany ? "border-blue-300 text-blue-700 hover:bg-blue-50" : "bg-module-accent hover:bg-module-accent-hover text-white"}
+                  >
+                    🛗 {elevatorCompany ? 'Alterar Empresa' : 'Selecionar Empresa'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+
             {isMasterAccount && !isOnline && (
               <Card className="bg-red-50 border-red-200 shadow-sm md:col-span-3">
                 <CardHeader className="pb-3">
@@ -555,6 +633,15 @@ export const ComputerDetailModal = ({
         deviceName={displayName}
         currentBuildingId={computer?.building_id || null}
         onAssigned={handleBuildingAssigned}
+      />
+
+      {/* Dialog de Seleção de Empresa de Elevador */}
+      <SelectElevatorCompanyDialog
+        isOpen={isElevatorDialogOpen}
+        onClose={() => setIsElevatorDialogOpen(false)}
+        deviceId={computer?.id || ''}
+        currentCompanyId={computer?.empresa_elevador_id || null}
+        onCompanySelected={handleElevatorCompanySelected}
       />
     </Dialog>
   );
