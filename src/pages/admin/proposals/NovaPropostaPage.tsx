@@ -33,7 +33,6 @@ import { ProposalAlertRecipients, type AlertRecipient } from '@/components/admin
 import { calculateBuildingsPrice, type PlanDuration } from '@/utils/buildingPriceUtils';
 import { CCEmailsInput } from '@/components/ui/cc-emails-input';
 import { createContactFromProposal } from '@/services/contactAutoCreator';
-
 interface Building {
   id: string;
   nome: string;
@@ -50,7 +49,6 @@ interface Building {
   imagem_principal: string | null;
   is_manual?: boolean;
 }
-
 interface ManualBuilding {
   id: string;
   nome: string;
@@ -64,14 +62,22 @@ interface ManualBuilding {
   imagem_principal: string | null;
   is_manual: true;
 }
-
 const NovaPropostaPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { isMobile } = useResponsiveLayout();
-  const { buildPath } = useAdminBasePath();
-  const { consultCNPJ, isLoading: isLoadingCNPJ } = useCNPJConsult();
-  const { saveClientData: saveAutocomplete } = useAutocompleteHistory();
+  const {
+    isMobile
+  } = useResponsiveLayout();
+  const {
+    buildPath
+  } = useAdminBasePath();
+  const {
+    consultCNPJ,
+    isLoading: isLoadingCNPJ
+  } = useCNPJConsult();
+  const {
+    saveClientData: saveAutocomplete
+  } = useAutocompleteHistory();
 
   // Estado do formulário
   const [clientData, setClientData] = useState({
@@ -81,7 +87,8 @@ const NovaPropostaPage = () => {
     country: 'BR' as 'BR' | 'AR' | 'PY',
     document: '',
     phone: '',
-    phoneFullNumber: '', // Número completo com código do país
+    phoneFullNumber: '',
+    // Número completo com código do país
     phoneCountry: 'BR' as CountryCode,
     email: '',
     address: '',
@@ -92,31 +99,40 @@ const NovaPropostaPage = () => {
   // Funções auxiliares para documento dinâmico por país
   const getDocumentLabel = () => {
     switch (clientData.country) {
-      case 'BR': return 'CNPJ';
-      case 'AR': return 'CUIT';
-      case 'PY': return 'RUC';
-      default: return 'Documento';
+      case 'BR':
+        return 'CNPJ';
+      case 'AR':
+        return 'CUIT';
+      case 'PY':
+        return 'RUC';
+      default:
+        return 'Documento';
     }
   };
-
   const getDocumentPlaceholder = () => {
     switch (clientData.country) {
-      case 'BR': return '00.000.000/0000-00';
-      case 'AR': return '20-12345678-3';
-      case 'PY': return '80012345-6';
-      default: return 'Documento';
+      case 'BR':
+        return '00.000.000/0000-00';
+      case 'AR':
+        return '20-12345678-3';
+      case 'PY':
+        return '80012345-6';
+      default:
+        return 'Documento';
     }
   };
-
   const getDocumentMaxLength = () => {
     switch (clientData.country) {
-      case 'BR': return 18;
-      case 'AR': return 13;
-      case 'PY': return 10;
-      default: return 20;
+      case 'BR':
+        return 18;
+      case 'AR':
+        return 13;
+      case 'PY':
+        return 10;
+      default:
+        return 20;
     }
   };
-
   const isDocumentValid = () => {
     if (!clientData.document) return true;
     const minLength = clientData.country === 'BR' ? 14 : clientData.country === 'AR' ? 11 : 9;
@@ -124,19 +140,18 @@ const NovaPropostaPage = () => {
     if (cleanDoc.length < minLength) return true; // Still typing
     return validateCompanyDocument(clientData.document, clientData.country);
   };
-
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
   const [durationMonths, setDurationMonths] = useState(6);
   const [fidelValue, setFidelValue] = useState('');
   const [discountPercent, setDiscountPercent] = useState(10);
   const [overwriteCashValue, setOverwriteCashValue] = useState(false);
   const [cashValue, setCashValue] = useState('');
-  
+
   // Validade da proposta
   const [validityHours, setValidityHours] = useState(24);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
-  
+
   // Dialog de envio
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sendViaWhatsApp, setSendViaWhatsApp] = useState(true);
@@ -161,16 +176,17 @@ const NovaPropostaPage = () => {
     nome: '',
     endereco: '',
     quantidade_telas: 1,
-    visualizacoes_mes: 11610, // Manual v3.0: 387 ciclos × 30 dias = 11.610/mês por tela
+    visualizacoes_mes: 11610,
+    // Manual v3.0: 387 ciclos × 30 dias = 11.610/mês por tela
     publico_estimado: 100
   });
-  
+
   // Estados para destinatários de notificações EXA Alerts
   const [alertRecipients, setAlertRecipients] = useState<AlertRecipient[]>([]);
-  
+
   // Estados para e-mails de cópia (CC)
   const [ccEmails, setCcEmails] = useState<string[]>([]);
-  
+
   // Estado para preview da proposta
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
@@ -179,22 +195,49 @@ const NovaPropostaPage = () => {
   const [exigirContrato, setExigirContrato] = useState(true);
 
   // Opções de período
-  const periodOptions = [
-    { value: 1, label: '1 mês', discount: 0 },
-    { value: 3, label: '3 meses', discount: 20 },
-    { value: 6, label: '6 meses', discount: 30 },
-    { value: 9, label: '9 meses', discount: 33 },
-    { value: 12, label: '12 meses', discount: 37.5 },
-    { value: 18, label: '18 meses', discount: 40 },
-    { value: 24, label: '24 meses', discount: 45 },
-    { value: -2, label: 'Período em Dias', discount: -10, customDays: true },
-    { value: -1, label: 'Pagamento Personalizado', discount: 0, custom: true },
-  ];
+  const periodOptions = [{
+    value: 1,
+    label: '1 mês',
+    discount: 0
+  }, {
+    value: 3,
+    label: '3 meses',
+    discount: 20
+  }, {
+    value: 6,
+    label: '6 meses',
+    discount: 30
+  }, {
+    value: 9,
+    label: '9 meses',
+    discount: 33
+  }, {
+    value: 12,
+    label: '12 meses',
+    discount: 37.5
+  }, {
+    value: 18,
+    label: '18 meses',
+    discount: 40
+  }, {
+    value: 24,
+    label: '24 meses',
+    discount: 45
+  }, {
+    value: -2,
+    label: 'Período em Dias',
+    discount: -10,
+    customDays: true
+  }, {
+    value: -1,
+    label: 'Pagamento Personalizado',
+    discount: 0,
+    custom: true
+  }];
 
   // Handler para Vertical Premium
   const handleVerticalPremiumToggle = () => {
     const newTipoProduto = tipoProduto === 'vertical_premium' ? 'horizontal' : 'vertical_premium';
-    
     if (newTipoProduto === 'vertical_premium') {
       // Selecionar TODOS os prédios automaticamente
       setSelectedBuildings(buildings.map(b => b.id));
@@ -208,7 +251,7 @@ const NovaPropostaPage = () => {
   // Estados para pagamento personalizado
   const [isCustomPayment, setIsCustomPayment] = useState(false);
   const [customDurationMonths, setCustomDurationMonths] = useState(12);
-  
+
   // Estados para período em dias
   const [isCustomDays, setIsCustomDays] = useState(false);
   const [customDays, setCustomDays] = useState(15);
@@ -216,10 +259,15 @@ const NovaPropostaPage = () => {
     id: number;
     dueDate: Date;
     amount: string;
-  }[]>([
-    { id: 1, dueDate: new Date(), amount: '' },
-    { id: 2, dueDate: new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000), amount: '' }
-  ]);
+  }[]>([{
+    id: 1,
+    dueDate: new Date(),
+    amount: ''
+  }, {
+    id: 2,
+    dueDate: new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000),
+    amount: ''
+  }]);
 
   // Detectar se tem parcela futura no pagamento personalizado
   const hasFutureInstallment = useMemo(() => {
@@ -252,20 +300,16 @@ const NovaPropostaPage = () => {
       setDurationMonths(value);
     }
   };
-
-
   const addCustomInstallment = () => {
     const lastInstallment = customInstallments[customInstallments.length - 1];
     const newDate = new Date(lastInstallment.dueDate);
     newDate.setMonth(newDate.getMonth() + 1);
-    
     setCustomInstallments(prev => [...prev, {
       id: prev.length + 1,
       dueDate: newDate,
       amount: ''
     }]);
   };
-
   const removeCustomInstallment = (id: number) => {
     if (customInstallments.length <= 2) {
       toast.error('Mínimo de 2 parcelas');
@@ -281,23 +325,22 @@ const NovaPropostaPage = () => {
     }
     return date.toISOString().split('T')[0];
   };
-
   const updateInstallmentDate = (id: number, date: Date | null) => {
     // Só atualiza se a data for válida
     if (!date || isNaN(date.getTime())) {
       return;
     }
-    setCustomInstallments(prev => prev.map(p => 
-      p.id === id ? { ...p, dueDate: date } : p
-    ));
+    setCustomInstallments(prev => prev.map(p => p.id === id ? {
+      ...p,
+      dueDate: date
+    } : p));
   };
-
   const updateInstallmentAmount = (id: number, amount: string) => {
-    setCustomInstallments(prev => prev.map(p => 
-      p.id === id ? { ...p, amount } : p
-    ));
+    setCustomInstallments(prev => prev.map(p => p.id === id ? {
+      ...p,
+      amount
+    } : p));
   };
-
   const distributeEqually = () => {
     if (!fidelValue || parseFloat(fidelValue) <= 0) {
       toast.error('Defina o valor total primeiro');
@@ -305,64 +348,83 @@ const NovaPropostaPage = () => {
     }
     const total = parseFloat(fidelValue) * (isCustomPayment ? customDurationMonths : durationMonths);
     const perInstallment = (total / customInstallments.length).toFixed(2);
-    setCustomInstallments(prev => prev.map(p => ({ ...p, amount: perInstallment })));
+    setCustomInstallments(prev => prev.map(p => ({
+      ...p,
+      amount: perInstallment
+    })));
   };
-
   const customTotal = useMemo(() => {
     return customInstallments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
   }, [customInstallments]);
 
   // Opções de validade da proposta
-  const validityOptions = [
-    { value: 24, label: '24 horas', icon: '⚡' },
-    { value: 72, label: '72 horas', icon: '🕐' },
-    { value: 168, label: '7 dias', icon: '📅' },
-    { value: -1, label: 'Personalizado', icon: '🗓️' },
-    { value: 0, label: 'Indeterminada', icon: '∞' },
-  ];
+  const validityOptions = [{
+    value: 24,
+    label: '24 horas',
+    icon: '⚡'
+  }, {
+    value: 72,
+    label: '72 horas',
+    icon: '🕐'
+  }, {
+    value: 168,
+    label: '7 dias',
+    icon: '📅'
+  }, {
+    value: -1,
+    label: 'Personalizado',
+    icon: '🗓️'
+  }, {
+    value: 0,
+    label: 'Indeterminada',
+    icon: '∞'
+  }];
 
   // Buscar prédios ativos do banco de dados (incluindo preços por plano)
-  const { data: buildings = [], isLoading: isLoadingBuildings } = useQuery({
+  const {
+    data: buildings = [],
+    isLoading: isLoadingBuildings
+  } = useQuery({
     queryKey: ['buildings-active-for-proposals'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('buildings')
-        .select('id, nome, bairro, endereco, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, preco_trimestral, preco_semestral, preco_anual, publico_estimado, imagem_principal')
-        .eq('status', 'ativo')
-        .order('nome');
-      
+      const {
+        data,
+        error
+      } = await supabase.from('buildings').select('id, nome, bairro, endereco, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, preco_trimestral, preco_semestral, preco_anual, publico_estimado, imagem_principal').eq('status', 'ativo').order('nome');
       if (error) throw error;
       return data as Building[];
     }
   });
 
   // Buscar usuário atual (incluindo telefone para EXA Alerts)
-  const { data: currentUser } = useQuery({
+  const {
+    data: currentUser
+  } = useQuery({
     queryKey: ['current-user-with-phone'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) return null;
-      
-      const { data: userData } = await supabase
-        .from('users')
-        .select('id, nome, email, telefone')
-        .eq('id', user.id)
-        .single();
-      
+      const {
+        data: userData
+      } = await supabase.from('users').select('id, nome, email, telefone').eq('id', user.id).single();
       return userData;
     }
   });
 
   // Buscar todos os usuários administrativos para seletor de vendedor
-  const { data: adminUsers = [] } = useQuery({
+  const {
+    data: adminUsers = []
+  } = useQuery({
     queryKey: ['admin-users-for-seller-select'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, nome, email, telefone')
-        .in('role', ['super_admin', 'admin', 'comercial', 'marketing', 'gerente'])
-        .order('nome');
-      
+      const {
+        data,
+        error
+      } = await supabase.from('users').select('id, nome, email, telefone').in('role', ['super_admin', 'admin', 'comercial', 'marketing', 'gerente']).order('nome');
       if (error) throw error;
       return data || [];
     }
@@ -393,7 +455,7 @@ const NovaPropostaPage = () => {
         phone: currentUser.telefone,
         phoneCountry: 'BR' as CountryCode,
         receiveWhatsapp: true,
-        active: true,
+        active: true
       };
       setAlertRecipients([sellerRecipient]);
       console.log('🔔 Vendedor adicionado automaticamente como destinatário EXA Alerts');
@@ -402,11 +464,7 @@ const NovaPropostaPage = () => {
 
   // Toggle individual building
   const toggleBuilding = (id: string) => {
-    setSelectedBuildings(prev => 
-      prev.includes(id) 
-        ? prev.filter(b => b !== id)
-        : [...prev, id]
-    );
+    setSelectedBuildings(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
   };
 
   // Selecionar todos
@@ -425,15 +483,12 @@ const NovaPropostaPage = () => {
     const selectedManual = manualBuildings.filter(b => selectedBuildings.includes(b.id));
     return [...dbBuildings, ...selectedManual];
   }, [buildings, manualBuildings, selectedBuildings]);
-
   const totalPanels = useMemo(() => {
     return selectedBuildingsData.reduce((sum, b) => sum + (b.quantidade_telas || (b as any).numero_elevadores || 0), 0);
   }, [selectedBuildingsData]);
-
   const totalImpressions = useMemo(() => {
     return selectedBuildingsData.reduce((sum, b) => sum + (b.visualizacoes_mes || 0), 0);
   }, [selectedBuildingsData]);
-
   const totalPublico = useMemo(() => {
     return selectedBuildingsData.reduce((sum, b) => sum + (b.publico_estimado || 0), 0);
   }, [selectedBuildingsData]);
@@ -441,12 +496,12 @@ const NovaPropostaPage = () => {
   // Calcular preço para período em dias (< 30 dias = +10% acréscimo)
   const calculateDaysPrice = useMemo(() => {
     if (!isCustomDays || customDays <= 0) return 0;
-    
+
     // Soma do preço base de todos os prédios selecionados
     const totalBasePrice = selectedBuildingsData.reduce((sum, b) => sum + (b.preco_base || 0), 0);
-    
+
     // Preço por dia = (Preço mensal / 30) × 1.10 (10% acréscimo)
-    const pricePerDay = (totalBasePrice / 30) * 1.10;
+    const pricePerDay = totalBasePrice / 30 * 1.10;
     return pricePerDay * customDays;
   }, [isCustomDays, customDays, selectedBuildingsData]);
 
@@ -460,7 +515,6 @@ const NovaPropostaPage = () => {
       toast.error('Informe o endereço do prédio');
       return;
     }
-    
     const newBuilding: ManualBuilding = {
       id: `manual_${Date.now()}`,
       nome: newManualBuilding.nome.trim(),
@@ -468,17 +522,23 @@ const NovaPropostaPage = () => {
       endereco: newManualBuilding.endereco.trim(),
       quantidade_telas: newManualBuilding.quantidade_telas || 1,
       numero_elevadores: newManualBuilding.quantidade_telas || 1,
-      visualizacoes_mes: newManualBuilding.visualizacoes_mes || 11610, // Manual v3.0
+      visualizacoes_mes: newManualBuilding.visualizacoes_mes || 11610,
+      // Manual v3.0
       preco_base: 0,
       publico_estimado: newManualBuilding.publico_estimado || 100,
       imagem_principal: null,
       is_manual: true
     };
-    
     setManualBuildings(prev => [...prev, newBuilding]);
     setSelectedBuildings(prev => [...prev, newBuilding.id]);
     setAddBuildingDialogOpen(false);
-    setNewManualBuilding({ nome: '', endereco: '', quantidade_telas: 1, visualizacoes_mes: 11610, publico_estimado: 100 });
+    setNewManualBuilding({
+      nome: '',
+      endereco: '',
+      quantidade_telas: 1,
+      visualizacoes_mes: 11610,
+      publico_estimado: 100
+    });
     toast.success('Prédio manual adicionado com *');
   };
 
@@ -492,12 +552,10 @@ const NovaPropostaPage = () => {
   // Usa preços manuais (preco_trimestral, preco_semestral, preco_anual) quando disponíveis
   const valorSugeridoMensal = useMemo(() => {
     if (selectedBuildingsData.length === 0) return 0;
-    
+
     // Converter durationMonths para PlanDuration válido
     const planDuration = ([1, 3, 6, 12].includes(durationMonths) ? durationMonths : 1) as PlanDuration;
-    
     const result = calculateBuildingsPrice(selectedBuildingsData, planDuration);
-    
     console.log("💰 [NovaPropostaPage] Valor sugerido mensal calculado:", {
       durationMonths,
       planDuration,
@@ -505,22 +563,26 @@ const NovaPropostaPage = () => {
       totalPrice: result.totalPrice,
       hasAnyManualPrice: result.hasAnyManualPrice
     });
-    
     return result.pricePerMonth;
   }, [selectedBuildingsData, durationMonths]);
 
   // Cálculos de valores
   const fidelMonthly = parseFloat(fidelValue) || 0;
   const fidelTotal = fidelMonthly * durationMonths;
-  const cashTotal = overwriteCashValue 
-    ? parseFloat(cashValue) || 0 
-    : fidelTotal * (1 - discountPercent / 100);
+  const cashTotal = overwriteCashValue ? parseFloat(cashValue) || 0 : fidelTotal * (1 - discountPercent / 100);
 
   // Mutation para salvar proposta
   const createProposalMutation = useMutation({
-    mutationFn: async (sendOptions: { whatsapp: boolean; email: boolean; onlyLink?: boolean }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
+    mutationFn: async (sendOptions: {
+      whatsapp: boolean;
+      email: boolean;
+      onlyLink?: boolean;
+    }) => {
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       const buildingsData = selectedBuildingsData.map(b => ({
         building_id: b.id,
         building_name: b.nome,
@@ -532,67 +594,55 @@ const NovaPropostaPage = () => {
         publico_estimado: b.publico_estimado,
         is_manual: (b as any).is_manual || false
       }));
-
       const year = new Date().getFullYear();
       const randomNum = Math.floor(1000 + Math.random() * 9000);
       const proposalNumber = `EXA-${year}-${randomNum}`;
-
       const fullName = `${clientData.firstName.trim()} ${clientData.lastName.trim()}`;
-      
-      const { data: proposal, error } = await supabase
-        .from('proposals')
-        .insert([{
-          number: proposalNumber,
-          client_name: fullName,
-          client_first_name: clientData.firstName.trim(),
-          client_last_name: clientData.lastName.trim(),
-          client_company_name: clientData.companyName || null,
-          client_country: clientData.country || 'BR',
-          client_cnpj: clientData.document || null,
-          client_phone: clientData.phoneFullNumber || clientData.phone || null, // Número completo com código do país
-          client_email: clientData.email || null,
-          selected_buildings: buildingsData as Json,
-          total_panels: totalPanels,
-          total_impressions_month: totalImpressions,
-          fidel_monthly_value: isCustomDays 
-            ? calculateDaysPrice 
-            : (isCustomPayment ? customTotal / customInstallments.length : fidelMonthly),
-          cash_total_value: isCustomDays 
-            ? calculateDaysPrice 
-            : (isCustomPayment ? customTotal : cashTotal),
-          discount_percent: isCustomDays ? -10 : discountPercent,
-          duration_months: isCustomDays ? 0 : durationMonths,
-          status: 'enviada',
-          sent_at: new Date().toISOString(),
-          expires_at: validityHours === 0 
-            ? null 
-            : validityHours === -1 && customDateRange?.to
-              ? customDateRange.to.toISOString()
-              : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
-          created_by: selectedSellerId || user?.id,
-          seller_name: selectedSeller?.nome || currentUser?.nome || selectedSeller?.email || 'Vendedor',
-          seller_phone: selectedSeller?.telefone || currentUser?.telefone || null,
-          seller_email: selectedSeller?.email || currentUser?.email || null,
-          payment_type: isCustomDays ? 'days' : (isCustomPayment ? 'custom' : 'standard'),
-          tipo_produto: tipoProduto,
-          client_address: clientData.address || null,
-          client_latitude: clientData.latitude || null,
-          client_longitude: clientData.longitude || null,
-          custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
-            installment: idx + 1,
-            due_date: formatDateForInput(p.dueDate),
-            amount: parseFloat(p.amount) || 0
-          })) as Json : null,
-          cobranca_futura: cobrancaFutura,
-          data_inicio_cobranca: null,
-          exigir_contrato: exigirContrato,
-          custom_days: isCustomDays ? customDays : null,
-          is_custom_days: isCustomDays,
-          cc_emails: ccEmails.length > 0 ? ccEmails : null
-        }])
-        .select()
-        .single();
-
+      const {
+        data: proposal,
+        error
+      } = await supabase.from('proposals').insert([{
+        number: proposalNumber,
+        client_name: fullName,
+        client_first_name: clientData.firstName.trim(),
+        client_last_name: clientData.lastName.trim(),
+        client_company_name: clientData.companyName || null,
+        client_country: clientData.country || 'BR',
+        client_cnpj: clientData.document || null,
+        client_phone: clientData.phoneFullNumber || clientData.phone || null,
+        // Número completo com código do país
+        client_email: clientData.email || null,
+        selected_buildings: buildingsData as Json,
+        total_panels: totalPanels,
+        total_impressions_month: totalImpressions,
+        fidel_monthly_value: isCustomDays ? calculateDaysPrice : isCustomPayment ? customTotal / customInstallments.length : fidelMonthly,
+        cash_total_value: isCustomDays ? calculateDaysPrice : isCustomPayment ? customTotal : cashTotal,
+        discount_percent: isCustomDays ? -10 : discountPercent,
+        duration_months: isCustomDays ? 0 : durationMonths,
+        status: 'enviada',
+        sent_at: new Date().toISOString(),
+        expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to ? customDateRange.to.toISOString() : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
+        created_by: selectedSellerId || user?.id,
+        seller_name: selectedSeller?.nome || currentUser?.nome || selectedSeller?.email || 'Vendedor',
+        seller_phone: selectedSeller?.telefone || currentUser?.telefone || null,
+        seller_email: selectedSeller?.email || currentUser?.email || null,
+        payment_type: isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
+        tipo_produto: tipoProduto,
+        client_address: clientData.address || null,
+        client_latitude: clientData.latitude || null,
+        client_longitude: clientData.longitude || null,
+        custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
+          installment: idx + 1,
+          due_date: formatDateForInput(p.dueDate),
+          amount: parseFloat(p.amount) || 0
+        })) as Json : null,
+        cobranca_futura: cobrancaFutura,
+        data_inicio_cobranca: null,
+        exigir_contrato: exigirContrato,
+        custom_days: isCustomDays ? customDays : null,
+        is_custom_days: isCustomDays,
+        cc_emails: ccEmails.length > 0 ? ccEmails : null
+      }]).select().single();
       if (error) throw error;
 
       // 📇 CRIAR CONTATO AUTOMATICAMENTE NO CRM
@@ -609,7 +659,6 @@ const NovaPropostaPage = () => {
           clientAddress: clientData.address || undefined,
           createdBy: selectedSellerId || user?.id
         });
-        
         if (contactResult.success) {
           console.log(`📇 Contato ${contactResult.isNew ? 'criado' : 'atualizado'} automaticamente:`, contactResult.contactId);
         } else {
@@ -629,26 +678,27 @@ const NovaPropostaPage = () => {
           receive_whatsapp: r.receiveWhatsapp,
           active: r.active
         }));
-        
         await supabase.from('proposal_alert_recipients').insert(recipientsToInsert);
         console.log(`✅ ${recipientsToInsert.length} destinatários de alertas salvos`);
       }
-
       await supabase.from('proposal_logs').insert({
         proposal_id: proposal.id,
         action: 'criada',
-        details: { 
-          send_whatsapp: sendOptions.whatsapp, 
+        details: {
+          send_whatsapp: sendOptions.whatsapp,
           send_email: sendOptions.email,
           buildings_count: selectedBuildings.length,
           alert_recipients_count: alertRecipients.length
         }
       });
-
       if (sendOptions.whatsapp && clientData.phone) {
         try {
-          const { error: whatsappError } = await supabase.functions.invoke('send-proposal-whatsapp', { 
-            body: { proposalId: proposal.id } 
+          const {
+            error: whatsappError
+          } = await supabase.functions.invoke('send-proposal-whatsapp', {
+            body: {
+              proposalId: proposal.id
+            }
           });
           if (whatsappError) {
             console.error('Erro ao enviar WhatsApp:', whatsappError);
@@ -660,11 +710,14 @@ const NovaPropostaPage = () => {
           console.error('Erro ao enviar WhatsApp:', err);
         }
       }
-
       if (sendOptions.email && clientData.email) {
         try {
-          const { error: emailError } = await supabase.functions.invoke('send-proposal-email', { 
-            body: { proposalId: proposal.id } 
+          const {
+            error: emailError
+          } = await supabase.functions.invoke('send-proposal-email', {
+            body: {
+              proposalId: proposal.id
+            }
           });
           if (emailError) {
             console.error('Erro ao enviar Email:', emailError);
@@ -691,12 +744,17 @@ const NovaPropostaPage = () => {
           console.error('⚠️ Erro ao enviar notificação EXA Alerts:', err);
         }
       }
-
-      return { proposal, onlyLink: sendOptions.onlyLink };
+      return {
+        proposal,
+        onlyLink: sendOptions.onlyLink
+      };
     },
-    onSuccess: (result) => {
-      const { proposal, onlyLink } = result;
-      
+    onSuccess: result => {
+      const {
+        proposal,
+        onlyLink
+      } = result;
+
       // Salvar dados do cliente no histórico de autocomplete
       saveAutocomplete({
         firstName: clientData.firstName,
@@ -707,9 +765,9 @@ const NovaPropostaPage = () => {
         phone: clientData.phoneFullNumber || clientData.phone,
         address: clientData.address
       });
-      
-      queryClient.invalidateQueries({ queryKey: ['proposals'] });
-      
+      queryClient.invalidateQueries({
+        queryKey: ['proposals']
+      });
       if (onlyLink) {
         // Copiar link para clipboard
         const proposalUrl = `${window.location.origin}/proposta/${proposal.id}`;
@@ -721,16 +779,14 @@ const NovaPropostaPage = () => {
       } else {
         toast.success(`Proposta ${proposal.number} criada e enviada!`);
       }
-      
       setSendDialogOpen(false);
       navigate(buildPath('propostas'));
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Erro ao criar proposta:', error);
       toast.error('Erro ao criar proposta. Tente novamente.');
     }
   });
-
   const handleOpenSendDialog = () => {
     if (!clientData.firstName.trim()) {
       toast.error('Preencha o primeiro nome do cliente');
@@ -744,7 +800,7 @@ const NovaPropostaPage = () => {
       toast.error('Selecione ao menos um prédio');
       return;
     }
-    
+
     // Validação para pagamento personalizado
     if (isCustomPayment) {
       const invalidInstallments = customInstallments.filter(p => !p.amount || parseFloat(p.amount) <= 0);
@@ -762,7 +818,6 @@ const NovaPropostaPage = () => {
         return;
       }
     }
-    
     if (!clientData.phone && !clientData.email) {
       toast.error('Preencha ao menos um contato (WhatsApp ou E-mail)');
       return;
@@ -771,7 +826,6 @@ const NovaPropostaPage = () => {
       toast.error(`${getDocumentLabel()} inválido. Verifique o número.`);
       return;
     }
-
     setSendViaWhatsApp(!!clientData.phone);
     setSendViaEmail(!!clientData.email);
     setSendDialogOpen(true);
@@ -785,34 +839,37 @@ const NovaPropostaPage = () => {
     }
     setOnlyGenerateLink(checked);
   };
-
   const handleWhatsAppChange = (checked: boolean) => {
     if (checked && onlyGenerateLink) {
       setOnlyGenerateLink(false);
     }
     setSendViaWhatsApp(checked);
   };
-
   const handleEmailChange = (checked: boolean) => {
     if (checked && onlyGenerateLink) {
       setOnlyGenerateLink(false);
     }
     setSendViaEmail(checked);
   };
-
   const handleSendProposal = () => {
     if (!sendViaWhatsApp && !sendViaEmail && !onlyGenerateLink) {
       toast.error('Selecione ao menos uma forma de envio');
       return;
     }
-    
     if (onlyGenerateLink) {
       // Apenas gerar link, sem notificações
-      createProposalMutation.mutate({ whatsapp: false, email: false, onlyLink: true });
+      createProposalMutation.mutate({
+        whatsapp: false,
+        email: false,
+        onlyLink: true
+      });
     } else {
       // REGRA: Se email está selecionado, SEMPRE enviar também por WhatsApp (se tiver telefone)
-      const shouldSendWhatsApp = sendViaWhatsApp || (sendViaEmail && !!clientData.phone);
-      createProposalMutation.mutate({ whatsapp: shouldSendWhatsApp, email: sendViaEmail });
+      const shouldSendWhatsApp = sendViaWhatsApp || sendViaEmail && !!clientData.phone;
+      createProposalMutation.mutate({
+        whatsapp: shouldSendWhatsApp,
+        email: sendViaEmail
+      });
     }
   };
 
@@ -843,10 +900,11 @@ const NovaPropostaPage = () => {
         bairro: b.bairro,
         quantidade_telas: b.quantidade_telas || b.numero_elevadores || 0
       }));
-
       const fullClientName = `${clientData.firstName.trim()} ${clientData.lastName.trim()}`;
-      
-      const { data, error } = await supabase.functions.invoke('request-cortesia-code', {
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('request-cortesia-code', {
         body: {
           clientName: fullClientName,
           clientEmail: clientData.email,
@@ -861,9 +919,7 @@ const NovaPropostaPage = () => {
           vendorId: currentUser?.id
         }
       });
-
       if (error) throw error;
-
       if (data?.success) {
         setCortesiaRequestId(data.requestId);
         setCortesiaConfirmDialogOpen(false);
@@ -886,18 +942,18 @@ const NovaPropostaPage = () => {
       toast.error('Digite o código de 4 dígitos');
       return;
     }
-
     setIsValidatingCode(true);
     try {
-      const { data, error } = await supabase.functions.invoke('validate-cortesia-code', {
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('validate-cortesia-code', {
         body: {
           requestId: cortesiaRequestId,
           code: cortesiaCode
         }
       });
-
       if (error) throw error;
-
       if (data?.success) {
         toast.success('✅ Cortesia enviada! O cliente receberá um WhatsApp com o link.');
         setCortesiaCodeDialogOpen(false);
@@ -915,20 +971,17 @@ const NovaPropostaPage = () => {
       setIsValidatingCode(false);
     }
   };
-
   const formatCurrency = (value: number) => {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return value.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
+  return <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-white/50 px-4 py-3 sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate(buildPath('propostas'))}
-            className="p-2 -ml-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
+          <button onClick={() => navigate(buildPath('propostas'))} className="p-2 -ml-2 rounded-lg hover:bg-gray-100 transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex-1">
@@ -945,27 +998,20 @@ const NovaPropostaPage = () => {
             <Users className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Vendedor Responsável</h2>
           </div>
-          <Select
-            value={selectedSellerId || ''}
-            onValueChange={(value) => setSelectedSellerId(value)}
-          >
+          <Select value={selectedSellerId || ''} onValueChange={value => setSelectedSellerId(value)}>
             <SelectTrigger className="h-12 text-base">
               <SelectValue placeholder="Selecione o vendedor">
                 {selectedSeller?.nome || selectedSeller?.email || 'Selecionar vendedor'}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {adminUsers.map(user => (
-                <SelectItem key={user.id} value={user.id}>
+              {adminUsers.map(user => <SelectItem key={user.id} value={user.id}>
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
                     <span>{user.nome || user.email}</span>
-                    {user.id === currentUser?.id && (
-                      <Badge variant="secondary" className="ml-2 text-[10px]">Você</Badge>
-                    )}
+                    {user.id === currentUser?.id && <Badge variant="secondary" className="ml-2 text-[10px]">Você</Badge>}
                   </div>
-                </SelectItem>
-              ))}
+                </SelectItem>)}
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground mt-2">
@@ -984,68 +1030,59 @@ const NovaPropostaPage = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Nome *</Label>
-                <AutocompleteInput
-                  fieldType="client_name"
-                  placeholder="Primeiro nome"
-                  value={clientData.firstName}
-                  onChange={(value) => setClientData(prev => ({ ...prev, firstName: value }))}
-                  onSelectSuggestion={(entry) => {
-                    const meta = entry.metadata || {};
-                    setClientData(prev => ({
-                      ...prev,
-                      firstName: meta.firstName || entry.field_value.split(' ')[0] || prev.firstName,
-                      lastName: meta.lastName || entry.field_value.split(' ').slice(1).join(' ') || prev.lastName,
-                      companyName: meta.companyName || prev.companyName,
-                      document: meta.cnpj || prev.document,
-                      email: meta.email || prev.email,
-                      phone: meta.phone || prev.phone,
-                      address: meta.address || prev.address
-                    }));
-                  }}
-                  className="mt-1 h-12 text-base"
-                />
+                <AutocompleteInput fieldType="client_name" placeholder="Primeiro nome" value={clientData.firstName} onChange={value => setClientData(prev => ({
+                ...prev,
+                firstName: value
+              }))} onSelectSuggestion={entry => {
+                const meta = entry.metadata || {};
+                setClientData(prev => ({
+                  ...prev,
+                  firstName: meta.firstName || entry.field_value.split(' ')[0] || prev.firstName,
+                  lastName: meta.lastName || entry.field_value.split(' ').slice(1).join(' ') || prev.lastName,
+                  companyName: meta.companyName || prev.companyName,
+                  document: meta.cnpj || prev.document,
+                  email: meta.email || prev.email,
+                  phone: meta.phone || prev.phone,
+                  address: meta.address || prev.address
+                }));
+              }} className="mt-1 h-12 text-base" />
               </div>
               <div>
                 <Label className="text-xs">Sobrenome *</Label>
-                <Input
-                  placeholder="Sobrenome"
-                  value={clientData.lastName}
-                  onChange={(e) => setClientData(prev => ({ ...prev, lastName: e.target.value }))}
-                  className="mt-1 h-12 text-base"
-                />
+                <Input placeholder="Sobrenome" value={clientData.lastName} onChange={e => setClientData(prev => ({
+                ...prev,
+                lastName: e.target.value
+              }))} className="mt-1 h-12 text-base" />
               </div>
             </div>
             <div>
               <Label className="text-xs">Nome da Empresa *</Label>
-              <AutocompleteInput
-                fieldType="company_name"
-                placeholder="Razão Social ou Nome Fantasia"
-                value={clientData.companyName}
-                onChange={(value) => setClientData(prev => ({ ...prev, companyName: value }))}
-                onSelectSuggestion={(entry) => {
-                  const meta = entry.metadata || {};
-                  setClientData(prev => ({
-                    ...prev,
-                    firstName: meta.firstName || prev.firstName,
-                    lastName: meta.lastName || prev.lastName,
-                    companyName: entry.field_value,
-                    document: meta.cnpj || prev.document,
-                    email: meta.email || prev.email,
-                    phone: meta.phone || prev.phone,
-                    address: meta.address || prev.address
-                  }));
-                }}
-                className="mt-1 h-12 text-base"
-              />
+              <AutocompleteInput fieldType="company_name" placeholder="Razão Social ou Nome Fantasia" value={clientData.companyName} onChange={value => setClientData(prev => ({
+              ...prev,
+              companyName: value
+            }))} onSelectSuggestion={entry => {
+              const meta = entry.metadata || {};
+              setClientData(prev => ({
+                ...prev,
+                firstName: meta.firstName || prev.firstName,
+                lastName: meta.lastName || prev.lastName,
+                companyName: entry.field_value,
+                document: meta.cnpj || prev.document,
+                email: meta.email || prev.email,
+                phone: meta.phone || prev.phone,
+                address: meta.address || prev.address
+              }));
+            }} className="mt-1 h-12 text-base" />
             </div>
             <div>
               <Label className="text-xs">País da Empresa</Label>
-              <Select
-                value={clientData.country}
-                onValueChange={(value: 'BR' | 'AR' | 'PY') => {
-                  setClientData(prev => ({ ...prev, country: value, document: '' }));
-                }}
-              >
+              <Select value={clientData.country} onValueChange={(value: 'BR' | 'AR' | 'PY') => {
+              setClientData(prev => ({
+                ...prev,
+                country: value,
+                document: ''
+              }));
+            }}>
                 <SelectTrigger className="mt-1 h-12 text-base">
                   <SelectValue />
                 </SelectTrigger>
@@ -1059,99 +1096,59 @@ const NovaPropostaPage = () => {
             <div>
               <Label className="text-xs">{getDocumentLabel()}</Label>
               <div className="flex gap-2 mt-1">
-                <Input
-                  placeholder={getDocumentPlaceholder()}
-                  value={clientData.document}
-                  onChange={(e) => {
-                    const formatted = formatCompanyDocument(e.target.value, clientData.country);
-                    setClientData(prev => ({ ...prev, document: formatted }));
-                  }}
-                  maxLength={getDocumentMaxLength()}
-                  className={`h-12 text-base flex-1 ${
-                    !isDocumentValid()
-                      ? 'border-red-500 focus:border-red-500 focus-visible:ring-red-500' 
-                      : ''
-                  }`}
-                />
-                {clientData.country === 'BR' && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-12 w-12 shrink-0"
-                    disabled={isLoadingCNPJ || clientData.document.replace(/\D/g, '').length !== 14}
-                    onClick={async () => {
-                      const data = await consultCNPJ(clientData.document);
-                      if (data) {
-                        setClientData(prev => ({
-                          ...prev,
-                          companyName: data.razaoSocial || prev.companyName,
-                          address: data.endereco || prev.address,
-                          email: data.email || prev.email,
-                          phone: data.telefone || prev.phone,
-                        }));
-                      }
-                    }}
-                    title="Consultar CNPJ"
-                  >
-                    {isLoadingCNPJ ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Search className="h-4 w-4" />
-                    )}
-                  </Button>
-                )}
-              </div>
-              {!isDocumentValid() && (
-                <p className="text-xs text-red-500 mt-1">{getDocumentLabel()} inválido</p>
-              )}
-            </div>
-            <PhoneInput
-              value={clientData.phone}
-              onChange={(formatted, fullNumber, countryCode) => setClientData(prev => ({ 
-                ...prev, 
-                phone: formatted,
-                phoneFullNumber: fullNumber,
-                phoneCountry: countryCode
-              }))}
-              defaultCountry={clientData.country as CountryCode}
-              label="Telefone WhatsApp"
-              showLabel={true}
-              compact={false}
-            />
-            <div>
-              <Label className="text-xs">E-mail *</Label>
-              <AutocompleteInput
-                fieldType="email"
-                placeholder="email@empresa.com"
-                value={clientData.email}
-                onChange={(value) => setClientData(prev => ({ ...prev, email: value }))}
-                onSelectSuggestion={(entry) => {
-                  const meta = entry.metadata || {};
+                <Input placeholder={getDocumentPlaceholder()} value={clientData.document} onChange={e => {
+                const formatted = formatCompanyDocument(e.target.value, clientData.country);
+                setClientData(prev => ({
+                  ...prev,
+                  document: formatted
+                }));
+              }} maxLength={getDocumentMaxLength()} className={`h-12 text-base flex-1 ${!isDocumentValid() ? 'border-red-500 focus:border-red-500 focus-visible:ring-red-500' : ''}`} />
+                {clientData.country === 'BR' && <Button type="button" variant="outline" size="icon" className="h-12 w-12 shrink-0" disabled={isLoadingCNPJ || clientData.document.replace(/\D/g, '').length !== 14} onClick={async () => {
+                const data = await consultCNPJ(clientData.document);
+                if (data) {
                   setClientData(prev => ({
                     ...prev,
-                    firstName: meta.firstName || prev.firstName,
-                    lastName: meta.lastName || prev.lastName,
-                    companyName: meta.companyName || prev.companyName,
-                    document: meta.cnpj || prev.document,
-                    email: entry.field_value,
-                    phone: meta.phone || prev.phone,
-                    address: meta.address || prev.address
+                    companyName: data.razaoSocial || prev.companyName,
+                    address: data.endereco || prev.address,
+                    email: data.email || prev.email,
+                    phone: data.telefone || prev.phone
                   }));
-                }}
-                className="mt-1 h-12 text-base"
-              />
+                }
+              }} title="Consultar CNPJ">
+                    {isLoadingCNPJ ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </Button>}
+              </div>
+              {!isDocumentValid() && <p className="text-xs text-red-500 mt-1">{getDocumentLabel()} inválido</p>}
+            </div>
+            <PhoneInput value={clientData.phone} onChange={(formatted, fullNumber, countryCode) => setClientData(prev => ({
+            ...prev,
+            phone: formatted,
+            phoneFullNumber: fullNumber,
+            phoneCountry: countryCode
+          }))} defaultCountry={clientData.country as CountryCode} label="Telefone WhatsApp" showLabel={true} compact={false} />
+            <div>
+              <Label className="text-xs">E-mail *</Label>
+              <AutocompleteInput fieldType="email" placeholder="email@empresa.com" value={clientData.email} onChange={value => setClientData(prev => ({
+              ...prev,
+              email: value
+            }))} onSelectSuggestion={entry => {
+              const meta = entry.metadata || {};
+              setClientData(prev => ({
+                ...prev,
+                firstName: meta.firstName || prev.firstName,
+                lastName: meta.lastName || prev.lastName,
+                companyName: meta.companyName || prev.companyName,
+                document: meta.cnpj || prev.document,
+                email: entry.field_value,
+                phone: meta.phone || prev.phone,
+                address: meta.address || prev.address
+              }));
+            }} className="mt-1 h-12 text-base" />
             </div>
             
             {/* Campo de E-mails de Cópia (CC) */}
             <div className="md:col-span-2">
-              <CCEmailsInput
-                value={ccEmails}
-                onChange={setCcEmails}
-                label="E-mails de Cópia (CC)"
-                placeholder="email@empresa.com"
-                maxEmails={5}
-              />
+              <CCEmailsInput value={ccEmails} onChange={setCcEmails} label="E-mails de Cópia (CC)" placeholder="email@empresa.com" maxEmails={5} />
             </div>
             
             {/* Campo de Endereço - Condicional por país */}
@@ -1160,44 +1157,28 @@ const NovaPropostaPage = () => {
                 <MapPin className="h-3 w-3" />
                 Endereço da Empresa
               </Label>
-              {clientData.country === 'BR' ? (
-                <AddressAutocomplete
-                  value={clientData.address}
-                  onChange={(value) => setClientData(prev => ({ ...prev, address: value }))}
-                  onPlaceSelect={(place) => {
-                    setClientData(prev => ({ 
-                      ...prev, 
-                      address: place.address,
-                      latitude: place.coordinates.lat,
-                      longitude: place.coordinates.lng
-                    }));
-                  }}
-                  placeholder="Digite o endereço da empresa..."
-                  className="mt-1 h-12 text-base"
-                />
-              ) : (
-                <Input
-                  value={clientData.address}
-                  onChange={(e) => setClientData(prev => ({ 
-                    ...prev, 
-                    address: e.target.value,
-                    latitude: null,
-                    longitude: null
-                  }))}
-                  placeholder="Digite o endereço completo da empresa..."
-                  className="mt-1 h-12 text-base"
-                />
-              )}
+              {clientData.country === 'BR' ? <AddressAutocomplete value={clientData.address} onChange={value => setClientData(prev => ({
+              ...prev,
+              address: value
+            }))} onPlaceSelect={place => {
+              setClientData(prev => ({
+                ...prev,
+                address: place.address,
+                latitude: place.coordinates.lat,
+                longitude: place.coordinates.lng
+              }));
+            }} placeholder="Digite o endereço da empresa..." className="mt-1 h-12 text-base" /> : <Input value={clientData.address} onChange={e => setClientData(prev => ({
+              ...prev,
+              address: e.target.value,
+              latitude: null,
+              longitude: null
+            }))} placeholder="Digite o endereço completo da empresa..." className="mt-1 h-12 text-base" />}
             </div>
           </div>
         </Card>
 
         {/* Seção 1.5: Notificações EXA Alert */}
-        <ProposalAlertRecipients
-          recipients={alertRecipients}
-          onRecipientsChange={setAlertRecipients}
-          className="relative z-40"
-        />
+        <ProposalAlertRecipients recipients={alertRecipients} onRecipientsChange={setAlertRecipients} className="relative z-40" />
 
         {/* Seção 2: Seleção de Prédios */}
         <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50 relative z-30">
@@ -1213,14 +1194,7 @@ const NovaPropostaPage = () => {
 
           {/* Botão Vertical Premium */}
           <div className="mb-4">
-            <button
-              onClick={handleVerticalPremiumToggle}
-              className={`w-full p-3 rounded-lg border-2 transition-all ${
-                tipoProduto === 'vertical_premium'
-                  ? 'border-purple-500 bg-gradient-to-r from-purple-50 to-purple-100'
-                  : 'border-dashed border-purple-200 hover:border-purple-300 bg-white'
-              }`}
-            >
+            <button onClick={handleVerticalPremiumToggle} className={`w-full p-3 rounded-lg border-2 transition-all ${tipoProduto === 'vertical_premium' ? 'border-purple-500 bg-gradient-to-r from-purple-50 to-purple-100' : 'border-dashed border-purple-200 hover:border-purple-300 bg-white'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-lg ${tipoProduto === 'vertical_premium' ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-600'}`}>
@@ -1235,49 +1209,26 @@ const NovaPropostaPage = () => {
                     </p>
                   </div>
                 </div>
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  tipoProduto === 'vertical_premium' ? 'border-purple-500 bg-purple-500' : 'border-gray-300'
-                }`}>
-                  {tipoProduto === 'vertical_premium' && (
-                    <CheckCircle className="h-3 w-3 text-white" />
-                  )}
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tipoProduto === 'vertical_premium' ? 'border-purple-500 bg-purple-500' : 'border-gray-300'}`}>
+                  {tipoProduto === 'vertical_premium' && <CheckCircle className="h-3 w-3 text-white" />}
                 </div>
               </div>
-              {tipoProduto === 'vertical_premium' && (
-                <div className="mt-2 text-[10px] text-purple-600 bg-purple-100/50 rounded p-2">
+              {tipoProduto === 'vertical_premium' && <div className="mt-2 text-[10px] text-purple-600 bg-purple-100/50 rounded p-2">
                   ✓ Vídeo vertical 15s • ✓ Tela cheia 9:16 • ✓ {buildings.length} prédios incluídos • ✓ Sem portal
-                </div>
-              )}
+                </div>}
             </button>
           </div>
 
           {/* Botões Selecionar Todos / Limpar */}
           <div className="flex gap-2 mb-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={selectAll}
-              disabled={isLoadingBuildings || selectedBuildings.length === buildings.length || tipoProduto === 'vertical_premium'}
-              className="text-xs h-8"
-            >
+            <Button variant="outline" size="sm" onClick={selectAll} disabled={isLoadingBuildings || selectedBuildings.length === buildings.length || tipoProduto === 'vertical_premium'} className="text-xs h-8">
               <CheckCircle className="h-3 w-3 mr-1" />
               Selecionar Todos ({buildings.length})
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearSelection}
-              disabled={selectedBuildings.length === 0 || tipoProduto === 'vertical_premium'}
-              className="text-xs h-8"
-            >
+            <Button variant="ghost" size="sm" onClick={clearSelection} disabled={selectedBuildings.length === 0 || tipoProduto === 'vertical_premium'} className="text-xs h-8">
               Limpar Seleção
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAddBuildingDialogOpen(true)}
-              className="text-xs h-8 border-dashed border-amber-400 text-amber-600 hover:bg-amber-50"
-            >
+            <Button variant="outline" size="sm" onClick={() => setAddBuildingDialogOpen(true)} className="text-xs h-8 border-dashed border-amber-400 text-amber-600 hover:bg-amber-50">
               <Plus className="h-3 w-3 mr-1" />
               Adicionar Prédio*
             </Button>
@@ -1285,31 +1236,17 @@ const NovaPropostaPage = () => {
 
           {/* Lista de Prédios */}
           <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-            {isLoadingBuildings ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="p-3 rounded-lg border border-gray-100">
+            {isLoadingBuildings ? Array.from({
+            length: 5
+          }).map((_, i) => <div key={i} className="p-3 rounded-lg border border-gray-100">
                   <Skeleton className="h-4 w-3/4 mb-2" />
                   <Skeleton className="h-3 w-full mb-1" />
                   <Skeleton className="h-3 w-2/3" />
-                </div>
-              ))
-            ) : buildings.length === 0 && manualBuildings.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-sm">
+                </div>) : buildings.length === 0 && manualBuildings.length === 0 ? <div className="text-center py-8 text-muted-foreground text-sm">
                 Nenhum prédio ativo encontrado
-              </div>
-            ) : (
-              <>
+              </div> : <>
                 {/* Prédios Manuais (aparecem primeiro com destaque) */}
-                {manualBuildings.map((building) => (
-                  <div
-                    key={building.id}
-                    onClick={() => toggleBuilding(building.id)}
-                    className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                      selectedBuildings.includes(building.id)
-                        ? 'border-amber-400 bg-amber-50'
-                        : 'border-amber-200 hover:border-amber-300 bg-amber-50/50'
-                    }`}
-                  >
+                {manualBuildings.map(building => <div key={building.id} onClick={() => toggleBuilding(building.id)} className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${selectedBuildings.includes(building.id) ? 'border-amber-400 bg-amber-50' : 'border-amber-200 hover:border-amber-300 bg-amber-50/50'}`}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm truncate flex items-center gap-1">
@@ -1335,38 +1272,19 @@ const NovaPropostaPage = () => {
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeManualBuilding(building.id);
-                          }}
-                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
+                        <Button variant="ghost" size="sm" onClick={e => {
+                    e.stopPropagation();
+                    removeManualBuilding(building.id);
+                  }} className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50">
                           <X className="h-3 w-3" />
                         </Button>
-                        <Checkbox
-                          checked={selectedBuildings.includes(building.id)}
-                          onCheckedChange={() => toggleBuilding(building.id)}
-                          className="mt-1"
-                        />
+                        <Checkbox checked={selectedBuildings.includes(building.id)} onCheckedChange={() => toggleBuilding(building.id)} className="mt-1" />
                       </div>
                     </div>
-                  </div>
-                ))}
+                  </div>)}
 
                 {/* Prédios do Banco de Dados */}
-                {buildings.map((building) => (
-                  <div
-                    key={building.id}
-                    onClick={() => toggleBuilding(building.id)}
-                    className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                      selectedBuildings.includes(building.id)
-                        ? 'border-primary bg-primary/5'
-                        : 'border-gray-100 hover:border-gray-200 bg-white'
-                    }`}
-                  >
+                {buildings.map(building => <div key={building.id} onClick={() => toggleBuilding(building.id)} className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${selectedBuildings.includes(building.id) ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200 bg-white'}`}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm truncate">{building.nome}</div>
@@ -1388,23 +1306,15 @@ const NovaPropostaPage = () => {
                         </div>
                       </div>
                       
-                      <Checkbox
-                        checked={selectedBuildings.includes(building.id)}
-                        onCheckedChange={() => toggleBuilding(building.id)}
-                        className="mt-1"
-                      />
+                      <Checkbox checked={selectedBuildings.includes(building.id)} onCheckedChange={() => toggleBuilding(building.id)} className="mt-1" />
                     </div>
-                  </div>
-                ))}
+                  </div>)}
 
                 {/* Legenda para prédios manuais */}
-                {manualBuildings.length > 0 && (
-                  <div className="text-xs text-amber-600 mt-2 px-1">
+                {manualBuildings.length > 0 && <div className="text-xs text-amber-600 mt-2 px-1">
                     * Prédio adicionado manualmente (apenas para emissão desta proposta)
-                  </div>
-                )}
-              </>
-            )}
+                  </div>}
+              </>}
           </div>
         </Card>
 
@@ -1419,49 +1329,28 @@ const NovaPropostaPage = () => {
           <div className="mb-4">
             <Label className="text-xs mb-2 block">Período do Contrato</Label>
             <div className="grid grid-cols-5 gap-2">
-              {periodOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => handlePeriodChange(option.value)}
-                  className={`p-3 rounded-lg border-2 text-center transition-all ${
-                    (option.value === -1 && isCustomPayment) || 
-                    (option.value === -2 && isCustomDays) ||
-                    (!isCustomPayment && !isCustomDays && durationMonths === option.value)
-                      ? 'border-primary bg-primary/5'
-                      : 'border-gray-100 hover:border-gray-200'
-                  }`}
-                >
-                  {option.value === -1 ? (
-                    <>
+              {periodOptions.map(option => <button key={option.value} onClick={() => handlePeriodChange(option.value)} className={`p-3 rounded-lg border-2 text-center transition-all ${option.value === -1 && isCustomPayment || option.value === -2 && isCustomDays || !isCustomPayment && !isCustomDays && durationMonths === option.value ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
+                  {option.value === -1 ? <>
                       <div className="font-bold text-sm">⚙️</div>
                       <div className="text-[10px] text-muted-foreground">Parcelas</div>
-                    </>
-                  ) : option.value === -2 ? (
-                    <>
+                    </> : option.value === -2 ? <>
                       <div className="font-bold text-sm">📅</div>
                       <div className="text-[10px] text-muted-foreground">Dias</div>
-                    </>
-                  ) : (
-                    <>
+                    </> : <>
                       <div className="font-bold text-lg">{option.value}</div>
                       <div className="text-[10px] text-muted-foreground">
                         {option.value === 1 ? 'mês' : 'meses'}
                       </div>
-                      {option.discount > 0 && (
-                        <div className="text-[10px] text-green-600 font-medium">
+                      {option.discount > 0 && <div className="text-[10px] text-green-600 font-medium">
                           -{option.discount}%
-                        </div>
-                      )}
-                    </>
-                  )}
-                </button>
-              ))}
+                        </div>}
+                    </>}
+                </button>)}
             </div>
           </div>
 
           {/* Configuração de Período em Dias */}
-          {isCustomDays && (
-            <div className="mb-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
+          {isCustomDays && <div className="mb-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-lg">📅</span>
                 <h3 className="font-semibold text-orange-800">Período em Dias</h3>
@@ -1470,14 +1359,7 @@ const NovaPropostaPage = () => {
               <div className="flex items-center gap-4">
                 <div className="flex-1">
                   <Label className="text-xs">Quantidade de Dias</Label>
-                  <Input 
-                    type="number" 
-                    min={1}
-                    max={29}
-                    value={customDays}
-                    onChange={(e) => setCustomDays(Math.min(29, Math.max(1, parseInt(e.target.value) || 1)))}
-                    className="mt-1 h-12 text-lg font-bold bg-white"
-                  />
+                  <Input type="number" min={1} max={29} value={customDays} onChange={e => setCustomDays(Math.min(29, Math.max(1, parseInt(e.target.value) || 1)))} className="mt-1 h-12 text-lg font-bold bg-white" />
                 </div>
                 <div className="text-sm text-muted-foreground pt-5">dias</div>
               </div>
@@ -1486,8 +1368,7 @@ const NovaPropostaPage = () => {
                 ⚠️ Períodos menores que 30 dias têm acréscimo de 10% no valor
               </p>
 
-              {calculateDaysPrice > 0 && (
-                <div className="mt-3 p-3 bg-orange-100 rounded-lg">
+              {calculateDaysPrice > 0 && <div className="mt-3 p-3 bg-orange-100 rounded-lg">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-orange-800">Valor Total ({customDays} dias):</span>
                     <span className="text-lg font-bold text-orange-900">{formatCurrency(calculateDaysPrice)}</span>
@@ -1495,14 +1376,11 @@ const NovaPropostaPage = () => {
                   <p className="text-xs text-orange-700 mt-1">
                     Base: {formatCurrency(selectedBuildingsData.reduce((sum, b) => sum + (b.preco_base || 0), 0))}/mês × {customDays}/30 × 1.10
                   </p>
-                </div>
-              )}
-            </div>
-          )}
+                </div>}
+            </div>}
 
           {/* Configuração de Pagamento Personalizado */}
-          {isCustomPayment && (
-            <div className="mb-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+          {isCustomPayment && <div className="mb-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-lg">⚙️</span>
                 <h3 className="font-semibold text-amber-800">Pagamento Personalizado</h3>
@@ -1511,20 +1389,15 @@ const NovaPropostaPage = () => {
               {/* Duração do Contrato */}
               <div className="mb-4">
                 <Label className="text-xs">Duração do Contrato (meses)</Label>
-                <Select 
-                  value={customDurationMonths.toString()} 
-                  onValueChange={(v) => {
-                    setCustomDurationMonths(parseInt(v));
-                    setDurationMonths(parseInt(v));
-                  }}
-                >
+                <Select value={customDurationMonths.toString()} onValueChange={v => {
+              setCustomDurationMonths(parseInt(v));
+              setDurationMonths(parseInt(v));
+            }}>
                   <SelectTrigger className="mt-1 bg-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {[3, 6, 9, 12, 18, 24].map(m => (
-                      <SelectItem key={m} value={m.toString()}>{m} meses</SelectItem>
-                    ))}
+                    {[3, 6, 9, 12, 18, 24].map(m => <SelectItem key={m} value={m.toString()}>{m} meses</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -1534,59 +1407,35 @@ const NovaPropostaPage = () => {
                 <div className="flex items-center justify-between mb-2">
                   <Label className="text-xs">Parcelas ({customInstallments.length})</Label>
                   <div className="flex gap-2">
-                    <button
-                      onClick={distributeEqually}
-                      className="text-[10px] text-amber-700 hover:underline"
-                    >
+                    <button onClick={distributeEqually} className="text-[10px] text-amber-700 hover:underline">
                       Dividir igualmente
                     </button>
-                    <button
-                      onClick={addCustomInstallment}
-                      className="text-[10px] text-primary font-medium hover:underline"
-                    >
+                    <button onClick={addCustomInstallment} className="text-[10px] text-primary font-medium hover:underline">
                       + Adicionar
                     </button>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  {customInstallments.map((installment, index) => (
-                    <div key={installment.id} className="flex items-center gap-2 bg-white p-2 rounded-lg border">
+                  {customInstallments.map((installment, index) => <div key={installment.id} className="flex items-center gap-2 bg-white p-2 rounded-lg border">
                       <span className="text-xs font-medium text-muted-foreground w-6">{index + 1}ª</span>
-                      <Input
-                        type="date"
-                        value={formatDateForInput(installment.dueDate)}
-                        onChange={(e) => {
-                          const dateValue = e.target.value;
-                          if (dateValue) {
-                            const newDate = new Date(dateValue + 'T00:00:00');
-                            if (!isNaN(newDate.getTime())) {
-                              updateInstallmentDate(installment.id, newDate);
-                            }
-                          }
-                        }}
-                        className="flex-1 h-9 text-sm"
-                      />
+                      <Input type="date" value={formatDateForInput(installment.dueDate)} onChange={e => {
+                  const dateValue = e.target.value;
+                  if (dateValue) {
+                    const newDate = new Date(dateValue + 'T00:00:00');
+                    if (!isNaN(newDate.getTime())) {
+                      updateInstallmentDate(installment.id, newDate);
+                    }
+                  }
+                }} className="flex-1 h-9 text-sm" />
                       <div className="relative flex-1">
                         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
-                        <Input
-                          type="number"
-                          placeholder="0,00"
-                          value={installment.amount}
-                          onChange={(e) => updateInstallmentAmount(installment.id, e.target.value)}
-                          className="pl-8 h-9 text-sm"
-                        />
+                        <Input type="number" placeholder="0,00" value={installment.amount} onChange={e => updateInstallmentAmount(installment.id, e.target.value)} className="pl-8 h-9 text-sm" />
                       </div>
-                      {customInstallments.length > 2 && (
-                        <button
-                          onClick={() => removeCustomInstallment(installment.id)}
-                          className="text-red-500 hover:text-red-700 text-sm p-1"
-                        >
+                      {customInstallments.length > 2 && <button onClick={() => removeCustomInstallment(installment.id)} className="text-red-500 hover:text-red-700 text-sm p-1">
                           ✕
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                        </button>}
+                    </div>)}
                 </div>
 
                 {/* Total das parcelas */}
@@ -1595,95 +1444,56 @@ const NovaPropostaPage = () => {
                   <span className="font-bold text-amber-900">{formatCurrency(customTotal)}</span>
                 </div>
               </div>
-            </div>
-          )}
+            </div>}
 
           {/* Valor Mensal Fidelidade - Somente para pagamento padrão */}
-          {!isCustomPayment && (
-            <div className="mb-4">
+          {!isCustomPayment && <div className="mb-4">
               <div className="flex items-center justify-between mb-1">
                 <Label className="text-xs">Valor Mensal (Fidelidade)</Label>
-                {valorSugeridoMensal > 0 && (
-                  <button
-                    onClick={() => setFidelValue(valorSugeridoMensal.toFixed(2))}
-                    className="text-[10px] text-primary hover:underline"
-                  >
+                {valorSugeridoMensal > 0 && <button onClick={() => setFidelValue(valorSugeridoMensal.toFixed(2))} className="text-[10px] text-primary hover:underline">
                     Usar sugerido: {formatCurrency(valorSugeridoMensal)}
-                  </button>
-                )}
+                  </button>}
               </div>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                <Input
-                  type="number"
-                  placeholder="0,00"
-                  value={fidelValue}
-                  onChange={(e) => setFidelValue(e.target.value)}
-                  className="pl-10 h-12 text-base"
-                />
+                <Input type="number" placeholder="0,00" value={fidelValue} onChange={e => setFidelValue(e.target.value)} className="pl-10 h-12 text-base" />
               </div>
-              {fidelMonthly > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
+              {fidelMonthly > 0 && <p className="text-xs text-muted-foreground mt-1">
                   Total: {formatCurrency(fidelTotal)} em {durationMonths}x de {formatCurrency(fidelMonthly)}
-                </p>
-              )}
-            </div>
-          )}
+                </p>}
+            </div>}
 
           {/* Desconto PIX à Vista - Somente para pagamento padrão */}
-          {!isCustomPayment && (
-            <div className="mb-4">
+          {!isCustomPayment && <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <Label className="text-xs">Desconto PIX à Vista</Label>
                 <span className="text-sm font-medium text-primary">{discountPercent}% OFF</span>
               </div>
-              <Slider
-                value={[discountPercent]}
-                onValueChange={(value) => setDiscountPercent(value[0])}
-                min={0}
-                max={25}
-                step={1}
-                className="w-full"
-              />
+              <Slider value={[discountPercent]} onValueChange={value => setDiscountPercent(value[0])} min={0} max={25} step={1} className="w-full" />
               <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
                 <span>0%</span>
                 <span>25%</span>
               </div>
-            </div>
-          )}
+            </div>}
 
           {/* Sobrescrever valor à vista - Somente para pagamento padrão */}
-          {!isCustomPayment && (
-            <>
+          {!isCustomPayment && <>
               <div className="flex items-center gap-3 mb-3">
-                <Switch
-                  checked={overwriteCashValue}
-                  onCheckedChange={setOverwriteCashValue}
-                />
+                <Switch checked={overwriteCashValue} onCheckedChange={setOverwriteCashValue} />
                 <Label className="text-xs">Definir valor à vista manualmente</Label>
               </div>
 
-              {overwriteCashValue && (
-                <div className="mb-4">
+              {overwriteCashValue && <div className="mb-4">
                   <Label className="text-xs">Valor Total à Vista</Label>
                   <div className="relative mt-1">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                    <Input
-                      type="number"
-                      placeholder="0,00"
-                      value={cashValue}
-                      onChange={(e) => setCashValue(e.target.value)}
-                      className="pl-10 h-12 text-base"
-                    />
+                    <Input type="number" placeholder="0,00" value={cashValue} onChange={e => setCashValue(e.target.value)} className="pl-10 h-12 text-base" />
                   </div>
-                </div>
-              )}
-            </>
-          )}
+                </div>}
+            </>}
 
           {/* Resumo de Valores - Padrão */}
-          {!isCustomPayment && fidelMonthly > 0 && (
-            <div className="p-3 bg-gray-50 rounded-lg space-y-2">
+          {!isCustomPayment && fidelMonthly > 0 && <div className="p-3 bg-gray-50 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Fidelidade ({durationMonths}x):</span>
                 <span className="font-medium">{formatCurrency(fidelMonthly)}/mês</span>
@@ -1698,25 +1508,19 @@ const NovaPropostaPage = () => {
                 <span className="font-bold text-primary">{formatCurrency(cashTotal)}</span>
               </div>
               {/* Mensalidade equivalente à vista e economia */}
-              {durationMonths > 0 && (
-                <div className="flex justify-between text-sm pt-1">
+              {durationMonths > 0 && <div className="flex justify-between text-sm pt-1">
                   <span className="text-muted-foreground">Equivale a:</span>
                   <div className="text-right">
                     <span className="font-bold text-green-600">
                       {formatCurrency(cashTotal / durationMonths)}/mês
                     </span>
-                    <span className="ml-2 text-xs text-green-600 font-medium">
-                      ({Math.round(((fidelMonthly - (cashTotal / durationMonths)) / fidelMonthly) * 100)}% mais barato)
-                    </span>
+                    
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                </div>}
+            </div>}
 
           {/* Resumo de Valores - Personalizado */}
-          {isCustomPayment && customTotal > 0 && (
-            <div className="p-3 bg-amber-50 rounded-lg space-y-2 border border-amber-200">
+          {isCustomPayment && customTotal > 0 && <div className="p-3 bg-amber-50 rounded-lg space-y-2 border border-amber-200">
               <div className="flex items-center gap-2 mb-1">
                 <span>⚙️</span>
                 <span className="text-xs font-medium text-amber-800">Pagamento Personalizado</span>
@@ -1734,8 +1538,7 @@ const NovaPropostaPage = () => {
                 <span className="text-muted-foreground">Total:</span>
                 <span className="font-bold text-amber-800">{formatCurrency(customTotal)}</span>
               </div>
-            </div>
-          )}
+            </div>}
         </Card>
 
         {/* Seção: Configurações Avançadas */}
@@ -1747,8 +1550,7 @@ const NovaPropostaPage = () => {
 
           <div className="space-y-4">
             {/* Toggle: Ativar Pedido Hoje - SÓ aparece quando pagamento personalizado E tem parcela futura */}
-            {isCustomPayment && hasFutureInstallment && (
-              <div className="flex items-center justify-between p-4 bg-amber-50/80 rounded-xl border border-amber-200">
+            {isCustomPayment && hasFutureInstallment && <div className="flex items-center justify-between p-4 bg-amber-50/80 rounded-xl border border-amber-200">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-amber-500 rounded-lg">
                     <DollarSign className="h-4 w-4 text-white" />
@@ -1760,13 +1562,8 @@ const NovaPropostaPage = () => {
                     </p>
                   </div>
                 </div>
-                <Switch 
-                  checked={cobrancaFutura} 
-                  onCheckedChange={setCobrancaFutura}
-                  className="data-[state=checked]:bg-amber-500"
-                />
-              </div>
-            )}
+                <Switch checked={cobrancaFutura} onCheckedChange={setCobrancaFutura} className="data-[state=checked]:bg-amber-500" />
+              </div>}
 
             {/* Toggle: Exigir Assinatura de Contrato */}
             <div className="flex items-center justify-between p-4 bg-blue-50/80 rounded-xl border border-blue-200">
@@ -1781,11 +1578,7 @@ const NovaPropostaPage = () => {
                   </p>
                 </div>
               </div>
-              <Switch 
-                checked={exigirContrato} 
-                onCheckedChange={setExigirContrato}
-                className="data-[state=checked]:bg-blue-500"
-              />
+              <Switch checked={exigirContrato} onCheckedChange={setExigirContrato} className="data-[state=checked]:bg-blue-500" />
             </div>
           </div>
         </Card>
@@ -1798,65 +1591,47 @@ const NovaPropostaPage = () => {
           </div>
 
           <div className="grid grid-cols-5 gap-2">
-            {validityOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => {
-                  setValidityHours(option.value);
-                  if (option.value === -1) {
-                    setShowCalendarModal(true);
-                  }
-                }}
-                className={`p-3 rounded-lg border-2 text-center transition-all ${
-                  validityHours === option.value
-                    ? 'border-primary bg-primary/5'
-                    : 'border-gray-100 hover:border-gray-200'
-                }`}
-              >
+            {validityOptions.map(option => <button key={option.value} onClick={() => {
+            setValidityHours(option.value);
+            if (option.value === -1) {
+              setShowCalendarModal(true);
+            }
+          }} className={`p-3 rounded-lg border-2 text-center transition-all ${validityHours === option.value ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
                 <div className="text-lg mb-1">{option.icon}</div>
                 <div className="text-xs font-medium">{option.label}</div>
-              </button>
-            ))}
+              </button>)}
           </div>
 
           {/* Botão para abrir calendário quando Personalizado está selecionado */}
-          {validityHours === -1 && (
-            <div className="mt-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowCalendarModal(true)}
-                className="w-full justify-start text-left h-11 bg-white/60 backdrop-blur-sm border-gray-200"
-              >
+          {validityHours === -1 && <div className="mt-3">
+              <Button variant="outline" onClick={() => setShowCalendarModal(true)} className="w-full justify-start text-left h-11 bg-white/60 backdrop-blur-sm border-gray-200">
                 <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
-                {customDateRange?.from && customDateRange?.to ? (
-                  <span className="flex items-center gap-2">
+                {customDateRange?.from && customDateRange?.to ? <span className="flex items-center gap-2">
                     <span className="font-medium">
-                      {format(customDateRange.from, "dd/MM/yyyy", { locale: ptBR })}
+                      {format(customDateRange.from, "dd/MM/yyyy", {
+                  locale: ptBR
+                })}
                     </span>
                     <span className="text-muted-foreground">até</span>
                     <span className="font-medium">
-                      {format(customDateRange.to, "dd/MM/yyyy", { locale: ptBR })}
+                      {format(customDateRange.to, "dd/MM/yyyy", {
+                  locale: ptBR
+                })}
                     </span>
                     <span className="text-xs text-muted-foreground ml-2">
                       ({differenceInDays(customDateRange.to, customDateRange.from)} dias)
                     </span>
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">Selecionar período de validade</span>
-                )}
+                  </span> : <span className="text-muted-foreground">Selecionar período de validade</span>}
               </Button>
-            </div>
-          )}
+            </div>}
 
           {/* Feedback para validade indeterminada */}
-          {validityHours === 0 && (
-            <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg">
+          {validityHours === 0 && <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-sm text-green-700 flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />
                 Esta proposta não terá data de expiração
               </p>
-            </div>
-          )}
+            </div>}
 
           {/* Modal de Calendário Glassmorphism */}
           <Dialog open={showCalendarModal} onOpenChange={setShowCalendarModal}>
@@ -1871,32 +1646,20 @@ const NovaPropostaPage = () => {
               </DialogHeader>
               
               <div className="p-4 flex justify-center">
-                <Calendar
-                  mode="range"
-                  selected={customDateRange}
-                  onSelect={setCustomDateRange}
-                  numberOfMonths={isMobile ? 1 : 2}
-                  disabled={{ before: new Date() }}
-                  locale={ptBR}
-                  className="rounded-xl border bg-white/60 backdrop-blur-sm pointer-events-auto"
-                />
+                <Calendar mode="range" selected={customDateRange} onSelect={setCustomDateRange} numberOfMonths={isMobile ? 1 : 2} disabled={{
+                before: new Date()
+              }} locale={ptBR} className="rounded-xl border bg-white/60 backdrop-blur-sm pointer-events-auto" />
               </div>
 
               <div className="p-4 pt-0 space-y-3">
-                {customDateRange?.from && customDateRange?.to && (
-                  <div className="p-3 bg-green-50/80 rounded-xl border border-green-200/50 backdrop-blur-sm">
+                {customDateRange?.from && customDateRange?.to && <div className="p-3 bg-green-50/80 rounded-xl border border-green-200/50 backdrop-blur-sm">
                     <p className="text-sm text-green-700 text-center font-medium flex items-center justify-center gap-2">
                       <CheckCircle className="h-4 w-4" />
                       Válida por {differenceInDays(customDateRange.to, customDateRange.from)} dias
                     </p>
-                  </div>
-                )}
+                  </div>}
                 
-                <Button 
-                  onClick={() => setShowCalendarModal(false)}
-                  disabled={!customDateRange?.from || !customDateRange?.to}
-                  className="w-full bg-[#9C1E1E] hover:bg-[#7A1818] text-white h-11"
-                >
+                <Button onClick={() => setShowCalendarModal(false)} disabled={!customDateRange?.from || !customDateRange?.to} className="w-full bg-[#9C1E1E] hover:bg-[#7A1818] text-white h-11">
                   Confirmar Período
                 </Button>
               </div>
@@ -1905,8 +1668,7 @@ const NovaPropostaPage = () => {
         </Card>
 
         {/* Métricas Resumo */}
-        {selectedBuildings.length > 0 && (
-          <Card className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+        {selectedBuildings.length > 0 && <Card className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
             <div className="flex items-center gap-2 mb-3">
               <Eye className="h-5 w-5 text-primary" />
               <h2 className="font-semibold text-primary">Alcance Estimado</h2>
@@ -1925,39 +1687,24 @@ const NovaPropostaPage = () => {
                 <div className="text-[10px] text-muted-foreground">Pessoas</div>
               </div>
             </div>
-          </Card>
-        )}
+          </Card>}
       </div>
 
       {/* Footer Fixo com Botões */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-200 p-4 z-20">
         <div className="flex gap-2 max-w-lg mx-auto">
           {/* Botão Cortesia */}
-          <Button
-            variant="outline"
-            onClick={handleOpenCortesiaDialog}
-            disabled={selectedBuildings.length === 0 || !clientData.email}
-            className="h-11 px-3 border-pink-200 text-pink-600 hover:bg-pink-50"
-          >
+          <Button variant="outline" onClick={handleOpenCortesiaDialog} disabled={selectedBuildings.length === 0 || !clientData.email} className="h-11 px-3 border-pink-200 text-pink-600 hover:bg-pink-50">
             <Gift className="h-4 w-4" />
           </Button>
           
           {/* Botão Preview */}
-          <Button
-            variant="outline"
-            onClick={() => setShowPreviewModal(true)}
-            disabled={selectedBuildings.length === 0}
-            className="h-11 px-3 border-gray-200 text-gray-600 hover:bg-gray-50"
-          >
+          <Button variant="outline" onClick={() => setShowPreviewModal(true)} disabled={selectedBuildings.length === 0} className="h-11 px-3 border-gray-200 text-gray-600 hover:bg-gray-50">
             <Eye className="h-4 w-4" />
           </Button>
           
           {/* Botão Enviar Proposta */}
-          <Button
-            onClick={handleOpenSendDialog}
-            disabled={selectedBuildings.length === 0 || (isCustomPayment ? customTotal <= 0 : !fidelValue)}
-            className="flex-1 h-11 gap-2"
-          >
+          <Button onClick={handleOpenSendDialog} disabled={selectedBuildings.length === 0 || (isCustomPayment ? customTotal <= 0 : !fidelValue)} className="flex-1 h-11 gap-2">
             <Send className="h-4 w-4" />
             Enviar
           </Button>
@@ -1980,17 +1727,8 @@ const NovaPropostaPage = () => {
             </p>
 
             {/* WhatsApp */}
-            <div 
-              className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                sendViaWhatsApp ? 'border-[#25D366] bg-[#25D366]/5' : 'border-gray-200'
-              } ${!clientData.phone ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => clientData.phone && handleWhatsAppChange(!sendViaWhatsApp)}
-            >
-              <Checkbox 
-                checked={sendViaWhatsApp} 
-                onCheckedChange={(checked) => clientData.phone && handleWhatsAppChange(!!checked)}
-                disabled={!clientData.phone}
-              />
+            <div className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${sendViaWhatsApp ? 'border-[#25D366] bg-[#25D366]/5' : 'border-gray-200'} ${!clientData.phone ? 'opacity-50 cursor-not-allowed' : ''}`} onClick={() => clientData.phone && handleWhatsAppChange(!sendViaWhatsApp)}>
+              <Checkbox checked={sendViaWhatsApp} onCheckedChange={checked => clientData.phone && handleWhatsAppChange(!!checked)} disabled={!clientData.phone} />
               <MessageSquare className="h-5 w-5 text-[#25D366]" />
               <div className="flex-1">
                 <div className="font-medium text-sm">WhatsApp</div>
@@ -2001,17 +1739,8 @@ const NovaPropostaPage = () => {
             </div>
 
             {/* Email */}
-            <div 
-              className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                sendViaEmail ? 'border-primary bg-primary/5' : 'border-gray-200'
-              } ${!clientData.email ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => clientData.email && handleEmailChange(!sendViaEmail)}
-            >
-              <Checkbox 
-                checked={sendViaEmail} 
-                onCheckedChange={(checked) => clientData.email && handleEmailChange(!!checked)}
-                disabled={!clientData.email}
-              />
+            <div className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${sendViaEmail ? 'border-primary bg-primary/5' : 'border-gray-200'} ${!clientData.email ? 'opacity-50 cursor-not-allowed' : ''}`} onClick={() => clientData.email && handleEmailChange(!sendViaEmail)}>
+              <Checkbox checked={sendViaEmail} onCheckedChange={checked => clientData.email && handleEmailChange(!!checked)} disabled={!clientData.email} />
               <Mail className="h-5 w-5 text-primary" />
               <div className="flex-1">
                 <div className="font-medium text-sm">E-mail</div>
@@ -2022,16 +1751,8 @@ const NovaPropostaPage = () => {
             </div>
 
             {/* Apenas Gerar Link */}
-            <div 
-              className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                onlyGenerateLink ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-              }`}
-              onClick={() => handleOnlyLinkChange(!onlyGenerateLink)}
-            >
-              <Checkbox 
-                checked={onlyGenerateLink} 
-                onCheckedChange={(checked) => handleOnlyLinkChange(!!checked)}
-              />
+            <div className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${onlyGenerateLink ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`} onClick={() => handleOnlyLinkChange(!onlyGenerateLink)}>
+              <Checkbox checked={onlyGenerateLink} onCheckedChange={checked => handleOnlyLinkChange(!!checked)} />
               <Link2 className="h-5 w-5 text-blue-500" />
               <div className="flex-1">
                 <div className="font-medium text-sm">Apenas Gerar Link</div>
@@ -2053,8 +1774,7 @@ const NovaPropostaPage = () => {
                 <span className="font-medium">{isCustomPayment ? customDurationMonths : durationMonths} {(isCustomPayment ? customDurationMonths : durationMonths) === 1 ? 'mês' : 'meses'}</span>
               </div>
               
-              {isCustomPayment ? (
-                <>
+              {isCustomPayment ? <>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tipo:</span>
                     <span className="font-medium text-amber-600">Pagamento Personalizado</span>
@@ -2067,20 +1787,14 @@ const NovaPropostaPage = () => {
                     <span className="text-muted-foreground">Parcelas:</span>
                     <span className="font-medium">{customInstallments.length}x</span>
                   </div>
-                  {customInstallments.slice(0, 3).map((inst, idx) => (
-                    <div key={inst.id} className="flex justify-between pl-3 text-[10px]">
+                  {customInstallments.slice(0, 3).map((inst, idx) => <div key={inst.id} className="flex justify-between pl-3 text-[10px]">
                       <span className="text-muted-foreground">{idx + 1}ª parcela:</span>
                       <span className="font-medium">{formatCurrency(parseFloat(inst.amount.replace(/\D/g, '') || '0') / 100)}</span>
-                    </div>
-                  ))}
-                  {customInstallments.length > 3 && (
-                    <div className="text-[10px] text-muted-foreground pl-3">
+                    </div>)}
+                  {customInstallments.length > 3 && <div className="text-[10px] text-muted-foreground pl-3">
                       ... e mais {customInstallments.length - 3} parcelas
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
+                    </div>}
+                </> : <>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Valor à Vista:</span>
                     <span className="font-medium text-primary">{formatCurrency(cashTotal)}</span>
@@ -2089,8 +1803,7 @@ const NovaPropostaPage = () => {
                     <span className="text-muted-foreground">Valor Fidelidade:</span>
                     <span className="font-medium">{formatCurrency(fidelMonthly)}/mês (total: {formatCurrency(fidelTotal)})</span>
                   </div>
-                </>
-              )}
+                </>}
               
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Validade:</span>
@@ -2103,27 +1816,17 @@ const NovaPropostaPage = () => {
             <Button variant="outline" onClick={() => setSendDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button 
-              onClick={handleSendProposal}
-              disabled={(!sendViaWhatsApp && !sendViaEmail && !onlyGenerateLink) || createProposalMutation.isPending}
-              className="gap-2"
-            >
-              {createProposalMutation.isPending ? (
-                <>
+            <Button onClick={handleSendProposal} disabled={!sendViaWhatsApp && !sendViaEmail && !onlyGenerateLink || createProposalMutation.isPending} className="gap-2">
+              {createProposalMutation.isPending ? <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   {onlyGenerateLink ? 'Criando...' : 'Enviando...'}
-                </>
-              ) : onlyGenerateLink ? (
-                <>
+                </> : onlyGenerateLink ? <>
                   <Link2 className="h-4 w-4" />
                   Criar e Copiar Link
-                </>
-              ) : (
-                <>
+                </> : <>
                   <Send className="h-4 w-4" />
                   Enviar Agora
-                </>
-              )}
+                </>}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2156,12 +1859,10 @@ const NovaPropostaPage = () => {
                 <Mail className="h-4 w-4" />
                 <span>{clientData.email}</span>
               </div>
-              {clientData.phone && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {clientData.phone && <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <MessageSquare className="h-4 w-4" />
                   <span>{clientData.phone}</span>
-                </div>
-              )}
+                </div>}
             </div>
 
             <div className="grid grid-cols-3 gap-3 text-center p-4 bg-muted/30 rounded-xl border border-border/30">
@@ -2198,34 +1899,26 @@ const NovaPropostaPage = () => {
             <Button variant="outline" onClick={() => setCortesiaConfirmDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button 
-              onClick={handleRequestCortesiaCode}
-              disabled={isRequestingCode}
-              className="gap-2"
-            >
-              {isRequestingCode ? (
-                <>
+            <Button onClick={handleRequestCortesiaCode} disabled={isRequestingCode} className="gap-2">
+              {isRequestingCode ? <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Enviando código...
-                </>
-              ) : (
-                <>
+                </> : <>
                   <Gift className="h-4 w-4" />
                   Solicitar Código
-                </>
-              )}
+                </>}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Dialog de Código de Cortesia */}
-      <Dialog open={cortesiaCodeDialogOpen} onOpenChange={(open) => {
-        if (!open) {
-          setCortesiaCode('');
-        }
-        setCortesiaCodeDialogOpen(open);
-      }}>
+      <Dialog open={cortesiaCodeDialogOpen} onOpenChange={open => {
+      if (!open) {
+        setCortesiaCode('');
+      }
+      setCortesiaCodeDialogOpen(open);
+    }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -2239,25 +1932,14 @@ const NovaPropostaPage = () => {
 
           <div className="py-6">
             <p className="text-sm text-muted-foreground text-center mb-6">
-              Digite o código de 4 dígitos enviado<br/>
+              Digite o código de 4 dígitos enviado<br />
               para o WhatsApp do administrador
             </p>
             
             <div className="flex justify-center">
-              <InputOTP 
-                maxLength={4} 
-                value={cortesiaCode} 
-                onChange={setCortesiaCode}
-                disabled={isValidatingCode}
-              >
+              <InputOTP maxLength={4} value={cortesiaCode} onChange={setCortesiaCode} disabled={isValidatingCode}>
                 <InputOTPGroup className="gap-3">
-                  {[0, 1, 2, 3].map((index) => (
-                    <InputOTPSlot
-                      key={index}
-                      index={index}
-                      className="w-14 h-16 text-2xl font-semibold rounded-xl border-2 transition-all duration-200 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                    />
-                  ))}
+                  {[0, 1, 2, 3].map(index => <InputOTPSlot key={index} index={index} className="w-14 h-16 text-2xl font-semibold rounded-xl border-2 transition-all duration-200 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20" />)}
                 </InputOTPGroup>
               </InputOTP>
             </div>
@@ -2268,31 +1950,20 @@ const NovaPropostaPage = () => {
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setCortesiaCodeDialogOpen(false);
-                setCortesiaCode('');
-              }}
-            >
+            <Button variant="outline" onClick={() => {
+            setCortesiaCodeDialogOpen(false);
+            setCortesiaCode('');
+          }}>
               Cancelar
             </Button>
-            <Button 
-              onClick={handleValidateCortesiaCode}
-              disabled={cortesiaCode.length !== 4 || isValidatingCode}
-              className="gap-2"
-            >
-              {isValidatingCode ? (
-                <>
+            <Button onClick={handleValidateCortesiaCode} disabled={cortesiaCode.length !== 4 || isValidatingCode} className="gap-2">
+              {isValidatingCode ? <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Validando...
-                </>
-              ) : (
-                <>
+                </> : <>
                   <CheckCircle className="h-4 w-4" />
                   Confirmar Cortesia
-                </>
-              )}
+                </>}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2314,52 +1985,39 @@ const NovaPropostaPage = () => {
           <div className="space-y-4 py-4">
             <div>
               <Label className="text-xs">Nome do Prédio *</Label>
-              <Input 
-                value={newManualBuilding.nome}
-                onChange={(e) => setNewManualBuilding({...newManualBuilding, nome: e.target.value})}
-                placeholder="Ex: Edifício Aurora"
-                className="mt-1"
-              />
+              <Input value={newManualBuilding.nome} onChange={e => setNewManualBuilding({
+              ...newManualBuilding,
+              nome: e.target.value
+            })} placeholder="Ex: Edifício Aurora" className="mt-1" />
             </div>
             <div>
               <Label className="text-xs">Endereço *</Label>
-              <Input 
-                value={newManualBuilding.endereco}
-                onChange={(e) => setNewManualBuilding({...newManualBuilding, endereco: e.target.value})}
-                placeholder="Ex: Rua das Flores, 123 - Centro"
-                className="mt-1"
-              />
+              <Input value={newManualBuilding.endereco} onChange={e => setNewManualBuilding({
+              ...newManualBuilding,
+              endereco: e.target.value
+            })} placeholder="Ex: Rua das Flores, 123 - Centro" className="mt-1" />
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <Label className="text-xs">Nº de Telas</Label>
-                <Input 
-                  type="number"
-                  min="1"
-                  value={newManualBuilding.quantidade_telas}
-                  onChange={(e) => setNewManualBuilding({...newManualBuilding, quantidade_telas: parseInt(e.target.value) || 1})}
-                  className="mt-1"
-                />
+                <Input type="number" min="1" value={newManualBuilding.quantidade_telas} onChange={e => setNewManualBuilding({
+                ...newManualBuilding,
+                quantidade_telas: parseInt(e.target.value) || 1
+              })} className="mt-1" />
               </div>
               <div>
                 <Label className="text-xs">Exibições/Mês</Label>
-                <Input 
-                  type="number"
-                  min="0"
-                  value={newManualBuilding.visualizacoes_mes}
-                  onChange={(e) => setNewManualBuilding({...newManualBuilding, visualizacoes_mes: parseInt(e.target.value) || 0})}
-                  className="mt-1"
-                />
+                <Input type="number" min="0" value={newManualBuilding.visualizacoes_mes} onChange={e => setNewManualBuilding({
+                ...newManualBuilding,
+                visualizacoes_mes: parseInt(e.target.value) || 0
+              })} className="mt-1" />
               </div>
               <div>
                 <Label className="text-xs">Público Est.</Label>
-                <Input 
-                  type="number"
-                  min="0"
-                  value={newManualBuilding.publico_estimado}
-                  onChange={(e) => setNewManualBuilding({...newManualBuilding, publico_estimado: parseInt(e.target.value) || 0})}
-                  className="mt-1"
-                />
+                <Input type="number" min="0" value={newManualBuilding.publico_estimado} onChange={e => setNewManualBuilding({
+                ...newManualBuilding,
+                publico_estimado: parseInt(e.target.value) || 0
+              })} className="mt-1" />
               </div>
             </div>
           </div>
@@ -2368,18 +2026,13 @@ const NovaPropostaPage = () => {
             <Button variant="outline" onClick={() => setAddBuildingDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button 
-              onClick={handleAddManualBuilding}
-              className="gap-2 bg-amber-500 hover:bg-amber-600"
-            >
+            <Button onClick={handleAddManualBuilding} className="gap-2 bg-amber-500 hover:bg-amber-600">
               <Plus className="h-4 w-4" />
               Adicionar Prédio
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>;
 };
-
 export default NovaPropostaPage;
