@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, Clock, Building, User, Calendar } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 import { getStatusConfig as getCanonicalStatusConfig } from '@/constants/pedidoStatus';
@@ -109,10 +109,15 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
         {formatCurrency(item.valor_total || 0)}
       </div>
       
-      {/* Tempo */}
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-[90px]">
-        <Clock className="h-3.5 w-3.5" />
-        <span>{timeAgo}</span>
+      {/* Data e Tempo */}
+      <div className="flex flex-col items-end min-w-[90px]">
+        <span className="text-xs font-medium text-foreground">
+          {format(new Date(item.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+        </span>
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          <span>{timeAgo}</span>
+        </div>
       </div>
       
       {/* Ação */}
