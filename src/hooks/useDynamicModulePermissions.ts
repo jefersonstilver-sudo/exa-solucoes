@@ -7,42 +7,61 @@ import { useMemo } from 'react';
 const MASTER_ACCOUNT_EMAIL = 'jefersonstilver@gmail.com';
 
 // Module keys mapping to sidebar items
+// AUDITORIA COMPLETA: Todos os módulos do sistema mapeados
 export const MODULE_KEYS = {
+  // === MINHA MANHÃ ===
+  minha_manha: 'minha_manha',
   dashboard: 'dashboard',
-  posicoes: 'posicoes',
-  sync_notion: 'sync_notion',
-  agenda: 'agenda',
-  pedidos: 'pedidos',
-  produtos: 'produtos',
-  propostas: 'propostas',
-  juridico: 'juridico',
-  assinaturas: 'assinaturas',
-  aprovacoes: 'aprovacoes',
-  cupons: 'cupons',
-  beneficios: 'beneficios',
+  exa_alerts: 'exa_alerts',
+  escalacoes: 'escalacoes',
+  
+  // === RELACIONAMENTO / CRM ===
+  crm_hub: 'crm_hub',
   contatos: 'contatos',
   contatos_kanban: 'contatos_kanban',
   crm_site: 'crm_site',
   crm_chat: 'crm_chat',
-  escalacoes: 'escalacoes',
-  agentes_sofia: 'agentes_sofia',
-  exa_alerts: 'exa_alerts',
+  
+  // === VENDAS ===
+  vendas: 'vendas',
+  propostas: 'propostas',
+  pedidos: 'pedidos',
+  juridico: 'juridico',
+  assinaturas: 'assinaturas',
+  posicoes: 'posicoes',
+  produtos: 'produtos',
+  cupons: 'cupons',
+  
+  // === OPERAÇÃO ===
   predios: 'predios',
   paineis: 'paineis',
+  sync_notion: 'sync_notion',
+  agenda: 'agenda',
+  videos_anunciantes: 'videos_anunciantes',
+  aprovacoes: 'aprovacoes',
+  beneficios: 'beneficios',
   sindicos: 'sindicos',
   leads: 'leads',
-  videos_anunciantes: 'videos_anunciantes',
-  videos_site: 'videos_site',
-  ticker: 'ticker',
-  editor_videos: 'editor_videos',
+  processos: 'processos',
+  
+  // === COMUNICAÇÃO ===
   emails: 'emails',
-  usuarios: 'usuarios',
-  notificacoes: 'notificacoes',
+  ticker: 'ticker',
+  videos_site: 'videos_site',
+  editor_videos: 'editor_videos',
+  agentes_sofia: 'agentes_sofia',
+  homepage_config: 'homepage_config',
+  logos: 'logos',
+  
+  // === GOVERNANÇA ===
+  financeiro: 'financeiro',
+  financeiro_mp: 'financeiro_mp',
   relatorios: 'relatorios',
+  usuarios: 'usuarios',
+  tipos_conta: 'tipos_conta',
+  notificacoes: 'notificacoes',
   seguranca: 'seguranca',
   configuracoes: 'configuracoes',
-  financeiro: 'financeiro',
-  processos: 'processos',
 } as const;
 
 export type ModuleKey = keyof typeof MODULE_KEYS;
