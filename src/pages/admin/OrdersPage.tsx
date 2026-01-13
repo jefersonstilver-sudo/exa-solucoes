@@ -6,7 +6,7 @@ import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRe
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import OrdersCompactStats from '@/components/admin/orders/OrdersCompactStats';
-import OrdersTabs from '@/components/admin/orders/OrdersTabs';
+import OrdersTabsRefactored from '@/components/admin/orders/OrdersTabsRefactored';
 import OrdersCompactHeader from '@/components/admin/orders/OrdersCompactHeader';
 import OrdersPageAlerts from '@/components/admin/orders/OrdersPageAlerts';
 import OrdersPageFilters from '@/components/admin/orders/OrdersPageFilters';
@@ -479,7 +479,7 @@ const OrdersPage = () => {
 
         {/* Orders Tabs */}
         <div className="animate-fade-in">
-          <OrdersTabs onViewOrderDetails={handleViewOrderDetails} />
+          <OrdersTabsRefactored onViewOrderDetails={handleViewOrderDetails} />
         </div>
       </div>
     </div>
