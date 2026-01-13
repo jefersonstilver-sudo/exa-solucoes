@@ -13727,6 +13727,7 @@ export type Database = {
         Args: { p_month: number; p_year: number }
         Returns: Json
       }
+      get_orders_stats_real: { Args: never; Returns: Json }
       get_own_sensitive_data: {
         Args: never
         Returns: {

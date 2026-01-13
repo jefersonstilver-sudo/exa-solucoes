@@ -14,7 +14,7 @@ interface AppleLikeMetricCardProps {
   description?: React.ReactNode;
   hoverContent?: React.ReactNode;
   onClick?: () => void;
-  variant?: 'default' | 'danger';
+  variant?: 'default' | 'danger' | 'success';
   disableHover?: boolean; // Bloqueia hover para proteção de dados
 }
 
@@ -56,7 +56,8 @@ const AppleLikeMetricCard = ({
       {/* Value - Responsive Text */}
       <div className="mb-1 overflow-hidden">
         <p className={`font-bold tracking-tight truncate ${
-          variant === 'danger' ? 'text-red-600 dark:text-red-500' : 'text-foreground'
+          variant === 'danger' ? 'text-red-600 dark:text-red-500' : 
+          variant === 'success' ? 'text-emerald-600 dark:text-emerald-500' : 'text-foreground'
         } ${
           String(value).length > 15 ? 'text-sm' : 
           String(value).length > 10 ? 'text-base' : 
