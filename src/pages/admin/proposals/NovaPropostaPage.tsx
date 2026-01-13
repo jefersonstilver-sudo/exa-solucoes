@@ -1697,6 +1697,20 @@ const NovaPropostaPage = () => {
                 <span className="text-muted-foreground">À Vista ({discountPercent}% OFF):</span>
                 <span className="font-bold text-primary">{formatCurrency(cashTotal)}</span>
               </div>
+              {/* Mensalidade equivalente à vista e economia */}
+              {durationMonths > 0 && (
+                <div className="flex justify-between text-sm pt-1">
+                  <span className="text-muted-foreground">Equivale a:</span>
+                  <div className="text-right">
+                    <span className="font-bold text-green-600">
+                      {formatCurrency(cashTotal / durationMonths)}/mês
+                    </span>
+                    <span className="ml-2 text-xs text-green-600 font-medium">
+                      ({Math.round(((fidelMonthly - (cashTotal / durationMonths)) / fidelMonthly) * 100)}% mais barato)
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
