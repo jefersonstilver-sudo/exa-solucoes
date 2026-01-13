@@ -235,21 +235,66 @@ serve(async (req) => {
         );
       }
 
-      // Buscar pedido pelo ID
-      const { data: pedido, error: pedidoError } = await supabase
+      // Buscar pedido pelo ID - primeiro tenta na tabela pedidos
+      let { data: pedido, error: pedidoError } = await supabase
         .from('pedidos')
         .select('id, status, client_id, valor_total, is_subscription, asaas_subscription_id')
         .eq('id', pedidoId)
         .maybeSingle();
 
-      if (pedidoError || !pedido) {
-        log('error', '❌ Pedido não encontrado', { pedidoId, error: pedidoError?.message });
+      // Se não encontrar pedido, verificar se o external_reference é um ID de PARCELA
+      let parcelaEncontrada = null;
+      if (!pedido) {
+        log('info', '🔍 Pedido não encontrado, buscando na tabela parcelas...', { externalReference: pedidoId });
+        
+        const { data: parcela, error: parcelaError } = await supabase
+          .from('parcelas')
+          .select('id, pedido_id, numero_parcela, valor_final, status')
+          .eq('id', pedidoId)
+          .maybeSingle();
+        
+        if (parcela && parcela.pedido_id) {
+          log('info', '✅ PARCELA encontrada! Buscando pedido associado...', { 
+            parcelaId: parcela.id, 
+            pedidoIdReal: parcela.pedido_id,
+            numeroParcela: parcela.numero_parcela 
+          });
+          
+          parcelaEncontrada = parcela;
+          
+          // Buscar o pedido real usando o pedido_id da parcela
+          const { data: pedidoReal, error: pedidoRealError } = await supabase
+            .from('pedidos')
+            .select('id, status, client_id, valor_total, is_subscription, asaas_subscription_id')
+            .eq('id', parcela.pedido_id)
+            .maybeSingle();
+          
+          if (pedidoReal) {
+            pedido = pedidoReal;
+            log('info', '✅ Pedido encontrado via parcela', { 
+              pedidoId: pedidoReal.id, 
+              parcelaOriginal: pedidoId 
+            });
+          } else {
+            log('error', '❌ Pedido da parcela não encontrado', { 
+              parcelaId: parcela.id, 
+              pedidoId: parcela.pedido_id,
+              error: pedidoRealError?.message 
+            });
+          }
+        } else {
+          log('warn', '⚠️ Nem pedido nem parcela encontrados', { externalReference: pedidoId, parcelaError: parcelaError?.message });
+        }
+      }
+
+      if (!pedido) {
+        log('error', '❌ Pedido não encontrado (nem via parcela)', { pedidoId, error: pedidoError?.message });
         
         await supabase
           .from('webhook_logs')
           .update({ 
             status: 'error',
-            error_message: `Pedido não encontrado: ${pedidoId}`,
+            error_message: `Pedido não encontrado (nem via parcela): ${pedidoId}`,
             processed_at: new Date().toISOString()
           })
           .eq('webhook_id', event.id)
@@ -257,6 +302,103 @@ serve(async (req) => {
 
         return new Response(
           JSON.stringify({ success: true, message: 'Order not found' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Se encontramos via parcela, atualizar diretamente essa parcela como paga
+      if (parcelaEncontrada) {
+        log('info', '💳 Atualizando parcela específica como paga', { 
+          parcelaId: parcelaEncontrada.id,
+          numeroParcela: parcelaEncontrada.numero_parcela
+        });
+        
+        const { error: parcelaUpdateError } = await supabase
+          .from('parcelas')
+          .update({
+            status: 'pago',
+            data_pagamento: payment.paymentDate || payment.confirmedDate || new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', parcelaEncontrada.id);
+        
+        if (parcelaUpdateError) {
+          log('error', '❌ Erro ao atualizar parcela encontrada', { 
+            parcelaId: parcelaEncontrada.id, 
+            error: parcelaUpdateError.message 
+          });
+        } else {
+          log('info', '✅ Parcela atualizada para PAGO via external_reference direto', { 
+            parcelaId: parcelaEncontrada.id,
+            numeroParcela: parcelaEncontrada.numero_parcela
+          });
+        }
+        
+        // Se é a primeira parcela, atualizar o status do pedido conforme fluxo Opção B
+        if (parcelaEncontrada.numero_parcela === 1) {
+          const novoStatus = 'aguardando_contrato'; // Opção B: pagamento → aguardando_contrato
+          
+          await supabase
+            .from('pedidos')
+            .update({
+              status: novoStatus,
+              transaction_id: payment.id,
+              log_pagamento: {
+                provider: 'asaas',
+                payment_id: payment.id,
+                payment_status: 'approved',
+                payment_date: payment.paymentDate || payment.confirmedDate || new Date().toISOString(),
+                value: payment.value,
+                parcela_numero: parcelaEncontrada.numero_parcela,
+                confirmed_at: new Date().toISOString()
+              },
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', pedido.id);
+          
+          log('info', '✅ Pedido atualizado para aguardando_contrato após 1ª parcela', { 
+            pedidoId: pedido.id,
+            parcelaNumero: parcelaEncontrada.numero_parcela
+          });
+        }
+        
+        // Registrar log do evento
+        await supabase
+          .from('log_eventos_sistema')
+          .insert({
+            tipo_evento: 'parcela_payment_confirmed',
+            descricao: `Pagamento de parcela ${parcelaEncontrada.numero_parcela} confirmado - R$ ${payment.value.toFixed(2)}`,
+            detalhes: {
+              pedido_id: pedido.id,
+              parcela_id: parcelaEncontrada.id,
+              parcela_numero: parcelaEncontrada.numero_parcela,
+              payment_id: payment.id,
+              event_type: event.event,
+              valor: payment.value,
+              data_pagamento: payment.paymentDate || payment.confirmedDate,
+              timestamp: new Date().toISOString()
+            }
+          });
+        
+        // Atualizar log do webhook como processado
+        await supabase
+          .from('webhook_logs')
+          .update({ 
+            status: 'processed',
+            processed_at: new Date().toISOString()
+          })
+          .eq('webhook_id', event.id)
+          .eq('provider', 'asaas');
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Parcela payment processed successfully',
+            pedidoId: pedido.id,
+            parcelaId: parcelaEncontrada.id,
+            parcelaNumero: parcelaEncontrada.numero_parcela,
+            paymentId: payment.id
+          }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
