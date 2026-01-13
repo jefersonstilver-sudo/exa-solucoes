@@ -10,7 +10,7 @@ export type { UserProfile } from '@/types/userTypes';
  * OTIMIZADO para evitar logs excessivos e re-renderizações
  */
 export const useUserSession = () => {
-  const { user, session, userProfile, isLoading, isLoggedIn, logout, hasRole } = useAuth();
+  const { user, session, userProfile, isLoading, isLoggedIn, logout, hasRole, refreshUserProfile } = useAuth();
 
   // FIXED: Memoizar para evitar re-computações desnecessárias
   const sessionData = useMemo(() => {
@@ -33,9 +33,10 @@ export const useUserSession = () => {
       logout,
       updateUserProfile: async () => ({ success: true }), // Legacy - not needed
       hasRole,
-      setUserRole: async () => ({ success: true }) // Legacy - not needed
+      setUserRole: async () => ({ success: true }), // Legacy - not needed
+      refreshUserProfile // Expor para atualização global do nome
     };
-  }, [userProfile, user, session, isLoading, isLoggedIn, logout, hasRole]);
+  }, [userProfile, user, session, isLoading, isLoggedIn, logout, hasRole, refreshUserProfile]);
 
   return sessionData;
 };

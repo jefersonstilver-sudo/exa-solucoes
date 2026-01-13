@@ -74,7 +74,7 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
   user,
   onUserUpdated
 }) => {
-  const { userProfile } = useAuth();
+  const { userProfile, refreshUserProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [blockingUser, setBlockingUser] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
@@ -288,6 +288,12 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
       if (error) throw error;
 
       toast.success('Informações atualizadas!');
+      
+      // Se o usuário editado é o próprio usuário logado, atualizar o estado global
+      if (user.id === userProfile?.id) {
+        await refreshUserProfile();
+      }
+      
       onUserUpdated();
     } catch (error: any) {
       console.error('❌ Erro ao atualizar:', error);

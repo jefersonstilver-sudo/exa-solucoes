@@ -13,6 +13,7 @@ interface AuthContextType {
   isAdmin: boolean; // Added for backward compatibility
   logout: () => Promise<void>;
   hasRole: (role: string) => boolean;
+  refreshUserProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -87,117 +88,119 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUserProfile(null);
   };
 
-  // Setup inicial otimizado
-  useEffect(() => {
-    // 🚨 SECURITY FIX: SEMPRE buscar role de user_roles (JWT não confiável sem hook)
-    const fetchUserProfile = async (userId: string, accessToken?: string) => {
-      try {
-        // ⚠️ CRÍTICO: Usar RPC get_user_highest_role para buscar role de maior prioridade
-        // Isso evita bug de duplicatas onde admin logava como client
-        console.log('🔍 Buscando role prioritário do usuário:', userId);
-        const { data: highestRole, error: roleError } = await supabase
-          .rpc('get_user_highest_role', { p_user_id: userId });
-        
-        let role: UserRole = 'client'; // Fallback seguro
-        
-        if (roleError) {
-          console.error('❌ Erro ao buscar role via RPC:', roleError);
-          // Fallback: tentar buscar da tabela users
-          const { data: userRoleData } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', userId)
-            .single();
-          
-          if (userRoleData?.role) {
-            role = userRoleData.role as UserRole;
-            console.log('✅ Role obtido da tabela users (fallback):', role);
-          }
-        } else {
-          role = (highestRole || 'client') as UserRole;
-          console.log('✅ Role prioritário obtido via RPC:', role);
-        }
-        
-        // Buscar dados completos do usuário
-        let userData = null;
-        let userError = null;
-        
-        const userResult = await supabase
+  // Função para buscar perfil do usuário (movida para fora do useEffect para reutilização)
+  const fetchUserProfile = async (userId: string, accessToken?: string) => {
+    try {
+      // ⚠️ CRÍTICO: Usar RPC get_user_highest_role para buscar role de maior prioridade
+      // Isso evita bug de duplicatas onde admin logava como client
+      console.log('🔍 Buscando role prioritário do usuário:', userId);
+      const { data: highestRole, error: roleError } = await supabase
+        .rpc('get_user_highest_role', { p_user_id: userId });
+      
+      let role: UserRole = 'client'; // Fallback seguro
+      
+      if (roleError) {
+        console.error('❌ Erro ao buscar role via RPC:', roleError);
+        // Fallback: tentar buscar da tabela users
+        const { data: userRoleData } = await supabase
           .from('users')
-          .select('id, email, nome, cpf, avatar_url, email_verified_at')
+          .select('role')
           .eq('id', userId)
-          .maybeSingle();
+          .single();
         
-        userData = userResult.data;
-        userError = userResult.error;
+        if (userRoleData?.role) {
+          role = userRoleData.role as UserRole;
+          console.log('✅ Role obtido da tabela users (fallback):', role);
+        }
+      } else {
+        role = (highestRole || 'client') as UserRole;
+        console.log('✅ Role prioritário obtido via RPC:', role);
+      }
+      
+      // Buscar dados completos do usuário
+      let userData = null;
+      let userError = null;
+      
+      const userResult = await supabase
+        .from('users')
+        .select('id, email, nome, cpf, avatar_url, email_verified_at')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      userData = userResult.data;
+      userError = userResult.error;
+      
+      // FALLBACK: Se usuário não existe em public.users, sincronizar de auth.users
+      if (!userData && !userError) {
+        console.warn('⚠️ [useAuth] Usuário não encontrado em public.users, tentando sincronizar...');
         
-        // FALLBACK: Se usuário não existe em public.users, sincronizar de auth.users
-        if (!userData && !userError) {
-          console.warn('⚠️ [useAuth] Usuário não encontrado em public.users, tentando sincronizar...');
-          
-          try {
-            const { data: syncResult, error: syncError } = await supabase
-              .rpc('sync_auth_user_to_public', { auth_user_id: userId });
+        try {
+          const { data: syncResult, error: syncError } = await supabase
+            .rpc('sync_auth_user_to_public', { auth_user_id: userId });
 
-            if (syncError) {
-              console.error('❌ [useAuth] Erro ao sincronizar usuário:', syncError);
-              setUserProfile(null);
-              return;
-            }
-
-            console.log('✅ [useAuth] Usuário sincronizado:', syncResult);
-
-            // Tentar buscar novamente após sincronização
-            const retryResult = await supabase
-              .from('users')
-              .select('id, email, nome, cpf, avatar_url, email_verified_at')
-              .eq('id', userId)
-              .maybeSingle();
-
-            userData = retryResult.data;
-            userError = retryResult.error;
-
-            if (!userData || userError) {
-              console.error('❌ [useAuth] Erro ao buscar usuário após sincronização:', userError);
-              setUserProfile(null);
-              return;
-            }
-            
-            console.log('✅ [useAuth] Usuário carregado após sincronização');
-            
-          } catch (syncException) {
-            console.error('❌ [useAuth] Exceção ao sincronizar usuário:', syncException);
+          if (syncError) {
+            console.error('❌ [useAuth] Erro ao sincronizar usuário:', syncError);
             setUserProfile(null);
             return;
           }
-        } else if (userError) {
-          console.error('❌ Erro ao buscar dados do usuário:', userError);
+
+          console.log('✅ [useAuth] Usuário sincronizado:', syncResult);
+
+          // Tentar buscar novamente após sincronização
+          const retryResult = await supabase
+            .from('users')
+            .select('id, email, nome, cpf, avatar_url, email_verified_at')
+            .eq('id', userId)
+            .maybeSingle();
+
+          userData = retryResult.data;
+          userError = retryResult.error;
+
+          if (!userData || userError) {
+            console.error('❌ [useAuth] Erro ao buscar usuário após sincronização:', userError);
+            setUserProfile(null);
+            return;
+          }
+          
+          console.log('✅ [useAuth] Usuário carregado após sincronização');
+          
+        } catch (syncException) {
+          console.error('❌ [useAuth] Exceção ao sincronizar usuário:', syncException);
           setUserProfile(null);
           return;
         }
-        
-        const profile: UserProfile = {
-          id: userId,
-          email: userData.email,
-          nome: userData.nome,
-          documento: userData.cpf,
-          avatar_url: userData.avatar_url,
-          role: role,
-          email_verified_at: userData.email_verified_at
-        };
-        
-        setUserProfile(profile);
-        console.log('✅ Profile carregado com sucesso:', { 
-          userId,
-          email: profile.email, 
-          role: profile.role 
-        });
-        console.log('🔍 DEBUG DETALHADO - Profile completo:', JSON.stringify(profile, null, 2));
-      } catch (error) {
-        console.error('❌ Erro inesperado ao buscar profile:', error);
+      } else if (userError) {
+        console.error('❌ Erro ao buscar dados do usuário:', userError);
         setUserProfile(null);
+        return;
       }
-    };
+      
+      const profile: UserProfile = {
+        id: userId,
+        email: userData.email,
+        nome: userData.nome,
+        documento: userData.cpf,
+        avatar_url: userData.avatar_url,
+        role: role,
+        email_verified_at: userData.email_verified_at
+      };
+      
+      setUserProfile(profile);
+      console.log('✅ Profile carregado com sucesso:', { 
+        userId,
+        email: profile.email, 
+        role: profile.role 
+      });
+      console.log('🔍 DEBUG DETALHADO - Profile completo:', JSON.stringify(profile, null, 2));
+    } catch (error) {
+      console.error('❌ Erro inesperado ao buscar profile:', error);
+      setUserProfile(null);
+    }
+  };
+
+  // Setup inicial otimizado
+  useEffect(() => {
+    // Verificação de existência do usuário removida para evitar logouts indesejados durante checkout
 
     // Verificação de existência do usuário removida para evitar logouts indesejados durante checkout
 
@@ -235,6 +238,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
+  // Função para recarregar o perfil do usuário (útil após edições)
+  const refreshUserProfile = async (): Promise<void> => {
+    if (session?.user?.id && session?.access_token) {
+      console.log('🔄 [useAuth] Recarregando perfil do usuário...');
+      await fetchUserProfile(session.user.id, session.access_token);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     session,
@@ -244,7 +255,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isSuperAdmin,
     isAdmin, // Added for backward compatibility
     logout,
-    hasRole
+    hasRole,
+    refreshUserProfile
   };
 
   return (
