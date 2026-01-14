@@ -116,9 +116,9 @@ const UsersPage = () => {
     setSelectedUser(user);
   };
 
-  // Filtrar usuários
+  // Filtrar usuários - incluindo comercial na equipe EXA
   const indexaTeam = users.filter((u) =>
-    ['super_admin', 'admin', 'admin_marketing', 'admin_financeiro'].includes(u.role)
+    ['super_admin', 'admin', 'admin_marketing', 'admin_financeiro', 'comercial'].includes(u.role)
   );
   const clients = users.filter((u) => u.role === 'client');
 
