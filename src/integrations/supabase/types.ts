@@ -11876,6 +11876,499 @@ export type Database = {
           },
         ]
       }
+      task_checklist_items: {
+        Row: {
+          concluido: boolean | null
+          concluido_em: string | null
+          concluido_por: string | null
+          created_at: string | null
+          descricao: string
+          id: string
+          obrigatorio: boolean | null
+          ordem: number | null
+          task_id: string
+        }
+        Insert: {
+          concluido?: boolean | null
+          concluido_em?: string | null
+          concluido_por?: string | null
+          created_at?: string | null
+          descricao: string
+          id?: string
+          obrigatorio?: boolean | null
+          ordem?: number | null
+          task_id: string
+        }
+        Update: {
+          concluido?: boolean | null
+          concluido_em?: string | null
+          concluido_por?: string | null
+          created_at?: string | null
+          descricao?: string
+          id?: string
+          obrigatorio?: boolean | null
+          ordem?: number | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_checklist_items_concluido_por_fkey"
+            columns: ["concluido_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_checklist_items_concluido_por_fkey"
+            columns: ["concluido_por"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_checklist_items_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_responsaveis: {
+        Row: {
+          created_at: string | null
+          id: string
+          lida_em: string | null
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lida_em?: string | null
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lida_em?: string | null
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_responsaveis_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_responsaveis_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_responsaveis_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_rotina_checklist: {
+        Row: {
+          created_at: string | null
+          descricao: string
+          id: string
+          obrigatorio: boolean | null
+          ordem: number | null
+          rotina_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          descricao: string
+          id?: string
+          obrigatorio?: boolean | null
+          ordem?: number | null
+          rotina_id: string
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string
+          id?: string
+          obrigatorio?: boolean | null
+          ordem?: number | null
+          rotina_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_rotina_checklist_rotina_id_fkey"
+            columns: ["rotina_id"]
+            isOneToOne: false
+            referencedRelation: "task_rotinas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_rotina_responsaveis: {
+        Row: {
+          created_at: string | null
+          id: string
+          rotina_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          rotina_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          rotina_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_rotina_responsaveis_rotina_id_fkey"
+            columns: ["rotina_id"]
+            isOneToOne: false
+            referencedRelation: "task_rotinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_rotina_responsaveis_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_rotina_responsaveis_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_rotinas: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          dia_mes: number | null
+          dias_semana: Database["public"]["Enums"]["dia_semana"][] | null
+          frequencia: Database["public"]["Enums"]["frequencia_rotina"]
+          horario_inicio: string | null
+          horario_limite: string | null
+          id: string
+          nome: string
+          prioridade: Database["public"]["Enums"]["task_prioridade"] | null
+          task_type_id: string | null
+          todos_responsaveis: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          dia_mes?: number | null
+          dias_semana?: Database["public"]["Enums"]["dia_semana"][] | null
+          frequencia?: Database["public"]["Enums"]["frequencia_rotina"]
+          horario_inicio?: string | null
+          horario_limite?: string | null
+          id?: string
+          nome: string
+          prioridade?: Database["public"]["Enums"]["task_prioridade"] | null
+          task_type_id?: string | null
+          todos_responsaveis?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          dia_mes?: number | null
+          dias_semana?: Database["public"]["Enums"]["dia_semana"][] | null
+          frequencia?: Database["public"]["Enums"]["frequencia_rotina"]
+          horario_inicio?: string | null
+          horario_limite?: string | null
+          id?: string
+          nome?: string
+          prioridade?: Database["public"]["Enums"]["task_prioridade"] | null
+          task_type_id?: string | null
+          todos_responsaveis?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_rotinas_task_type_id_fkey"
+            columns: ["task_type_id"]
+            isOneToOne: false
+            referencedRelation: "task_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_status_log: {
+        Row: {
+          alterado_por: string | null
+          created_at: string | null
+          id: string
+          motivo: string | null
+          status_anterior: Database["public"]["Enums"]["task_status"] | null
+          status_novo: Database["public"]["Enums"]["task_status"]
+          task_id: string
+        }
+        Insert: {
+          alterado_por?: string | null
+          created_at?: string | null
+          id?: string
+          motivo?: string | null
+          status_anterior?: Database["public"]["Enums"]["task_status"] | null
+          status_novo: Database["public"]["Enums"]["task_status"]
+          task_id: string
+        }
+        Update: {
+          alterado_por?: string | null
+          created_at?: string | null
+          id?: string
+          motivo?: string | null
+          status_anterior?: Database["public"]["Enums"]["task_status"] | null
+          status_novo?: Database["public"]["Enums"]["task_status"]
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_status_log_alterado_por_fkey"
+            columns: ["alterado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_status_log_alterado_por_fkey"
+            columns: ["alterado_por"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_status_log_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_type_responsaveis_padrao: {
+        Row: {
+          created_at: string | null
+          id: string
+          task_type_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          task_type_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          task_type_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_type_responsaveis_padrao_task_type_id_fkey"
+            columns: ["task_type_id"]
+            isOneToOne: false
+            referencedRelation: "task_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_type_responsaveis_padrao_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_type_responsaveis_padrao_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_types: {
+        Row: {
+          ativo: boolean | null
+          codigo: string
+          created_at: string | null
+          departamento: string
+          descricao: string | null
+          id: string
+          nome: string
+          prioridade_padrao:
+            | Database["public"]["Enums"]["task_prioridade"]
+            | null
+          requer_checklist: boolean | null
+          tempo_estimado_minutos: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          codigo: string
+          created_at?: string | null
+          departamento: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          prioridade_padrao?:
+            | Database["public"]["Enums"]["task_prioridade"]
+            | null
+          requer_checklist?: boolean | null
+          tempo_estimado_minutos?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          codigo?: string
+          created_at?: string | null
+          departamento?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          prioridade_padrao?:
+            | Database["public"]["Enums"]["task_prioridade"]
+            | null
+          requer_checklist?: boolean | null
+          tempo_estimado_minutos?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          cliente_id: string | null
+          concluida_por: string | null
+          created_at: string | null
+          created_by: string | null
+          data_conclusao: string | null
+          data_prevista: string | null
+          descricao: string | null
+          horario_limite: string | null
+          id: string
+          motivo_nao_realizada: string | null
+          origem: Database["public"]["Enums"]["task_origem"]
+          origem_id: string | null
+          prioridade: Database["public"]["Enums"]["task_prioridade"]
+          rotina_id: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          task_type_id: string | null
+          titulo: string
+          todos_responsaveis: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          cliente_id?: string | null
+          concluida_por?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data_conclusao?: string | null
+          data_prevista?: string | null
+          descricao?: string | null
+          horario_limite?: string | null
+          id?: string
+          motivo_nao_realizada?: string | null
+          origem?: Database["public"]["Enums"]["task_origem"]
+          origem_id?: string | null
+          prioridade?: Database["public"]["Enums"]["task_prioridade"]
+          rotina_id?: string | null
+          status?: Database["public"]["Enums"]["task_status"]
+          task_type_id?: string | null
+          titulo: string
+          todos_responsaveis?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          cliente_id?: string | null
+          concluida_por?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data_conclusao?: string | null
+          data_prevista?: string | null
+          descricao?: string | null
+          horario_limite?: string | null
+          id?: string
+          motivo_nao_realizada?: string | null
+          origem?: Database["public"]["Enums"]["task_origem"]
+          origem_id?: string | null
+          prioridade?: Database["public"]["Enums"]["task_prioridade"]
+          rotina_id?: string | null
+          status?: Database["public"]["Enums"]["task_status"]
+          task_type_id?: string | null
+          titulo?: string
+          todos_responsaveis?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_concluida_por_fkey"
+            columns: ["concluida_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_concluida_por_fkey"
+            columns: ["concluida_por"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_rotina_id_fkey"
+            columns: ["rotina_id"]
+            isOneToOne: false
+            referencedRelation: "task_rotinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_task_type_id_fkey"
+            columns: ["task_type_id"]
+            isOneToOne: false
+            referencedRelation: "task_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tentativas_compra: {
         Row: {
           created_at: string | null
@@ -14504,7 +14997,16 @@ export type Database = {
         | "administrativo"
         | "diretoria"
         | "ti"
+      dia_semana:
+        | "segunda"
+        | "terca"
+        | "quarta"
+        | "quinta"
+        | "sexta"
+        | "sabado"
+        | "domingo"
       fornecedor_tipo: "servico" | "produto" | "ambos" | "elevador"
+      frequencia_rotina: "diaria" | "semanal" | "quinzenal" | "mensal"
       funcionario_status: "ativo" | "ferias" | "suspenso" | "encerrado"
       investimento_status:
         | "planejado"
@@ -14539,6 +15041,25 @@ export type Database = {
         | "admin"
         | "cron"
         | "reconciliacao"
+      task_origem:
+        | "manual"
+        | "rotina"
+        | "sistema"
+        | "crm"
+        | "financeiro"
+        | "operacao"
+        | "notion"
+        | "alerta"
+        | "ia"
+      task_prioridade: "emergencia" | "alta" | "media" | "baixa"
+      task_status:
+        | "pendente"
+        | "em_andamento"
+        | "aguardando_aprovacao"
+        | "aguardando_insumo"
+        | "concluida"
+        | "nao_realizada"
+        | "cancelada"
       tipo_contrato_funcionario:
         | "clt"
         | "pj"
@@ -14716,7 +15237,17 @@ export const Constants = {
         "diretoria",
         "ti",
       ],
+      dia_semana: [
+        "segunda",
+        "terca",
+        "quarta",
+        "quinta",
+        "sexta",
+        "sabado",
+        "domingo",
+      ],
       fornecedor_tipo: ["servico", "produto", "ambos", "elevador"],
+      frequencia_rotina: ["diaria", "semanal", "quinzenal", "mensal"],
       funcionario_status: ["ativo", "ferias", "suspenso", "encerrado"],
       investimento_status: [
         "planejado",
@@ -14754,6 +15285,27 @@ export const Constants = {
         "admin",
         "cron",
         "reconciliacao",
+      ],
+      task_origem: [
+        "manual",
+        "rotina",
+        "sistema",
+        "crm",
+        "financeiro",
+        "operacao",
+        "notion",
+        "alerta",
+        "ia",
+      ],
+      task_prioridade: ["emergencia", "alta", "media", "baixa"],
+      task_status: [
+        "pendente",
+        "em_andamento",
+        "aguardando_aprovacao",
+        "aguardando_insumo",
+        "concluida",
+        "nao_realizada",
+        "cancelada",
       ],
       tipo_contrato_funcionario: [
         "clt",
