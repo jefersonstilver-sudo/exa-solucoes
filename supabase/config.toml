@@ -585,3 +585,11 @@ schedule = "* * * * *"
 
 [functions.sync-contacts-unified]
 verify_jwt = false
+
+[functions.generate-daily-tasks]
+verify_jwt = false
+
+# Geração de tarefas diárias - 02:00 Brasília (05:00 UTC)
+[[cron]]
+function_name = "generate-daily-tasks"
+schedule = "0 5 * * *"
