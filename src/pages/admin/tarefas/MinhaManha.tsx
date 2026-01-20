@@ -1,12 +1,15 @@
+/**
+ * Minha Manhã - Página de Tarefas do Dia (Migrada)
+ * Fonte de dados: tabela `tasks` (canônica)
+ * Sem dependência do Notion
+ */
+
 import React, { useState } from 'react';
 import { 
   Sunrise, 
   RefreshCw, 
   Check, 
-  ExternalLink, 
   AlertTriangle,
-  Clock,
-  CalendarDays,
   Loader2,
   ChevronRight,
   Zap,
@@ -16,145 +19,19 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { format, parseISO, isBefore, startOfDay } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useMinhaManha } from '@/hooks/tarefas/useMinhaManha';
-import type { TarefaNotionExistente } from '@/types/tarefas';
-import { PRIORIDADE_CONFIG } from '@/types/tarefas';
+import { TaskCard } from './components/TaskCard';
+import type { TaskWithDetails, TaskCategory } from '@/types/tarefas';
 import { cn } from '@/lib/utils';
-
-// Card de tarefa individual
-interface TarefaCardProps {
-  tarefa: TarefaNotionExistente;
-  tipo: 'urgente' | 'importante' | 'rotina';
-  onConcluir: (id: string) => void;
-  isConcluindo: boolean;
-}
-
-const TarefaCard = ({ tarefa, tipo, onConcluir, isConcluindo }: TarefaCardProps) => {
-  const hoje = startOfDay(new Date());
-  const isAtrasada = tarefa.data && isBefore(parseISO(tarefa.data.split('T')[0]), hoje);
-  
-  const tipoConfig = {
-    urgente: {
-      border: 'border-l-red-500',
-      bg: 'bg-red-50/50 hover:bg-red-50',
-      badge: 'bg-red-100 text-red-700 border-red-200',
-    },
-    importante: {
-      border: 'border-l-amber-500',
-      bg: 'bg-amber-50/50 hover:bg-amber-50',
-      badge: 'bg-amber-100 text-amber-700 border-amber-200',
-    },
-    rotina: {
-      border: 'border-l-emerald-500',
-      bg: 'bg-emerald-50/50 hover:bg-emerald-50',
-      badge: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    },
-  };
-
-  const config = tipoConfig[tipo];
-
-  return (
-    <div 
-      className={cn(
-        "p-4 rounded-xl border-l-4 transition-all cursor-pointer group",
-        config.border,
-        config.bg,
-        "border border-gray-100"
-      )}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          {/* Badges */}
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            {tarefa.prioridade && (
-              <Badge className={cn("text-[10px] font-medium", config.badge)}>
-                {tarefa.prioridade}
-              </Badge>
-            )}
-            {isAtrasada && (
-              <Badge className="text-[10px] bg-red-100 text-red-700 border-red-200 font-semibold">
-                <AlertTriangle className="h-3 w-3 mr-1" />
-                Atrasada
-              </Badge>
-            )}
-            {tarefa.categoria && (
-              <Badge className="text-[10px] bg-purple-50 text-purple-700 border-purple-200">
-                {tarefa.categoria}
-              </Badge>
-            )}
-          </div>
-          
-          {/* Título */}
-          <h4 className="font-medium text-gray-900 text-sm leading-tight mb-1">
-            {tarefa.nome}
-          </h4>
-          
-          {/* Data */}
-          {tarefa.data && (
-            <div className={cn(
-              "flex items-center gap-1 text-xs",
-              isAtrasada ? "text-red-600 font-medium" : "text-gray-500"
-            )}>
-              <CalendarDays className="h-3 w-3" />
-              {format(parseISO(tarefa.data), "dd/MM/yyyy", { locale: ptBR })}
-            </div>
-          )}
-
-          {/* Responsável */}
-          {tarefa.responsavel && (
-            <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
-              <Clock className="h-3 w-3" />
-              {tarefa.responsavel}
-            </div>
-          )}
-        </div>
-
-        {/* Ações */}
-        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-8 w-8 p-0 hover:bg-emerald-100 hover:text-emerald-600"
-            onClick={(e) => {
-              e.stopPropagation();
-              onConcluir(tarefa.id);
-            }}
-            disabled={isConcluindo}
-            title="Concluir tarefa"
-          >
-            {isConcluindo ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Check className="h-4 w-4" />
-            )}
-          </Button>
-          {tarefa.notion_url && (
-            <a
-              href={tarefa.notion_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-gray-100"
-              onClick={(e) => e.stopPropagation()}
-              title="Abrir no Notion"
-            >
-              <ExternalLink className="h-4 w-4 text-gray-400" />
-            </a>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // Seção de tarefas
 interface SecaoTarefasProps {
   titulo: string;
   icone: React.ReactNode;
-  tarefas: TarefaNotionExistente[];
-  tipo: 'urgente' | 'importante' | 'rotina';
+  tarefas: TaskWithDetails[];
+  tipo: TaskCategory;
   onConcluir: (id: string) => void;
   isConcluindo: boolean;
   corHeader: string;
@@ -178,23 +55,23 @@ const SecaoTarefas = ({
   if (tarefas.length === 0) return null;
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden border-0 shadow-sm">
       <CardHeader className={cn("py-3 px-4", corHeader)}>
         <CardTitle className="flex items-center justify-between text-sm font-semibold">
           <div className="flex items-center gap-2">
             {icone}
             {titulo}
           </div>
-          <Badge variant="secondary" className="bg-white/80">
+          <Badge variant="secondary" className="bg-white/80 text-gray-700">
             {tarefas.length}
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-3 space-y-2">
+      <CardContent className="p-3 space-y-2 bg-white">
         {tarefasVisiveis.map(tarefa => (
-          <TarefaCard 
+          <TaskCard 
             key={tarefa.id}
-            tarefa={tarefa}
+            task={tarefa}
             tipo={tipo}
             onConcluir={onConcluir}
             isConcluindo={isConcluindo}
@@ -204,7 +81,7 @@ const SecaoTarefas = ({
           <Button
             variant="ghost"
             size="sm"
-            className="w-full text-xs text-gray-500"
+            className="w-full text-xs text-gray-500 hover:text-gray-700"
             onClick={() => setExpandido(!expandido)}
           >
             {expandido ? 'Ver menos' : `Ver mais ${tarefas.length - maxItens} tarefas`}
@@ -224,16 +101,22 @@ const MinhaManha = () => {
   const { 
     dados, 
     isLoading, 
+    refetch,
     concluirTarefa, 
     isConcluindo,
-    sincronizar,
-    isSincronizando
   } = useMinhaManha();
 
   const { estatisticas } = dados;
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refetch();
+    setIsRefreshing(false);
+  };
 
   return (
-    <div className="p-4 md:p-6 space-y-6 bg-white min-h-screen">
+    <div className="p-4 md:p-6 space-y-6 bg-gray-50/50 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -250,25 +133,25 @@ const MinhaManha = () => {
 
         <div className="flex items-center gap-2">
           <Button
-            onClick={() => sincronizar()}
-            disabled={isSincronizando}
+            onClick={handleRefresh}
+            disabled={isRefreshing}
             size="sm"
             variant="outline"
             className="gap-2"
           >
-            {isSincronizando ? (
+            {isRefreshing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <RefreshCw className="h-4 w-4" />
             )}
-            Sincronizar Notion
+            Atualizar
           </Button>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="bg-red-50 border-red-200">
+        <Card className="bg-red-50 border-red-200/50 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-red-100">
@@ -284,7 +167,7 @@ const MinhaManha = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-amber-50 border-amber-200">
+        <Card className="bg-amber-50 border-amber-200/50 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-amber-100">
@@ -300,7 +183,7 @@ const MinhaManha = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-emerald-50 border-emerald-200">
+        <Card className="bg-emerald-50 border-emerald-200/50 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-emerald-100">
@@ -316,7 +199,7 @@ const MinhaManha = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-blue-50 border-blue-200">
+        <Card className="bg-blue-50 border-blue-200/50 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-blue-100">
@@ -324,9 +207,9 @@ const MinhaManha = () => {
               </div>
               <div>
                 <div className="text-2xl font-bold text-blue-700">
-                  {estatisticas.concluidas_hoje}
+                  {estatisticas.total}
                 </div>
-                <div className="text-xs text-blue-600">Concluídas Hoje</div>
+                <div className="text-xs text-blue-600">Total Pendentes</div>
               </div>
             </div>
           </CardContent>
@@ -377,7 +260,7 @@ const MinhaManha = () => {
 
       {/* Mensagem quando não há tarefas */}
       {!isLoading && estatisticas.total === 0 && (
-        <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
+        <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200/50 shadow-sm">
           <CardContent className="p-8 text-center">
             <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
               <Check className="h-8 w-8 text-emerald-600" />

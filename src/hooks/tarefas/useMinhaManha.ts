@@ -1,33 +1,100 @@
+/**
+ * useMinhaManha - Hook migrado para o novo sistema de tarefas
+ * Fonte de dados: tabela `tasks` (canônica)
+ * Remove dependência do Notion
+ */
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useMemo } from 'react';
 import { format, parseISO, isBefore, isToday, startOfDay } from 'date-fns';
-import type { TarefaNotionExistente, MinhaManhaDados } from '@/types/tarefas';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { ACTIVE_STATUSES, COMPLETABLE_STATUSES } from '@/constants/taskStatus';
+import { URGENT_PRIORITIES, IMPORTANT_PRIORITIES, ROUTINE_PRIORITIES } from '@/constants/taskPriority';
+import type { TaskWithDetails, MinhaManhaDadosV2, TaskStatusCanonical, TaskPriorityCanonical } from '@/types/tarefas';
 
 export function useMinhaManha() {
   const queryClient = useQueryClient();
-  const { userProfile } = useAuth();
+  const { user, userProfile } = useAuth();
 
-  // Buscar todas as tarefas do notion_tasks
+  // Buscar tarefas do novo sistema
   const { data: tarefas, isLoading, error, refetch } = useQuery({
-    queryKey: ['minha-manha-tarefas'],
+    queryKey: ['minha-manha-tasks-v2', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('notion_tasks' as any)
-        .select('*')
-        .order('data', { ascending: true, nullsFirst: false });
-      
-      if (error) throw error;
-      return (data || []) as unknown as TarefaNotionExistente[];
+      if (!user?.id) return [];
+
+      // Buscar tarefas com status ativo
+      const { data: tasks, error: tasksError } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          task_types (
+            id,
+            codigo,
+            nome,
+            departamento
+          ),
+          task_responsaveis (
+            id,
+            user_id,
+            users:user_id (
+              id,
+              nome,
+              email
+            )
+          ),
+          task_checklist_items (
+            id,
+            descricao,
+            obrigatorio,
+            concluido,
+            ordem
+          )
+        `)
+        .in('status', ACTIVE_STATUSES)
+        .order('prioridade', { ascending: true })
+        .order('data_prevista', { ascending: true, nullsFirst: false });
+
+      if (tasksError) throw tasksError;
+
+      // Filtrar tarefas onde o usuário é responsável OU todos_responsaveis = true
+      const filteredTasks = (tasks || []).filter(task => {
+        if (task.todos_responsaveis) return true;
+        const responsaveis = task.task_responsaveis || [];
+        return responsaveis.some((r: any) => r.user_id === user.id);
+      });
+
+      // Mapear para o formato esperado
+      return filteredTasks.map((task: any): TaskWithDetails => {
+        const checklist = task.task_checklist_items || [];
+        const responsaveis = (task.task_responsaveis || []).map((r: any) => ({
+          id: r.id,
+          task_id: task.id,
+          user_id: r.user_id,
+          user_nome: r.users?.nome || r.users?.email || 'Desconhecido',
+          user_email: r.users?.email,
+          created_at: r.created_at || task.created_at
+        }));
+
+        return {
+          ...task,
+          task_type: task.task_types || null,
+          departamento: task.task_types?.departamento || null,
+          responsaveis,
+          checklist,
+          checklist_total: checklist.length,
+          checklist_concluidos: checklist.filter((c: any) => c.concluido).length
+        };
+      });
     },
+    enabled: !!user?.id,
     refetchInterval: 60000, // Atualizar a cada minuto
   });
 
   // Processar e categorizar tarefas
-  const dados: MinhaManhaDados = useMemo(() => {
-    if (!tarefas) {
+  const dados: MinhaManhaDadosV2 = useMemo(() => {
+    if (!tarefas || tarefas.length === 0) {
       return {
         urgentes: [],
         importantes: [],
@@ -47,88 +114,82 @@ export function useMinhaManha() {
     const hoje = startOfDay(new Date());
     const hojeStr = format(hoje, 'yyyy-MM-dd');
 
-    // Filtrar tarefas não concluídas
-    const tarefasAtivas = tarefas.filter(t => 
-      t.status !== 'Concluído' && t.status !== 'concluida'
-    );
-
-    // Calcular atrasadas
-    const atrasadas = tarefasAtivas.filter(t => {
-      if (!t.data) return false;
-      const dataTask = parseISO(t.data.split('T')[0]);
+    // Identificar atrasadas
+    const isAtrasada = (task: TaskWithDetails): boolean => {
+      if (!task.data_prevista) return false;
+      const dataTask = parseISO(task.data_prevista.split('T')[0]);
       return isBefore(dataTask, hoje);
-    });
+    };
 
-    // Tarefas de hoje
-    const tarefasHoje = tarefasAtivas.filter(t => {
-      if (!t.data) return false;
-      return t.data.split('T')[0] === hojeStr;
-    });
+    // Identificar tarefas de hoje
+    const isHoje = (task: TaskWithDetails): boolean => {
+      if (!task.data_prevista) return false;
+      return task.data_prevista.split('T')[0] === hojeStr;
+    };
 
-    // Concluídas hoje
-    const concluidasHoje = tarefas.filter(t => {
-      if (t.status !== 'Concluído' && t.status !== 'concluida') return false;
-      if (!t.updated_at) return false;
-      return isToday(parseISO(t.updated_at));
-    });
-
-    // Categorizar por prioridade
-    // URGENTE: Alta prioridade OU atrasada
-    const urgentes = tarefasAtivas.filter(t => {
-      const isAtrasada = t.data && isBefore(parseISO(t.data.split('T')[0]), hoje);
-      return t.prioridade === 'Alta' || isAtrasada;
+    // URGENTE: emergencia, alta, ou atrasada
+    const urgentes = tarefas.filter(t => {
+      if (isAtrasada(t)) return true;
+      return URGENT_PRIORITIES.includes(t.prioridade as TaskPriorityCanonical);
     }).sort((a, b) => {
-      // Ordenar por data, atrasadas primeiro
-      if (!a.data && !b.data) return 0;
-      if (!a.data) return 1;
-      if (!b.data) return -1;
-      return new Date(a.data).getTime() - new Date(b.data).getTime();
+      // Ordenar: atrasadas primeiro, depois por data
+      const aAtrasada = isAtrasada(a);
+      const bAtrasada = isAtrasada(b);
+      if (aAtrasada && !bAtrasada) return -1;
+      if (!aAtrasada && bAtrasada) return 1;
+      if (!a.data_prevista && !b.data_prevista) return 0;
+      if (!a.data_prevista) return 1;
+      if (!b.data_prevista) return -1;
+      return new Date(a.data_prevista).getTime() - new Date(b.data_prevista).getTime();
     });
 
-    // IMPORTANTE: Média prioridade ou tarefas de hoje sem alta prioridade
-    const importantes = tarefasAtivas.filter(t => {
-      const isAtrasada = t.data && isBefore(parseISO(t.data.split('T')[0]), hoje);
-      if (isAtrasada) return false; // Já está em urgentes
-      if (t.prioridade === 'Alta') return false; // Já está em urgentes
-      
-      const isHoje = t.data && t.data.split('T')[0] === hojeStr;
-      return t.prioridade === 'Média' || isHoje;
+    // IDs das urgentes para evitar duplicação
+    const urgentesIds = new Set(urgentes.map(t => t.id));
+
+    // IMPORTANTE: média prioridade OU hoje (sem ser urgente)
+    const importantes = tarefas.filter(t => {
+      if (urgentesIds.has(t.id)) return false;
+      if (IMPORTANT_PRIORITIES.includes(t.prioridade as TaskPriorityCanonical)) return true;
+      if (isHoje(t)) return true;
+      return false;
     }).sort((a, b) => {
-      if (!a.data && !b.data) return 0;
-      if (!a.data) return 1;
-      if (!b.data) return -1;
-      return new Date(a.data).getTime() - new Date(b.data).getTime();
+      if (!a.data_prevista && !b.data_prevista) return 0;
+      if (!a.data_prevista) return 1;
+      if (!b.data_prevista) return -1;
+      return new Date(a.data_prevista).getTime() - new Date(b.data_prevista).getTime();
     });
 
-    // ROTINA: Baixa prioridade ou sem prioridade definida
-    const rotina = tarefasAtivas.filter(t => {
-      const isAtrasada = t.data && isBefore(parseISO(t.data.split('T')[0]), hoje);
-      if (isAtrasada) return false;
-      if (t.prioridade === 'Alta') return false;
-      if (t.prioridade === 'Média') return false;
-      const isHoje = t.data && t.data.split('T')[0] === hojeStr;
-      if (isHoje) return false;
-      
+    // IDs das importantes para evitar duplicação
+    const importantesIds = new Set(importantes.map(t => t.id));
+
+    // ROTINA: baixa prioridade ou restantes
+    const rotina = tarefas.filter(t => {
+      if (urgentesIds.has(t.id)) return false;
+      if (importantesIds.has(t.id)) return false;
       return true;
     }).sort((a, b) => {
-      if (!a.data && !b.data) return 0;
-      if (!a.data) return 1;
-      if (!b.data) return -1;
-      return new Date(a.data).getTime() - new Date(b.data).getTime();
+      if (!a.data_prevista && !b.data_prevista) return 0;
+      if (!a.data_prevista) return 1;
+      if (!b.data_prevista) return -1;
+      return new Date(a.data_prevista).getTime() - new Date(b.data_prevista).getTime();
     });
+
+    // Estatísticas
+    const atrasadas = tarefas.filter(isAtrasada);
+    const tarefasHoje = tarefas.filter(isHoje);
 
     return {
       urgentes,
       importantes,
       rotina,
       estatisticas: {
-        total: tarefasAtivas.length,
+        total: tarefas.length,
         urgentes: urgentes.length,
         importantes: importantes.length,
         rotina: rotina.length,
         atrasadas: atrasadas.length,
         hoje: tarefasHoje.length,
-        concluidas_hoje: concluidasHoje.length,
+        concluidas_hoje: 0, // Será calculado separadamente se necessário
       },
     };
   }, [tarefas]);
@@ -136,11 +197,24 @@ export function useMinhaManha() {
   // Mutation para concluir tarefa
   const concluirTarefa = useMutation({
     mutationFn: async (taskId: string) => {
+      // Verificar se há itens obrigatórios não concluídos
+      const task = tarefas?.find(t => t.id === taskId);
+      if (task?.checklist) {
+        const obrigatoriosPendentes = task.checklist.filter(
+          item => item.obrigatorio && !item.concluido
+        );
+        if (obrigatoriosPendentes.length > 0) {
+          throw new Error(`Existem ${obrigatoriosPendentes.length} item(ns) obrigatório(s) pendente(s) no checklist`);
+        }
+      }
+
+      // Atualizar status da tarefa
       const { error } = await supabase
-        .from('notion_tasks' as any)
+        .from('tasks')
         .update({ 
-          status: 'Concluído',
-          finalizado_por: userProfile?.nome || userProfile?.email || 'Sistema',
+          status: 'concluida' as TaskStatusCanonical,
+          data_conclusao: new Date().toISOString(),
+          concluida_por: user?.id || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', taskId);
@@ -149,30 +223,11 @@ export function useMinhaManha() {
     },
     onSuccess: () => {
       toast.success('Tarefa concluída!');
-      queryClient.invalidateQueries({ queryKey: ['minha-manha-tarefas'] });
-      queryClient.invalidateQueries({ queryKey: ['notion-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['minha-manha-tasks-v2'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
     onError: (error: any) => {
-      toast.error(`Erro ao concluir tarefa: ${error.message}`);
-    }
-  });
-
-  // Mutation para sincronizar com Notion
-  const sincronizar = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('sync-notion-tasks', {
-        body: { force: true }
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      toast.success(`Sincronizado! ${data?.stats?.updated || 0} atualizadas`);
-      queryClient.invalidateQueries({ queryKey: ['minha-manha-tarefas'] });
-      queryClient.invalidateQueries({ queryKey: ['notion-tasks'] });
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao sincronizar: ${error.message}`);
+      toast.error(error.message || 'Erro ao concluir tarefa');
     }
   });
 
@@ -184,7 +239,7 @@ export function useMinhaManha() {
     refetch,
     concluirTarefa: concluirTarefa.mutate,
     isConcluindo: concluirTarefa.isPending,
-    sincronizar: sincronizar.mutate,
-    isSincronizando: sincronizar.isPending,
+    // Removido: sincronizar (não há mais Notion)
+    // Removido: isSincronizando (não há mais Notion)
   };
 }
