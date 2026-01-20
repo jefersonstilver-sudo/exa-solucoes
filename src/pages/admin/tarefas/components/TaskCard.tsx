@@ -66,43 +66,46 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         "p-4 rounded-xl border-l-4 transition-all duration-200 cursor-pointer group",
         priorityConfig.borderLeftColor,
         config.bg,
-        "border border-gray-100/80",
-        "hover:shadow-md",
+        "border border-gray-100/60",
+        // Shadow sutil no hover (premium, não chamativo)
+        "hover:shadow-sm hover:border-gray-200/80",
         config.hoverShadow
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          {/* Badges */}
-          <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+          {/* Título - elemento de maior hierarquia visual */}
+          <h4 className="font-semibold text-gray-900 text-sm leading-snug mb-2 line-clamp-2">
+            {task.titulo}
+          </h4>
+          
+          {/* Badges - peso visual reduzido, secundários */}
+          <div className="flex items-center gap-1.5 mb-2.5 flex-wrap">
             <TaskPriorityBadge priority={task.prioridade} size="sm" />
             
+            {/* Badge departamento - mais discreto */}
             {task.departamento && (
-              <Badge className="text-[10px] bg-purple-50 text-purple-700 border-purple-200 font-medium">
+              <Badge className="text-[9px] bg-gray-50 text-gray-500 border-gray-200/80 font-normal px-1.5 py-0">
                 {task.departamento}
               </Badge>
             )}
             
+            {/* Badge Atrasada - animação mais sutil */}
             {isAtrasada && (
-              <Badge className="text-[10px] bg-red-100 text-red-700 border-red-200 font-semibold animate-pulse">
-                <AlertTriangle className="h-3 w-3 mr-0.5" />
+              <Badge className="text-[9px] bg-red-50 text-red-600 border-red-200/80 font-medium px-1.5 py-0 animate-[pulse_3s_ease-in-out_infinite]">
+                <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
                 Atrasada
               </Badge>
             )}
           </div>
           
-          {/* Título */}
-          <h4 className="font-medium text-gray-900 text-sm leading-tight mb-1.5 line-clamp-2">
-            {task.titulo}
-          </h4>
-          
           {/* Linha de metadados */}
-          <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+          <div className="flex items-center gap-3 text-xs text-gray-400 flex-wrap">
             {/* Data */}
             {task.data_prevista && (
               <div className={cn(
                 "flex items-center gap-1",
-                isAtrasada ? "text-red-600 font-medium" : "text-gray-500"
+                isAtrasada ? "text-red-500 font-medium" : "text-gray-400"
               )}>
                 <CalendarDays className="h-3 w-3" />
                 {format(parseISO(task.data_prevista), "dd/MM/yyyy", { locale: ptBR })}
@@ -111,7 +114,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             
             {/* Horário limite */}
             {task.horario_limite && (
-              <div className="flex items-center gap-1 text-gray-500">
+              <div className="flex items-center gap-1 text-gray-400">
                 <Clock className="h-3 w-3" />
                 {task.horario_limite.slice(0, 5)}
               </div>
@@ -119,20 +122,20 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           </div>
 
           {/* Linha inferior: Responsável + Checklist */}
-          <div className="flex items-center justify-between gap-2 mt-2">
+          <div className="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-gray-100/60">
             {/* Responsável */}
-            <div className="flex items-center gap-1 text-xs text-gray-400">
+            <div className="flex items-center gap-1.5 text-xs text-gray-400">
               {task.todos_responsaveis ? (
                 <>
                   <Users className="h-3 w-3" />
-                  <span>Todos</span>
+                  <span className="text-gray-500">Todos</span>
                 </>
               ) : responsavelDisplay ? (
                 <>
-                  <span className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-medium text-gray-600">
+                  <span className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center text-[9px] font-medium text-gray-500">
                     {responsavelDisplay.charAt(0).toUpperCase()}
                   </span>
-                  <span className="truncate max-w-[100px]">{responsavelDisplay}</span>
+                  <span className="truncate max-w-[100px] text-gray-500">{responsavelDisplay}</span>
                 </>
               ) : null}
             </div>
@@ -147,15 +150,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           </div>
         </div>
 
-        {/* Ação Concluir (hover only) */}
-        <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {/* Ação Concluir - discreto, apenas no hover */}
+        <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <Button
             size="sm"
             variant="ghost"
             className={cn(
-              "h-8 w-8 p-0 rounded-lg",
-              "hover:bg-emerald-100 hover:text-emerald-600",
-              "focus:ring-2 focus:ring-emerald-200"
+              "h-7 w-7 p-0 rounded-full",
+              "bg-transparent hover:bg-emerald-50 hover:text-emerald-600",
+              "text-gray-300 group-hover:text-gray-400",
+              "transition-colors duration-200"
             )}
             onClick={(e) => {
               e.stopPropagation();
@@ -165,9 +169,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             title="Concluir tarefa"
           >
             {isConcluindo ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Check className="h-4 w-4" />
+              <Check className="h-3.5 w-3.5" />
             )}
           </Button>
         </div>
