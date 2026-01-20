@@ -55,19 +55,19 @@ const SecaoTarefas = ({
   if (tarefas.length === 0) return null;
 
   return (
-    <Card className="overflow-hidden border-0 shadow-sm">
-      <CardHeader className={cn("py-3 px-4", corHeader)}>
-        <CardTitle className="flex items-center justify-between text-sm font-semibold">
+    <Card className="overflow-hidden border-0 shadow-sm bg-white">
+      <CardHeader className={cn("py-2.5 px-4", corHeader)}>
+        <CardTitle className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide">
           <div className="flex items-center gap-2">
             {icone}
             {titulo}
           </div>
-          <Badge variant="secondary" className="bg-white/80 text-gray-700">
+          <Badge variant="secondary" className="bg-white/90 text-gray-600 text-[10px] font-medium">
             {tarefas.length}
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-3 space-y-2 bg-white">
+      <CardContent className="p-2.5 space-y-2 bg-white">
         {tarefasVisiveis.map(tarefa => (
           <TaskCard 
             key={tarefa.id}
@@ -81,12 +81,12 @@ const SecaoTarefas = ({
           <Button
             variant="ghost"
             size="sm"
-            className="w-full text-xs text-gray-500 hover:text-gray-700"
+            className="w-full text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50/50"
             onClick={() => setExpandido(!expandido)}
           >
-            {expandido ? 'Ver menos' : `Ver mais ${tarefas.length - maxItens} tarefas`}
+            {expandido ? 'Ver menos' : `+${tarefas.length - maxItens} tarefas`}
             <ChevronRight className={cn(
-              "h-4 w-4 ml-1 transition-transform",
+              "h-3.5 w-3.5 ml-1 transition-transform",
               expandido && "rotate-90"
             )} />
           </Button>
