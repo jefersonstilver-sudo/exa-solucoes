@@ -78,8 +78,9 @@ const AlertasFinanceirosPage = lazy(() => import('@/pages/admin/financeiro/Alert
 const RelatoriosFinanceirosPage = lazy(() => import('@/pages/admin/financeiro/RelatoriosFinanceirosPage'));
 const CategoriasFinanceirasPage = lazy(() => import('@/pages/admin/financeiro/CategoriasFinanceirasPage'));
 
-// Lazy import para Central de Tarefas (FASE 3)
+// Lazy import para Central de Tarefas (FASE 3 e 4.3)
 const MinhaManha = lazy(() => import('@/pages/admin/tarefas/MinhaManha'));
+const CentralTarefasPage = lazy(() => import('@/pages/admin/tarefas/CentralTarefasPage'));
 
 // Lazy imports para Processos & Operação
 const ProcessosPage = lazy(() => import('@/pages/admin/processos/ProcessosPage'));
@@ -92,6 +93,7 @@ const SuperAdminRoutes = () => {
       {/* ============ GESTÃO PRINCIPAL ============ */}
       <Route index element={<Dashboard />} />
       <Route path="minha-manha" element={<Suspense fallback={<GlobalLoadingPage />}><MinhaManha /></Suspense>} />
+      <Route path="tarefas" element={<Suspense fallback={<GlobalLoadingPage />}><CentralTarefasPage /></Suspense>} />
       <Route path="posicoes" element={<PosicoesDisponiveisPage />} />
       <Route path="sync-notion" element={<SyncNotionPage />} />
       <Route path="agenda" element={<AgendaPage />} />
