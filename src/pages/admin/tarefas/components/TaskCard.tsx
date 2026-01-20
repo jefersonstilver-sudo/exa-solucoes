@@ -18,6 +18,7 @@ interface TaskCardProps {
   task: TaskWithDetails;
   tipo: TaskCategory;
   onConcluir: (taskId: string) => void;
+  onClick?: (task: TaskWithDetails) => void;
   isConcluindo: boolean;
 }
 
@@ -25,6 +26,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   task,
   tipo,
   onConcluir,
+  onClick,
   isConcluindo
 }) => {
   const hoje = startOfDay(new Date());
@@ -71,6 +73,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         "hover:shadow-sm hover:border-gray-200/80",
         config.hoverShadow
       )}
+      onClick={() => onClick?.(task)}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">

@@ -181,6 +181,8 @@ export function useTaskDetail(options: UseTaskDetailOptions) {
       queryClient.invalidateQueries({ queryKey: ['task-detail', taskId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['minha-manha'] });
+      queryClient.invalidateQueries({ queryKey: ['minha-manha-tasks-v2'] });
+      queryClient.invalidateQueries({ queryKey: ['task-status-history'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Erro ao atualizar status');
@@ -224,6 +226,7 @@ export function useTaskDetail(options: UseTaskDetailOptions) {
       queryClient.invalidateQueries({ queryKey: ['task-detail', taskId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['minha-manha'] });
+      queryClient.invalidateQueries({ queryKey: ['minha-manha-tasks-v2'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Erro ao atualizar checklist');

@@ -22,8 +22,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useMinhaManha } from '@/hooks/tarefas/useMinhaManha';
+import { useTaskDetail } from '@/hooks/tarefas/useTaskDetail';
 import { TaskCard } from './components/TaskCard';
-import type { TaskWithDetails, TaskCategory } from '@/types/tarefas';
+import { TaskDetailDrawer } from './components/TaskDetailDrawer';
+import type { TaskWithDetails, TaskCategory, TaskStatusCanonical } from '@/types/tarefas';
 import { cn } from '@/lib/utils';
 
 // Seção de tarefas
@@ -33,6 +35,7 @@ interface SecaoTarefasProps {
   tarefas: TaskWithDetails[];
   tipo: TaskCategory;
   onConcluir: (id: string) => void;
+  onClick: (task: TaskWithDetails) => void;
   isConcluindo: boolean;
   corHeader: string;
   maxItens?: number;
@@ -43,7 +46,8 @@ const SecaoTarefas = ({
   icone, 
   tarefas, 
   tipo, 
-  onConcluir, 
+  onConcluir,
+  onClick,
   isConcluindo,
   corHeader,
   maxItens = 5
@@ -74,6 +78,7 @@ const SecaoTarefas = ({
             task={tarefa}
             tipo={tipo}
             onConcluir={onConcluir}
+            onClick={onClick}
             isConcluindo={isConcluindo}
           />
         ))}
@@ -106,6 +111,22 @@ const MinhaManha = () => {
     isConcluindo,
   } = useMinhaManha();
 
+  // Estado do drawer
+  const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Hook para operações de detalhe
+  const {
+    task: taskDetail,
+    updateStatus,
+    isUpdatingStatus,
+    updateChecklistItem,
+    isUpdatingChecklist
+  } = useTaskDetail({ 
+    taskId: selectedTask?.id || null, 
+    enabled: drawerOpen 
+  });
+
   const { estatisticas } = dados;
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -113,6 +134,19 @@ const MinhaManha = () => {
     setIsRefreshing(true);
     await refetch();
     setIsRefreshing(false);
+  };
+
+  const handleTaskClick = (task: TaskWithDetails) => {
+    setSelectedTask(task);
+    setDrawerOpen(true);
+  };
+
+  const handleStatusChange = async (taskId: string, newStatus: TaskStatusCanonical, motivo?: string) => {
+    await updateStatus({ status: newStatus, motivo });
+  };
+
+  const handleChecklistToggle = async (itemId: string, concluido: boolean) => {
+    await updateChecklistItem({ itemId, concluido });
   };
 
   return (
@@ -230,6 +264,7 @@ const MinhaManha = () => {
             tarefas={dados.urgentes}
             tipo="urgente"
             onConcluir={concluirTarefa}
+            onClick={handleTaskClick}
             isConcluindo={isConcluindo}
             corHeader="bg-red-50 text-red-900"
           />
@@ -241,6 +276,7 @@ const MinhaManha = () => {
             tarefas={dados.importantes}
             tipo="importante"
             onConcluir={concluirTarefa}
+            onClick={handleTaskClick}
             isConcluindo={isConcluindo}
             corHeader="bg-amber-50 text-amber-900"
           />
@@ -252,6 +288,7 @@ const MinhaManha = () => {
             tarefas={dados.rotina}
             tipo="rotina"
             onConcluir={concluirTarefa}
+            onClick={handleTaskClick}
             isConcluindo={isConcluindo}
             corHeader="bg-emerald-50 text-emerald-900"
           />
@@ -274,6 +311,15 @@ const MinhaManha = () => {
           </CardContent>
         </Card>
       )}
+      {/* Task Detail Drawer */}
+      <TaskDetailDrawer
+        task={taskDetail || selectedTask}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        onStatusChange={handleStatusChange}
+        onChecklistItemToggle={handleChecklistToggle}
+        isUpdating={isUpdatingStatus || isUpdatingChecklist}
+      />
     </div>
   );
 };
