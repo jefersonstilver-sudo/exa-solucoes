@@ -1,20 +1,29 @@
 /**
  * CentralTarefasPage - Página Central de Tarefas
- * Fase 4.3: Listagem completa com filtros, reutilizando TaskCard e TaskDetailDrawer
+ * Fase 4.3: Listagem completa com filtros, CTA, FAB mobile
+ * Reutiliza TaskCard e TaskDetailDrawer
  */
 
 import React, { useState, useCallback } from 'react';
-import { RefreshCw, ListTodo, Clock, PlayCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { RefreshCw, ListTodo, Clock, PlayCircle, CheckCircle2, Loader2, Plus, Calendar as CalendarIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useCentralTarefas } from '@/hooks/tarefas/useCentralTarefas';
 import { useTaskDetail } from '@/hooks/tarefas/useTaskDetail';
 import { TaskFiltersBar } from './components/TaskFiltersBar';
 import { TaskCard } from './components/TaskCard';
 import { TaskDetailDrawer } from './components/TaskDetailDrawer';
+import { TaskEmptyState } from './components/TaskEmptyState';
+import { TaskFAB } from './components/TaskFAB';
+import CreateTaskModal from '@/components/admin/agenda/CreateTaskModal';
 import { ACTIVE_STATUSES } from '@/constants/taskStatus';
 import type { TaskWithDetails, TaskStatusCanonical, TaskPriorityCanonical } from '@/types/tarefas';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const CentralTarefasPage: React.FC = () => {
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
+
   // Estado dos filtros
   const [statusFilter, setStatusFilter] = useState<TaskStatusCanonical[] | undefined>(
     [...ACTIVE_STATUSES] // Default: status ativos
@@ -24,9 +33,10 @@ const CentralTarefasPage: React.FC = () => {
   const [responsavelFilter, setResponsavelFilter] = useState<string | undefined>();
   const [offset, setOffset] = useState(0);
 
-  // Estado do drawer
+  // Estado do drawer e modal
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   // Hook principal
   const {
@@ -97,6 +107,14 @@ const CentralTarefasPage: React.FC = () => {
     refetch();
   }, [refetch]);
 
+  const handleCreateTask = useCallback(() => {
+    setCreateModalOpen(true);
+  }, []);
+
+  const handleCalendarClick = useCallback(() => {
+    navigate('/super_admin/agenda');
+  }, [navigate]);
+
   // Determinar categoria visual para cada tarefa
   const getTaskCategory = (task: TaskWithDetails): 'urgente' | 'importante' | 'rotina' => {
     if (task.prioridade === 'emergencia' || task.prioridade === 'alta') return 'urgente';
@@ -104,75 +122,104 @@ const CentralTarefasPage: React.FC = () => {
     return 'rotina';
   };
 
+  const isEmpty = tasks.length === 0 && !isLoading;
+  const hasFilters = statusFilter?.length !== ACTIVE_STATUSES.length || prioridadeFilter || departamentoFilter || responsavelFilter;
+
   return (
-    <div className="min-h-screen bg-gray-50/50 p-6 space-y-6">
+    <div className="min-h-screen bg-background p-4 md:p-6 space-y-6 pb-24 md:pb-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Central de Tarefas</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-xl md:text-2xl font-bold text-foreground">Central de Tarefas</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Visualize e gerencie todas as tarefas do sistema
           </p>
         </div>
         
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={isLoading}
-          className="gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          Atualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Botão Agenda */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCalendarClick}
+            className="gap-2"
+          >
+            <CalendarIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">Agenda</span>
+          </Button>
+
+          {/* Botão Atualizar */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Atualizar</span>
+          </Button>
+
+          {/* Botão Nova Tarefa - Desktop */}
+          {!isMobile && (
+            <Button
+              onClick={handleCreateTask}
+              size="sm"
+              className="gap-2 bg-primary hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              Nova Tarefa
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-gray-100 p-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gray-100 rounded-lg">
-              <ListTodo className="h-5 w-5 text-gray-600" />
+            <div className="p-2 bg-muted rounded-lg">
+              <ListTodo className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-              <p className="text-xs text-gray-500">Total</p>
+              <p className="text-2xl font-bold text-foreground">{stats.total}</p>
+              <p className="text-xs text-muted-foreground">Total</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-50 rounded-lg">
+            <div className="p-2 bg-amber-500/10 rounded-lg">
               <Clock className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.pendentes}</p>
-              <p className="text-xs text-gray-500">Pendentes</p>
+              <p className="text-2xl font-bold text-foreground">{stats.pendentes}</p>
+              <p className="text-xs text-muted-foreground">Pendentes</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <PlayCircle className="h-5 w-5 text-blue-600" />
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <PlayCircle className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.em_andamento}</p>
-              <p className="text-xs text-gray-500">Em Andamento</p>
+              <p className="text-2xl font-bold text-foreground">{stats.em_andamento}</p>
+              <p className="text-xs text-muted-foreground">Em Andamento</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-50 rounded-lg">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <div className="p-2 bg-emerald-500/10 rounded-lg">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.concluidas}</p>
-              <p className="text-xs text-gray-500">Concluídas</p>
+              <p className="text-2xl font-bold text-foreground">{stats.concluidas}</p>
+              <p className="text-xs text-muted-foreground">Concluídas</p>
             </div>
           </div>
         </div>
@@ -197,18 +244,14 @@ const CentralTarefasPage: React.FC = () => {
       <div className="space-y-4">
         {isLoading && tasks.length === 0 ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-        ) : tasks.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-            <ListTodo className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-1">
-              Nenhuma tarefa encontrada
-            </h3>
-            <p className="text-sm text-gray-500">
-              Tente ajustar os filtros para ver mais resultados
-            </p>
-          </div>
+        ) : isEmpty ? (
+          <TaskEmptyState 
+            variant={hasFilters ? 'no-results' : 'no-tasks'} 
+            onCreateTask={handleCreateTask}
+            filterActive={!!hasFilters}
+          />
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -246,12 +289,23 @@ const CentralTarefasPage: React.FC = () => {
             )}
 
             {/* Contador de resultados */}
-            <p className="text-center text-xs text-gray-400 pt-2">
+            <p className="text-center text-xs text-muted-foreground pt-2">
               Exibindo {tasks.length} de {stats.total} tarefas
             </p>
           </>
         )}
       </div>
+
+      {/* FAB para mobile */}
+      {isMobile && (
+        <TaskFAB onClick={handleCreateTask} />
+      )}
+
+      {/* Modal de criação */}
+      <CreateTaskModal 
+        open={createModalOpen} 
+        onOpenChange={setCreateModalOpen} 
+      />
 
       {/* Drawer de Detalhes */}
       <TaskDetailDrawer
