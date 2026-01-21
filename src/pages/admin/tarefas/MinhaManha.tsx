@@ -1,32 +1,33 @@
 /**
  * Minha Manhã - Página de Tarefas do Dia (Migrada)
  * Fonte de dados: tabela `tasks` (canônica)
- * Sem dependência do Notion
+ * Inclui: CTA para criar tarefa, FAB mobile, filtros rápidos
  */
 
 import React, { useState } from 'react';
 import { 
   Sunrise, 
-  RefreshCw, 
   Check, 
-  AlertTriangle,
-  Loader2,
-  ChevronRight,
   Zap,
   Target,
-  Coffee
+  Coffee,
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { useMinhaManha } from '@/hooks/tarefas/useMinhaManha';
 import { useTaskDetail } from '@/hooks/tarefas/useTaskDetail';
 import { TaskCard } from './components/TaskCard';
 import { TaskDetailDrawer } from './components/TaskDetailDrawer';
+import { TaskPageHeader, QuickFilter } from './components/TaskPageHeader';
+import { TaskEmptyState } from './components/TaskEmptyState';
+import { TaskFAB } from './components/TaskFAB';
+import CreateTaskModal from '@/components/admin/agenda/CreateTaskModal';
 import type { TaskWithDetails, TaskCategory, TaskStatusCanonical } from '@/types/tarefas';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Seção de tarefas
 interface SecaoTarefasProps {
@@ -59,19 +60,19 @@ const SecaoTarefas = ({
   if (tarefas.length === 0) return null;
 
   return (
-    <Card className="overflow-hidden border-0 shadow-sm bg-white">
+    <Card className="overflow-hidden border-0 shadow-sm bg-card">
       <CardHeader className={cn("py-2.5 px-4", corHeader)}>
         <CardTitle className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide">
           <div className="flex items-center gap-2">
             {icone}
             {titulo}
           </div>
-          <Badge variant="secondary" className="bg-white/90 text-gray-600 text-[10px] font-medium">
+          <Badge variant="secondary" className="bg-background/90 text-foreground/70 text-[10px] font-medium">
             {tarefas.length}
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-2.5 space-y-2 bg-white">
+      <CardContent className="p-2.5 space-y-2 bg-card">
         {tarefasVisiveis.map(tarefa => (
           <TaskCard 
             key={tarefa.id}
@@ -86,7 +87,7 @@ const SecaoTarefas = ({
           <Button
             variant="ghost"
             size="sm"
-            className="w-full text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50/50"
+            className="w-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
             onClick={() => setExpandido(!expandido)}
           >
             {expandido ? 'Ver menos' : `+${tarefas.length - maxItens} tarefas`}
@@ -111,9 +112,13 @@ const MinhaManha = () => {
     isConcluindo,
   } = useMinhaManha();
 
-  // Estado do drawer
+  const isMobile = useIsMobile();
+
+  // Estado do drawer e modal
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('hoje');
 
   // Hook para operações de detalhe
   const {
@@ -149,62 +154,51 @@ const MinhaManha = () => {
     await updateChecklistItem({ itemId, concluido });
   };
 
-  return (
-    <div className="p-4 md:p-6 space-y-6 bg-gray-50/50 min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg">
-              <Sunrise className="h-6 w-6 text-white" />
-            </div>
-            Minha Manhã
-          </h1>
-          <p className="text-sm text-gray-500 mt-1 ml-14">
-            {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
-          </p>
-        </div>
+  const handleCreateTask = () => {
+    setCreateModalOpen(true);
+  };
 
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            size="sm"
-            variant="outline"
-            className="gap-2"
-          >
-            {isRefreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            Atualizar
-          </Button>
-        </div>
-      </div>
+  // Determinar estado vazio
+  const isEmpty = estatisticas.total === 0;
+  const emptyVariant = isEmpty ? 'all-done' : 'no-tasks';
+
+  return (
+    <div className="p-4 md:p-6 space-y-6 bg-background min-h-screen pb-24 md:pb-6">
+      {/* Header com CTA e ícone de calendário */}
+      <TaskPageHeader
+        titulo="Minha Manhã"
+        icone={<Sunrise className="h-6 w-6 text-primary-foreground" />}
+        onNovaTarefa={handleCreateTask}
+        onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
+        quickFilter={quickFilter}
+        onQuickFilterChange={setQuickFilter}
+        atrasadasCount={0} // TODO: calcular atrasadas
+        showCreateButtonDesktop={true}
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="bg-red-50 border-red-200/50 shadow-sm">
+        <Card className="bg-destructive/10 border-destructive/20 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-100">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+              <div className="p-2 rounded-lg bg-destructive/20">
+                <Zap className="h-5 w-5 text-destructive" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-red-700">
+                <div className="text-2xl font-bold text-destructive">
                   {estatisticas.urgentes}
                 </div>
-                <div className="text-xs text-red-600">Urgentes</div>
+                <div className="text-xs text-destructive/80">Urgentes</div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-amber-50 border-amber-200/50 shadow-sm">
+        <Card className="bg-amber-500/10 border-amber-500/20 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-100">
+              <div className="p-2 rounded-lg bg-amber-500/20">
                 <Target className="h-5 w-5 text-amber-600" />
               </div>
               <div>
@@ -217,10 +211,10 @@ const MinhaManha = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-emerald-50 border-emerald-200/50 shadow-sm">
+        <Card className="bg-emerald-500/10 border-emerald-500/20 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-100">
+              <div className="p-2 rounded-lg bg-emerald-500/20">
                 <Coffee className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
@@ -233,17 +227,17 @@ const MinhaManha = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-blue-50 border-blue-200/50 shadow-sm">
+        <Card className="bg-primary/10 border-primary/20 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100">
-                <Check className="h-5 w-5 text-blue-600" />
+              <div className="p-2 rounded-lg bg-primary/20">
+                <Check className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-blue-700">
+                <div className="text-2xl font-bold text-primary">
                   {estatisticas.total}
                 </div>
-                <div className="text-xs text-blue-600">Total Pendentes</div>
+                <div className="text-xs text-primary/80">Total Pendentes</div>
               </div>
             </div>
           </CardContent>
@@ -253,20 +247,26 @@ const MinhaManha = () => {
       {/* Loading */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
+      ) : isEmpty ? (
+        /* Estado vazio com CTA */
+        <TaskEmptyState 
+          variant={emptyVariant} 
+          onCreateTask={handleCreateTask} 
+        />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Urgentes */}
           <SecaoTarefas
             titulo="🔴 URGENTE"
-            icone={<Zap className="h-4 w-4 text-red-600" />}
+            icone={<Zap className="h-4 w-4 text-destructive" />}
             tarefas={dados.urgentes}
             tipo="urgente"
             onConcluir={concluirTarefa}
             onClick={handleTaskClick}
             isConcluindo={isConcluindo}
-            corHeader="bg-red-50 text-red-900"
+            corHeader="bg-destructive/10 text-destructive"
           />
 
           {/* Importantes */}
@@ -278,7 +278,7 @@ const MinhaManha = () => {
             onConcluir={concluirTarefa}
             onClick={handleTaskClick}
             isConcluindo={isConcluindo}
-            corHeader="bg-amber-50 text-amber-900"
+            corHeader="bg-amber-500/10 text-amber-900"
           />
 
           {/* Rotina */}
@@ -290,27 +290,22 @@ const MinhaManha = () => {
             onConcluir={concluirTarefa}
             onClick={handleTaskClick}
             isConcluindo={isConcluindo}
-            corHeader="bg-emerald-50 text-emerald-900"
+            corHeader="bg-emerald-500/10 text-emerald-900"
           />
         </div>
       )}
 
-      {/* Mensagem quando não há tarefas */}
-      {!isLoading && estatisticas.total === 0 && (
-        <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200/50 shadow-sm">
-          <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-              <Check className="h-8 w-8 text-emerald-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-emerald-800 mb-2">
-              Parabéns! Nenhuma tarefa pendente.
-            </h3>
-            <p className="text-sm text-emerald-600">
-              Todas as tarefas foram concluídas. Aproveite seu dia!
-            </p>
-          </CardContent>
-        </Card>
+      {/* FAB para mobile */}
+      {isMobile && (
+        <TaskFAB onClick={handleCreateTask} />
       )}
+
+      {/* Modal de criação */}
+      <CreateTaskModal 
+        open={createModalOpen} 
+        onOpenChange={setCreateModalOpen} 
+      />
+
       {/* Task Detail Drawer */}
       <TaskDetailDrawer
         task={taskDetail || selectedTask}
