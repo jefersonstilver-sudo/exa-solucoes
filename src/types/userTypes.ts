@@ -1,7 +1,7 @@
 
 import { Session } from '@supabase/supabase-js';
 
-export type UserRole = 'client' | 'admin' | 'admin_marketing' | 'admin_financeiro' | 'super_admin' | 'painel';
+export type UserRole = 'client' | 'admin' | 'admin_marketing' | 'admin_financeiro' | 'super_admin' | 'painel' | 'comercial';
 
 export interface UserProfile {
   id: string;
@@ -114,10 +114,11 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewFinancialReports: true,
   },
   admin: {
-    // ⚠️ ADMIN GERAL - Permissões RESTRITAS conforme definido
+    // ⚠️ ADMIN GERAL (COORDENAÇÃO) - Permissões RESTRITAS
+    // ❌ COORDENAÇÃO NÃO TEM ACESSO AO CRM - Apenas CEO e Comercial
     canViewDashboard: false,              // ❌ Removido acesso ao Dashboard
     canViewOrders: true,                  // ✅ Acesso a Pedidos
-    canViewCRM: true,                     // ✅ Acesso a CRM Clientes
+    canViewCRM: false,                    // ❌ SEM ACESSO ao CRM - Apenas CEO e Comercial
     canViewApprovals: true,               // ✅ Acesso a Aprovações
     canManageBuildings: true,             // ✅ Acesso a Prédios (ver e editar)
     canDeleteBuildings: false,            // ❌ NUNCA pode deletar prédios
@@ -236,6 +237,34 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewLeadsCampanhas: false,
     canViewLeadsLinkae: false,
     canViewLeadsExa: false,
+    canManageUsers: false,
+    canManageCoupons: false,
+    canManageHomepageConfig: false,
+    canManageSystemSettings: false,
+    canViewAudit: false,
+    canViewSecurity: false,
+    canManageVideos: false,
+    canManagePortfolio: false,
+    canManageNotifications: false,
+    canManageEmails: false,
+    canManageProviderBenefits: false,
+    canViewFinancialReports: false,
+  },
+  comercial: {
+    // COMERCIAL: Acesso ao CRM (apenas próprias conversas via RLS)
+    canViewDashboard: false,
+    canViewOrders: true,                  // ✅ Ver pedidos
+    canViewCRM: true,                     // ✅ CRM - apenas próprias conversas (filtrado por RLS)
+    canViewApprovals: false,
+    canManageBuildings: false,
+    canDeleteBuildings: false,
+    canManagePanels: false,
+    canViewLeads: true,                   // ✅ Ver leads do comercial
+    canViewSindicosInteressados: false,
+    canViewLeadsProdutora: false,
+    canViewLeadsCampanhas: false,
+    canViewLeadsLinkae: false,
+    canViewLeadsExa: true,
     canManageUsers: false,
     canManageCoupons: false,
     canManageHomepageConfig: false,

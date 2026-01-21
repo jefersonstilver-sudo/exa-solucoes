@@ -1,13 +1,20 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, ArrowRight } from 'lucide-react';
+import { MessageCircle, ArrowRight, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUnreadCount } from '@/modules/monitoramento-ia/hooks/useUnreadCount';
+import { useDynamicModulePermissions } from '@/hooks/useDynamicModulePermissions';
 
 const CRMInboxPreview = () => {
   const navigate = useNavigate();
   const { unreadCount, loading } = useUnreadCount();
+  const { hasCRMAccess } = useDynamicModulePermissions();
+
+  // Se não tem acesso ao CRM, não renderiza o card
+  if (!hasCRMAccess) {
+    return null;
+  }
 
   if (loading) {
     return (
