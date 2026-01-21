@@ -68,7 +68,7 @@ export const updateUserRoleInDB = async (userId: string, role: UserRole): Promis
     // ✅ SECURITY: Update role in user_roles table (secure)
     const { error } = await supabase
       .from('user_roles')
-      .update({ role })
+      .update({ role: role as any }) // Cast para compatibilidade com tipos do banco
       .eq('user_id', userId);
       
     if (error) {

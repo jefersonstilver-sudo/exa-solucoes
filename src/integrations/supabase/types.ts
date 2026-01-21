@@ -12994,6 +12994,7 @@ export type Database = {
           cpf: string | null
           dashboard_preferences: Json | null
           data_criacao: string | null
+          departamento_id: string | null
           documento_estrangeiro: string | null
           documento_frente_url: string | null
           documento_verso_url: string | null
@@ -13035,6 +13036,7 @@ export type Database = {
           cpf?: string | null
           dashboard_preferences?: Json | null
           data_criacao?: string | null
+          departamento_id?: string | null
           documento_estrangeiro?: string | null
           documento_frente_url?: string | null
           documento_verso_url?: string | null
@@ -13076,6 +13078,7 @@ export type Database = {
           cpf?: string | null
           dashboard_preferences?: Json | null
           data_criacao?: string | null
+          departamento_id?: string | null
           documento_estrangeiro?: string | null
           documento_frente_url?: string | null
           documento_verso_url?: string | null
@@ -13120,6 +13123,13 @@ export type Database = {
             columns: ["blocked_by"]
             isOneToOne: false
             referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_departamento_id_fkey"
+            columns: ["departamento_id"]
+            isOneToOne: false
+            referencedRelation: "process_departments"
             referencedColumns: ["id"]
           },
           {
