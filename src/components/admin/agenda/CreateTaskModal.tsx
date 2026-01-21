@@ -3,7 +3,7 @@
  * Usa tabela `tasks` (canônica) - NÃO notion_tasks
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,7 +28,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar as CalendarIcon, Loader2, Plus, Clock, Bell, BellRing, Users, ChevronDown } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Plus, Clock, Bell, BellRing, Users, ChevronDown, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -52,6 +52,15 @@ interface AdminUser {
   nome: string;
   role: string;
   telefone?: string;
+  departamento_id?: string;
+}
+
+interface Department {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+  display_order: number;
 }
 
 const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
@@ -71,20 +80,59 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   const [alarmePadrao, setAlarmePadrao] = useState(true);
   const [alarmeInsistente, setAlarmeInsistente] = useState(false);
 
+  // Buscar departamentos
+  const { data: departments = [] } = useQuery({
+    queryKey: ['departments-for-tasks'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('process_departments')
+        .select('id, name, color, icon, display_order')
+        .eq('is_active', true)
+        .order('display_order');
+      
+      if (error) throw error;
+      return (data || []) as Department[];
+    }
+  });
+
   // Buscar usuários administrativos
   const { data: adminUsers = [] } = useQuery({
     queryKey: ['admin-users-for-tasks'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('users')
-        .select('id, email, nome, role, telefone')
-        .in('role', ['super_admin', 'admin', 'admin_financeiro', 'admin_marketing', 'ceo', 'coordenacao', 'admin_departamental', 'comercial'])
+        .select('id, email, nome, role, telefone, departamento_id')
+        .in('role', ['super_admin', 'admin', 'admin_departamental', 'ceo', 'coordenacao'])
         .order('nome');
       
       if (error) throw error;
       return (data || []) as AdminUser[];
     }
   });
+
+  // Agrupar usuários por departamento
+  const usersByDepartment = useMemo(() => {
+    const grouped: Record<string, AdminUser[]> = {};
+    
+    // Criar grupos para cada departamento
+    departments.forEach(dept => {
+      grouped[dept.id] = [];
+    });
+    
+    // Grupo para usuários sem departamento
+    grouped['sem_departamento'] = [];
+    
+    // Distribuir usuários
+    adminUsers.forEach(user => {
+      if (user.departamento_id && grouped[user.departamento_id]) {
+        grouped[user.departamento_id].push(user);
+      } else {
+        grouped['sem_departamento'].push(user);
+      }
+    });
+    
+    return grouped;
+  }, [adminUsers, departments]);
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -161,12 +209,13 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
       'ceo': 'CEO',
       'admin': 'Coordenação',
       'coordenacao': 'Coordenação',
-      'admin_departamental': 'Departamental',
-      'admin_financeiro': 'Financeiro',
-      'admin_marketing': 'Marketing',
-      'comercial': 'Comercial'
+      'admin_departamental': 'Admin Dept.'
     };
     return labels[role] || role;
+  };
+
+  const getDepartmentById = (id: string) => {
+    return departments.find(d => d.id === id);
   };
 
   const formContent = (
@@ -277,33 +326,101 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-2">
-          <div className="border rounded-lg p-3 space-y-2 bg-muted/30 max-h-48 overflow-y-auto">
-            <p className="text-xs text-muted-foreground mb-2">
+          <div className="border rounded-lg p-3 space-y-3 bg-muted/30 max-h-64 overflow-y-auto">
+            <p className="text-xs text-muted-foreground">
               Selecione quem será notificado. Se nenhum for selecionado, todos receberão.
             </p>
-            {adminUsers.map((u) => (
-              <div 
-                key={u.id} 
-                className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer"
-                onClick={() => toggleResponsavel(u.id)}
-              >
-                <Checkbox 
-                  checked={responsaveisIds.includes(u.id)}
-                  onCheckedChange={() => toggleResponsavel(u.id)}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {u.nome || u.email.split('@')[0]}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {getRoleLabel(u.role)}
-                  </p>
+            
+            {/* Usuários agrupados por departamento */}
+            {departments.map((dept) => {
+              const usersInDept = usersByDepartment[dept.id] || [];
+              if (usersInDept.length === 0) return null;
+              
+              return (
+                <div key={dept.id} className="space-y-1">
+                  {/* Header do departamento */}
+                  <div 
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-md"
+                    style={{ backgroundColor: `${dept.color}15` }}
+                  >
+                    <Building2 className="h-3.5 w-3.5" style={{ color: dept.color }} />
+                    <span className="text-xs font-semibold" style={{ color: dept.color }}>
+                      {dept.name}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      ({usersInDept.length})
+                    </span>
+                  </div>
+                  
+                  {/* Usuários do departamento */}
+                  <div className="ml-2 space-y-0.5">
+                    {usersInDept.map((u) => (
+                      <div 
+                        key={u.id} 
+                        className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
+                        onClick={() => toggleResponsavel(u.id)}
+                      >
+                        <Checkbox 
+                          checked={responsaveisIds.includes(u.id)}
+                          onCheckedChange={() => toggleResponsavel(u.id)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {u.nome || u.email.split('@')[0]}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {getRoleLabel(u.role)}
+                          </p>
+                        </div>
+                        {u.telefone && (
+                          <span className="text-xs text-green-600">📱</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                {u.telefone && (
-                  <span className="text-xs text-green-600">📱</span>
-                )}
+              );
+            })}
+            
+            {/* Usuários sem departamento */}
+            {usersByDepartment['sem_departamento']?.length > 0 && (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50">
+                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Sem Departamento
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    ({usersByDepartment['sem_departamento'].length})
+                  </span>
+                </div>
+                <div className="ml-2 space-y-0.5">
+                  {usersByDepartment['sem_departamento'].map((u) => (
+                    <div 
+                      key={u.id} 
+                      className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => toggleResponsavel(u.id)}
+                    >
+                      <Checkbox 
+                        checked={responsaveisIds.includes(u.id)}
+                        onCheckedChange={() => toggleResponsavel(u.id)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {u.nome || u.email.split('@')[0]}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {getRoleLabel(u.role)}
+                        </p>
+                      </div>
+                      {u.telefone && (
+                        <span className="text-xs text-green-600">📱</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </CollapsibleContent>
       </Collapsible>
