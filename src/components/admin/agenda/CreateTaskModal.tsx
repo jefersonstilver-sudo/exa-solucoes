@@ -194,8 +194,61 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
     );
   };
 
+  // Selecionar/deselecionar departamento inteiro
+  const toggleDepartamento = (deptId: string) => {
+    const usersInDept = usersByDepartment[deptId] || [];
+    const userIds = usersInDept.map(u => u.id);
+    
+    // Verificar se todos os usuários do departamento já estão selecionados
+    const allSelected = userIds.every(id => responsaveisIds.includes(id));
+    
+    if (allSelected) {
+      // Remover todos do departamento
+      setResponsaveisIds(prev => prev.filter(id => !userIds.includes(id)));
+    } else {
+      // Adicionar todos do departamento
+      setResponsaveisIds(prev => [...new Set([...prev, ...userIds])]);
+    }
+  };
+
+  // Verificar se departamento está totalmente selecionado
+  const isDepartmentFullySelected = (deptId: string) => {
+    const usersInDept = usersByDepartment[deptId] || [];
+    if (usersInDept.length === 0) return false;
+    return usersInDept.every(u => responsaveisIds.includes(u.id));
+  };
+
+  // Verificar se departamento está parcialmente selecionado
+  const isDepartmentPartiallySelected = (deptId: string) => {
+    const usersInDept = usersByDepartment[deptId] || [];
+    if (usersInDept.length === 0) return false;
+    const selectedCount = usersInDept.filter(u => responsaveisIds.includes(u.id)).length;
+    return selectedCount > 0 && selectedCount < usersInDept.length;
+  };
+
   const getSelectedResponsaveisText = () => {
     if (responsaveisIds.length === 0) return 'Todos';
+    
+    // Verificar se algum departamento inteiro está selecionado
+    const fullySelectedDepts = departments.filter(d => isDepartmentFullySelected(d.id));
+    
+    if (fullySelectedDepts.length > 0) {
+      const deptNames = fullySelectedDepts.map(d => d.name);
+      // Contar usuários selecionados que não estão em departamentos completos
+      const deptUserIds = fullySelectedDepts.flatMap(d => 
+        (usersByDepartment[d.id] || []).map(u => u.id)
+      );
+      const otherSelected = responsaveisIds.filter(id => !deptUserIds.includes(id)).length;
+      
+      if (deptNames.length === 1 && otherSelected === 0) {
+        return deptNames[0];
+      }
+      if (deptNames.length <= 2 && otherSelected === 0) {
+        return deptNames.join(', ');
+      }
+      return `${deptNames.length} dept${otherSelected > 0 ? ` +${otherSelected}` : ''}`;
+    }
+    
     const selectedNames = adminUsers
       .filter(u => responsaveisIds.includes(u.id))
       .map(u => u.nome?.split(' ')[0] || u.email.split('@')[0]);
@@ -336,24 +389,35 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
               const usersInDept = usersByDepartment[dept.id] || [];
               if (usersInDept.length === 0) return null;
               
+              const isFullySelected = isDepartmentFullySelected(dept.id);
+              const isPartiallySelected = isDepartmentPartiallySelected(dept.id);
+              
               return (
                 <div key={dept.id} className="space-y-1">
-                  {/* Header do departamento */}
+                  {/* Header do departamento - clicável para selecionar todos */}
                   <div 
-                    className="flex items-center gap-2 px-2 py-1.5 rounded-md"
+                    className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer hover:opacity-80 transition-opacity"
                     style={{ backgroundColor: `${dept.color}15` }}
+                    onClick={() => toggleDepartamento(dept.id)}
                   >
+                    <Checkbox 
+                      checked={isFullySelected}
+                      className={cn(
+                        isPartiallySelected && "data-[state=unchecked]:bg-primary/30"
+                      )}
+                      onCheckedChange={() => toggleDepartamento(dept.id)}
+                    />
                     <Building2 className="h-3.5 w-3.5" style={{ color: dept.color }} />
-                    <span className="text-xs font-semibold" style={{ color: dept.color }}>
+                    <span className="text-xs font-semibold flex-1" style={{ color: dept.color }}>
                       {dept.name}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      ({usersInDept.length})
+                      {usersInDept.filter(u => responsaveisIds.includes(u.id)).length}/{usersInDept.length}
                     </span>
                   </div>
                   
                   {/* Usuários do departamento */}
-                  <div className="ml-2 space-y-0.5">
+                  <div className="ml-6 space-y-0.5">
                     {usersInDept.map((u) => (
                       <div 
                         key={u.id} 
