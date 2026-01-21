@@ -1,7 +1,32 @@
-
 import { Session } from '@supabase/supabase-js';
 
-export type UserRole = 'client' | 'admin' | 'admin_marketing' | 'admin_financeiro' | 'super_admin' | 'painel' | 'comercial';
+// === ROLES DO SISTEMA ===
+// Hierarquia principal (3 níveis):
+// - super_admin: CEO/Diretoria - acesso total
+// - admin: Coordenação - acesso operacional completo
+// - admin_departamental: Acesso restrito ao próprio departamento
+// 
+// Roles legados (mantidos para compatibilidade):
+// - admin_financeiro, admin_marketing, comercial → migrar para admin_departamental + departamento_id
+// - client, painel → mantidos para compatibilidade, mas não são usuários internos
+
+export type UserRole = 
+  | 'super_admin' 
+  | 'admin' 
+  | 'admin_departamental' 
+  | 'admin_financeiro' 
+  | 'admin_marketing' 
+  | 'comercial'
+  | 'client'  // Legado - manter para compatibilidade
+  | 'painel'; // Legado - manter para compatibilidade
+
+export interface UserDepartment {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+  display_order: number;
+}
 
 export interface UserProfile {
   id: string;
@@ -12,8 +37,10 @@ export interface UserProfile {
   telefone?: string;
   avatar_url?: string;
   role?: UserRole;
+  departamento_id?: string; // NOVO: Link obrigatório com departamento
+  departamento?: UserDepartment; // NOVO: Dados do departamento
   data_criacao?: string;
-  email_verified_at?: string; // FASE 5: Verificação de email
+  email_verified_at?: string;
   terms_accepted_at?: string;
   privacy_accepted_at?: string;
 }
@@ -29,12 +56,12 @@ export interface UserPermissions {
   // Gestão principal
   canViewDashboard: boolean;
   canViewOrders: boolean;
-  canViewCRM: boolean; // ✅ NOVA: Separado de pedidos
+  canViewCRM: boolean;
   canViewApprovals: boolean;
   
   // Ativos
   canManageBuildings: boolean;
-  canDeleteBuildings: boolean; // ✅ NOVA: Separar visualizar/editar de deletar
+  canDeleteBuildings: boolean;
   canManagePanels: boolean;
   
   // Leads & Clientes
@@ -42,16 +69,16 @@ export interface UserPermissions {
   canViewSindicosInteressados: boolean;
   canViewLeadsProdutora: boolean;
   canViewLeadsCampanhas: boolean;
-  canViewLeadsLinkae: boolean; // ✅ NOVA
-  canViewLeadsExa: boolean;    // ✅ NOVA
+  canViewLeadsLinkae: boolean;
+  canViewLeadsExa: boolean;
   
   // Sistema
   canManageUsers: boolean;
   canManageCoupons: boolean;
   canManageHomepageConfig: boolean;
   canManageSystemSettings: boolean;
-  canViewAudit: boolean; // ✅ NOVA: Auditoria
-  canViewSecurity: boolean; // ✅ NOVA: Segurança
+  canViewAudit: boolean;
+  canViewSecurity: boolean;
   
   // Conteúdo
   canManageVideos: boolean;
@@ -64,8 +91,7 @@ export interface UserPermissions {
   canViewFinancialReports: boolean;
 }
 
-// Permissões customizadas por usuário (sobrescrevem as padrões do role)
-// Nomes no banco de dados usam snake_case
+// Permissões customizadas por usuário
 export interface UserCustomPermissions {
   user_id?: string;
   can_view_dashboard?: boolean;
@@ -84,7 +110,11 @@ export interface UserCustomPermissions {
   updated_at?: string;
 }
 
-// Mapa de permissões por tipo de usuário
+// === PERMISSÕES POR ROLE ===
+// CEO (super_admin): Acesso TOTAL
+// Coordenação (admin): Acesso operacional (sem sistema)
+// Admin Departamental: Acesso apenas ao próprio departamento
+
 export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
   super_admin: {
     canViewDashboard: true,
@@ -92,7 +122,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewCRM: true,
     canViewApprovals: true,
     canManageBuildings: true,
-    canDeleteBuildings: true, // ✅ Super admin pode deletar
+    canDeleteBuildings: true,
     canManagePanels: true,
     canViewLeads: true,
     canViewSindicosInteressados: true,
@@ -114,38 +144,93 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewFinancialReports: true,
   },
   admin: {
-    // ⚠️ ADMIN GERAL (COORDENAÇÃO) - Permissões RESTRITAS
-    // ❌ COORDENAÇÃO NÃO TEM ACESSO AO CRM - Apenas CEO e Comercial
-    canViewDashboard: false,              // ❌ Removido acesso ao Dashboard
-    canViewOrders: true,                  // ✅ Acesso a Pedidos
-    canViewCRM: false,                    // ❌ SEM ACESSO ao CRM - Apenas CEO e Comercial
-    canViewApprovals: true,               // ✅ Acesso a Aprovações
-    canManageBuildings: true,             // ✅ Acesso a Prédios (ver e editar)
-    canDeleteBuildings: false,            // ❌ NUNCA pode deletar prédios
-    canManagePanels: false,               // ❌ Removido acesso a Painéis
-    canViewLeads: false,                  // ❌ Removido acesso geral a leads
-    canViewSindicosInteressados: true,    // ✅ Acesso a Síndicos Interessados
-    canViewLeadsProdutora: false,         // ❌ Removido acesso a Leads Produtora
-    canViewLeadsCampanhas: false,         // ❌ Removido acesso a Leads Campanhas
-    canViewLeadsLinkae: false,            // ❌ Removido acesso a Leads Linkae
-    canViewLeadsExa: true,                // ✅ Acesso a Leads EXA
-    canManageUsers: false,                // ❌ Apenas super_admin pode criar usuários
-    canManageCoupons: true,               // ✅ Acesso a Cupons
-    canManageHomepageConfig: false,       // ❌ Removido acesso a Homepage Config
-    canManageSystemSettings: false,       // ❌ Apenas super_admin
-    canViewAudit: false,                  // ❌ Apenas super_admin
-    canViewSecurity: false,               // ❌ Apenas super_admin
-    canManageVideos: true,                // ✅ Acesso a Vídeos
-    canManagePortfolio: false,            // ❌ Removido acesso a Portfólio Produtora
-    canManageNotifications: false,        // ❌ Removido acesso a Notificações
-    canManageEmails: false,               // ❌ Removido acesso a Emails
-    canManageProviderBenefits: true,      // ✅ Acesso a Benefícios Prestadores
-    canViewFinancialReports: false,       // ❌ Removido acesso a Relatórios Financeiros
+    // COORDENAÇÃO: Acesso operacional completo, sem configurações de sistema
+    canViewDashboard: true,
+    canViewOrders: true,
+    canViewCRM: true,
+    canViewApprovals: true,
+    canManageBuildings: true,
+    canDeleteBuildings: false, // Apenas CEO pode deletar
+    canManagePanels: true,
+    canViewLeads: true,
+    canViewSindicosInteressados: true,
+    canViewLeadsProdutora: true,
+    canViewLeadsCampanhas: true,
+    canViewLeadsLinkae: true,
+    canViewLeadsExa: true,
+    canManageUsers: false, // Apenas CEO
+    canManageCoupons: true,
+    canManageHomepageConfig: true,
+    canManageSystemSettings: false, // Apenas CEO
+    canViewAudit: false, // Apenas CEO
+    canViewSecurity: false, // Apenas CEO
+    canManageVideos: true,
+    canManagePortfolio: true,
+    canManageNotifications: true,
+    canManageEmails: true,
+    canManageProviderBenefits: true,
+    canViewFinancialReports: true,
+  },
+  admin_departamental: {
+    // ADMIN DEPARTAMENTAL: Permissões base (complementadas pelo departamento)
+    canViewDashboard: true,
+    canViewOrders: false,
+    canViewCRM: false,
+    canViewApprovals: false,
+    canManageBuildings: false,
+    canDeleteBuildings: false,
+    canManagePanels: false,
+    canViewLeads: false,
+    canViewSindicosInteressados: false,
+    canViewLeadsProdutora: false,
+    canViewLeadsCampanhas: false,
+    canViewLeadsLinkae: false,
+    canViewLeadsExa: false,
+    canManageUsers: false,
+    canManageCoupons: false,
+    canManageHomepageConfig: false,
+    canManageSystemSettings: false,
+    canViewAudit: false,
+    canViewSecurity: false,
+    canManageVideos: false,
+    canManagePortfolio: false,
+    canManageNotifications: false,
+    canManageEmails: false,
+    canManageProviderBenefits: false,
+    canViewFinancialReports: false,
+  },
+  // === ROLES LEGADOS (para compatibilidade) ===
+  admin_financeiro: {
+    canViewDashboard: true,
+    canViewOrders: true,
+    canViewCRM: false,
+    canViewApprovals: false,
+    canManageBuildings: false,
+    canDeleteBuildings: false,
+    canManagePanels: false,
+    canViewLeads: false,
+    canViewSindicosInteressados: false,
+    canViewLeadsProdutora: false,
+    canViewLeadsCampanhas: false,
+    canViewLeadsLinkae: false,
+    canViewLeadsExa: false,
+    canManageUsers: false,
+    canManageCoupons: false,
+    canManageHomepageConfig: false,
+    canManageSystemSettings: false,
+    canViewAudit: false,
+    canViewSecurity: false,
+    canManageVideos: false,
+    canManagePortfolio: false,
+    canManageNotifications: false,
+    canManageEmails: false,
+    canManageProviderBenefits: true,
+    canViewFinancialReports: true,
   },
   admin_marketing: {
     canViewDashboard: true,
     canViewOrders: false,
-    canViewCRM: false, // ❌ Marketing não vê CRM de clientes
+    canViewCRM: false,
     canViewApprovals: true,
     canManageBuildings: false,
     canDeleteBuildings: false,
@@ -169,33 +254,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageProviderBenefits: false,
     canViewFinancialReports: false,
   },
-  admin_financeiro: {
-    canViewDashboard: true,
-    canViewOrders: true,               // ✅ Acesso TOTAL a pedidos
-    canViewCRM: false,                 // ❌ Não vê CRM (corrigido)
-    canViewApprovals: false,           // ❌ Não precisa aprovar vídeos
-    canManageBuildings: false,         // ❌ Não gerencia prédios
-    canDeleteBuildings: false,
-    canManagePanels: false,            // ❌ Não gerencia painéis
-    canViewLeads: false,               // ❌ Não precisa ver leads
-    canViewSindicosInteressados: false,
-    canViewLeadsProdutora: false,
-    canViewLeadsCampanhas: false,
-    canViewLeadsLinkae: false,
-    canViewLeadsExa: false,
-    canManageUsers: false,             // ❌ Não cria usuários
-    canManageCoupons: false,           // ❌ Pode VER mas não CRIAR cupons
-    canManageHomepageConfig: false,
-    canManageSystemSettings: false,
-    canViewAudit: false,
-    canViewSecurity: false,
-    canManageVideos: false,
-    canManagePortfolio: false,
-    canManageNotifications: false,
-    canManageEmails: false,
-    canManageProviderBenefits: true,   // ✅✅ ACESSO TOTAL a benefícios prestadores
-    canViewFinancialReports: true,     // ✅✅ ACESSO a relatórios financeiros
-  },
+  // === ROLES LEGADOS (para compatibilidade) ===
   client: {
     canViewDashboard: false,
     canViewOrders: false,
@@ -251,15 +310,14 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewFinancialReports: false,
   },
   comercial: {
-    // COMERCIAL: Acesso ao CRM (apenas próprias conversas via RLS)
     canViewDashboard: false,
-    canViewOrders: true,                  // ✅ Ver pedidos
-    canViewCRM: true,                     // ✅ CRM - apenas próprias conversas (filtrado por RLS)
+    canViewOrders: true,
+    canViewCRM: true,
     canViewApprovals: false,
     canManageBuildings: false,
     canDeleteBuildings: false,
     canManagePanels: false,
-    canViewLeads: true,                   // ✅ Ver leads do comercial
+    canViewLeads: true,
     canViewSindicosInteressados: false,
     canViewLeadsProdutora: false,
     canViewLeadsCampanhas: false,
@@ -282,12 +340,26 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
 
 // Helper para obter permissões do usuário
 export const getUserPermissions = (role?: UserRole): UserPermissions => {
-  if (!role) return USER_PERMISSIONS.client;
-  return USER_PERMISSIONS[role] || USER_PERMISSIONS.client;
+  if (!role) return USER_PERMISSIONS.admin_departamental;
+  return USER_PERMISSIONS[role] || USER_PERMISSIONS.admin_departamental;
 };
 
 // Helper para verificar se usuário tem permissão específica
 export const hasPermission = (permission: keyof UserPermissions, role?: UserRole): boolean => {
   const permissions = getUserPermissions(role);
   return permissions[permission];
+};
+
+// Helper para verificar nível hierárquico
+export const getRoleLevel = (role?: UserRole): number => {
+  switch (role) {
+    case 'super_admin': return 1; // CEO - mais alto
+    case 'admin': return 2; // Coordenação
+    default: return 3; // Admin Departamental - mais baixo
+  }
+};
+
+// Helper para verificar se um role pode gerenciar outro
+export const canManageRole = (managerRole?: UserRole, targetRole?: UserRole): boolean => {
+  return getRoleLevel(managerRole) < getRoleLevel(targetRole);
 };

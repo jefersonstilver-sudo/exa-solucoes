@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { UserProfile, UserRole } from '@/types/userTypes';
+import { UserProfile, UserRole, UserDepartment } from '@/types/userTypes';
 
 interface AuthContextType {
   user: User | null;
@@ -97,7 +97,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { data: highestRole, error: roleError } = await supabase
         .rpc('get_user_highest_role', { p_user_id: userId });
       
-      let role: UserRole = 'client'; // Fallback seguro
+      let role: UserRole = 'admin_departamental'; // Fallback seguro para usuários internos
       
       if (roleError) {
         console.error('❌ Erro ao buscar role via RPC:', roleError);
@@ -117,13 +117,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('✅ Role prioritário obtido via RPC:', role);
       }
       
-      // Buscar dados completos do usuário
+      // Buscar dados completos do usuário COM departamento
       let userData = null;
       let userError = null;
       
       const userResult = await supabase
         .from('users')
-        .select('id, email, nome, cpf, avatar_url, email_verified_at')
+        .select(`
+          id, email, nome, cpf, avatar_url, email_verified_at, departamento_id,
+          departamento:process_departments(id, name, color, icon, display_order)
+        `)
         .eq('id', userId)
         .maybeSingle();
       
@@ -175,6 +178,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
       
+      // Processar departamento (pode vir como array ou objeto)
+      let departamento: UserDepartment | undefined;
+      if (userData.departamento) {
+        const dept = Array.isArray(userData.departamento) 
+          ? userData.departamento[0] 
+          : userData.departamento;
+        if (dept) {
+          departamento = {
+            id: dept.id,
+            name: dept.name,
+            color: dept.color,
+            icon: dept.icon,
+            display_order: dept.display_order
+          };
+        }
+      }
+      
       const profile: UserProfile = {
         id: userId,
         email: userData.email,
@@ -182,6 +202,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         documento: userData.cpf,
         avatar_url: userData.avatar_url,
         role: role,
+        departamento_id: userData.departamento_id,
+        departamento: departamento,
         email_verified_at: userData.email_verified_at
       };
       
