@@ -77,7 +77,7 @@ export const useDynamicPermissions = () => {
 
   // Verificar se é conta administrativa (não pode fazer pedidos)
   const isAdminAccount = useMemo(() => {
-    const adminRoles = ['super_admin', 'admin', 'admin_marketing', 'admin_financeiro', 'painel'];
+    const adminRoles = ['super_admin', 'admin', 'admin_marketing', 'admin_financeiro', 'painel', 'comercial'];
     return adminRoles.includes(userRole || '');
   }, [userRole]);
 

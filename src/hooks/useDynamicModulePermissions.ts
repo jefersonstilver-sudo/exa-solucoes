@@ -3,9 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useMemo } from 'react';
 
-// Master account email - always has full access
-const MASTER_ACCOUNT_EMAIL = 'jefersonstilver@gmail.com';
-
 // Module keys mapping to sidebar items
 // AUDITORIA COMPLETA: Todos os módulos do sistema mapeados
 export const MODULE_KEYS = {
@@ -76,8 +73,10 @@ export const useDynamicModulePermissions = () => {
   const roleKey = userProfile?.role;
   const userEmail = userProfile?.email;
   
-  // Check if this is the master account
-  const isMasterAccount = userEmail?.toLowerCase() === MASTER_ACCOUNT_EMAIL.toLowerCase();
+  // CEO (super_admin) has full access - NO hardcoded email
+  const isCEO = roleKey === 'super_admin';
+  // Keep isMasterAccount as alias for backward compatibility
+  const isMasterAccount = isCEO;
 
   // Fetch module permissions from role_permissions table
   const { data: modulePermissions, isLoading: permissionsLoading } = useQuery({
@@ -97,7 +96,7 @@ export const useDynamicModulePermissions = () => {
       
       return data as ModulePermission[];
     },
-    enabled: !!roleKey && !isMasterAccount,
+    enabled: !!roleKey && !isCEO,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -105,8 +104,8 @@ export const useDynamicModulePermissions = () => {
   const permissionsMap = useMemo(() => {
     const map: Record<string, boolean> = {};
     
-    if (isMasterAccount) {
-      // Master account has all permissions enabled
+    if (isCEO) {
+      // CEO has all permissions enabled
       Object.values(MODULE_KEYS).forEach(key => {
         map[key] = true;
       });
@@ -117,12 +116,12 @@ export const useDynamicModulePermissions = () => {
     }
     
     return map;
-  }, [modulePermissions, isMasterAccount]);
+  }, [modulePermissions, isCEO]);
 
   // Function to check if user has access to a specific module
   const hasModuleAccess = (moduleKey: string): boolean => {
-    // Master account always has access
-    if (isMasterAccount) return true;
+    // CEO always has access
+    if (isCEO) return true;
     
     // If still loading, assume no access for security
     if (authLoading || permissionsLoading) return false;
@@ -133,17 +132,24 @@ export const useDynamicModulePermissions = () => {
 
   // Get all enabled modules
   const enabledModules = useMemo(() => {
-    if (isMasterAccount) {
+    if (isCEO) {
       return Object.values(MODULE_KEYS);
     }
     
     return Object.entries(permissionsMap)
       .filter(([_, enabled]) => enabled)
       .map(([key]) => key);
-  }, [permissionsMap, isMasterAccount]);
+  }, [permissionsMap, isCEO]);
 
   // Get count of enabled modules
   const enabledModulesCount = enabledModules.length;
+
+  // CRM Access rules:
+  // - CEO (super_admin): full access
+  // - Comercial: own conversations only (filtered by RLS)
+  // - Everyone else: no access
+  const hasCRMAccess = isCEO || roleKey === 'comercial';
+  const isComercial = roleKey === 'comercial';
 
   return {
     hasModuleAccess,
@@ -151,6 +157,9 @@ export const useDynamicModulePermissions = () => {
     enabledModules,
     enabledModulesCount,
     isMasterAccount,
+    isCEO,
+    isComercial,
+    hasCRMAccess,
     isLoading: authLoading || permissionsLoading,
     roleKey,
     userEmail,

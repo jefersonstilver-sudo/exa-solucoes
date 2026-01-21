@@ -4336,6 +4336,7 @@ export type Database = {
         Row: {
           agent_key: string | null
           alerted_exa: boolean | null
+          assigned_user_id: string | null
           audit_inbound_count: number | null
           audit_last_check: string | null
           audit_outbound_count: number | null
@@ -4375,6 +4376,7 @@ export type Database = {
         Insert: {
           agent_key?: string | null
           alerted_exa?: boolean | null
+          assigned_user_id?: string | null
           audit_inbound_count?: number | null
           audit_last_check?: string | null
           audit_outbound_count?: number | null
@@ -4414,6 +4416,7 @@ export type Database = {
         Update: {
           agent_key?: string | null
           alerted_exa?: boolean | null
+          assigned_user_id?: string | null
           audit_inbound_count?: number | null
           audit_last_check?: string | null
           audit_outbound_count?: number | null
