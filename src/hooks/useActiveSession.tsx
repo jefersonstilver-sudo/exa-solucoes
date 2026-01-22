@@ -176,10 +176,15 @@ export const useActiveSession = (options: UseActiveSessionOptions = {}) => {
           return;
         }
 
+        // Se sessão anterior foi encerrada, criar NOVA sessão em vez de deslogar
         if (existingSession && existingSession.is_active === false) {
-          console.warn('🛑 Tentativa de reativar sessão encerrada. Fazendo signOut:', sessionId);
-          await supabase.auth.signOut();
-          return;
+          console.log('🔄 Sessão anterior encerrada. Criando nova sessão...');
+          // Gerar novo session_id
+          const newSessionId = crypto.randomUUID();
+          localStorage.setItem(STORAGE_KEY_SESSION_ID, newSessionId);
+          localStorage.setItem(STORAGE_KEY_SESSION_CREATED, new Date().toISOString());
+          sessionData.session_id = newSessionId;
+          console.log('✅ Nova sessão criada:', newSessionId);
         }
 
         const { data, error } = await supabase
@@ -233,15 +238,10 @@ export const useActiveSession = (options: UseActiveSessionOptions = {}) => {
           return;
         }
 
-        // Se não retornou linha, é porque a sessão já foi encerrada.
+        // Se não retornou linha, apenas logar - não deslogar automaticamente
         if (!data || data.length === 0) {
-          console.warn('🛑 Sessão encerrada remotamente. Fazendo signOut:', sessionId);
-          if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
-          try {
-            await supabase.auth.signOut();
-          } catch (e) {
-            console.error('❌ Erro ao executar signOut após encerramento remoto:', e);
-          }
+          console.warn('⚠️ Heartbeat sem retorno para sessão:', sessionId);
+          // NÃO fazer signOut aqui - pode ser apenas lag de rede
         }
       } catch (error) {
         console.error('❌ Erro ao atualizar heartbeat:', error);
