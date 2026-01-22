@@ -67,6 +67,8 @@ interface Proposal {
   cortesia_inicio?: string | null;
   cortesia_fim?: string | null;
   meses_cortesia?: number | null;
+  // Campo de Título
+  titulo?: string | null;
 }
 
 interface PaymentData {
@@ -1619,6 +1621,18 @@ const PropostaPublicaPage = () => {
         </div>
       </header>
 
+      {/* Título da Proposta (se preenchido) */}
+      {proposal.titulo && (
+        <div className="bg-white border-b border-gray-200 py-3 px-3 sm:py-4 sm:px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800">
+              {proposal.titulo}
+            </h2>
+            <div className="w-16 h-1 bg-[#9C1E1E] mx-auto mt-2 rounded-full" />
+          </div>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto px-3 py-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* Banner Cortesia Especial - EXA Red Theme */}
         {isCortesia && !['aceita', 'recusada', 'expirada'].includes(proposal.status) && (
@@ -1994,6 +2008,88 @@ const PropostaPublicaPage = () => {
               </>
             )}
           </div>
+        )}
+
+        {/* Detalhamento de Preços por Local - Corporativo */}
+        {!isCortesia && proposal.payment_type !== 'custom' && !proposal.is_custom_days && buildings.length > 0 && (
+          <Card className="p-3 sm:p-4 bg-slate-50/80 border-slate-200">
+            <div className="flex items-center gap-2 mb-3">
+              <Calculator className="h-4 w-4 text-slate-600" />
+              <h3 className="text-sm font-semibold text-slate-700">Detalhamento por Local</h3>
+            </div>
+
+            {/* Header da tabela */}
+            <div className="grid grid-cols-4 gap-1 p-2 bg-slate-100 rounded-t-lg text-[9px] sm:text-[10px] font-medium text-slate-600">
+              <span>Prédio</span>
+              <span className="text-center">Telas</span>
+              <span className="text-right">R$/Local</span>
+              <span className="text-right">R$/Tela</span>
+            </div>
+
+            {/* Lista de prédios */}
+            <div className="divide-y divide-slate-100 border border-t-0 border-slate-200 rounded-b-lg max-h-28 overflow-y-auto">
+              {buildings.map((b: any, i: number) => {
+                const precoBase = b.preco_base || 0;
+                const telas = b.quantidade_telas || 1;
+                const precoPorTela = telas > 0 ? precoBase / telas : 0;
+                
+                return (
+                  <div key={i} className="grid grid-cols-4 gap-1 p-2 text-[9px] sm:text-[10px] bg-white">
+                    <span className="truncate">{b.building_name || b.nome}</span>
+                    <span className="text-center">{telas}</span>
+                    <span className="text-right font-medium">
+                      {precoBase.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                    <span className="text-right text-muted-foreground">
+                      {precoPorTela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Resumo por modalidade */}
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-3">
+              {/* Fidelidade */}
+              <div className="p-2 bg-white rounded-lg border border-slate-200 space-y-1">
+                <div className="text-[9px] sm:text-[10px] font-medium text-slate-500 uppercase">
+                  Fidelidade ({proposal.duration_months}x)
+                </div>
+                <div className="flex justify-between text-[9px] sm:text-[10px]">
+                  <span>Por local:</span>
+                  <span className="font-medium">
+                    {(proposal.fidel_monthly_value / buildings.length).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                  </span>
+                </div>
+                <div className="flex justify-between text-[9px] sm:text-[10px]">
+                  <span>Por tela:</span>
+                  <span className="font-medium">
+                    {(proposal.fidel_monthly_value / totalPanels).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                  </span>
+                </div>
+              </div>
+
+              {/* À Vista */}
+              <div className="p-2 bg-gradient-to-br from-green-50 to-white rounded-lg border border-green-200 space-y-1">
+                <div className="text-[9px] sm:text-[10px] font-medium text-green-600 uppercase flex items-center gap-1">
+                  PIX À Vista
+                  <span className="bg-green-100 text-[7px] sm:text-[8px] px-1 rounded">-{proposal.discount_percent}%</span>
+                </div>
+                <div className="flex justify-between text-[9px] sm:text-[10px]">
+                  <span>Por local:</span>
+                  <span className="font-medium text-green-600">
+                    {((proposal.cash_total_value / proposal.duration_months) / buildings.length).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                  </span>
+                </div>
+                <div className="flex justify-between text-[9px] sm:text-[10px]">
+                  <span>Por tela:</span>
+                  <span className="font-medium text-green-600">
+                    {((proposal.cash_total_value / proposal.duration_months) / totalPanels).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Card>
         )}
 
         {/* Botões de Ação - Mobile Optimized */}

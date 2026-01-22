@@ -195,6 +195,9 @@ const NovaPropostaPage = () => {
   // Estado para preview da proposta
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
+  // Estado para título da proposta
+  const [tituloProposta, setTituloProposta] = useState('');
+
   // Estados para novos toggles: Cobrança Futura e Exigir Contrato
   const [cobrancaFutura, setCobrancaFutura] = useState(false);
   const [exigirContrato, setExigirContrato] = useState(true);
@@ -697,7 +700,8 @@ const NovaPropostaPage = () => {
         predios_instalados_no_fechamento: vendaFutura ? buildings.length : selectedBuildingsData.length,
         predios_pendentes: vendaFutura ? Math.max(0, prediosContratados - buildings.length) : 0,
         cortesia_inicio: vendaFutura && prediosContratados > buildings.length ? new Date().toISOString().split('T')[0] : null,
-        meses_cortesia: 0
+        meses_cortesia: 0,
+        titulo: tituloProposta.trim() || null
       }]).select().single();
       if (error) throw error;
 
@@ -1231,6 +1235,24 @@ const NovaPropostaPage = () => {
             }))} placeholder="Digite o endereço completo da empresa..." className="mt-1 h-12 text-base" />}
             </div>
           </div>
+
+          {/* Título da Proposta (Opcional) */}
+          <div className="md:col-span-2 mt-2">
+            <Label className="text-xs flex items-center gap-1.5">
+              <FileText className="h-3 w-3" />
+              Título da Proposta (opcional)
+            </Label>
+            <Input
+              placeholder="Ex: Campanha Black Friday 2026, Parceria Institucional..."
+              value={tituloProposta}
+              onChange={(e) => setTituloProposta(e.target.value)}
+              maxLength={100}
+              className="mt-1 h-10 text-sm"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Se preenchido, aparece em destaque no topo da proposta para o cliente
+            </p>
+          </div>
         </Card>
 
         {/* Seção 1.5: Notificações EXA Alert */}
@@ -1729,6 +1751,90 @@ const NovaPropostaPage = () => {
                 <span className="font-bold text-amber-800">{formatCurrency(customTotal)}</span>
               </div>
             </div>}
+
+          {/* Detalhamento de Preços Corporativo */}
+          {selectedBuildings.length > 0 && !isCustomPayment && !isCustomDays && (
+            <Card className="p-3 bg-slate-50/80 border-slate-200 mt-3">
+              <div className="flex items-center gap-2 mb-3">
+                <Building2 className="h-4 w-4 text-slate-600" />
+                <h3 className="font-semibold text-sm text-slate-800">Detalhamento por Local</h3>
+              </div>
+
+              {/* Tabela de Prédios */}
+              <div className="rounded-lg border border-slate-200 overflow-hidden mb-3">
+                <div className="grid grid-cols-4 gap-2 p-2 bg-slate-100 text-[10px] font-medium text-slate-600">
+                  <span>Prédio</span>
+                  <span className="text-center">Telas</span>
+                  <span className="text-right">R$/Local</span>
+                  <span className="text-right">R$/Tela</span>
+                </div>
+                <div className="divide-y divide-slate-100 max-h-24 overflow-y-auto">
+                  {selectedBuildingsData.map((building) => {
+                    const precoBase = (building as any).preco_base || 0;
+                    const telas = building.quantidade_telas || 1;
+                    const precoPorTela = telas > 0 ? precoBase / telas : 0;
+                    
+                    return (
+                      <div key={building.id} className="grid grid-cols-4 gap-2 p-2 text-[10px] bg-white">
+                        <span className="truncate">{building.nome}</span>
+                        <span className="text-center">{telas}</span>
+                        <span className="text-right font-medium">{formatCurrency(precoBase)}</span>
+                        <span className="text-right text-muted-foreground">{formatCurrency(precoPorTela)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Resumo Consolidado por Modalidade */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Fidelidade */}
+                <div className="p-2 bg-white rounded-lg border border-slate-200 space-y-1">
+                  <div className="text-[10px] font-medium text-slate-500 uppercase mb-1">Fidelidade ({durationMonths}x)</div>
+                  <div className="flex justify-between text-[10px]">
+                    <span>Por local/mês:</span>
+                    <span className="font-medium">
+                      {formatCurrency(selectedBuildingsData.length > 0 ? fidelMonthly / selectedBuildingsData.length : 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span>Por tela/mês:</span>
+                    <span className="font-medium">
+                      {formatCurrency(totalPanels > 0 ? fidelMonthly / totalPanels : 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs pt-1 border-t border-slate-100">
+                    <span className="font-medium">Total:</span>
+                    <span className="font-bold">{formatCurrency(fidelTotal)}</span>
+                  </div>
+                </div>
+
+                {/* À Vista */}
+                <div className="p-2 bg-gradient-to-br from-green-50 to-white rounded-lg border border-green-200 space-y-1">
+                  <div className="text-[10px] font-medium text-green-600 uppercase flex items-center gap-1 mb-1">
+                    PIX À Vista
+                    <span className="bg-green-100 text-green-700 text-[8px] px-1 rounded">-{discountPercent}%</span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span>Por local/mês:</span>
+                    <span className="font-medium text-green-600">
+                      {formatCurrency(selectedBuildingsData.length > 0 && durationMonths > 0 ? (cashTotal / durationMonths) / selectedBuildingsData.length : 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span>Por tela/mês:</span>
+                    <span className="font-medium text-green-600">
+                      {formatCurrency(totalPanels > 0 && durationMonths > 0 ? (cashTotal / durationMonths) / totalPanels : 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs pt-1 border-t border-green-100">
+                    <span className="font-medium">Total:</span>
+                    <span className="font-bold text-green-600">{formatCurrency(cashTotal)}</span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
         </Card>
 
         {/* Seção: Configurações Avançadas */}

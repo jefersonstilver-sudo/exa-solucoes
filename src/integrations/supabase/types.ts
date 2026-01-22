@@ -10641,6 +10641,7 @@ export type Database = {
           sent_at: string | null
           status: string | null
           tipo_produto: string | null
+          titulo: string | null
           total_impressions_month: number
           total_panels: number
           total_time_spent_seconds: number | null
@@ -10710,6 +10711,7 @@ export type Database = {
           sent_at?: string | null
           status?: string | null
           tipo_produto?: string | null
+          titulo?: string | null
           total_impressions_month?: number
           total_panels?: number
           total_time_spent_seconds?: number | null
@@ -10779,6 +10781,7 @@ export type Database = {
           sent_at?: string | null
           status?: string | null
           tipo_produto?: string | null
+          titulo?: string | null
           total_impressions_month?: number
           total_panels?: number
           total_time_spent_seconds?: number | null
