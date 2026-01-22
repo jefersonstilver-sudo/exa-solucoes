@@ -1,6 +1,16 @@
 import React from 'react';
 import { Building2, Tv, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+
+// Função para converter path relativo para URL pública do Storage
+const getImageUrl = (path: string | null | undefined): string | null => {
+  if (!path) return null;
+  // Se já é uma URL completa, retornar direto
+  if (path.startsWith('http')) return path;
+  // Converter path relativo para URL pública do Supabase Storage
+  return supabase.storage.from('building-images').getPublicUrl(path).data.publicUrl;
+};
 
 interface ProposalBuildingCardProps {
   building: {
@@ -25,8 +35,8 @@ export const ProposalBuildingCard: React.FC<ProposalBuildingCardProps> = ({ buil
   const nome = building.building_name || building.nome || 'Local';
   const bairro = building.bairro || '';
   
-  // Buscar imagem - tentar imagem_principal primeiro, depois imageurl
-  const imagemUrl = building.imagem_principal || building.imageurl;
+  // Buscar imagem - tentar imagem_principal primeiro, depois imageurl (convertendo para URL pública)
+  const imagemUrl = getImageUrl(building.imagem_principal) || getImageUrl(building.imageurl);
 
   return (
     <div className="group relative bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
