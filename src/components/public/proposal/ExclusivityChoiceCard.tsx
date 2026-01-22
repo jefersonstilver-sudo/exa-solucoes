@@ -23,6 +23,40 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
+// Mapa de valores para labels de segmentos
+const segmentLabels: Record<string, string> = {
+  restaurants: 'Restaurantes',
+  gyms: 'Academias',
+  beauty: 'Beleza & Estética',
+  real_estate: 'Imobiliárias',
+  healthcare: 'Saúde',
+  education: 'Educação',
+  retail: 'Varejo',
+  automotive: 'Automotivo',
+  financial: 'Financeiro',
+  technology: 'Tecnologia',
+  food_delivery: 'Delivery de Comida',
+  pet_shops: 'Pet Shops',
+  pharmacies: 'Farmácias',
+  supermarkets: 'Supermercados',
+  clothing: 'Moda & Vestuário',
+  electronics: 'Eletrônicos',
+  furniture: 'Móveis & Decoração',
+  travel: 'Viagens & Turismo',
+  entertainment: 'Entretenimento',
+  professional_services: 'Serviços Profissionais',
+  construction: 'Construção Civil',
+  insurance: 'Seguros',
+  events: 'Eventos',
+  other: 'Outro',
+  electronics_import: 'Eletrônicos Importados',
+  lojas_paraguai: 'Shopping Eletrônicos PY',
+};
+
+const getSegmentLabel = (value: string): string => {
+  return segmentLabels[value] || value;
+};
+
 export function ExclusivityChoiceCard({
   segmento,
   valorNormal,
@@ -34,6 +68,7 @@ export function ExclusivityChoiceCard({
   escolhido,
   onChoose,
 }: ExclusivityChoiceCardProps) {
+  const segmentoLabel = getSegmentLabel(segmento);
   return (
     <Card className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 to-white border-2 border-slate-200 shadow-md overflow-hidden">
       {/* Header */}
@@ -46,7 +81,7 @@ export function ExclusivityChoiceCard({
             Exclusividade de Segmento Disponível
           </h3>
           <p className="text-[10px] sm:text-xs text-slate-500">
-            Bloqueie concorrentes do segmento <strong className="text-[#9C1E1E]">{segmento}</strong>
+            Bloqueie concorrentes do segmento <strong className="text-[#9C1E1E]">{segmentoLabel}</strong>
           </p>
         </div>
       </div>
@@ -143,7 +178,7 @@ export function ExclusivityChoiceCard({
           <div className="mt-3 pt-3 border-t border-[#9C1E1E]/10 space-y-1">
             <p className="text-[10px] text-[#7D1818] flex items-center gap-1 font-medium">
               <Lock className="h-3 w-3" />
-              Segmento "{segmento}" BLOQUEADO
+              Segmento "{segmentoLabel}" BLOQUEADO
             </p>
             <p className="text-[10px] text-[#9C1E1E]/70 flex items-center gap-1">
               <Shield className="h-3 w-3" />
