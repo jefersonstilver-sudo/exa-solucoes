@@ -103,7 +103,16 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
   // SEÇÃO 2: QUERIES - Busca de dados externos
   // ==========================================================================
 
-  // Query: Departamentos ativos
+  // Lista fixa dos 5 departamentos para organização de usuários (Governança EXA)
+  const DEPARTAMENTOS_USUARIOS = [
+    'Administrativo',
+    'Comercial',
+    'Marketing',
+    'Financeiro',
+    'Tecnologia'
+  ];
+
+  // Query: Departamentos ativos (filtrado pelos 5 organizacionais)
   const { data: departments = [], isLoading: loadingDepartments } = useQuery({
     queryKey: ['console-departments'],
     queryFn: async () => {
@@ -111,6 +120,7 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
         .from('process_departments')
         .select('id, name, color, icon, display_order, is_active')
         .eq('is_active', true)
+        .in('name', DEPARTAMENTOS_USUARIOS)
         .order('display_order');
       
       if (error) throw error;
@@ -142,9 +152,9 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     const isSelf = user?.id === userProfile?.id;
     
     return {
-      // Regras de edição
-      canEditRole: isAdmin && !isSelf, // Não pode editar próprio cargo
-      canEditDepartment: isAdmin,
+      // Regras de edição - Apenas super_admin pode alterar cargo e departamento
+      canEditRole: isSuperAdmin && !isSelf,
+      canEditDepartment: isSuperAdmin && !isSelf,
       
       // Regras de ações críticas
       canBlock: isSuperAdmin && !isTargetCEO && !isSelf,
