@@ -1677,17 +1677,6 @@ const PropostaPublicaPage = () => {
         </div>
       </header>
 
-      {/* Título da Proposta (se preenchido) */}
-      {proposal.titulo && (
-        <div className="bg-white border-b border-gray-200 py-3 px-3 sm:py-4 sm:px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800">
-              {proposal.titulo}
-            </h2>
-            <div className="w-16 h-1 bg-[#9C1E1E] mx-auto mt-2 rounded-full" />
-          </div>
-        </div>
-      )}
 
       <div className="max-w-4xl mx-auto px-3 py-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* Banner Cortesia Especial - EXA Red Theme */}
