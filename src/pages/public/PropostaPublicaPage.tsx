@@ -1470,6 +1470,25 @@ const PropostaPublicaPage = () => {
   const totalImpressions = proposal.total_impressions_month || buildings.reduce((sum: number, b: any) => sum + (b.visualizacoes_mes || 0), 0);
   const fidelTotal = proposal.fidel_monthly_value * proposal.duration_months;
 
+  // ============ VARIÁVEIS PARA VENDA FUTURA ============
+  // Quando é venda futura, usar predios_contratados e telas estimadas
+  const isVendaFutura = proposal.venda_futura && (proposal.predios_contratados ?? 0) > 0;
+  
+  // Número de prédios para exibição (contratados se venda futura, senão os selecionados)
+  const displayBuildingsCount = isVendaFutura 
+    ? proposal.predios_contratados! 
+    : buildings.length;
+  
+  // Número de telas para exibição (estimadas se venda futura, senão as reais)
+  const displayPanelsCount = isVendaFutura 
+    ? Math.ceil((proposal.predios_contratados ?? 0) * 1.35) 
+    : totalPanels;
+  
+  // Exibições estimadas para venda futura (11.610 por tela/mês)
+  const displayImpressions = isVendaFutura 
+    ? displayPanelsCount * 11610 
+    : totalImpressions;
+
   // ==== CÁLCULO DO BREAKDOWN DE PREÇO ====
   // Calcular valor base mensal total (soma de todos os preco_base dos prédios)
   const baseMonthlyTotal = buildings.reduce((sum: number, b: any) => sum + (b.preco_base || 0), 0);
@@ -1688,26 +1707,93 @@ const PropostaPublicaPage = () => {
           </Card>
         )}
 
-        {/* Resumo Rápido - Grid 2x2 no mobile */}
+        {/* Card de Venda Futura - PRIMEIRO para destaque máximo */}
+        {isVendaFutura && (
+          <Card className="p-3 sm:p-4 bg-gradient-to-r from-amber-50 via-amber-100/80 to-orange-50 border-2 border-amber-300 shadow-lg">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-1.5 bg-amber-500 rounded-full">
+                <Rocket className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base sm:text-lg text-amber-800">🚀 Venda Futura</h3>
+                <p className="text-[10px] sm:text-xs text-amber-700">Proposta baseada em meta de expansão</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3">
+              <div className="text-center p-2 sm:p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                <span className="text-lg sm:text-2xl font-bold text-emerald-600">{proposal.predios_instalados_no_fechamento ?? 0}</span>
+                <p className="text-[9px] sm:text-xs text-emerald-700 font-medium">Instalados Hoje</p>
+              </div>
+              <div className="text-center p-2 sm:p-3 bg-amber-100 rounded-lg border border-amber-300">
+                <span className="text-lg sm:text-2xl font-bold text-amber-700">{proposal.predios_contratados ?? 0}</span>
+                <p className="text-[9px] sm:text-xs text-amber-800 font-medium">Meta Contratada</p>
+              </div>
+              <div className="text-center p-2 sm:p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <span className="text-lg sm:text-2xl font-bold text-blue-600">{proposal.predios_pendentes ?? 0}</span>
+                <p className="text-[9px] sm:text-xs text-blue-700 font-medium">Em Expansão</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2 p-2 sm:p-3 bg-gradient-to-r from-amber-100 to-orange-100 rounded-lg border border-amber-200">
+              <Gift className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs sm:text-sm text-amber-900 font-semibold mb-1">✨ Benefício Cortesia Incluído!</p>
+                <p className="text-[10px] sm:text-xs text-amber-800">
+                  Você terá <strong>exibição gratuita</strong> até atingirmos a meta de {proposal.predios_contratados} prédios. 
+                  O período pago só inicia quando a rede estiver completa!
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Banner de Múltiplas Marcas/Posições - aparece quando há mais de 1 posição */}
+        {(proposal.quantidade_posicoes ?? 1) > 1 && (
+          <Card className="p-3 sm:p-4 bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 border-2 border-violet-200 shadow-md">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-1.5 bg-violet-500 rounded-full">
+                <Users className="h-4 w-4 text-white" />
+              </div>
+              <h3 className="font-bold text-sm sm:text-base text-violet-800">
+                {proposal.quantidade_posicoes}x Posições por Painel
+              </h3>
+            </div>
+            <p className="text-xs sm:text-sm text-violet-700">
+              Esta proposta inclui <strong>{proposal.quantidade_posicoes} espaços simultâneos</strong> por painel, 
+              permitindo exibição de múltiplas marcas ou campanhas diferentes ao mesmo tempo.
+            </p>
+          </Card>
+        )}
+
+        {/* Resumo Rápido - Grid com números ajustados para Venda Futura */}
         <div className={`grid ${(proposal.quantidade_posicoes ?? 1) > 1 ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'} gap-2 sm:gap-3`}>
           <Card className="p-2.5 sm:p-3 text-center bg-white/80 backdrop-blur-sm">
-            <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">{buildings.length}</div>
-            <div className="text-[10px] sm:text-xs text-muted-foreground">Prédios</div>
+            <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">{displayBuildingsCount}</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">
+              {isVendaFutura ? 'Prédios Contratados' : 'Prédios'}
+            </div>
           </Card>
           <Card className="p-2.5 sm:p-3 text-center bg-white/80 backdrop-blur-sm">
-            <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">{totalPanels}</div>
-            <div className="text-[10px] sm:text-xs text-muted-foreground">Telas</div>
+            <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">{displayPanelsCount}</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">
+              {isVendaFutura ? 'Telas Estimadas' : 'Telas'}
+            </div>
           </Card>
           {/* Card de Posições - só aparece quando há mais de 1 */}
           {(proposal.quantidade_posicoes ?? 1) > 1 && (
-            <Card className="p-2.5 sm:p-3 text-center bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-              <div className="text-xl sm:text-2xl font-bold text-primary">{proposal.quantidade_posicoes}x</div>
-              <div className="text-[10px] sm:text-xs text-muted-foreground">Marcas</div>
+            <Card className="p-2.5 sm:p-3 text-center bg-gradient-to-br from-violet-100 to-purple-100 border-violet-200">
+              <div className="text-xl sm:text-2xl font-bold text-violet-700">{proposal.quantidade_posicoes}x</div>
+              <div className="text-[10px] sm:text-xs text-violet-600 font-medium">Marcas</div>
             </Card>
           )}
           <Card className="p-2.5 sm:p-3 text-center bg-white/80 backdrop-blur-sm">
-            <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">{(totalImpressions / 1000).toFixed(0)}k</div>
-            <div className="text-[10px] sm:text-xs text-muted-foreground">Exibições/mês</div>
+            <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">
+              {displayImpressions >= 1000000 
+                ? (displayImpressions / 1000000).toFixed(1) + 'M' 
+                : (displayImpressions / 1000).toFixed(0) + 'k'}
+            </div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">
+              {isVendaFutura ? 'Exibições Est./mês' : 'Exibições/mês'}
+            </div>
           </Card>
           <Card className="p-2.5 sm:p-3 text-center bg-white/80 backdrop-blur-sm">
             <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">
@@ -1716,35 +1802,8 @@ const PropostaPublicaPage = () => {
             <div className="text-[10px] sm:text-xs text-muted-foreground">
               {proposal.is_custom_days ? 'Dias' : 'Meses'}
             </div>
-        </Card>
-        </div>
-
-        {/* Card de Venda Futura - aparece quando a proposta é de venda futura */}
-        {proposal.venda_futura && (proposal.predios_pendentes ?? 0) > 0 && (
-          <Card className="p-3 sm:p-4 bg-gradient-to-r from-amber-50 to-amber-100/80 border-amber-200">
-            <div className="flex items-center gap-2 mb-3">
-              <Rocket className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" />
-              <h3 className="font-semibold text-sm sm:text-base text-amber-800">Venda Futura</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div className="text-center p-2 bg-background/60 rounded-lg">
-                <span className="text-xl sm:text-2xl font-bold text-emerald-600">{proposal.predios_instalados_no_fechamento ?? 0}</span>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Prédios Instalados</p>
-              </div>
-              <div className="text-center p-2 bg-background/60 rounded-lg">
-                <span className="text-xl sm:text-2xl font-bold text-amber-600">{proposal.predios_contratados ?? 0}</span>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Prédios Contratados</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 p-2 bg-amber-100/60 rounded-lg">
-              <Gift className="h-4 w-4 text-amber-600 flex-shrink-0" />
-              <p className="text-xs text-amber-800">
-                <strong>Cortesia:</strong> Exibição gratuita até {proposal.predios_pendentes} prédio(s) adicional(is) ser(em) instalado(s). 
-                O período de cortesia será adicionado ao final do contrato.
-              </p>
-            </div>
           </Card>
-        )}
+        </div>
 
         {/* Módulo de Período da Campanha - Mobile Optimized */}
         {(() => {
@@ -2048,7 +2107,7 @@ const PropostaPublicaPage = () => {
               })}
             </div>
 
-            {/* Resumo por modalidade */}
+            {/* Resumo por modalidade - USA displayBuildingsCount e displayPanelsCount para Venda Futura */}
             <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-3">
               {/* Fidelidade */}
               <div className="p-2 bg-white rounded-lg border border-slate-200 space-y-1">
@@ -2058,13 +2117,13 @@ const PropostaPublicaPage = () => {
                 <div className="flex justify-between text-[9px] sm:text-[10px]">
                   <span>Por local:</span>
                   <span className="font-medium">
-                    {(proposal.fidel_monthly_value / buildings.length).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                    {(proposal.fidel_monthly_value / displayBuildingsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
                   </span>
                 </div>
                 <div className="flex justify-between text-[9px] sm:text-[10px]">
                   <span>Por tela:</span>
                   <span className="font-medium">
-                    {(proposal.fidel_monthly_value / totalPanels).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                    {(proposal.fidel_monthly_value / displayPanelsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
                   </span>
                 </div>
               </div>
@@ -2078,17 +2137,27 @@ const PropostaPublicaPage = () => {
                 <div className="flex justify-between text-[9px] sm:text-[10px]">
                   <span>Por local:</span>
                   <span className="font-medium text-green-600">
-                    {((proposal.cash_total_value / proposal.duration_months) / buildings.length).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                    {((proposal.cash_total_value / proposal.duration_months) / displayBuildingsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
                   </span>
                 </div>
                 <div className="flex justify-between text-[9px] sm:text-[10px]">
                   <span>Por tela:</span>
                   <span className="font-medium text-green-600">
-                    {((proposal.cash_total_value / proposal.duration_months) / totalPanels).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                    {((proposal.cash_total_value / proposal.duration_months) / displayPanelsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
                   </span>
                 </div>
               </div>
             </div>
+
+            {/* Indicador de Venda Futura no breakdown */}
+            {isVendaFutura && (
+              <div className="mt-2 p-1.5 bg-amber-50 rounded border border-amber-200 flex items-center gap-1.5">
+                <Rocket className="h-3 w-3 text-amber-600 flex-shrink-0" />
+                <span className="text-[8px] sm:text-[9px] text-amber-700">
+                  Valores calculados para {displayBuildingsCount} prédios e {displayPanelsCount} telas (meta contratada)
+                </span>
+              </div>
+            )}
           </Card>
         )}
 
