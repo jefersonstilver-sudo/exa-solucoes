@@ -5,6 +5,7 @@ import { format, addDays, addMonths, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
@@ -19,6 +20,7 @@ import { ProductShowcaseCard } from '@/components/public/proposal/ProductShowcas
 import { TechnicalSpecsGrid } from '@/components/public/proposal/TechnicalSpecsGrid';
 import { ProposalSummaryText } from '@/components/public/proposal/ProposalSummaryText';
 import { ExclusivityChoiceCard } from '@/components/public/proposal/ExclusivityChoiceCard';
+import { ProposalBuildingCard } from '@/components/public/proposal/ProposalBuildingCard';
 
 // Contract flow type
 type ContractFlowStep = 'idle' | 'loading' | 'collecting' | 'generating' | 'previewing' | 'accepted';
@@ -340,11 +342,11 @@ const PropostaPublicaPage = () => {
         if (buildingIds.length > 0) {
           const { data: currentBuildingsData } = await supabase
             .from('buildings')
-            .select('id, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, preco_trimestral, preco_semestral, preco_anual')
+            .select('id, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, preco_trimestral, preco_semestral, preco_anual, imagem_principal, imageurl, codigo_predio, publico_estimado, bairro, endereco, nome')
             .in('id', buildingIds);
 
           if (currentBuildingsData) {
-            // Create map of current data with ALL fields including plan prices
+            // Create map of current data with ALL fields including plan prices and images
             const buildingsMap = new Map(currentBuildingsData.map(b => [
               b.id,
               {
@@ -353,11 +355,18 @@ const PropostaPublicaPage = () => {
                 preco_base: b.preco_base || 0,
                 preco_trimestral: b.preco_trimestral || 0,
                 preco_semestral: b.preco_semestral || 0,
-                preco_anual: b.preco_anual || 0
+                preco_anual: b.preco_anual || 0,
+                imagem_principal: b.imagem_principal || null,
+                imageurl: b.imageurl || null,
+                codigo_predio: b.codigo_predio || null,
+                publico_estimado: b.publico_estimado || 0,
+                bairro: b.bairro || null,
+                endereco: b.endereco || null,
+                nome: b.nome || null
               }
             ]));
 
-            // Enrich selected_buildings with REAL current data from database
+            // Enrich selected_buildings with REAL current data from database including images
             const enriched = buildings.map((b: any) => {
               const currentData = buildingsMap.get(b.building_id);
               return {
@@ -367,7 +376,14 @@ const PropostaPublicaPage = () => {
                 preco_base: currentData?.preco_base || b.preco_base || 0,
                 preco_trimestral: currentData?.preco_trimestral || 0,
                 preco_semestral: currentData?.preco_semestral || 0,
-                preco_anual: currentData?.preco_anual || 0
+                preco_anual: currentData?.preco_anual || 0,
+                imagem_principal: currentData?.imagem_principal || null,
+                imageurl: currentData?.imageurl || null,
+                codigo_predio: currentData?.codigo_predio || null,
+                publico_estimado: currentData?.publico_estimado || 0,
+                bairro: currentData?.bairro || b.bairro || null,
+                endereco: currentData?.endereco || b.endereco || null,
+                nome: currentData?.nome || b.building_name || null
               };
             });
 
@@ -2028,35 +2044,25 @@ const PropostaPublicaPage = () => {
         {/* Detalhamento de Preços por Local - Corporativo */}
         {!isCortesia && proposal.payment_type !== 'custom' && !proposal.is_custom_days && buildings.length > 0 && (
           <Card className="p-3 sm:p-4 bg-slate-50/80 border-slate-200">
-            <div className="flex items-center gap-2 mb-3">
-              <Calculator className="h-4 w-4 text-slate-600" />
-              <h3 className="text-sm font-semibold text-slate-700">Detalhamento por Local</h3>
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold text-slate-700">Locais Contratados</h3>
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                {buildings.length} {buildings.length === 1 ? 'local' : 'locais'}
+              </Badge>
             </div>
 
-            {/* Header da tabela */}
-            <div className="grid grid-cols-3 gap-1 p-2 bg-slate-100 rounded-t-lg text-[9px] sm:text-[10px] font-medium text-slate-600">
-              <span>Prédio</span>
-              <span className="text-center">Telas</span>
-              <span className="text-right">Exibições/mês</span>
-            </div>
-
-            {/* Lista de prédios */}
-            <div className="divide-y divide-slate-100 border border-t-0 border-slate-200 rounded-b-lg max-h-28 overflow-y-auto">
-              {buildings.map((b: any, i: number) => {
-                const telas = b.quantidade_telas || 1;
-                const exibicoesPorTela = 11610; // Manual v3.0
-                const exibicoesTotais = telas * exibicoesPorTela;
-                
-                return (
-                  <div key={i} className="grid grid-cols-3 gap-1 p-2 text-[9px] sm:text-[10px] bg-white">
-                    <span className="truncate">{b.building_name || b.nome}</span>
-                    <span className="text-center">{telas}</span>
-                    <span className="text-right font-medium">
-                      {exibicoesTotais.toLocaleString('pt-BR')}
-                    </span>
-                  </div>
-                );
-              })}
+            {/* Grid visual de prédios com fotos */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[420px] overflow-y-auto pr-1">
+              {buildings.map((b: any, i: number) => (
+                <ProposalBuildingCard 
+                  key={b.building_id || i} 
+                  building={b}
+                  index={i + 1}
+                />
+              ))}
             </div>
 
             {/* Resumo por modalidade - USA valores dinâmicos com exclusividade */}
