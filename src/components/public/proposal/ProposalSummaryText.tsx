@@ -32,6 +32,9 @@ export function ProposalSummaryText({
   
   // Para venda futura, usar predios contratados como meta
   const prediosExibidos = isVendaFutura && prediosContratados ? prediosContratados : totalPredios;
+  
+  // Calcular total de vídeos simultâneos para horizontal com múltiplas posições
+  const totalVideosSimultaneos = isHorizontal ? maxVideosPorPedido * quantidadePosicoes : quantidadePosicoes;
 
   return (
     <Card className="p-4 sm:p-5 bg-slate-50/80 border border-slate-200">
@@ -66,12 +69,24 @@ export function ProposalSummaryText({
           {/* Condicionais por tipo/cenário */}
           <div className="space-y-1.5 pt-1 border-t border-slate-200">
             {/* Destaque HORIZONTAL */}
-            {isHorizontal && (
+            {isHorizontal && !hasMultiplePosicoes && (
               <p className="text-slate-600">
                 <span className="text-slate-400">→</span>{' '}
                 Com o formato Horizontal, você pode intercalar até{' '}
                 <span className="font-semibold text-slate-800">{maxVideosPorPedido} vídeos diferentes</span>{' '}
                 no mesmo pedido, transmitindo variedade e alto posicionamento.
+              </p>
+            )}
+
+            {/* Destaque HORIZONTAL com MÚLTIPLAS POSIÇÕES */}
+            {isHorizontal && hasMultiplePosicoes && (
+              <p className="text-slate-600">
+                <span className="text-slate-400">→</span>{' '}
+                Com o formato Horizontal e{' '}
+                <span className="font-semibold text-slate-800">{quantidadePosicoes} marcas</span>, 
+                sua empresa pode manter{' '}
+                <span className="font-semibold text-[#9C1E1E]">{totalVideosSimultaneos} vídeos simultâneos</span>{' '}
+                na plataforma ({maxVideosPorPedido} vídeos × {quantidadePosicoes} posições) com programações automáticas de exibição.
               </p>
             )}
 
