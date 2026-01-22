@@ -135,7 +135,14 @@ serve(async (req) => {
       cortesia_inicio: proposal.cortesia_inicio || null,
       cortesia_fim: proposal.cortesia_fim || null,
       meses_cortesia: proposal.meses_cortesia || null,
-      titulo_proposta: proposal.titulo || null
+      titulo_proposta: proposal.titulo || null,
+      
+      // EXCLUSIVIDADE DE SEGMENTO
+      exclusividade_segmento: proposal.exclusividade_segmento || false,
+      segmento_exclusivo: proposal.segmento_exclusivo || null,
+      exclusividade_percentual: proposal.exclusividade_percentual || 0,
+      exclusividade_valor_extra: proposal.exclusividade_valor_extra || 0,
+      cliente_escolheu_exclusividade: proposal.cliente_escolheu_exclusividade || false
     };
 
     const { data: contrato, error: contratoError } = await supabase
@@ -348,6 +355,30 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
   const predios = contrato.lista_predios || [];
   const totalTelas = predios.reduce((sum: number, p: any) => sum + (p.quantidade_telas || 1), 0);
 
+  // ========== MAPEAMENTO DE LABELS DE SEGMENTO ==========
+  const segmentLabels: Record<string, string> = {
+    real_estate: 'Imobiliário',
+    food_delivery: 'Delivery de Alimentos',
+    health_clinics: 'Clínicas de Saúde',
+    gyms_fitness: 'Academias e Fitness',
+    beauty_salons: 'Salões de Beleza',
+    pet_shops: 'Pet Shops',
+    education: 'Educação',
+    automotive: 'Automotivo',
+    restaurants: 'Restaurantes',
+    pharmacies: 'Farmácias',
+    electronics_import: 'Eletrônicos Importados',
+    lojas_paraguai: 'Shopping Eletrônicos PY',
+    technology: 'Tecnologia',
+    fashion: 'Moda e Vestuário',
+    financial_services: 'Serviços Financeiros',
+    insurance: 'Seguros',
+    travel_tourism: 'Turismo e Viagens',
+    home_services: 'Serviços para Casa',
+    other: 'Outro'
+  };
+  const segmentoLabel = segmentLabels[contrato.segmento_exclusivo] || contrato.segmento_exclusivo || 'Não especificado';
+
   // ========== ESPECIFICAÇÕES TÉCNICAS DO MANUAL v3.0 ==========
   // Buscar dinamicamente da tabela produtos_exa
   const isVerticalPremium = contrato.tipo_produto === 'vertical_premium';
@@ -461,6 +492,10 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
 
   // Verificar se é cortesia
   const isCortesia = contrato.valor_total === 0;
+  
+  // ========== OFFSET DE NUMERAÇÃO PARA EXCLUSIVIDADE ==========
+  // Se cliente escolheu exclusividade, adiciona +1 em todas as cláusulas após a 5ª
+  const clauseOffset = contrato.cliente_escolheu_exclusividade ? 1 : 0;
 
   return `
     <!DOCTYPE html>
@@ -1067,19 +1102,19 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
       <div class="section no-break">
         <div class="section-title">CLÁUSULA 4ª - DO PRAZO DE VIGÊNCIA</div>
         <div class="clause">
-          <p><span class="clause-title">4.1.</span> O presente contrato terá vigência de <strong>\${contrato.plano_meses} (\${contrato.plano_meses === 1 ? 'um' : contrato.plano_meses === 3 ? 'três' : contrato.plano_meses === 6 ? 'seis' : 'doze'}) \${contrato.plano_meses === 1 ? 'mês' : 'meses'}</strong>, com início em <strong>\${formatDate(contrato.data_inicio)}</strong> e término em <strong>\${formatDate(contrato.data_fim)}</strong>.</p>
+          <p><span class="clause-title">4.1.</span> O presente contrato terá vigência de <strong>${contrato.plano_meses} (${contrato.plano_meses === 1 ? 'um' : contrato.plano_meses === 3 ? 'três' : contrato.plano_meses === 6 ? 'seis' : 'doze'}) ${contrato.plano_meses === 1 ? 'mês' : 'meses'}</strong>, com início em <strong>${formatDate(contrato.data_inicio)}</strong> e término em <strong>${formatDate(contrato.data_fim)}</strong>.</p>
           
           <p><span class="clause-title">4.2.</span> O contrato poderá ser renovado por igual período mediante acordo entre as partes, formalizado por escrito com antecedência mínima de 30 (trinta) dias do término da vigência.</p>
           
           <p><span class="clause-title">4.3.</span> A veiculação do material publicitário terá início em até 48 (quarenta e oito) horas úteis após a confirmação do pagamento e aprovação do conteúdo pela CONTRATADA.</p>
           
-          \${contrato.quantidade_posicoes && contrato.quantidade_posicoes > 1 ? \`
-          <p><span class="clause-title">4.4.</span> <strong>MÚLTIPLAS POSIÇÕES:</strong> O CONTRATANTE contratou <strong>\${contrato.quantidade_posicoes} posições</strong> no ciclo de exibição, o que significa que seu material será exibido \${contrato.quantidade_posicoes}x mais vezes por ciclo, multiplicando proporcionalmente o número total de exibições.</p>
-          \` : ''}
+          ${contrato.quantidade_posicoes && contrato.quantidade_posicoes > 1 ? `
+          <p><span class="clause-title">4.4.</span> <strong>MÚLTIPLAS POSIÇÕES:</strong> O CONTRATANTE contratou <strong>${contrato.quantidade_posicoes} posições</strong> no ciclo de exibição, o que significa que seu material será exibido ${contrato.quantidade_posicoes}x mais vezes por ciclo, multiplicando proporcionalmente o número total de exibições.</p>
+          ` : ''}
           
-          \${contrato.venda_futura ? \`
-          <p><span class="clause-title">4.\${contrato.quantidade_posicoes > 1 ? '5' : '4'}.</span> <strong>CONDIÇÃO ESPECIAL - VENDA FUTURA:</strong> Este contrato contempla a meta de <strong>\${contrato.predios_contratados || '-'} prédios</strong>. Na data de fechamento, encontram-se instalados <strong>\${contrato.predios_instalados_fechamento || '-'} prédios</strong>. O CONTRATANTE terá direito a um <strong>período de cortesia</strong>\${contrato.cortesia_inicio && contrato.cortesia_fim ? \` (de \${formatDateShort(contrato.cortesia_inicio)} a \${formatDateShort(contrato.cortesia_fim)}, aproximadamente \${contrato.meses_cortesia || '-'} meses)\` : ''}, durante o qual a veiculação ocorrerá sem cobrança, até que a meta de prédios seja atingida. Após atingida a meta, inicia-se o período de vigência paga conforme cláusula 5ª.</p>
-          \` : ''}
+          ${contrato.venda_futura ? `
+          <p><span class="clause-title">4.${contrato.quantidade_posicoes > 1 ? '5' : '4'}.</span> <strong>CONDIÇÃO ESPECIAL - VENDA FUTURA:</strong> Este contrato contempla a meta de <strong>${contrato.predios_contratados || '-'} prédios</strong>. Na data de fechamento, encontram-se instalados <strong>${contrato.predios_instalados_fechamento || '-'} prédios</strong>. O CONTRATANTE terá direito a um <strong>período de cortesia</strong>${contrato.cortesia_inicio && contrato.cortesia_fim ? ` (de ${formatDateShort(contrato.cortesia_inicio)} a ${formatDateShort(contrato.cortesia_fim)}, aproximadamente ${contrato.meses_cortesia || '-'} meses)` : ''}, durante o qual a veiculação ocorrerá sem cobrança, até que a meta de prédios seja atingida. Após atingida a meta, inicia-se o período de vigência paga conforme cláusula 5ª.</p>
+          ` : ''}
         </div>
       </div>
 
@@ -1108,9 +1143,34 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
         </div>
       </div>
 
-      <!-- CLÁUSULA 6: DAS ESPECIFICAÇÕES TÉCNICAS -->
+      ${contrato.cliente_escolheu_exclusividade ? `
+      <!-- CLÁUSULA 6: DA EXCLUSIVIDADE DE SEGMENTO (CONDICIONAL) -->
       <div class="section no-break">
-        <div class="section-title">CLÁUSULA 6ª - DAS ESPECIFICAÇÕES TÉCNICAS</div>
+        <div class="section-title">CLÁUSULA 6ª - DA EXCLUSIVIDADE DE SEGMENTO</div>
+        <div class="clause">
+          <div class="highlight-box" style="background: #e8f5e9; border-color: #4caf50;">
+            <strong>🔒 EXCLUSIVIDADE CONTRATADA</strong><br>
+            Segmento: <strong>${segmentoLabel}</strong> | 
+            Acréscimo: <strong>${contrato.exclusividade_percentual || 0}%</strong> | 
+            Valor extra: <strong>${formatCurrency(contrato.exclusividade_valor_extra || 0)}</strong>
+          </div>
+          
+          <p><span class="clause-title">6.1.</span> O CONTRATANTE adquiriu <strong>exclusividade de segmento</strong> para a categoria "<strong>${segmentoLabel}</strong>" nos prédios contratados neste instrumento.</p>
+          
+          <p><span class="clause-title">6.2.</span> Durante a vigência deste contrato, a CONTRATADA compromete-se a <strong>não veicular publicidade de concorrentes diretos</strong> do CONTRATANTE que atuem no mesmo segmento de mercado nos painéis dos locais listados na Cláusula 3ª.</p>
+          
+          <p><span class="clause-title">6.3.</span> O benefício de exclusividade é válido exclusivamente para o segmento especificado e não impede a veiculação de anunciantes de outros segmentos de mercado.</p>
+          
+          <p><span class="clause-title">6.4.</span> Pela exclusividade, foi acordado um acréscimo de <strong>${contrato.exclusividade_percentual || 0}%</strong> sobre o valor base, correspondendo a <strong>${formatCurrency(contrato.exclusividade_valor_extra || 0)}</strong> adicionais, já incluídos no valor total deste contrato.</p>
+          
+          <p><span class="clause-title">6.5.</span> A exclusividade é intransferível e está vinculada ao CNPJ/CPF do CONTRATANTE, não podendo ser cedida a terceiros sem autorização expressa da CONTRATADA.</p>
+        </div>
+      </div>
+      ` : ''}
+
+      <!-- CLÁUSULA ${6 + clauseOffset}: DAS ESPECIFICAÇÕES TÉCNICAS -->
+      <div class="section no-break">
+        <div class="section-title">CLÁUSULA ${6 + clauseOffset}ª - DAS ESPECIFICAÇÕES TÉCNICAS</div>
         <div class="clause">
           <div class="tech-specs">
             <div class="tech-specs-title">📺 Especificações do Material Publicitário — ${especificacoesTecnicas.descricao}</div>
@@ -1128,23 +1188,23 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
             </ul>
           </div>
 
-          <p><span class="clause-title">6.1.</span> O CONTRATANTE é responsável por fornecer o material publicitário em conformidade com as especificações técnicas acima descritas.</p>
+          <p><span class="clause-title">${6 + clauseOffset}.1.</span> O CONTRATANTE é responsável por fornecer o material publicitário em conformidade com as especificações técnicas acima descritas.</p>
           
-          <p><span class="clause-title">6.2.</span> Materiais que não atendam às especificações técnicas serão devolvidos para adequação, podendo acarretar atraso no início da veiculação.</p>
+          <p><span class="clause-title">${6 + clauseOffset}.2.</span> Materiais que não atendam às especificações técnicas serão devolvidos para adequação, podendo acarretar atraso no início da veiculação.</p>
           
-          <p><span class="clause-title">6.3.</span> A CONTRATADA poderá recusar a veiculação de materiais que contenham conteúdo ilícito, ofensivo, discriminatório, político-partidário ou que viole direitos de terceiros.</p>
+          <p><span class="clause-title">${6 + clauseOffset}.3.</span> A CONTRATADA poderá recusar a veiculação de materiais que contenham conteúdo ilícito, ofensivo, discriminatório, político-partidário ou que viole direitos de terceiros.</p>
           
-          <p><span class="clause-title">6.4.</span> Os valores de exibições são estimados com base em ${horasOperacao} horas de operação diária e ${diasMes} dias por mês, conforme Manual Técnico v3.0 da EXA Mídia.</p>
+          <p><span class="clause-title">${6 + clauseOffset}.4.</span> Os valores de exibições são estimados com base em ${horasOperacao} horas de operação diária e ${diasMes} dias por mês, conforme Manual Técnico v3.0 da EXA Mídia.</p>
         </div>
       </div>
 
       <div class="page-break"></div>
 
-      <!-- CLÁUSULA 7: DOS DIREITOS DE IMAGEM E AUTORAIS -->
+      <!-- CLÁUSULA ${7 + clauseOffset}: DOS DIREITOS DE IMAGEM E AUTORAIS -->
       <div class="section no-break">
-        <div class="section-title">CLÁUSULA 7ª - DOS DIREITOS DE IMAGEM E AUTORAIS</div>
+        <div class="section-title">CLÁUSULA ${7 + clauseOffset}ª - DOS DIREITOS DE IMAGEM E AUTORAIS</div>
         <div class="clause">
-          <p><span class="clause-title">7.1.</span> O CONTRATANTE declara e garante ser o legítimo proprietário ou possuir autorização expressa para uso de todo o conteúdo veiculado, incluindo, mas não se limitando a:
+          <p><span class="clause-title">${7 + clauseOffset}.1.</span> O CONTRATANTE declara e garante ser o legítimo proprietário ou possuir autorização expressa para uso de todo o conteúdo veiculado, incluindo, mas não se limitando a:
             <ul>
               <li>Imagens, fotografias e vídeos;</li>
               <li>Textos, slogans e marcas;</li>
@@ -1154,11 +1214,11 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
             </ul>
           </p>
           
-          <p><span class="clause-title">7.2.</span> O CONTRATANTE assume integral responsabilidade por quaisquer reclamações, ações judiciais ou administrativas relacionadas a direitos autorais, marcas, patentes ou direitos de imagem do conteúdo veiculado, isentando a CONTRATADA de qualquer responsabilidade.</p>
+          <p><span class="clause-title">${7 + clauseOffset}.2.</span> O CONTRATANTE assume integral responsabilidade por quaisquer reclamações, ações judiciais ou administrativas relacionadas a direitos autorais, marcas, patentes ou direitos de imagem do conteúdo veiculado, isentando a CONTRATADA de qualquer responsabilidade.</p>
           
-          <p><span class="clause-title">7.3.</span> Em caso de demanda judicial ou extrajudicial envolvendo o conteúdo veiculado, o CONTRATANTE deverá assumir a defesa e arcar com todos os custos, honorários e eventuais condenações.</p>
+          <p><span class="clause-title">${7 + clauseOffset}.3.</span> Em caso de demanda judicial ou extrajudicial envolvendo o conteúdo veiculado, o CONTRATANTE deverá assumir a defesa e arcar com todos os custos, honorários e eventuais condenações.</p>
           
-          <p><span class="clause-title">7.4.</span> O CONTRATANTE <strong>autoriza expressamente</strong> a CONTRATADA a utilizar o material publicitário veiculado para fins de divulgação institucional, incluindo, mas não se limitando a:
+          <p><span class="clause-title">${7 + clauseOffset}.4.</span> O CONTRATANTE <strong>autoriza expressamente</strong> a CONTRATADA a utilizar o material publicitário veiculado para fins de divulgação institucional, incluindo, mas não se limitando a:
             <ul>
               <li>Materiais internos de apresentação comercial e portfólio;</li>
               <li>Cases de sucesso e exemplos de trabalhos realizados;</li>
@@ -1168,15 +1228,15 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
             </ul>
           </p>
           
-          <p><span class="clause-title">7.5.</span> A utilização do material pela CONTRATADA será sempre de forma profissional e institucional, podendo incluir a identificação do CONTRATANTE como cliente, salvo solicitação expressa em contrário formalizada por escrito.</p>
+          <p><span class="clause-title">${7 + clauseOffset}.5.</span> A utilização do material pela CONTRATADA será sempre de forma profissional e institucional, podendo incluir a identificação do CONTRATANTE como cliente, salvo solicitação expressa em contrário formalizada por escrito.</p>
         </div>
       </div>
 
-      <!-- CLÁUSULA 8: DAS OBRIGAÇÕES DA CONTRATADA -->
+      <!-- CLÁUSULA ${8 + clauseOffset}: DAS OBRIGAÇÕES DA CONTRATADA -->
       <div class="section no-break">
-        <div class="section-title">CLÁUSULA 8ª - DAS OBRIGAÇÕES DA CONTRATADA</div>
+        <div class="section-title">CLÁUSULA ${8 + clauseOffset}ª - DAS OBRIGAÇÕES DA CONTRATADA</div>
         <div class="clause">
-          <p><span class="clause-title">8.1.</span> São obrigações da CONTRATADA:</p>
+          <p><span class="clause-title">${8 + clauseOffset}.1.</span> São obrigações da CONTRATADA:</p>
           <ul>
             <li><strong>a)</strong> Disponibilizar os painéis digitais nos locais especificados neste contrato em perfeito estado de funcionamento;</li>
             <li><strong>b)</strong> Garantir o funcionamento dos equipamentos durante as <strong>${horasOperacao} horas diárias</strong> de operação, conforme configuração estabelecida para cada local;</li>
@@ -1187,15 +1247,15 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
             <li><strong>g)</strong> Comunicar o CONTRATANTE sobre eventuais problemas técnicos que afetem a veiculação.</li>
           </ul>
           
-          <p><span class="clause-title">8.2.</span> A CONTRATADA não se responsabiliza por interrupções decorrentes de casos fortuitos, força maior, ou falhas nos serviços de energia elétrica e internet dos condomínios.</p>
+          <p><span class="clause-title">${8 + clauseOffset}.2.</span> A CONTRATADA não se responsabiliza por interrupções decorrentes de casos fortuitos, força maior, ou falhas nos serviços de energia elétrica e internet dos condomínios.</p>
         </div>
       </div>
 
-      <!-- CLÁUSULA 9: DAS OBRIGAÇÕES DO CONTRATANTE -->
+      <!-- CLÁUSULA ${9 + clauseOffset}: DAS OBRIGAÇÕES DO CONTRATANTE -->
       <div class="section no-break">
-        <div class="section-title">CLÁUSULA 9ª - DAS OBRIGAÇÕES DO CONTRATANTE</div>
+        <div class="section-title">CLÁUSULA ${9 + clauseOffset}ª - DAS OBRIGAÇÕES DO CONTRATANTE</div>
         <div class="clause">
-          <p><span class="clause-title">9.1.</span> São obrigações do CONTRATANTE:</p>
+          <p><span class="clause-title">${9 + clauseOffset}.1.</span> São obrigações do CONTRATANTE:</p>
           <ul>
             <li><strong>a)</strong> Efetuar o pagamento dos valores acordados nas datas de vencimento;</li>
             <li><strong>b)</strong> Fornecer material publicitário em conformidade com as especificações técnicas estabelecidas;</li>
@@ -1207,20 +1267,20 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
         </div>
       </div>
 
-      <!-- CLÁUSULA 10: DA MULTA E PENALIDADES -->
+      <!-- CLÁUSULA ${10 + clauseOffset}: DA MULTA E PENALIDADES -->
       <div class="section no-break">
-        <div class="section-title">CLÁUSULA 10ª - DA MULTA E PENALIDADES</div>
+        <div class="section-title">CLÁUSULA ${10 + clauseOffset}ª - DA MULTA E PENALIDADES</div>
         <div class="clause">
           ${isCortesia ? `
-            <p><span class="clause-title">10.1.</span> Por tratar-se de contrato de cortesia, não haverá aplicação de multas por inadimplemento financeiro.</p>
-            <p><span class="clause-title">10.2.</span> A CONTRATADA reserva-se o direito de rescindir este contrato a qualquer momento, mediante comunicação prévia de 15 (quinze) dias.</p>
+            <p><span class="clause-title">${10 + clauseOffset}.1.</span> Por tratar-se de contrato de cortesia, não haverá aplicação de multas por inadimplemento financeiro.</p>
+            <p><span class="clause-title">${10 + clauseOffset}.2.</span> A CONTRATADA reserva-se o direito de rescindir este contrato a qualquer momento, mediante comunicação prévia de 15 (quinze) dias.</p>
           ` : `
             <div class="penalty-box">
               <strong>⚠️ Atenção às penalidades por atraso:</strong><br>
               Multa de 2% + Juros de 1% ao mês sobre o valor em atraso
             </div>
             
-            <p><span class="clause-title">10.1.</span> O atraso no pagamento de qualquer parcela implicará na incidência de:
+            <p><span class="clause-title">${10 + clauseOffset}.1.</span> O atraso no pagamento de qualquer parcela implicará na incidência de:
               <ul>
                 <li>Multa de <strong>2% (dois por cento)</strong> sobre o valor da parcela em atraso;</li>
                 <li>Juros moratórios de <strong>1% (um por cento) ao mês</strong>, calculados pro rata die;</li>
@@ -1228,20 +1288,20 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
               </ul>
             </p>
             
-            <p><span class="clause-title">10.2.</span> Após <strong>10 (dez) dias</strong> de atraso, a veiculação do material publicitário será automaticamente suspensa, sem aviso prévio adicional.</p>
+            <p><span class="clause-title">${10 + clauseOffset}.2.</span> Após <strong>10 (dez) dias</strong> de atraso, a veiculação do material publicitário será automaticamente suspensa, sem aviso prévio adicional.</p>
             
-            <p><span class="clause-title">10.3.</span> A reativação da veiculação após suspensão por inadimplência ficará condicionada à quitação integral dos valores em atraso, acrescidos das penalidades previstas.</p>
+            <p><span class="clause-title">${10 + clauseOffset}.3.</span> A reativação da veiculação após suspensão por inadimplência ficará condicionada à quitação integral dos valores em atraso, acrescidos das penalidades previstas.</p>
             
-            <p><span class="clause-title">10.4.</span> A suspensão da veiculação por inadimplência não prorroga o prazo contratual nem gera direito a ressarcimento ou desconto.</p>
+            <p><span class="clause-title">${10 + clauseOffset}.4.</span> A suspensão da veiculação por inadimplência não prorroga o prazo contratual nem gera direito a ressarcimento ou desconto.</p>
           `}
         </div>
       </div>
 
-      <!-- CLÁUSULA 11: DA RESCISÃO CONTRATUAL -->
+      <!-- CLÁUSULA ${11 + clauseOffset}: DA RESCISÃO CONTRATUAL -->
       <div class="section no-break">
-        <div class="section-title">CLÁUSULA 11ª - DA RESCISÃO CONTRATUAL</div>
+        <div class="section-title">CLÁUSULA ${11 + clauseOffset}ª - DA RESCISÃO CONTRATUAL</div>
         <div class="clause">
-          <p><span class="clause-title">11.1.</span> O presente contrato poderá ser rescindido:
+          <p><span class="clause-title">${11 + clauseOffset}.1.</span> O presente contrato poderá ser rescindido:
             <ul>
               <li><strong>a)</strong> Por mútuo acordo entre as partes, formalizado por escrito;</li>
               <li><strong>b)</strong> Por inadimplemento de qualquer das partes, após notificação com prazo de 15 (quinze) dias para regularização;</li>
@@ -1251,22 +1311,22 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
           </p>
           
           ${!isCortesia ? `
-            <p><span class="clause-title">11.2.</span> Em caso de rescisão antecipada por iniciativa do CONTRATANTE, sem justa causa, será devida multa rescisória correspondente a <strong>20% (vinte por cento)</strong> do valor restante do contrato.</p>
+            <p><span class="clause-title">${11 + clauseOffset}.2.</span> Em caso de rescisão antecipada por iniciativa do CONTRATANTE, sem justa causa, será devida multa rescisória correspondente a <strong>20% (vinte por cento)</strong> do valor restante do contrato.</p>
             
-            <p><span class="clause-title">11.3.</span> Em caso de rescisão por culpa da CONTRATADA, esta deverá restituir ao CONTRATANTE os valores pagos proporcionalmente ao período não usufruído.</p>
+            <p><span class="clause-title">${11 + clauseOffset}.3.</span> Em caso de rescisão por culpa da CONTRATADA, esta deverá restituir ao CONTRATANTE os valores pagos proporcionalmente ao período não usufruído.</p>
           ` : `
-            <p><span class="clause-title">11.2.</span> Por tratar-se de cortesia, qualquer das partes poderá rescindir o contrato mediante comunicação prévia de 15 (quinze) dias, sem aplicação de multas.</p>
+            <p><span class="clause-title">${11 + clauseOffset}.2.</span> Por tratar-se de cortesia, qualquer das partes poderá rescindir o contrato mediante comunicação prévia de 15 (quinze) dias, sem aplicação de multas.</p>
           `}
         </div>
       </div>
 
-      <!-- CLÁUSULA 12: DA CONFIDENCIALIDADE -->
+      <!-- CLÁUSULA ${12 + clauseOffset}: DA CONFIDENCIALIDADE -->
       <div class="section no-break">
-        <div class="section-title">CLÁUSULA 12ª - DA CONFIDENCIALIDADE</div>
+        <div class="section-title">CLÁUSULA ${12 + clauseOffset}ª - DA CONFIDENCIALIDADE</div>
         <div class="clause">
-          <p><span class="clause-title">12.1.</span> As partes comprometem-se a manter em <strong>absoluto sigilo</strong> todas as informações comerciais, valores, condições e acordos estabelecidos neste contrato, não podendo divulgá-los a terceiros sem prévia autorização por escrito.</p>
+          <p><span class="clause-title">${12 + clauseOffset}.1.</span> As partes comprometem-se a manter em <strong>absoluto sigilo</strong> todas as informações comerciais, valores, condições e acordos estabelecidos neste contrato, não podendo divulgá-los a terceiros sem prévia autorização por escrito.</p>
           
-          <p><span class="clause-title">12.2.</span> São consideradas informações confidenciais:
+          <p><span class="clause-title">${12 + clauseOffset}.2.</span> São consideradas informações confidenciais:
             <ul>
               <li>Valores, descontos e condições comerciais acordadas;</li>
               <li>Estratégias comerciais, de marketing e operacionais;</li>
@@ -1276,11 +1336,11 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
             </ul>
           </p>
           
-          <p><span class="clause-title">12.3.</span> O dever de confidencialidade <strong>permanecerá em vigor por prazo indeterminado</strong>, mesmo após o término ou rescisão deste contrato.</p>
+          <p><span class="clause-title">${12 + clauseOffset}.3.</span> O dever de confidencialidade <strong>permanecerá em vigor por prazo indeterminado</strong>, mesmo após o término ou rescisão deste contrato.</p>
           
-          <p><span class="clause-title">12.4.</span> A parte que violar o dever de confidencialidade responderá pelos danos causados à outra parte, sem prejuízo das sanções legais cabíveis.</p>
+          <p><span class="clause-title">${12 + clauseOffset}.4.</span> A parte que violar o dever de confidencialidade responderá pelos danos causados à outra parte, sem prejuízo das sanções legais cabíveis.</p>
           
-          <p><span class="clause-title">12.5.</span> Não será considerada violação de confidencialidade:
+          <p><span class="clause-title">${12 + clauseOffset}.5.</span> Não será considerada violação de confidencialidade:
             <ul>
               <li>Informações que se tornarem públicas por meios lícitos;</li>
               <li>Divulgações exigidas por ordem judicial ou determinação de autoridade competente;</li>
@@ -1290,21 +1350,21 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
         </div>
       </div>
 
-      <!-- CLÁUSULA 13: DO FORO E DISPOSIÇÕES GERAIS -->
+      <!-- CLÁUSULA ${13 + clauseOffset}: DO FORO E DISPOSIÇÕES GERAIS -->
       <div class="section no-break">
-        <div class="section-title">CLÁUSULA 13ª - DO FORO E DISPOSIÇÕES GERAIS</div>
+        <div class="section-title">CLÁUSULA ${13 + clauseOffset}ª - DO FORO E DISPOSIÇÕES GERAIS</div>
         <div class="clause">
-          <p><span class="clause-title">13.1.</span> As partes elegem o <strong>Foro da Comarca de Foz do Iguaçu, Estado do Paraná</strong>, para dirimir quaisquer questões oriundas deste contrato, com exclusão de qualquer outro, por mais privilegiado que seja.</p>
+          <p><span class="clause-title">${13 + clauseOffset}.1.</span> As partes elegem o <strong>Foro da Comarca de Foz do Iguaçu, Estado do Paraná</strong>, para dirimir quaisquer questões oriundas deste contrato, com exclusão de qualquer outro, por mais privilegiado que seja.</p>
           
-          <p><span class="clause-title">13.2.</span> O presente contrato é firmado em caráter irrevogável e irretratável, obrigando as partes e seus sucessores a qualquer título.</p>
+          <p><span class="clause-title">${13 + clauseOffset}.2.</span> O presente contrato é firmado em caráter irrevogável e irretratável, obrigando as partes e seus sucessores a qualquer título.</p>
           
-          <p><span class="clause-title">13.3.</span> A tolerância de qualquer das partes quanto ao descumprimento de cláusulas deste contrato não constituirá renúncia nem criará precedente invocável.</p>
+          <p><span class="clause-title">${13 + clauseOffset}.3.</span> A tolerância de qualquer das partes quanto ao descumprimento de cláusulas deste contrato não constituirá renúncia nem criará precedente invocável.</p>
           
-          <p><span class="clause-title">13.4.</span> Qualquer alteração neste contrato somente terá validade se formalizada por escrito e assinada por ambas as partes.</p>
+          <p><span class="clause-title">${13 + clauseOffset}.4.</span> Qualquer alteração neste contrato somente terá validade se formalizada por escrito e assinada por ambas as partes.</p>
           
-          <p><span class="clause-title">13.5.</span> Os dados pessoais fornecidos pelas partes serão tratados em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 - LGPD).</p>
+          <p><span class="clause-title">${13 + clauseOffset}.5.</span> Os dados pessoais fornecidos pelas partes serão tratados em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 - LGPD).</p>
           
-          <p><span class="clause-title">13.6.</span> Este contrato representa o acordo integral entre as partes, substituindo quaisquer entendimentos anteriores, verbais ou escritos.</p>
+          <p><span class="clause-title">${13 + clauseOffset}.6.</span> Este contrato representa o acordo integral entre as partes, substituindo quaisquer entendimentos anteriores, verbais ou escritos.</p>
         </div>
       </div>
 
