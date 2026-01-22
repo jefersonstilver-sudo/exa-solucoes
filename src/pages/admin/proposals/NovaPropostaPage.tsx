@@ -60,7 +60,7 @@ const businessSegments = [
   { value: 'furniture', label: 'Móveis e Decoração' },
   { value: 'electronics', label: 'Eletrônicos' },
   { value: 'electronics_import', label: 'Eletrônicos Importados' },
-  { value: 'lojas_paraguai', label: 'Lojas Paraguai' },
+  { value: 'lojas_paraguai', label: 'Shopping Eletrônicos PY' },
   { value: 'clothing', label: 'Vestuário e Moda' },
   { value: 'jewelry', label: 'Joalherias' },
   { value: 'pet_shop', label: 'Pet Shops' },
