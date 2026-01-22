@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
+import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock } from 'lucide-react';
+import { format, differenceInDays, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
 import { Calendar } from '@/components/ui/calendar';
@@ -35,6 +35,50 @@ import { CCEmailsInput } from '@/components/ui/cc-emails-input';
 import { createContactFromProposal } from '@/services/contactAutoCreator';
 import { usePosicoesDisponiveis } from '@/hooks/usePosicoesDisponiveis';
 import { useVideoSpecifications } from '@/hooks/useVideoSpecifications';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ChevronsUpDown } from 'lucide-react';
+
+// Lista de segmentos de negócio para exclusividade
+const businessSegments = [
+  { value: 'tourist_attraction', label: 'Atrações Turísticas' },
+  { value: 'travel_agency', label: 'Agências de Viagem' },
+  { value: 'restaurant', label: 'Restaurantes' },
+  { value: 'fast_food', label: 'Fast Food' },
+  { value: 'pizzaria', label: 'Pizzarias' },
+  { value: 'steakhouse', label: 'Churrascarias' },
+  { value: 'bakery', label: 'Padarias e Confeitarias' },
+  { value: 'supermarket', label: 'Supermercados' },
+  { value: 'pharmacy', label: 'Farmácias' },
+  { value: 'hospital', label: 'Hospitais e Clínicas' },
+  { value: 'dentist', label: 'Odontologia' },
+  { value: 'gym', label: 'Academias' },
+  { value: 'beauty_salon', label: 'Salões de Beleza' },
+  { value: 'spa', label: 'Spas e Estética' },
+  { value: 'real_estate', label: 'Imobiliárias' },
+  { value: 'construction', label: 'Construtoras' },
+  { value: 'furniture', label: 'Móveis e Decoração' },
+  { value: 'electronics', label: 'Eletrônicos' },
+  { value: 'clothing', label: 'Vestuário e Moda' },
+  { value: 'jewelry', label: 'Joalherias' },
+  { value: 'pet_shop', label: 'Pet Shops' },
+  { value: 'auto_dealer', label: 'Concessionárias' },
+  { value: 'auto_repair', label: 'Oficinas Mecânicas' },
+  { value: 'gas_station', label: 'Postos de Combustível' },
+  { value: 'bank', label: 'Bancos e Financeiras' },
+  { value: 'insurance', label: 'Seguradoras' },
+  { value: 'law_firm', label: 'Escritórios de Advocacia' },
+  { value: 'accounting', label: 'Contabilidade' },
+  { value: 'education', label: 'Escolas e Cursos' },
+  { value: 'university', label: 'Universidades' },
+  { value: 'hotel', label: 'Hotéis e Pousadas' },
+  { value: 'event_venue', label: 'Casas de Eventos' },
+  { value: 'bar', label: 'Bares e Pubs' },
+  { value: 'nightclub', label: 'Casas Noturnas' },
+  { value: 'technology', label: 'Tecnologia e TI' },
+  { value: 'marketing', label: 'Marketing e Publicidade' },
+  { value: 'other', label: 'Outros Segmentos' },
+];
 interface Building {
   id: string;
   nome: string;
@@ -206,6 +250,15 @@ const NovaPropostaPage = () => {
   const [vendaFutura, setVendaFutura] = useState(false);
   const [prediosContratados, setPrediosContratados] = useState(0);
   const [telasContratadas, setTelasContratadas] = useState<number | null>(null); // null = automático
+
+  // Estados para Exclusividade de Segmento
+  const [oferecerExclusividade, setOferecerExclusividade] = useState(false);
+  const [segmentoExclusivo, setSegmentoExclusivo] = useState('');
+  const [exclusividadePercentual, setExclusividadePercentual] = useState(35);
+  const [exclusividadeValorExtra, setExclusividadeValorExtra] = useState<number | null>(null); // null = automático
+  const [exclusividadeDisponivel, setExclusividadeDisponivel] = useState<boolean | null>(null);
+  const [verificandoExclusividade, setVerificandoExclusividade] = useState(false);
+  const [segmentoPopoverOpen, setSegmentoPopoverOpen] = useState(false);
 
   // Opções de período
   const periodOptions = [{
@@ -636,6 +689,72 @@ const NovaPropostaPage = () => {
   const fidelTotal = fidelMonthly * durationMonths;
   const cashTotal = overwriteCashValue ? parseFloat(cashValue) || 0 : fidelTotal * (1 - discountPercent / 100);
 
+  // Cálculo do valor extra de exclusividade
+  const exclusividadeValorCalculado = useMemo(() => {
+    if (!oferecerExclusividade) return 0;
+    if (exclusividadeValorExtra !== null) return exclusividadeValorExtra;
+    
+    const valorBase = isCustomPayment ? customTotal : cashTotal;
+    return (valorBase * exclusividadePercentual) / 100;
+  }, [oferecerExclusividade, exclusividadePercentual, cashTotal, customTotal, exclusividadeValorExtra, isCustomPayment]);
+
+  // Função para verificar disponibilidade de exclusividade
+  const verificarDisponibilidadeExclusividade = async () => {
+    if (!segmentoExclusivo || selectedBuildings.length === 0) {
+      toast.error('Selecione um segmento e ao menos um prédio');
+      return;
+    }
+
+    setVerificandoExclusividade(true);
+    
+    try {
+      // Calcular período da proposta
+      const startDate = new Date();
+      const endDate = addMonths(startDate, durationMonths || 12);
+      
+      // Filtrar apenas prédios reais (não manuais)
+      const realBuildingIds = selectedBuildings.filter(id => !id.startsWith('manual_'));
+      
+      if (realBuildingIds.length === 0) {
+        setExclusividadeDisponivel(true);
+        toast.success('Exclusividade disponível! (Prédios manuais não têm restrição)');
+        setVerificandoExclusividade(false);
+        return;
+      }
+
+      // Consultar exclusividades ativas que conflitam
+      const { data: conflitos, error } = await supabase
+        .from('exclusividades_segmento')
+        .select('*, buildings:building_id(nome)')
+        .eq('segmento', segmentoExclusivo)
+        .eq('ativo', true)
+        .in('building_id', realBuildingIds)
+        .gte('data_fim', startDate.toISOString().split('T')[0])
+        .lte('data_inicio', endDate.toISOString().split('T')[0]);
+
+      if (error) {
+        console.error('Erro ao verificar exclusividade:', error);
+        toast.error('Erro ao verificar disponibilidade');
+        setVerificandoExclusividade(false);
+        return;
+      }
+
+      if (conflitos && conflitos.length > 0) {
+        setExclusividadeDisponivel(false);
+        const prediosConflito = conflitos.map((c: any) => c.buildings?.nome || 'Prédio').join(', ');
+        toast.error(`Exclusividade INDISPONÍVEL. Conflito em: ${prediosConflito}`);
+      } else {
+        setExclusividadeDisponivel(true);
+        toast.success('Exclusividade DISPONÍVEL para todos os prédios selecionados!');
+      }
+    } catch (err) {
+      console.error('Erro ao verificar exclusividade:', err);
+      toast.error('Erro ao verificar disponibilidade');
+    } finally {
+      setVerificandoExclusividade(false);
+    }
+  };
+
   // Mutation para salvar proposta
   const createProposalMutation = useMutation({
     mutationFn: async (sendOptions: {
@@ -715,7 +834,14 @@ const NovaPropostaPage = () => {
         predios_pendentes: vendaFutura ? Math.max(0, prediosContratados - buildings.length) : 0,
         cortesia_inicio: vendaFutura && prediosContratados > buildings.length ? new Date().toISOString().split('T')[0] : null,
         meses_cortesia: 0,
-        titulo: tituloProposta.trim() || null
+        titulo: tituloProposta.trim() || null,
+        // Campos de Exclusividade de Segmento
+        exclusividade_segmento: oferecerExclusividade,
+        segmento_exclusivo: oferecerExclusividade ? segmentoExclusivo : null,
+        exclusividade_percentual: oferecerExclusividade ? exclusividadePercentual : null,
+        exclusividade_valor_extra: oferecerExclusividade ? exclusividadeValorCalculado : null,
+        exclusividade_disponivel: exclusividadeDisponivel ?? true,
+        cliente_escolheu_exclusividade: null
       }]).select().single();
       if (error) throw error;
 
@@ -1923,6 +2049,172 @@ const NovaPropostaPage = () => {
                 </div>
               </div>
               <Switch checked={exigirContrato} onCheckedChange={setExigirContrato} className="data-[state=checked]:bg-blue-500" />
+            </div>
+
+            {/* Card: Exclusividade de Segmento */}
+            <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-[#9C1E1E] to-[#7D1818] rounded-lg">
+                    <Crown className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Exclusividade de Segmento</p>
+                    <p className="text-xs text-muted-foreground">
+                      Bloqueia concorrentes nos prédios selecionados
+                    </p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={oferecerExclusividade} 
+                  onCheckedChange={(checked) => {
+                    setOferecerExclusividade(checked);
+                    if (!checked) {
+                      setExclusividadeDisponivel(null);
+                      setSegmentoExclusivo('');
+                    }
+                  }} 
+                  className="data-[state=checked]:bg-[#9C1E1E]" 
+                />
+              </div>
+
+              {/* Conteúdo expandido quando ativado */}
+              {oferecerExclusividade && (
+                <div className="space-y-3 pt-3 border-t border-slate-200">
+                  {/* Seletor de Segmento */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-slate-600">Segmento a Bloquear</Label>
+                    <Popover open={segmentoPopoverOpen} onOpenChange={setSegmentoPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={segmentoPopoverOpen}
+                          className="w-full justify-between h-10 bg-white"
+                        >
+                          {segmentoExclusivo 
+                            ? businessSegments.find(s => s.value === segmentoExclusivo)?.label 
+                            : "Selecione o segmento"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Buscar segmento..." />
+                          <CommandList>
+                            <CommandEmpty>Nenhum segmento encontrado.</CommandEmpty>
+                            <CommandGroup>
+                              {businessSegments.map(segment => (
+                                <CommandItem
+                                  key={segment.value}
+                                  value={segment.label}
+                                  onSelect={() => {
+                                    setSegmentoExclusivo(segment.value);
+                                    setSegmentoPopoverOpen(false);
+                                    setExclusividadeDisponivel(null); // Reset ao mudar segmento
+                                  }}
+                                >
+                                  <CheckCircle className={`mr-2 h-4 w-4 ${segmentoExclusivo === segment.value ? 'opacity-100' : 'opacity-0'}`} />
+                                  {segment.label}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Botão Verificar Disponibilidade */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={verificarDisponibilidadeExclusividade}
+                    disabled={!segmentoExclusivo || selectedBuildings.length === 0 || verificandoExclusividade}
+                    className="w-full"
+                  >
+                    {verificandoExclusividade ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Search className="h-4 w-4 mr-2" />
+                    )}
+                    Verificar Disponibilidade
+                  </Button>
+
+                  {/* Indicador de Status */}
+                  {exclusividadeDisponivel !== null && (
+                    <div className={`p-2.5 rounded-lg flex items-center gap-2 ${
+                      exclusividadeDisponivel 
+                        ? 'bg-emerald-50 border border-emerald-200' 
+                        : 'bg-red-50 border border-red-200'
+                    }`}>
+                      {exclusividadeDisponivel ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 text-emerald-600" />
+                          <span className="text-xs font-medium text-emerald-700">
+                            Exclusividade DISPONÍVEL
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <X className="h-4 w-4 text-red-600" />
+                          <span className="text-xs font-medium text-red-700">
+                            Exclusividade INDISPONÍVEL (conflito existente)
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Configuração de Percentual e Valor */}
+                  {exclusividadeDisponivel && (
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      {/* Percentual Extra */}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-slate-600">Percentual Extra (%)</Label>
+                        <Input
+                          type="number"
+                          value={exclusividadePercentual}
+                          onChange={(e) => setExclusividadePercentual(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+                          className="h-9 text-sm"
+                          min={0}
+                          max={100}
+                        />
+                      </div>
+
+                      {/* Valor Extra Manual (opcional) */}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-slate-600">Valor Extra (R$)</Label>
+                        <Input
+                          type="number"
+                          value={exclusividadeValorExtra ?? ''}
+                          onChange={(e) => setExclusividadeValorExtra(e.target.value ? parseFloat(e.target.value) : null)}
+                          placeholder={formatCurrency(exclusividadeValorCalculado)}
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Preview do valor com exclusividade */}
+                  {exclusividadeDisponivel && (
+                    <div className="p-2.5 bg-gradient-to-r from-[#9C1E1E]/5 to-[#9C1E1E]/10 rounded-lg border border-[#9C1E1E]/20">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-600">Valor base à vista:</span>
+                        <span className="font-medium">{formatCurrency(cashTotal)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs mt-1">
+                        <span className="text-slate-600">+ Exclusividade ({exclusividadePercentual}%):</span>
+                        <span className="font-medium text-[#9C1E1E]">+ {formatCurrency(exclusividadeValorCalculado)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm mt-2 pt-2 border-t border-[#9C1E1E]/10">
+                        <span className="font-semibold text-slate-700">Total com Exclusividade:</span>
+                        <span className="font-bold text-[#9C1E1E]">{formatCurrency(cashTotal + exclusividadeValorCalculado)}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </Card>

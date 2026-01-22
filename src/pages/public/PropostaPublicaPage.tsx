@@ -18,6 +18,7 @@ import { ContractLoadingScreen } from '@/components/public/ContractLoadingScreen
 import { ProductShowcaseCard } from '@/components/public/proposal/ProductShowcaseCard';
 import { TechnicalSpecsGrid } from '@/components/public/proposal/TechnicalSpecsGrid';
 import { ProposalSummaryText } from '@/components/public/proposal/ProposalSummaryText';
+import { ExclusivityChoiceCard } from '@/components/public/proposal/ExclusivityChoiceCard';
 
 // Contract flow type
 type ContractFlowStep = 'idle' | 'loading' | 'collecting' | 'generating' | 'previewing' | 'accepted';
@@ -70,6 +71,13 @@ interface Proposal {
   meses_cortesia?: number | null;
   // Campo de Título
   titulo?: string | null;
+  // Campos de Exclusividade de Segmento
+  exclusividade_segmento?: boolean | null;
+  segmento_exclusivo?: string | null;
+  exclusividade_percentual?: number | null;
+  exclusividade_valor_extra?: number | null;
+  exclusividade_disponivel?: boolean | null;
+  cliente_escolheu_exclusividade?: boolean | null;
 }
 
 interface PaymentData {
@@ -128,6 +136,8 @@ const PropostaPublicaPage = () => {
   const [isPollingPayment, setIsPollingPayment] = useState(false);
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
   
+  // Exclusivity choice state
+  const [clienteEscolheuExclusividade, setClienteEscolheuExclusividade] = useState<boolean | null>(null);
   // Contract flow states
   const [contractFlow, setContractFlow] = useState<ContractFlowStep>('idle');
   const [contractLoadingMessage, setContractLoadingMessage] = useState('');
@@ -1876,6 +1886,21 @@ const PropostaPublicaPage = () => {
               </div>
             </div>
           </Card>
+        )}
+
+        {/* Card de Exclusividade de Segmento - Aparece antes dos planos */}
+        {!isCortesia && proposal.exclusividade_segmento && proposal.exclusividade_disponivel && (
+          <ExclusivityChoiceCard
+            segmento={proposal.segmento_exclusivo || 'Segmento'}
+            valorNormal={proposal.cash_total_value}
+            valorComExclusividade={proposal.cash_total_value + (proposal.exclusividade_valor_extra || 0)}
+            fidelidadeNormal={proposal.fidel_monthly_value}
+            fidelidadeComExclusividade={proposal.fidel_monthly_value * (1 + (proposal.exclusividade_percentual || 35) / 100)}
+            percentualExtra={proposal.exclusividade_percentual || 35}
+            durationMonths={proposal.duration_months}
+            escolhido={clienteEscolheuExclusividade}
+            onChoose={setClienteEscolheuExclusividade}
+          />
         )}
 
         {/* Planos - NÃO APARECEM para cortesia - Mobile Optimized */}

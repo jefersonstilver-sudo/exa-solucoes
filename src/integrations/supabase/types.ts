@@ -6442,6 +6442,60 @@ export type Database = {
           },
         ]
       }
+      exclusividades_segmento: {
+        Row: {
+          ativo: boolean | null
+          building_id: string | null
+          created_at: string | null
+          data_fim: string
+          data_inicio: string
+          id: string
+          order_id: string | null
+          proposal_id: string | null
+          segmento: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          building_id?: string | null
+          created_at?: string | null
+          data_fim: string
+          data_inicio: string
+          id?: string
+          order_id?: string | null
+          proposal_id?: string | null
+          segmento: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          building_id?: string | null
+          created_at?: string | null
+          data_fim?: string
+          data_inicio?: string
+          id?: string
+          order_id?: string | null
+          proposal_id?: string | null
+          segmento?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exclusividades_segmento_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exclusividades_segmento_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       execution_steps: {
         Row: {
           audio_url: string | null
@@ -10620,6 +10674,7 @@ export type Database = {
           client_longitude: number | null
           client_name: string
           client_phone: string | null
+          cliente_escolheu_exclusividade: boolean | null
           cobranca_futura: boolean | null
           contract_accepted_at: string | null
           contract_accepted_ip: string | null
@@ -10635,6 +10690,10 @@ export type Database = {
           data_inicio_cobranca: string | null
           discount_percent: number | null
           duration_months: number | null
+          exclusividade_disponivel: boolean | null
+          exclusividade_percentual: number | null
+          exclusividade_segmento: boolean | null
+          exclusividade_valor_extra: number | null
           exigir_contrato: boolean | null
           expires_at: string | null
           fidel_monthly_value: number
@@ -10658,6 +10717,7 @@ export type Database = {
           quantidade_posicoes: number
           rejection_reason: string | null
           responded_at: string | null
+          segmento_exclusivo: string | null
           selected_buildings: Json
           seller_email: string | null
           seller_name: string | null
@@ -10690,6 +10750,7 @@ export type Database = {
           client_longitude?: number | null
           client_name: string
           client_phone?: string | null
+          cliente_escolheu_exclusividade?: boolean | null
           cobranca_futura?: boolean | null
           contract_accepted_at?: string | null
           contract_accepted_ip?: string | null
@@ -10705,6 +10766,10 @@ export type Database = {
           data_inicio_cobranca?: string | null
           discount_percent?: number | null
           duration_months?: number | null
+          exclusividade_disponivel?: boolean | null
+          exclusividade_percentual?: number | null
+          exclusividade_segmento?: boolean | null
+          exclusividade_valor_extra?: number | null
           exigir_contrato?: boolean | null
           expires_at?: string | null
           fidel_monthly_value: number
@@ -10728,6 +10793,7 @@ export type Database = {
           quantidade_posicoes?: number
           rejection_reason?: string | null
           responded_at?: string | null
+          segmento_exclusivo?: string | null
           selected_buildings?: Json
           seller_email?: string | null
           seller_name?: string | null
@@ -10760,6 +10826,7 @@ export type Database = {
           client_longitude?: number | null
           client_name?: string
           client_phone?: string | null
+          cliente_escolheu_exclusividade?: boolean | null
           cobranca_futura?: boolean | null
           contract_accepted_at?: string | null
           contract_accepted_ip?: string | null
@@ -10775,6 +10842,10 @@ export type Database = {
           data_inicio_cobranca?: string | null
           discount_percent?: number | null
           duration_months?: number | null
+          exclusividade_disponivel?: boolean | null
+          exclusividade_percentual?: number | null
+          exclusividade_segmento?: boolean | null
+          exclusividade_valor_extra?: number | null
           exigir_contrato?: boolean | null
           expires_at?: string | null
           fidel_monthly_value?: number
@@ -10798,6 +10869,7 @@ export type Database = {
           quantidade_posicoes?: number
           rejection_reason?: string | null
           responded_at?: string | null
+          segmento_exclusivo?: string | null
           selected_buildings?: Json
           seller_email?: string | null
           seller_name?: string | null
