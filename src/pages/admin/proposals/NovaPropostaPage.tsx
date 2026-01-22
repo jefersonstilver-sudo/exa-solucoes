@@ -205,6 +205,7 @@ const NovaPropostaPage = () => {
   // Estados para Venda Futura (prédios ainda não instalados)
   const [vendaFutura, setVendaFutura] = useState(false);
   const [prediosContratados, setPrediosContratados] = useState(0);
+  const [telasContratadas, setTelasContratadas] = useState<number | null>(null); // null = automático
 
   // Opções de período
   const periodOptions = [{
@@ -504,14 +505,17 @@ const NovaPropostaPage = () => {
     return selectedBuildingsData.reduce((sum, b) => sum + (b.quantidade_telas || (b as any).numero_elevadores || 0), 0);
   }, [selectedBuildingsData]);
 
-  // Total de telas para cálculos - considera Venda Futura
+  // Total de telas para cálculos - considera Venda Futura e telas manuais
   const totalPanels = useMemo(() => {
     if (vendaFutura && prediosContratados > 0) {
-      // Venda Futura: usa estimativa de 1.35 telas por prédio contratado
+      // Venda Futura: usa telas manuais se definido, senão estimativa de 1.35 telas por prédio
+      if (telasContratadas !== null && telasContratadas > 0) {
+        return telasContratadas;
+      }
       return Math.ceil(prediosContratados * 1.35);
     }
     return totalPanelsInstalled;
-  }, [vendaFutura, prediosContratados, totalPanelsInstalled]);
+  }, [vendaFutura, prediosContratados, telasContratadas, totalPanelsInstalled]);
   const totalImpressions = useMemo(() => {
     return selectedBuildingsData.reduce((sum, b) => sum + (b.visualizacoes_mes || 0), 0);
   }, [selectedBuildingsData]);
@@ -1407,81 +1411,101 @@ const NovaPropostaPage = () => {
         </Card>
 
         {/* Seção 2.5: Venda Futura */}
-        <Card className="p-4 border-2 border-dashed border-amber-300 bg-amber-50/50">
+        <Card className="p-4 border border-slate-200 bg-slate-50/50">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Rocket className="h-5 w-5 text-amber-600" />
-              <Label className="font-semibold">Venda Futura</Label>
+              <Rocket className="h-5 w-5 text-[#9C1E1E]" />
+              <Label className="font-semibold text-slate-800">Venda Futura</Label>
             </div>
             <Switch
               checked={vendaFutura}
               onCheckedChange={(checked) => {
                 setVendaFutura(checked);
-                if (!checked) setPrediosContratados(0);
+                if (!checked) {
+                  setPrediosContratados(0);
+                  setTelasContratadas(null);
+                }
               }}
             />
           </div>
           
           {vendaFutura && (
             <>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-slate-500 mb-4">
                 Venda para prédios que ainda serão instalados. O cliente recebe 
-                exibição <strong>gratuita</strong> até todos os prédios estarem prontos.
+                exibição <strong className="text-slate-700">gratuita</strong> até todos os prédios estarem prontos.
               </p>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 {/* Prédios Instalados (readonly) */}
                 <div>
-                  <Label className="text-xs">Prédios Instalados Hoje</Label>
+                  <Label className="text-xs text-slate-600">Prédios Instalados</Label>
                   <div className="flex items-center gap-2 mt-1">
-                    <Building2 className="h-4 w-4 text-emerald-600" />
-                    <span className="text-2xl font-bold text-emerald-600">
+                    <Building2 className="h-4 w-4 text-slate-500" />
+                    <span className="text-xl font-bold text-slate-700">
                       {buildings.length}
                     </span>
-                    <span className="text-xs text-muted-foreground">prédios</span>
                   </div>
                 </div>
                 
                 {/* Prédios Contratados (input) */}
                 <div>
-                  <Label className="text-xs">Prédios Contratados</Label>
+                  <Label className="text-xs text-slate-600">Prédios Contratados</Label>
                   <Input
                     type="number"
                     min={buildings.length + 1}
-                    max={100}
+                    max={200}
                     value={prediosContratados || ''}
                     onChange={(e) => setPrediosContratados(parseInt(e.target.value) || 0)}
                     placeholder={`Ex: ${buildings.length + 3}`}
-                    className="mt-1 h-10 bg-background"
+                    className="mt-1 h-9 bg-white border-slate-200"
                   />
+                </div>
+                
+                {/* Telas Contratadas (input editável) */}
+                <div>
+                  <Label className="text-xs text-slate-600">Telas Contratadas</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={500}
+                    value={telasContratadas ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setTelasContratadas(val ? parseInt(val) : null);
+                    }}
+                    placeholder={`~${Math.ceil((prediosContratados || buildings.length) * 1.35)}`}
+                    className="mt-1 h-9 bg-white border-slate-200"
+                  />
+                  <span className="text-[10px] text-slate-400">Deixe vazio = automático</span>
                 </div>
               </div>
               
               {/* Resumo da Venda Futura */}
               {prediosContratados > buildings.length && (
-                <div className="mt-4 p-3 bg-amber-100 rounded-lg">
-                  <div className="flex items-center gap-2 text-amber-800">
-                    <Gift className="h-4 w-4" />
+                <div className="mt-4 p-3 bg-white rounded-lg border border-slate-200">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <Gift className="h-4 w-4 text-[#9C1E1E]" />
                     <span className="text-sm font-medium">
-                      Cortesia até instalação de {prediosContratados - buildings.length} prédio(s) adicional(is)
+                      Cortesia até instalação de <strong className="text-[#9C1E1E]">{prediosContratados - buildings.length}</strong> prédio(s) adicional(is)
                     </span>
                   </div>
-                  <p className="text-xs text-amber-700 mt-1">
-                    O período de exibição gratuita será adicionado como bônus no final do contrato.
+                  <p className="text-xs text-slate-500 mt-1">
+                    Exibição gratuita até a meta ser atingida.
                   </p>
                   
                   {/* Cálculo estimado de exibições */}
-                  <div className="mt-3 pt-3 border-t border-amber-200 grid grid-cols-2 gap-2 text-xs">
+                  <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
                     <div>
-                      <span className="text-amber-700">Telas estimadas:</span>
-                      <span className="ml-1 font-bold text-amber-900">
-                        ~{Math.ceil(prediosContratados * 1.35)}
+                      <span className="text-slate-500">Telas:</span>
+                      <span className="ml-1 font-bold text-slate-800">
+                        {telasContratadas ?? `~${Math.ceil(prediosContratados * 1.35)}`}
                       </span>
                     </div>
                     <div>
-                      <span className="text-amber-700">Exibições/mês:</span>
-                      <span className="ml-1 font-bold text-amber-900">
-                        ~{(Math.ceil(prediosContratados * 1.35) * (specifications?.exibicoes.porMes ?? 11610) * quantidadePosicoes).toLocaleString()}
+                      <span className="text-slate-500">Exibições/mês:</span>
+                      <span className="ml-1 font-bold text-slate-800">
+                        ~{((telasContratadas ?? Math.ceil(prediosContratados * 1.35)) * (specifications?.exibicoes.porMes ?? 11610) * quantidadePosicoes).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -1798,10 +1822,10 @@ const NovaPropostaPage = () => {
 
               {/* Indicador de Venda Futura */}
               {vendaFutura && prediosContratados > 0 && (
-                <div className="p-2 bg-amber-50 rounded-lg border border-amber-200 mb-3 flex items-center gap-2">
-                  <Rocket className="h-3 w-3 text-amber-600" />
-                  <span className="text-[10px] text-amber-700">
-                    <strong>Venda Futura:</strong> Cálculo baseado em {prediosContratados} prédios contratados (~{totalPanels} telas)
+                <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 mb-3 flex items-center gap-2">
+                  <Rocket className="h-3 w-3 text-[#9C1E1E]" />
+                  <span className="text-[10px] text-slate-600">
+                    <strong className="text-slate-700">Venda Futura:</strong> {prediosContratados} prédios contratados ({totalPanels} telas)
                   </span>
                 </div>
               )}
