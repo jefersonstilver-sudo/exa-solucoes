@@ -499,9 +499,19 @@ const NovaPropostaPage = () => {
     const selectedManual = manualBuildings.filter(b => selectedBuildings.includes(b.id));
     return [...dbBuildings, ...selectedManual];
   }, [buildings, manualBuildings, selectedBuildings]);
-  const totalPanels = useMemo(() => {
+  // Telas dos prédios selecionados atualmente
+  const totalPanelsInstalled = useMemo(() => {
     return selectedBuildingsData.reduce((sum, b) => sum + (b.quantidade_telas || (b as any).numero_elevadores || 0), 0);
   }, [selectedBuildingsData]);
+
+  // Total de telas para cálculos - considera Venda Futura
+  const totalPanels = useMemo(() => {
+    if (vendaFutura && prediosContratados > 0) {
+      // Venda Futura: usa estimativa de 1.35 telas por prédio contratado
+      return Math.ceil(prediosContratados * 1.35);
+    }
+    return totalPanelsInstalled;
+  }, [vendaFutura, prediosContratados, totalPanelsInstalled]);
   const totalImpressions = useMemo(() => {
     return selectedBuildingsData.reduce((sum, b) => sum + (b.visualizacoes_mes || 0), 0);
   }, [selectedBuildingsData]);
@@ -1786,6 +1796,16 @@ const NovaPropostaPage = () => {
                 </div>
               </div>
 
+              {/* Indicador de Venda Futura */}
+              {vendaFutura && prediosContratados > 0 && (
+                <div className="p-2 bg-amber-50 rounded-lg border border-amber-200 mb-3 flex items-center gap-2">
+                  <Rocket className="h-3 w-3 text-amber-600" />
+                  <span className="text-[10px] text-amber-700">
+                    <strong>Venda Futura:</strong> Cálculo baseado em {prediosContratados} prédios contratados (~{totalPanels} telas)
+                  </span>
+                </div>
+              )}
+
               {/* Resumo Consolidado por Modalidade */}
               <div className="grid grid-cols-2 gap-3">
                 {/* Fidelidade */}
@@ -1794,7 +1814,9 @@ const NovaPropostaPage = () => {
                   <div className="flex justify-between text-[10px]">
                     <span>Por local/mês:</span>
                     <span className="font-medium">
-                      {formatCurrency(selectedBuildingsData.length > 0 ? fidelMonthly / selectedBuildingsData.length : 0)}
+                      {formatCurrency((vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) > 0 
+                        ? fidelMonthly / (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) 
+                        : 0)}
                     </span>
                   </div>
                   <div className="flex justify-between text-[10px]">
@@ -1818,7 +1840,9 @@ const NovaPropostaPage = () => {
                   <div className="flex justify-between text-[10px]">
                     <span>Por local/mês:</span>
                     <span className="font-medium text-green-600">
-                      {formatCurrency(selectedBuildingsData.length > 0 && durationMonths > 0 ? (cashTotal / durationMonths) / selectedBuildingsData.length : 0)}
+                      {formatCurrency((vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) > 0 && durationMonths > 0 
+                        ? (cashTotal / durationMonths) / (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) 
+                        : 0)}
                     </span>
                   </div>
                   <div className="flex justify-between text-[10px]">
