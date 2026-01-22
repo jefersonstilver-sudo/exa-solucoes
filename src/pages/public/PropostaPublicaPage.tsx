@@ -1811,36 +1811,6 @@ const PropostaPublicaPage = () => {
         {/* Módulo do Produto Escolhido - NEW */}
         <ProductShowcaseCard tipo={proposal.tipo_produto || 'horizontal'} totalPanels={totalPanels} />
 
-        {/* Lista de Prédios - Mobile Optimized */}
-        <Card className="p-3 sm:p-4 bg-white/80 backdrop-blur-sm">
-          <div className="flex items-center gap-2 mb-2.5 sm:mb-3">
-            <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#9C1E1E]" />
-            <h2 className="font-semibold text-sm sm:text-base">Prédios Incluídos</h2>
-          </div>
-          <div className="space-y-1.5 sm:space-y-2 max-h-40 sm:max-h-48 overflow-y-auto scrollbar-hide">
-            {buildings.map((building: any, index: number) => {
-              // Cálculo dinâmico: 11.610 exibições por tela/mês (Manual v3.0)
-              const exibicoesPorTela = 11610;
-              const telas = building.quantidade_telas > 0 ? building.quantidade_telas : 1;
-              const exibicoesCalculadas = telas * exibicoesPorTela;
-              
-              return (
-                <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
-                  <div className="flex-1 min-w-0 pr-2">
-                    <div className="font-medium text-xs sm:text-sm truncate">{building.building_name || building.nome}</div>
-                    <div className="text-[10px] sm:text-xs text-muted-foreground">
-                      {building.bairro} • {telas} tela(s)
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-xs sm:text-sm font-medium">{exibicoesCalculadas.toLocaleString()}</div>
-                    <div className="text-[10px] sm:text-xs text-muted-foreground">exib/mês</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
 
         {/* Infográfico EXA - Espaço é Posição */}
         <div className="w-full">
@@ -2042,29 +2012,25 @@ const PropostaPublicaPage = () => {
             </div>
 
             {/* Header da tabela */}
-            <div className="grid grid-cols-4 gap-1 p-2 bg-slate-100 rounded-t-lg text-[9px] sm:text-[10px] font-medium text-slate-600">
+            <div className="grid grid-cols-3 gap-1 p-2 bg-slate-100 rounded-t-lg text-[9px] sm:text-[10px] font-medium text-slate-600">
               <span>Prédio</span>
               <span className="text-center">Telas</span>
-              <span className="text-right">R$/Local</span>
-              <span className="text-right">R$/Tela</span>
+              <span className="text-right">Exibições/mês</span>
             </div>
 
             {/* Lista de prédios */}
             <div className="divide-y divide-slate-100 border border-t-0 border-slate-200 rounded-b-lg max-h-28 overflow-y-auto">
               {buildings.map((b: any, i: number) => {
-                const precoBase = b.preco_base || 0;
                 const telas = b.quantidade_telas || 1;
-                const precoPorTela = telas > 0 ? precoBase / telas : 0;
+                const exibicoesPorTela = 11610; // Manual v3.0
+                const exibicoesTotais = telas * exibicoesPorTela;
                 
                 return (
-                  <div key={i} className="grid grid-cols-4 gap-1 p-2 text-[9px] sm:text-[10px] bg-white">
+                  <div key={i} className="grid grid-cols-3 gap-1 p-2 text-[9px] sm:text-[10px] bg-white">
                     <span className="truncate">{b.building_name || b.nome}</span>
                     <span className="text-center">{telas}</span>
                     <span className="text-right font-medium">
-                      {precoBase.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </span>
-                    <span className="text-right text-muted-foreground">
-                      {precoPorTela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      {exibicoesTotais.toLocaleString('pt-BR')}
                     </span>
                   </div>
                 );
