@@ -1,7 +1,6 @@
 import React from 'react';
-import { Building2, Tv, Eye, ExternalLink } from 'lucide-react';
+import { Building2, Tv, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 
 interface ProposalBuildingCardProps {
   building: {
@@ -14,7 +13,6 @@ interface ProposalBuildingCardProps {
     visualizacoes_mes?: number;
     imagem_principal?: string | null;
     imageurl?: string | null;
-    codigo_predio?: string | null;
     publico_estimado?: number;
   };
   index: number;
@@ -26,14 +24,9 @@ export const ProposalBuildingCard: React.FC<ProposalBuildingCardProps> = ({ buil
   const exibicoesTotais = telas * exibicoesPorTela;
   const nome = building.building_name || building.nome || 'Local';
   const bairro = building.bairro || '';
+  
+  // Buscar imagem - tentar imagem_principal primeiro, depois imageurl
   const imagemUrl = building.imagem_principal || building.imageurl;
-  const codigoPredio = building.codigo_predio;
-
-  const handleWatchLive = () => {
-    if (codigoPredio) {
-      window.open(`https://indexa.live/${codigoPredio}`, '_blank');
-    }
-  };
 
   return (
     <div className="group relative bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
@@ -92,19 +85,6 @@ export const ProposalBuildingCard: React.FC<ProposalBuildingCardProps> = ({ buil
             <span className="text-slate-400 hidden sm:inline">/mês</span>
           </div>
         </div>
-
-        {/* Botão Assistir ao Vivo */}
-        {codigoPredio && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleWatchLive}
-            className="w-full h-7 text-[10px] sm:text-xs border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E]/50 gap-1.5"
-          >
-            <ExternalLink className="h-3 w-3" />
-            Assistir ao Vivo
-          </Button>
-        )}
       </div>
     </div>
   );
