@@ -33,6 +33,8 @@ import { ProposalAlertRecipients, type AlertRecipient } from '@/components/admin
 import { calculateBuildingsPrice, type PlanDuration } from '@/utils/buildingPriceUtils';
 import { CCEmailsInput } from '@/components/ui/cc-emails-input';
 import { createContactFromProposal } from '@/services/contactAutoCreator';
+import { usePosicoesDisponiveis } from '@/hooks/usePosicoesDisponiveis';
+import { useVideoSpecifications } from '@/hooks/useVideoSpecifications';
 interface Building {
   id: string;
   nome: string;
@@ -168,6 +170,9 @@ const NovaPropostaPage = () => {
 
   // Estado para tipo de produto
   const [tipoProduto, setTipoProduto] = useState<'horizontal' | 'vertical_premium'>('horizontal');
+
+  // Estado para quantidade de posições (marcas)
+  const [quantidadePosicoes, setQuantidadePosicoes] = useState(1);
 
   // Estados para prédios manuais
   const [manualBuildings, setManualBuildings] = useState<ManualBuilding[]>([]);
@@ -396,6 +401,10 @@ const NovaPropostaPage = () => {
     }
   });
 
+  // Hooks para posições disponíveis e especificações de vídeo
+  const { posicoesMap, isLoading: isLoadingPosicoes } = usePosicoesDisponiveis();
+  const { specifications } = useVideoSpecifications();
+
   // Buscar usuário atual (incluindo telefone para EXA Alerts)
   const {
     data: currentUser
@@ -493,6 +502,35 @@ const NovaPropostaPage = () => {
     return selectedBuildingsData.reduce((sum, b) => sum + (b.publico_estimado || 0), 0);
   }, [selectedBuildingsData]);
 
+  // Calcular máximo de posições disponíveis baseado nos prédios selecionados
+  const maxPosicoes = useMemo(() => {
+    const maxPorProduto = tipoProduto === 'vertical_premium' 
+      ? (specifications?.vertical.maxClientesPainel ?? 3)
+      : (specifications?.horizontal.maxClientesPainel ?? 15);
+    
+    if (!posicoesMap || selectedBuildings.length === 0) return maxPorProduto;
+    
+    // Calcular mínimo disponível entre todos os prédios selecionados
+    const disponiveis = selectedBuildings
+      .filter(id => !id.startsWith('manual_')) // Ignora prédios manuais
+      .map(id => posicoesMap[id]?.disponiveis ?? maxPorProduto);
+    
+    return disponiveis.length > 0 ? Math.min(...disponiveis, maxPorProduto) : maxPorProduto;
+  }, [posicoesMap, selectedBuildings, tipoProduto, specifications]);
+
+  // Resetar quantidade de posições se exceder o máximo disponível
+  React.useEffect(() => {
+    if (quantidadePosicoes > maxPosicoes) {
+      setQuantidadePosicoes(Math.max(1, maxPosicoes));
+    }
+  }, [maxPosicoes, quantidadePosicoes]);
+
+  // Exibições mensais ajustadas pela quantidade de posições
+  const totalImpressionsAdjusted = useMemo(() => {
+    const exibicoesBase = specifications?.exibicoes.porMes ?? 11610;
+    return exibicoesBase * quantidadePosicoes * totalPanels;
+  }, [specifications, quantidadePosicoes, totalPanels]);
+
   // Calcular preço para período em dias (< 30 dias = +10% acréscimo)
   const calculateDaysPrice = useMemo(() => {
     if (!isCustomDays || customDays <= 0) return 0;
@@ -550,21 +588,27 @@ const NovaPropostaPage = () => {
 
   // Valor sugerido baseado nos prédios selecionados e plano escolhido
   // Usa preços manuais (preco_trimestral, preco_semestral, preco_anual) quando disponíveis
+  // Multiplicado pela quantidade de posições
   const valorSugeridoMensal = useMemo(() => {
     if (selectedBuildingsData.length === 0) return 0;
 
     // Converter durationMonths para PlanDuration válido
     const planDuration = ([1, 3, 6, 12].includes(durationMonths) ? durationMonths : 1) as PlanDuration;
     const result = calculateBuildingsPrice(selectedBuildingsData, planDuration);
+    
+    // Multiplicar pelo número de posições
+    const valorAjustado = result.pricePerMonth * quantidadePosicoes;
+    
     console.log("💰 [NovaPropostaPage] Valor sugerido mensal calculado:", {
       durationMonths,
       planDuration,
       pricePerMonth: result.pricePerMonth,
-      totalPrice: result.totalPrice,
+      quantidadePosicoes,
+      valorAjustado,
       hasAnyManualPrice: result.hasAnyManualPrice
     });
-    return result.pricePerMonth;
-  }, [selectedBuildingsData, durationMonths]);
+    return valorAjustado;
+  }, [selectedBuildingsData, durationMonths, quantidadePosicoes]);
 
   // Cálculos de valores
   const fidelMonthly = parseFloat(fidelValue) || 0;
@@ -614,7 +658,8 @@ const NovaPropostaPage = () => {
         client_email: clientData.email || null,
         selected_buildings: buildingsData as Json,
         total_panels: totalPanels,
-        total_impressions_month: totalImpressions,
+        total_impressions_month: totalImpressionsAdjusted,
+        quantidade_posicoes: quantidadePosicoes,
         fidel_monthly_value: isCustomDays ? calculateDaysPrice : isCustomPayment ? customTotal / customInstallments.length : fidelMonthly,
         cash_total_value: isCustomDays ? calculateDaysPrice : isCustomPayment ? customTotal : cashTotal,
         discount_percent: isCustomDays ? -10 : discountPercent,
@@ -1348,6 +1393,55 @@ const NovaPropostaPage = () => {
                 </button>)}
             </div>
           </div>
+
+          {/* Quantidade de Posições (Marcas) */}
+          {tipoProduto === 'horizontal' && selectedBuildings.length > 0 && (
+            <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg border border-primary/20">
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-foreground">Quantidade de Posições (Marcas)</h3>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-4">
+                  <Slider
+                    value={[quantidadePosicoes]}
+                    onValueChange={(v) => setQuantidadePosicoes(v[0])}
+                    min={1}
+                    max={maxPosicoes}
+                    step={1}
+                    disabled={maxPosicoes <= 1}
+                    className="flex-1"
+                  />
+                  <Badge variant="outline" className="text-lg px-4 py-2 bg-background font-bold min-w-[60px] justify-center">
+                    {quantidadePosicoes}x
+                  </Badge>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>1 marca</span>
+                  <span>{maxPosicoes} marcas disponíveis</span>
+                </div>
+
+                {quantidadePosicoes > 1 && (
+                  <div className="bg-background/80 rounded-lg p-3 space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Exibições por marca/mês:</span>
+                      <span className="font-medium">{(specifications?.exibicoes.porMes ?? 11610).toLocaleString()}x</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Total exibições/mês ({quantidadePosicoes} marcas × {totalPanels} telas):</span>
+                      <span className="font-bold text-primary">{totalImpressionsAdjusted.toLocaleString()}x</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-xs text-muted-foreground mt-3 bg-muted/50 p-2 rounded">
+                💡 O cliente pode adquirir múltiplas posições para exibir vídeos de marcas diferentes no mesmo painel
+              </p>
+            </div>
+          )}
 
           {/* Configuração de Período em Dias */}
           {isCustomDays && <div className="mb-4 p-4 bg-orange-50 rounded-lg border border-orange-200">

@@ -40,6 +40,7 @@ interface Proposal {
   selected_buildings: any[];
   total_panels: number;
   total_impressions_month: number;
+  quantidade_posicoes?: number;
   fidel_monthly_value: number;
   cash_total_value: number;
   discount_percent: number;
@@ -1666,7 +1667,7 @@ const PropostaPublicaPage = () => {
         )}
 
         {/* Resumo Rápido - Grid 2x2 no mobile */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+        <div className={`grid ${(proposal.quantidade_posicoes ?? 1) > 1 ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'} gap-2 sm:gap-3`}>
           <Card className="p-2.5 sm:p-3 text-center bg-white/80 backdrop-blur-sm">
             <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">{buildings.length}</div>
             <div className="text-[10px] sm:text-xs text-muted-foreground">Prédios</div>
@@ -1675,6 +1676,13 @@ const PropostaPublicaPage = () => {
             <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">{totalPanels}</div>
             <div className="text-[10px] sm:text-xs text-muted-foreground">Telas</div>
           </Card>
+          {/* Card de Posições - só aparece quando há mais de 1 */}
+          {(proposal.quantidade_posicoes ?? 1) > 1 && (
+            <Card className="p-2.5 sm:p-3 text-center bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+              <div className="text-xl sm:text-2xl font-bold text-primary">{proposal.quantidade_posicoes}x</div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground">Marcas</div>
+            </Card>
+          )}
           <Card className="p-2.5 sm:p-3 text-center bg-white/80 backdrop-blur-sm">
             <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">{(totalImpressions / 1000).toFixed(0)}k</div>
             <div className="text-[10px] sm:text-xs text-muted-foreground">Exibições/mês</div>

@@ -10625,6 +10625,7 @@ export type Database = {
           number: string
           payment_type: string | null
           pdf_url: string | null
+          quantidade_posicoes: number
           rejection_reason: string | null
           responded_at: string | null
           selected_buildings: Json
@@ -10686,6 +10687,7 @@ export type Database = {
           number: string
           payment_type?: string | null
           pdf_url?: string | null
+          quantidade_posicoes?: number
           rejection_reason?: string | null
           responded_at?: string | null
           selected_buildings?: Json
@@ -10747,6 +10749,7 @@ export type Database = {
           number?: string
           payment_type?: string | null
           pdf_url?: string | null
+          quantidade_posicoes?: number
           rejection_reason?: string | null
           responded_at?: string | null
           selected_buildings?: Json
