@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/card';
-import { Lightbulb, Target, FileText } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 interface ProposalSummaryTextProps {
   tipoProduto: 'horizontal' | 'vertical_premium';
@@ -29,74 +29,68 @@ export function ProposalSummaryText({
   const hasMultiplePosicoes = quantidadePosicoes > 1;
 
   return (
-    <Card className="p-4 sm:p-5 bg-white border border-slate-200 shadow-sm">
-      <div className="space-y-3 text-sm text-slate-700 leading-relaxed">
-        {/* Texto principal */}
-        <p>
-          Você está adquirindo{' '}
-          <span className="font-semibold text-slate-900">
-            {quantidadePosicoes} {quantidadePosicoes === 1 ? 'posição' : 'posições'}
-          </span>{' '}
-          no formato{' '}
-          <span className="font-semibold text-slate-900">{formatoNome}</span>, com presença em{' '}
-          <span className="font-semibold text-slate-900">{totalPredios} prédios</span> e{' '}
-          <span className="font-semibold text-slate-900">{totalTelas} telas</span> de elevador.
-          Seu anúncio de{' '}
-          <span className="font-semibold text-slate-900">{duracaoVideoSegundos} segundos</span> será exibido aproximadamente{' '}
-          <span className="font-semibold text-[#9C1E1E]">
-            {exibicoesMes.toLocaleString('pt-BR')} vezes por mês
-          </span>.
-        </p>
+    <Card className="p-4 sm:p-5 bg-slate-50/80 border border-slate-200">
+      <div className="flex gap-3">
+        <Info className="h-4 w-4 text-slate-500 flex-shrink-0 mt-0.5" />
+        <div className="space-y-2 text-sm text-slate-600 leading-relaxed">
+          {/* Texto principal */}
+          <p>
+            Você está adquirindo{' '}
+            <span className="font-semibold text-slate-800">
+              {quantidadePosicoes} {quantidadePosicoes === 1 ? 'posição' : 'posições'}
+            </span>{' '}
+            no formato{' '}
+            <span className="font-semibold text-slate-800">{formatoNome}</span>, com presença em{' '}
+            <span className="font-semibold text-slate-800">{totalPredios} prédios</span> e{' '}
+            <span className="font-semibold text-slate-800">{totalTelas} telas</span>.
+            Seu anúncio de{' '}
+            <span className="font-semibold text-slate-800">{duracaoVideoSegundos}s</span> será exibido aproximadamente{' '}
+            <span className="font-semibold text-[#9C1E1E]">
+              {exibicoesMes.toLocaleString('pt-BR')}x/mês
+            </span>.
+          </p>
 
-        {/* Destaque para HORIZONTAL - intercalação de vídeos */}
-        {isHorizontal && (
-          <div className="flex gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-            <Lightbulb className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-            <p className="text-slate-700">
-              <span className="font-semibold text-slate-900">
-                Você pode enviar até {maxVideosPorPedido} vídeos diferentes
-              </span>{' '}
-              que serão intercalados automaticamente, transmitindo maior variedade e{' '}
-              <span className="font-medium">alto posicionamento</span> da sua marca.
+          {/* Destaque para HORIZONTAL - intercalação de vídeos */}
+          {isHorizontal && (
+            <p className="text-slate-600">
+              <span className="font-medium text-slate-700">→</span>{' '}
+              Você pode enviar até{' '}
+              <span className="font-semibold text-slate-800">{maxVideosPorPedido} vídeos diferentes</span>{' '}
+              que serão intercalados automaticamente, transmitindo variedade e alto posicionamento.
             </p>
-          </div>
-        )}
+          )}
 
-        {/* Destaque para VERTICAL PREMIUM */}
-        {!isHorizontal && (
-          <div className="flex gap-2.5 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-            <Lightbulb className="h-4 w-4 text-purple-600 flex-shrink-0 mt-0.5" />
-            <p className="text-slate-700">
-              O formato <span className="font-semibold text-slate-900">Vertical Premium</span> garante{' '}
-              <span className="font-medium">atenção total no elevador</span>, sem divisão de tela com outros anunciantes.
+          {/* Destaque para VERTICAL PREMIUM */}
+          {!isHorizontal && (
+            <p className="text-slate-600">
+              <span className="font-medium text-slate-700">→</span>{' '}
+              O formato <span className="font-semibold text-slate-800">Vertical Premium</span> garante{' '}
+              atenção total no elevador, sem divisão de tela.
             </p>
-          </div>
-        )}
+          )}
 
-        {/* Destaque para MÚLTIPLAS POSIÇÕES */}
-        {hasMultiplePosicoes && (
-          <div className="flex gap-2.5 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <Target className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
-            <p className="text-slate-700">
-              Com <span className="font-semibold text-slate-900">{quantidadePosicoes} posições</span>, 
+          {/* Destaque para MÚLTIPLAS POSIÇÕES */}
+          {hasMultiplePosicoes && (
+            <p className="text-slate-600">
+              <span className="font-medium text-slate-700">→</span>{' '}
+              Com{' '}
+              <span className="font-semibold text-slate-800">{quantidadePosicoes} posições</span>, 
               sua marca ocupa{' '}
               <span className="font-semibold text-[#9C1E1E]">{quantidadePosicoes}x mais espaço</span>{' '}
-              no ciclo de exibição, garantindo maior frequência e memorização.
+              no ciclo de exibição.
             </p>
-          </div>
-        )}
+          )}
 
-        {/* Destaque para VENDA FUTURA */}
-        {isVendaFutura && (
-          <div className="flex gap-2.5 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <FileText className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-            <p className="text-slate-700">
-              Esta proposta inclui <span className="font-semibold text-slate-900">condição especial</span>: 
-              você garante o preço atual e todo o período até a conclusão da instalação dos {totalPredios} prédios é{' '}
-              <span className="font-semibold text-green-700">100% gratuito</span>.
+          {/* Destaque para VENDA FUTURA */}
+          {isVendaFutura && (
+            <p className="text-slate-600">
+              <span className="font-medium text-slate-700">→</span>{' '}
+              <span className="font-semibold text-slate-800">Condição especial</span>: 
+              você garante o preço atual e o período até a instalação completa é{' '}
+              <span className="font-semibold text-[#9C1E1E]">100% gratuito</span>.
             </p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </Card>
   );
