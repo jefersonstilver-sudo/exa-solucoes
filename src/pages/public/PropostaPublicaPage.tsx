@@ -1460,8 +1460,9 @@ const PropostaPublicaPage = () => {
     );
   }
 
-  // Use enriched building data
-  const buildings = enrichedBuildings.length > 0 ? enrichedBuildings : (proposal.selected_buildings || []);
+  // Use enriched building data - FILTRAR prédios inválidos (sem telas)
+  const allBuildings = enrichedBuildings.length > 0 ? enrichedBuildings : (proposal.selected_buildings || []);
+  const buildings = allBuildings.filter((b: any) => b.quantidade_telas && b.quantidade_telas > 0);
   const totalPanels = realTotalPanels || proposal.total_panels || buildings.reduce((sum: number, b: any) => sum + (b.quantidade_telas || 1), 0);
   const totalImpressions = proposal.total_impressions_month || buildings.reduce((sum: number, b: any) => sum + (b.visualizacoes_mes || 0), 0);
   const fidelTotal = proposal.fidel_monthly_value * proposal.duration_months;
