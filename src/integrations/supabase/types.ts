@@ -3741,6 +3741,7 @@ export type Database = {
           cliente_data_nascimento: string | null
           cliente_email: string
           cliente_endereco: string | null
+          cliente_escolheu_exclusividade: boolean | null
           cliente_latitude: number | null
           cliente_longitude: number | null
           cliente_nome: string
@@ -3756,6 +3757,9 @@ export type Database = {
           data_inicio: string | null
           dia_vencimento: number | null
           enviado_em: string | null
+          exclusividade_percentual: number | null
+          exclusividade_segmento: boolean | null
+          exclusividade_valor_extra: number | null
           expirado_em: string | null
           id: string
           lista_predios: Json | null
@@ -3779,6 +3783,7 @@ export type Database = {
           quantidade_posicoes: number | null
           recusado_em: string | null
           requer_internet: boolean | null
+          segmento_exclusivo: string | null
           sindico_id: string | null
           status: string
           tipo_contrato: string
@@ -3807,6 +3812,7 @@ export type Database = {
           cliente_data_nascimento?: string | null
           cliente_email: string
           cliente_endereco?: string | null
+          cliente_escolheu_exclusividade?: boolean | null
           cliente_latitude?: number | null
           cliente_longitude?: number | null
           cliente_nome: string
@@ -3822,6 +3828,9 @@ export type Database = {
           data_inicio?: string | null
           dia_vencimento?: number | null
           enviado_em?: string | null
+          exclusividade_percentual?: number | null
+          exclusividade_segmento?: boolean | null
+          exclusividade_valor_extra?: number | null
           expirado_em?: string | null
           id?: string
           lista_predios?: Json | null
@@ -3845,6 +3854,7 @@ export type Database = {
           quantidade_posicoes?: number | null
           recusado_em?: string | null
           requer_internet?: boolean | null
+          segmento_exclusivo?: string | null
           sindico_id?: string | null
           status?: string
           tipo_contrato: string
@@ -3873,6 +3883,7 @@ export type Database = {
           cliente_data_nascimento?: string | null
           cliente_email?: string
           cliente_endereco?: string | null
+          cliente_escolheu_exclusividade?: boolean | null
           cliente_latitude?: number | null
           cliente_longitude?: number | null
           cliente_nome?: string
@@ -3888,6 +3899,9 @@ export type Database = {
           data_inicio?: string | null
           dia_vencimento?: number | null
           enviado_em?: string | null
+          exclusividade_percentual?: number | null
+          exclusividade_segmento?: boolean | null
+          exclusividade_valor_extra?: number | null
           expirado_em?: string | null
           id?: string
           lista_predios?: Json | null
@@ -3911,6 +3925,7 @@ export type Database = {
           quantidade_posicoes?: number | null
           recusado_em?: string | null
           requer_internet?: boolean | null
+          segmento_exclusivo?: string | null
           sindico_id?: string | null
           status?: string
           tipo_contrato?: string
