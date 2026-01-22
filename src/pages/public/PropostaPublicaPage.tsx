@@ -1770,6 +1770,19 @@ const PropostaPublicaPage = () => {
           </Card>
         </div>
 
+        {/* Resumo Executivo da Proposta - Logo após as métricas */}
+        <ProposalSummaryText
+          tipoProduto={(proposal.tipo_produto as 'horizontal' | 'vertical_premium') || 'horizontal'}
+          quantidadePosicoes={proposal.quantidade_posicoes || 1}
+          totalPredios={displayBuildingsCount}
+          totalTelas={displayPanelsCount}
+          exibicoesMes={displayImpressions}
+          duracaoMeses={proposal.duration_months}
+          duracaoVideoSegundos={proposal.tipo_produto === 'vertical_premium' ? 15 : 10}
+          isVendaFutura={isVendaFutura}
+          maxVideosPorPedido={4}
+        />
+
         {/* Módulo de Período da Campanha - Mobile Optimized */}
         {(() => {
           const startDate = new Date(proposal.created_at);
@@ -1812,18 +1825,6 @@ const PropostaPublicaPage = () => {
         {/* Módulo do Produto Escolhido - NEW */}
         <ProductShowcaseCard tipo={proposal.tipo_produto || 'horizontal'} totalPanels={totalPanels} />
 
-        {/* Resumo Executivo da Proposta */}
-        <ProposalSummaryText
-          tipoProduto={(proposal.tipo_produto as 'horizontal' | 'vertical_premium') || 'horizontal'}
-          quantidadePosicoes={proposal.quantidade_posicoes || 1}
-          totalPredios={displayBuildingsCount}
-          totalTelas={displayPanelsCount}
-          exibicoesMes={displayImpressions}
-          duracaoMeses={proposal.duration_months}
-          duracaoVideoSegundos={proposal.tipo_produto === 'vertical_premium' ? 15 : 10}
-          isVendaFutura={isVendaFutura}
-          maxVideosPorPedido={4}
-        />
 
         {/* Infográfico EXA - Espaço é Posição */}
         <div className="w-full">
