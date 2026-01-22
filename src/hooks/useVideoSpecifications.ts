@@ -8,6 +8,7 @@ export interface VideoSpecifications {
     proporcao: string;
     formato: string;
     maxClientesPainel: number;
+    maxVideosPorPedido: number;
     ultimaAlteracao: string | null;
   };
   vertical: {
@@ -16,6 +17,7 @@ export interface VideoSpecifications {
     proporcao: string;
     formato: string;
     maxClientesPainel: number;
+    maxVideosPorPedido: number;
     ultimaAlteracao: string | null;
   };
   exibicoes: {
@@ -73,6 +75,7 @@ export function useVideoSpecifications() {
           proporcao: (horizontal as any)?.proporcao ?? '4:3',
           formato: horizontal?.formato ?? 'horizontal',
           maxClientesPainel: horizontal?.max_clientes_por_painel ?? 15,
+          maxVideosPorPedido: (horizontal as any)?.max_videos_por_pedido ?? 4,
           ultimaAlteracao: (horizontal as any)?.ultima_alteracao_em ?? null
         },
         vertical: {
@@ -81,6 +84,7 @@ export function useVideoSpecifications() {
           proporcao: (vertical as any)?.proporcao ?? '9:16',
           formato: vertical?.formato ?? 'vertical',
           maxClientesPainel: vertical?.max_clientes_por_painel ?? 3,
+          maxVideosPorPedido: (vertical as any)?.max_videos_por_pedido ?? 1,
           ultimaAlteracao: (vertical as any)?.ultima_alteracao_em ?? null
         },
         exibicoes: {

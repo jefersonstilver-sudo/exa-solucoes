@@ -17,6 +17,7 @@ import { ContractFullPreview } from '@/components/public/ContractFullPreview';
 import { ContractLoadingScreen } from '@/components/public/ContractLoadingScreen';
 import { ProductShowcaseCard } from '@/components/public/proposal/ProductShowcaseCard';
 import { TechnicalSpecsGrid } from '@/components/public/proposal/TechnicalSpecsGrid';
+import { ProposalSummaryText } from '@/components/public/proposal/ProposalSummaryText';
 
 // Contract flow type
 type ContractFlowStep = 'idle' | 'loading' | 'collecting' | 'generating' | 'previewing' | 'accepted';
@@ -1811,6 +1812,18 @@ const PropostaPublicaPage = () => {
         {/* Módulo do Produto Escolhido - NEW */}
         <ProductShowcaseCard tipo={proposal.tipo_produto || 'horizontal'} totalPanels={totalPanels} />
 
+        {/* Resumo Executivo da Proposta */}
+        <ProposalSummaryText
+          tipoProduto={(proposal.tipo_produto as 'horizontal' | 'vertical_premium') || 'horizontal'}
+          quantidadePosicoes={proposal.quantidade_posicoes || 1}
+          totalPredios={displayBuildingsCount}
+          totalTelas={displayPanelsCount}
+          exibicoesMes={displayImpressions}
+          duracaoMeses={proposal.duration_months}
+          duracaoVideoSegundos={proposal.tipo_produto === 'vertical_premium' ? 15 : 10}
+          isVendaFutura={isVendaFutura}
+          maxVideosPorPedido={4}
+        />
 
         {/* Infográfico EXA - Espaço é Posição */}
         <div className="w-full">
