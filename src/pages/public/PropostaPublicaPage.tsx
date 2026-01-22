@@ -634,37 +634,6 @@ const PropostaPublicaPage = () => {
     }
   };
 
-  // Handle contract acceptance from preview - PERSISTIDO NO BANCO
-  const handleContractAccepted = async () => {
-    try {
-      // Persistir aceite no banco de dados para validade jurídica
-      const { error } = await supabase.functions.invoke('persist-contract-acceptance', {
-        body: {
-          proposalId: proposal?.id,
-          clientData: contractClientData,
-          fingerprint: navigator.userAgent + '_' + new Date().toISOString()
-        }
-      });
-
-      if (error) {
-        console.error('Erro ao persistir aceite do contrato:', error);
-        // Continua mesmo com erro (graceful degradation)
-      } else {
-        console.log('✅ Aceite do contrato persistido com sucesso');
-      }
-
-      setShowContractPreview(false);
-      setContractFlow('accepted');
-      toast.success('Contrato aceito e registrado! Agora você pode prosseguir com o pagamento.');
-    } catch (err) {
-      console.error('Erro ao processar aceite do contrato:', err);
-      // Graceful degradation - continua mesmo com erro
-      setShowContractPreview(false);
-      setContractFlow('accepted');
-      toast.success('Contrato visualizado! Agora você pode prosseguir com o pagamento.');
-    }
-  };
-
   // Aceitar cortesia (cria conta + pedido)
   const handleAcceptCortesia = async () => {
     if (!proposal || isAcceptingCortesia) return;
@@ -1565,7 +1534,7 @@ const PropostaPublicaPage = () => {
         <ContractLoadingScreen message={contractLoadingMessage} step={1} />
       )}
 
-      {/* Contract Flow: Preview */}
+      {/* Contract Flow: Preview (Read-Only Draft) */}
       {contractFlow === 'previewing' && generatedContractHtml && (
         <ContractFullPreview
           isOpen={showContractPreview}
@@ -1573,8 +1542,6 @@ const PropostaPublicaPage = () => {
             setShowContractPreview(false);
             setContractFlow('idle');
           }}
-          onConfirm={handleContractAccepted}
-          isLoading={false}
           contractHtml={generatedContractHtml}
         />
       )}
