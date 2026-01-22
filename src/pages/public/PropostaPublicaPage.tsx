@@ -1780,6 +1780,7 @@ const PropostaPublicaPage = () => {
           duracaoMeses={proposal.duration_months}
           duracaoVideoSegundos={proposal.tipo_produto === 'vertical_premium' ? 15 : 10}
           isVendaFutura={isVendaFutura}
+          prediosContratados={proposal.predios_contratados || undefined}
           maxVideosPorPedido={4}
         />
 

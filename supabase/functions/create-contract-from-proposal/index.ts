@@ -125,7 +125,17 @@ serve(async (req) => {
       
       // Produto - USA O TIPO DA PROPOSTA
       tipo_produto: proposal.tipo_produto || 'horizontal',
-      objeto: 'Contratação de espaço publicitário em painéis digitais de elevadores'
+      objeto: 'Contratação de espaço publicitário em painéis digitais de elevadores',
+      
+      // NOVOS CAMPOS - Condições avançadas da proposta
+      quantidade_posicoes: proposal.quantidade_posicoes || 1,
+      venda_futura: proposal.venda_futura || false,
+      predios_contratados: proposal.predios_contratados || null,
+      predios_instalados_fechamento: proposal.predios_instalados_no_fechamento || null,
+      cortesia_inicio: proposal.cortesia_inicio || null,
+      cortesia_fim: proposal.cortesia_fim || null,
+      meses_cortesia: proposal.meses_cortesia || null,
+      titulo_proposta: proposal.titulo || null
     };
 
     const { data: contrato, error: contratoError } = await supabase
@@ -1057,11 +1067,19 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
       <div class="section no-break">
         <div class="section-title">CLÁUSULA 4ª - DO PRAZO DE VIGÊNCIA</div>
         <div class="clause">
-          <p><span class="clause-title">4.1.</span> O presente contrato terá vigência de <strong>${contrato.plano_meses} (${contrato.plano_meses === 1 ? 'um' : contrato.plano_meses === 3 ? 'três' : contrato.plano_meses === 6 ? 'seis' : 'doze'}) ${contrato.plano_meses === 1 ? 'mês' : 'meses'}</strong>, com início em <strong>${formatDate(contrato.data_inicio)}</strong> e término em <strong>${formatDate(contrato.data_fim)}</strong>.</p>
+          <p><span class="clause-title">4.1.</span> O presente contrato terá vigência de <strong>\${contrato.plano_meses} (\${contrato.plano_meses === 1 ? 'um' : contrato.plano_meses === 3 ? 'três' : contrato.plano_meses === 6 ? 'seis' : 'doze'}) \${contrato.plano_meses === 1 ? 'mês' : 'meses'}</strong>, com início em <strong>\${formatDate(contrato.data_inicio)}</strong> e término em <strong>\${formatDate(contrato.data_fim)}</strong>.</p>
           
           <p><span class="clause-title">4.2.</span> O contrato poderá ser renovado por igual período mediante acordo entre as partes, formalizado por escrito com antecedência mínima de 30 (trinta) dias do término da vigência.</p>
           
           <p><span class="clause-title">4.3.</span> A veiculação do material publicitário terá início em até 48 (quarenta e oito) horas úteis após a confirmação do pagamento e aprovação do conteúdo pela CONTRATADA.</p>
+          
+          \${contrato.quantidade_posicoes && contrato.quantidade_posicoes > 1 ? \`
+          <p><span class="clause-title">4.4.</span> <strong>MÚLTIPLAS POSIÇÕES:</strong> O CONTRATANTE contratou <strong>\${contrato.quantidade_posicoes} posições</strong> no ciclo de exibição, o que significa que seu material será exibido \${contrato.quantidade_posicoes}x mais vezes por ciclo, multiplicando proporcionalmente o número total de exibições.</p>
+          \` : ''}
+          
+          \${contrato.venda_futura ? \`
+          <p><span class="clause-title">4.\${contrato.quantidade_posicoes > 1 ? '5' : '4'}.</span> <strong>CONDIÇÃO ESPECIAL - VENDA FUTURA:</strong> Este contrato contempla a meta de <strong>\${contrato.predios_contratados || '-'} prédios</strong>. Na data de fechamento, encontram-se instalados <strong>\${contrato.predios_instalados_fechamento || '-'} prédios</strong>. O CONTRATANTE terá direito a um <strong>período de cortesia</strong>\${contrato.cortesia_inicio && contrato.cortesia_fim ? \` (de \${formatDateShort(contrato.cortesia_inicio)} a \${formatDateShort(contrato.cortesia_fim)}, aproximadamente \${contrato.meses_cortesia || '-'} meses)\` : ''}, durante o qual a veiculação ocorrerá sem cobrança, até que a meta de prédios seja atingida. Após atingida a meta, inicia-se o período de vigência paga conforme cláusula 5ª.</p>
+          \` : ''}
         </div>
       </div>
 

@@ -3748,6 +3748,8 @@ export type Database = {
           cliente_segmento: string | null
           cliente_sobrenome: string | null
           cliente_telefone: string | null
+          cortesia_fim: string | null
+          cortesia_inicio: string | null
           created_at: string | null
           criado_por: string | null
           data_fim: string | null
@@ -3757,6 +3759,7 @@ export type Database = {
           expirado_em: string | null
           id: string
           lista_predios: Json | null
+          meses_cortesia: number | null
           metodo_pagamento: string | null
           numero_contrato: string
           numero_telas_instaladas: number | null
@@ -3770,17 +3773,22 @@ export type Database = {
           predio_endereco: string | null
           predio_id: string | null
           predio_nome: string | null
+          predios_contratados: number | null
+          predios_instalados_fechamento: number | null
           proposta_id: string | null
+          quantidade_posicoes: number | null
           recusado_em: string | null
           requer_internet: boolean | null
           sindico_id: string | null
           status: string
           tipo_contrato: string
           tipo_produto: string | null
+          titulo_proposta: string | null
           total_paineis: number | null
           updated_at: string | null
           valor_mensal: number | null
           valor_total: number | null
+          venda_futura: boolean | null
           visualizado_em: string | null
         }
         Insert: {
@@ -3806,6 +3814,8 @@ export type Database = {
           cliente_segmento?: string | null
           cliente_sobrenome?: string | null
           cliente_telefone?: string | null
+          cortesia_fim?: string | null
+          cortesia_inicio?: string | null
           created_at?: string | null
           criado_por?: string | null
           data_fim?: string | null
@@ -3815,6 +3825,7 @@ export type Database = {
           expirado_em?: string | null
           id?: string
           lista_predios?: Json | null
+          meses_cortesia?: number | null
           metodo_pagamento?: string | null
           numero_contrato: string
           numero_telas_instaladas?: number | null
@@ -3828,17 +3839,22 @@ export type Database = {
           predio_endereco?: string | null
           predio_id?: string | null
           predio_nome?: string | null
+          predios_contratados?: number | null
+          predios_instalados_fechamento?: number | null
           proposta_id?: string | null
+          quantidade_posicoes?: number | null
           recusado_em?: string | null
           requer_internet?: boolean | null
           sindico_id?: string | null
           status?: string
           tipo_contrato: string
           tipo_produto?: string | null
+          titulo_proposta?: string | null
           total_paineis?: number | null
           updated_at?: string | null
           valor_mensal?: number | null
           valor_total?: number | null
+          venda_futura?: boolean | null
           visualizado_em?: string | null
         }
         Update: {
@@ -3864,6 +3880,8 @@ export type Database = {
           cliente_segmento?: string | null
           cliente_sobrenome?: string | null
           cliente_telefone?: string | null
+          cortesia_fim?: string | null
+          cortesia_inicio?: string | null
           created_at?: string | null
           criado_por?: string | null
           data_fim?: string | null
@@ -3873,6 +3891,7 @@ export type Database = {
           expirado_em?: string | null
           id?: string
           lista_predios?: Json | null
+          meses_cortesia?: number | null
           metodo_pagamento?: string | null
           numero_contrato?: string
           numero_telas_instaladas?: number | null
@@ -3886,17 +3905,22 @@ export type Database = {
           predio_endereco?: string | null
           predio_id?: string | null
           predio_nome?: string | null
+          predios_contratados?: number | null
+          predios_instalados_fechamento?: number | null
           proposta_id?: string | null
+          quantidade_posicoes?: number | null
           recusado_em?: string | null
           requer_internet?: boolean | null
           sindico_id?: string | null
           status?: string
           tipo_contrato?: string
           tipo_produto?: string | null
+          titulo_proposta?: string | null
           total_paineis?: number | null
           updated_at?: string | null
           valor_mensal?: number | null
           valor_total?: number | null
+          venda_futura?: boolean | null
           visualizado_em?: string | null
         }
         Relationships: [
