@@ -356,7 +356,7 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
           old_role: oldRole as any,
           new_role: selectedRole as any,
           changed_by: userProfile?.id
-        });
+        }]);
       }
       
       // Log geral
