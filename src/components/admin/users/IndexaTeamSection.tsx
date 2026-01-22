@@ -27,7 +27,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import CreateUserDialog from './CreateUserDialog';
-import { UserDetailsDialogComplete } from './UserDetailsDialogComplete';
+import { UserConsoleDialog } from './console/UserConsoleDialog';
 import SecurityAuditBanner from '../security/SecurityAuditBanner';
 
 interface User {
@@ -328,10 +328,10 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
 
       {/* Dialog de Detalhes do Usuário */}
       {selectedUser && (
-        <UserDetailsDialogComplete
+        <UserConsoleDialog
           open={detailsDialogOpen}
           onOpenChange={setDetailsDialogOpen}
-          user={selectedUser}
+          user={selectedUser as any}
           onUserUpdated={onRefresh}
         />
       )}
