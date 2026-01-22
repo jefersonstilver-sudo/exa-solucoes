@@ -9,7 +9,7 @@ import { useUserStats } from '@/hooks/useUserStats';
 import UserStatsCards from '@/components/admin/users/UserStatsCards';
 import EnhancedUserMobileCard from '@/components/admin/users/EnhancedUserMobileCard';
 import CreateUserDialog from '@/components/admin/users/CreateUserDialog';
-import { UserDetailsDialogComplete } from '@/components/admin/users/UserDetailsDialogComplete';
+import { UserConsoleDialog } from '@/components/admin/users/console/UserConsoleDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
@@ -339,10 +339,10 @@ const UsersPage = () => {
         />
 
         {selectedUser && (
-          <UserDetailsDialogComplete 
+          <UserConsoleDialog 
             open={true}
             onOpenChange={(open) => !open && setSelectedUser(null)}
-            user={selectedUser} 
+            user={selectedUser as any} 
             onUserUpdated={handleRefresh}
           />
         )}
@@ -531,10 +531,10 @@ const UsersPage = () => {
       />
 
       {selectedUser && (
-        <UserDetailsDialogComplete 
+        <UserConsoleDialog 
           open={true}
           onOpenChange={(open) => !open && setSelectedUser(null)}
-          user={selectedUser} 
+          user={selectedUser as any} 
           onUserUpdated={handleRefresh}
         />
       )}
