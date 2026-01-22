@@ -1707,43 +1707,13 @@ const PropostaPublicaPage = () => {
           </Card>
         )}
 
-        {/* Card de Venda Futura - PRIMEIRO para destaque máximo */}
-        {isVendaFutura && (
-          <Card className="p-3 sm:p-4 bg-gradient-to-r from-amber-50 via-amber-100/80 to-orange-50 border-2 border-amber-300 shadow-lg">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-1.5 bg-amber-500 rounded-full">
-                <Rocket className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-              </div>
-              <div>
-                <h3 className="font-bold text-base sm:text-lg text-amber-800">🚀 Venda Futura</h3>
-                <p className="text-[10px] sm:text-xs text-amber-700">Proposta baseada em meta de expansão</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3">
-              <div className="text-center p-2 sm:p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                <span className="text-lg sm:text-2xl font-bold text-emerald-600">{proposal.predios_instalados_no_fechamento ?? 0}</span>
-                <p className="text-[9px] sm:text-xs text-emerald-700 font-medium">Instalados Hoje</p>
-              </div>
-              <div className="text-center p-2 sm:p-3 bg-amber-100 rounded-lg border border-amber-300">
-                <span className="text-lg sm:text-2xl font-bold text-amber-700">{proposal.predios_contratados ?? 0}</span>
-                <p className="text-[9px] sm:text-xs text-amber-800 font-medium">Meta Contratada</p>
-              </div>
-              <div className="text-center p-2 sm:p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <span className="text-lg sm:text-2xl font-bold text-blue-600">{proposal.predios_pendentes ?? 0}</span>
-                <p className="text-[9px] sm:text-xs text-blue-700 font-medium">Em Expansão</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2 p-2 sm:p-3 bg-gradient-to-r from-amber-100 to-orange-100 rounded-lg border border-amber-200">
-              <Gift className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs sm:text-sm text-amber-900 font-semibold mb-1">✨ Benefício Cortesia Incluído!</p>
-                <p className="text-[10px] sm:text-xs text-amber-800">
-                  Você terá <strong>exibição gratuita</strong> até atingirmos a meta de {proposal.predios_contratados} prédios. 
-                  O período pago só inicia quando a rede estiver completa!
-                </p>
-              </div>
-            </div>
-          </Card>
+        {/* Título Personalizado da Proposta */}
+        {proposal.titulo && (
+          <div className="text-center py-2">
+            <h2 className="text-lg sm:text-xl font-bold text-[#9C1E1E]">
+              {proposal.titulo}
+            </h2>
+          </div>
         )}
 
         {/* Banner de Múltiplas Marcas/Posições - aparece quando há mais de 1 posição */}
@@ -1768,15 +1738,11 @@ const PropostaPublicaPage = () => {
         <div className={`grid ${(proposal.quantidade_posicoes ?? 1) > 1 ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'} gap-2 sm:gap-3`}>
           <Card className="p-2.5 sm:p-3 text-center bg-white/80 backdrop-blur-sm">
             <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">{displayBuildingsCount}</div>
-            <div className="text-[10px] sm:text-xs text-muted-foreground">
-              {isVendaFutura ? 'Prédios Contratados' : 'Prédios'}
-            </div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">Prédios</div>
           </Card>
           <Card className="p-2.5 sm:p-3 text-center bg-white/80 backdrop-blur-sm">
             <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">{displayPanelsCount}</div>
-            <div className="text-[10px] sm:text-xs text-muted-foreground">
-              {isVendaFutura ? 'Telas Estimadas' : 'Telas'}
-            </div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">Telas</div>
           </Card>
           {/* Card de Posições - só aparece quando há mais de 1 */}
           {(proposal.quantidade_posicoes ?? 1) > 1 && (
@@ -1791,9 +1757,7 @@ const PropostaPublicaPage = () => {
                 ? (displayImpressions / 1000000).toFixed(1) + 'M' 
                 : (displayImpressions / 1000).toFixed(0) + 'k'}
             </div>
-            <div className="text-[10px] sm:text-xs text-muted-foreground">
-              {isVendaFutura ? 'Exibições Est./mês' : 'Exibições/mês'}
-            </div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">Exibições/mês</div>
           </Card>
           <Card className="p-2.5 sm:p-3 text-center bg-white/80 backdrop-blur-sm">
             <div className="text-xl sm:text-2xl font-bold text-[#9C1E1E]">
@@ -2149,13 +2113,14 @@ const PropostaPublicaPage = () => {
               </div>
             </div>
 
-            {/* Indicador de Venda Futura no breakdown */}
+            {/* Condição Especial - Pré-Conclusão de Fase */}
             {isVendaFutura && (
-              <div className="mt-2 p-1.5 bg-amber-50 rounded border border-amber-200 flex items-center gap-1.5">
-                <Rocket className="h-3 w-3 text-amber-600 flex-shrink-0" />
-                <span className="text-[8px] sm:text-[9px] text-amber-700">
-                  Valores calculados para {displayBuildingsCount} prédios e {displayPanelsCount} telas (meta contratada)
-                </span>
+              <div className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 mt-3">
+                <Gift className="h-4 w-4 text-[#9C1E1E] flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-gray-600">
+                  <span className="font-medium text-gray-800">Condição Especial:</span> Esta proposta garante o preço atual 
+                  sem reajustes. O período até atingirmos a cobertura total contratada é <strong className="text-[#9C1E1E]">100% gratuito</strong> para você.
+                </div>
               </div>
             )}
           </Card>
