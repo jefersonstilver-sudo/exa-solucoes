@@ -192,7 +192,7 @@ export interface ImpactPreviewProps {
 }
 
 // === CONSTANTES ===
-export const CEO_EMAIL = 'jefersonstilver@gmail.com';
+// CEO é identificado por role === 'super_admin', não por email
 
 // === HELPERS ===
 export const getHierarchyLabel = (role: string): string => {

@@ -22,7 +22,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import {
-  CEO_EMAIL,
   ConsoleUser,
   ConsoleDepartment,
   AuditEntry,
@@ -73,6 +72,8 @@ interface ValidationErrors {
   selfRoleChange?: boolean;
   /** Tentativa de rebaixar o CEO */
   ceoDowngrade?: boolean;
+  /** Tentativa de promoção a CEO sem permissão */
+  unauthorizedPromotion?: boolean;
 }
 
 // ============================================================================
@@ -101,10 +102,6 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
   // ==========================================================================
   // SEÇÃO 2: QUERIES - Busca de dados externos
   // ==========================================================================
-  
-  // Email do CEO protegido - importado do arquivo de configuração
-  // Para alterar, editar CEO_EMAIL em src/types/userConsoleTypes.ts
-  const ceoEmail = CEO_EMAIL;
 
   // Query: Departamentos ativos
   const { data: departments = [], isLoading: loadingDepartments } = useQuery({
@@ -140,7 +137,8 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
   const permissions = useMemo((): OperatorPermissions => {
     const isSuperAdmin = userProfile?.role === 'super_admin';
     const isAdmin = userProfile?.role === 'admin' || isSuperAdmin;
-    const isTargetCEO = !!ceoEmail && user?.email === ceoEmail;
+    // CEO é identificado por role, não por email
+    const isTargetCEO = user?.role === 'super_admin';
     const isSelf = user?.id === userProfile?.id;
     
     return {
@@ -159,7 +157,7 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
       isTargetCEO,
       isSelf
     };
-  }, [userProfile, user, ceoEmail]);
+  }, [userProfile, user]);
 
   // ==========================================================================
   // SEÇÃO 4: VALIDAÇÕES - Regras de negócio que bloqueiam ações
@@ -181,6 +179,13 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     // REGRA 3: CEO nunca pode ser rebaixado
     if (permissions.isTargetCEO && selectedRole !== 'super_admin') {
       result.ceoDowngrade = true;
+    }
+    
+    // REGRA 4: Apenas super_admin pode promover para CEO
+    if (selectedRole === 'super_admin' && 
+        mapLegacyRole(user?.role || '') !== 'super_admin' && 
+        !permissions.isSuperAdmin) {
+      result.unauthorizedPromotion = true;
     }
     
     return result;
@@ -242,32 +247,10 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
   // SEÇÃO 7: OPERAÇÕES - Ações que modificam dados
   // ==========================================================================
   
-  /** Altera o cargo selecionado (com validação prévia) */
+  /** Altera o cargo selecionado (UI decide bloqueios via errors) */
   const handleRoleChange = useCallback((newRole: HierarchyLevel) => {
-    // Validar antes de permitir
-    if (permissions.isSelf) {
-      toast.error('Ação bloqueada', {
-        description: 'Você não pode alterar seu próprio cargo'
-      });
-      return;
-    }
-    
-    if (permissions.isTargetCEO && newRole !== 'super_admin') {
-      toast.error('Ação bloqueada', {
-        description: 'O CEO não pode ser rebaixado'
-      });
-      return;
-    }
-    
-    if (newRole === 'super_admin' && !permissions.isSuperAdmin) {
-      toast.error('Permissão negada', {
-        description: 'Apenas o CEO pode promover usuários a CEO'
-      });
-      return;
-    }
-    
     setSelectedRole(newRole);
-  }, [permissions]);
+  }, []);
 
   /** Altera o departamento selecionado */
   const handleDepartamentoChange = useCallback((deptId: string) => {
@@ -515,11 +498,16 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     try {
       setIsSaving(true);
       
-      // Log antes de excluir
+      // Log antes de excluir (usuario_id = alvo, metadata = operador)
       await supabase.from('log_eventos_sistema').insert({
         tipo_evento: 'USER_DELETED',
         descricao: `Usuário ${user.email} excluído permanentemente por ${userProfile?.email}`,
-        usuario_id: userProfile?.id // Log no ID do operador, já que o usuário será excluído
+        usuario_id: user.id,
+        metadata: {
+          deleted_by_id: userProfile?.id,
+          deleted_by_email: userProfile?.email,
+          deleted_user_email: user.email
+        }
       });
       
       // Excluir de user_roles primeiro (FK)
@@ -677,20 +665,13 @@ function calculateAccessImpact(params: {
   const changes: ImpactChange[] = [];
   const warnings: string[] = [];
   
-  // Verificar tentativa de rebaixar CEO
-  if (isTargetCEO && newRole !== 'super_admin') {
-    warnings.push('⚠️ CEO não pode ser rebaixado');
-  }
-  
   // Mudanças ao virar admin departamental
   if (newRole === 'admin_departamental') {
     if (currentRole !== 'admin_departamental') {
       changes.push({ type: 'lose', module: 'all_departments', label: 'Acesso a todos os departamentos' });
       changes.push({ type: 'lose', module: 'crm_full', label: 'CRM completo' });
     }
-    if (!newDeptId) {
-      warnings.push('❌ Departamento obrigatório para Admin Departamental');
-    } else if (newDept) {
+    if (newDept) {
       changes.push({ type: 'gain', module: `dept_${newDept.id}`, label: `Acesso ao ${newDept.name}` });
     }
   }

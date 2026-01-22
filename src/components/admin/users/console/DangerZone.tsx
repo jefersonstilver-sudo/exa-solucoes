@@ -16,7 +16,7 @@ import {
   Loader2,
   Crown
 } from 'lucide-react';
-import { ConsoleUser, CEO_EMAIL } from '@/types/userConsoleTypes';
+import { ConsoleUser } from '@/types/userConsoleTypes';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -24,6 +24,7 @@ interface DangerZoneProps {
   user: ConsoleUser;
   canBlock: boolean;
   canDelete: boolean;
+  isTargetCEO: boolean;
   onToggleBlock: () => Promise<void>;
   onUserUpdated: () => void;
   onClose: () => void;
@@ -33,6 +34,7 @@ export const DangerZone: React.FC<DangerZoneProps> = ({
   user,
   canBlock,
   canDelete,
+  isTargetCEO,
   onToggleBlock,
   onUserUpdated,
   onClose
@@ -40,7 +42,6 @@ export const DangerZone: React.FC<DangerZoneProps> = ({
   const [loading, setLoading] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
   
-  const isCEO = user.email === CEO_EMAIL;
   const isBlocked = user.is_blocked;
 
   const handleResetPassword = async () => {
@@ -175,7 +176,7 @@ export const DangerZone: React.FC<DangerZoneProps> = ({
         </div>
 
         {/* Bloquear/Desbloquear */}
-        {canBlock && !isCEO && (
+        {canBlock && !isTargetCEO && (
           <div className={`space-y-2 p-3 rounded-lg border ${
             isBlocked 
               ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
@@ -222,7 +223,7 @@ export const DangerZone: React.FC<DangerZoneProps> = ({
         )}
 
         {/* CEO Protection */}
-        {isCEO && (
+        {isTargetCEO && (
           <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2">
               <Crown className="h-4 w-4 text-yellow-500" />
@@ -232,7 +233,7 @@ export const DangerZone: React.FC<DangerZoneProps> = ({
         )}
 
         {/* Deletar Conta */}
-        {canDelete && !isCEO && (
+        {canDelete && !isTargetCEO && (
           <>
             <Separator className="bg-red-200 dark:bg-red-800" />
             
