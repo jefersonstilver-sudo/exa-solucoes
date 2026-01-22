@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink, Calendar, Globe, Users } from 'lucide-react';
+import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink, Calendar, Globe, Users, Rocket } from 'lucide-react';
 import { format, addDays, addMonths, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -59,6 +59,14 @@ interface Proposal {
     type?: string;
     cortesia_code_id?: string;
   };
+  // Campos de Venda Futura
+  venda_futura?: boolean | null;
+  predios_contratados?: number | null;
+  predios_instalados_no_fechamento?: number | null;
+  predios_pendentes?: number | null;
+  cortesia_inicio?: string | null;
+  cortesia_fim?: string | null;
+  meses_cortesia?: number | null;
 }
 
 interface PaymentData {
@@ -1696,6 +1704,33 @@ const PropostaPublicaPage = () => {
             </div>
         </Card>
         </div>
+
+        {/* Card de Venda Futura - aparece quando a proposta é de venda futura */}
+        {proposal.venda_futura && (proposal.predios_pendentes ?? 0) > 0 && (
+          <Card className="p-3 sm:p-4 bg-gradient-to-r from-amber-50 to-amber-100/80 border-amber-200">
+            <div className="flex items-center gap-2 mb-3">
+              <Rocket className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" />
+              <h3 className="font-semibold text-sm sm:text-base text-amber-800">Venda Futura</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="text-center p-2 bg-background/60 rounded-lg">
+                <span className="text-xl sm:text-2xl font-bold text-emerald-600">{proposal.predios_instalados_no_fechamento ?? 0}</span>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Prédios Instalados</p>
+              </div>
+              <div className="text-center p-2 bg-background/60 rounded-lg">
+                <span className="text-xl sm:text-2xl font-bold text-amber-600">{proposal.predios_contratados ?? 0}</span>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Prédios Contratados</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-2 bg-amber-100/60 rounded-lg">
+              <Gift className="h-4 w-4 text-amber-600 flex-shrink-0" />
+              <p className="text-xs text-amber-800">
+                <strong>Cortesia:</strong> Exibição gratuita até {proposal.predios_pendentes} prédio(s) adicional(is) ser(em) instalado(s). 
+                O período de cortesia será adicionado ao final do contrato.
+              </p>
+            </div>
+          </Card>
+        )}
 
         {/* Módulo de Período da Campanha - Mobile Optimized */}
         {(() => {

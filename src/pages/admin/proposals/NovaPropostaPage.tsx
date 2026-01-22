@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon } from 'lucide-react';
+import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
@@ -198,6 +198,10 @@ const NovaPropostaPage = () => {
   // Estados para novos toggles: Cobrança Futura e Exigir Contrato
   const [cobrancaFutura, setCobrancaFutura] = useState(false);
   const [exigirContrato, setExigirContrato] = useState(true);
+
+  // Estados para Venda Futura (prédios ainda não instalados)
+  const [vendaFutura, setVendaFutura] = useState(false);
+  const [prediosContratados, setPrediosContratados] = useState(0);
 
   // Opções de período
   const periodOptions = [{
@@ -686,7 +690,14 @@ const NovaPropostaPage = () => {
         exigir_contrato: exigirContrato,
         custom_days: isCustomDays ? customDays : null,
         is_custom_days: isCustomDays,
-        cc_emails: ccEmails.length > 0 ? ccEmails : null
+        cc_emails: ccEmails.length > 0 ? ccEmails : null,
+        // Campos de Venda Futura
+        venda_futura: vendaFutura,
+        predios_contratados: vendaFutura ? prediosContratados : selectedBuildingsData.length,
+        predios_instalados_no_fechamento: vendaFutura ? buildings.length : selectedBuildingsData.length,
+        predios_pendentes: vendaFutura ? Math.max(0, prediosContratados - buildings.length) : 0,
+        cortesia_inicio: vendaFutura && prediosContratados > buildings.length ? new Date().toISOString().split('T')[0] : null,
+        meses_cortesia: 0
       }]).select().single();
       if (error) throw error;
 
@@ -1361,6 +1372,91 @@ const NovaPropostaPage = () => {
                   </div>}
               </>}
           </div>
+        </Card>
+
+        {/* Seção 2.5: Venda Futura */}
+        <Card className="p-4 border-2 border-dashed border-amber-300 bg-amber-50/50">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Rocket className="h-5 w-5 text-amber-600" />
+              <Label className="font-semibold">Venda Futura</Label>
+            </div>
+            <Switch
+              checked={vendaFutura}
+              onCheckedChange={(checked) => {
+                setVendaFutura(checked);
+                if (!checked) setPrediosContratados(0);
+              }}
+            />
+          </div>
+          
+          {vendaFutura && (
+            <>
+              <p className="text-sm text-muted-foreground mb-4">
+                Venda para prédios que ainda serão instalados. O cliente recebe 
+                exibição <strong>gratuita</strong> até todos os prédios estarem prontos.
+              </p>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {/* Prédios Instalados (readonly) */}
+                <div>
+                  <Label className="text-xs">Prédios Instalados Hoje</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Building2 className="h-4 w-4 text-emerald-600" />
+                    <span className="text-2xl font-bold text-emerald-600">
+                      {buildings.length}
+                    </span>
+                    <span className="text-xs text-muted-foreground">prédios</span>
+                  </div>
+                </div>
+                
+                {/* Prédios Contratados (input) */}
+                <div>
+                  <Label className="text-xs">Prédios Contratados</Label>
+                  <Input
+                    type="number"
+                    min={buildings.length + 1}
+                    max={100}
+                    value={prediosContratados || ''}
+                    onChange={(e) => setPrediosContratados(parseInt(e.target.value) || 0)}
+                    placeholder={`Ex: ${buildings.length + 3}`}
+                    className="mt-1 h-10 bg-background"
+                  />
+                </div>
+              </div>
+              
+              {/* Resumo da Venda Futura */}
+              {prediosContratados > buildings.length && (
+                <div className="mt-4 p-3 bg-amber-100 rounded-lg">
+                  <div className="flex items-center gap-2 text-amber-800">
+                    <Gift className="h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      Cortesia até instalação de {prediosContratados - buildings.length} prédio(s) adicional(is)
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-700 mt-1">
+                    O período de exibição gratuita será adicionado como bônus no final do contrato.
+                  </p>
+                  
+                  {/* Cálculo estimado de exibições */}
+                  <div className="mt-3 pt-3 border-t border-amber-200 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-amber-700">Telas estimadas:</span>
+                      <span className="ml-1 font-bold text-amber-900">
+                        ~{Math.ceil(prediosContratados * 1.35)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-amber-700">Exibições/mês:</span>
+                      <span className="ml-1 font-bold text-amber-900">
+                        ~{(Math.ceil(prediosContratados * 1.35) * (specifications?.exibicoes.porMes ?? 11610) * quantidadePosicoes).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </Card>
 
         {/* Seção 3: Período e Valores */}

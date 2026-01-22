@@ -10602,6 +10602,8 @@ export type Database = {
           contract_accepted_user_agent: string | null
           contract_terms_version: string | null
           converted_order_id: string | null
+          cortesia_fim: string | null
+          cortesia_inicio: string | null
           created_at: string | null
           created_by: string | null
           custom_days: number | null
@@ -10619,12 +10621,16 @@ export type Database = {
           last_heartbeat_at: string | null
           last_modified_at: string | null
           last_viewed_at: string | null
+          meses_cortesia: number | null
           metadata: Json | null
           modified_by: string | null
           needs_reacceptance: boolean | null
           number: string
           payment_type: string | null
           pdf_url: string | null
+          predios_contratados: number | null
+          predios_instalados_no_fechamento: number | null
+          predios_pendentes: number | null
           quantidade_posicoes: number
           rejection_reason: string | null
           responded_at: string | null
@@ -10639,6 +10645,7 @@ export type Database = {
           total_panels: number
           total_time_spent_seconds: number | null
           updated_at: string | null
+          venda_futura: boolean | null
           view_count: number | null
           viewed_at: string | null
         }
@@ -10664,6 +10671,8 @@ export type Database = {
           contract_accepted_user_agent?: string | null
           contract_terms_version?: string | null
           converted_order_id?: string | null
+          cortesia_fim?: string | null
+          cortesia_inicio?: string | null
           created_at?: string | null
           created_by?: string | null
           custom_days?: number | null
@@ -10681,12 +10690,16 @@ export type Database = {
           last_heartbeat_at?: string | null
           last_modified_at?: string | null
           last_viewed_at?: string | null
+          meses_cortesia?: number | null
           metadata?: Json | null
           modified_by?: string | null
           needs_reacceptance?: boolean | null
           number: string
           payment_type?: string | null
           pdf_url?: string | null
+          predios_contratados?: number | null
+          predios_instalados_no_fechamento?: number | null
+          predios_pendentes?: number | null
           quantidade_posicoes?: number
           rejection_reason?: string | null
           responded_at?: string | null
@@ -10701,6 +10714,7 @@ export type Database = {
           total_panels?: number
           total_time_spent_seconds?: number | null
           updated_at?: string | null
+          venda_futura?: boolean | null
           view_count?: number | null
           viewed_at?: string | null
         }
@@ -10726,6 +10740,8 @@ export type Database = {
           contract_accepted_user_agent?: string | null
           contract_terms_version?: string | null
           converted_order_id?: string | null
+          cortesia_fim?: string | null
+          cortesia_inicio?: string | null
           created_at?: string | null
           created_by?: string | null
           custom_days?: number | null
@@ -10743,12 +10759,16 @@ export type Database = {
           last_heartbeat_at?: string | null
           last_modified_at?: string | null
           last_viewed_at?: string | null
+          meses_cortesia?: number | null
           metadata?: Json | null
           modified_by?: string | null
           needs_reacceptance?: boolean | null
           number?: string
           payment_type?: string | null
           pdf_url?: string | null
+          predios_contratados?: number | null
+          predios_instalados_no_fechamento?: number | null
+          predios_pendentes?: number | null
           quantidade_posicoes?: number
           rejection_reason?: string | null
           responded_at?: string | null
@@ -10763,6 +10783,7 @@ export type Database = {
           total_panels?: number
           total_time_spent_seconds?: number | null
           updated_at?: string | null
+          venda_futura?: boolean | null
           view_count?: number | null
           viewed_at?: string | null
         }
