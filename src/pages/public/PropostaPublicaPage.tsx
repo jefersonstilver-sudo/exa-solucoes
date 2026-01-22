@@ -350,40 +350,52 @@ const PropostaPublicaPage = () => {
             const buildingsMap = new Map(currentBuildingsData.map(b => [
               b.id,
               {
-                quantidade_telas: b.quantidade_telas || b.numero_elevadores || 1,
-                visualizacoes_mes: b.visualizacoes_mes || 0,
-                preco_base: b.preco_base || 0,
-                preco_trimestral: b.preco_trimestral || 0,
-                preco_semestral: b.preco_semestral || 0,
-                preco_anual: b.preco_anual || 0,
-                imagem_principal: b.imagem_principal || null,
-                imageurl: b.imageurl || null,
-                codigo_predio: b.codigo_predio || null,
-                publico_estimado: b.publico_estimado || 0,
-                bairro: b.bairro || null,
-                endereco: b.endereco || null,
-                nome: b.nome || null
+                // IMPORTANTE: não usar "||" aqui porque 0 é um valor válido.
+                // Se vier 0, precisamos preservar para conseguir filtrar corretamente.
+                quantidade_telas: (b.quantidade_telas ?? b.numero_elevadores ?? 1),
+                visualizacoes_mes: (b.visualizacoes_mes ?? 0),
+                preco_base: (b.preco_base ?? 0),
+                preco_trimestral: (b.preco_trimestral ?? 0),
+                preco_semestral: (b.preco_semestral ?? 0),
+                preco_anual: (b.preco_anual ?? 0),
+                imagem_principal: (b.imagem_principal ?? null),
+                imageurl: (b.imageurl ?? null),
+                codigo_predio: (b.codigo_predio ?? null),
+                publico_estimado: (b.publico_estimado ?? 0),
+                bairro: (b.bairro ?? null),
+                endereco: (b.endereco ?? null),
+                nome: (b.nome ?? null)
               }
             ]));
 
             // Enrich selected_buildings with REAL current data from database including images
             const enriched = buildings.map((b: any) => {
-              const currentData = buildingsMap.get(b.building_id);
+              const hasBuildingId = Boolean(b?.building_id);
+              const currentData = hasBuildingId ? buildingsMap.get(b.building_id) : undefined;
+
               return {
                 ...b,
-                quantidade_telas: currentData?.quantidade_telas || b.quantidade_telas || 1,
-                visualizacoes_mes: currentData?.visualizacoes_mes || b.visualizacoes_mes || 0,
-                preco_base: currentData?.preco_base || b.preco_base || 0,
-                preco_trimestral: currentData?.preco_trimestral || 0,
-                preco_semestral: currentData?.preco_semestral || 0,
-                preco_anual: currentData?.preco_anual || 0,
-                imagem_principal: currentData?.imagem_principal || null,
-                imageurl: currentData?.imageurl || null,
-                codigo_predio: currentData?.codigo_predio || null,
-                publico_estimado: currentData?.publico_estimado || 0,
-                bairro: currentData?.bairro || b.bairro || null,
-                endereco: currentData?.endereco || b.endereco || null,
-                nome: currentData?.nome || b.building_name || null
+                // Se não tem building_id, não é um prédio válido para proposta pública.
+                // Mantemos 0 para ser filtrado posteriormente.
+                quantidade_telas: hasBuildingId
+                  ? (currentData?.quantidade_telas ?? b.quantidade_telas ?? 1)
+                  : 0,
+                visualizacoes_mes: hasBuildingId
+                  ? (currentData?.visualizacoes_mes ?? b.visualizacoes_mes ?? 0)
+                  : 0,
+                preco_base: hasBuildingId
+                  ? (currentData?.preco_base ?? b.preco_base ?? 0)
+                  : 0,
+                preco_trimestral: hasBuildingId ? (currentData?.preco_trimestral ?? 0) : 0,
+                preco_semestral: hasBuildingId ? (currentData?.preco_semestral ?? 0) : 0,
+                preco_anual: hasBuildingId ? (currentData?.preco_anual ?? 0) : 0,
+                imagem_principal: hasBuildingId ? (currentData?.imagem_principal ?? null) : null,
+                imageurl: hasBuildingId ? (currentData?.imageurl ?? null) : null,
+                codigo_predio: hasBuildingId ? (currentData?.codigo_predio ?? null) : null,
+                publico_estimado: hasBuildingId ? (currentData?.publico_estimado ?? 0) : 0,
+                bairro: hasBuildingId ? (currentData?.bairro ?? b.bairro ?? null) : null,
+                endereco: hasBuildingId ? (currentData?.endereco ?? b.endereco ?? null) : null,
+                nome: hasBuildingId ? (currentData?.nome ?? b.building_name ?? null) : (b.building_name ?? null)
               };
             });
 
@@ -1462,7 +1474,9 @@ const PropostaPublicaPage = () => {
 
   // Use enriched building data - FILTRAR prédios inválidos (sem telas)
   const allBuildings = enrichedBuildings.length > 0 ? enrichedBuildings : (proposal.selected_buildings || []);
-  const buildings = allBuildings.filter((b: any) => b.quantidade_telas && b.quantidade_telas > 0);
+  // Correção: só exibir prédios válidos (com building_id) e com telas > 0.
+  // Isso remove itens "soltos" (ex: "Sala Jeff") que não estão atribuídos a um prédio.
+  const buildings = allBuildings.filter((b: any) => Boolean(b?.building_id) && (b.quantidade_telas ?? 0) > 0);
   const totalPanels = realTotalPanels || proposal.total_panels || buildings.reduce((sum: number, b: any) => sum + (b.quantidade_telas || 1), 0);
   const totalImpressions = proposal.total_impressions_month || buildings.reduce((sum: number, b: any) => sum + (b.visualizacoes_mes || 0), 0);
   const fidelTotal = proposal.fidel_monthly_value * proposal.duration_months;
