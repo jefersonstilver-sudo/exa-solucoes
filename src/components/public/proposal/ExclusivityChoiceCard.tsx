@@ -10,7 +10,7 @@ interface ExclusivityChoiceCardProps {
   fidelidadeComExclusividade: number;
   percentualExtra: number;
   durationMonths: number;
-  escolhido: boolean | null;
+  escolhido: boolean;
   onChoose: (escolheuExclusividade: boolean) => void;
 }
 
@@ -57,12 +57,12 @@ export function ExclusivityChoiceCard({
         <div
           onClick={() => onChoose(false)}
           className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all ${
-            escolhido === false
+            !escolhido
               ? 'border-slate-600 bg-slate-50 shadow-md'
               : 'border-slate-200 hover:border-slate-300 bg-white'
           }`}
         >
-          {escolhido === false && (
+          {!escolhido && (
             <div className="absolute -top-2 -right-2 p-1 bg-slate-600 rounded-full">
               <Check className="h-3 w-3 text-white" />
             </div>
@@ -100,7 +100,7 @@ export function ExclusivityChoiceCard({
         <div
           onClick={() => onChoose(true)}
           className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all ${
-            escolhido === true
+            escolhido
               ? 'border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg'
               : 'border-slate-200 hover:border-[#9C1E1E]/50 bg-white'
           }`}
@@ -111,7 +111,7 @@ export function ExclusivityChoiceCard({
             RECOMENDADO
           </div>
 
-          {escolhido === true && (
+          {escolhido && (
             <div className="absolute -top-2 -right-2 p-1 bg-[#9C1E1E] rounded-full">
               <Check className="h-3 w-3 text-white" />
             </div>
