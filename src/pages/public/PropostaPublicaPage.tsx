@@ -136,8 +136,8 @@ const PropostaPublicaPage = () => {
   const [isPollingPayment, setIsPollingPayment] = useState(false);
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
   
-  // Exclusivity choice state
-  const [clienteEscolheuExclusividade, setClienteEscolheuExclusividade] = useState<boolean | null>(null);
+  // Exclusivity choice state - defaults to false (Proposta Padrão)
+  const [clienteEscolheuExclusividade, setClienteEscolheuExclusividade] = useState<boolean>(false);
   // Contract flow states
   const [contractFlow, setContractFlow] = useState<ContractFlowStep>('idle');
   const [contractLoadingMessage, setContractLoadingMessage] = useState('');
@@ -1518,6 +1518,17 @@ const PropostaPublicaPage = () => {
   const pixDiscountValue = afterPlanDiscount * (pixDiscountPercent / 100);
   const finalCashValue = afterPlanDiscount - pixDiscountValue;
   
+  // ==== VALORES DINÂMICOS COM EXCLUSIVIDADE ====
+  // Se cliente escolheu exclusividade, adicionar o valor extra
+  const hasExclusivity = proposal.exclusividade_segmento && proposal.exclusividade_disponivel;
+  const exclusivityMultiplier = clienteEscolheuExclusividade ? (1 + (proposal.exclusividade_percentual || 35) / 100) : 1;
+  const exclusivityExtraValue = clienteEscolheuExclusividade ? (proposal.exclusividade_valor_extra || 0) : 0;
+  
+  // Valores finais ajustados pela exclusividade
+  const displayCashValue = proposal.cash_total_value + exclusivityExtraValue;
+  const displayFidelMonthly = proposal.fidel_monthly_value * exclusivityMultiplier;
+  const displayFidelTotal = displayFidelMonthly * proposal.duration_months;
+  
   // Economia total À Vista
   const totalSavingsAvista = baseTotalValue > 0 
     ? ((baseTotalValue - proposal.cash_total_value) / baseTotalValue * 100).toFixed(1)
@@ -1569,83 +1580,98 @@ const PropostaPublicaPage = () => {
       )}
 
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
-      {/* Header - Always EXA Red - Mobile Optimized */}
-      <header className="bg-gradient-to-r from-[#4a0f0f] to-[#7D1818] text-white px-3 py-4 sm:p-4">
+      {/* Header - Always EXA Red - Enhanced Design */}
+      <header className="bg-gradient-to-r from-[#4a0f0f] via-[#6B1515] to-[#7D1818] text-white px-4 py-6 sm:px-6 sm:py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Mobile: Logo centralizada no topo */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-            {/* Logo - Responsiva: menor no mobile, maior no desktop */}
-            <div className="w-20 h-16 sm:w-32 md:w-48 sm:h-24 md:h-36 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0">
+          {/* Logo + Title Row */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
+            {/* Logo */}
+            <div className="w-24 h-20 sm:w-36 md:w-48 sm:h-28 md:h-36 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-shrink-0 border border-white/20">
               <UnifiedLogo 
                 size="custom" 
                 variant="light"
-                className="w-16 h-16 sm:w-24 sm:h-24 md:w-36 md:h-36"
+                className="w-20 h-20 sm:w-28 sm:h-28 md:w-40 md:h-40"
               />
             </div>
+            
+            {/* Title & Type */}
             <div className="flex-1 text-center sm:text-left">
-            {isCortesia ? (
-                <div className="flex items-center justify-center sm:justify-start gap-2">
-                  <Gift className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <h1 className="text-sm sm:text-lg font-bold">Presente Cortesia • EXA Mídia</h1>
-                  <PartyPopper className="h-4 w-4 sm:h-5 sm:w-5" />
+              {isCortesia ? (
+                <div className="flex items-center justify-center sm:justify-start gap-3">
+                  <Gift className="h-6 w-6 sm:h-8 sm:w-8" />
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Presente Cortesia</h1>
+                  <PartyPopper className="h-6 w-6 sm:h-8 sm:w-8" />
                 </div>
               ) : (
                 <div>
-                  <h1 className="text-sm sm:text-lg font-bold">Proposta Comercial EXA Mídia</h1>
-                  <span className="inline-flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded text-[10px] sm:text-xs mt-1">
-                    <Video className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                    {proposal.tipo_produto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal Tradicional'}
-                  </span>
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-2">
+                    Proposta Comercial
+                  </h1>
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                    <span className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
+                      <Video className="h-3 w-3 sm:h-4 sm:w-4" />
+                      {proposal.tipo_produto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal'}
+                    </span>
+                    <span className="bg-white/10 px-3 py-1 rounded-full text-xs sm:text-sm">
+                      #{proposal.number}
+                    </span>
+                  </div>
                 </div>
               )}
-              <div className="flex flex-wrap justify-center sm:justify-start gap-1.5 sm:gap-2 mt-2">
-                <span className="bg-white/10 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium">
-                  {proposal.number}
-                </span>
-                <span className="bg-white/10 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs">
-                  {new Date(proposal.created_at).toLocaleDateString('pt-BR')}
-                </span>
-                {(() => {
-                  const statusConfig: Record<string, { bg: string; text: string }> = {
-                    'enviada': { bg: 'bg-blue-500', text: 'Enviada' },
-                    'visualizada': { bg: 'bg-purple-500', text: 'Visualizada' },
-                    'aceita': { bg: 'bg-emerald-500', text: 'Aceita' },
-                    'recusada': { bg: 'bg-red-500', text: 'Recusada' },
-                    'expirada': { bg: 'bg-gray-500', text: 'Expirada' },
-                  };
-                  const config = statusConfig[proposal.status] || { bg: 'bg-gray-500', text: proposal.status };
-                  return (
-                    <span className={`${config.bg} px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium`}>
-                      {config.text}
-                    </span>
-                  );
-                })()}
-                {isCortesia && (
-                  <span className="bg-white text-[#9C1E1E] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold animate-pulse">
-                    🎁 CORTESIA
-                  </span>
-                )}
-              </div>
             </div>
           </div>
-          <div className="text-xs sm:text-sm opacity-90 space-y-0.5 sm:space-y-1 text-center sm:text-left">
-            {/* Nome da Empresa - destacado */}
+          
+          {/* Client Info - Prominent Section */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-white/20">
+            {/* Company Name - Large & Bold */}
             {proposal.client_company_name && (
-              <div className="text-sm sm:text-base font-bold">
-                🏢 {proposal.client_company_name}
+              <div className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 flex items-center gap-2">
+                <Building2 className="h-5 w-5 sm:h-6 sm:w-6 opacity-80" />
+                {proposal.client_company_name}
               </div>
             )}
-            <div>
-              {isCortesia ? 'Você ganhou um presente!' : 'Cliente:'}{' '}
-              <strong>{proposal.client_name}</strong>
+            
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm sm:text-base opacity-90">
+              <div>
+                {isCortesia ? 'Presenteado:' : 'Responsável:'}{' '}
+                <strong>{proposal.client_name}</strong>
+              </div>
+              {proposal.client_cnpj && (
+                <div className="text-white/80">CNPJ: <strong>{proposal.client_cnpj}</strong></div>
+              )}
             </div>
-            {proposal.client_cnpj && (
-              <div>CNPJ: <strong>{proposal.client_cnpj}</strong></div>
-            )}
+            
             {proposal.client_address && (
-              <div className="flex items-center justify-center sm:justify-start gap-1 text-[10px] sm:text-xs opacity-80 mt-1">
+              <div className="flex items-center gap-1.5 text-xs sm:text-sm opacity-70 mt-2">
                 📍 {proposal.client_address}
               </div>
+            )}
+          </div>
+          
+          {/* Status Badges */}
+          <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-4">
+            <span className="bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full text-xs sm:text-sm">
+              📅 {new Date(proposal.created_at).toLocaleDateString('pt-BR')}
+            </span>
+            {(() => {
+              const statusConfig: Record<string, { bg: string; text: string }> = {
+                'enviada': { bg: 'bg-blue-500', text: 'Enviada' },
+                'visualizada': { bg: 'bg-purple-500', text: 'Visualizada' },
+                'aceita': { bg: 'bg-emerald-500', text: 'Aceita' },
+                'recusada': { bg: 'bg-red-500', text: 'Recusada' },
+                'expirada': { bg: 'bg-gray-500', text: 'Expirada' },
+              };
+              const config = statusConfig[proposal.status] || { bg: 'bg-gray-500', text: proposal.status };
+              return (
+                <span className={`${config.bg} px-3 py-1 rounded-full text-xs sm:text-sm font-medium shadow-lg`}>
+                  {config.text}
+                </span>
+              );
+            })()}
+            {isCortesia && (
+              <span className="bg-white text-[#9C1E1E] px-3 py-1 rounded-full text-xs sm:text-sm font-bold animate-pulse shadow-lg">
+                🎁 CORTESIA
+              </span>
             )}
           </div>
         </div>
@@ -1993,11 +2019,11 @@ const PropostaPublicaPage = () => {
                     </div>
                     <div className="text-right flex-shrink-0">
                       <div className="text-sm sm:text-base font-bold text-[#9C1E1E]">
-                        {proposal.cash_total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        {displayCashValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </div>
                       {!proposal.is_custom_days && proposal.duration_months > 0 && (
                         <p className="text-[8px] sm:text-[9px] text-muted-foreground">
-                          {(proposal.cash_total_value / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                          {(displayCashValue / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
                         </p>
                       )}
                     </div>
@@ -2028,11 +2054,11 @@ const PropostaPublicaPage = () => {
                       </div>
                       <div className="text-right flex-shrink-0">
                         <div className="text-sm sm:text-base font-bold">
-                          {proposal.fidel_monthly_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          {displayFidelMonthly.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           <span className="text-[9px] font-normal text-muted-foreground">/mês</span>
                         </div>
                         <p className="text-[8px] sm:text-[9px] text-muted-foreground">
-                          Total: {(proposal.fidel_monthly_value * proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          Total: {displayFidelTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </p>
                       </div>
                     </div>
@@ -2077,7 +2103,7 @@ const PropostaPublicaPage = () => {
               })}
             </div>
 
-            {/* Resumo por modalidade - USA displayBuildingsCount e displayPanelsCount para Venda Futura */}
+            {/* Resumo por modalidade - USA valores dinâmicos com exclusividade */}
             <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-3">
               {/* Fidelidade */}
               <div className="p-2 bg-white rounded-lg border border-slate-200 space-y-1">
@@ -2087,13 +2113,13 @@ const PropostaPublicaPage = () => {
                 <div className="flex justify-between text-[9px] sm:text-[10px]">
                   <span>Por local:</span>
                   <span className="font-medium">
-                    {(proposal.fidel_monthly_value / displayBuildingsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                    {(displayFidelMonthly / displayBuildingsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
                   </span>
                 </div>
                 <div className="flex justify-between text-[9px] sm:text-[10px]">
                   <span>Por tela:</span>
                   <span className="font-medium">
-                    {(proposal.fidel_monthly_value / displayPanelsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                    {(displayFidelMonthly / displayPanelsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
                   </span>
                 </div>
               </div>
@@ -2107,13 +2133,13 @@ const PropostaPublicaPage = () => {
                 <div className="flex justify-between text-[9px] sm:text-[10px]">
                   <span>Por local:</span>
                   <span className="font-medium text-green-600">
-                    {((proposal.cash_total_value / proposal.duration_months) / displayBuildingsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                    {((displayCashValue / proposal.duration_months) / displayBuildingsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
                   </span>
                 </div>
                 <div className="flex justify-between text-[9px] sm:text-[10px]">
                   <span>Por tela:</span>
                   <span className="font-medium text-green-600">
-                    {((proposal.cash_total_value / proposal.duration_months) / displayPanelsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                    {((displayCashValue / proposal.duration_months) / displayPanelsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
                   </span>
                 </div>
               </div>
