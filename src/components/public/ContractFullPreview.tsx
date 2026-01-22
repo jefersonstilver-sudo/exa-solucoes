@@ -1,24 +1,18 @@
-import React, { useState, useRef } from 'react';
-import { X, FileText, Check, Printer, Download, Shield } from 'lucide-react';
+import React, { useRef } from 'react';
+import { X, FileText, Printer, AlertCircle, FileWarning } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 
 interface ContractFullPreviewProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
-  isLoading?: boolean;
   contractHtml: string;
 }
 
 export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
   isOpen,
   onClose,
-  onConfirm,
-  isLoading = false,
   contractHtml
 }) => {
-  const [acceptTerms, setAcceptTerms] = useState(false);
   const contractRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen || !contractHtml) return null;
@@ -30,7 +24,7 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Contrato EXA Mídia</title>
+          <title>Rascunho - Contrato EXA Mídia</title>
           <meta charset="UTF-8">
           <style>
             @page {
@@ -43,6 +37,17 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
                 print-color-adjust: exact !important;
                 color-adjust: exact !important;
               }
+              .watermark {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-30deg);
+                font-size: 80px;
+                font-weight: bold;
+                color: rgba(156, 30, 30, 0.08);
+                pointer-events: none;
+                z-index: 1000;
+              }
             }
             body {
               font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -52,6 +57,7 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
               background: white;
               margin: 0;
               padding: 0;
+              position: relative;
             }
             h1, h2, h3 {
               page-break-after: avoid;
@@ -70,6 +76,7 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
           </style>
         </head>
         <body>
+          <div class="watermark">RASCUNHO</div>
           ${contractHtml}
         </body>
         </html>
@@ -93,15 +100,20 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
                 <FileText className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-lg font-bold">Contrato de Prestação de Serviços</h2>
-                <p className="text-sm text-white/80">Leia o contrato completo antes de aceitar</p>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold">Rascunho do Contrato</h2>
+                  <span className="px-2 py-0.5 text-xs font-bold bg-amber-400 text-amber-900 rounded-full uppercase">
+                    Prévia
+                  </span>
+                </div>
+                <p className="text-sm text-white/80">Gerado conforme as condições escolhidas na proposta</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button 
                 onClick={handlePrint}
                 className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
-                title="Imprimir contrato"
+                title="Imprimir rascunho"
               >
                 <Printer className="h-5 w-5" />
               </button>
@@ -115,12 +127,34 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
           </div>
         </div>
 
+        {/* Draft Notice Banner */}
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-start gap-3">
+          <FileWarning className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-800">
+            <p className="font-semibold mb-1">Este é apenas um rascunho para visualização</p>
+            <p className="text-amber-700">
+              O contrato final será enviado para seu e-mail <strong>após você aceitar a proposta e efetuar o pagamento</strong>. 
+              Nele você receberá o link para assinatura digital oficial via ClickSign.
+            </p>
+          </div>
+        </div>
+
         {/* Contract Content - Scrollable */}
         <div 
           ref={contractRef}
-          className="flex-1 overflow-y-auto bg-gray-50"
+          className="flex-1 overflow-y-auto bg-gray-50 relative"
         >
-          <div className="max-w-3xl mx-auto p-3 md:p-6 lg:p-8">
+          {/* Watermark */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+            <span 
+              className="text-[80px] md:text-[120px] font-bold text-[#9C1E1E]/[0.04] select-none"
+              style={{ transform: 'rotate(-30deg)' }}
+            >
+              RASCUNHO
+            </span>
+          </div>
+          
+          <div className="max-w-3xl mx-auto p-3 md:p-6 lg:p-8 relative z-20">
             {/* Paper effect */}
             <div 
               className="bg-white rounded-lg shadow-lg p-3 md:p-6 lg:p-10 border border-gray-200"
@@ -142,55 +176,25 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
           </div>
         </div>
 
-        {/* Footer - Fixed */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex-shrink-0 space-y-4">
-          {/* Accept Terms Checkbox */}
-          <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-            <Checkbox
-              id="accept-contract-terms"
-              checked={acceptTerms}
-              onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
-              className="mt-0.5 border-amber-400 data-[state=checked]:bg-[#9C1E1E] data-[state=checked]:border-[#9C1E1E]"
-            />
-            <label htmlFor="accept-contract-terms" className="text-sm text-amber-900 cursor-pointer">
-              <strong>Li e concordo</strong> com todas as cláusulas deste contrato. Entendo que após o pagamento, 
-              receberei o <strong>link de assinatura digital</strong> por e-mail via ClickSign.
-            </label>
-          </div>
-
+        {/* Footer - Simplified */}
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex-shrink-0">
           {/* Info */}
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <Shield className="h-4 w-4 text-green-600" />
-            <span>Contrato com validade jurídica. Assinatura digital via ClickSign após pagamento.</span>
+          <div className="flex items-start gap-2 text-sm text-gray-600 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <AlertCircle className="h-5 w-5 text-slate-500 flex-shrink-0 mt-0.5" />
+            <span>
+              <strong>Próximos passos:</strong> Aceite a proposta → Efetue o pagamento → Receba o contrato final por e-mail para assinatura digital.
+            </span>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="flex-1 h-12 border-gray-300"
-            >
-              Voltar
-            </Button>
-            <Button
-              onClick={onConfirm}
-              disabled={!acceptTerms || isLoading}
-              className="flex-1 h-12 bg-[#9C1E1E] hover:bg-[#7D1818] text-white font-medium shadow-lg disabled:opacity-50"
-            >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Processando...
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Check className="h-5 w-5" />
-                  Aceitar Contrato
-                </div>
-              )}
-            </Button>
-          </div>
+          {/* Action Button */}
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="w-full h-12 border-gray-300"
+          >
+            <X className="h-4 w-4 mr-2" />
+            Fechar Visualização
+          </Button>
         </div>
       </div>
 
