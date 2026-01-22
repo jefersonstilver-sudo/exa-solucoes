@@ -1,6 +1,19 @@
 /**
  * Hook centralizado do Console Administrativo de Usuário
- * Gerencia estado, validações e operações
+ * 
+ * ARQUITETURA:
+ * 1. SEÇÃO DE ESTADO - Estado principal do console
+ * 2. SEÇÃO DE QUERIES - Busca de dados (departamentos, auditoria)
+ * 3. SEÇÃO DE PERMISSÕES - O que o operador pode fazer
+ * 4. SEÇÃO DE VALIDAÇÕES - Regras de negócio que bloqueiam ações
+ * 5. SEÇÃO DE IMPACTO - Cálculo de consequências antes de salvar
+ * 6. SEÇÃO DE OPERAÇÕES - Ações que modificam dados
+ * 
+ * REGRAS DE NEGÓCIO:
+ * - Admin departamental SEM departamento = INVÁLIDO
+ * - Ninguém altera o próprio cargo
+ * - CEO nunca pode ser rebaixado (email dinâmico da config)
+ * - Toda mudança gera log de auditoria
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -9,17 +22,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import {
+  CEO_EMAIL,
   ConsoleUser,
   ConsoleDepartment,
   AuditEntry,
   HierarchyLevel,
   AccessImpact,
+  ImpactChange,
   UserConsoleState,
-  CEO_EMAIL,
   getHierarchyLabel,
   mapLegacyRole,
   HIERARCHY_OPTIONS
 } from '@/types/userConsoleTypes';
+
+// ============================================================================
+// TIPOS E INTERFACES
+// ============================================================================
 
 interface UseUserConsoleProps {
   user: ConsoleUser | null;
@@ -27,10 +45,47 @@ interface UseUserConsoleProps {
   onUserUpdated: () => void;
 }
 
+interface OperatorPermissions {
+  /** Operador pode alterar o cargo deste usuário */
+  canEditRole: boolean;
+  /** Operador pode alterar o departamento */
+  canEditDepartment: boolean;
+  /** Operador pode bloquear/desbloquear */
+  canBlock: boolean;
+  /** Operador pode excluir a conta */
+  canDelete: boolean;
+  /** Operador pode resetar senha */
+  canResetPassword: boolean;
+  /** Operador é super_admin */
+  isSuperAdmin: boolean;
+  /** Operador é admin ou super_admin */
+  isAdmin: boolean;
+  /** Usuário alvo é o CEO protegido */
+  isTargetCEO: boolean;
+  /** Operador está editando a si mesmo */
+  isSelf: boolean;
+}
+
+interface ValidationErrors {
+  /** Admin departamental precisa de departamento */
+  departmentRequired?: boolean;
+  /** Usuário tentando alterar próprio cargo */
+  selfRoleChange?: boolean;
+  /** Tentativa de rebaixar o CEO */
+  ceoDowngrade?: boolean;
+}
+
+// ============================================================================
+// HOOK PRINCIPAL
+// ============================================================================
+
 export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProps) => {
   const { userProfile, refreshUserProfile } = useAuth();
   
-  // Estado principal
+  // ==========================================================================
+  // SEÇÃO 1: ESTADO PRINCIPAL
+  // ==========================================================================
+  
   const [selectedRole, setSelectedRole] = useState<HierarchyLevel>('admin_departamental');
   const [selectedDepartamento, setSelectedDepartamento] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -43,9 +98,15 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     ccEmails: [] as string[]
   });
 
-  // === QUERIES ===
+  // ==========================================================================
+  // SEÇÃO 2: QUERIES - Busca de dados externos
+  // ==========================================================================
   
-  // Buscar departamentos ativos
+  // Email do CEO protegido - importado do arquivo de configuração
+  // Para alterar, editar CEO_EMAIL em src/types/userConsoleTypes.ts
+  const ceoEmail = CEO_EMAIL;
+
+  // Query: Departamentos ativos
   const { data: departments = [], isLoading: loadingDepartments } = useQuery({
     queryKey: ['console-departments'],
     queryFn: async () => {
@@ -61,76 +122,96 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     enabled: open
   });
 
-  // Buscar entradas de auditoria
+  // Query: Entradas de auditoria unificadas
   const { 
     data: auditEntries = [], 
     isLoading: loadingAudit,
     refetch: refetchAudit 
   } = useQuery({
     queryKey: ['console-audit', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      
-      // Buscar de múltiplas fontes
-      const [activityLogs, roleChanges] = await Promise.all([
-        supabase
-          .from('user_activity_logs')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(30),
-        supabase
-          .from('role_change_audit')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(20)
-      ]);
-
-      const entries: AuditEntry[] = [];
-
-      // Processar activity logs
-      if (activityLogs.data) {
-        for (const log of activityLogs.data) {
-          const meta = log.metadata as Record<string, unknown> | null;
-          entries.push({
-            id: log.id,
-            type: categorizeActivityType(log.action_type),
-            title: formatActivityTitle(log.action_type),
-            description: log.action_description || '',
-            timestamp: log.created_at,
-            performedBy: meta?.performed_by as string | undefined,
-            performedByEmail: meta?.user_email as string | undefined,
-            metadata: meta || undefined,
-            ip: log.ip_address
-          });
-        }
-      }
-
-      // Processar role changes
-      if (roleChanges.data) {
-        for (const change of roleChanges.data) {
-          entries.push({
-            id: change.id,
-            type: 'role_change',
-            title: 'Alteração de Cargo',
-            description: `Cargo alterado de ${getHierarchyLabel(change.old_role)} para ${getHierarchyLabel(change.new_role)}`,
-            timestamp: change.created_at,
-            performedBy: change.changed_by,
-            metadata: { old_role: change.old_role, new_role: change.new_role }
-          });
-        }
-      }
-
-      // Ordenar por data
-      entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      
-      return entries.slice(0, 50);
-    },
+    queryFn: async () => fetchAuditEntries(user?.id),
     enabled: open && !!user?.id
   });
 
-  // === EFEITOS ===
+  // ==========================================================================
+  // SEÇÃO 3: PERMISSÕES - O que o operador pode fazer
+  // ==========================================================================
+  
+  const permissions = useMemo((): OperatorPermissions => {
+    const isSuperAdmin = userProfile?.role === 'super_admin';
+    const isAdmin = userProfile?.role === 'admin' || isSuperAdmin;
+    const isTargetCEO = !!ceoEmail && user?.email === ceoEmail;
+    const isSelf = user?.id === userProfile?.id;
+    
+    return {
+      // Regras de edição
+      canEditRole: isAdmin && !isSelf, // Não pode editar próprio cargo
+      canEditDepartment: isAdmin,
+      
+      // Regras de ações críticas
+      canBlock: isSuperAdmin && !isTargetCEO && !isSelf,
+      canDelete: isSuperAdmin && !isTargetCEO && !isSelf,
+      canResetPassword: isAdmin && !isSelf,
+      
+      // Flags de contexto
+      isSuperAdmin,
+      isAdmin,
+      isTargetCEO,
+      isSelf
+    };
+  }, [userProfile, user, ceoEmail]);
+
+  // ==========================================================================
+  // SEÇÃO 4: VALIDAÇÕES - Regras de negócio que bloqueiam ações
+  // ==========================================================================
+  
+  const errors = useMemo((): ValidationErrors => {
+    const result: ValidationErrors = {};
+    
+    // REGRA 1: Admin departamental PRECISA de departamento
+    if (selectedRole === 'admin_departamental' && !selectedDepartamento) {
+      result.departmentRequired = true;
+    }
+    
+    // REGRA 2: Ninguém altera o próprio cargo
+    if (permissions.isSelf && selectedRole !== mapLegacyRole(user?.role || '')) {
+      result.selfRoleChange = true;
+    }
+    
+    // REGRA 3: CEO nunca pode ser rebaixado
+    if (permissions.isTargetCEO && selectedRole !== 'super_admin') {
+      result.ceoDowngrade = true;
+    }
+    
+    return result;
+  }, [selectedRole, selectedDepartamento, permissions, user]);
+
+  /** Verifica se há algum erro de validação */
+  const hasValidationErrors = useMemo(() => {
+    return Object.values(errors).some(Boolean);
+  }, [errors]);
+
+  // ==========================================================================
+  // SEÇÃO 5: CÁLCULO DE IMPACTO - Consequências das mudanças
+  // ==========================================================================
+  
+  const impact = useMemo((): AccessImpact | null => {
+    if (!user || !pendingChanges) return null;
+    
+    return calculateAccessImpact({
+      user,
+      currentRole: mapLegacyRole(user.role),
+      newRole: selectedRole,
+      currentDeptId: user.departamento_id,
+      newDeptId: selectedDepartamento,
+      departments,
+      isTargetCEO: permissions.isTargetCEO
+    });
+  }, [user, pendingChanges, selectedRole, selectedDepartamento, departments, permissions.isTargetCEO]);
+
+  // ==========================================================================
+  // SEÇÃO 6: EFEITOS - Sincronização de estado
+  // ==========================================================================
   
   // Resetar estado quando o usuário muda
   useEffect(() => {
@@ -139,8 +220,8 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
       setSelectedRole(mappedRole);
       setSelectedDepartamento(user.departamento_id || null);
       setEditData({
-        nome: user.nome || user.raw_user_meta_data?.name as string || '',
-        telefone: user.telefone || user.raw_user_meta_data?.telefone as string || '',
+        nome: user.nome || (user.raw_user_meta_data?.name as string) || '',
+        telefone: user.telefone || (user.raw_user_meta_data?.telefone as string) || '',
         ccEmails: user.cc_emails || []
       });
       setPendingChanges(false);
@@ -157,123 +238,11 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     setPendingChanges(roleChanged || deptChanged);
   }, [user, selectedRole, selectedDepartamento]);
 
-  // === PERMISSÕES DO OPERADOR ===
-  const permissions = useMemo(() => {
-    const isSuperAdmin = userProfile?.role === 'super_admin';
-    const isAdmin = userProfile?.role === 'admin' || isSuperAdmin;
-    const isCEO = user?.email === CEO_EMAIL;
-    const isSelf = user?.id === userProfile?.id;
-    
-    return {
-      canEditRole: isAdmin && !isSelf,
-      canEditDepartment: isAdmin,
-      canBlock: isSuperAdmin && !isCEO && !isSelf,
-      canDelete: isSuperAdmin && !isCEO && !isSelf,
-      isSuperAdmin,
-      isAdmin,
-      isCEO,
-      isSelf
-    };
-  }, [userProfile, user]);
-
-  // === VALIDAÇÕES ===
-  const errors = useMemo(() => {
-    const result: UserConsoleState['errors'] = {};
-    
-    // Admin departamental precisa de departamento
-    if (selectedRole === 'admin_departamental' && !selectedDepartamento) {
-      result.departmentRequired = true;
-    }
-    
-    // Não pode alterar próprio cargo
-    if (permissions.isSelf && selectedRole !== mapLegacyRole(user?.role || '')) {
-      result.selfRoleChange = true;
-    }
-    
-    // CEO não pode ser rebaixado
-    if (permissions.isCEO && selectedRole !== 'super_admin') {
-      result.ceoDowngrade = true;
-    }
-    
-    return result;
-  }, [selectedRole, selectedDepartamento, permissions, user]);
-
-  // === PREVIEW DE IMPACTO ===
-  const impact = useMemo((): AccessImpact | null => {
-    if (!user || !pendingChanges) return null;
-    
-    const currentRole = mapLegacyRole(user.role);
-    const currentDept = departments.find(d => d.id === user.departamento_id);
-    const newDept = departments.find(d => d.id === selectedDepartamento);
-    
-    // Calcular mudanças de acesso
-    const changes: AccessImpact['changes'] = [];
-    const warnings: string[] = [];
-    
-    // Se está indo de CEO para outro cargo
-    if (currentRole === 'super_admin' && selectedRole !== 'super_admin') {
-      warnings.push('⚠️ CEO não pode ser rebaixado');
-    }
-    
-    // Se está virando admin departamental
-    if (selectedRole === 'admin_departamental') {
-      if (currentRole !== 'admin_departamental') {
-        changes.push({ type: 'lose', module: 'all_departments', label: 'Acesso a todos os departamentos' });
-        changes.push({ type: 'lose', module: 'crm_full', label: 'CRM completo' });
-      }
-      if (!selectedDepartamento) {
-        warnings.push('❌ Departamento obrigatório para Admin Departamental');
-      } else if (newDept) {
-        changes.push({ type: 'gain', module: `dept_${newDept.id}`, label: `Acesso ao ${newDept.name}` });
-      }
-    }
-    
-    // Se está virando Coordenação
-    if (selectedRole === 'admin' && currentRole !== 'admin') {
-      changes.push({ type: 'gain', module: 'operational', label: 'Acesso operacional completo' });
-      if (currentRole === 'super_admin') {
-        changes.push({ type: 'lose', module: 'system', label: 'Configurações de sistema' });
-        changes.push({ type: 'lose', module: 'users', label: 'Gerenciamento de usuários' });
-      }
-    }
-    
-    // Se está virando CEO
-    if (selectedRole === 'super_admin' && currentRole !== 'super_admin') {
-      changes.push({ type: 'gain', module: 'full', label: 'Acesso total ao sistema' });
-    }
-    
-    // Calcular CRM
-    let crmBefore = 'Sem acesso';
-    let crmAfter = 'Sem acesso';
-    
-    if (currentRole === 'super_admin') crmBefore = 'Acesso total';
-    else if (currentDept?.name === 'Comercial') crmBefore = 'Apenas próprias conversas';
-    
-    if (selectedRole === 'super_admin') crmAfter = 'Acesso total';
-    else if (selectedRole === 'admin') crmAfter = 'Acesso total';
-    else if (newDept?.name === 'Comercial') crmAfter = 'Apenas próprias conversas';
-    
-    return {
-      from: {
-        role: currentRole,
-        roleLabel: getHierarchyLabel(currentRole),
-        departamento: user.departamento_id,
-        departamentoLabel: currentDept?.name
-      },
-      to: {
-        role: selectedRole,
-        roleLabel: getHierarchyLabel(selectedRole),
-        departamento: selectedDepartamento || undefined,
-        departamentoLabel: newDept?.name
-      },
-      changes,
-      crmAccess: { before: crmBefore, after: crmAfter },
-      warnings
-    };
-  }, [user, pendingChanges, selectedRole, selectedDepartamento, departments]);
-
-  // === OPERAÇÕES ===
+  // ==========================================================================
+  // SEÇÃO 7: OPERAÇÕES - Ações que modificam dados
+  // ==========================================================================
   
+  /** Altera o cargo selecionado (com validação prévia) */
   const handleRoleChange = useCallback((newRole: HierarchyLevel) => {
     // Validar antes de permitir
     if (permissions.isSelf) {
@@ -283,7 +252,7 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
       return;
     }
     
-    if (permissions.isCEO && newRole !== 'super_admin') {
+    if (permissions.isTargetCEO && newRole !== 'super_admin') {
       toast.error('Ação bloqueada', {
         description: 'O CEO não pode ser rebaixado'
       });
@@ -300,15 +269,17 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     setSelectedRole(newRole);
   }, [permissions]);
 
+  /** Altera o departamento selecionado */
   const handleDepartamentoChange = useCallback((deptId: string) => {
     setSelectedDepartamento(deptId);
   }, []);
 
+  /** Salva alterações de acesso (role + departamento) */
   const saveAccessChanges = useCallback(async () => {
     if (!user || !pendingChanges) return;
     
-    // Validar
-    if (Object.keys(errors).some(k => errors[k as keyof typeof errors])) {
+    // Bloquear se houver erros de validação
+    if (hasValidationErrors) {
       toast.error('Validação falhou', {
         description: 'Corrija os erros antes de salvar'
       });
@@ -321,7 +292,7 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
       const updates: Record<string, unknown> = {};
       const oldRole = user.role;
       
-      // Mapear role se necessário (para compatibilidade)
+      // Determinar o que mudou
       if (selectedRole !== mapLegacyRole(user.role)) {
         updates.role = selectedRole;
       }
@@ -335,7 +306,7 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
         return;
       }
       
-      // Atualizar usuário
+      // 1. Atualizar tabela users
       const { error: updateError } = await supabase
         .from('users')
         .update(updates as any)
@@ -343,14 +314,14 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
       
       if (updateError) throw updateError;
       
-      // Se role mudou, atualizar também em user_roles
+      // 2. Se role mudou, atualizar também user_roles
       if (updates.role) {
         await supabase
           .from('user_roles')
           .update({ role: updates.role as any })
           .eq('user_id', user.id);
         
-        // Log de auditoria
+        // 3. Log de auditoria de role
         await supabase.from('role_change_audit').insert([{
           user_id: user.id,
           old_role: oldRole as any,
@@ -359,10 +330,11 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
         }]);
       }
       
-      // Log geral
+      // 4. Log geral do sistema
+      const deptName = departments.find(d => d.id === selectedDepartamento)?.name;
       await supabase.from('log_eventos_sistema').insert({
         tipo_evento: 'USER_ACCESS_UPDATED',
-        descricao: `Acesso alterado: ${getHierarchyLabel(selectedRole)}${selectedDepartamento ? ` - Departamento: ${departments.find(d => d.id === selectedDepartamento)?.name}` : ''}`,
+        descricao: `Acesso alterado: ${getHierarchyLabel(selectedRole)}${deptName ? ` - Departamento: ${deptName}` : ''}`,
         usuario_id: user.id
       });
       
@@ -382,8 +354,9 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     } finally {
       setIsSaving(false);
     }
-  }, [user, selectedRole, selectedDepartamento, pendingChanges, errors, userProfile, departments, onUserUpdated, refetchAudit]);
+  }, [user, selectedRole, selectedDepartamento, pendingChanges, hasValidationErrors, userProfile, departments, onUserUpdated, refetchAudit]);
 
+  /** Salva dados de identidade (nome, telefone, cc_emails) */
   const saveIdentity = useCallback(async (data: { nome: string; telefone: string; ccEmails: string[] }) => {
     if (!user) return;
     
@@ -418,6 +391,7 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     }
   }, [user, userProfile, refreshUserProfile, onUserUpdated]);
 
+  /** Reenvia email de confirmação */
   const resendConfirmationEmail = useCallback(async () => {
     if (!user) return;
     
@@ -445,6 +419,7 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     }
   }, [user]);
 
+  /** Bloqueia ou desbloqueia o usuário */
   const toggleBlock = useCallback(async () => {
     if (!user || !permissions.canBlock) return;
     
@@ -488,8 +463,94 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     } finally {
       setIsSaving(false);
     }
-  }, [user, permissions, userProfile, onUserUpdated, refetchAudit]);
+  }, [user, permissions.canBlock, userProfile, onUserUpdated, refetchAudit]);
 
+  /** Reseta a senha do usuário (envia email) */
+  const resetPassword = useCallback(async () => {
+    if (!user || !permissions.canResetPassword) return;
+    
+    if (!confirm(`Enviar email de redefinição de senha para ${user.email}?`)) return;
+    
+    try {
+      setIsSaving(true);
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+      
+      if (error) throw error;
+      
+      await supabase.from('log_eventos_sistema').insert({
+        tipo_evento: 'PASSWORD_RESET_REQUESTED',
+        descricao: `Reset de senha solicitado para ${user.email} por ${userProfile?.email}`,
+        usuario_id: user.id
+      });
+      
+      toast.success('Email de redefinição enviado!', {
+        description: `Link enviado para ${user.email}`
+      });
+      
+    } catch (error: unknown) {
+      console.error('Erro ao resetar senha:', error);
+      toast.error('Erro ao enviar email de redefinição');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [user, permissions.canResetPassword, userProfile]);
+
+  /** Exclui permanentemente a conta do usuário */
+  const deleteAccount = useCallback(async () => {
+    if (!user || !permissions.canDelete) return;
+    
+    const confirmText = `EXCLUIR ${user.email}`;
+    const input = prompt(`Digite "${confirmText}" para confirmar a exclusão permanente:`);
+    
+    if (input !== confirmText) {
+      toast.error('Exclusão cancelada', {
+        description: 'Texto de confirmação não corresponde'
+      });
+      return;
+    }
+    
+    try {
+      setIsSaving(true);
+      
+      // Log antes de excluir
+      await supabase.from('log_eventos_sistema').insert({
+        tipo_evento: 'USER_DELETED',
+        descricao: `Usuário ${user.email} excluído permanentemente por ${userProfile?.email}`,
+        usuario_id: userProfile?.id // Log no ID do operador, já que o usuário será excluído
+      });
+      
+      // Excluir de user_roles primeiro (FK)
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', user.id);
+      
+      // Excluir da tabela users
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      toast.success('Conta excluída permanentemente');
+      onUserUpdated();
+      
+    } catch (error: unknown) {
+      console.error('Erro ao excluir conta:', error);
+      toast.error('Erro ao excluir conta');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [user, permissions.canDelete, userProfile, onUserUpdated]);
+
+  // ==========================================================================
+  // RETORNO DO HOOK
+  // ==========================================================================
+  
   return {
     // Estado
     selectedRole,
@@ -499,34 +560,187 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     pendingChanges,
     isSaving,
     
-    // Dados
+    // Dados carregados
     departments,
     auditEntries,
     
     // Loading
     isLoading: loadingDepartments || loadingAudit,
     
-    // Permissões e validações
+    // Permissões e validações (separados claramente)
     permissions,
     errors,
+    hasValidationErrors,
+    
+    // Preview de impacto
     impact,
     
-    // Operações
+    // Operações de acesso
     handleRoleChange,
     handleDepartamentoChange,
     saveAccessChanges,
+    
+    // Operações de identidade
     saveIdentity,
     resendConfirmationEmail,
-    toggleBlock,
-    refetchAudit,
     
-    // Constantes
+    // Operações críticas (danger zone)
+    toggleBlock,
+    resetPassword,
+    deleteAccount,
+    
+    // Utilitários
+    refetchAudit,
     hierarchyOptions: HIERARCHY_OPTIONS
   };
 };
 
-// === HELPERS INTERNOS ===
+// ============================================================================
+// FUNÇÕES AUXILIARES (fora do hook para melhor performance)
+// ============================================================================
 
+/** Busca entradas de auditoria de múltiplas fontes */
+async function fetchAuditEntries(userId: string | undefined): Promise<AuditEntry[]> {
+  if (!userId) return [];
+  
+  const [activityLogs, roleChanges] = await Promise.all([
+    supabase
+      .from('user_activity_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(30),
+    supabase
+      .from('role_change_audit')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(20)
+  ]);
+
+  const entries: AuditEntry[] = [];
+
+  // Processar activity logs
+  if (activityLogs.data) {
+    for (const log of activityLogs.data) {
+      const meta = log.metadata as Record<string, unknown> | null;
+      entries.push({
+        id: log.id,
+        type: categorizeActivityType(log.action_type),
+        title: formatActivityTitle(log.action_type),
+        description: log.action_description || '',
+        timestamp: log.created_at,
+        performedBy: meta?.performed_by as string | undefined,
+        performedByEmail: meta?.user_email as string | undefined,
+        metadata: meta || undefined,
+        ip: log.ip_address
+      });
+    }
+  }
+
+  // Processar role changes
+  if (roleChanges.data) {
+    for (const change of roleChanges.data) {
+      entries.push({
+        id: change.id,
+        type: 'role_change',
+        title: 'Alteração de Cargo',
+        description: `Cargo alterado de ${getHierarchyLabel(change.old_role)} para ${getHierarchyLabel(change.new_role)}`,
+        timestamp: change.created_at,
+        performedBy: change.changed_by,
+        metadata: { old_role: change.old_role, new_role: change.new_role }
+      });
+    }
+  }
+
+  // Ordenar por data (mais recente primeiro)
+  entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  
+  return entries.slice(0, 50);
+}
+
+/** Calcula o impacto das mudanças de acesso */
+function calculateAccessImpact(params: {
+  user: ConsoleUser;
+  currentRole: HierarchyLevel;
+  newRole: HierarchyLevel;
+  currentDeptId: string | null | undefined;
+  newDeptId: string | null;
+  departments: ConsoleDepartment[];
+  isTargetCEO: boolean;
+}): AccessImpact {
+  const { user, currentRole, newRole, currentDeptId, newDeptId, departments, isTargetCEO } = params;
+  
+  const currentDept = departments.find(d => d.id === currentDeptId);
+  const newDept = departments.find(d => d.id === newDeptId);
+  
+  const changes: ImpactChange[] = [];
+  const warnings: string[] = [];
+  
+  // Verificar tentativa de rebaixar CEO
+  if (isTargetCEO && newRole !== 'super_admin') {
+    warnings.push('⚠️ CEO não pode ser rebaixado');
+  }
+  
+  // Mudanças ao virar admin departamental
+  if (newRole === 'admin_departamental') {
+    if (currentRole !== 'admin_departamental') {
+      changes.push({ type: 'lose', module: 'all_departments', label: 'Acesso a todos os departamentos' });
+      changes.push({ type: 'lose', module: 'crm_full', label: 'CRM completo' });
+    }
+    if (!newDeptId) {
+      warnings.push('❌ Departamento obrigatório para Admin Departamental');
+    } else if (newDept) {
+      changes.push({ type: 'gain', module: `dept_${newDept.id}`, label: `Acesso ao ${newDept.name}` });
+    }
+  }
+  
+  // Mudanças ao virar Coordenação
+  if (newRole === 'admin' && currentRole !== 'admin') {
+    changes.push({ type: 'gain', module: 'operational', label: 'Acesso operacional completo' });
+    if (currentRole === 'super_admin') {
+      changes.push({ type: 'lose', module: 'system', label: 'Configurações de sistema' });
+      changes.push({ type: 'lose', module: 'users', label: 'Gerenciamento de usuários' });
+    }
+  }
+  
+  // Mudanças ao virar CEO
+  if (newRole === 'super_admin' && currentRole !== 'super_admin') {
+    changes.push({ type: 'gain', module: 'full', label: 'Acesso total ao sistema' });
+  }
+  
+  // Calcular acesso CRM
+  let crmBefore = 'Sem acesso';
+  let crmAfter = 'Sem acesso';
+  
+  if (currentRole === 'super_admin') crmBefore = 'Acesso total';
+  else if (currentRole === 'admin') crmBefore = 'Acesso total';
+  else if (currentDept?.name === 'Comercial') crmBefore = 'Apenas próprias conversas';
+  
+  if (newRole === 'super_admin') crmAfter = 'Acesso total';
+  else if (newRole === 'admin') crmAfter = 'Acesso total';
+  else if (newDept?.name === 'Comercial') crmAfter = 'Apenas próprias conversas';
+  
+  return {
+    from: {
+      role: currentRole,
+      roleLabel: getHierarchyLabel(currentRole),
+      departamento: currentDeptId || undefined,
+      departamentoLabel: currentDept?.name
+    },
+    to: {
+      role: newRole,
+      roleLabel: getHierarchyLabel(newRole),
+      departamento: newDeptId || undefined,
+      departamentoLabel: newDept?.name
+    },
+    changes,
+    crmAccess: { before: crmBefore, after: crmAfter },
+    warnings
+  };
+}
+
+/** Categoriza o tipo de atividade para exibição */
 function categorizeActivityType(actionType: string): AuditEntry['type'] {
   const type = actionType.toLowerCase();
   if (type.includes('login') || type.includes('signin')) return 'login';
@@ -540,6 +754,7 @@ function categorizeActivityType(actionType: string): AuditEntry['type'] {
   return 'action';
 }
 
+/** Formata o título da atividade para exibição */
 function formatActivityTitle(actionType: string): string {
   const map: Record<string, string> = {
     'login': 'Login',
