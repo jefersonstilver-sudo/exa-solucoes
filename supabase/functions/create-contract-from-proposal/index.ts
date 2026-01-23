@@ -26,16 +26,22 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { proposalId, clientData } = body as { proposalId: string; clientData: ContractClientData };
+    const { proposalId, clientData, preview_only = false } = body as { 
+      proposalId: string; 
+      clientData?: ContractClientData;
+      preview_only?: boolean;
+    };
 
     console.log("📋 ProposalId:", proposalId);
-    console.log("👤 ClientData:", JSON.stringify(clientData, null, 2));
+    console.log("👁️ Preview Only:", preview_only);
+    console.log("👤 ClientData:", clientData ? JSON.stringify(clientData, null, 2) : "(não fornecido - modo preview)");
 
     if (!proposalId) {
       throw new Error("proposalId é obrigatório");
     }
 
-    if (!clientData || !clientData.primeiro_nome || !clientData.cpf || !clientData.data_nascimento) {
+    // Se for modo preview, não exige dados do cliente
+    if (!preview_only && (!clientData || !clientData.primeiro_nome || !clientData.cpf || !clientData.data_nascimento)) {
       throw new Error("Dados do cliente incompletos (nome, CPF e data de nascimento são obrigatórios)");
     }
 
@@ -89,8 +95,118 @@ serve(async (req) => {
       endereco: b.endereco || ''
     }));
 
+    // ==================================================
+    // MODO PREVIEW ONLY - Apenas gera HTML sem salvar
+    // ==================================================
+    if (preview_only) {
+      console.log("👁️ MODO PREVIEW - Gerando HTML sem salvar no banco...");
+      
+      // Criar objeto contrato "virtual" para gerar HTML
+      const contratoVirtual = {
+        id: 'preview',
+        numero_contrato: `PREVIEW-${proposal.number}`,
+        proposta_id: proposalId,
+        tipo_contrato: 'anunciante',
+        status: 'preview',
+        
+        // Dados do cliente - usar da proposta
+        cliente_nome: proposal.client_name || 'Cliente',
+        cliente_sobrenome: '',
+        cliente_email: proposal.client_email,
+        cliente_telefone: proposal.client_phone,
+        cliente_cpf: '',
+        cliente_data_nascimento: null,
+        cliente_razao_social: proposal.client_company_name,
+        cliente_cnpj: proposal.client_cnpj,
+        
+        // Dados comerciais
+        valor_total: valorTotal,
+        valor_mensal: proposal.fidel_monthly_value || (valorTotal / (proposal.duration_months || 1)),
+        plano_meses: proposal.duration_months || 1,
+        data_inicio: startDate.toISOString().split('T')[0],
+        data_fim: endDate.toISOString().split('T')[0],
+        
+        // Prédios e painéis
+        lista_predios: listaPredios,
+        total_paineis: selectedBuildings.reduce((sum: number, b: any) => sum + (b.quantidade_telas || 1), 0),
+        
+        // Pagamento
+        metodo_pagamento: isCustomPayment ? 'personalizado' : 'pix',
+        parcelas: isCustomPayment ? customInstallments : null,
+        
+        // Produto
+        tipo_produto: proposal.tipo_produto || 'horizontal',
+        objeto: 'Contratação de espaço publicitário em painéis digitais de elevadores',
+        
+        // Condições avançadas
+        quantidade_posicoes: proposal.quantidade_posicoes || 1,
+        venda_futura: proposal.venda_futura || false,
+        predios_contratados: proposal.predios_contratados || null,
+        predios_instalados_fechamento: proposal.predios_instalados_no_fechamento || null,
+        cortesia_inicio: proposal.cortesia_inicio || null,
+        cortesia_fim: proposal.cortesia_fim || null,
+        meses_cortesia: proposal.meses_cortesia || null,
+        titulo_proposta: proposal.titulo || null,
+        
+        // Exclusividade
+        exclusividade_segmento: proposal.exclusividade_segmento || false,
+        segmento_exclusivo: proposal.segmento_exclusivo || null,
+        exclusividade_percentual: proposal.exclusividade_percentual || 0,
+        exclusividade_valor_extra: proposal.exclusividade_valor_extra || 0,
+        cliente_escolheu_exclusividade: proposal.cliente_escolheu_exclusividade || false,
+        
+        // Travamento
+        travamento_preco_ativo: proposal.travamento_preco_ativo || false,
+        travamento_preco_valor: proposal.travamento_preco_valor || 0,
+        travamento_telas_atuais: proposal.travamento_telas_atuais || null,
+        travamento_telas_limite: proposal.travamento_telas_limite || null,
+        travamento_preco_por_tela: proposal.travamento_preco_por_tela || null,
+        
+        created_at: new Date().toISOString()
+      };
+
+      // Buscar signatários EXA para o preview
+      const { data: exaSignatarios } = await supabase
+        .from("signatarios_exa")
+        .select("*")
+        .eq("is_active", true)
+        .order('is_default', { ascending: false });
+
+      // Buscar produtos e configurações
+      const { data: produtosExa } = await supabase
+        .from("produtos_exa")
+        .select("*");
+      
+      const { data: configExibicao } = await supabase
+        .from("configuracoes_exibicao")
+        .select("*")
+        .single();
+
+      // Gerar HTML do contrato
+      const contractHtml = generateContractHtml(contratoVirtual, exaSignatarios || [], produtosExa || [], configExibicao);
+
+      console.log("✅ HTML do contrato gerado para preview");
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          preview_only: true,
+          contractHtml,
+          contrato: contratoVirtual
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+
+    // ==================================================
+    // MODO COMPLETO - Salva contrato no banco
+    // ==================================================
+    
     // 5. Criar contrato no banco (status rascunho)
-    console.log("📝 Criando contrato...");
+    console.log("📝 Criando contrato no banco...");
     
     const contratoData = {
       numero_contrato: contratoNumber,
@@ -99,12 +215,12 @@ serve(async (req) => {
       status: 'rascunho',
       
       // Dados do cliente
-      cliente_nome: `${clientData.primeiro_nome} ${clientData.sobrenome}`.trim(),
-      cliente_sobrenome: clientData.sobrenome,
-      cliente_email: clientData.email || proposal.client_email,
-      cliente_telefone: clientData.telefone || proposal.client_phone,
-      cliente_cpf: clientData.cpf.replace(/\D/g, ''),
-      cliente_data_nascimento: clientData.data_nascimento,
+      cliente_nome: `${clientData!.primeiro_nome} ${clientData!.sobrenome}`.trim(),
+      cliente_sobrenome: clientData!.sobrenome,
+      cliente_email: clientData!.email || proposal.client_email,
+      cliente_telefone: clientData!.telefone || proposal.client_phone,
+      cliente_cpf: clientData!.cpf.replace(/\D/g, ''),
+      cliente_data_nascimento: clientData!.data_nascimento,
       cliente_razao_social: proposal.client_company_name,
       cliente_cnpj: proposal.client_cnpj,
       
@@ -172,11 +288,11 @@ serve(async (req) => {
       .insert({
         contrato_id: contrato.id,
         tipo: 'cliente',
-        nome: clientData.primeiro_nome,
-        sobrenome: clientData.sobrenome,
-        email: clientData.email || proposal.client_email,
-        cpf: clientData.cpf.replace(/\D/g, ''),
-        data_nascimento: clientData.data_nascimento,
+        nome: clientData!.primeiro_nome,
+        sobrenome: clientData!.sobrenome,
+        email: clientData!.email || proposal.client_email,
+        cpf: clientData!.cpf.replace(/\D/g, ''),
+        data_nascimento: clientData!.data_nascimento,
         ordem: 1
       });
 
@@ -260,9 +376,9 @@ serve(async (req) => {
         body: {
           type: "contract_created",
           lead: {
-            name: `${clientData.primeiro_nome} ${clientData.sobrenome}`,
+            name: `${clientData!.primeiro_nome} ${clientData!.sobrenome}`,
             phone: proposal.client_phone,
-            email: clientData.email || proposal.client_email
+            email: clientData!.email || proposal.client_email
           },
           data: {
             proposal_id: proposalId,

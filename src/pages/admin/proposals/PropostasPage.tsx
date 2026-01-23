@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone, Bell, BellOff, RefreshCcw, Calendar } from 'lucide-react';
+import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone, Bell, BellOff, RefreshCcw, Calendar, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { format, isToday, startOfMonth, endOfMonth, formatDistanceToNow, isWithinInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExporter';
+import { ContractPDFExporter } from '@/components/admin/contracts/ContractPDFExporter';
 import { ProposalMobileList } from '@/components/admin/proposals/ProposalMobileList';
 import { ProposalPreviewModal } from '@/components/admin/proposals/ProposalPreviewModal';
 import { ProposalsPeriodSelector, getDefaultPeriod, type PeriodRange } from '@/components/admin/proposals/ProposalsPeriodSelector';
@@ -613,6 +614,55 @@ const PropostasPage = () => {
     }
   };
 
+  // Gerar PDF do contrato (preview limpo sem salvar no banco)
+  const handleGenerateContractPDF = async (proposal: Proposal) => {
+    try {
+      toast.loading('Gerando contrato PDF...', { id: 'contract-pdf' });
+      
+      // 1. Chamar Edge Function para gerar HTML do contrato (preview only)
+      const { data, error } = await supabase.functions.invoke('create-contract-from-proposal', {
+        body: {
+          proposalId: proposal.id,
+          preview_only: true
+        }
+      });
+      
+      if (error) {
+        console.error('Erro na Edge Function:', error);
+        throw new Error('Falha ao gerar contrato');
+      }
+
+      if (!data?.success || !data?.contractHtml) {
+        console.error('Resposta inválida:', data);
+        throw new Error(data?.error || 'Falha ao gerar HTML do contrato');
+      }
+      
+      // 2. Criar elemento temporário para renderização
+      const tempContainer = document.createElement('div');
+      tempContainer.id = 'temp-contract-preview';
+      tempContainer.innerHTML = data.contractHtml;
+      tempContainer.style.cssText = 'position: absolute; left: -9999px; width: 794px; background: white;';
+      document.body.appendChild(tempContainer);
+      
+      // 3. Aguardar renderização
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // 4. Gerar PDF
+      await ContractPDFExporter.exportFromElement(
+        tempContainer, 
+        `Contrato_Proposta_${proposal.number}.pdf`
+      );
+      
+      // 5. Limpar
+      document.body.removeChild(tempContainer);
+      
+      toast.success('Contrato PDF gerado com sucesso!', { id: 'contract-pdf' });
+    } catch (error: any) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error(error.message || 'Erro ao gerar contrato PDF', { id: 'contract-pdf' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 relative">
       {/* Live View Notifications */}
@@ -1071,6 +1121,11 @@ const PropostasPage = () => {
                           <DropdownMenuItem onClick={() => handleResend(proposal, 'email')}>
                             <Mail className="h-4 w-4 mr-2" />
                             Reenviar Email
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleGenerateContractPDF(proposal)}>
+                            <FileDown className="h-4 w-4 mr-2" />
+                            Gerar Contrato PDF
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
