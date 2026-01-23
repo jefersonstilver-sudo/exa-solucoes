@@ -142,7 +142,14 @@ serve(async (req) => {
       segmento_exclusivo: proposal.segmento_exclusivo || null,
       exclusividade_percentual: proposal.exclusividade_percentual || 0,
       exclusividade_valor_extra: proposal.exclusividade_valor_extra || 0,
-      cliente_escolheu_exclusividade: proposal.cliente_escolheu_exclusividade || false
+      cliente_escolheu_exclusividade: proposal.cliente_escolheu_exclusividade || false,
+      
+      // TRAVAMENTO DE PREÇO
+      travamento_preco_ativo: proposal.travamento_preco_ativo || false,
+      travamento_preco_valor: proposal.travamento_preco_valor || 0,
+      travamento_telas_atuais: proposal.travamento_telas_atuais || null,
+      travamento_telas_limite: proposal.travamento_telas_limite || null,
+      travamento_preco_por_tela: proposal.travamento_preco_por_tela || null
     };
 
     const { data: contrato, error: contratoError } = await supabase
@@ -493,9 +500,11 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
   // Verificar se é cortesia
   const isCortesia = contrato.valor_total === 0;
   
-  // ========== OFFSET DE NUMERAÇÃO PARA EXCLUSIVIDADE ==========
-  // Se cliente escolheu exclusividade, adiciona +1 em todas as cláusulas após a 5ª
-  const clauseOffset = contrato.cliente_escolheu_exclusividade ? 1 : 0;
+  // ========== OFFSET DE NUMERAÇÃO PARA EXCLUSIVIDADE E TRAVAMENTO ==========
+  // Adiciona +1 para cada cláusula extra (exclusividade e/ou travamento de preço)
+  let clauseOffset = 0;
+  if (contrato.cliente_escolheu_exclusividade) clauseOffset += 1;
+  if (contrato.travamento_preco_ativo) clauseOffset += 1;
 
   return `
     <!DOCTYPE html>
@@ -1168,7 +1177,37 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
       </div>
       ` : ''}
 
-      <!-- CLÁUSULA ${6 + clauseOffset}: DAS ESPECIFICAÇÕES TÉCNICAS -->
+      ${contrato.travamento_preco_ativo ? `
+      <!-- CLÁUSULA DE TRAVAMENTO DE PREÇO (CONDICIONAL) -->
+      <div class="section no-break">
+        <div class="section-title">CLÁUSULA ${contrato.cliente_escolheu_exclusividade ? '7' : '6'}ª - DO TRAVAMENTO DE PREÇO</div>
+        <div class="clause">
+          <div class="highlight-box" style="background: #e3f2fd; border-color: #2196f3;">
+            <strong>🔒 TRAVAMENTO DE PREÇO GARANTIDO</strong><br>
+            Telas atuais: <strong>${contrato.travamento_telas_atuais || '-'}</strong> | 
+            Limite garantido: <strong>até ${contrato.travamento_telas_limite || '-'} telas</strong> | 
+            Preço travado: <strong>${formatCurrency(contrato.travamento_preco_por_tela || 0)}/tela/mês</strong>
+            ${contrato.travamento_preco_valor && contrato.travamento_preco_valor > 0 
+              ? `<br>Valor do travamento: <strong>${formatCurrency(contrato.travamento_preco_valor)}</strong>` 
+              : '<br><em>Garantia incluída sem custo adicional</em>'}
+          </div>
+          
+          <p><span class="clause-title">${contrato.cliente_escolheu_exclusividade ? '7' : '6'}.1.</span> Este contrato garante ao CONTRATANTE o direito de <strong>expandir sua veiculação</strong> das atuais ${contrato.travamento_telas_atuais || '-'} telas para até <strong>${contrato.travamento_telas_limite || '-'} telas</strong>, mantendo o valor unitário de <strong>${formatCurrency(contrato.travamento_preco_por_tela || 0)} por tela/mês</strong>.</p>
+          
+          <p><span class="clause-title">${contrato.cliente_escolheu_exclusividade ? '7' : '6'}.2.</span> O travamento de preço é válido para expansões dentro da rede de prédios da CONTRATADA, durante toda a vigência contratual e em eventuais renovações subsequentes.</p>
+          
+          <p><span class="clause-title">${contrato.cliente_escolheu_exclusividade ? '7' : '6'}.3.</span> A expansão deverá ser solicitada formalmente à CONTRATADA, que terá prazo de até 30 (trinta) dias para viabilizar a instalação nos novos locais, sujeito à disponibilidade técnica.</p>
+          
+          ${contrato.travamento_preco_valor && contrato.travamento_preco_valor > 0 ? `
+          <p><span class="clause-title">${contrato.cliente_escolheu_exclusividade ? '7' : '6'}.4.</span> Pelo benefício de travamento de preço, foi acordado o valor adicional de <strong>${formatCurrency(contrato.travamento_preco_valor)}</strong>, já incluído no valor total deste contrato.</p>
+          ` : `
+          <p><span class="clause-title">${contrato.cliente_escolheu_exclusividade ? '7' : '6'}.4.</span> O travamento de preço é concedido a título de <strong>condição especial</strong>, sem custo adicional para o CONTRATANTE.</p>
+          `}
+          
+          <p><span class="clause-title">${contrato.cliente_escolheu_exclusividade ? '7' : '6'}.5.</span> O direito ao travamento de preço é intransferível e está vinculado ao CNPJ/CPF do CONTRATANTE, não podendo ser cedido a terceiros.</p>
+        </div>
+      </div>
+      ` : ''}
       <div class="section no-break">
         <div class="section-title">CLÁUSULA ${6 + clauseOffset}ª - DAS ESPECIFICAÇÕES TÉCNICAS</div>
         <div class="clause">
