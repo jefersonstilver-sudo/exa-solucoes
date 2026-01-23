@@ -125,6 +125,11 @@ const AdminRoutes = () => {
           <NovaPropostaPage />
         </ProtectedModuleRoute>
       } />
+      <Route path="propostas/:id/editar" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.propostas}>
+          <NovaPropostaPage />
+        </ProtectedModuleRoute>
+      } />
       <Route path="propostas/:id" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.propostas}>
           <PropostaDetalhesPage />
