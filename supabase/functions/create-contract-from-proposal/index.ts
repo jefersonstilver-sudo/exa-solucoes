@@ -1122,7 +1122,24 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
           ` : ''}
           
           ${contrato.venda_futura ? `
-          <p><span class="clause-title">4.${contrato.quantidade_posicoes > 1 ? '5' : '4'}.</span> <strong>CONDIÇÃO ESPECIAL - VENDA FUTURA:</strong> Este contrato contempla a meta de <strong>${contrato.predios_contratados || '-'} prédios</strong>. Na data de fechamento, encontram-se instalados <strong>${contrato.predios_instalados_fechamento || '-'} prédios</strong>. O CONTRATANTE terá direito a um <strong>período de cortesia</strong>${contrato.cortesia_inicio && contrato.cortesia_fim ? ` (de ${formatDateShort(contrato.cortesia_inicio)} a ${formatDateShort(contrato.cortesia_fim)}, aproximadamente ${contrato.meses_cortesia || '-'} meses)` : ''}, durante o qual a veiculação ocorrerá sem cobrança, até que a meta de prédios seja atingida. Após atingida a meta, inicia-se o período de vigência paga conforme cláusula 5ª.</p>
+          <div class="highlight-box" style="background: #fff3e0; border-color: #ff9800; margin-top: 15px;">
+            <strong>⚠️ CONTRATO DE VENDA FUTURA - INÍCIO CONDICIONADO À EXPANSÃO</strong><br>
+            Meta contratada: <strong>${contrato.predios_contratados || '-'} prédios</strong><br>
+            Prédios instalados no fechamento: <strong>${contrato.predios_instalados_fechamento || '-'} prédios</strong><br>
+            <em><strong>IMPORTANTE:</strong> O período de vigência paga de ${contrato.plano_meses} ${contrato.plano_meses === 1 ? 'mês' : 'meses'} SOMENTE terá início quando a meta de ${contrato.predios_contratados || '-'} prédios for atingida.</em>
+          </div>
+          
+          <p><span class="clause-title">4.${contrato.quantidade_posicoes > 1 ? '5' : '4'}.</span> <strong>MODALIDADE DE VENDA FUTURA:</strong> Este contrato é firmado sob a <strong>modalidade de VENDA FUTURA</strong>, onde o CONTRATANTE garante antecipadamente sua posição na rede publicitária da CONTRATADA, que se encontra em fase de expansão.</p>
+          
+          <p><span class="clause-title">4.${contrato.quantidade_posicoes > 1 ? '5' : '4'}.1.</span> Na data de assinatura deste instrumento, a CONTRATADA possui <strong>${contrato.predios_instalados_fechamento || '-'} prédios</strong> instalados e operacionais. A meta contratada pelo CONTRATANTE é de <strong>${contrato.predios_contratados || '-'} prédios</strong>.</p>
+          
+          <p><span class="clause-title">4.${contrato.quantidade_posicoes > 1 ? '5' : '4'}.2.</span> <strong>PERÍODO DE CORTESIA (100% gratuito):</strong> Enquanto a meta de ${contrato.predios_contratados || '-'} prédios não for atingida, o CONTRATANTE terá seu material publicitário veiculado <strong>gratuitamente</strong> em todos os prédios disponíveis da rede, sem qualquer cobrança${contrato.cortesia_inicio && contrato.cortesia_fim ? ` (período estimado: ${formatDateShort(contrato.cortesia_inicio)} a ${formatDateShort(contrato.cortesia_fim)})` : ''}.</p>
+          
+          <p><span class="clause-title">4.${contrato.quantidade_posicoes > 1 ? '5' : '4'}.3.</span> <strong>INÍCIO DA VIGÊNCIA PAGA:</strong> O prazo contratual de <strong>${contrato.plano_meses} (${contrato.plano_meses === 1 ? 'um' : contrato.plano_meses === 3 ? 'três' : contrato.plano_meses === 6 ? 'seis' : 'doze'}) ${contrato.plano_meses === 1 ? 'mês' : 'meses'}</strong> estabelecido na Cláusula 4.1 <strong>SOMENTE TERÁ INÍCIO</strong> na data em que a CONTRATADA comunicar formalmente ao CONTRATANTE que a meta de ${contrato.predios_contratados || '-'} prédios foi atingida. A partir dessa data, passam a contar as cobranças e o período contratual.</p>
+          
+          <p><span class="clause-title">4.${contrato.quantidade_posicoes > 1 ? '5' : '4'}.4.</span> A CONTRATADA compromete-se a notificar o CONTRATANTE por e-mail, com antecedência mínima de 15 (quinze) dias, sobre o atingimento da meta e consequente início da vigência paga.</p>
+          
+          <p><span class="clause-title">4.${contrato.quantidade_posicoes > 1 ? '5' : '4'}.5.</span> <strong>GARANTIA DE PREÇO:</strong> O valor por tela contratado neste instrumento permanecerá inalterado durante todo o período de cortesia e durante toda a vigência paga, não estando sujeito a reajustes pela expansão da rede ou inflação.</p>
           ` : ''}
         </div>
       </div>
@@ -1490,59 +1507,92 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
   `;
 }
 
-// Helper function to convert number to words (Portuguese)
+// Helper function to convert number to words (Portuguese) - Suporta até milhões
 function valorPorExtenso(valor: number): string {
+  if (!valor || isNaN(valor)) return 'valor não informado';
   if (valor === 0) return 'zero reais';
   
-  const unidades = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
-  const especiais = ['dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+  const unidades = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
   const dezenas = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
   const centenas = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
-  
+
+  // Função auxiliar para converter grupos de até 3 dígitos (0-999)
+  function grupo(n: number): string {
+    if (n === 0) return '';
+    if (n === 100) return 'cem';
+    
+    let resultado = '';
+    const c = Math.floor(n / 100);
+    const du = n % 100;
+    
+    if (c > 0) resultado += centenas[c];
+    
+    if (du > 0 && c > 0) resultado += ' e ';
+    
+    if (du >= 1 && du <= 19) {
+      resultado += unidades[du];
+    } else if (du >= 20) {
+      const d = Math.floor(du / 10);
+      const u = du % 10;
+      resultado += dezenas[d];
+      if (u > 0) resultado += ' e ' + unidades[u];
+    }
+    
+    return resultado;
+  }
+
   const parteInteira = Math.floor(valor);
   const centavos = Math.round((valor - parteInteira) * 100);
-  
+
   let resultado = '';
   
-  if (parteInteira >= 1000) {
-    const milhares = Math.floor(parteInteira / 1000);
+  // Milhões (1.000.000+)
+  const milhoes = Math.floor(parteInteira / 1000000);
+  if (milhoes > 0) {
+    resultado += grupo(milhoes) + (milhoes === 1 ? ' milhão' : ' milhões');
+  }
+  
+  // Milhares (1.000 - 999.999)
+  const milhares = Math.floor((parteInteira % 1000000) / 1000);
+  if (milhares > 0) {
+    if (resultado) resultado += ' ';
     if (milhares === 1) {
-      resultado += 'mil ';
+      resultado += 'mil';
     } else {
-      resultado += unidades[milhares] + ' mil ';
+      resultado += grupo(milhares) + ' mil';
     }
   }
   
+  // Centenas e unidades (1 - 999)
   const resto = parteInteira % 1000;
-  
-  if (resto >= 100) {
-    const c = Math.floor(resto / 100);
-    if (resto === 100) {
-      resultado += 'cem ';
-    } else {
-      resultado += centenas[c] + ' e ';
+  if (resto > 0) {
+    if (resultado && resto < 100) {
+      resultado += ' e ';
+    } else if (resultado) {
+      resultado += ' ';
     }
+    resultado += grupo(resto);
   }
   
-  const dezena = resto % 100;
-  
-  if (dezena >= 10 && dezena < 20) {
-    resultado += especiais[dezena - 10] + ' ';
-  } else {
-    if (dezena >= 20) {
-      resultado += dezenas[Math.floor(dezena / 10)] + ' ';
-      if (dezena % 10 > 0) {
-        resultado += 'e ' + unidades[dezena % 10] + ' ';
-      }
-    } else if (dezena > 0) {
-      resultado += unidades[dezena] + ' ';
-    }
+  // Reais
+  if (parteInteira === 1) {
+    resultado += ' real';
+  } else if (parteInteira > 0) {
+    resultado += ' reais';
   }
   
-  resultado += parteInteira === 1 ? 'real' : 'reais';
-  
+  // Centavos por extenso
   if (centavos > 0) {
-    resultado += ' e ' + centavos + (centavos === 1 ? ' centavo' : ' centavos');
+    if (parteInteira > 0) resultado += ' e ';
+    if (centavos >= 1 && centavos <= 19) {
+      resultado += unidades[centavos];
+    } else {
+      const dc = Math.floor(centavos / 10);
+      const uc = centavos % 10;
+      resultado += dezenas[dc];
+      if (uc > 0) resultado += ' e ' + unidades[uc];
+    }
+    resultado += centavos === 1 ? ' centavo' : ' centavos';
   }
   
   return resultado.trim();
