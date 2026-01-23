@@ -369,9 +369,12 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
       
       toast.success('Informações atualizadas!');
       
-      // Se é o próprio usuário, atualizar estado global
+      // SEMPRE atualizar o estado global se for o próprio usuário
+      console.log('🔄 [useUserConsole] Verificando refresh:', { editedUserId: user.id, loggedUserId: userProfile?.id });
       if (user.id === userProfile?.id) {
+        console.log('🔄 [useUserConsole] Chamando refreshUserProfile...');
         await refreshUserProfile();
+        console.log('✅ [useUserConsole] refreshUserProfile concluído');
       }
       
       onUserUpdated();

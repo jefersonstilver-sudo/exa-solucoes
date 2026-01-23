@@ -289,9 +289,12 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
 
       toast.success('Informações atualizadas!');
       
-      // Se o usuário editado é o próprio usuário logado, atualizar o estado global
+      // SEMPRE atualizar o estado global se for o próprio usuário
+      console.log('🔄 Verificando refresh:', { editedUserId: user.id, loggedUserId: userProfile?.id });
       if (user.id === userProfile?.id) {
+        console.log('🔄 Chamando refreshUserProfile para atualizar nome globalmente...');
         await refreshUserProfile();
+        console.log('✅ refreshUserProfile concluído');
       }
       
       onUserUpdated();
