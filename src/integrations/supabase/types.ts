@@ -10773,6 +10773,8 @@ export type Database = {
           meses_cortesia: number | null
           metadata: Json | null
           modified_by: string | null
+          multa_rescisao_ativa: boolean | null
+          multa_rescisao_percentual: number | null
           needs_reacceptance: boolean | null
           number: string
           payment_type: string | null
@@ -10855,6 +10857,8 @@ export type Database = {
           meses_cortesia?: number | null
           metadata?: Json | null
           modified_by?: string | null
+          multa_rescisao_ativa?: boolean | null
+          multa_rescisao_percentual?: number | null
           needs_reacceptance?: boolean | null
           number: string
           payment_type?: string | null
@@ -10937,6 +10941,8 @@ export type Database = {
           meses_cortesia?: number | null
           metadata?: Json | null
           modified_by?: string | null
+          multa_rescisao_ativa?: boolean | null
+          multa_rescisao_percentual?: number | null
           needs_reacceptance?: boolean | null
           number?: string
           payment_type?: string | null
