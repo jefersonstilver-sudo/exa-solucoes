@@ -230,6 +230,10 @@ const NovaPropostaPage = () => {
   const [travamentoModoCalculo, setTravamentoModoCalculo] = useState<'automatico' | 'manual'>('automatico');
   const [travamentoPrecoManual, setTravamentoPrecoManual] = useState<number>(0);
 
+  // Estados para Multa de Rescisão
+  const [multaRescisaoAtiva, setMultaRescisaoAtiva] = useState(true);
+  const [multaRescisaoPercentual, setMultaRescisaoPercentual] = useState<number>(20);
+
   // Opções de período
   const periodOptions = [{
     value: 1,
@@ -552,6 +556,10 @@ const NovaPropostaPage = () => {
       setTravamentoPrecoAtivo(existingProposal.travamento_preco_ativo || false);
       setTravamentoPrecoValor(existingProposal.travamento_preco_valor || 0);
       setTravamentoTelasLimite(existingProposal.travamento_telas_limite || 50);
+
+      // Multa de rescisão
+      setMultaRescisaoAtiva(existingProposal.multa_rescisao_ativa !== false);
+      setMultaRescisaoPercentual(existingProposal.multa_rescisao_percentual || 20);
 
       // CC Emails
       if (existingProposal.cc_emails) {
@@ -955,7 +963,9 @@ const NovaPropostaPage = () => {
         travamento_preco_por_tela: travamentoPrecoAtivo && totalPanels > 0 
           ? (travamentoModoCalculo === 'automatico' ? valorMensalEfetivo / totalPanels : travamentoPrecoManual)
           : null,
-        travamento_modo_calculo: travamentoPrecoAtivo ? travamentoModoCalculo : null
+        travamento_modo_calculo: travamentoPrecoAtivo ? travamentoModoCalculo : null,
+        multa_rescisao_ativa: multaRescisaoAtiva,
+        multa_rescisao_percentual: multaRescisaoAtiva ? multaRescisaoPercentual : null
       };
 
       let proposal;
@@ -2519,6 +2529,71 @@ const NovaPropostaPage = () => {
                       }
                     </p>
                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* Card: Multa de Rescisão de Contrato */}
+            <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-rose-600 to-rose-800 rounded-lg">
+                    <FileText className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Multa de Rescisão</p>
+                    <p className="text-xs text-muted-foreground">
+                      Penalidade por quebra antecipada de contrato
+                    </p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={multaRescisaoAtiva} 
+                  onCheckedChange={setMultaRescisaoAtiva} 
+                  className="data-[state=checked]:bg-rose-600" 
+                />
+              </div>
+
+              {/* Conteúdo expandido quando ativado */}
+              {multaRescisaoAtiva && (
+                <div className="space-y-3 pt-3 border-t border-slate-200">
+                  {/* Slider de Percentual */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs text-slate-600">Percentual da Multa</Label>
+                      <span className="text-lg font-bold text-rose-700">{multaRescisaoPercentual}%</span>
+                    </div>
+                    <Slider
+                      value={[multaRescisaoPercentual]}
+                      onValueChange={(values) => setMultaRescisaoPercentual(values[0])}
+                      min={0}
+                      max={50}
+                      step={5}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span>0%</span>
+                      <span>25%</span>
+                      <span>50%</span>
+                    </div>
+                  </div>
+
+                  {/* Explicação */}
+                  <div className="p-3 bg-rose-50/80 rounded-lg border border-rose-200">
+                    <p className="text-xs text-rose-700">
+                      Em caso de rescisão antecipada, o cliente pagará <span className="font-bold">{multaRescisaoPercentual}%</span> sobre o valor remanescente do contrato.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Preview quando desativado */}
+              {!multaRescisaoAtiva && (
+                <div className="p-3 bg-emerald-50/80 rounded-lg border border-emerald-200">
+                  <p className="text-xs text-emerald-700 flex items-center gap-2">
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Contrato sem multa de rescisão
+                  </p>
                 </div>
               )}
             </div>
