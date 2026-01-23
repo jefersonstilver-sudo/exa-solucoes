@@ -3823,6 +3823,7 @@ export type Database = {
           tipo_produto: string | null
           titulo_proposta: string | null
           total_paineis: number | null
+          travamento_modo_calculo: string | null
           travamento_preco_ativo: boolean | null
           travamento_preco_por_tela: number | null
           travamento_preco_valor: number | null
@@ -3899,6 +3900,7 @@ export type Database = {
           tipo_produto?: string | null
           titulo_proposta?: string | null
           total_paineis?: number | null
+          travamento_modo_calculo?: string | null
           travamento_preco_ativo?: boolean | null
           travamento_preco_por_tela?: number | null
           travamento_preco_valor?: number | null
@@ -3975,6 +3977,7 @@ export type Database = {
           tipo_produto?: string | null
           titulo_proposta?: string | null
           total_paineis?: number | null
+          travamento_modo_calculo?: string | null
           travamento_preco_ativo?: boolean | null
           travamento_preco_por_tela?: number | null
           travamento_preco_valor?: number | null
@@ -10792,6 +10795,7 @@ export type Database = {
           total_impressions_month: number
           total_panels: number
           total_time_spent_seconds: number | null
+          travamento_modo_calculo: string | null
           travamento_preco_ativo: boolean | null
           travamento_preco_por_tela: number | null
           travamento_preco_valor: number | null
@@ -10873,6 +10877,7 @@ export type Database = {
           total_impressions_month?: number
           total_panels?: number
           total_time_spent_seconds?: number | null
+          travamento_modo_calculo?: string | null
           travamento_preco_ativo?: boolean | null
           travamento_preco_por_tela?: number | null
           travamento_preco_valor?: number | null
@@ -10954,6 +10959,7 @@ export type Database = {
           total_impressions_month?: number
           total_panels?: number
           total_time_spent_seconds?: number | null
+          travamento_modo_calculo?: string | null
           travamento_preco_ativo?: boolean | null
           travamento_preco_por_tela?: number | null
           travamento_preco_valor?: number | null

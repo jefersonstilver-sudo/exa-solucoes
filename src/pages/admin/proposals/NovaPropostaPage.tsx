@@ -225,6 +225,8 @@ const NovaPropostaPage = () => {
   const [travamentoPrecoAtivo, setTravamentoPrecoAtivo] = useState(false);
   const [travamentoPrecoValor, setTravamentoPrecoValor] = useState<number>(0);
   const [travamentoTelasLimite, setTravamentoTelasLimite] = useState<number>(50);
+  const [travamentoModoCalculo, setTravamentoModoCalculo] = useState<'automatico' | 'manual'>('automatico');
+  const [travamentoPrecoManual, setTravamentoPrecoManual] = useState<number>(0);
 
   // Opções de período
   const periodOptions = [{
@@ -813,7 +815,10 @@ const NovaPropostaPage = () => {
         travamento_preco_valor: travamentoPrecoAtivo ? travamentoPrecoValor : null,
         travamento_telas_atuais: travamentoPrecoAtivo ? totalPanels : null,
         travamento_telas_limite: travamentoPrecoAtivo ? travamentoTelasLimite : null,
-        travamento_preco_por_tela: travamentoPrecoAtivo && totalPanels > 0 ? fidelMonthly / totalPanels : null
+        travamento_preco_por_tela: travamentoPrecoAtivo && totalPanels > 0 
+          ? (travamentoModoCalculo === 'automatico' ? fidelMonthly / totalPanels : travamentoPrecoManual)
+          : null,
+        travamento_modo_calculo: travamentoPrecoAtivo ? travamentoModoCalculo : null
       }]).select().single();
       if (error) throw error;
 
@@ -2195,7 +2200,7 @@ const NovaPropostaPage = () => {
                     </div>
                   </div>
 
-                  {/* Limite de Telas para Travamento */}
+                  {/* Limite de Telas */}
                   <div className="space-y-1.5">
                     <Label className="text-xs text-slate-600">Limite de Telas para Travamento</Label>
                     <Input
@@ -2226,19 +2231,78 @@ const NovaPropostaPage = () => {
                     </p>
                   </div>
 
-                  {/* Preço por Tela Travado (calculado) */}
-                  <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <div className="flex justify-between items-center text-xs mb-1">
-                      <span className="text-blue-700">Preço por tela travado:</span>
-                      <span className="font-bold text-blue-800">
-                        {formatCurrency(totalPanels > 0 ? fidelMonthly / totalPanels : 0)}/tela/mês
-                      </span>
+                  {/* Modo de Cálculo do Preço Travado */}
+                  <div className="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <Label className="text-xs text-slate-700 font-medium">Modo de Cálculo do Preço Travado</Label>
+                    
+                    {/* Opção Automático */}
+                    <div 
+                      className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                        travamentoModoCalculo === 'automatico' 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => setTravamentoModoCalculo('automatico')}
+                    >
+                      <div className={`w-4 h-4 mt-0.5 rounded-full border-2 flex items-center justify-center ${
+                        travamentoModoCalculo === 'automatico' ? 'border-primary' : 'border-gray-300'
+                      }`}>
+                        {travamentoModoCalculo === 'automatico' && (
+                          <div className="w-2 h-2 rounded-full bg-primary" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">Conforme Proposta (automático)</div>
+                        <p className="text-[10px] text-muted-foreground">
+                          Calcula baseado no valor total ÷ número de telas
+                        </p>
+                        <div className="mt-2 p-2 bg-white rounded border">
+                          <span className="text-xs text-slate-600">Preço calculado: </span>
+                          <span className="font-bold text-primary">
+                            {formatCurrency(totalPanels > 0 ? fidelMonthly / totalPanels : 0)}/tela/mês
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-blue-700">Expansão garantida:</span>
-                      <span className="font-semibold text-blue-800">
-                        + {travamentoTelasLimite - totalPanels} telas
-                      </span>
+
+                    {/* Opção Manual */}
+                    <div 
+                      className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                        travamentoModoCalculo === 'manual' 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => setTravamentoModoCalculo('manual')}
+                    >
+                      <div className={`w-4 h-4 mt-0.5 rounded-full border-2 flex items-center justify-center ${
+                        travamentoModoCalculo === 'manual' ? 'border-primary' : 'border-gray-300'
+                      }`}>
+                        {travamentoModoCalculo === 'manual' && (
+                          <div className="w-2 h-2 rounded-full bg-primary" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">Valor Manual por Painel</div>
+                        <p className="text-[10px] text-muted-foreground mb-2">
+                          Defina um valor fixo por tela/mês
+                        </p>
+                        {travamentoModoCalculo === 'manual' && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">R$</span>
+                            <Input
+                              type="number"
+                              value={travamentoPrecoManual || ''}
+                              onChange={(e) => setTravamentoPrecoManual(Math.max(0, parseFloat(e.target.value) || 0))}
+                              placeholder="0,00"
+                              className="h-9 w-32"
+                              min={0}
+                              step={0.01}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span className="text-sm text-muted-foreground">/tela/mês</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -2250,10 +2314,30 @@ const NovaPropostaPage = () => {
                         {travamentoPrecoValor === 0 ? 'Garantia Incluída' : 'Opção de Travamento'}
                       </span>
                     </div>
-                    <p className={`text-[10px] ${travamentoPrecoValor === 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
-                      {travamentoPrecoValor === 0 
-                        ? `Proposta inclui garantia de travamento de preço para até ${travamentoTelasLimite} telas`
-                        : `Cliente pode adquirir travamento por + ${formatCurrency(travamentoPrecoValor)}`
+                    <div className="flex justify-between items-center text-xs mb-1">
+                      <span className={travamentoPrecoValor === 0 ? 'text-emerald-600' : 'text-amber-600'}>
+                        Preço por tela travado:
+                      </span>
+                      <span className={`font-bold ${travamentoPrecoValor === 0 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                        {formatCurrency(
+                          travamentoModoCalculo === 'automatico'
+                            ? (totalPanels > 0 ? fidelMonthly / totalPanels : 0)
+                            : travamentoPrecoManual
+                        )}/tela/mês
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs mb-1">
+                      <span className={travamentoPrecoValor === 0 ? 'text-emerald-600' : 'text-amber-600'}>
+                        Expansão garantida:
+                      </span>
+                      <span className={`font-semibold ${travamentoPrecoValor === 0 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                        + {travamentoTelasLimite - totalPanels} telas
+                      </span>
+                    </div>
+                    <p className={`text-[10px] mt-2 ${travamentoPrecoValor === 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      {travamentoModoCalculo === 'automatico' 
+                        ? '📊 Calculado conforme valor da proposta'
+                        : '✏️ Valor definido manualmente'
                       }
                     </p>
                   </div>
