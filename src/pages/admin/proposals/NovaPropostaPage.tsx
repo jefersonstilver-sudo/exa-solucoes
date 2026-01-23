@@ -221,6 +221,11 @@ const NovaPropostaPage = () => {
   const [verificandoExclusividade, setVerificandoExclusividade] = useState(false);
   const [segmentoPopoverOpen, setSegmentoPopoverOpen] = useState(false);
 
+  // Estados para Travamento de Preço
+  const [travamentoPrecoAtivo, setTravamentoPrecoAtivo] = useState(false);
+  const [travamentoPrecoValor, setTravamentoPrecoValor] = useState<number>(0);
+  const [travamentoTelasLimite, setTravamentoTelasLimite] = useState<number>(50);
+
   // Opções de período
   const periodOptions = [{
     value: 1,
@@ -802,7 +807,13 @@ const NovaPropostaPage = () => {
         exclusividade_percentual: oferecerExclusividade ? exclusividadePercentual : null,
         exclusividade_valor_extra: oferecerExclusividade ? exclusividadeValorCalculado : null,
         exclusividade_disponivel: exclusividadeDisponivel ?? true,
-        cliente_escolheu_exclusividade: null
+        cliente_escolheu_exclusividade: null,
+        // Campos de Travamento de Preço
+        travamento_preco_ativo: travamentoPrecoAtivo,
+        travamento_preco_valor: travamentoPrecoAtivo ? travamentoPrecoValor : null,
+        travamento_telas_atuais: travamentoPrecoAtivo ? totalPanels : null,
+        travamento_telas_limite: travamentoPrecoAtivo ? travamentoTelasLimite : null,
+        travamento_preco_por_tela: travamentoPrecoAtivo && totalPanels > 0 ? fidelMonthly / totalPanels : null
       }]).select().single();
       if (error) throw error;
 
@@ -2143,6 +2154,109 @@ const NovaPropostaPage = () => {
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+            </div>
+
+            {/* Card: Travamento de Preço para Expansão Futura */}
+            <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg">
+                    <Lock className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Travamento de Preço</p>
+                    <p className="text-xs text-muted-foreground">
+                      Garante o preço atual para expansões futuras
+                    </p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={travamentoPrecoAtivo} 
+                  onCheckedChange={(checked) => {
+                    setTravamentoPrecoAtivo(checked);
+                    if (checked && travamentoTelasLimite < totalPanels) {
+                      setTravamentoTelasLimite(Math.ceil(totalPanels * 3));
+                    }
+                  }} 
+                  className="data-[state=checked]:bg-blue-600" 
+                />
+              </div>
+
+              {/* Conteúdo expandido quando ativado */}
+              {travamentoPrecoAtivo && (
+                <div className="space-y-4 pt-3 border-t border-slate-200">
+                  {/* Telas Atuais (readonly) */}
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-blue-700 font-medium">Telas Instaladas Hoje</span>
+                      <span className="text-lg font-bold text-blue-800">{totalPanels}</span>
+                    </div>
+                  </div>
+
+                  {/* Limite de Telas para Travamento */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-slate-600">Limite de Telas para Travamento</Label>
+                    <Input
+                      type="number"
+                      value={travamentoTelasLimite}
+                      onChange={(e) => setTravamentoTelasLimite(Math.max(totalPanels, parseInt(e.target.value) || totalPanels))}
+                      className="h-10 text-base font-semibold"
+                      min={totalPanels}
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Cliente poderá expandir até {travamentoTelasLimite} telas mantendo o preço atual
+                    </p>
+                  </div>
+
+                  {/* Valor do Travamento */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-slate-600">Valor do Travamento (R$)</Label>
+                    <Input
+                      type="number"
+                      value={travamentoPrecoValor}
+                      onChange={(e) => setTravamentoPrecoValor(Math.max(0, parseFloat(e.target.value) || 0))}
+                      placeholder="0 = gratuito"
+                      className="h-10"
+                      min={0}
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      {travamentoPrecoValor === 0 ? '✨ Travamento gratuito como benefício especial' : `Taxa adicional de ${formatCurrency(travamentoPrecoValor)} pelo travamento`}
+                    </p>
+                  </div>
+
+                  {/* Preço por Tela Travado (calculado) */}
+                  <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                    <div className="flex justify-between items-center text-xs mb-1">
+                      <span className="text-blue-700">Preço por tela travado:</span>
+                      <span className="font-bold text-blue-800">
+                        {formatCurrency(totalPanels > 0 ? fidelMonthly / totalPanels : 0)}/tela/mês
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-blue-700">Expansão garantida:</span>
+                      <span className="font-semibold text-blue-800">
+                        + {travamentoTelasLimite - totalPanels} telas
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Preview resumido */}
+                  <div className={`p-3 rounded-lg border ${travamentoPrecoValor === 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Lock className={`h-3.5 w-3.5 ${travamentoPrecoValor === 0 ? 'text-emerald-600' : 'text-amber-600'}`} />
+                      <span className={`text-xs font-semibold ${travamentoPrecoValor === 0 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                        {travamentoPrecoValor === 0 ? 'Garantia Incluída' : 'Opção de Travamento'}
+                      </span>
+                    </div>
+                    <p className={`text-[10px] ${travamentoPrecoValor === 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      {travamentoPrecoValor === 0 
+                        ? `Proposta inclui garantia de travamento de preço para até ${travamentoTelasLimite} telas`
+                        : `Cliente pode adquirir travamento por + ${formatCurrency(travamentoPrecoValor)}`
+                      }
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

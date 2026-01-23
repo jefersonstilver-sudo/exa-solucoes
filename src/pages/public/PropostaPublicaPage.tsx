@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink, Calendar, Globe, Users, Rocket } from 'lucide-react';
+import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink, Calendar, Globe, Users, Rocket, Lock } from 'lucide-react';
 import { format, addDays, addMonths, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -80,6 +80,12 @@ interface Proposal {
   exclusividade_valor_extra?: number | null;
   exclusividade_disponivel?: boolean | null;
   cliente_escolheu_exclusividade?: boolean | null;
+  // Campos de Travamento de Preço
+  travamento_preco_ativo?: boolean | null;
+  travamento_preco_valor?: number | null;
+  travamento_telas_atuais?: number | null;
+  travamento_telas_limite?: number | null;
+  travamento_preco_por_tela?: number | null;
 }
 
 interface PaymentData {
@@ -1914,6 +1920,57 @@ const PropostaPublicaPage = () => {
             escolhido={clienteEscolheuExclusividade}
             onChoose={setClienteEscolheuExclusividade}
           />
+        )}
+
+        {/* Card de Travamento de Preço - Aparece quando ativo */}
+        {proposal.travamento_preco_ativo && (
+          <Card className={`p-3 sm:p-4 border-2 ${proposal.travamento_preco_valor === 0 ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-white' : 'border-amber-400 bg-gradient-to-br from-amber-50 to-white'} shadow-md`}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className={`p-1.5 ${proposal.travamento_preco_valor === 0 ? 'bg-blue-600' : 'bg-amber-500'} rounded-full`}>
+                <Lock className="h-4 w-4 text-white" />
+              </div>
+              <h3 className={`font-bold text-sm sm:text-base ${proposal.travamento_preco_valor === 0 ? 'text-blue-800' : 'text-amber-800'}`}>
+                {proposal.travamento_preco_valor === 0 ? '🔒 Garantia de Travamento de Preço' : '🔒 Opção de Travamento de Preço'}
+              </h3>
+            </div>
+            
+            <div className="space-y-2">
+              <p className={`text-xs sm:text-sm ${proposal.travamento_preco_valor === 0 ? 'text-blue-700' : 'text-amber-700'}`}>
+                {proposal.travamento_preco_valor === 0 ? (
+                  <>Esta proposta <strong>inclui a garantia</strong> de travamento de preço.</>
+                ) : (
+                  <>Adquira a garantia de travamento por <strong className="text-amber-800">{(proposal.travamento_preco_valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>.</>
+                )}
+              </p>
+              
+              <div className={`p-2.5 sm:p-3 rounded-lg ${proposal.travamento_preco_valor === 0 ? 'bg-blue-100' : 'bg-amber-100'}`}>
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div>
+                    <p className={`text-[10px] sm:text-xs ${proposal.travamento_preco_valor === 0 ? 'text-blue-600' : 'text-amber-600'}`}>Telas Atuais</p>
+                    <p className={`text-base sm:text-lg font-bold ${proposal.travamento_preco_valor === 0 ? 'text-blue-800' : 'text-amber-800'}`}>
+                      {proposal.travamento_telas_atuais || realTotalPanels}
+                    </p>
+                  </div>
+                  <div>
+                    <p className={`text-[10px] sm:text-xs ${proposal.travamento_preco_valor === 0 ? 'text-blue-600' : 'text-amber-600'}`}>Limite Garantido</p>
+                    <p className={`text-base sm:text-lg font-bold ${proposal.travamento_preco_valor === 0 ? 'text-blue-800' : 'text-amber-800'}`}>
+                      até {proposal.travamento_telas_limite}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className={`flex items-center justify-center gap-2 p-2 rounded-lg ${proposal.travamento_preco_valor === 0 ? 'bg-blue-50' : 'bg-amber-50'}`}>
+                <span className={`text-xs sm:text-sm font-medium ${proposal.travamento_preco_valor === 0 ? 'text-blue-700' : 'text-amber-700'}`}>
+                  Preço travado: <strong>{(proposal.travamento_preco_por_tela || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/tela/mês</strong>
+                </span>
+              </div>
+              
+              <p className={`text-[10px] sm:text-xs text-center ${proposal.travamento_preco_valor === 0 ? 'text-blue-600' : 'text-amber-600'}`}>
+                Expanda sua veiculação para até <strong>{proposal.travamento_telas_limite}</strong> telas mantendo o valor unitário atual
+              </p>
+            </div>
+          </Card>
         )}
 
         {/* Planos - NÃO APARECEM para cortesia - Mobile Optimized */}
