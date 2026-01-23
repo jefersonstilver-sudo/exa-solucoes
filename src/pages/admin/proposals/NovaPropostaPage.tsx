@@ -657,6 +657,16 @@ const NovaPropostaPage = () => {
   const fidelTotal = fidelMonthly * durationMonths;
   const cashTotal = overwriteCashValue ? parseFloat(cashValue) || 0 : fidelTotal * (1 - discountPercent / 100);
 
+  // Valor mensal efetivo para cálculo do travamento (considera pagamento customizado)
+  const valorMensalEfetivo = useMemo(() => {
+    if (isCustomPayment && customTotal > 0 && customDurationMonths > 0) {
+      // Pagamento customizado: divide total das parcelas pelo número de meses
+      return customTotal / customDurationMonths;
+    }
+    // Padrão: valor fidelidade mensal
+    return fidelMonthly;
+  }, [isCustomPayment, customTotal, customDurationMonths, fidelMonthly]);
+
   // Cálculo do valor extra de exclusividade
   const exclusividadeValorCalculado = useMemo(() => {
     if (!oferecerExclusividade) return 0;
@@ -816,7 +826,7 @@ const NovaPropostaPage = () => {
         travamento_telas_atuais: travamentoPrecoAtivo ? totalPanels : null,
         travamento_telas_limite: travamentoPrecoAtivo ? travamentoTelasLimite : null,
         travamento_preco_por_tela: travamentoPrecoAtivo && totalPanels > 0 
-          ? (travamentoModoCalculo === 'automatico' ? fidelMonthly / totalPanels : travamentoPrecoManual)
+          ? (travamentoModoCalculo === 'automatico' ? valorMensalEfetivo / totalPanels : travamentoPrecoManual)
           : null,
         travamento_modo_calculo: travamentoPrecoAtivo ? travamentoModoCalculo : null
       }]).select().single();
@@ -2259,7 +2269,7 @@ const NovaPropostaPage = () => {
                         <div className="mt-2 p-2 bg-white rounded border">
                           <span className="text-xs text-slate-600">Preço calculado: </span>
                           <span className="font-bold text-primary">
-                            {formatCurrency(totalPanels > 0 ? fidelMonthly / totalPanels : 0)}/tela/mês
+                            {formatCurrency(totalPanels > 0 ? valorMensalEfetivo / totalPanels : 0)}/tela/mês
                           </span>
                         </div>
                       </div>
@@ -2321,7 +2331,7 @@ const NovaPropostaPage = () => {
                       <span className={`font-bold ${travamentoPrecoValor === 0 ? 'text-emerald-700' : 'text-amber-700'}`}>
                         {formatCurrency(
                           travamentoModoCalculo === 'automatico'
-                            ? (totalPanels > 0 ? fidelMonthly / totalPanels : 0)
+                            ? (totalPanels > 0 ? valorMensalEfetivo / totalPanels : 0)
                             : travamentoPrecoManual
                         )}/tela/mês
                       </span>
