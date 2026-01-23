@@ -332,6 +332,8 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
     return date.toLocaleDateString('pt-BR');
   };
 
+  const isVendaFutura = !!contrato?.venda_futura;
+
   const formatCurrency = (value: number) => {
     return (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
@@ -1111,7 +1113,12 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
       <div class="section no-break">
         <div class="section-title">CLÁUSULA 4ª - DO PRAZO DE VIGÊNCIA</div>
         <div class="clause">
-          <p><span class="clause-title">4.1.</span> O presente contrato terá vigência de <strong>${contrato.plano_meses} (${contrato.plano_meses === 1 ? 'um' : contrato.plano_meses === 3 ? 'três' : contrato.plano_meses === 6 ? 'seis' : 'doze'}) ${contrato.plano_meses === 1 ? 'mês' : 'meses'}</strong>, com início em <strong>${formatDate(contrato.data_inicio)}</strong> e término em <strong>${formatDate(contrato.data_fim)}</strong>.</p>
+          ${isVendaFutura ? `
+            <p><span class="clause-title">4.1.</span> O presente contrato é firmado na modalidade de <strong>VENDA FUTURA</strong>. Assim, o prazo contratual de <strong>${contrato.plano_meses} (${contrato.plano_meses === 1 ? 'um' : contrato.plano_meses === 3 ? 'três' : contrato.plano_meses === 6 ? 'seis' : 'doze'}) ${contrato.plano_meses === 1 ? 'mês' : 'meses'}</strong> refere-se ao <strong>PERÍODO DE VIGÊNCIA PAGA</strong> e <strong>SOMENTE TERÁ INÍCIO</strong> na data em que a CONTRATADA comunicar formalmente ao CONTRATANTE o atingimento da meta de expansão de <strong>${contrato.predios_contratados || '-'}</strong> prédios instalados e operacionais.</p>
+            <p><span class="clause-title">4.1.1.</span> Até que a meta referida seja atingida, aplica-se o <strong>PERÍODO DE CORTESIA</strong> previsto neste instrumento, durante o qual a veiculação ocorrerá sem cobrança, sem que isso implique início de contagem do prazo de ${contrato.plano_meses} ${contrato.plano_meses === 1 ? 'mês' : 'meses'}.</p>
+          ` : `
+            <p><span class="clause-title">4.1.</span> O presente contrato terá vigência de <strong>${contrato.plano_meses} (${contrato.plano_meses === 1 ? 'um' : contrato.plano_meses === 3 ? 'três' : contrato.plano_meses === 6 ? 'seis' : 'doze'}) ${contrato.plano_meses === 1 ? 'mês' : 'meses'}</strong>, com início em <strong>${formatDate(contrato.data_inicio)}</strong> e término em <strong>${formatDate(contrato.data_fim)}</strong>.</p>
+          `}
           
           <p><span class="clause-title">4.2.</span> O contrato poderá ser renovado por igual período mediante acordo entre as partes, formalizado por escrito com antecedência mínima de 30 (trinta) dias do término da vigência.</p>
           
@@ -1508,9 +1515,22 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
 }
 
 // Helper function to convert number to words (Portuguese) - Suporta até milhões
-function valorPorExtenso(valor: number): string {
-  if (!valor || isNaN(valor)) return 'valor não informado';
-  if (valor === 0) return 'zero reais';
+function valorPorExtenso(valor: number | string): string {
+  // Aceita number ou string (incluindo formato pt-BR: "70.698,74")
+  let v: number;
+  if (typeof valor === 'string') {
+    const normalized = valor
+      .trim()
+      .replace(/\./g, '')
+      .replace(',', '.')
+      .replace(/[^0-9.-]/g, '');
+    v = Number(normalized);
+  } else {
+    v = valor;
+  }
+
+  if (Number.isNaN(v)) return 'valor não informado';
+  if (v === 0) return 'zero reais';
   
   const unidades = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
   const dezenas = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
@@ -1541,8 +1561,8 @@ function valorPorExtenso(valor: number): string {
     return resultado;
   }
 
-  const parteInteira = Math.floor(valor);
-  const centavos = Math.round((valor - parteInteira) * 100);
+  const parteInteira = Math.floor(v);
+  const centavos = Math.round((v - parteInteira) * 100);
 
   let resultado = '';
   
