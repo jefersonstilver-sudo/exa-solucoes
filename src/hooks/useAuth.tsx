@@ -263,8 +263,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Função para recarregar o perfil do usuário (útil após edições)
   const refreshUserProfile = async (): Promise<void> => {
     if (session?.user?.id && session?.access_token) {
-      console.log('🔄 [useAuth] Recarregando perfil do usuário...');
+      console.log('🔄 [useAuth] Recarregando perfil do usuário...', { userId: session.user.id });
       await fetchUserProfile(session.user.id, session.access_token);
+      console.log('✅ [useAuth] Perfil recarregado com sucesso!');
+    } else {
+      console.warn('⚠️ [useAuth] Não foi possível recarregar perfil - sessão inválida');
     }
   };
 
