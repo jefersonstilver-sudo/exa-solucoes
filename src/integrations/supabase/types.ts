@@ -1660,6 +1660,39 @@ export type Database = {
           },
         ]
       }
+      business_segments: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          label: string
+          sort_order: number | null
+          value: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          sort_order?: number | null
+          value: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          sort_order?: number | null
+          value?: string
+        }
+        Relationships: []
+      }
       caixa_manual: {
         Row: {
           building_id: string | null

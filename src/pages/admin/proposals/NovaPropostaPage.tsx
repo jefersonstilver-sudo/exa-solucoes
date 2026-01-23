@@ -39,48 +39,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ChevronsUpDown } from 'lucide-react';
 
-// Lista de segmentos de negócio para exclusividade
-const businessSegments = [
-  { value: 'tourist_attraction', label: 'Atrações Turísticas' },
-  { value: 'travel_agency', label: 'Agências de Viagem' },
-  { value: 'restaurant', label: 'Restaurantes' },
-  { value: 'fast_food', label: 'Fast Food' },
-  { value: 'pizzaria', label: 'Pizzarias' },
-  { value: 'steakhouse', label: 'Churrascarias' },
-  { value: 'bakery', label: 'Padarias e Confeitarias' },
-  { value: 'supermarket', label: 'Supermercados' },
-  { value: 'pharmacy', label: 'Farmácias' },
-  { value: 'hospital', label: 'Hospitais e Clínicas' },
-  { value: 'dentist', label: 'Odontologia' },
-  { value: 'gym', label: 'Academias' },
-  { value: 'beauty_salon', label: 'Salões de Beleza' },
-  { value: 'spa', label: 'Spas e Estética' },
-  { value: 'real_estate', label: 'Imobiliárias' },
-  { value: 'construction', label: 'Construtoras' },
-  { value: 'furniture', label: 'Móveis e Decoração' },
-  { value: 'electronics', label: 'Eletrônicos' },
-  { value: 'electronics_import', label: 'Eletrônicos Importados' },
-  { value: 'lojas_paraguai', label: 'Shopping Eletrônicos PY' },
-  { value: 'clothing', label: 'Vestuário e Moda' },
-  { value: 'jewelry', label: 'Joalherias' },
-  { value: 'pet_shop', label: 'Pet Shops' },
-  { value: 'auto_dealer', label: 'Concessionárias' },
-  { value: 'auto_repair', label: 'Oficinas Mecânicas' },
-  { value: 'gas_station', label: 'Postos de Combustível' },
-  { value: 'bank', label: 'Bancos e Financeiras' },
-  { value: 'insurance', label: 'Seguradoras' },
-  { value: 'law_firm', label: 'Escritórios de Advocacia' },
-  { value: 'accounting', label: 'Contabilidade' },
-  { value: 'education', label: 'Escolas e Cursos' },
-  { value: 'university', label: 'Universidades' },
-  { value: 'hotel', label: 'Hotéis e Pousadas' },
-  { value: 'event_venue', label: 'Casas de Eventos' },
-  { value: 'bar', label: 'Bares e Pubs' },
-  { value: 'nightclub', label: 'Casas Noturnas' },
-  { value: 'technology', label: 'Tecnologia e TI' },
-  { value: 'marketing', label: 'Marketing e Publicidade' },
-  { value: 'other', label: 'Outros Segmentos' },
-];
+import { BusinessSegmentSelector } from '@/components/ui/business-segment-selector';
 interface Building {
   id: string;
   nome: string;
@@ -2084,48 +2043,17 @@ const NovaPropostaPage = () => {
               {oferecerExclusividade && (
                 <div className="space-y-3 pt-3 border-t border-slate-200">
                   {/* Seletor de Segmento */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-slate-600">Segmento a Bloquear</Label>
-                    <Popover open={segmentoPopoverOpen} onOpenChange={setSegmentoPopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={segmentoPopoverOpen}
-                          className="w-full justify-between h-10 bg-white"
-                        >
-                          {segmentoExclusivo 
-                            ? businessSegments.find(s => s.value === segmentoExclusivo)?.label 
-                            : "Selecione o segmento"}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0" align="start">
-                        <Command>
-                          <CommandInput placeholder="Buscar segmento..." />
-                          <CommandList>
-                            <CommandEmpty>Nenhum segmento encontrado.</CommandEmpty>
-                            <CommandGroup>
-                              {businessSegments.map(segment => (
-                                <CommandItem
-                                  key={segment.value}
-                                  value={segment.label}
-                                  onSelect={() => {
-                                    setSegmentoExclusivo(segment.value);
-                                    setSegmentoPopoverOpen(false);
-                                    setExclusividadeDisponivel(null); // Reset ao mudar segmento
-                                  }}
-                                >
-                                  <CheckCircle className={`mr-2 h-4 w-4 ${segmentoExclusivo === segment.value ? 'opacity-100' : 'opacity-0'}`} />
-                                  {segment.label}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+                  <BusinessSegmentSelector
+                    value={segmentoExclusivo}
+                    onChange={(value) => {
+                      setSegmentoExclusivo(value);
+                      setExclusividadeDisponivel(null); // Reset ao mudar segmento
+                    }}
+                    showLabel={true}
+                    label="Segmento a Bloquear"
+                    placeholder="Selecione o segmento"
+                    allowCreate={true}
+                  />
 
                   {/* Botão Verificar Disponibilidade */}
                   <Button
