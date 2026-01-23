@@ -102,9 +102,10 @@ serve(async (req) => {
       console.log("👁️ MODO PREVIEW - Gerando HTML sem salvar no banco...");
       
       // Criar objeto contrato "virtual" para gerar HTML
+      // IMPORTANTE: Usar número real do contrato (não PREVIEW) para PDF final
       const contratoVirtual = {
-        id: 'preview',
-        numero_contrato: `PREVIEW-${proposal.number}`,
+        id: 'contract-' + proposal.number,
+        numero_contrato: proposal.number,
         proposta_id: proposalId,
         tipo_contrato: 'anunciante',
         status: 'preview',
@@ -801,16 +802,17 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
         }
         
         .highlight-box {
-          background: #fff3cd;
-          border: 1px solid #ffc107;
-          border-radius: 8px;
+          background: #fafafa;
+          border: 1px solid #e0e0e0;
+          border-left: 4px solid #8B1A1A;
+          border-radius: 4px;
           padding: 15px;
           margin: 15px 0;
         }
         
         .highlight-box.cortesia {
-          background: #d4edda;
-          border-color: #28a745;
+          background: #f5f5f5;
+          border-left-color: #4a4a4a;
         }
         
         table {
@@ -933,23 +935,25 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
         }
         
         .tech-specs {
-          background: #e3f2fd;
-          border: 1px solid #90caf9;
-          border-radius: 8px;
+          background: #f8f8f8;
+          border: 1px solid #e0e0e0;
+          border-left: 4px solid #8B1A1A;
+          border-radius: 4px;
           padding: 15px;
           margin: 15px 0;
         }
         
         .tech-specs-title {
           font-weight: 600;
-          color: #1565c0;
+          color: #8B1A1A;
           margin-bottom: 10px;
         }
         
         .penalty-box {
-          background: #ffebee;
-          border: 1px solid #ef9a9a;
-          border-radius: 8px;
+          background: #f9f9f9;
+          border: 1px solid #e0e0e0;
+          border-left: 4px solid #666;
+          border-radius: 4px;
           padding: 15px;
           margin: 15px 0;
         }
@@ -1085,7 +1089,7 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
     <body>
       <!-- HEADER COM GRADIENTE EXA -->
       <div class="header">
-        <img src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos%20exa/Videos%20Site/Logo%20Branca%20-%20Exa.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcyBleGEvVmlkZW9zIFNpdGUvTG9nbyBCcmFuY2EgLSBFeGEucG5nIiwiaWF0IjoxNzY0MjcxNTgwLCJleHAiOjMxNTUzMzI3MzU1ODB9.Re62vBPxmFdoOTCd6maWctMCukPMPv0AEVqKdZubahU" alt="EXA Mídia" class="header-logo" />
+        <div style="font-size: 28px; font-weight: 700; letter-spacing: 4px; color: white; margin-bottom: 8px;">exa</div>
         <div class="header-subtitle">Publicidade em Elevadores</div>
       </div>
 
@@ -1245,8 +1249,8 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
           ` : ''}
           
           ${contrato.venda_futura ? `
-          <div class="highlight-box" style="background: #fff3e0; border-color: #ff9800; margin-top: 15px;">
-            <strong>⚠️ CONTRATO DE VENDA FUTURA - INÍCIO CONDICIONADO À EXPANSÃO</strong><br>
+          <div class="highlight-box" style="margin-top: 15px;">
+            <strong>CONTRATO DE VENDA FUTURA - INÍCIO CONDICIONADO À EXPANSÃO</strong><br>
             Meta contratada: <strong>${contrato.predios_contratados || '-'} prédios</strong><br>
             Prédios instalados no fechamento: <strong>${contrato.predios_instalados_fechamento || '-'} prédios</strong><br>
             <em><strong>IMPORTANTE:</strong> O período de vigência paga de ${contrato.plano_meses} ${contrato.plano_meses === 1 ? 'mês' : 'meses'} SOMENTE terá início quando a meta de ${contrato.predios_contratados || '-'} prédios for atingida.</em>
@@ -1273,7 +1277,7 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
         <div class="clause">
           ${isCortesia ? `
             <div class="highlight-box cortesia">
-              <strong>🎁 CONTRATO DE CORTESIA</strong><br>
+              <strong>CONTRATO DE CORTESIA</strong><br>
               Este contrato é firmado a título de cortesia, sem ônus para o CONTRATANTE, conforme acordo comercial estabelecido entre as partes.
             </div>
             <p><span class="clause-title">5.1.</span> O presente contrato é firmado a título de <strong>CORTESIA</strong>, não havendo valores a serem cobrados do CONTRATANTE durante a vigência deste instrumento.</p>
@@ -1297,8 +1301,8 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
       <div class="section no-break">
         <div class="section-title">CLÁUSULA 6ª - DA EXCLUSIVIDADE DE SEGMENTO</div>
         <div class="clause">
-          <div class="highlight-box" style="background: #e8f5e9; border-color: #4caf50;">
-            <strong>🔒 EXCLUSIVIDADE CONTRATADA</strong><br>
+          <div class="highlight-box">
+            <strong>EXCLUSIVIDADE CONTRATADA</strong><br>
             Segmento: <strong>${segmentoLabel}</strong> | 
             Acréscimo: <strong>${contrato.exclusividade_percentual || 0}%</strong> | 
             Valor extra: <strong>${formatCurrency(contrato.exclusividade_valor_extra || 0)}</strong>
@@ -1322,8 +1326,8 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
       <div class="section no-break">
         <div class="section-title">CLÁUSULA ${contrato.cliente_escolheu_exclusividade ? '7' : '6'}ª - DO TRAVAMENTO DE PREÇO</div>
         <div class="clause">
-          <div class="highlight-box" style="background: #e3f2fd; border-color: #2196f3;">
-            <strong>🔒 TRAVAMENTO DE PREÇO GARANTIDO</strong><br>
+          <div class="highlight-box">
+            <strong>TRAVAMENTO DE PREÇO GARANTIDO</strong><br>
             Telas atuais: <strong>${contrato.travamento_telas_atuais || '-'}</strong> | 
             Limite garantido: <strong>até ${contrato.travamento_telas_limite || '-'} telas</strong> | 
             Preço travado: <strong>${formatCurrency(contrato.travamento_preco_por_tela || 0)}/tela/mês</strong>
@@ -1352,7 +1356,7 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
         <div class="section-title">CLÁUSULA ${6 + clauseOffset}ª - DAS ESPECIFICAÇÕES TÉCNICAS</div>
         <div class="clause">
           <div class="tech-specs">
-            <div class="tech-specs-title">📺 Especificações do Material Publicitário — ${especificacoesTecnicas.descricao}</div>
+            <div class="tech-specs-title">Especificações do Material Publicitário — ${especificacoesTecnicas.descricao}</div>
             <ul style="margin: 10px 0; padding-left: 20px;">
               <li><strong>Resolução:</strong> ${especificacoesTecnicas.formato}</li>
               <li><strong>Proporção:</strong> ${especificacoesTecnicas.proporcao}</li>
