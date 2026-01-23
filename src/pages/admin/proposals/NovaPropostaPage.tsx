@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock } from 'lucide-react';
 import { format, differenceInDays, addMonths } from 'date-fns';
@@ -71,6 +71,8 @@ interface ManualBuilding {
 }
 const NovaPropostaPage = () => {
   const navigate = useNavigate();
+  const { id: editProposalId } = useParams<{ id?: string }>();
+  const isEditMode = Boolean(editProposalId);
   const queryClient = useQueryClient();
   const {
     isMobile
@@ -430,6 +432,142 @@ const NovaPropostaPage = () => {
     }
   });
 
+  // Buscar proposta existente para modo de edição
+  const { data: existingProposal, isLoading: isLoadingProposal } = useQuery({
+    queryKey: ['proposal-for-edit', editProposalId],
+    queryFn: async () => {
+      if (!editProposalId) return null;
+      const { data, error } = await supabase
+        .from('proposals')
+        .select('*')
+        .eq('id', editProposalId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: isEditMode
+  });
+
+  // Popular campos quando proposta existente é carregada
+  const [dataLoaded, setDataLoaded] = useState(false);
+  useEffect(() => {
+    if (existingProposal && !dataLoaded && buildings.length > 0) {
+      console.log('📝 Carregando dados da proposta para edição:', existingProposal.number);
+      
+      // Dados do cliente
+      const nameParts = (existingProposal.client_name || '').split(' ');
+      const firstName = existingProposal.client_first_name || nameParts[0] || '';
+      const lastName = existingProposal.client_last_name || nameParts.slice(1).join(' ') || '';
+      
+      setClientData({
+        firstName,
+        lastName,
+        companyName: existingProposal.client_company_name || '',
+        country: (existingProposal.client_country as 'BR' | 'AR' | 'PY') || 'BR',
+        document: existingProposal.client_cnpj || '',
+        phone: existingProposal.client_phone || '',
+        phoneFullNumber: existingProposal.client_phone || '',
+        phoneCountry: 'BR' as CountryCode,
+        email: existingProposal.client_email || '',
+        address: existingProposal.client_address || '',
+        latitude: existingProposal.client_latitude || null,
+        longitude: existingProposal.client_longitude || null
+      });
+
+      // Prédios selecionados
+      const selectedBuildingsList = Array.isArray(existingProposal.selected_buildings) 
+        ? existingProposal.selected_buildings 
+        : [];
+      const buildingIds = (selectedBuildingsList as any[])
+        .filter((b: any) => b.building_id && !b.is_manual)
+        .map((b: any) => b.building_id);
+      setSelectedBuildings(buildingIds);
+
+      // Prédios manuais
+      const manualBldgs = (selectedBuildingsList as any[])
+        .filter((b: any) => b.is_manual)
+        .map((b: any) => ({
+          id: b.building_id || `manual_${Date.now()}_${Math.random()}`,
+          nome: b.building_name || '',
+          bairro: b.bairro || 'N/A',
+          endereco: b.endereco || '',
+          quantidade_telas: b.quantidade_telas || 1,
+          numero_elevadores: b.quantidade_telas || 1,
+          visualizacoes_mes: b.visualizacoes_mes || 11610,
+          preco_base: b.preco_base || 0,
+          publico_estimado: b.publico_estimado || 100,
+          imagem_principal: null,
+          is_manual: true as const
+        }));
+      setManualBuildings(manualBldgs);
+
+      // Configurações de pagamento
+      setDurationMonths(existingProposal.duration_months || 6);
+      setDiscountPercent(existingProposal.discount_percent || 10);
+      setFidelValue(String(existingProposal.fidel_monthly_value || ''));
+      
+      if (existingProposal.payment_type === 'custom' && existingProposal.custom_installments) {
+        setIsCustomPayment(true);
+        const installments = existingProposal.custom_installments as any[];
+        setCustomInstallments(installments.map((p: any, idx: number) => ({
+          id: idx + 1,
+          dueDate: new Date(p.due_date),
+          amount: String(p.amount || '')
+        })));
+        setCustomDurationMonths(existingProposal.duration_months || 12);
+      }
+
+      if (existingProposal.is_custom_days) {
+        setIsCustomDays(true);
+        setCustomDays(existingProposal.custom_days || 15);
+      }
+
+      // Tipo de produto
+      const tipoProdutoValue = existingProposal.tipo_produto;
+      if (tipoProdutoValue === 'horizontal' || tipoProdutoValue === 'vertical_premium') {
+        setTipoProduto(tipoProdutoValue);
+      }
+      
+      // Quantidade de posições
+      setQuantidadePosicoes(existingProposal.quantidade_posicoes || 1);
+
+      // Título
+      setTituloProposta(existingProposal.titulo || '');
+
+      // Configurações adicionais
+      setCobrancaFutura(existingProposal.cobranca_futura || false);
+      setExigirContrato(existingProposal.exigir_contrato !== false);
+      
+      // Venda futura
+      setVendaFutura(existingProposal.venda_futura || false);
+      setPrediosContratados(existingProposal.predios_contratados || 0);
+      
+      // Exclusividade
+      setOferecerExclusividade(existingProposal.exclusividade_segmento || false);
+      setSegmentoExclusivo(existingProposal.segmento_exclusivo || '');
+      setExclusividadePercentual(existingProposal.exclusividade_percentual || 35);
+      setExclusividadeValorExtra(existingProposal.exclusividade_valor_extra || null);
+
+      // Travamento de preço
+      setTravamentoPrecoAtivo(existingProposal.travamento_preco_ativo || false);
+      setTravamentoPrecoValor(existingProposal.travamento_preco_valor || 0);
+      setTravamentoTelasLimite(existingProposal.travamento_telas_limite || 50);
+
+      // CC Emails
+      if (existingProposal.cc_emails) {
+        setCcEmails(existingProposal.cc_emails as string[]);
+      }
+
+      // Vendedor
+      if (existingProposal.created_by) {
+        setSelectedSellerId(existingProposal.created_by);
+      }
+
+      setDataLoaded(true);
+      toast.success(`Proposta ${existingProposal.number} carregada para edição`);
+    }
+  }, [existingProposal, dataLoaded, buildings.length]);
+
   // Hooks para posições disponíveis e especificações de vídeo
   const { posicoesMap, isLoading: isLoadingPosicoes } = usePosicoesDisponiveis();
   const { specifications } = useVideoSpecifications();
@@ -733,7 +871,7 @@ const NovaPropostaPage = () => {
     }
   };
 
-  // Mutation para salvar proposta
+  // Mutation para salvar proposta (criar ou atualizar)
   const createProposalMutation = useMutation({
     mutationFn: async (sendOptions: {
       whatsapp: boolean;
@@ -756,15 +894,11 @@ const NovaPropostaPage = () => {
         publico_estimado: b.publico_estimado,
         is_manual: (b as any).is_manual || false
       }));
-      const year = new Date().getFullYear();
-      const randomNum = Math.floor(1000 + Math.random() * 9000);
-      const proposalNumber = `EXA-${year}-${randomNum}`;
+      
       const fullName = `${clientData.firstName.trim()} ${clientData.lastName.trim()}`;
-      const {
-        data: proposal,
-        error
-      } = await supabase.from('proposals').insert([{
-        number: proposalNumber,
+      
+      // Dados comuns para criar ou atualizar
+      const proposalData = {
         client_name: fullName,
         client_first_name: clientData.firstName.trim(),
         client_last_name: clientData.lastName.trim(),
@@ -772,7 +906,6 @@ const NovaPropostaPage = () => {
         client_country: clientData.country || 'BR',
         client_cnpj: clientData.document || null,
         client_phone: clientData.phoneFullNumber || clientData.phone || null,
-        // Número completo com código do país
         client_email: clientData.email || null,
         selected_buildings: buildingsData as Json,
         total_panels: totalPanels,
@@ -782,9 +915,6 @@ const NovaPropostaPage = () => {
         cash_total_value: isCustomDays ? calculateDaysPrice : isCustomPayment ? customTotal : cashTotal,
         discount_percent: isCustomDays ? -10 : discountPercent,
         duration_months: isCustomDays ? 0 : durationMonths,
-        status: 'enviada',
-        sent_at: new Date().toISOString(),
-        expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to ? customDateRange.to.toISOString() : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
         created_by: selectedSellerId || user?.id,
         seller_name: selectedSeller?.nome || currentUser?.nome || selectedSeller?.email || 'Vendedor',
         seller_phone: selectedSeller?.telefone || currentUser?.telefone || null,
@@ -805,7 +935,6 @@ const NovaPropostaPage = () => {
         custom_days: isCustomDays ? customDays : null,
         is_custom_days: isCustomDays,
         cc_emails: ccEmails.length > 0 ? ccEmails : null,
-        // Campos de Venda Futura
         venda_futura: vendaFutura,
         predios_contratados: vendaFutura ? prediosContratados : selectedBuildingsData.length,
         predios_instalados_no_fechamento: vendaFutura ? buildings.length : selectedBuildingsData.length,
@@ -813,14 +942,12 @@ const NovaPropostaPage = () => {
         cortesia_inicio: vendaFutura && prediosContratados > buildings.length ? new Date().toISOString().split('T')[0] : null,
         meses_cortesia: 0,
         titulo: tituloProposta.trim() || null,
-        // Campos de Exclusividade de Segmento
         exclusividade_segmento: oferecerExclusividade,
         segmento_exclusivo: oferecerExclusividade ? segmentoExclusivo : null,
         exclusividade_percentual: oferecerExclusividade ? exclusividadePercentual : null,
         exclusividade_valor_extra: oferecerExclusividade ? exclusividadeValorCalculado : null,
         exclusividade_disponivel: exclusividadeDisponivel ?? true,
         cliente_escolheu_exclusividade: null,
-        // Campos de Travamento de Preço
         travamento_preco_ativo: travamentoPrecoAtivo,
         travamento_preco_valor: travamentoPrecoAtivo ? travamentoPrecoValor : null,
         travamento_telas_atuais: travamentoPrecoAtivo ? totalPanels : null,
@@ -829,35 +956,86 @@ const NovaPropostaPage = () => {
           ? (travamentoModoCalculo === 'automatico' ? valorMensalEfetivo / totalPanels : travamentoPrecoManual)
           : null,
         travamento_modo_calculo: travamentoPrecoAtivo ? travamentoModoCalculo : null
-      }]).select().single();
-      if (error) throw error;
+      };
 
-      // 📇 CRIAR CONTATO AUTOMATICAMENTE NO CRM
-      // Garante que todos os leads de propostas vão para a tabela contacts
-      try {
-        const contactResult = await createContactFromProposal({
-          clientName: fullName,
-          clientFirstName: clientData.firstName.trim(),
-          clientLastName: clientData.lastName.trim(),
-          clientCompanyName: clientData.companyName || undefined,
-          clientCnpj: clientData.document || undefined,
-          clientPhone: clientData.phoneFullNumber || clientData.phone || undefined,
-          clientEmail: clientData.email || undefined,
-          clientAddress: clientData.address || undefined,
-          createdBy: selectedSellerId || user?.id
+      let proposal;
+      
+      if (isEditMode && editProposalId) {
+        // MODO EDIÇÃO - Atualizar proposta existente
+        const { data, error } = await supabase
+          .from('proposals')
+          .update(proposalData)
+          .eq('id', editProposalId)
+          .select()
+          .single();
+        if (error) throw error;
+        proposal = data;
+        
+        // Log de edição
+        await supabase.from('proposal_logs').insert({
+          proposal_id: proposal.id,
+          action: 'editada',
+          details: {
+            edited_by: user?.id,
+            buildings_count: selectedBuildings.length
+          }
         });
-        if (contactResult.success) {
-          console.log(`📇 Contato ${contactResult.isNew ? 'criado' : 'atualizado'} automaticamente:`, contactResult.contactId);
-        } else {
-          console.warn('⚠️ Não foi possível criar contato:', contactResult.error);
+        
+        toast.success(`Proposta ${proposal.number} atualizada com sucesso!`);
+      } else {
+        // MODO CRIAÇÃO - Criar nova proposta
+        const year = new Date().getFullYear();
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        const proposalNumber = `EXA-${year}-${randomNum}`;
+        
+        const { data, error } = await supabase.from('proposals').insert([{
+          ...proposalData,
+          number: proposalNumber,
+          status: 'enviada',
+          sent_at: new Date().toISOString(),
+          expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to ? customDateRange.to.toISOString() : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
+        }]).select().single();
+        if (error) throw error;
+        proposal = data;
+        
+        // 📇 CRIAR CONTATO AUTOMATICAMENTE NO CRM
+        // Garante que todos os leads de propostas vão para a tabela contacts
+        try {
+          const contactResult = await createContactFromProposal({
+            clientName: fullName,
+            clientFirstName: clientData.firstName.trim(),
+            clientLastName: clientData.lastName.trim(),
+            clientCompanyName: clientData.companyName || undefined,
+            clientCnpj: clientData.document || undefined,
+            clientPhone: clientData.phoneFullNumber || clientData.phone || undefined,
+            clientEmail: clientData.email || undefined,
+            clientAddress: clientData.address || undefined,
+            createdBy: selectedSellerId || user?.id
+          });
+          if (contactResult.success) {
+            console.log(`📇 Contato ${contactResult.isNew ? 'criado' : 'atualizado'} automaticamente:`, contactResult.contactId);
+          } else {
+            console.warn('⚠️ Não foi possível criar contato:', contactResult.error);
+          }
+        } catch (contactErr) {
+          console.error('⚠️ Erro ao criar contato (não crítico):', contactErr);
         }
-      } catch (contactErr) {
-        console.error('⚠️ Erro ao criar contato (não crítico):', contactErr);
-        // Não falha a criação da proposta se contato falhar
+
+        // Log de criação
+        await supabase.from('proposal_logs').insert({
+          proposal_id: proposal.id,
+          action: 'criada',
+          details: {
+            send_whatsapp: sendOptions.whatsapp,
+            send_email: sendOptions.email,
+            buildings_count: selectedBuildings.length,
+            alert_recipients_count: alertRecipients.length
+          }
+        });
       }
 
-      // Salvar destinatários de notificações EXA Alerts
-      if (alertRecipients.length > 0) {
+      // Salvar destinatários de notificações EXA Alerts (apenas para novas propostas)
+      if (!isEditMode && alertRecipients.length > 0) {
         const recipientsToInsert = alertRecipients.map(r => ({
           proposal_id: proposal.id,
           name: r.name,
@@ -868,16 +1046,6 @@ const NovaPropostaPage = () => {
         await supabase.from('proposal_alert_recipients').insert(recipientsToInsert);
         console.log(`✅ ${recipientsToInsert.length} destinatários de alertas salvos`);
       }
-      await supabase.from('proposal_logs').insert({
-        proposal_id: proposal.id,
-        action: 'criada',
-        details: {
-          send_whatsapp: sendOptions.whatsapp,
-          send_email: sendOptions.email,
-          buildings_count: selectedBuildings.length,
-          alert_recipients_count: alertRecipients.length
-        }
-      });
       if (sendOptions.whatsapp && clientData.phone) {
         try {
           const {
@@ -1172,8 +1340,8 @@ const NovaPropostaPage = () => {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex-1">
-            <h1 className="text-lg font-bold text-foreground">Nova Proposta</h1>
-            <p className="text-xs text-muted-foreground">Preencha os dados do cliente</p>
+            <h1 className="text-lg font-bold text-foreground">{isEditMode ? 'Editar Proposta' : 'Nova Proposta'}</h1>
+            <p className="text-xs text-muted-foreground">{isEditMode ? `Editando ${existingProposal?.number || ''}` : 'Preencha os dados do cliente'}</p>
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone, Bell, BellOff, RefreshCcw, Calendar, FileDown } from 'lucide-react';
+import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone, Bell, BellOff, RefreshCcw, Calendar, FileDown, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -1095,6 +1095,10 @@ const PropostasPage = () => {
                           <DropdownMenuItem onClick={() => navigate(buildPath(`propostas/${proposal.id}`))}>
                             <FileText className="h-4 w-4 mr-2" />
                             Ver Detalhes
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(buildPath(`propostas/${proposal.id}/editar`))}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar Proposta
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleCopyLink(proposal)}>
                             <Copy className="h-4 w-4 mr-2" />
