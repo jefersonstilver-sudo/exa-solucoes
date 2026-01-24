@@ -187,25 +187,42 @@ export default function JuridicoWorkspacePage() {
       return;
     }
 
+    // Save state before AI processing
+    setStateHistory(prev => [...prev.slice(-9), { ...data }]);
+    
     // Process with AI
     try {
-      await processWithAI(sanitizedContent, 'text');
+      const aiResponse = await processWithAI(sanitizedContent, 'text');
       
-      // Generate response based on what was detected
+      // PRIORITY: If AI returned follow_up_message (from REGEX-first or SDR), use it directly
+      if (aiResponse?.follow_up_message) {
+        setTimeout(() => addAssistantMessage(aiResponse.follow_up_message), 300);
+        return;
+      }
+      
+      // Fallback: Generate response based on updated data
       const responses: string[] = [];
-      if (data.parceiro_nome) responses.push(`✓ Parceiro identificado: **${data.parceiro_nome}**`);
-      if (data.tipo_contrato) responses.push(`✓ Tipo de contrato: **${data.tipo_contrato}**`);
-      if (data.objeto) responses.push(`✓ Objeto definido`);
+      if (aiResponse?.parceiro?.nome || data.parceiro_nome) {
+        responses.push(`✓ Parceiro: **${aiResponse?.parceiro?.nome || data.parceiro_nome}**`);
+      }
+      if (aiResponse?.parceiro?.documento || data.parceiro_documento) {
+        responses.push(`✓ CNPJ/CPF: **${aiResponse?.parceiro?.documento || data.parceiro_documento}**`);
+      }
+      if (aiResponse?.tipo_contrato || data.tipo_contrato) {
+        responses.push(`✓ Tipo: **${aiResponse?.tipo_contrato || data.tipo_contrato}**`);
+      }
       
       const nextSteps: string[] = [];
-      if (!data.parceiro_documento) nextSteps.push('Preciso do CNPJ/CPF do parceiro');
-      if (!data.objeto || data.objeto.length < 50) nextSteps.push('Descreva melhor o objeto do contrato');
+      const updatedDoc = aiResponse?.parceiro?.documento || data.parceiro_documento;
+      if (!updatedDoc) nextSteps.push('CNPJ/CPF do parceiro');
+      if (!data.objeto || data.objeto.length < 50) nextSteps.push('Objeto detalhado do contrato');
       if (!data.valor_financeiro && data.obrigacoes_parceiro.length === 0) {
-        nextSteps.push('Qual é o valor ou contrapartida?');
+        nextSteps.push('Valor ou contrapartida');
       }
 
       const responseText = responses.length > 0 
-        ? responses.join('\n') + (nextSteps.length > 0 ? `\n\n**Próximos passos:**\n${nextSteps.join('\n')}` : '\n\n✅ Contrato pronto para revisão!')
+        ? `**Dados atualizados:**\n${responses.join('\n')}` + 
+          (nextSteps.length > 0 ? `\n\n**Próximo passo:** ${nextSteps[0]}` : '\n\n✅ Contrato pronto para revisão!')
         : 'Entendi. Pode me dar mais detalhes sobre o contrato?';
 
       setTimeout(() => addAssistantMessage(responseText), 300);
@@ -293,22 +310,37 @@ export default function JuridicoWorkspacePage() {
     toast.success('Alteração desfeita!');
   }, [stateHistory, updateData, addAssistantMessage]);
 
-  // Advance step - IA focuses on next gap
-  const handleAdvanceStep = useCallback(() => {
+  // Advance step - IA focuses on next gap proactively
+  const handleAdvanceStep = useCallback(async () => {
     // Determine what's missing
     const missing: string[] = [];
-    if (!data.parceiro_documento) missing.push('CNPJ/CPF do parceiro');
+    if (!data.parceiro_documento) missing.push('CNPJ/CPF');
     if (!data.parceiro_nome) missing.push('Nome/Razão Social');
-    if (!data.objeto || data.objeto.length < 50) missing.push('Objeto do contrato (mais detalhado)');
-    if (!data.valor_financeiro && data.obrigacoes_parceiro.length === 0) missing.push('Valor ou contrapartida');
+    if (!data.objeto || data.objeto.length < 50) missing.push('Objeto detalhado');
+    if (!data.valor_financeiro && data.obrigacoes_parceiro.length === 0) missing.push('Contrapartida');
     
     if (missing.length === 0) {
-      addAssistantMessage('✅ **Contrato completo!** Todos os campos obrigatórios estão preenchidos. Você pode revisar e finalizar.');
-    } else {
-      const nextMissing = missing[0];
-      addAssistantMessage(`➡️ **Próximo passo:** Falta informar o **${nextMissing}**. Por favor, forneça esse dado para continuar.`);
+      addAssistantMessage('✅ **Contrato completo!** Todos os campos obrigatórios estão preenchidos. Revise e finalize.');
+      return;
     }
-  }, [data, addAssistantMessage]);
+    
+    // Send proactive command to AI to focus on next field
+    const nextField = missing[0];
+    addUserMessage(`[Sistema] Avançando para: ${nextField}`);
+    
+    try {
+      const command = `COMANDO_SISTEMA: Foco no próximo campo obrigatório: ${nextField}. Solicite essa informação de forma direta e objetiva.`;
+      const aiResponse = await processWithAI(command, 'text');
+      
+      if (aiResponse?.follow_up_message) {
+        setTimeout(() => addAssistantMessage(aiResponse.follow_up_message), 300);
+      } else {
+        addAssistantMessage(`➡️ **Próximo passo:** Preciso do **${nextField}**. Por favor, forneça essa informação.`);
+      }
+    } catch (e) {
+      addAssistantMessage(`➡️ Falta: **${nextField}**. Forneça essa informação para continuar.`);
+    }
+  }, [data, processWithAI, addUserMessage, addAssistantMessage]);
 
   // Can undo?
   const canUndo = stateHistory.length > 0;
