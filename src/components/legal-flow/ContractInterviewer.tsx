@@ -14,11 +14,17 @@ import {
   Users,
   Handshake,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  Copy,
+  Bug,
+  X,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { LegalFlowData } from '@/hooks/useLegalFlow';
 import { VoiceRecordButton } from './VoiceRecordButton';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export interface ChatMessage {
   id: string;
@@ -103,6 +109,56 @@ export function ContractInterviewer({
 
   const allMessages = messages.length === 0 ? [INITIAL_MESSAGE] : messages;
 
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+
+  // Capture console logs for debugging
+  useEffect(() => {
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    const addLog = (type: string, ...args: any[]) => {
+      const timestamp = new Date().toLocaleTimeString('pt-BR');
+      const message = args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ');
+      setDebugLogs(prev => [...prev.slice(-99), `[${timestamp}] [${type}] ${message}`]);
+    };
+
+    console.log = (...args) => { addLog('LOG', ...args); originalLog.apply(console, args); };
+    console.error = (...args) => { addLog('ERROR', ...args); originalError.apply(console, args); };
+    console.warn = (...args) => { addLog('WARN', ...args); originalWarn.apply(console, args); };
+
+    return () => {
+      console.log = originalLog;
+      console.error = originalError;
+      console.warn = originalWarn;
+    };
+  }, []);
+
+  const copyMessageToClipboard = (content: string) => {
+    navigator.clipboard.writeText(content);
+    toast.success('📋 Mensagem copiada!');
+  };
+
+  const copyAllConversation = () => {
+    const conversation = allMessages.map(m => `[${m.role.toUpperCase()}]: ${m.content}`).join('\n\n');
+    navigator.clipboard.writeText(conversation);
+    toast.success('📋 Conversa completa copiada!');
+  };
+
+  const copyDebugLogs = () => {
+    const logsText = debugLogs.join('\n');
+    const fullDebug = JSON.stringify({
+      timestamp: new Date().toISOString(),
+      route: window.location.pathname,
+      currentData,
+      messages: allMessages,
+      consoleLogs: debugLogs,
+    }, null, 2);
+    navigator.clipboard.writeText(fullDebug);
+    toast.success('🐛 Logs de debug copiados para análise!');
+  };
+
   return (
     <div className="flex flex-col h-full bg-gradient-to-b from-slate-50 to-white">
       {/* Header */}
@@ -115,6 +171,32 @@ export function ContractInterviewer({
             <h3 className="font-semibold text-gray-900">Assistente Jurídico IA</h3>
             <p className="text-xs text-gray-500">Converse naturalmente para criar o contrato</p>
           </div>
+          
+          {/* Debug & Copy buttons */}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={copyAllConversation}
+              className="h-8 w-8 text-gray-500 hover:text-[#9C1E1E] hover:bg-[#9C1E1E]/10"
+              title="Copiar conversa"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowDebugPanel(!showDebugPanel)}
+              className={cn(
+                "h-8 w-8 hover:bg-[#9C1E1E]/10",
+                showDebugPanel ? "text-[#9C1E1E] bg-[#9C1E1E]/10" : "text-gray-500 hover:text-[#9C1E1E]"
+              )}
+              title="Ver logs de debug"
+            >
+              <Bug className="h-4 w-4" />
+            </Button>
+          </div>
+
           {isProcessing && (
             <Badge variant="secondary" className="animate-pulse bg-[#9C1E1E]/10 text-[#9C1E1E]">
               <Loader2 className="h-3 w-3 mr-1 animate-spin" />
@@ -123,6 +205,42 @@ export function ContractInterviewer({
           )}
         </div>
       </div>
+
+      {/* Debug Panel */}
+      {showDebugPanel && (
+        <div className="flex-shrink-0 border-b bg-gray-900 text-green-400 max-h-48 overflow-hidden">
+          <div className="flex items-center justify-between p-2 border-b border-gray-700">
+            <span className="text-xs font-mono flex items-center gap-2">
+              <Bug className="h-3 w-3" />
+              Debug Console ({debugLogs.length} logs)
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={copyDebugLogs}
+                className="h-6 text-xs text-green-400 hover:text-green-300 hover:bg-gray-800"
+              >
+                <Copy className="h-3 w-3 mr-1" />
+                Copiar Tudo
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowDebugPanel(false)}
+                className="h-6 w-6 text-gray-400 hover:text-white hover:bg-gray-800"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+          <ScrollArea className="h-32 p-2">
+            <pre className="text-[10px] font-mono whitespace-pre-wrap">
+              {debugLogs.length > 0 ? debugLogs.join('\n') : 'Nenhum log capturado ainda...'}
+            </pre>
+          </ScrollArea>
+        </div>
+      )}
 
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
@@ -154,25 +272,41 @@ export function ContractInterviewer({
                 'flex-1 max-w-[85%]',
                 message.role === 'user' ? 'text-right' : ''
               )}>
-                <div
-                  className={cn(
-                    'inline-block p-3 rounded-2xl text-sm shadow-sm',
-                    message.role === 'assistant'
-                      ? 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'
-                      : 'bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-tr-sm'
-                  )}
-                >
-                  {message.isTyping ? (
-                    <div className="flex items-center gap-1">
-                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
-                  ) : (
-                    <div 
-                      dangerouslySetInnerHTML={{ __html: formatMessageContent(message.content) }}
-                      className="whitespace-pre-wrap"
-                    />
+                <div className="group relative">
+                  <div
+                    className={cn(
+                      'inline-block p-3 rounded-2xl text-sm shadow-sm',
+                      message.role === 'assistant'
+                        ? 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'
+                        : 'bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-tr-sm'
+                    )}
+                  >
+                    {message.isTyping ? (
+                      <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    ) : (
+                      <div 
+                        dangerouslySetInnerHTML={{ __html: formatMessageContent(message.content) }}
+                        className="whitespace-pre-wrap select-text cursor-text"
+                      />
+                    )}
+                  </div>
+                  
+                  {/* Copy button on hover */}
+                  {!message.isTyping && (
+                    <button
+                      onClick={() => copyMessageToClipboard(message.content)}
+                      className={cn(
+                        "absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded bg-gray-800/80 text-white hover:bg-gray-700",
+                        message.role === 'user' ? 'left-1' : 'right-1'
+                      )}
+                      title="Copiar mensagem"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </button>
                   )}
                 </div>
 
