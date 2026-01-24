@@ -54,12 +54,12 @@ const getNumeroExtenso = (num: number) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ESTILOS INLINE PADRÃO OFICIAL EXA - IDÊNTICO A create-contract-from-proposal
+// ESTILOS INLINE PADRÃO OFICIAL EXA - TEMPLATE OFICIAL COM ESPAÇAMENTOS ABNT
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const styles = {
   // ═══════════════════════════════════════════════════════════════════════════════
-  // HEADER CORPORATIVO EXA - FUNDO BRANCO COM BORDA INFERIOR VERMELHA (PADRÃO PDF OFICIAL)
+  // HEADER CORPORATIVO EXA - FUNDO BRANCO COM BORDA INFERIOR VERMELHA (VISUAL CLONE PDF)
   // ═══════════════════════════════════════════════════════════════════════════════
   header: {
     width: '100%',
@@ -68,102 +68,128 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '20px 0',
-    marginBottom: '25px',
+    padding: '25px 0',
+    marginBottom: '30px',
   },
-  // Logo CSS-based para evitar problema de URL expirada
+  // Logo CSS-based igual ao template oficial (badge vermelho)
   headerLogoCss: {
-    background: '#C8102E',
+    background: '#8B1A1A',
     color: 'white',
     fontWeight: 800,
-    fontSize: '28px',
-    padding: '8px 20px',
-    borderRadius: '6px',
-    letterSpacing: '2px',
+    fontSize: '32px',
+    padding: '12px 28px',
+    borderRadius: '8px',
+    letterSpacing: '3px',
+    fontFamily: "'Arial Black', 'Helvetica Neue', sans-serif",
   },
-  // Título do contrato
+  // Título do contrato - COM BORDA AZUL (conforme template oficial)
   contractTitle: {
     textAlign: 'center' as const,
-    margin: '30px 0',
+    margin: '35px 0',
+    padding: '20px 30px',
+    border: '2px solid #3B82F6',
+    borderRadius: '4px',
+    background: '#ffffff',
   },
   contractTitleH1: {
     color: '#8B1A1A',
-    fontSize: '18pt',
-    margin: '0 0 10px 0',
+    fontSize: '16pt',
+    margin: '0 0 8px 0',
     fontWeight: 600,
+    letterSpacing: '1px',
+    textTransform: 'uppercase' as const,
   },
   contractNumber: {
-    fontSize: '12pt',
-    color: '#666',
+    fontSize: '11pt',
+    color: '#6b7280',
+    fontWeight: 400,
   },
-  // Seções
+  // Seções - FUNDO VERMELHO ESCURO (conforme template oficial)
   section: {
-    margin: '25px 0',
+    margin: '30px 0',
   },
   sectionTitle: {
-    background: 'linear-gradient(90deg, #8B1A1A, #A52020)',
+    background: '#8B1A1A',
     color: 'white',
-    padding: '10px 15px',
-    fontSize: '12pt',
+    padding: '12px 20px',
+    fontSize: '11pt',
     fontWeight: 600,
-    marginBottom: '15px',
-    borderRadius: '4px',
+    marginBottom: '20px',
+    borderRadius: '0',
+    letterSpacing: '0.5px',
+    textTransform: 'uppercase' as const,
   },
-  // Grid de info cards
+  // Grid de info cards - LAYOUT DUAS COLUNAS (conforme template oficial)
   infoGrid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: '15px',
-    margin: '15px 0',
+    gap: '20px',
+    margin: '20px 0',
   },
   infoCard: {
-    background: '#f8f9fa',
-    border: '1px solid #e9ecef',
-    borderRadius: '8px',
-    padding: '15px',
+    background: '#fafafa',
+    border: '1px solid #e5e7eb',
+    borderRadius: '0',
+    padding: '18px 20px',
   },
   infoCardTitle: {
     fontWeight: 600,
     color: '#8B1A1A',
-    marginBottom: '10px',
-    fontSize: '11pt',
+    marginBottom: '15px',
+    fontSize: '10pt',
     borderBottom: '2px solid #8B1A1A',
-    paddingBottom: '5px',
+    paddingBottom: '8px',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.5px',
   },
   infoRow: {
     display: 'flex',
     justifyContent: 'space-between',
-    padding: '5px 0',
-    borderBottom: '1px dotted #ddd',
+    alignItems: 'flex-start',
+    padding: '8px 0',
+    borderBottom: '1px dotted #d1d5db',
+    gap: '15px',
   },
   infoLabel: {
-    color: '#666',
-    fontSize: '10pt',
+    color: '#6b7280',
+    fontSize: '9.5pt',
+    flexShrink: 0,
+    minWidth: '80px',
   },
   infoValue: {
     fontWeight: 500,
-    color: '#1a1a1a',
+    color: '#1f2937',
     textAlign: 'right' as const,
-    fontSize: '10pt',
+    fontSize: '9.5pt',
+    flex: 1,
   },
-  // Cláusulas
+  // Cláusulas - ESPAÇAMENTO ABNT (1.5 linha, justificado)
   clause: {
-    margin: '20px 0',
+    margin: '22px 0',
     textAlign: 'justify' as const,
     lineHeight: 1.8,
   },
   clauseTitle: {
     fontWeight: 600,
     color: '#8B1A1A',
+    fontSize: '10.5pt',
+    display: 'block',
+    marginBottom: '10px',
+  },
+  clauseText: {
+    margin: '10px 0',
+    textAlign: 'justify' as const,
+    lineHeight: 1.8,
+    fontSize: '10.5pt',
   },
   // Highlight box
   highlightBox: {
     background: '#fafafa',
     border: '1px solid #e0e0e0',
     borderLeft: '4px solid #8B1A1A',
-    borderRadius: '4px',
-    padding: '15px',
-    margin: '15px 0',
+    borderRadius: '0',
+    padding: '15px 18px',
+    margin: '18px 0',
   },
   // Assinaturas
   signatureSection: {
@@ -173,50 +199,54 @@ const styles = {
   signaturesGrid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: '40px',
-    marginTop: '30px',
+    gap: '50px',
+    marginTop: '35px',
   },
   signatureBox: {
     textAlign: 'center' as const,
   },
   signatureLine: {
-    borderTop: '1px solid #333',
-    marginTop: '70px',
-    paddingTop: '10px',
+    borderTop: '1px solid #1f2937',
+    marginTop: '75px',
+    paddingTop: '12px',
   },
   signatureName: {
     fontWeight: 600,
-    color: '#1a1a1a',
+    color: '#1f2937',
+    fontSize: '10pt',
   },
   signatureRole: {
-    fontSize: '10pt',
-    color: '#666',
-    marginTop: '3px',
+    fontSize: '9.5pt',
+    color: '#6b7280',
+    marginTop: '4px',
   },
   signatureDoc: {
     fontSize: '9pt',
-    color: '#888',
-    marginTop: '3px',
+    color: '#9ca3af',
+    marginTop: '4px',
   },
   // Testemunhas
   witnessesSection: {
-    marginTop: '50px',
+    marginTop: '55px',
     paddingTop: '30px',
-    borderTop: '1px dashed #ccc',
+    borderTop: '1px dashed #d1d5db',
   },
   witnessesTitle: {
     textAlign: 'center' as const,
     fontWeight: 600,
-    color: '#666',
+    color: '#6b7280',
     marginBottom: '30px',
+    fontSize: '10pt',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.5px',
   },
   // Rodapé
   footer: {
-    marginTop: '50px',
-    paddingTop: '15px',
+    marginTop: '55px',
+    paddingTop: '18px',
     borderTop: '2px solid #8B1A1A',
     textAlign: 'center' as const,
-    color: '#666',
+    color: '#6b7280',
     fontSize: '9pt',
   },
 };
@@ -277,22 +307,22 @@ export function LiveContractPreview({
           ref={containerRef}
           id="contract-preview"
           style={{
-            fontFamily: "'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+            fontFamily: "'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
             fontSize: '10.5pt',
-            lineHeight: 1.65,
-            color: '#1a1a1a',
+            lineHeight: 1.7,
+            color: '#1f2937',
             backgroundColor: '#ffffff',
             maxWidth: '210mm',
             width: '100%',
             minHeight: '297mm',
-            padding: '15px 20px',
+            padding: '25mm 20mm',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
             border: '1px solid #d1d5db',
             position: 'relative'
           }}
         >
           <style>{`
-            @page { size: A4; margin: 12mm 15mm; }
+            @page { size: A4; margin: 25mm 20mm; }
             @media print {
               html, body {
                 -webkit-print-color-adjust: exact !important;
@@ -307,14 +337,14 @@ export function LiveContractPreview({
           `}</style>
 
           {/* ═══════════════════════════════════════════════════════════════════
-              CABEÇALHO CORPORATIVO EXA — FUNDO BRANCO + BORDA VERMELHA (VISUAL CLONE PDF)
+              CABEÇALHO CORPORATIVO EXA — FUNDO BRANCO + LOGO + BORDA VERMELHA (TEMPLATE OFICIAL)
           ═══════════════════════════════════════════════════════════════════ */}
           <div className="no-break" style={styles.header}>
             <div style={styles.headerLogoCss}>EXA</div>
           </div>
 
           {/* ═══════════════════════════════════════════════════════════════════
-              TÍTULO DO CONTRATO
+              TÍTULO DO CONTRATO — COM BORDA AZUL (TEMPLATE OFICIAL)
           ═══════════════════════════════════════════════════════════════════ */}
           <div style={styles.contractTitle}>
             <h1 style={styles.contractTitleH1}>
