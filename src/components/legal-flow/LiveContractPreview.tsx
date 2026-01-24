@@ -302,7 +302,9 @@ export function LiveContractPreview({
             maxWidth: '210mm',
             width: '100%',
             minHeight: '297mm',
-            padding: '30mm 20mm 20mm 30mm',
+            // Importante: o cabeçalho precisa ficar visível no topo (como no template oficial).
+            // As margens ABNT (30/20mm) devem afetar o conteúdo do contrato, não o cabeçalho.
+            padding: 0,
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
             border: '1px solid #d1d5db',
             position: 'relative'
@@ -329,6 +331,9 @@ export function LiveContractPreview({
           <div className="no-break" style={styles.header}>
             <div style={styles.headerLogoCss}>EXA</div>
           </div>
+
+          {/* Conteúdo com margens ABNT estritas */}
+          <div style={{ padding: '30mm 20mm 20mm 30mm' }}>
 
           {/* ═══════════════════════════════════════════════════════════════════
               TÍTULO DO CONTRATO (TEMPLATE OFICIAL - SEM BORDA)
@@ -694,6 +699,7 @@ export function LiveContractPreview({
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </ScrollArea>
