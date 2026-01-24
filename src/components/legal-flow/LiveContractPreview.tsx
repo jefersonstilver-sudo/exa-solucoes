@@ -71,9 +71,15 @@ const styles = {
     padding: '20px 0',
     marginBottom: '25px',
   },
-  headerLogo: {
-    height: '50px',
-    width: 'auto',
+  // Logo CSS-based para evitar problema de URL expirada
+  headerLogoCss: {
+    background: '#C8102E',
+    color: 'white',
+    fontWeight: 800,
+    fontSize: '28px',
+    padding: '8px 20px',
+    borderRadius: '6px',
+    letterSpacing: '2px',
   },
   // Título do contrato
   contractTitle: {
@@ -304,12 +310,7 @@ export function LiveContractPreview({
               CABEÇALHO CORPORATIVO EXA — FUNDO BRANCO + BORDA VERMELHA (VISUAL CLONE PDF)
           ═══════════════════════════════════════════════════════════════════ */}
           <div className="no-break" style={styles.header}>
-            <img 
-              src={EXA_LOGO_URL} 
-              alt="EXA Mídia" 
-              style={styles.headerLogo}
-              crossOrigin="anonymous"
-            />
+            <div style={styles.headerLogoCss}>EXA</div>
           </div>
 
           {/* ═══════════════════════════════════════════════════════════════════
