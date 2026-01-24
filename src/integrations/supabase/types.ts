@@ -1445,6 +1445,7 @@ export type Database = {
           audience_profile: string[] | null
           bairro: string
           caracteristicas: string[] | null
+          cnpj_condominio: string | null
           codigo_predio: string | null
           contato_sindico: string | null
           contato_sindico_telefone: string | null
@@ -1515,6 +1516,7 @@ export type Database = {
           audience_profile?: string[] | null
           bairro: string
           caracteristicas?: string[] | null
+          cnpj_condominio?: string | null
           codigo_predio?: string | null
           contato_sindico?: string | null
           contato_sindico_telefone?: string | null
@@ -1585,6 +1587,7 @@ export type Database = {
           audience_profile?: string[] | null
           bairro?: string
           caracteristicas?: string[] | null
+          cnpj_condominio?: string | null
           codigo_predio?: string | null
           contato_sindico?: string | null
           contato_sindico_telefone?: string | null
@@ -2207,6 +2210,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      clausulas_padrao: {
+        Row: {
+          codigo: string
+          conteudo: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          ordem: number | null
+          tipos_contrato: string[] | null
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          codigo: string
+          conteudo: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          ordem?: number | null
+          tipos_contrato?: string[] | null
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          codigo?: string
+          conteudo?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          ordem?: number | null
+          tipos_contrato?: string[] | null
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       client_activity_events: {
         Row: {
@@ -2848,6 +2887,108 @@ export type Database = {
           suporte_horario?: string | null
           termos_uso_url?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      configuracoes_empresa: {
+        Row: {
+          cnpj: string
+          created_at: string | null
+          email_institucional: string | null
+          endereco_bairro: string
+          endereco_cep: string
+          endereco_cidade: string
+          endereco_complemento: string | null
+          endereco_estado: string
+          endereco_logradouro: string
+          endereco_numero: string
+          foro_comarca: string
+          foro_estado: string
+          id: string
+          indice_reajuste: string | null
+          inscricao_estadual: string | null
+          inscricao_municipal: string | null
+          instagram: string | null
+          is_active: boolean | null
+          multa_rescisao_percentual: number | null
+          nome_fantasia: string
+          prazo_aviso_rescisao_dias: number | null
+          razao_social: string
+          representante_cargo: string
+          representante_cpf: string
+          representante_email: string
+          representante_nome: string
+          representante_rg: string | null
+          telefone_principal: string | null
+          updated_at: string | null
+          website: string | null
+          whatsapp_comercial: string | null
+        }
+        Insert: {
+          cnpj?: string
+          created_at?: string | null
+          email_institucional?: string | null
+          endereco_bairro?: string
+          endereco_cep?: string
+          endereco_cidade?: string
+          endereco_complemento?: string | null
+          endereco_estado?: string
+          endereco_logradouro?: string
+          endereco_numero?: string
+          foro_comarca?: string
+          foro_estado?: string
+          id?: string
+          indice_reajuste?: string | null
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          instagram?: string | null
+          is_active?: boolean | null
+          multa_rescisao_percentual?: number | null
+          nome_fantasia?: string
+          prazo_aviso_rescisao_dias?: number | null
+          razao_social?: string
+          representante_cargo?: string
+          representante_cpf?: string
+          representante_email?: string
+          representante_nome?: string
+          representante_rg?: string | null
+          telefone_principal?: string | null
+          updated_at?: string | null
+          website?: string | null
+          whatsapp_comercial?: string | null
+        }
+        Update: {
+          cnpj?: string
+          created_at?: string | null
+          email_institucional?: string | null
+          endereco_bairro?: string
+          endereco_cep?: string
+          endereco_cidade?: string
+          endereco_complemento?: string | null
+          endereco_estado?: string
+          endereco_logradouro?: string
+          endereco_numero?: string
+          foro_comarca?: string
+          foro_estado?: string
+          id?: string
+          indice_reajuste?: string | null
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          instagram?: string | null
+          is_active?: boolean | null
+          multa_rescisao_percentual?: number | null
+          nome_fantasia?: string
+          prazo_aviso_rescisao_dias?: number | null
+          razao_social?: string
+          representante_cargo?: string
+          representante_cpf?: string
+          representante_email?: string
+          representante_nome?: string
+          representante_rg?: string | null
+          telefone_principal?: string | null
+          updated_at?: string | null
+          website?: string | null
+          whatsapp_comercial?: string | null
         }
         Relationships: []
       }
@@ -3782,6 +3923,7 @@ export type Database = {
           cliente_segmento: string | null
           cliente_sobrenome: string | null
           cliente_telefone: string | null
+          contrato_origem_id: string | null
           cortesia_fim: string | null
           cortesia_inicio: string | null
           created_at: string | null
@@ -3859,6 +4001,7 @@ export type Database = {
           cliente_segmento?: string | null
           cliente_sobrenome?: string | null
           cliente_telefone?: string | null
+          contrato_origem_id?: string | null
           cortesia_fim?: string | null
           cortesia_inicio?: string | null
           created_at?: string | null
@@ -3936,6 +4079,7 @@ export type Database = {
           cliente_segmento?: string | null
           cliente_sobrenome?: string | null
           cliente_telefone?: string | null
+          contrato_origem_id?: string | null
           cortesia_fim?: string | null
           cortesia_inicio?: string | null
           created_at?: string | null
@@ -3990,6 +4134,13 @@ export type Database = {
           visualizado_em?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "contratos_legais_contrato_origem_id_fkey"
+            columns: ["contrato_origem_id"]
+            isOneToOne: false
+            referencedRelation: "contratos_legais"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contratos_legais_pedido_id_fkey"
             columns: ["pedido_id"]
