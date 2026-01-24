@@ -203,6 +203,21 @@ Analise o contexto acima e retorne APENAS um JSON válido com a estrutura especi
       throw new Error('Invalid JSON response from AI');
     }
 
+    // 6.1 SDR INVESTIGATIVO: Se a IA pediu mais informações, retornar request_info
+    if (parsedResponse.action === 'request_info') {
+      console.log('[JURIDICO-BRAIN] 🔍 SDR Mode: Requesting more info');
+      return new Response(JSON.stringify({
+        success: true,
+        action: 'request_info',
+        questions: parsedResponse.questions || [],
+        missing_fields: parsedResponse.missing_fields || [],
+        health_score: parsedResponse.health_score || 20,
+        partial_data: parsedResponse.partial_data || {},
+        contexto_ia: processedContent,
+        follow_up_message: parsedResponse.follow_up_message || 'Para continuar, preciso de mais informações.'
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // 7. Gerar HTML preview
     const htmlPreview = generateHtmlPreview(parsedResponse);
 

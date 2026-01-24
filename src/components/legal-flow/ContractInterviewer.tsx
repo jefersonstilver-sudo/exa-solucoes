@@ -265,10 +265,11 @@ export function ContractInterviewer({
             onChange={handleFileChange}
           />
 
-          {/* Voice button - AGORA SEPARADO E BEM POSICIONADO */}
+          {/* Voice button - Texto vai para o campo para revisão */}
           <VoiceRecordButton
             onTranscriptionComplete={(text) => {
-              onSendMessage(text);
+              setInputValue(text);
+              inputRef.current?.focus();
             }}
             disabled={isProcessing}
             variant="inline"
