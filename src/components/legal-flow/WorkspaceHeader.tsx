@@ -1,16 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, 
   Settings,
   Save,
-  Loader2
+  Loader2,
+  Download
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { LegalHealthGauge } from './LegalHealthGauge';
 import { HealthBreakdown } from '@/hooks/useLegalFlow';
+import { exportContractToPDF } from './ContractPDFExporter';
+import { toast } from 'sonner';
 
 // Logo oficial EXA
 const EXA_LOGO_URL = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Exa%20sozinha.png";
@@ -23,16 +26,35 @@ interface WorkspaceHeaderProps {
   isSaving?: boolean;
   onSave?: () => void;
   contractType?: string;
+  contractNumber?: string;
 }
 
 export function WorkspaceHeader({ 
   health, 
   isSaving,
   onSave,
-  contractType 
+  contractType,
+  contractNumber
 }: WorkspaceHeaderProps) {
   const navigate = useNavigate();
   const { buildPath } = useAdminBasePath();
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const filename = contractNumber 
+        ? `contrato-${contractNumber}` 
+        : `contrato-${new Date().toISOString().split('T')[0]}`;
+      await exportContractToPDF('contract-preview', filename);
+      toast.success('PDF exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      toast.error('Erro ao gerar PDF. Tente novamente.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const getTypeLabel = (type?: string) => {
     const labels: Record<string, string> = {
@@ -128,6 +150,20 @@ export function WorkspaceHeader({
               <Save className="h-4 w-4 mr-2" />
             )}
             Salvar Rascunho
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            className="bg-[#8B1A1A] hover:bg-[#6B1515] text-white"
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            Baixar PDF
           </Button>
 
           <Button
