@@ -32,7 +32,8 @@ import {
   UserCheck,
   MoreVertical,
   ArrowLeft,
-  PenTool
+  PenTool,
+  Sparkles
 } from 'lucide-react';
 import { SignatariosExaManager } from '@/components/admin/contracts/SignatariosExaManager';
 import { format } from 'date-fns';
@@ -218,6 +219,14 @@ const ContratosPage = () => {
               >
                 <PenTool className="h-4 w-4 mr-2" />
                 Signatários
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => navigate(buildPath('juridico/flow'))}
+                className="border-purple-300 text-purple-700 hover:bg-purple-50"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Legal Flow (IA)
               </Button>
               <Button 
                 onClick={() => navigate(buildPath(mainTab === 'anunciantes' ? 'juridico/novo' : 'juridico/novo-sindico'))}

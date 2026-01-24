@@ -498,6 +498,9 @@ verify_jwt = false
 [functions.configure-sofia-agent]
 verify_jwt = false
 
+[functions.juridico-brain]
+verify_jwt = true
+
 [functions.sofia-health-check]
 verify_jwt = false
 

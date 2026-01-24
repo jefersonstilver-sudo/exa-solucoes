@@ -3923,11 +3923,13 @@ export type Database = {
           cliente_segmento: string | null
           cliente_sobrenome: string | null
           cliente_telefone: string | null
+          contexto_ia: string | null
           contrato_origem_id: string | null
           cortesia_fim: string | null
           cortesia_inicio: string | null
           created_at: string | null
           criado_por: string | null
+          dados_parceiro_snapshot: Json | null
           data_fim: string | null
           data_inicio: string | null
           dia_vencimento: number | null
@@ -3936,10 +3938,13 @@ export type Database = {
           exclusividade_segmento: boolean | null
           exclusividade_valor_extra: number | null
           expirado_em: string | null
+          gatilhos_condicionais: Json | null
+          health_score: number | null
           id: string
           lista_predios: Json | null
           meses_cortesia: number | null
           metodo_pagamento: string | null
+          modo_entrada: string | null
           numero_contrato: string
           numero_telas_instaladas: number | null
           objeto: string
@@ -4001,11 +4006,13 @@ export type Database = {
           cliente_segmento?: string | null
           cliente_sobrenome?: string | null
           cliente_telefone?: string | null
+          contexto_ia?: string | null
           contrato_origem_id?: string | null
           cortesia_fim?: string | null
           cortesia_inicio?: string | null
           created_at?: string | null
           criado_por?: string | null
+          dados_parceiro_snapshot?: Json | null
           data_fim?: string | null
           data_inicio?: string | null
           dia_vencimento?: number | null
@@ -4014,10 +4021,13 @@ export type Database = {
           exclusividade_segmento?: boolean | null
           exclusividade_valor_extra?: number | null
           expirado_em?: string | null
+          gatilhos_condicionais?: Json | null
+          health_score?: number | null
           id?: string
           lista_predios?: Json | null
           meses_cortesia?: number | null
           metodo_pagamento?: string | null
+          modo_entrada?: string | null
           numero_contrato: string
           numero_telas_instaladas?: number | null
           objeto?: string
@@ -4079,11 +4089,13 @@ export type Database = {
           cliente_segmento?: string | null
           cliente_sobrenome?: string | null
           cliente_telefone?: string | null
+          contexto_ia?: string | null
           contrato_origem_id?: string | null
           cortesia_fim?: string | null
           cortesia_inicio?: string | null
           created_at?: string | null
           criado_por?: string | null
+          dados_parceiro_snapshot?: Json | null
           data_fim?: string | null
           data_inicio?: string | null
           dia_vencimento?: number | null
@@ -4092,10 +4104,13 @@ export type Database = {
           exclusividade_segmento?: boolean | null
           exclusividade_valor_extra?: number | null
           expirado_em?: string | null
+          gatilhos_condicionais?: Json | null
+          health_score?: number | null
           id?: string
           lista_predios?: Json | null
           meses_cortesia?: number | null
           metodo_pagamento?: string | null
+          modo_entrada?: string | null
           numero_contrato?: string
           numero_telas_instaladas?: number | null
           objeto?: string
@@ -7759,6 +7774,45 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           phone_number?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      juridico_prompts: {
+        Row: {
+          codigo: string
+          created_at: string | null
+          few_shot_examples: Json | null
+          id: string
+          is_active: boolean | null
+          modelo: string | null
+          system_prompt: string
+          temperatura: number | null
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          codigo: string
+          created_at?: string | null
+          few_shot_examples?: Json | null
+          id?: string
+          is_active?: boolean | null
+          modelo?: string | null
+          system_prompt: string
+          temperatura?: number | null
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          codigo?: string
+          created_at?: string | null
+          few_shot_examples?: Json | null
+          id?: string
+          is_active?: boolean | null
+          modelo?: string | null
+          system_prompt?: string
+          temperatura?: number | null
+          titulo?: string
           updated_at?: string | null
         }
         Relationships: []
