@@ -5,8 +5,7 @@ import { useSofia } from '@/contexts/SofiaContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-// CRITICAL: Sofia Jarvis é EXCLUSIVA do CEO - JAMAIS alterar esta verificação
-const MASTER_ACCOUNT_EMAIL = 'jefersonstilver@gmail.com';
+// Sofia Jarvis é EXCLUSIVA para super_admin
 
 interface SofiaVoiceButtonProps {
   className?: string;
@@ -23,14 +22,12 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
     endCall,
   } = useSofia();
 
-  // VERIFICAÇÃO CRÍTICA: Sofia Jarvis APENAS para o master
-  // Nenhum outro usuário administrativo ou cliente pode acessar
-  const userEmail = userProfile?.email?.toLowerCase();
-  const isMasterAccount = userEmail === MASTER_ACCOUNT_EMAIL.toLowerCase();
+  // VERIFICAÇÃO: Sofia Jarvis APENAS para super_admin
+  const isSuperAdmin = userProfile?.role === 'super_admin';
 
-  // Buscar configuração sofia_ativa (apenas para o master)
+  // Buscar configuração sofia_ativa (apenas para super_admin)
   useEffect(() => {
-    if (!isMasterAccount) return;
+    if (!isSuperAdmin) return;
 
     let isActive = true;
 
@@ -61,10 +58,10 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
       isActive = false;
       supabase.removeChannel(channel);
     };
-  }, [isMasterAccount]);
+  }, [isSuperAdmin]);
 
-  // Se não for o master, não renderizar NADA - botão não existe no DOM
-  if (!isMasterAccount) {
+  // Se não for super_admin, não renderizar NADA - botão não existe no DOM
+  if (!isSuperAdmin) {
     return null;
   }
 
