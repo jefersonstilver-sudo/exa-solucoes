@@ -77,7 +77,9 @@ serve(async (req) => {
     console.log('[JURIDICO-BRAIN] 🧠 Processing request:', { input_type, contentLength: content?.length });
 
     // 1. Se for áudio, transcrever primeiro
-    let processedContent = content;
+    // Sanitize content for Indexa 2026 compliance
+    let processedContent = sanitizeToIndexa2026(content);
+    
     if (input_type === 'audio_url') {
       console.log('[JURIDICO-BRAIN] 🎤 Transcribing audio...');
       const transcribeResponse = await fetch(`${SUPABASE_URL}/functions/v1/transcribe-audio`, {
@@ -248,24 +250,56 @@ Analise o contexto acima e retorne APENAS um JSON válido com a estrutura especi
   }
 });
 
+// Validate CNPJ format
+function isValidCNPJ(cnpj: string): boolean {
+  const cleaned = (cnpj || '').replace(/\D/g, '');
+  return cleaned.length === 14;
+}
+
+// Sanitize old company data to Indexa 2026 compliance
+function sanitizeToIndexa2026(text: string): string {
+  const replacements = [
+    { old: /EXA\s*Soluções\s*(Digitais)?/gi, new: 'INDEXA MIDIA LTDA' },
+    { old: /51\.925\.922\/0001-50/g, new: '38.142.638/0001-30' },
+    { old: /Natália\s*[A-Za-z\s]*/gi, new: 'Jeferson Stilver Rodrigues Encina' },
+  ];
+  
+  let result = text;
+  for (const r of replacements) {
+    result = result.replace(r.old, r.new);
+  }
+  return result;
+}
+
+// Calculate health score - Exact Indexa 2026 algorithm
 function calculateHealthScore(data: any): number {
   let score = 0;
   
-  // Parceiro identificado: +20
-  if (data.parceiro?.nome) score += 20;
+  // +15%: Parceiro identificado (CNPJ válido)
+  if (data.parceiro?.documento && isValidCNPJ(data.parceiro.documento)) {
+    score += 15;
+  }
   
-  // Objeto claro: +20
-  if (data.objeto && data.objeto.length > 20) score += 20;
+  // +25%: Objeto >50 caracteres
+  if (data.objeto && data.objeto.length > 50) {
+    score += 25;
+  }
   
-  // Prazos definidos: +20
-  if (data.prazo_meses && data.prazo_meses > 0) score += 20;
+  // +20%: Contrapartida clara (valor R$ ou obrigação de permuta)
+  if (data.valor_financeiro || (data.obrigacoes_parceiro?.length > 0)) {
+    score += 20;
+  }
   
-  // Contrapartidas (obrigações de ambas partes): +20
-  if ((data.obrigacoes_indexa?.length > 0) && (data.obrigacoes_parceiro?.length > 0)) score += 20;
+  // +10%: Prazo definido
+  if (data.prazo_meses && data.prazo_meses > 0) {
+    score += 10;
+  }
   
-  // Sem riscos críticos: +20
+  // +30%: Validação de risco (sem cláusulas abusivas críticas)
   const criticalRisks = data.riscos_detectados?.filter((r: any) => r.nivel === 'critico') || [];
-  if (criticalRisks.length === 0) score += 20;
+  if (criticalRisks.length === 0) {
+    score += 30;
+  }
   
   return Math.min(score, 100);
 }

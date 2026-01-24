@@ -118,23 +118,58 @@ export function useLegalFlow() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Calcular health score
+  // Validate CNPJ format
+  const isValidCNPJ = useCallback((cnpj: string): boolean => {
+    const cleaned = cnpj.replace(/\D/g, '');
+    return cleaned.length === 14;
+  }, []);
+
+  // Calcular health score - Algoritmo exato Indexa 2026
   const calculateHealth = useCallback((): { score: number; breakdown: HealthBreakdown } => {
+    let score = 0;
     const breakdown: HealthBreakdown = {
-      parceiro: Boolean(data.parceiro_nome && data.parceiro_nome.length > 2),
-      objeto: Boolean(data.objeto && data.objeto.length > 10),
-      prazos: Boolean(data.prazo_meses > 0 && data.data_inicio),
-      contrapartidas: Boolean(
-        (data.obrigacoes_indexa.length > 0 || data.obrigacoes_parceiro.length > 0) ||
-        data.tipo_contrato // Tipo definido conta como contrapartida inicial
-      ),
-      validacao_risco: data.riscos_detectados.length === 0 || 
-        data.riscos_detectados.every(r => r.aceito === true || r.nivel !== 'critico'),
+      parceiro: false,
+      objeto: false,
+      prazos: false,
+      contrapartidas: false,
+      validacao_risco: false,
     };
 
-    const score = Object.values(breakdown).filter(Boolean).length * 20;
+    // +15%: Parceiro identificado (CNPJ válido)
+    if (data.parceiro_documento && isValidCNPJ(data.parceiro_documento)) {
+      score += 15;
+      breakdown.parceiro = true;
+    }
+
+    // +25%: Objeto >50 caracteres
+    if (data.objeto && data.objeto.length > 50) {
+      score += 25;
+      breakdown.objeto = true;
+    }
+
+    // +20%: Contrapartida clara (valor R$ ou obrigação de permuta)
+    if (data.valor_financeiro || data.obrigacoes_parceiro.length > 0) {
+      score += 20;
+      breakdown.contrapartidas = true;
+    }
+
+    // +10%: Prazo definido
+    if (data.prazo_meses > 0 && data.data_inicio) {
+      score += 10;
+      breakdown.prazos = true;
+    }
+
+    // +30%: Validação de risco (sem cláusulas abusivas críticas não aceitas)
+    const hasNoCriticalRisks = !data.riscos_detectados.some(
+      r => r.nivel === 'critico' && !r.aceito
+    );
+    if (hasNoCriticalRisks) {
+      score += 30;
+      breakdown.validacao_risco = true;
+    }
+
     return { score, breakdown };
-  }, [data]);
+  }, [data, isValidCNPJ]);
 
   // Atualizar dados
   const updateData = useCallback((updates: Partial<LegalFlowData>) => {

@@ -222,11 +222,11 @@ const ContratosPage = () => {
               </Button>
               <Button 
                 variant="outline"
-                onClick={() => navigate(buildPath('juridico/flow'))}
+                onClick={() => navigate(buildPath('juridico/workspace'))}
                 className="border-purple-300 text-purple-700 hover:bg-purple-50"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
-                Legal Flow (IA)
+                Juridical Workspace (IA)
               </Button>
               <Button 
                 onClick={() => navigate(buildPath(mainTab === 'anunciantes' ? 'juridico/novo' : 'juridico/novo-sindico'))}
