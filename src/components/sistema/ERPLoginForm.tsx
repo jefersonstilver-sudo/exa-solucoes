@@ -135,7 +135,9 @@ const ERPLoginForm = () => {
           });
 
           toast.info('Código de verificação enviado para seu WhatsApp');
-          navigate(`/verificacao-2fa?userId=${data.user.id}&redirect=/super_admin/dashboard`);
+          // Importante: o dashboard do super_admin é a rota index (/super_admin).
+          // A rota /super_admin/dashboard não existe nas SuperAdminRoutes e gera tela em branco.
+          navigate(`/verificacao-2fa?userId=${data.user.id}&redirect=/super_admin`);
           return;
         } catch (error) {
           console.error('❌ [ERP_LOGIN] Erro ao enviar código 2FA:', error);
@@ -150,7 +152,8 @@ const ERPLoginForm = () => {
       });
 
       // Redirecionar para o dashboard apropriado
-      const targetPath = userRole === 'super_admin' ? '/super_admin/dashboard' : '/admin';
+      // Nota: o dashboard do super_admin é a rota index (/super_admin).
+      const targetPath = userRole === 'super_admin' ? '/super_admin' : '/admin';
       navigate(targetPath, { replace: true });
       
     } catch (error: any) {
