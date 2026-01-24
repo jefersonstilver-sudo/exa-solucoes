@@ -37,50 +37,46 @@ export function WorkspaceFooter({
   onPreviewPDF,
   onDownloadDraft
 }: WorkspaceFooterProps) {
-  const missingScore = 85 - healthScore;
+  const missingScore = Math.max(0, 85 - healthScore);
 
   return (
-    <div className="flex-shrink-0 bg-white/90 backdrop-blur-xl border-t border-gray-100 shadow-lg">
-      <div className="flex items-center justify-between px-4 py-3 gap-3">
+    <div className="flex-shrink-0 bg-white border-t border-gray-200">
+      <div className="flex items-center justify-between px-6 py-4 gap-4">
         {/* Left side - Secondary actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            size="sm"
             onClick={onSave}
             disabled={isSaving}
-            className="text-gray-600"
+            className="h-11 px-5 rounded-xl border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all"
           >
             {isSaving ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="h-4 w-4 mr-2 text-gray-500" />
             )}
-            <span className="hidden sm:inline">Salvar Rascunho</span>
-            <span className="sm:hidden">Salvar</span>
+            <span className="font-medium text-gray-700">Salvar Rascunho</span>
           </Button>
 
           {onPreviewPDF && (
             <Button
               variant="ghost"
-              size="sm"
               onClick={onPreviewPDF}
-              className="text-gray-600 hidden sm:flex"
+              className="h-11 px-4 rounded-xl text-gray-600 hover:bg-gray-100 hidden lg:flex"
             >
               <FileText className="h-4 w-4 mr-2" />
-              Visualizar PDF
+              <span className="font-medium">Visualizar PDF</span>
             </Button>
           )}
 
           {onDownloadDraft && (
             <Button
               variant="ghost"
-              size="sm"
               onClick={onDownloadDraft}
-              className="text-gray-600 hidden sm:flex"
+              className="h-11 px-4 rounded-xl text-gray-600 hover:bg-gray-100 hidden lg:flex"
             >
               <Download className="h-4 w-4 mr-2" />
-              Baixar Minuta
+              <span className="font-medium">Baixar Minuta</span>
             </Button>
           )}
         </div>
@@ -88,18 +84,15 @@ export function WorkspaceFooter({
         {/* Center - Status message */}
         <div className="flex-1 flex justify-center">
           {canFinalize ? (
-            <div className="flex items-center gap-2 text-sm text-green-600">
-              <CheckCircle2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Pronto para envio!</span>
+            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-full border border-emerald-200">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              <span className="text-sm font-medium text-emerald-700">Pronto para envio!</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-sm text-amber-600">
-              <AlertCircle className="h-4 w-4" />
-              <span className="hidden sm:inline">
+            <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-full border border-amber-200">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-medium text-amber-700">
                 Faltam {missingScore}% para liberar envio
-              </span>
-              <span className="sm:hidden">
-                +{missingScore}% necessário
               </span>
             </div>
           )}
@@ -109,38 +102,34 @@ export function WorkspaceFooter({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div>
-                <Button
-                  onClick={onFinalize}
-                  disabled={!canFinalize || isSubmitting}
-                  className={`
-                    min-w-[160px] transition-all duration-300
-                    ${canFinalize 
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-green-500/25' 
-                      : 'bg-gray-300 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Finalizar e Enviar</span>
-                      <span className="sm:hidden">Enviar</span>
-                    </>
-                  )}
-                </Button>
-              </div>
+              <Button
+                onClick={onFinalize}
+                disabled={!canFinalize || isSubmitting}
+                className={`
+                  h-12 px-8 rounded-xl font-semibold text-white transition-all duration-300 shadow-lg
+                  ${canFinalize 
+                    ? 'bg-gradient-to-r from-[#9C1E1E] to-[#B40D1A] hover:from-[#8B1A1A] hover:to-[#A30C18] shadow-[#9C1E1E]/25 hover:shadow-[#9C1E1E]/40 hover:scale-[1.02]' 
+                    : 'bg-gray-300 cursor-not-allowed shadow-none'
+                  }
+                `}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    <span>Enviando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-5 w-5 mr-2" />
+                    <span>Finalizar e Enviar</span>
+                  </>
+                )}
+              </Button>
             </TooltipTrigger>
             {!canFinalize && (
-              <TooltipContent side="top" className="max-w-xs">
+              <TooltipContent side="top" className="max-w-xs bg-gray-900 text-white border-0 rounded-xl px-4 py-3">
                 <p className="text-sm">
-                  O contrato precisa ter um Health Score de pelo menos 85% para ser enviado. 
-                  Complete os campos obrigatórios através da conversa com a IA.
+                  Complete os campos obrigatórios para atingir 85% de Health Score.
                 </p>
               </TooltipContent>
             )}
