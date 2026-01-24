@@ -22,11 +22,15 @@ export const useLoginTracking = () => {
         
         console.log('✅ Login tracked for user:', userProfile.id);
       } catch (error) {
-        console.error('❌ Error tracking login:', error);
+        // CRITICAL: Log silencioso - NUNCA propagar erro para não travar a UI
+        console.warn('⚠️ Login tracking failed (non-blocking):', error);
       }
     };
 
-    trackLogin();
+    // Executar de forma não-bloqueante
+    trackLogin().catch(() => {
+      // Fallback silencioso final
+    });
   }, [userProfile?.id]);
 };
 
