@@ -60,9 +60,10 @@ import SignatariosStep, { SignatarioContrato } from '@/components/admin/contract
 type Step = 'tipo' | 'modo' | 'vinculo' | 'cliente' | 'contrato' | 'signatarios' | 'preview';
 type FillMode = 'extract' | 'manual';
 type TipoProduto = 'horizontal' | 'vertical_premium';
+type TipoContrato = 'termo_aceite' | 'comodato' | 'anunciante' | 'parceria_clt' | 'parceria_pj' | 'permuta';
 
 interface ContratoData {
-  tipo_contrato: 'anunciante' | 'sindico';
+  tipo_contrato: TipoContrato;
   pedido_id?: string;
   proposta_id?: string;
   cliente_nome: string;
@@ -88,6 +89,12 @@ interface ContratoData {
   clausulas_especiais: string;
   data_inicio: string;
   tipo_produto: TipoProduto;
+  // Campos adicionais para Parceria CLT/PJ
+  parceiro_cargo?: string;
+  parceiro_salario?: number;
+  parceiro_jornada?: string;
+  // Campo para vínculo de prédio
+  predio_id?: string;
 }
 
 const NovoContratoPage = () => {
@@ -140,7 +147,11 @@ const NovoContratoPage = () => {
     parcelas: [],
     clausulas_especiais: '',
     data_inicio: new Date().toISOString().split('T')[0],
-    tipo_produto: 'horizontal'
+    tipo_produto: 'horizontal',
+    parceiro_cargo: '',
+    parceiro_salario: 0,
+    parceiro_jornada: '',
+    predio_id: ''
   });
 
   // Buscar pedidos para vincular
@@ -351,8 +362,16 @@ const NovoContratoPage = () => {
       ? 'Vertical Premium (tela cheia a cada ~195s)' 
       : 'Horizontal Padrão (até 10 segundos)';
     
-    if (data.tipo_contrato === 'sindico') {
+    if (data.tipo_contrato === 'termo_aceite' || data.tipo_contrato === 'comodato') {
       return `Cessão de espaço para instalação de painéis digitais no(s) elevador(es) do condomínio.`;
+    }
+    
+    if (data.tipo_contrato === 'parceria_clt' || data.tipo_contrato === 'parceria_pj') {
+      return `Contrato de ${data.tipo_contrato === 'parceria_clt' ? 'trabalho CLT' : 'prestação de serviços PJ'} para ${data.parceiro_cargo || 'cargo a definir'}.`;
+    }
+    
+    if (data.tipo_contrato === 'permuta') {
+      return `Contrato de permuta de serviços de publicidade digital.`;
     }
     
     return `Veiculação de publicidade em vídeo ${tipoProdutoTexto} nos painéis digitais da EXA MÍDIA em ${data.lista_predios.length} prédio(s), pelo período de ${data.plano_meses} mês(es).`;
@@ -653,38 +672,152 @@ const NovoContratoPage = () => {
         {step === 'tipo' && (
           <div className="space-y-6">
             <h2 className="text-lg font-semibold">Selecione o tipo de contrato</h2>
-            <RadioGroup 
-              value={contratoData.tipo_contrato} 
-              onValueChange={(v) => setContratoData(prev => ({ ...prev, tipo_contrato: v as 'anunciante' | 'sindico' }))}
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
-            >
-              <Label 
-                htmlFor="anunciante" 
-                className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md ${
-                  contratoData.tipo_contrato === 'anunciante' ? 'border-primary bg-primary/5 shadow-md' : 'border-muted hover:border-primary/30'
-                }`}
+            
+            {/* Select de Tipo de Contrato */}
+            <div className="space-y-2">
+              <Label>Tipo de Contrato</Label>
+              <Select 
+                value={contratoData.tipo_contrato} 
+                onValueChange={(v) => setContratoData(prev => ({ ...prev, tipo_contrato: v as TipoContrato }))}
               >
-                <RadioGroupItem value="anunciante" id="anunciante" />
-                <Users className="h-8 w-8 text-primary" />
-                <div>
-                  <p className="font-semibold">Anunciante</p>
-                  <p className="text-sm text-muted-foreground">Contrato de publicidade</p>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="termo_aceite">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-emerald-600" />
+                      <span>Termo de Aceite (Síndico)</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="comodato">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-blue-600" />
+                      <span>Contrato de Comodato</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="anunciante">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-purple-600" />
+                      <span>Anunciante (Publicidade)</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="parceria_clt">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-orange-600" />
+                      <span>Parceria CLT</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="parceria_pj">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-amber-600" />
+                      <span>Parceria PJ</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="permuta">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-pink-600" />
+                      <span>Permuta</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Campos adicionais para Parceria CLT/PJ */}
+            {(contratoData.tipo_contrato === 'parceria_clt' || contratoData.tipo_contrato === 'parceria_pj') && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-4">
+                <h3 className="font-semibold text-amber-800 flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Dados da Parceria
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label>Cargo</Label>
+                    <Input
+                      placeholder="Ex: Gerente Comercial"
+                      value={contratoData.parceiro_cargo || ''}
+                      onChange={(e) => setContratoData(prev => ({ ...prev, parceiro_cargo: e.target.value }))}
+                      className="rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <Label>{contratoData.tipo_contrato === 'parceria_clt' ? 'Salário (R$)' : 'Remuneração (R$)'}</Label>
+                    <Input
+                      type="number"
+                      placeholder="0,00"
+                      value={contratoData.parceiro_salario || ''}
+                      onChange={(e) => setContratoData(prev => ({ ...prev, parceiro_salario: parseFloat(e.target.value) || 0 }))}
+                      className="rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <Label>Jornada</Label>
+                    <Input
+                      placeholder="Ex: 44h semanais"
+                      value={contratoData.parceiro_jornada || ''}
+                      onChange={(e) => setContratoData(prev => ({ ...prev, parceiro_jornada: e.target.value }))}
+                      className="rounded-xl"
+                    />
+                  </div>
                 </div>
-              </Label>
-              <Label 
-                htmlFor="sindico" 
-                className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md ${
-                  contratoData.tipo_contrato === 'sindico' ? 'border-primary bg-primary/5 shadow-md' : 'border-muted hover:border-primary/30'
-                }`}
-              >
-                <RadioGroupItem value="sindico" id="sindico" />
-                <Building2 className="h-8 w-8 text-primary" />
-                <div>
-                  <p className="font-semibold">Síndico</p>
-                  <p className="text-sm text-muted-foreground">Termo de cessão de espaço</p>
-                </div>
-              </Label>
-            </RadioGroup>
+              </div>
+            )}
+
+            {/* Seleção de Prédio para termo_aceite e comodato */}
+            {(contratoData.tipo_contrato === 'termo_aceite' || contratoData.tipo_contrato === 'comodato') && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-4">
+                <h3 className="font-semibold text-blue-800 flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Selecione o Prédio
+                </h3>
+                <Select 
+                  value={contratoData.predio_id || ''}
+                  onValueChange={(predioId) => {
+                    const predio = predios?.find(p => p.id === predioId);
+                    if (predio) {
+                      setContratoData(prev => ({
+                        ...prev,
+                        predio_id: predio.id,
+                        lista_predios: [{
+                          id: predio.id,
+                          building_id: predio.id,
+                          building_name: predio.nome,
+                          nome: predio.nome,
+                          bairro: predio.bairro,
+                          endereco: predio.endereco,
+                          quantidade_telas: predio.quantidade_telas || 1,
+                          visualizacoes_mes: predio.visualizacoes_mes || 0,
+                          cnpj_condominio: predio.cnpj_condominio || ''
+                        }],
+                        cliente_endereco: predio.endereco || ''
+                      }));
+                    }
+                  }}
+                >
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Selecione um prédio cadastrado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {predios?.map(predio => (
+                      <SelectItem key={predio.id} value={predio.id}>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span>{predio.nome}</span>
+                          <span className="text-muted-foreground">- {predio.bairro}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {contratoData.predio_id && contratoData.lista_predios[0] && (
+                  <div className="text-sm text-blue-700 bg-blue-100 p-2 rounded-lg">
+                    <p><strong>Endereço:</strong> {contratoData.lista_predios[0].endereco}</p>
+                    <p><strong>Telas:</strong> {contratoData.lista_predios[0].quantidade_telas}</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Lista de Rascunhos */}
             {rascunhos && rascunhos.length > 0 && (
@@ -789,41 +922,17 @@ const NovoContratoPage = () => {
           </div>
         )}
 
-        {/* Step 2b: Síndico vai direto para seleção de prédio */}
-        {step === 'modo' && contratoData.tipo_contrato === 'sindico' && (
+        {/* Step 2b: Termo/Comodato - prédio já selecionado no step anterior, então vai direto para modo */}
+        {step === 'modo' && (contratoData.tipo_contrato === 'termo_aceite' || contratoData.tipo_contrato === 'comodato') && (
           <div className="space-y-6">
-            <h2 className="text-lg font-semibold">Selecione o prédio</h2>
-            <Select 
-              onValueChange={(predioId) => {
-                const predio = predios?.find(p => p.id === predioId);
-                if (predio) {
-                  setContratoData(prev => ({
-                    ...prev,
-                    lista_predios: [{
-                      id: predio.id,
-                      building_id: predio.id,
-                      building_name: predio.nome,
-                      nome: predio.nome,
-                      bairro: predio.bairro,
-                      endereco: predio.endereco,
-                      quantidade_telas: predio.quantidade_telas || 1,
-                      visualizacoes_mes: predio.visualizacoes_mes || 0
-                    }]
-                  }));
-                }
-              }}
-            >
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="Selecione um prédio" />
-              </SelectTrigger>
-              <SelectContent>
-                {predios?.map(predio => (
-                  <SelectItem key={predio.id} value={predio.id}>
-                    {predio.nome} - {predio.bairro}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <h2 className="text-lg font-semibold">Prédio Selecionado</h2>
+            {contratoData.lista_predios[0] && (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <p className="font-semibold text-emerald-800">{contratoData.lista_predios[0].nome}</p>
+                <p className="text-sm text-emerald-700">{contratoData.lista_predios[0].endereco}</p>
+                <p className="text-xs text-emerald-600">{contratoData.lista_predios[0].quantidade_telas} tela(s)</p>
+              </div>
+            )}
 
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep('tipo')} className="rounded-xl">

@@ -1,6 +1,7 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 
 interface ContractPreviewProps {
   data: {
@@ -48,6 +49,7 @@ interface ContractPreviewProps {
 const EXA_LOGO_URL = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Exa%20sozinha.png";
 
 const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, onEdit }) => {
+  const { settings: companySettings, loading: loadingCompany } = useCompanySettings();
   const formatCurrency = (value: number | undefined) => {
     if (!value) return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -75,7 +77,9 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, on
   const listaPredios = Array.isArray(data.lista_predios) ? data.lista_predios : [];
   const totalPaineis = data.total_paineis || listaPredios.reduce((acc, p) => acc + (p.quantidade_telas > 0 ? p.quantidade_telas : 1), 0);
   const isVerticalPremium = data.tipo_produto === 'vertical_premium';
-  const isSindico = data.tipo_contrato === 'sindico' || data.tipo_contrato === 'comodato';
+  const isSindico = data.tipo_contrato === 'sindico' || data.tipo_contrato === 'comodato' || data.tipo_contrato === 'termo_aceite';
+  const isParceria = data.tipo_contrato === 'parceria_clt' || data.tipo_contrato === 'parceria_pj';
+  const isPermuta = data.tipo_contrato === 'permuta';
   const clienteNomeCompleto = data.cliente_sobrenome ? `${data.cliente_nome} ${data.cliente_sobrenome}` : data.cliente_nome;
 
   const totalImpMes = listaPredios.reduce((acc, p) => {
@@ -84,7 +88,11 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, on
   }, 0);
 
   const getTituloContrato = () => {
+    if (data.tipo_contrato === 'termo_aceite') return 'TERMO DE ACEITE PARA INSTALAÇÃO DE EQUIPAMENTOS';
     if (isSindico) return 'CONTRATO DE COMODATO DE EQUIPAMENTOS';
+    if (data.tipo_contrato === 'parceria_clt') return 'CONTRATO DE TRABALHO — CLT';
+    if (data.tipo_contrato === 'parceria_pj') return 'CONTRATO DE PRESTAÇÃO DE SERVIÇOS — PJ';
+    if (isPermuta) return 'CONTRATO DE PERMUTA DE SERVIÇOS';
     if (isVerticalPremium) return 'CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE PUBLICIDADE DIGITAL — VERTICAL PREMIUM';
     return 'CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE PUBLICIDADE DIGITAL';
   };
@@ -146,8 +154,9 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, on
         
         <p style={{ margin: '0 0 10px 0', textAlign: 'justify' }}>
           <strong style={{ color: '#8B1A1A' }}>{isSindico ? 'COMODANTE' : 'CONTRATADA'}:</strong>{' '}
-          <strong>EXA – Soluções Digitais LTDA</strong>, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº <strong>51.925.922/0001-50</strong>, 
-          com sede na Rua Pernambuco, nº 1.618, Centro, Cascavel/PR, CEP 85.810-021, neste ato representada por seus sócios administradores.
+          <strong>{companySettings.razao_social}</strong>, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº <strong>{companySettings.cnpj}</strong>, 
+          com sede em {companySettings.endereco_completo}, neste ato representada por seu {companySettings.representante_cargo}, <strong>{companySettings.representante_nome}</strong>, 
+          inscrito no CPF sob o nº {companySettings.representante_cpf}.
         </p>
 
         <p style={{ margin: 0, textAlign: 'justify' }}>
@@ -286,7 +295,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, on
           <div className="contract-section" style={{ marginBottom: '20px' }}>
             <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 11ª — DO FORO</h3>
             <p style={{ margin: 0, textAlign: 'justify' }}>
-              <strong>11.1.</strong> As partes elegem o foro da Comarca de <strong>Cascavel/PR</strong> para dirimir quaisquer controvérsias 
+              <strong>11.1.</strong> As partes elegem o foro da Comarca de <strong>{companySettings.foro_completo}</strong> para dirimir quaisquer controvérsias 
               oriundas deste contrato, renunciando a qualquer outro, por mais privilegiado que seja.
             </p>
           </div>
@@ -350,7 +359,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, on
           <div className="contract-section" style={{ marginBottom: '20px' }}>
             <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 7ª — DO FORO</h3>
             <p style={{ margin: 0, textAlign: 'justify' }}>
-              <strong>7.1.</strong> As partes elegem o foro da Comarca de <strong>Cascavel/PR</strong> para dirimir quaisquer controvérsias oriundas deste contrato.
+              <strong>7.1.</strong> As partes elegem o foro da Comarca de <strong>{companySettings.foro_completo}</strong> para dirimir quaisquer controvérsias oriundas deste contrato.
             </p>
           </div>
         </>
@@ -484,9 +493,9 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, on
               {isSindico ? 'COMODANTE' : 'CONTRATADA'}
             </p>
             <p style={{ margin: '0 0 2px 0', fontSize: '11px', fontWeight: '600' }}>
-              EXA – Soluções Digitais LTDA
+              {companySettings.razao_social}
             </p>
-            <p style={{ margin: 0, fontSize: '10px', color: '#555' }}>CNPJ: 51.925.922/0001-50</p>
+            <p style={{ margin: 0, fontSize: '10px', color: '#555' }}>CNPJ: {companySettings.cnpj}</p>
             
             {signatarios?.exa && signatarios.exa.length > 0 ? (
               signatarios.exa.map((sig, idx) => (
@@ -499,7 +508,7 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, on
             ) : (
               <>
                 <p style={{ margin: '6px 0 0 0', fontSize: '10px', color: '#555' }}>
-                  Jeferson Stilver R. Encina<br />Representante Legal<br />CPF: 055.031.279-00
+                  {companySettings.representante_nome}<br />{companySettings.representante_cargo}<br />CPF: {companySettings.representante_cpf}
                 </p>
               </>
             )}

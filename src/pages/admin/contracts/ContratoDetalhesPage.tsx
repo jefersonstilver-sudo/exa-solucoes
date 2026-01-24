@@ -35,7 +35,8 @@ import {
   Hash,
   Monitor,
   AlertTriangle,
-  Copy
+  Copy,
+  Gem
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -262,10 +263,62 @@ const ContratoDetalhesPage = () => {
     { key: 'signed', label: 'Assinado', date: contrato.assinado_em, done: !!contrato.assinado_em }
   ];
 
-  const tipoContratoLabel = contrato.tipo_contrato === 'comodato' ? 'Comodato (Síndico)' : 
-                           contrato.tipo_contrato === 'sindico' ? 'Síndico' : 'Anunciante';
+  const tipoContratoLabel = contrato.tipo_contrato === 'termo_aceite' ? 'Termo de Aceite' :
+                           contrato.tipo_contrato === 'comodato' ? 'Comodato (Síndico)' : 
+                           contrato.tipo_contrato === 'sindico' ? 'Síndico' : 
+                           contrato.tipo_contrato === 'parceria_clt' ? 'Parceria CLT' :
+                           contrato.tipo_contrato === 'parceria_pj' ? 'Parceria PJ' :
+                           contrato.tipo_contrato === 'permuta' ? 'Permuta' : 'Anunciante';
   
   const tipoProdutoLabel = contrato.tipo_produto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal Padrão';
+
+  // Handler para gerar contrato de comodato a partir do termo de aceite
+  const handleGerarComodato = async () => {
+    try {
+      toast.loading('Gerando contrato de comodato...');
+      
+      const { data: numeroContrato } = await supabase.rpc('generate_contract_number');
+      
+      const comodatoPayload = {
+        tipo_contrato: 'comodato',
+        contrato_origem_id: contrato.id,
+        numero_contrato: numeroContrato,
+        cliente_nome: contrato.cliente_nome,
+        cliente_sobrenome: contrato.cliente_sobrenome,
+        cliente_email: contrato.cliente_email,
+        cliente_telefone: contrato.cliente_telefone,
+        cliente_cnpj: contrato.cliente_cnpj,
+        cliente_cpf: contrato.cliente_cpf,
+        cliente_razao_social: contrato.cliente_razao_social,
+        cliente_cargo: contrato.cliente_cargo,
+        cliente_endereco: contrato.cliente_endereco,
+        cliente_cidade: contrato.cliente_cidade,
+        predio_id: contrato.predio_id,
+        predio_nome: contrato.predio_nome,
+        predio_endereco: contrato.predio_endereco,
+        lista_predios: contrato.lista_predios,
+        numero_telas_instaladas: contrato.numero_telas_instaladas,
+        status: 'rascunho',
+        valor_total: 0,
+        valor_mensal: 0
+      };
+
+      const { data: comodato, error } = await supabase
+        .from('contratos_legais')
+        .insert(comodatoPayload)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.dismiss();
+      toast.success('Contrato de Comodato criado com sucesso!');
+      navigate(buildPath(`juridico/${comodato.id}`));
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error(`Erro ao gerar comodato: ${err.message}`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 pb-24">
@@ -421,6 +474,22 @@ const ContratoDetalhesPage = () => {
             </div>
           </div>
         </Card>
+
+        {/* Botão Gerar Comodato - apenas para termo_aceite assinado */}
+        {contrato.tipo_contrato === 'termo_aceite' && contrato.status === 'assinado' && (
+          <Card className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200">
+            <Button 
+              onClick={handleGerarComodato}
+              className="w-full h-12 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold"
+            >
+              <Gem className="h-5 w-5 mr-2" />
+              💎 Gerar Contrato de Comodato
+            </Button>
+            <p className="text-xs text-center text-purple-700 mt-2">
+              Cria automaticamente o contrato de comodato vinculado a este Termo de Aceite
+            </p>
+          </Card>
+        )}
 
         {/* Accordion com todas as informações */}
         <Accordion type="multiple" defaultValue={['cliente', 'periodo', 'clicksign']} className="space-y-2">
