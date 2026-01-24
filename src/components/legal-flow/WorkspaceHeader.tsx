@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, 
-  Scale, 
   Settings,
   Save,
   Loader2
@@ -12,6 +11,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { LegalHealthGauge } from './LegalHealthGauge';
 import { HealthBreakdown } from '@/hooks/useLegalFlow';
+
+// Logo oficial EXA
+const EXA_LOGO_URL = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Exa%20sozinha.png";
 
 interface WorkspaceHeaderProps {
   health: {
@@ -59,12 +61,17 @@ export function WorkspaceHeader({
           </Button>
           
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-[#9C1E1E] to-[#7D1818] rounded-xl shadow-lg">
-              <Scale className="h-5 w-5 text-white" />
-            </div>
+            <img 
+              src={EXA_LOGO_URL} 
+              alt="EXA Mídia" 
+              className="h-10 w-auto"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
             <div>
               <h1 className="text-lg font-bold text-gray-900">
-                EXA Juridical Workspace
+                Juridical Workspace
               </h1>
               <p className="text-xs text-gray-500">
                 Criação assistida por IA
