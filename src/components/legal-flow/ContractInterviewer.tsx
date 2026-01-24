@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Send, 
   Mic, 
-  MicOff, 
   Paperclip, 
   Bot, 
   User, 
@@ -62,7 +61,6 @@ export function ContractInterviewer({
   currentData
 }: ContractInterviewerProps) {
   const [inputValue, setInputValue] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -106,19 +104,19 @@ export function ContractInterviewer({
   const allMessages = messages.length === 0 ? [INITIAL_MESSAGE] : messages;
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-gray-50 to-white">
+    <div className="flex flex-col h-full bg-gradient-to-b from-slate-50 to-white">
       {/* Header */}
       <div className="flex-shrink-0 p-4 border-b bg-white/80 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+          <div className="p-2.5 bg-gradient-to-br from-[#9C1E1E] to-[#7D1818] rounded-xl shadow-lg">
             <Bot className="h-5 w-5 text-white" />
           </div>
-          <div>
+          <div className="flex-1">
             <h3 className="font-semibold text-gray-900">Assistente Jurídico IA</h3>
             <p className="text-xs text-gray-500">Converse naturalmente para criar o contrato</p>
           </div>
           {isProcessing && (
-            <Badge variant="secondary" className="ml-auto animate-pulse">
+            <Badge variant="secondary" className="animate-pulse bg-[#9C1E1E]/10 text-[#9C1E1E]">
               <Loader2 className="h-3 w-3 mr-1 animate-spin" />
               Processando...
             </Badge>
@@ -139,10 +137,10 @@ export function ContractInterviewer({
             >
               {/* Avatar */}
               <div className={cn(
-                'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
+                'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-sm',
                 message.role === 'assistant' 
-                  ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-white' 
-                  : 'bg-gradient-to-br from-[#9C1E1E] to-[#7D1818] text-white'
+                  ? 'bg-gradient-to-br from-[#9C1E1E] to-[#7D1818] text-white' 
+                  : 'bg-gradient-to-br from-slate-600 to-slate-700 text-white'
               )}>
                 {message.role === 'assistant' ? (
                   <Bot className="h-4 w-4" />
@@ -158,10 +156,10 @@ export function ContractInterviewer({
               )}>
                 <div
                   className={cn(
-                    'inline-block p-3 rounded-2xl text-sm',
+                    'inline-block p-3 rounded-2xl text-sm shadow-sm',
                     message.role === 'assistant'
-                      ? 'bg-white border border-gray-100 shadow-sm text-gray-800 rounded-tl-sm'
-                      : 'bg-gradient-to-br from-[#9C1E1E] to-[#7D1818] text-white rounded-tr-sm'
+                      ? 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'
+                      : 'bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-tr-sm'
                   )}
                 >
                   {message.isTyping ? (
@@ -189,7 +187,7 @@ export function ContractInterviewer({
                           variant="outline"
                           size="sm"
                           onClick={() => onActionClick(action.value)}
-                          className="bg-white hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-all"
+                          className="bg-white hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E]/30 hover:text-[#9C1E1E] transition-all"
                         >
                           {Icon && <Icon className="h-3.5 w-3.5 mr-1.5" />}
                           {action.label}
@@ -223,14 +221,37 @@ export function ContractInterviewer({
         </div>
       </ScrollArea>
 
-      {/* Input Area */}
-      <div className="flex-shrink-0 p-4 border-t bg-white/80 backdrop-blur-sm">
+      {/* Input Area - Redesenhado */}
+      <div className="flex-shrink-0 p-4 border-t bg-white">
+        {/* Quick prompts */}
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {[
+            'Portal da Cidade - permuta',
+            'SECOVI - institucional',
+            'Comodato com síndico',
+          ].map((prompt, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                setInputValue(prompt);
+                inputRef.current?.focus();
+              }}
+              className="text-[11px] px-2.5 py-1 bg-gray-100 hover:bg-[#9C1E1E]/10 text-gray-600 hover:text-[#9C1E1E] rounded-full transition-colors flex items-center gap-1"
+              disabled={isProcessing}
+            >
+              <Sparkles className="h-3 w-3" />
+              {prompt}
+            </button>
+          ))}
+        </div>
+
+        {/* Input row */}
         <div className="flex items-end gap-2">
           {/* File upload button */}
           <Button
             variant="ghost"
             size="icon"
-            className="flex-shrink-0 h-10 w-10 text-gray-500 hover:text-purple-600"
+            className="flex-shrink-0 h-10 w-10 text-gray-500 hover:text-[#9C1E1E] hover:bg-[#9C1E1E]/10"
             onClick={() => fileInputRef.current?.click()}
             disabled={isProcessing}
           >
@@ -244,37 +265,34 @@ export function ContractInterviewer({
             onChange={handleFileChange}
           />
 
+          {/* Voice button - AGORA SEPARADO E BEM POSICIONADO */}
+          <VoiceRecordButton
+            onTranscriptionComplete={(text) => {
+              onSendMessage(text);
+            }}
+            disabled={isProcessing}
+            variant="inline"
+          />
+
           {/* Text input */}
-          <div className="flex-1 relative">
+          <div className="flex-1">
             <Textarea
               ref={inputRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Descreva o contrato ou faça perguntas..."
-              className="min-h-[44px] max-h-32 resize-none pr-12 rounded-2xl border-gray-200 focus:border-purple-300 focus:ring-purple-200"
+              className="min-h-[44px] max-h-32 resize-none rounded-xl border-gray-200 focus:border-[#9C1E1E]/30 focus:ring-[#9C1E1E]/20"
               disabled={isProcessing}
               rows={1}
             />
-            
-            {/* Voice button inside input */}
-            <div className="absolute right-2 bottom-2">
-              <VoiceRecordButton
-                onTranscriptionComplete={(text) => {
-                  // When transcription is ready, process it as voice input
-                  onSendMessage(text);
-                }}
-                disabled={isProcessing}
-                variant="inline"
-              />
-            </div>
           </div>
 
           {/* Send button */}
           <Button
             onClick={handleSend}
             disabled={!inputValue.trim() || isProcessing}
-            className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-lg"
+            className="flex-shrink-0 h-10 w-10 rounded-xl bg-gradient-to-br from-[#9C1E1E] to-[#7D1818] hover:from-[#8B1A1A] hover:to-[#6D1414] shadow-lg"
             size="icon"
           >
             {isProcessing ? (
@@ -283,28 +301,6 @@ export function ContractInterviewer({
               <Send className="h-4 w-4" />
             )}
           </Button>
-        </div>
-
-        {/* Quick prompts */}
-        <div className="flex flex-wrap gap-1.5 mt-3">
-          {[
-            'Portal da Cidade - permuta de mídia',
-            'SECOVI - parceria institucional',
-            'Comodato com isenção de energia',
-          ].map((prompt, idx) => (
-            <button
-              key={idx}
-              onClick={() => {
-                setInputValue(prompt);
-                inputRef.current?.focus();
-              }}
-              className="text-[11px] px-2.5 py-1 bg-gray-100 hover:bg-purple-100 text-gray-600 hover:text-purple-700 rounded-full transition-colors"
-              disabled={isProcessing}
-            >
-              <Sparkles className="h-3 w-3 inline mr-1" />
-              {prompt}
-            </button>
-          ))}
         </div>
       </div>
     </div>
