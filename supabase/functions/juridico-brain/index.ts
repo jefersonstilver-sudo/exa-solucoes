@@ -7,6 +7,56 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// REGEX-FIRST LAYER: Extração prioritária ANTES de chamar IA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface RegexExtractionResult {
+  cnpj: string | null;
+  cpf: string | null;
+  cep: string | null;
+  email: string | null;
+  telefone: string | null;
+  razaoSocial: string | null;
+  endereco: string | null;
+  hasStructuredData: boolean;
+}
+
+function extractWithRegex(text: string): RegexExtractionResult {
+  // CNPJ: XX.XXX.XXX/XXXX-XX
+  const cnpjMatch = text.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g);
+  // CPF: XXX.XXX.XXX-XX
+  const cpfMatch = text.match(/\d{3}\.\d{3}\.\d{3}-\d{2}/g);
+  // CEP: XXXXX-XXX
+  const cepMatch = text.match(/\d{5}-\d{3}/g);
+  // Email
+  const emailMatch = text.match(/[\w.-]+@[\w.-]+\.\w{2,}/gi);
+  // Telefone: (XX) XXXXX-XXXX ou variantes
+  const telefoneMatch = text.match(/\(?\d{2}\)?\s*\d{4,5}-?\d{4}/g);
+  // Razão Social: Linha que contém "Razão Social:" ou "RAZÃO SOCIAL:"
+  const razaoMatch = text.match(/(?:Razão\s*Social|RAZÃO\s*SOCIAL)\s*[:\-]?\s*([^\n\r]+)/i);
+  // Endereço: Linha que contém "Endereço:" ou similar
+  const enderecoMatch = text.match(/(?:Endereço|ENDEREÇO|End\.?)\s*[:\-]?\s*([^\n\r]+)/i);
+
+  const result: RegexExtractionResult = {
+    cnpj: cnpjMatch?.[0] || null,
+    cpf: cpfMatch?.[0] || null,
+    cep: cepMatch?.[0] || null,
+    email: emailMatch?.[0] || null,
+    telefone: telefoneMatch?.[0] || null,
+    razaoSocial: razaoMatch?.[1]?.trim() || null,
+    endereco: enderecoMatch?.[1]?.trim() || null,
+    hasStructuredData: false,
+  };
+
+  // Se tem CNPJ ou CPF, considerar dados estruturados
+  result.hasStructuredData = !!(result.cnpj || result.cpf);
+
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+
 interface JuridicoBrainRequest {
   input_type: 'text' | 'audio_url' | 'document_text';
   content: string;
@@ -15,6 +65,7 @@ interface JuridicoBrainRequest {
     predio_nome?: string;
     parceiro_nome?: string;
     tipo_contrato_sugerido?: string;
+    current_state?: any; // Estado atual do contrato
   };
 }
 
@@ -54,6 +105,10 @@ interface JuridicoBrainResponse {
   html_preview: string;
   health_score: number;
   contexto_ia: string;
+  // Novos campos para controle REGEX-first
+  regex_extracted?: RegexExtractionResult;
+  action?: string;
+  follow_up_message?: string;
 }
 
 serve(async (req) => {
@@ -76,10 +131,78 @@ serve(async (req) => {
 
     console.log('[JURIDICO-BRAIN] 🧠 Processing request:', { input_type, contentLength: content?.length });
 
-    // 1. Se for áudio, transcrever primeiro
     // Sanitize content for Indexa 2026 compliance
     let processedContent = sanitizeToIndexa2026(content);
     
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // REGEX-FIRST MIDDLEWARE: Extração ANTES de chamar IA
+    // ═══════════════════════════════════════════════════════════════════════════════
+    
+    const regexExtracted = extractWithRegex(processedContent);
+    console.log('[JURIDICO-BRAIN] 📊 REGEX Extraction:', regexExtracted);
+
+    // REGRA DE OURO: Se CNPJ foi encontrado, NÃO perguntar "o que deseja fazer?"
+    // Forçar atualização do estado e responder de forma determinística
+    if (regexExtracted.hasStructuredData) {
+      console.log('[JURIDICO-BRAIN] ⚡ REGEX-FIRST: Dados estruturados detectados, bypass IA detection');
+      
+      // Preservar tipo de contrato atual do contexto se existir
+      const currentTipo = context?.current_state?.tipo_contrato || context?.tipo_contrato_sugerido;
+      
+      // Determinar tipo de pessoa
+      const tipoPessoa = regexExtracted.cnpj ? 'PJ' : 'PF';
+      const documento = regexExtracted.cnpj || regexExtracted.cpf || '';
+      
+      // Construir resposta determinística
+      const parceiro = {
+        nome: regexExtracted.razaoSocial || context?.parceiro_nome || '',
+        tipo_pessoa: tipoPessoa as 'PF' | 'PJ',
+        documento: documento,
+      };
+
+      // Montar mensagem de confirmação
+      const confirmParts: string[] = [];
+      if (documento) confirmParts.push(`${tipoPessoa === 'PJ' ? 'CNPJ' : 'CPF'}: **${documento}**`);
+      if (regexExtracted.razaoSocial) confirmParts.push(`Razão Social: **${regexExtracted.razaoSocial}**`);
+      if (regexExtracted.endereco) confirmParts.push(`Endereço: ${regexExtracted.endereco}`);
+      if (regexExtracted.cep) confirmParts.push(`CEP: ${regexExtracted.cep}`);
+      if (regexExtracted.email) confirmParts.push(`Email: ${regexExtracted.email}`);
+      if (regexExtracted.telefone) confirmParts.push(`Telefone: ${regexExtracted.telefone}`);
+
+      const nextStep = parceiro.nome 
+        ? 'Agora preciso saber: **Quem é o representante legal** que vai assinar?'
+        : 'Qual é a **Razão Social completa** da empresa?';
+
+      const response: JuridicoBrainResponse = {
+        success: true,
+        tipo_contrato: currentTipo || 'anunciante',
+        parceiro,
+        objeto: context?.current_state?.objeto || '',
+        obrigacoes_indexa: context?.current_state?.obrigacoes_indexa || [],
+        obrigacoes_parceiro: context?.current_state?.obrigacoes_parceiro || [],
+        gatilhos_condicionais: context?.current_state?.gatilhos_condicionais || [],
+        riscos_detectados: [],
+        valor_financeiro: context?.current_state?.valor_financeiro || null,
+        prazo_meses: context?.current_state?.prazo_meses || 12,
+        clausulas_geradas: [],
+        html_preview: '',
+        health_score: calculateHealthScore({ parceiro, objeto: context?.current_state?.objeto }),
+        contexto_ia: processedContent,
+        regex_extracted: regexExtracted,
+        action: 'data_updated',
+        follow_up_message: `✅ **Dados atualizados!**\n\n${confirmParts.join('\n')}\n\n${nextStep}`,
+      };
+
+      return new Response(JSON.stringify(response), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // FLUXO NORMAL: Se não tem dados estruturados, usar IA
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    // 1. Se for áudio, transcrever primeiro
     if (input_type === 'audio_url') {
       console.log('[JURIDICO-BRAIN] 🎤 Transcribing audio...');
       const transcribeResponse = await fetch(`${SUPABASE_URL}/functions/v1/transcribe-audio`, {
@@ -140,7 +263,35 @@ DADOS DO PRÉDIO:
       }
     }
 
-    // 4. Construir mensagens para GPT
+    // Incluir estado atual se fornecido
+    if (context?.current_state) {
+      additionalContext += `
+ESTADO ATUAL DO CONTRATO:
+${JSON.stringify(context.current_state, null, 2)}
+
+IMPORTANTE: NÃO resete o tipo de contrato se já estiver definido. Mantenha o contexto existente.
+`;
+    }
+
+    // 4. System prompt aprimorado com diretriz de PREENCHIMENTO
+    const enhancedSystemPrompt = `${promptData.system_prompt}
+
+═══════════════════════════════════════════════════════════════════════════════
+DIRETRIZ ESTRITA DE PREENCHIMENTO DE DADOS:
+═══════════════════════════════════════════════════════════════════════════════
+
+Sua função primária é PREENCHIMENTO DE DADOS. 
+
+Se o usuário fornecer um bloco de texto contendo "Razão Social", "CNPJ" ou "Endereço", sua ÚNICA tarefa é extrair esses valores e atualizar o contrato.
+
+É ESTRITAMENTE PROIBIDO perguntar "O que você deseja fazer?" após receber dados.
+
+Você deve responder: "Dados atualizados. Próximo passo: [X]".
+
+Se o tipo de contrato já foi definido (ex: parceria_institucional), MANTENHA. Não pergunte novamente.
+`;
+
+    // 5. Construir mensagens para GPT
     const fewShotExamples = promptData.few_shot_examples || [];
     const fewShotMessages: any[] = [];
     
@@ -154,12 +305,12 @@ DADOS DO PRÉDIO:
 ENTRADA DO USUÁRIO:
 ${processedContent}
 
-${context?.tipo_contrato_sugerido ? `TIPO SUGERIDO: ${context.tipo_contrato_sugerido}` : ''}
-${context?.parceiro_nome ? `PARCEIRO SUGERIDO: ${context.parceiro_nome}` : ''}
+${context?.tipo_contrato_sugerido ? `TIPO JÁ DEFINIDO (NÃO ALTERAR): ${context.tipo_contrato_sugerido}` : ''}
+${context?.parceiro_nome ? `PARCEIRO JÁ IDENTIFICADO: ${context.parceiro_nome}` : ''}
 
 Analise o contexto acima e retorne APENAS um JSON válido com a estrutura especificada no system prompt.`;
 
-    // 5. Chamar OpenAI GPT-4o
+    // 6. Chamar OpenAI GPT-4o
     console.log('[JURIDICO-BRAIN] 🔄 Calling OpenAI...');
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -171,7 +322,7 @@ Analise o contexto acima e retorne APENAS um JSON válido com a estrutura especi
         model: promptData.modelo || 'gpt-4o',
         temperature: Number(promptData.temperatura) || 0.2,
         messages: [
-          { role: 'system', content: promptData.system_prompt },
+          { role: 'system', content: enhancedSystemPrompt },
           ...fewShotMessages,
           { role: 'user', content: userMessage }
         ],
@@ -194,7 +345,7 @@ Analise o contexto acima e retorne APENAS um JSON válido com a estrutura especi
 
     console.log('[JURIDICO-BRAIN] ✅ OpenAI response received');
 
-    // 6. Parse JSON response
+    // 7. Parse JSON response
     let parsedResponse: any;
     try {
       parsedResponse = JSON.parse(assistantMessage);
@@ -203,7 +354,7 @@ Analise o contexto acima e retorne APENAS um JSON válido com a estrutura especi
       throw new Error('Invalid JSON response from AI');
     }
 
-    // 6.1 SDR INVESTIGATIVO: Se a IA pediu mais informações, retornar request_info
+    // 7.1 SDR INVESTIGATIVO: Se a IA pediu mais informações, retornar request_info
     if (parsedResponse.action === 'request_info') {
       console.log('[JURIDICO-BRAIN] 🔍 SDR Mode: Requesting more info');
       return new Response(JSON.stringify({
@@ -218,16 +369,16 @@ Analise o contexto acima e retorne APENAS um JSON válido com a estrutura especi
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // 7. Gerar HTML preview
+    // 8. Gerar HTML preview
     const htmlPreview = generateHtmlPreview(parsedResponse);
 
-    // 8. Calcular health score se não fornecido
+    // 9. Calcular health score se não fornecido
     const healthScore = parsedResponse.health_score || calculateHealthScore(parsedResponse);
 
-    // 9. Construir resposta final
+    // 10. Construir resposta final
     const response: JuridicoBrainResponse = {
       success: true,
-      tipo_contrato: parsedResponse.tipo_contrato || 'anunciante',
+      tipo_contrato: parsedResponse.tipo_contrato || context?.current_state?.tipo_contrato || 'anunciante',
       parceiro: parsedResponse.parceiro || { nome: '', tipo_pessoa: 'PJ', documento: '' },
       objeto: parsedResponse.objeto || '',
       obrigacoes_indexa: parsedResponse.obrigacoes_indexa || [],
@@ -240,6 +391,7 @@ Analise o contexto acima e retorne APENAS um JSON válido com a estrutura especi
       html_preview: htmlPreview,
       health_score: healthScore,
       contexto_ia: processedContent,
+      regex_extracted: regexExtracted,
     };
 
     console.log('[JURIDICO-BRAIN] ✅ Processing complete, health_score:', healthScore);
