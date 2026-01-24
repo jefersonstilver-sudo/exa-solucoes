@@ -1,55 +1,78 @@
 import React from 'react';
 import ExaSection from '../base/ExaSection';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
-import { Building2, FileText, MapPin, Globe, Instagram, MessageCircle, Mail } from 'lucide-react';
-
-const dadosEmpresa = [
-  {
-    icon: Building2,
-    label: 'Razão Social',
-    value: 'Indexa Midia LTDA',
-    link: null
-  },
-  {
-    icon: FileText,
-    label: 'CNPJ',
-    value: '38.142.638/0001-30',
-    link: null
-  },
-  {
-    icon: MapPin,
-    label: 'Endereço',
-    value: 'Avenida Paraná, 974 – Sala 301, Centro, Foz do Iguaçu – PR, CEP 85852-000',
-    link: null
-  },
-  {
-    icon: Globe,
-    label: 'Site',
-    value: 'www.examidia.com.br',
-    link: 'https://www.examidia.com.br'
-  },
-  {
-    icon: Instagram,
-    label: 'Instagram',
-    value: '@exa.publicidade',
-    link: 'https://www.instagram.com/exa.publicidade'
-  },
-  {
-    icon: MessageCircle,
-    label: 'WhatsApp',
-    value: '(45) 9 9141-5856',
-    link: 'https://wa.me/554591415856'
-  },
-  {
-    icon: Mail,
-    label: 'E-mail',
-    value: 'contato@examidia.com.br',
-    link: 'mailto:contato@examidia.com.br'
-  }
-];
+import { useCompanySettings } from '@/hooks/useCompanySettings';
+import { Building2, FileText, MapPin, Globe, Instagram, MessageCircle, Mail, Loader2 } from 'lucide-react';
 
 const DadosInstitucionaisSection = () => {
   const { ref, isVisible } = useScrollReveal(0.2);
+  const { settings, loading } = useCompanySettings();
+
+  // Dados dinâmicos da empresa vindos do banco de dados
+  const dadosEmpresa = [
+    {
+      icon: Building2,
+      label: 'Razão Social',
+      value: settings.razao_social,
+      link: null
+    },
+    {
+      icon: FileText,
+      label: 'CNPJ',
+      value: settings.cnpj,
+      link: null
+    },
+    {
+      icon: MapPin,
+      label: 'Endereço',
+      value: settings.endereco_completo,
+      link: null
+    },
+    {
+      icon: Globe,
+      label: 'Site',
+      value: settings.website?.replace('https://', '').replace('http://', '') || 'www.examidia.com.br',
+      link: settings.website || 'https://www.examidia.com.br'
+    },
+    {
+      icon: Instagram,
+      label: 'Instagram',
+      value: settings.instagram || '@exa.publicidade',
+      link: `https://www.instagram.com/${(settings.instagram || '@exa.publicidade').replace('@', '')}`
+    },
+    {
+      icon: MessageCircle,
+      label: 'WhatsApp',
+      value: settings.whatsapp_comercial || settings.telefone_principal || '(45) 9 9141-5856',
+      link: `https://wa.me/55${(settings.whatsapp_comercial || settings.telefone_principal || '').replace(/\D/g, '')}`
+    },
+    {
+      icon: Mail,
+      label: 'E-mail',
+      value: settings.email_institucional || 'contato@examidia.com.br',
+      link: `mailto:${settings.email_institucional || 'contato@examidia.com.br'}`
+    }
+  ];
+
+  const iconColors: { [key: string]: string } = {
+    'Razão Social': 'text-[#C8102E]',
+    'CNPJ': 'text-gray-600',
+    'Endereço': 'text-[#C8102E]',
+    'Site': 'text-blue-600',
+    'Instagram': 'text-pink-500',
+    'WhatsApp': 'text-green-500',
+    'E-mail': 'text-blue-500'
+  };
+
+  if (loading) {
+    return (
+      <ExaSection background="light" className="py-10 md:py-16 lg:py-24">
+        <div className="flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[#C8102E]" />
+        </div>
+      </ExaSection>
+    );
+  }
 
   return (
     <ExaSection background="light" className="py-10 md:py-16 lg:py-24">
@@ -66,15 +89,6 @@ const DadosInstitucionaisSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
           {dadosEmpresa.map((dado, index) => {
             const IconComponent = dado.icon;
-            const iconColors: { [key: string]: string } = {
-              'Razão Social': 'text-[#C8102E]',
-              'CNPJ': 'text-gray-600',
-              'Endereço': 'text-[#C8102E]',
-              'Site': 'text-blue-600',
-              'Instagram': 'text-pink-500',
-              'WhatsApp': 'text-green-500',
-              'E-mail': 'text-blue-500'
-            };
 
             return (
               <div 
