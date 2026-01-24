@@ -203,6 +203,7 @@ export function useLegalFlow() {
     setError(null);
 
     try {
+      // CRITICAL FIX: Pass current_state to preserve context
       const { data: response, error: fnError } = await supabase.functions.invoke('juridico-brain', {
         body: {
           input_type: inputType,
@@ -212,6 +213,7 @@ export function useLegalFlow() {
             predio_nome: data.predio_nome,
             parceiro_nome: data.parceiro_nome,
             tipo_contrato_sugerido: data.tipo_contrato,
+            current_state: data, // ESSENTIAL: Full state for REGEX-first layer
           }
         }
       });
@@ -225,12 +227,14 @@ export function useLegalFlow() {
           parceiro_nome: response.parceiro?.nome || data.parceiro_nome,
           parceiro_tipo_pessoa: response.parceiro?.tipo_pessoa || data.parceiro_tipo_pessoa,
           parceiro_documento: response.parceiro?.documento || data.parceiro_documento,
+          parceiro_email: response.parceiro?.email || data.parceiro_email,
+          parceiro_telefone: response.parceiro?.telefone || data.parceiro_telefone,
           objeto: response.objeto || data.objeto,
           obrigacoes_indexa: response.obrigacoes_indexa || data.obrigacoes_indexa,
           obrigacoes_parceiro: response.obrigacoes_parceiro || data.obrigacoes_parceiro,
           gatilhos_condicionais: response.gatilhos_condicionais || data.gatilhos_condicionais,
           riscos_detectados: (response.riscos_detectados || []).map((r: RiscoDetectado) => ({ ...r, aceito: false })),
-          valor_financeiro: response.valor_financeiro,
+          valor_financeiro: response.valor_financeiro ?? data.valor_financeiro,
           prazo_meses: response.prazo_meses || data.prazo_meses,
           clausulas_geradas: response.clausulas_geradas || [],
           html_preview: response.html_preview || '',
@@ -238,22 +242,12 @@ export function useLegalFlow() {
           modo_entrada: inputType === 'audio_url' ? 'voz' : inputType === 'document_text' ? 'arquivo' : 'ia',
         });
 
-        toast.success('IA processou o contexto com sucesso!');
-        
-        // Se temos riscos críticos, ir para step de riscos
-        if (response.riscos_detectados?.some((r: RiscoDetectado) => r.nivel === 'critico')) {
-          goToStep('riscos');
-        } else if (response.health_score >= 80) {
-          goToStep('preview');
-        } else {
-          // Ir para o primeiro step incompleto
-          if (!response.parceiro?.nome) goToStep('parceiro');
-          else if (!response.tipo_contrato) goToStep('tipo');
-          else if (!response.objeto) goToStep('objeto');
-          else goToStep('prazos');
-        }
-
-        return response;
+        // Return response with follow_up_message and action for caller to use
+        return {
+          ...response,
+          follow_up_message: response.follow_up_message,
+          action: response.action,
+        };
       } else {
         throw new Error(response?.error || 'Erro ao processar com IA');
       }
@@ -265,7 +259,7 @@ export function useLegalFlow() {
     } finally {
       setIsProcessing(false);
     }
-  }, [data, updateData, goToStep]);
+  }, [data, updateData]);
 
   // Aceitar sugestão de risco
   const acceptRiskSuggestion = useCallback((index: number) => {
