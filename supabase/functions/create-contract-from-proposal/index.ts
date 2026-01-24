@@ -672,31 +672,26 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
           background: #fff;
         }
         
+        /* TEMPLATE OFICIAL (igual ao preview de propostas):
+           cabeçalho branco + logo oficial centralizada + borda inferior vermelha 3px */
         .header {
-          background: linear-gradient(135deg, #8B1A1A 0%, #A52020 50%, #8B1A1A 100%);
-          color: white;
-          padding: 20px 25px;
+          width: 100%;
+          background: #ffffff;
+          color: #1a1a1a;
+          padding: 20px 0;
           margin: -15px -20px 25px -20px;
           text-align: center;
-          border-radius: 0 0 6px 6px;
-          border-bottom: 3px solid #5a0f0f;
+          border-radius: 0;
+          border-bottom: 3px solid #8B1A1A;
           display: flex;
-          flex-direction: column;
           align-items: center;
           justify-content: center;
         }
         
         .header-logo {
-          max-height: 50px;
+          max-height: 55px;
           width: auto;
-          margin-bottom: 10px;
-        }
-        
-        .header-subtitle {
-          font-size: 10px;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          opacity: 0.9;
+          display: block;
         }
         
         .contract-title {
@@ -1089,8 +1084,12 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
     <body>
       <!-- HEADER COM GRADIENTE EXA -->
       <div class="header">
-        <div style="font-size: 28px; font-weight: 700; letter-spacing: 4px; color: white; margin-bottom: 8px;">exa</div>
-        <div class="header-subtitle">Publicidade em Elevadores</div>
+        <img
+          class="header-logo"
+          src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0"
+          alt="EXA Mídia"
+          crossorigin="anonymous"
+        />
       </div>
 
       <!-- TÍTULO DO CONTRATO -->
