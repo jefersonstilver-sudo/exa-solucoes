@@ -59,33 +59,21 @@ const getNumeroExtenso = (num: number) => {
 
 const styles = {
   // ═══════════════════════════════════════════════════════════════════════════════
-  // HEADER CORPORATIVO EXA - VERMELHO #C8102E (BRANDBOOK OFICIAL)
+  // HEADER CORPORATIVO EXA - FUNDO BRANCO COM BORDA INFERIOR VERMELHA (PADRÃO PDF OFICIAL)
   // ═══════════════════════════════════════════════════════════════════════════════
   header: {
     width: '100%',
-    height: '128px',
-    background: '#C8102E',
+    background: '#ffffff',
+    borderBottom: '3px solid #8B1A1A',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '0 32px',
-    margin: '-15px -20px 25px -20px',
-    marginLeft: '-20px',
-    marginRight: '-20px',
-    marginTop: '-15px',
-    boxSizing: 'border-box' as const,
+    justifyContent: 'center',
+    padding: '20px 0',
+    marginBottom: '25px',
   },
   headerLogo: {
-    height: '60px',
+    height: '50px',
     width: 'auto',
-  },
-  headerText: {
-    color: 'white',
-    fontSize: '14px',
-    fontWeight: 700,
-    letterSpacing: '3px',
-    textTransform: 'uppercase' as const,
-    textAlign: 'right' as const,
   },
   // Título do contrato
   contractTitle: {
@@ -313,7 +301,7 @@ export function LiveContractPreview({
           `}</style>
 
           {/* ═══════════════════════════════════════════════════════════════════
-              CABEÇALHO CORPORATIVO EXA — HEADER VERMELHO #C8102E (BRANDBOOK)
+              CABEÇALHO CORPORATIVO EXA — FUNDO BRANCO + BORDA VERMELHA (VISUAL CLONE PDF)
           ═══════════════════════════════════════════════════════════════════ */}
           <div className="no-break" style={styles.header}>
             <img 
@@ -322,9 +310,6 @@ export function LiveContractPreview({
               style={styles.headerLogo}
               crossOrigin="anonymous"
             />
-            <div style={styles.headerText}>
-              PUBLICIDADE EM ELEVADORES
-            </div>
           </div>
 
           {/* ═══════════════════════════════════════════════════════════════════
