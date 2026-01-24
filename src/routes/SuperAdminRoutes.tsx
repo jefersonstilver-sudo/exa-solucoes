@@ -40,6 +40,7 @@ import ContratosPage from '@/pages/admin/contracts/ContratosPage';
 import NovoContratoPage from '@/pages/admin/contracts/NovoContratoPage';
 import NovoContratoSindicoPage from '@/pages/admin/contracts/NovoContratoSindicoPage';
 import ContratoDetalhesPage from '@/pages/admin/contracts/ContratoDetalhesPage';
+import LegalFlowPage from '@/pages/admin/contracts/LegalFlowPage';
 import PosicoesDisponiveisPage from '@/pages/admin/PosicoesDisponiveisPage';
 
 // Lazy imports para páginas do monitoramento-ia (integradas)
@@ -107,6 +108,7 @@ const SuperAdminRoutes = () => {
       <Route path="juridico" element={<ContratosPage />} />
       <Route path="juridico/novo" element={<NovoContratoPage />} />
       <Route path="juridico/novo-sindico" element={<NovoContratoSindicoPage />} />
+      <Route path="juridico/flow" element={<LegalFlowPage />} />
       <Route path="juridico/:id" element={<ContratoDetalhesPage />} />
       <Route path="assinaturas" element={<AssinaturasPage />} />
       <Route path="aprovacoes" element={<ApprovalsPage />} />
