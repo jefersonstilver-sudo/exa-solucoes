@@ -39,6 +39,15 @@ const formatCurrency = (value: number | null) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 };
 
+const calcDataFim = (dataInicio?: string, prazoMeses?: number) => {
+  if (!dataInicio || !prazoMeses) return null;
+  try {
+    const start = new Date(dataInicio + 'T00:00:00');
+    start.setMonth(start.getMonth() + prazoMeses);
+    return format(start, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+  } catch { return null; }
+};
+
 const getNumeroExtenso = (num: number) => {
   const extenso: Record<number, string> = { 1: 'um', 2: 'dois', 3: 'três', 4: 'quatro', 5: 'cinco', 6: 'seis', 7: 'sete', 8: 'oito', 9: 'nove', 10: 'dez', 11: 'onze', 12: 'doze', 20: 'vinte', 30: 'trinta' };
   return extenso[num] || String(num);
@@ -178,56 +187,170 @@ export function LiveContractPreview({
           </div>
 
           {/* ═══════════════════════════════════════════════════════════════════
-              CLÁUSULA 1ª — DO OBJETO
+              CLÁUSULAS DO CONTRATO — DIFERENCIADAS POR TIPO
           ═══════════════════════════════════════════════════════════════════ */}
-          <div className="contract-section" style={{ marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 1ª — DO OBJETO</h3>
-            <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
-              <strong>1.1.</strong> O presente instrumento tem por objeto:{' '}
-              <EditableField 
-                field="objeto" 
-                value={data.objeto} 
-                placeholder="[Descreva o objeto do contrato]"
-              />
-            </p>
-          </div>
+          {!isSindico ? (
+            <>
+              {/* CLÁUSULA 1 - OBJETO */}
+              <div className="contract-section" style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 1ª — DO OBJETO</h3>
+                <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
+                  <strong>1.1.</strong> O presente contrato tem por objeto:{' '}
+                  <EditableField 
+                    field="objeto" 
+                    value={data.objeto} 
+                    placeholder="[Descreva o objeto do contrato]"
+                  />
+                </p>
+              </div>
 
-          {/* ═══════════════════════════════════════════════════════════════════
-              CLÁUSULA 2ª — DO PRAZO
-          ═══════════════════════════════════════════════════════════════════ */}
-          <div className="contract-section" style={{ marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 2ª — DO PRAZO</h3>
-            <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
-              <strong>2.1.</strong> O presente contrato terá vigência de <strong>{data.prazo_meses || 12} ({getNumeroExtenso(data.prazo_meses || 12)}) {(data.prazo_meses || 12) === 1 ? 'mês' : 'meses'}</strong>, 
-              a partir de <strong>{formatDateExtended(data.data_inicio)}</strong>, podendo ser renovado mediante termo aditivo assinado pelas partes.
-            </p>
-            <p style={{ margin: 0, textAlign: 'justify' }}>
-              <strong>2.2.</strong> O contrato poderá ser renovado mediante acordo entre as partes, formalizado por escrito com antecedência mínima de 30 (trinta) dias do término.
-            </p>
-          </div>
+              {/* CLÁUSULA 2 - PRAZO */}
+              <div className="contract-section" style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 2ª — DO PRAZO</h3>
+                <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
+                  <strong>2.1.</strong> O presente contrato terá vigência de <strong>{data.prazo_meses || 12} ({getNumeroExtenso(data.prazo_meses || 12)}) {(data.prazo_meses || 12) === 1 ? 'mês' : 'meses'}</strong>, 
+                  com início em <strong>{formatDateExtended(data.data_inicio)}</strong> e término previsto para <strong>{calcDataFim(data.data_inicio, data.prazo_meses) || '[DATA FIM]'}</strong>.
+                </p>
+                <p style={{ margin: 0, textAlign: 'justify' }}>
+                  <strong>2.2.</strong> O contrato poderá ser renovado mediante acordo entre as partes, formalizado por escrito com antecedência mínima de 30 (trinta) dias do término.
+                </p>
+              </div>
 
-          {/* ═══════════════════════════════════════════════════════════════════
-              CLÁUSULA 3ª — DO VALOR (se houver)
-          ═══════════════════════════════════════════════════════════════════ */}
-          {data.valor_financeiro && (
-            <div className="contract-section" style={{ marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 3ª — DO VALOR E FORMA DE PAGAMENTO</h3>
-              <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
-                <strong>3.1.</strong> Pelo serviço objeto deste contrato, a CONTRATANTE pagará à CONTRATADA o valor de{' '}
-                <strong style={{ color: '#8B1A1A' }}>{formatCurrency(data.valor_financeiro)}</strong>.
-              </p>
-              <p style={{ margin: 0, textAlign: 'justify' }}>
-                <strong>3.2.</strong> O atraso no pagamento implicará multa de 2% (dois por cento) sobre o valor devido, acrescido de juros de mora de 1% (um por cento) ao mês.
-              </p>
-            </div>
+              {/* CLÁUSULA 3 - VALOR E PAGAMENTO (se houver) */}
+              {data.valor_financeiro && (
+                <div className="contract-section" style={{ marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 3ª — DO VALOR E FORMA DE PAGAMENTO</h3>
+                  <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
+                    <strong>3.1.</strong> Pelo serviço objeto deste contrato, a CONTRATANTE pagará à CONTRATADA o valor de <strong>{formatCurrency(data.valor_financeiro)}</strong>.
+                  </p>
+                  <p style={{ margin: 0, textAlign: 'justify' }}>
+                    <strong>3.2.</strong> O atraso no pagamento implicará multa de 2% (dois por cento) sobre o valor devido, acrescido de juros de mora de 1% (um por cento) ao mês.
+                  </p>
+                </div>
+              )}
+
+              {/* CLÁUSULA 4/3 - OBRIGAÇÕES DA CONTRATADA */}
+              <div className="contract-section" style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA {data.valor_financeiro ? '4ª' : '3ª'} — DAS OBRIGAÇÕES DA CONTRATADA</h3>
+                <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>{data.valor_financeiro ? '4.1.' : '3.1.'}</strong> Manter os equipamentos em perfeito funcionamento;</p>
+                <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>{data.valor_financeiro ? '4.2.' : '3.2.'}</strong> Garantir a exibição do conteúdo conforme especificações acordadas;</p>
+                <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>{data.valor_financeiro ? '4.3.' : '3.3.'}</strong> Prestar suporte técnico em caso de falhas;</p>
+                <p style={{ margin: 0, textAlign: 'justify' }}><strong>{data.valor_financeiro ? '4.4.' : '3.4.'}</strong> Fornecer relatórios de exibição quando solicitado.</p>
+              </div>
+
+              {/* CLÁUSULA 5/4 - OBRIGAÇÕES DO CONTRATANTE */}
+              <div className="contract-section" style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA {data.valor_financeiro ? '5ª' : '4ª'} — DAS OBRIGAÇÕES DA CONTRATANTE</h3>
+                <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>{data.valor_financeiro ? '5.1.' : '4.1.'}</strong> Efetuar os pagamentos nas datas acordadas;</p>
+                <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>{data.valor_financeiro ? '5.2.' : '4.2.'}</strong> Fornecer o material publicitário em formato compatível;</p>
+                <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>{data.valor_financeiro ? '5.3.' : '4.3.'}</strong> Garantir que o conteúdo não viole legislação vigente;</p>
+                <p style={{ margin: 0, textAlign: 'justify' }}><strong>{data.valor_financeiro ? '5.4.' : '4.4.'}</strong> Comunicar alterações no conteúdo com antecedência mínima de 48 horas.</p>
+              </div>
+
+              {/* CLÁUSULA - RESCISÃO */}
+              <div className="contract-section" style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA {data.valor_financeiro ? '6ª' : '5ª'} — DA RESCISÃO</h3>
+                <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
+                  <strong>{data.valor_financeiro ? '6.1.' : '5.1.'}</strong> O presente contrato poderá ser rescindido por qualquer das partes mediante aviso prévio de 30 (trinta) dias.
+                </p>
+                <p style={{ margin: 0, textAlign: 'justify' }}>
+                  <strong>{data.valor_financeiro ? '6.2.' : '5.2.'}</strong> Em caso de rescisão antecipada pela CONTRATANTE, será devida multa de 20% (vinte por cento) sobre o valor remanescente do contrato.
+                </p>
+              </div>
+
+              {/* CLÁUSULA - DIREITO DE IMAGEM */}
+              <div className="contract-section" style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA {data.valor_financeiro ? '7ª' : '6ª'} — DO DIREITO DE IMAGEM</h3>
+                <p style={{ margin: 0, textAlign: 'justify' }}>
+                  <strong>{data.valor_financeiro ? '7.1.' : '6.1.'}</strong> A CONTRATANTE autoriza expressamente a CONTRATADA a utilizar imagens dos painéis em funcionamento, 
+                  incluindo o conteúdo publicitário veiculado, para fins de divulgação institucional, portfólio e marketing.
+                </p>
+              </div>
+
+              {/* CLÁUSULA - FORO */}
+              <div className="contract-section" style={{ marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA {data.valor_financeiro ? '8ª' : '7ª'} — DO FORO</h3>
+                <p style={{ margin: 0, textAlign: 'justify' }}>
+                  <strong>{data.valor_financeiro ? '8.1.' : '7.1.'}</strong> As partes elegem o foro da Comarca de <strong>{companySettings.foro_completo}</strong> para dirimir quaisquer controvérsias 
+                  oriundas deste contrato, renunciando a qualquer outro, por mais privilegiado que seja.
+                </p>
+              </div>
+            </>
+          ) : (
+            /* ═══════════════════════════════════════════════════════════════════
+               CLÁUSULAS PARA CONTRATO DE COMODATO / TERMO DE ACEITE (SÍNDICO)
+            ═══════════════════════════════════════════════════════════════════ */
+            <>
+              <div className="contract-section" style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 1ª — DO OBJETO</h3>
+                <p style={{ margin: 0, textAlign: 'justify' }}>
+                  <strong>1.1.</strong> O presente contrato tem por objeto o empréstimo gratuito (comodato) de painel(éis) digital(is) 
+                  para instalação no(s) elevador(es) do edifício:{' '}
+                  <EditableField 
+                    field="objeto" 
+                    value={data.objeto} 
+                    placeholder="[Nome e endereço do prédio]"
+                  />
+                </p>
+              </div>
+
+              <div className="contract-section" style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 2ª — DA VIGÊNCIA</h3>
+                <p style={{ margin: 0, textAlign: 'justify' }}>
+                  <strong>2.1.</strong> O presente contrato vigorará por prazo indeterminado, podendo ser rescindido por qualquer das partes 
+                  mediante aviso prévio de <strong>30 (trinta)</strong> dias.
+                </p>
+              </div>
+
+              <div className="contract-section" style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 3ª — DAS OBRIGAÇÕES DA COMODANTE (EXA)</h3>
+                <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>3.1.</strong> Fornecer os equipamentos em perfeito estado de funcionamento;</p>
+                <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>3.2.</strong> Realizar a instalação e manutenção dos equipamentos;</p>
+                <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>3.3.</strong> Prestar suporte técnico durante toda a vigência do contrato;</p>
+                <p style={{ margin: 0, textAlign: 'justify' }}><strong>3.4.</strong> Substituir equipamentos defeituosos sem custo para o COMODATÁRIO.</p>
+              </div>
+
+              <div className="contract-section" style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 4ª — DAS OBRIGAÇÕES DO COMODATÁRIO</h3>
+                <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>4.1.</strong> Permitir o acesso da equipe técnica para instalação e manutenção;</p>
+                <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>4.2.</strong> Comunicar imediatamente qualquer dano ou mau funcionamento;</p>
+                <p style={{ margin: '0 0 4px 0', textAlign: 'justify' }}><strong>4.3.</strong> Não remover ou alterar os equipamentos sem autorização;</p>
+                <p style={{ margin: 0, textAlign: 'justify' }}><strong>4.4.</strong> Permitir a instalação de conexão de internet pela COMODANTE, se necessário.</p>
+              </div>
+
+              <div className="contract-section" style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 5ª — DA PROPRIEDADE</h3>
+                <p style={{ margin: 0, textAlign: 'justify' }}>
+                  <strong>5.1.</strong> Os equipamentos objeto deste comodato permanecem de propriedade exclusiva da COMODANTE (EXA), 
+                  devendo ser restituídos ao término do contrato em perfeito estado de conservação, ressalvado o desgaste natural pelo uso.
+                </p>
+              </div>
+
+              <div className="contract-section" style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 6ª — DO DIREITO DE IMAGEM</h3>
+                <p style={{ margin: 0, textAlign: 'justify' }}>
+                  <strong>6.1.</strong> O COMODATÁRIO autoriza expressamente a COMODANTE a utilizar imagens dos painéis instalados 
+                  para fins de divulgação institucional e comercialização de espaço publicitário a terceiros.
+                </p>
+              </div>
+
+              <div className="contract-section" style={{ marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 7ª — DO FORO</h3>
+                <p style={{ margin: 0, textAlign: 'justify' }}>
+                  <strong>7.1.</strong> As partes elegem o foro da Comarca de <strong>{companySettings.foro_completo}</strong> para dirimir quaisquer controvérsias oriundas deste contrato.
+                </p>
+              </div>
+            </>
           )}
 
           {/* ═══════════════════════════════════════════════════════════════════
-              CLÁUSULAS GERADAS PELA IA (se houver)
+              CLÁUSULAS ESPECIAIS GERADAS PELA IA (se houver)
           ═══════════════════════════════════════════════════════════════════ */}
           {data.clausulas_geradas && data.clausulas_geradas.length > 0 && (
-            <div className="contract-section" style={{ marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA ESPECIAL — CONDIÇÕES ESPECÍFICAS</h3>
+            <div className="contract-section" style={{ marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>
+                CLÁUSULA ADICIONAL — CONDIÇÕES ESPECIAIS
+              </h3>
               {data.clausulas_geradas.map((clausula, idx) => (
                 <div key={idx} style={{ marginBottom: '8px' }}>
                   <p style={{ margin: '0 0 2px 0', fontWeight: '600', fontSize: '11px' }}>
@@ -240,34 +363,6 @@ export function LiveContractPreview({
               ))}
             </div>
           )}
-
-          {/* ═══════════════════════════════════════════════════════════════════
-              CLÁUSULA — DA RESCISÃO
-          ═══════════════════════════════════════════════════════════════════ */}
-          <div className="contract-section" style={{ marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>
-              CLÁUSULA {data.valor_financeiro ? '4ª' : '3ª'} — DA RESCISÃO
-            </h3>
-            <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
-              <strong>{data.valor_financeiro ? '4.1.' : '3.1.'}</strong> O presente contrato poderá ser rescindido por qualquer das partes mediante aviso prévio de 30 (trinta) dias.
-            </p>
-            <p style={{ margin: 0, textAlign: 'justify' }}>
-              <strong>{data.valor_financeiro ? '4.2.' : '3.2.'}</strong> Em caso de rescisão antecipada, será devida multa de 20% (vinte por cento) sobre o valor remanescente do contrato.
-            </p>
-          </div>
-
-          {/* ═══════════════════════════════════════════════════════════════════
-              CLÁUSULA — DO FORO
-          ═══════════════════════════════════════════════════════════════════ */}
-          <div className="contract-section" style={{ marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>
-              CLÁUSULA {data.valor_financeiro ? '5ª' : '4ª'} — DO FORO
-            </h3>
-            <p style={{ margin: 0, textAlign: 'justify' }}>
-              As partes elegem o foro da Comarca de <strong>{companySettings.foro_completo}</strong> para dirimir quaisquer controvérsias 
-              oriundas deste contrato, com renúncia expressa a qualquer outro, por mais privilegiado que seja.
-            </p>
-          </div>
 
           {/* ═══════════════════════════════════════════════════════════════════
               DATA E LOCAL
