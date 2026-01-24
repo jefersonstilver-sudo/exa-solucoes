@@ -110,47 +110,47 @@ export function VoiceRecordButton({
   // Inline variant - compact button for forms
   if (variant === 'inline') {
     return (
-      <div className={cn("flex items-center gap-2", className)}>
+      <div className={cn("flex items-center gap-2 flex-shrink-0", className)}>
         {isRecording ? (
-          <>
+          <div className="flex items-center gap-2 bg-red-50 rounded-xl px-3 py-1.5 border border-red-200">
             <Button
               type="button"
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={cancelRecording}
-              className="text-gray-500"
+              className="h-8 w-8 text-gray-500 hover:text-red-600"
             >
               <MicOff className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-red-100 text-red-600 rounded-full text-xs">
-              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-              <span className="font-mono">{formattedDuration}</span>
+            <div className="flex items-center gap-1.5 text-red-600 text-xs">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              <span className="font-mono font-medium">{formattedDuration}</span>
             </div>
             <Button
               type="button"
               variant="destructive"
-              size="sm"
+              size="icon"
               onClick={stopRecording}
+              className="h-8 w-8"
             >
               <Square className="h-3 w-3 fill-current" />
             </Button>
-          </>
+          </div>
         ) : isTranscribing ? (
-          <Button type="button" variant="outline" size="sm" disabled>
-            <Loader2 className="h-4 w-4 animate-spin mr-1" />
-            Transcrevendo...
-          </Button>
+          <div className="flex items-center gap-2 bg-[#9C1E1E]/10 text-[#9C1E1E] rounded-xl px-3 py-2 text-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-xs">Transcrevendo...</span>
+          </div>
         ) : (
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            size="icon"
             onClick={startRecording}
             disabled={disabled}
-            className="border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/10"
+            className="h-10 w-10 rounded-xl border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/10 hover:border-[#9C1E1E]/50 flex-shrink-0"
           >
-            <Mic className="h-4 w-4 mr-1" />
-            Falar
+            <Mic className="h-5 w-5" />
           </Button>
         )}
       </div>

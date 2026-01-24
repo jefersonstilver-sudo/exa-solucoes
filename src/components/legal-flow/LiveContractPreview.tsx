@@ -22,8 +22,8 @@ const getTipoLabel = (tipo: string) => {
 };
 
 const formatDate = (date?: string) => {
-  if (!date) return new Date().toLocaleDateString('pt-BR');
-  return new Date(date).toLocaleDateString('pt-BR');
+  if (!date) return new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 };
 
 const formatCurrency = (value: number | null) => {
@@ -61,7 +61,7 @@ export function LiveContractPreview({
       onBlur={(e) => handleContentEdit(field, e.currentTarget.textContent || '')}
       className={`
         outline-none transition-all duration-200 rounded px-0.5
-        ${isEditable ? 'hover:bg-yellow-100/50 focus:bg-yellow-100 focus:ring-2 focus:ring-yellow-400/50' : ''}
+        ${isEditable ? 'hover:bg-amber-100/50 focus:bg-amber-100 focus:ring-2 focus:ring-amber-400/50' : ''}
         ${!value ? 'text-gray-400 italic' : ''}
         ${className}
       `}
@@ -72,85 +72,174 @@ export function LiveContractPreview({
 
   const hasMinimalContent = data.parceiro_nome || data.tipo_contrato || data.objeto;
 
+  // Estilo do template igual ao módulo de anunciante
+  const styles = `
+    @page {
+      size: A4;
+      margin: 12mm 15mm;
+    }
+    
+    @media print {
+      html, body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+    
+    .contract-body { 
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; 
+      line-height: 1.65; 
+      color: #1a1a1a; 
+      font-size: 10.5pt;
+      background: #fff;
+    }
+    
+    .contract-header {
+      background: linear-gradient(135deg, #8B1A1A 0%, #A52020 50%, #8B1A1A 100%);
+      color: white;
+      padding: 20px 25px;
+      text-align: center;
+      border-radius: 0 0 6px 6px;
+      border-bottom: 3px solid #5a0f0f;
+    }
+    
+    .section-title {
+      background: linear-gradient(90deg, #8B1A1A, #A52020);
+      color: white;
+      padding: 10px 15px;
+      font-size: 11pt;
+      font-weight: 600;
+      margin-bottom: 15px;
+      border-radius: 4px;
+    }
+    
+    .info-card {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 15px;
+    }
+    
+    .info-card-title {
+      font-weight: 600;
+      color: #8B1A1A;
+      margin-bottom: 10px;
+      font-size: 10pt;
+      border-bottom: 2px solid #8B1A1A;
+      padding-bottom: 5px;
+    }
+    
+    .clause-title {
+      font-weight: 600;
+      color: #8B1A1A;
+    }
+    
+    .highlight-box {
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      border-left: 4px solid #8B1A1A;
+      border-radius: 4px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+  `;
+
   return (
     <ScrollArea className="h-full">
+      <style>{styles}</style>
       <div className="flex justify-center p-4 md:p-8 bg-gray-200 min-h-full">
         <div 
           ref={containerRef}
-          className="bg-white shadow-2xl border border-gray-200 rounded overflow-hidden w-full max-w-[210mm] min-h-[297mm]"
-          style={{ 
-            fontFamily: "'Times New Roman', Georgia, serif",
-            lineHeight: '1.6',
-            fontSize: '12pt'
-          }}
+          className="contract-body bg-white shadow-2xl border border-gray-200 rounded overflow-hidden w-full max-w-[210mm] min-h-[297mm]"
         >
-          {/* Header Corporativo Elegante - Estilo Anunciante */}
-          <div className="bg-gradient-to-r from-[#9C1E1E] to-[#B40D1A] py-5 px-6">
-            <div className="flex items-center justify-center gap-3">
-              <div className="h-11 w-11 bg-white/15 backdrop-blur rounded-xl flex items-center justify-center border border-white/20">
-                <span className="text-white font-black text-xl">E</span>
-              </div>
-              <div className="text-white">
+          {/* Header Corporativo - Igual ao Anunciante */}
+          <div className="contract-header">
+            <div className="flex items-center justify-center gap-4">
+              <img 
+                src="/lovable-uploads/0bcfc861-e13d-455a-bfb2-3314c065a23d.png"
+                alt="EXA Mídia"
+                className="h-12 w-auto brightness-0 invert"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+              <div>
                 <h1 className="text-2xl font-bold tracking-tight">EXA Mídia</h1>
-                <p className="text-white/70 text-[9pt]">Mídia Indoor em Elevadores</p>
+                <p className="text-[10px] uppercase tracking-[3px] opacity-80">Mídia Indoor em Elevadores</p>
               </div>
             </div>
           </div>
 
-          {/* Content com padding */}
-          <div style={{ padding: 'clamp(1.5rem, 4vw, 2.5cm)' }}>
-            {/* Info Line */}
+          {/* Conteúdo do Contrato */}
+          <div className="p-6 md:p-8">
+            {/* Info da Empresa */}
             <div className="text-center border-b border-gray-200 pb-4 mb-6">
-              <p className="text-[10pt] text-gray-600 font-medium">
-                INDEXA MIDIA LTDA — CNPJ: 38.142.638/0001-30
+              <p className="text-[9pt] text-gray-500 font-medium">
+                Indexa Midia LTDA — CNPJ: 38.142.638/0001-30
               </p>
-              <p className="text-[9pt] text-gray-400 mt-1">
-                Av. Paraná, 974 • Sala 301, Centro • Foz do Iguaçu/PR • CEP 85851-180
+              <p className="text-[8pt] text-gray-400 mt-1">
+                Avenida Paraná, 974 – Sala 301, Centro • Foz do Iguaçu/PR • CEP 85852-000
               </p>
             </div>
 
             {/* Título do Contrato */}
-            <h1 className="text-center font-bold text-lg mb-8 tracking-wide text-gray-800">
-              {getTipoLabel(data.tipo_contrato)}
-            </h1>
-
-            {/* Partes */}
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
-              <p className="mb-4 text-justify">
-                <strong>CONTRATADA:</strong> INDEXA MIDIA LTDA, pessoa jurídica de direito privado, 
-                inscrita no CNPJ sob nº 38.142.638/0001-30, com sede na Avenida Paraná, 974 - Sala 301, 
-                Centro, Foz do Iguaçu - PR, CEP 85851-180, neste ato representada por seu sócio-administrador{' '}
-                <strong>Jeferson Stilver Rodrigues Encina</strong>, inscrito no CPF sob nº 055.031.279-00.
-              </p>
-              
-              <p className="text-justify">
-                <strong>CONTRATANTE:</strong>{' '}
-                <EditableField 
-                  field="parceiro_nome" 
-                  value={data.parceiro_nome} 
-                  placeholder="[Nome do Parceiro/Empresa]"
-                  className="font-semibold"
-                />
-                , {data.parceiro_tipo_pessoa === 'PF' ? 'pessoa física, inscrita no CPF sob nº' : 'pessoa jurídica de direito privado, inscrita no CNPJ sob nº'}{' '}
-                <EditableField 
-                  field="parceiro_documento" 
-                  value={data.parceiro_documento} 
-                  placeholder="[CNPJ/CPF]"
-                />
-                {data.parceiro_email && (
-                  <>, e-mail: {data.parceiro_email}</>
-                )}
-                {data.parceiro_telefone && (
-                  <>, telefone: {data.parceiro_telefone}</>
-                )}
-                .
+            <div className="text-center mb-8">
+              <h2 className="text-[16pt] font-semibold text-[#8B1A1A] tracking-wide">
+                {getTipoLabel(data.tipo_contrato)}
+              </h2>
+              <p className="text-[10pt] text-gray-500 mt-2">
+                Nº CTR-{Date.now().toString().slice(-8)}
               </p>
             </div>
 
-            {/* Objeto */}
+            {/* Cards de Informação - Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              {/* Contratada */}
+              <div className="info-card">
+                <div className="info-card-title">CONTRATADA</div>
+                <div className="space-y-1 text-[10pt]">
+                  <p><span className="text-gray-500">Razão Social:</span> <strong>Indexa Midia LTDA</strong></p>
+                  <p><span className="text-gray-500">CNPJ:</span> 38.142.638/0001-30</p>
+                  <p><span className="text-gray-500">Representante:</span> Jeferson Stilver Rodrigues Encina</p>
+                  <p><span className="text-gray-500">CPF:</span> 055.031.279-00</p>
+                </div>
+              </div>
+
+              {/* Contratante */}
+              <div className="info-card">
+                <div className="info-card-title">CONTRATANTE</div>
+                <div className="space-y-1 text-[10pt]">
+                  <p>
+                    <span className="text-gray-500">Nome/Razão:</span>{' '}
+                    <EditableField 
+                      field="parceiro_nome" 
+                      value={data.parceiro_nome} 
+                      placeholder="[Clique para editar]"
+                      className="font-semibold"
+                    />
+                  </p>
+                  <p>
+                    <span className="text-gray-500">{data.parceiro_tipo_pessoa === 'PF' ? 'CPF' : 'CNPJ'}:</span>{' '}
+                    <EditableField 
+                      field="parceiro_documento" 
+                      value={data.parceiro_documento} 
+                      placeholder="[Documento]"
+                    />
+                  </p>
+                  {data.parceiro_email && (
+                    <p><span className="text-gray-500">E-mail:</span> {data.parceiro_email}</p>
+                  )}
+                  {data.parceiro_telefone && (
+                    <p><span className="text-gray-500">Telefone:</span> {data.parceiro_telefone}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Cláusula 1 - Objeto */}
             <div className="mb-6">
-              <h2 className="font-bold mb-2 text-[#9C1E1E]">CLÁUSULA 1ª - DO OBJETO</h2>
-              <p className="text-justify">
+              <div className="section-title">CLÁUSULA 1ª — DO OBJETO</div>
+              <p className="text-justify text-[10.5pt] leading-relaxed">
                 O presente instrumento tem por objeto:{' '}
                 <EditableField 
                   field="objeto" 
@@ -160,59 +249,63 @@ export function LiveContractPreview({
               </p>
             </div>
 
-            {/* Valor (se houver) */}
+            {/* Cláusula 2 - Valor (se houver) */}
             {(data.valor_financeiro || data.tipo_contrato === 'anunciante') && (
               <div className="mb-6">
-                <h2 className="font-bold mb-2 text-[#9C1E1E]">CLÁUSULA 2ª - DO VALOR</h2>
-                <p className="text-justify">
+                <div className="section-title">CLÁUSULA 2ª — DO VALOR</div>
+                <div className="highlight-box">
                   {data.valor_financeiro ? (
-                    <>Pela execução dos serviços/produtos objeto deste contrato, a CONTRATANTE pagará à CONTRATADA o valor de {formatCurrency(data.valor_financeiro)}.</>
+                    <p className="text-[10.5pt]">
+                      Pela execução dos serviços objeto deste contrato, a CONTRATANTE pagará à CONTRATADA o valor total de{' '}
+                      <strong className="text-[#8B1A1A]">{formatCurrency(data.valor_financeiro)}</strong>.
+                    </p>
                   ) : (
-                    <span className="text-gray-400 italic">[Valor a ser definido]</span>
+                    <p className="text-gray-400 italic text-[10.5pt]">[Valor a ser definido]</p>
                   )}
-                </p>
+                </div>
               </div>
             )}
 
-            {/* Prazo */}
+            {/* Cláusula 3 - Prazo */}
             <div className="mb-6">
-              <h2 className="font-bold mb-2 text-[#9C1E1E]">
-                CLÁUSULA {data.valor_financeiro ? '3ª' : '2ª'} - DO PRAZO
-              </h2>
-              <p className="text-justify">
+              <div className="section-title">
+                CLÁUSULA {data.valor_financeiro ? '3ª' : '2ª'} — DO PRAZO E VIGÊNCIA
+              </div>
+              <p className="text-justify text-[10.5pt] leading-relaxed">
                 O presente contrato terá vigência de{' '}
                 <strong>{data.prazo_meses || 12} ({data.prazo_meses === 1 ? 'um' : data.prazo_meses || 'doze'}) meses</strong>, 
-                a partir de {formatDate(data.data_inicio)}, podendo ser renovado mediante acordo entre as partes.
+                a partir de <strong>{formatDate(data.data_inicio)}</strong>, podendo ser renovado mediante 
+                termo aditivo assinado pelas partes.
               </p>
             </div>
 
             {/* Obrigações das Partes */}
             {(data.obrigacoes_indexa.length > 0 || data.obrigacoes_parceiro.length > 0) && (
               <div className="mb-6">
-                <h2 className="font-bold mb-2 text-[#9C1E1E]">
-                  CLÁUSULA {data.valor_financeiro ? '4ª' : '3ª'} - DAS OBRIGAÇÕES
-                </h2>
+                <div className="section-title">
+                  CLÁUSULA {data.valor_financeiro ? '4ª' : '3ª'} — DAS OBRIGAÇÕES
+                </div>
                 
                 {data.obrigacoes_indexa.length > 0 && (
-                  <>
-                    <p className="font-semibold mb-1">São obrigações da CONTRATADA:</p>
-                    <ul className="list-disc pl-6 mb-3">
+                  <div className="mb-4">
+                    <p className="font-semibold text-[10.5pt] mb-2">São obrigações da CONTRATADA (EXA Mídia):</p>
+                    <ul className="list-disc pl-6 space-y-1 text-[10.5pt]">
                       {data.obrigacoes_indexa.map((obrigacao, i) => (
-                        <li key={i} className="mb-1">{obrigacao}</li>
+                        <li key={i}>{obrigacao}</li>
                       ))}
                     </ul>
-                  </>
+                  </div>
                 )}
                 
                 {data.obrigacoes_parceiro.length > 0 && (
-                  <>
-                    <p className="font-semibold mb-1">São obrigações da CONTRATANTE:</p>
-                    <ul className="list-disc pl-6">
+                  <div>
+                    <p className="font-semibold text-[10.5pt] mb-2">São obrigações da CONTRATANTE:</p>
+                    <ul className="list-disc pl-6 space-y-1 text-[10.5pt]">
                       {data.obrigacoes_parceiro.map((obrigacao, i) => (
-                        <li key={i} className="mb-1">{obrigacao}</li>
+                        <li key={i}>{obrigacao}</li>
                       ))}
                     </ul>
-                  </>
+                  </div>
                 )}
               </div>
             )}
@@ -220,36 +313,38 @@ export function LiveContractPreview({
             {/* Gatilhos Condicionais (para permutas) */}
             {data.gatilhos_condicionais.length > 0 && (
               <div className="mb-6">
-                <h2 className="font-bold mb-2 text-[#9C1E1E]">CLÁUSULA ESPECIAL - DOS GATILHOS CONDICIONAIS</h2>
-                <p className="mb-2 text-justify">
-                  As partes acordam os seguintes gatilhos condicionais para ativação de benefícios:
-                </p>
-                <ul className="list-disc pl-6">
-                  {data.gatilhos_condicionais.map((gatilho, i) => (
-                    <li key={i} className="mb-2">
-                      <strong>Condição:</strong> {gatilho.condicao}<br />
-                      <strong>Ação:</strong> {gatilho.acao}
-                      {gatilho.prazo && <><br /><strong>Prazo:</strong> {gatilho.prazo}</>}
-                    </li>
-                  ))}
-                </ul>
+                <div className="section-title">CLÁUSULA ESPECIAL — GATILHOS CONDICIONAIS</div>
+                <div className="highlight-box">
+                  <p className="mb-3 text-[10.5pt]">
+                    As partes acordam os seguintes gatilhos condicionais para ativação de benefícios:
+                  </p>
+                  <ul className="space-y-3">
+                    {data.gatilhos_condicionais.map((gatilho, i) => (
+                      <li key={i} className="text-[10.5pt] border-l-2 border-[#8B1A1A] pl-3">
+                        <strong>Condição:</strong> {gatilho.condicao}<br />
+                        <strong>Ação:</strong> {gatilho.acao}
+                        {gatilho.prazo && <><br /><strong>Prazo:</strong> {gatilho.prazo}</>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             )}
 
             {/* Cláusulas Geradas pela IA */}
             {data.clausulas_geradas.map((clausula, i) => (
               <div key={i} className="mb-6">
-                <h2 className="font-bold mb-2 text-[#9C1E1E]">
+                <div className="section-title">
                   {clausula.titulo.toUpperCase()}
-                </h2>
-                <p className="text-justify">{clausula.conteudo}</p>
+                </div>
+                <p className="text-justify text-[10.5pt] leading-relaxed">{clausula.conteudo}</p>
               </div>
             ))}
 
             {/* Foro */}
-            <div className="mb-6">
-              <h2 className="font-bold mb-2 text-[#9C1E1E]">CLÁUSULA FINAL - DO FORO</h2>
-              <p className="text-justify">
+            <div className="mb-8">
+              <div className="section-title">CLÁUSULA FINAL — DO FORO</div>
+              <p className="text-justify text-[10.5pt] leading-relaxed">
                 Fica eleito o foro da Comarca de <strong>Foz do Iguaçu/PR</strong> para dirimir quaisquer 
                 controvérsias oriundas do presente instrumento, com renúncia expressa a qualquer outro, 
                 por mais privilegiado que seja.
@@ -257,38 +352,39 @@ export function LiveContractPreview({
             </div>
 
             {/* Data e Local */}
-            <p className="text-center my-8">
+            <p className="text-center my-10 text-[10.5pt] italic text-gray-600">
               Foz do Iguaçu/PR, {formatDate(data.data_inicio)}.
             </p>
 
             {/* Assinaturas */}
-            <div className="flex justify-between mt-16 gap-8">
-              <div className="flex-1 text-center">
-                <div className="border-t-2 border-[#9C1E1E] pt-3 mt-16">
-                  <p className="font-bold text-[#9C1E1E]">EXA Mídia</p>
-                  <p className="text-sm text-gray-700">Jeferson Stilver Rodrigues Encina</p>
-                  <p className="text-xs text-gray-400">Sócio-Administrador</p>
+            <div className="grid grid-cols-2 gap-10 mt-16">
+              <div className="text-center">
+                <div className="border-t border-gray-800 pt-3 mt-20">
+                  <p className="font-semibold text-[#8B1A1A]">EXA Mídia</p>
+                  <p className="text-[9pt] text-gray-700">Jeferson Stilver Rodrigues Encina</p>
+                  <p className="text-[8pt] text-gray-500">Sócio-Administrador</p>
+                  <p className="text-[8pt] text-gray-400">CPF: 055.031.279-00</p>
                 </div>
               </div>
-              <div className="flex-1 text-center">
-                <div className="border-t-2 border-gray-300 pt-3 mt-16">
-                  <p className="font-bold text-gray-800">{data.parceiro_nome || '[CONTRATANTE]'}</p>
-                  <p className="text-sm text-gray-600">{data.parceiro_documento || '[Documento]'}</p>
+              <div className="text-center">
+                <div className="border-t border-gray-400 pt-3 mt-20">
+                  <p className="font-semibold text-gray-800">{data.parceiro_nome || '[CONTRATANTE]'}</p>
+                  <p className="text-[9pt] text-gray-600">{data.parceiro_documento || '[Documento]'}</p>
                 </div>
               </div>
             </div>
-
-            {/* Empty state overlay */}
-            {!hasMinimalContent && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded pointer-events-none">
-                <div className="text-center text-gray-400">
-                  <p className="text-lg mb-2">📝</p>
-                  <p className="text-sm">Converse com a IA para preencher o contrato</p>
-                  <p className="text-xs">ou clique nos campos para editar manualmente</p>
-                </div>
-              </div>
-            )}
           </div>
+
+          {/* Empty state overlay */}
+          {!hasMinimalContent && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/95 rounded pointer-events-none">
+              <div className="text-center text-gray-400 p-8">
+                <div className="text-5xl mb-4">📝</div>
+                <p className="text-base font-medium mb-2">Converse com a IA para preencher o contrato</p>
+                <p className="text-sm text-gray-400">ou clique nos campos amarelos para editar manualmente</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </ScrollArea>
