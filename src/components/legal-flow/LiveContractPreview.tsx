@@ -58,30 +58,34 @@ const getNumeroExtenso = (num: number) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const styles = {
-  // Header com gradiente vermelho e borda inferior - PADRÃO OFICIAL
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // HEADER CORPORATIVO EXA - VERMELHO #C8102E (BRANDBOOK OFICIAL)
+  // ═══════════════════════════════════════════════════════════════════════════════
   header: {
-    background: 'linear-gradient(135deg, #8B1A1A 0%, #A52020 50%, #8B1A1A 100%)',
-    color: 'white',
-    padding: '20px 25px',
-    margin: '-15px -20px 25px -20px',
-    textAlign: 'center' as const,
-    borderRadius: '0 0 6px 6px',
-    borderBottom: '3px solid #5a0f0f',
+    width: '100%',
+    height: '128px',
+    background: '#C8102E',
     display: 'flex',
-    flexDirection: 'column' as const,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    padding: '0 32px',
+    margin: '-15px -20px 25px -20px',
+    marginLeft: '-20px',
+    marginRight: '-20px',
+    marginTop: '-15px',
+    boxSizing: 'border-box' as const,
   },
   headerLogo: {
-    maxHeight: '50px',
+    height: '60px',
     width: 'auto',
-    marginBottom: '10px',
   },
-  headerSubtitle: {
-    fontSize: '10px',
-    letterSpacing: '2px',
+  headerText: {
+    color: 'white',
+    fontSize: '14px',
+    fontWeight: 700,
+    letterSpacing: '3px',
     textTransform: 'uppercase' as const,
-    opacity: 0.9,
+    textAlign: 'right' as const,
   },
   // Título do contrato
   contractTitle: {
@@ -309,7 +313,7 @@ export function LiveContractPreview({
           `}</style>
 
           {/* ═══════════════════════════════════════════════════════════════════
-              CABEÇALHO — PADRÃO OFICIAL EXA (Gradiente vermelho + borda)
+              CABEÇALHO CORPORATIVO EXA — HEADER VERMELHO #C8102E (BRANDBOOK)
           ═══════════════════════════════════════════════════════════════════ */}
           <div className="no-break" style={styles.header}>
             <img 
@@ -318,7 +322,7 @@ export function LiveContractPreview({
               style={styles.headerLogo}
               crossOrigin="anonymous"
             />
-            <div style={styles.headerSubtitle}>
+            <div style={styles.headerText}>
               PUBLICIDADE EM ELEVADORES
             </div>
           </div>

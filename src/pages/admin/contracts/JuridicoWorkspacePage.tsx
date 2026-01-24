@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 
 import { WorkspaceHeader } from '@/components/legal-flow/WorkspaceHeader';
 import { WorkspaceFooter } from '@/components/legal-flow/WorkspaceFooter';
+import { WorkspaceControlToolbar } from '@/components/legal-flow/WorkspaceControlToolbar';
 import { ContractInterviewer, ChatMessage } from '@/components/legal-flow/ContractInterviewer';
 import { LiveContractPreview } from '@/components/legal-flow/LiveContractPreview';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -118,6 +119,10 @@ export default function JuridicoWorkspacePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mobileTab, setMobileTab] = useState<'chat' | 'preview'>('chat');
+  
+  // State history for undo functionality
+  const [stateHistory, setStateHistory] = useState<LegalFlowData[]>([]);
+  const [previewKey, setPreviewKey] = useState(0); // Force re-render key
 
   // Calculate health with exact algorithm
   const health = {
@@ -257,10 +262,59 @@ export default function JuridicoWorkspacePage() {
     addAssistantMessage(`Recebi o arquivo **${file.name}**. Analisando conteúdo...`);
   }, [addAssistantMessage]);
 
-  // Handle manual edit from preview
+  // Handle manual edit from preview - save to history
   const handleManualEdit = useCallback((field: string, value: string) => {
+    // Save current state to history before edit
+    setStateHistory(prev => [...prev.slice(-9), { ...data }]);
     addAssistantMessage(`✓ Anotei a alteração no campo "${field}".`);
-  }, [addAssistantMessage]);
+  }, [addAssistantMessage, data]);
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // CONTROL TOOLBAR HANDLERS
+  // ═══════════════════════════════════════════════════════════════════════════════
+  
+  // Refresh preview - force re-render
+  const handleRefreshPreview = useCallback(() => {
+    setPreviewKey(prev => prev + 1);
+    toast.success('Preview atualizado!');
+  }, []);
+
+  // Undo - restore previous state
+  const handleUndo = useCallback(() => {
+    if (stateHistory.length === 0) {
+      toast.error('Nenhuma alteração para desfazer');
+      return;
+    }
+    
+    const previousState = stateHistory[stateHistory.length - 1];
+    setStateHistory(prev => prev.slice(0, -1));
+    updateData(previousState);
+    addAssistantMessage('⏪ Alteração desfeita. Estado anterior restaurado.');
+    toast.success('Alteração desfeita!');
+  }, [stateHistory, updateData, addAssistantMessage]);
+
+  // Advance step - IA focuses on next gap
+  const handleAdvanceStep = useCallback(() => {
+    // Determine what's missing
+    const missing: string[] = [];
+    if (!data.parceiro_documento) missing.push('CNPJ/CPF do parceiro');
+    if (!data.parceiro_nome) missing.push('Nome/Razão Social');
+    if (!data.objeto || data.objeto.length < 50) missing.push('Objeto do contrato (mais detalhado)');
+    if (!data.valor_financeiro && data.obrigacoes_parceiro.length === 0) missing.push('Valor ou contrapartida');
+    
+    if (missing.length === 0) {
+      addAssistantMessage('✅ **Contrato completo!** Todos os campos obrigatórios estão preenchidos. Você pode revisar e finalizar.');
+    } else {
+      const nextMissing = missing[0];
+      addAssistantMessage(`➡️ **Próximo passo:** Falta informar o **${nextMissing}**. Por favor, forneça esse dado para continuar.`);
+    }
+  }, [data, addAssistantMessage]);
+
+  // Can undo?
+  const canUndo = stateHistory.length > 0;
+  
+  // Can advance? Only if has minimal data
+  const canAdvance = Boolean(data.parceiro_nome || data.parceiro_documento);
 
   // Save draft
   const handleSave = useCallback(async () => {
@@ -318,20 +372,32 @@ export default function JuridicoWorkspacePage() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="chat" className="flex-1 m-0 p-0">
-            <ContractInterviewer
-              messages={messages}
-              onSendMessage={handleSendMessage}
-              onActionClick={handleActionClick}
-              onVoiceInput={handleVoiceInput}
-              onFileUpload={handleFileUpload}
+          <TabsContent value="chat" className="flex-1 m-0 p-0 flex flex-col">
+            <div className="flex-1 overflow-hidden">
+              <ContractInterviewer
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                onActionClick={handleActionClick}
+                onVoiceInput={handleVoiceInput}
+                onFileUpload={handleFileUpload}
+                isProcessing={isProcessing}
+                currentData={data}
+              />
+            </div>
+            <WorkspaceControlToolbar
+              onRefreshPreview={handleRefreshPreview}
+              onUndo={handleUndo}
+              onAdvanceStep={handleAdvanceStep}
+              canUndo={canUndo}
+              canAdvance={canAdvance}
               isProcessing={isProcessing}
-              currentData={data}
+              healthScore={health.score}
             />
           </TabsContent>
 
           <TabsContent value="preview" className="flex-1 m-0 p-0 overflow-hidden">
             <LiveContractPreview
+              key={previewKey}
               data={data}
               onUpdate={updateData}
               isEditable={true}
@@ -363,17 +429,31 @@ export default function JuridicoWorkspacePage() {
       />
 
       <ResizablePanelGroup direction="horizontal" className="flex-1">
-        {/* Left Panel: Interviewer */}
+        {/* Left Panel: Interviewer + Control Toolbar */}
         <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
-          <ContractInterviewer
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            onActionClick={handleActionClick}
-            onVoiceInput={handleVoiceInput}
-            onFileUpload={handleFileUpload}
-            isProcessing={isProcessing}
-            currentData={data}
-          />
+          <div className="flex flex-col h-full">
+            <div className="flex-1 overflow-hidden">
+              <ContractInterviewer
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                onActionClick={handleActionClick}
+                onVoiceInput={handleVoiceInput}
+                onFileUpload={handleFileUpload}
+                isProcessing={isProcessing}
+                currentData={data}
+              />
+            </div>
+            {/* Control Toolbar */}
+            <WorkspaceControlToolbar
+              onRefreshPreview={handleRefreshPreview}
+              onUndo={handleUndo}
+              onAdvanceStep={handleAdvanceStep}
+              canUndo={canUndo}
+              canAdvance={canAdvance}
+              isProcessing={isProcessing}
+              healthScore={health.score}
+            />
+          </div>
         </ResizablePanel>
 
         <ResizableHandle withHandle />
@@ -381,6 +461,7 @@ export default function JuridicoWorkspacePage() {
         {/* Right Panel: Live Preview */}
         <ResizablePanel defaultSize={65} minSize={50}>
           <LiveContractPreview
+            key={previewKey}
             data={data}
             onUpdate={updateData}
             isEditable={true}
