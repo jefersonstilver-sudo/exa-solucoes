@@ -1,80 +1,166 @@
 
-# Diagnóstico: Sistema de Rastreamento de Visualizações Não Está Funcionando
+# Diagnóstico: IA Jurídica Não Entende Contexto de Permuta com SECOVI
 
 ## Problemas Identificados
 
-Após análise completa dos logs, banco de dados e código, identifiquei **3 problemas principais**:
-
-### 1. Edge Function Não Foi Redeployed
-- Os logs mostram `Session: undefined, Referrer: undefined`
-- O código atualizado captura IP e faz geolocalização, mas os dados não estão chegando ao banco
-- **TODAS as visualizações recentes** (até 22:27 de hoje) têm `ip_address`, `city`, `country`, `session_id`, `referrer_url` como NULL
-- A Edge Function precisa ser redeployed para aplicar as alterações
-
-### 2. Logs de "enter" Ausentes
-- Não há logs de action "enter" (onde os dados de IP e geo são capturados)
-- Apenas logs de "heartbeat" aparecem
-- Isso sugere que o INSERT inicial está falhando silenciosamente
-
-### 3. Visualizações Históricas Sem Dados
-- As 4 visualizações da proposta `da6bdf5a-c3fc-434d-901d-3405560e1f1a` foram criadas em 23/01/2026 (antes da atualização)
-- Esses registros nunca terão os novos campos preenchidos
+Após análise completa do código, identifiquei **4 problemas graves** que causam o comportamento errático:
 
 ---
 
-## Plano de Correção
+### 1. SCENARIO_PATTERNS Força Tipo Errado
 
-### Etapa 1: Redeploy da Edge Function
-Forçar o deploy da Edge Function `track-proposal-view` para garantir que a versão mais recente com captura de IP/Geo está ativa.
-
-### Etapa 2: Adicionar Logs de Debug na Edge Function
-Adicionar mais logs para rastrear:
-- Se a requisição está chegando corretamente
-- Se a geolocalização está sendo chamada
-- Se o INSERT está funcionando ou falhando
-
-### Etapa 3: Testar com Nova Visualização
-Após o deploy, acessar a proposta pública e verificar:
-- Logs da Edge Function
-- Dados salvos no banco
-
-### Etapa 4: Melhorar Tratamento de Erros
-- Garantir que erros de geolocalização não bloqueiem o INSERT
-- Adicionar fallback se a API de geo falhar
-
----
-
-## Correções Técnicas a Implementar
-
-### Edge Function (`track-proposal-view/index.ts`)
+**Arquivo:** `JuridicoWorkspacePage.tsx` (linhas 26-30)
 
 ```typescript
-// 1. Adicionar mais logs no início
-console.log(`📨 [TRACK-VIEW] Full request body:`, JSON.stringify({ proposalId, action, sessionId, referrer, deviceType }));
+secovi: {
+  pattern: /secovi|sindicato|associação/i,
+  tipo: 'parceria_pj',  // ❌ ERRADO - deveria manter o tipo que o usuário escolheu (permuta)
+  suggestion: 'Detectei parceria institucional tipo SECOVI. Configurar como Cooperação Institucional com troca de logos?',
+}
+```
 
-// 2. Mover geolocalização para try/catch separado
-let geoData = null;
-try {
-  geoData = await getGeoLocation(ipAddress);
-  console.log('📍 Geolocalização obtida:', JSON.stringify(geoData));
-} catch (geoError) {
-  console.warn('⚠️ Falha na geolocalização, continuando sem:', geoError);
+**Problema:** Sempre que a palavra "SECOVI" aparece, o sistema FORÇA `tipo: 'parceria_pj'`, ignorando completamente que você escolheu "permuta" no início.
+
+---
+
+### 2. Detecção de Cenário Sobrescreve Escolha do Usuário
+
+**Arquivo:** `JuridicoWorkspacePage.tsx` (linhas 163-188)
+
+```typescript
+const handleSendMessage = useCallback(async (content: string) => {
+  // Sanitize input
+  const sanitizedContent = sanitizeToIndexa2026(content);
+  addUserMessage(sanitizedContent);
+
+  // Detect scenario - EXECUTA ANTES DA IA
+  const scenario = detectScenario(sanitizedContent);
+  if (scenario) {
+    updateData({ tipo_contrato: scenario.tipo }); // ❌ SOBRESCREVE O TIPO!
+    // ...
+  }
+});
+```
+
+**Problema:** A cada mensagem, o sistema busca padrões e SOBRESCREVE `tipo_contrato` para `parceria_pj`, resetando sua escolha de "permuta".
+
+---
+
+### 3. Sugestão Repetitiva e Loop Infinito
+
+O padrão SECOVI retorna a mesma sugestão SEMPRE:
+
+```typescript
+suggestion: 'Detectei parceria institucional tipo SECOVI. Configurar como Cooperação Institucional com troca de logos?'
+```
+
+Mesmo após você responder "Sim" ou "Não", a próxima mensagem com "SECOVI" (como os dados do CNPJ) dispara o MESMO padrão novamente, criando um loop.
+
+---
+
+### 4. Comodato Pattern Muito Agressivo
+
+```typescript
+comodato: {
+  pattern: /pietro\s*angelo|síndico|comodato|elevador/i,
+  // ...
+}
+```
+
+**Problema:** Se você menciona "síndico" (que existe nos dados do SECOVI: "SINDICATO DA HABITAÇÃO"), pode estar sendo capturado incorretamente, gerando template de comodato.
+
+---
+
+## Fluxo Quebrado Demonstrado
+
+```text
+1. Usuário: "Vou criar um contrato de permuta"
+   → Sistema: tipo_contrato = 'permuta' ✅
+
+2. Usuário: "SECOVI - institucional"
+   → SCENARIO_PATTERNS detecta "secovi"
+   → tipo_contrato SOBRESCRITO para 'parceria_pj' ❌
+   → Mensagem: "Configurar como Cooperação Institucional?"
+
+3. Usuário: "Sim, pode incluir"
+   → Sistema NÃO altera tipo de volta para permuta
+
+4. Usuário: Fornece CNPJ/Razão Social com "SINDICATO DA HABITAÇÃO"
+   → SCENARIO_PATTERNS detecta "sindicato" novamente!
+   → Loop de sugestão reinicia
+```
+
+---
+
+## Solução Proposta
+
+### Etapa 1: Não Sobrescrever Tipo Já Definido
+
+Modificar a lógica de detecção de cenário para **respeitar a escolha inicial do usuário**:
+
+```typescript
+// NOVO: Só aplica tipo se NÃO tiver sido definido antes
+if (scenario && !data.tipo_contrato) {
+  updateData({ tipo_contrato: scenario.tipo });
+}
+```
+
+### Etapa 2: Remover Detecção Agressiva de Padrões
+
+Criar uma flag `scenarioConfirmed` que, após confirmação, desabilita novas detecções:
+
+```typescript
+const [scenarioConfirmed, setScenarioConfirmed] = useState(false);
+
+if (scenario && !scenarioConfirmed && !data.parceiro_documento) {
+  // Só sugere se não confirmou e não tem CNPJ ainda
+}
+```
+
+### Etapa 3: Criar Categoria Correta para Permuta Institucional
+
+Adicionar novo tipo de cenário que NÃO sobrescreve:
+
+```typescript
+secovi_permuta: {
+  pattern: /secovi|sindicato\s*(da|de)?\s*habitação/i,
+  // NÃO define tipo - mantém o escolhido pelo usuário
+  suggestion: 'Parceria institucional com SECOVI. Incluir cláusula de exclusividade de marca?',
+  requiresConfirmation: true,
+}
+```
+
+### Etapa 4: Corrigir o Edge Function para Permuta
+
+O prompt da Edge Function tem exemplo de SECOVI como PERMUTA (linha 2 do few-shot), mas o frontend força para `parceria_pj`. Alinhar ambos:
+
+```typescript
+// Adicionar ao SCENARIO_PATTERNS
+secovi: {
+  pattern: /secovi/i,
+  tipo: 'permuta', // ✅ Alinhado com few-shot examples
+  suggestion: 'Parceria institucional tipo SECOVI. Configurar permuta de serviços?',
+}
+```
+
+### Etapa 5: Adicionar Lock de Contexto
+
+Quando usuário escolhe tipo inicial, criar lock que impede sobrescrita:
+
+```typescript
+const [tipoLocked, setTipoLocked] = useState(false);
+
+// Quando escolhe "permuta":
+handleActionClick = (value) => {
+  if (value === 'permuta') {
+    updateData({ tipo_contrato: 'permuta' });
+    setTipoLocked(true); // ⚡ LOCK!
+  }
 }
 
-// 3. Logar o objeto de insert antes de inserir
-console.log('💾 [INSERT] Dados a inserir:', JSON.stringify({
-  proposal_id: proposalId,
-  ip_address: ipAddress,
-  city: geoData?.city || null,
-  session_id: sessionId || null,
-  referrer_url: referrer || null,
-}));
-
-// 4. Logar resultado do insert
-if (insertError) {
-  console.error('❌ ERRO NO INSERT:', JSON.stringify(insertError));
-} else {
-  console.log('✅ INSERT realizado com sucesso');
+// Na detecção de cenário:
+if (scenario && !tipoLocked) {
+  // Só sobrescreve se não estiver travado
 }
 ```
 
@@ -84,22 +170,37 @@ if (insertError) {
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `supabase/functions/track-proposal-view/index.ts` | Adicionar logs extras e melhorar tratamento de erros |
+| `src/pages/admin/contracts/JuridicoWorkspacePage.tsx` | Corrigir SCENARIO_PATTERNS e lógica de detecção |
+| `supabase/functions/juridico-brain/index.ts` | Garantir que tipo já definido NÃO seja resetado |
 
 ---
 
 ## Resultado Esperado
 
-Após a implementação:
-1. **Novas visualizações** terão IP, cidade, país, ISP, session_id e referrer preenchidos
-2. **Logs detalhados** aparecerão na Edge Function mostrando cada etapa
-3. **Alertas de fraude** funcionarão corretamente (IPs internos, sessões longas)
-4. **Visualizações antigas** continuarão como "Localização desconhecida" (dados históricos)
+```text
+1. Usuário: "Vou criar um contrato de permuta"
+   → tipo_contrato = 'permuta' (TRAVADO)
+
+2. Usuário: "SECOVI - institucional"  
+   → Detecta SECOVI, MAS mantém tipo 'permuta'
+   → Mensagem: "Incluir cláusula de exclusividade de marca?"
+
+3. Usuário: "Sim"
+   → scenarioConfirmed = true (não pergunta mais)
+
+4. Usuário: Fornece CNPJ/dados
+   → REGEX-first atualiza dados
+   → tipo_contrato continua 'permuta' ✅
+   → Preview mostra "CONTRATO DE PERMUTA" ✅
+```
 
 ---
 
-## Observação Sobre Dados Históricos
+## Sumário Técnico
 
-As 4 visualizações existentes foram criadas **antes** da atualização do sistema de rastreamento. Esses registros não podem ser enriquecidos retroativamente pois não temos os IPs originais.
-
-Somente **novas visualizações** a partir do deploy terão os dados completos.
+| Problema | Causa | Solução |
+|----------|-------|---------|
+| IA repete mesma pergunta | SCENARIO_PATTERNS dispara a cada match | Flag `scenarioConfirmed` |
+| Tipo muda de permuta para parceria_pj | `updateData({ tipo_contrato: scenario.tipo })` | Respeitar tipo já definido |
+| Contrato gerado parece de síndico | Pattern `/síndico/` muito amplo | Refinar regex para excluir "Sindicato da Habitação" |
+| IA não entende contexto | Frontend intercepta ANTES da IA processar | Permitir IA processar quando tipo já definido |
