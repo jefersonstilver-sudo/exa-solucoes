@@ -1,114 +1,179 @@
 
-# Plano: Padronizar Cabeçalho Oficial EXA em Todos os Contratos
+# Plano: Sistema de Rastreamento Avançado de Visualizações
 
 ## Objetivo
-Estender o cabeçalho atual do `LiveContractPreview.tsx` (imagem full-width `exa-contract-header.png`) para **todos os componentes e funções** que geram ou exibem contratos no sistema.
+Adicionar captura de **IP**, **geolocalização** e **fingerprint** às visualizações de propostas para identificar fraudes e acessos internos.
 
 ---
 
-## Componentes e Arquivos Identificados
+## Arquitetura da Solução
 
-### 1. Componentes Frontend (React)
+### 1. Atualizar Schema da Tabela `proposal_views`
 
-| Arquivo | Situação Atual | Ação Necessária |
-|---------|----------------|-----------------|
-| `LiveContractPreview.tsx` | JÁ USA imagem oficial | Nenhuma (referência) |
-| `ContractPreview.tsx` | Usa logo antiga + CSS badge | Substituir por imagem oficial |
-| `ComodatoTemplate.tsx` | Usa SVG inline + gradiente | Substituir por imagem oficial |
-| `ContractPDFExporter.tsx` | Gera header via jsPDF | Atualizar método `exportFromData` |
-
-### 2. Edge Functions (Backend - Geração de HTML)
-
-| Arquivo | Situação Atual | Ação Necessária |
-|---------|----------------|-----------------|
-| `create-contract-from-proposal/index.ts` | Usa CSS `.header` com logo URL | Substituir por imagem oficial full-width |
-| `clicksign-create-contract/index.ts` | Usa CSS gradiente + logo box | Substituir por imagem oficial full-width |
-
----
-
-## Abordagem Técnica
-
-### A. Upload da Imagem para Storage Público
-A imagem `exa-contract-header.png` precisa estar disponível publicamente via URL para ser usada nas Edge Functions (que não têm acesso aos assets locais do frontend).
-
-```text
-Destino: Supabase Storage → bucket "arquivos" → pasta "logo e icones"
-URL Final: https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png
+Novos campos a adicionar:
+```sql
+ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS ip_address TEXT;
+ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS region TEXT;
+ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS country TEXT;
+ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS country_code TEXT;
+ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS latitude DECIMAL(10,7);
+ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS longitude DECIMAL(10,7);
+ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS timezone TEXT;
+ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS isp TEXT;
+ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS fingerprint TEXT;
+ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS session_id TEXT;
+ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS referrer_url TEXT;
 ```
 
-### B. Constante Global para URL do Header
-Criar uma constante única para evitar duplicação:
+---
 
+### 2. Atualizar Edge Function `track-proposal-view`
+
+**Captura de IP real do usuário:**
 ```typescript
-const EXA_CONTRACT_HEADER_URL = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png";
+const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
+  || req.headers.get('x-real-ip') 
+  || req.headers.get('cf-connecting-ip')
+  || 'unknown';
 ```
 
-### C. Padrão de Implementação do Header (CSS Inline)
+**Geolocalização via API (ipapi.co):**
+```typescript
+const geoResponse = await fetch(`https://ipapi.co/${ipAddress}/json/`);
+const geoData = await geoResponse.json();
+// Retorna: city, region, country_name, latitude, longitude, timezone, org
+```
 
-```html
-<!-- HEADER OFICIAL EXA - Full Width -->
-<div style="width: calc(100% + 40px); margin: -15px -20px 15px -20px; display: block;">
-  <img 
-    src="[EXA_CONTRACT_HEADER_URL]" 
-    alt="EXA Header" 
-    style="width: 100%; height: auto; display: block;"
-  />
-</div>
+**Persistir na inserção:**
+```typescript
+const { error: insertError } = await supabase
+  .from('proposal_views')
+  .insert({
+    proposal_id: proposalId,
+    device_type: deviceType || 'unknown',
+    user_agent: userAgent || null,
+    ip_address: ipAddress,
+    city: geoData?.city,
+    region: geoData?.region,
+    country: geoData?.country_name,
+    country_code: geoData?.country_code,
+    latitude: geoData?.latitude,
+    longitude: geoData?.longitude,
+    timezone: geoData?.timezone,
+    isp: geoData?.org,
+    fingerprint: fingerprint || null,
+    session_id: sessionId || null,
+    referrer_url: referrer || null,
+    time_spent_seconds: 0,
+  });
 ```
 
 ---
 
-## Etapas de Implementação
+### 3. Atualizar Frontend `PropostaPublicaPage.tsx`
 
-### Etapa 1: Upload da Imagem para Storage
-1. Copiar `src/assets/exa-contract-header.png` para o Supabase Storage
-2. Garantir que o bucket `arquivos` está público
-3. Testar a URL de acesso
+Enviar dados adicionais na chamada de tracking:
+```typescript
+// Gerar session ID único
+const sessionId = sessionStorage.getItem('pv_session') || crypto.randomUUID();
+sessionStorage.setItem('pv_session', sessionId);
 
-### Etapa 2: Atualizar Componentes Frontend
+// Referrer
+const referrer = document.referrer || 'direct';
 
-**2.1 - `ContractPreview.tsx`**
-- Remover: `EXA_LOGO_URL` e todo o bloco de header antigo (linhas 125-145)
-- Adicionar: Import da imagem + novo header com `<img>` full-width
-- Ajustar: Padding do container principal
-
-**2.2 - `ComodatoTemplate.tsx`**
-- Remover: Componente `ExaLogo()` (SVG inline)
-- Remover: Header com gradiente (linhas 72-85)
-- Adicionar: Mesmo padrão de header com imagem oficial
-
-**2.3 - `ContractPDFExporter.tsx`**
-- Atualizar método `exportFromData()` (linha 296+)
-- Substituir desenho do header via jsPDF por imagem
-
-### Etapa 3: Atualizar Edge Functions
-
-**3.1 - `create-contract-from-proposal/index.ts`**
-- Localizar: Bloco CSS `.header` (linhas 677-695)
-- Substituir: Por novo CSS que usa `<img>` full-width
-- Atualizar: Template HTML no retorno
-
-**3.2 - `clicksign-create-contract/index.ts`**
-- Localizar: Bloco CSS `.header` (linhas 909-941) e `generateSindicoContractHtml` (linha 1461-1467)
-- Substituir: Ambos os headers por padrão com imagem oficial
-- Atualizar: Template HTML para contratos de anunciante e síndico
+// Enviar na requisição
+supabase.functions.invoke('track-proposal-view', {
+  body: {
+    proposalId: id,
+    action: 'enter',
+    deviceType,
+    userAgent: navigator.userAgent,
+    sessionId,
+    referrer,
+    // fingerprint pode ser adicionado com biblioteca como FingerprintJS
+  }
+});
+```
 
 ---
 
-## Arquivos a Serem Modificados
+### 4. Atualizar UI de Detalhes da Proposta
 
-1. `src/components/admin/contracts/ContractPreview.tsx`
-2. `src/components/admin/contracts/ComodatoTemplate.tsx`
-3. `src/components/admin/contracts/ContractPDFExporter.tsx`
-4. `supabase/functions/create-contract-from-proposal/index.ts`
-5. `supabase/functions/clicksign-create-contract/index.ts`
+Adicionar seção expandida com informações de rastreamento:
+
+**Card "Análise de Visualizações":**
+- 🌍 **Países de Origem**: Lista com bandeiras
+- 📍 **Cidades**: Mapa ou lista das localizações
+- 🖥️ **IPs Únicos**: Contagem e lista
+- 🕐 **Sessões Únicas**: Baseado em session_id
+- ⚠️ **Alertas de Fraude**:
+  - IPs internos da empresa (definir whitelist)
+  - Múltiplos acessos do mesmo IP em curto período
+  - Tempo de sessão anormalmente alto
 
 ---
 
-## Resultado Esperado
-Todos os contratos do sistema (visualização, PDF, ClickSign) terão o cabeçalho idêntico ao `LiveContractPreview.tsx` - imagem full-width com fundo vermelho oficial da EXA.
+## Arquivos a Modificar
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `supabase/migrations/...` | Novo schema com campos de geolocalização |
+| `supabase/functions/track-proposal-view/index.ts` | Captura de IP e geolocalização |
+| `src/pages/public/PropostaPublicaPage.tsx` | Enviar sessionId e referrer |
+| `src/pages/admin/proposals/PropostaDetalhesPage.tsx` | Nova seção de análise de visualizações |
 
 ---
 
-## Observação Importante
-Antes de iniciar a implementação, será necessário confirmar se a imagem `exa-contract-header.png` já está no Supabase Storage ou se precisará ser uploaded manualmente.
+## Informações que Você Terá Após Implementação
+
+| Dado | Exemplo |
+|------|---------|
+| IP | `177.52.xxx.xxx` |
+| País | `Brasil` 🇧🇷 |
+| Cidade | `São Paulo, SP` |
+| ISP/Org | `Vivo Fibra` |
+| Timezone | `America/Sao_Paulo` |
+| Dispositivo | `Desktop - Chrome 143` |
+| Tempo Ativo | `18min 32s` |
+| Sessão | `abc123-...` (agrupamento) |
+| Origem | `wa.me` (veio do WhatsApp) |
+
+---
+
+## Detecção de Fraude
+
+**Alertas automáticos para:**
+1. ⚠️ IP da empresa (whitelist configurável)
+2. ⚠️ Mesmo IP com múltiplas visualizações em < 1h
+3. ⚠️ Tempo de sessão > 1 hora (possivelmente página aberta sem interação)
+4. ⚠️ User-Agent de bot ou automatizado
+
+---
+
+## Resultado Visual Esperado
+
+Na página de detalhes da proposta, você verá algo como:
+
+```
+┌─────────────────────────────────────────────────┐
+│  📊 Análise de Visualizações (12 acessos)      │
+├─────────────────────────────────────────────────┤
+│  🌍 Países: Brasil (10), Portugal (2)          │
+│  📍 Cidades: São Paulo (6), Rio (3), Lisboa (2)│
+│  🖥️ IPs Únicos: 4                              │
+│  ⏱️ Tempo Total: 2h 14min                       │
+├─────────────────────────────────────────────────┤
+│  ⚠️ ALERTAS                                     │
+│  • 3 acessos do IP 192.168.xxx (interno?)      │
+│  • Sessão #abc ficou 8h aberta                 │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+## Considerações de Privacidade (LGPD)
+
+- IPs são dados pessoais - armazenar com justificativa legítima (segurança/fraude)
+- Considerar anonimização após 90 dias
+- Informar no rodapé da proposta que acessos são monitorados
