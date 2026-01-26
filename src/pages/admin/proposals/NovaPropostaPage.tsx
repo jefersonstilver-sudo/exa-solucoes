@@ -965,7 +965,9 @@ const NovaPropostaPage = () => {
           : null,
         travamento_modo_calculo: travamentoPrecoAtivo ? travamentoModoCalculo : null,
         multa_rescisao_ativa: multaRescisaoAtiva,
-        multa_rescisao_percentual: multaRescisaoAtiva ? multaRescisaoPercentual : null
+        multa_rescisao_percentual: multaRescisaoAtiva ? multaRescisaoPercentual : null,
+        // Validade da proposta - funciona tanto na criação quanto na edição
+        expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to ? customDateRange.to.toISOString() : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
       };
 
       let proposal;
@@ -1003,7 +1005,6 @@ const NovaPropostaPage = () => {
           number: proposalNumber,
           status: 'enviada',
           sent_at: new Date().toISOString(),
-          expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to ? customDateRange.to.toISOString() : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
         }]).select().single();
         if (error) throw error;
         proposal = data;
