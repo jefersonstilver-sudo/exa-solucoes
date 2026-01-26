@@ -63,7 +63,7 @@ const styles = {
   // Margin negativa para "quebrar" o padding do body e ocupar 100% da largura
   header: {
     width: 'calc(100% + 40px)',
-    margin: '-15px -20px 25px -20px',
+    margin: '-15px -20px 26mm -20px', // 1mm extra de margem inferior
     display: 'block',
   },
   // Header imagem oficial (full-width)
