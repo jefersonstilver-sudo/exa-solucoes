@@ -54,33 +54,29 @@ const getNumeroExtenso = (num: number) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ESTILOS INLINE — VISUAL CLONE DO TEMPLATE OFICIAL (PDF PROPOSTA)
-// MARGENS ABNT: 30mm superior/esquerda, 20mm inferior/direita
+// ESTILOS INLINE — VISUAL CLONE 100% DO TEMPLATE OFICIAL (create-contract-from-proposal)
+// Margens do template oficial: padding 15px 20px no body + margin 12mm 15mm no @page
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const styles = {
   // HEADER CORPORATIVO EXA — Fundo branco + borda inferior vermelha 3px
+  // Margin negativa para "quebrar" o padding do body e ocupar 100% da largura
   header: {
-    width: '100%',
+    width: 'calc(100% + 40px)',
     background: '#ffffff',
     padding: '20px 0',
-    marginBottom: '25px',
+    margin: '-15px -20px 25px -20px',
     textAlign: 'center' as const,
     borderBottom: '3px solid #8B1A1A',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Logo CSS-based (badge vermelho EXA)
-  headerLogoCss: {
-    background: '#8B1A1A',
-    color: 'white',
-    fontWeight: 800,
-    fontSize: '28px',
-    padding: '10px 24px',
-    borderRadius: '6px',
-    letterSpacing: '2px',
-    fontFamily: "'Arial Black', 'Helvetica Neue', sans-serif",
+  // Logo imagem oficial
+  headerLogo: {
+    maxHeight: '55px',
+    width: 'auto',
+    display: 'block',
   },
   // Título do contrato - SEM borda azul (conforme PDF oficial)
   contractTitle: {
@@ -302,16 +298,15 @@ export function LiveContractPreview({
             maxWidth: '210mm',
             width: '100%',
             minHeight: '297mm',
-            // Importante: o cabeçalho precisa ficar visível no topo (como no template oficial).
-            // As margens ABNT (30/20mm) devem afetar o conteúdo do contrato, não o cabeçalho.
-            padding: 0,
+            // Template oficial: padding 15px 20px (igual ao create-contract-from-proposal)
+            padding: '15px 20px',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
             border: '1px solid #d1d5db',
             position: 'relative'
           }}
         >
           <style>{`
-            @page { size: A4; margin: 30mm 20mm 20mm 30mm; }
+            @page { size: A4; margin: 12mm 15mm; }
             @media print {
               html, body {
                 -webkit-print-color-adjust: exact !important;
@@ -326,14 +321,17 @@ export function LiveContractPreview({
           `}</style>
 
           {/* ═══════════════════════════════════════════════════════════════════
-              CABEÇALHO CORPORATIVO EXA — FUNDO BRANCO + LOGO + BORDA VERMELHA (TEMPLATE OFICIAL)
+              CABEÇALHO CORPORATIVO EXA — CLONE 100% DO TEMPLATE OFICIAL
+              Fundo branco + logo imagem oficial + borda vermelha 3px
           ═══════════════════════════════════════════════════════════════════ */}
           <div className="no-break" style={styles.header}>
-            <div style={styles.headerLogoCss}>EXA</div>
+            <img
+              style={styles.headerLogo}
+              src={EXA_LOGO_URL}
+              alt="EXA Publicidade Inteligente - Painéis Digitais para Elevadores"
+              crossOrigin="anonymous"
+            />
           </div>
-
-          {/* Conteúdo com margens ABNT estritas */}
-          <div style={{ padding: '30mm 20mm 20mm 30mm' }}>
 
           {/* ═══════════════════════════════════════════════════════════════════
               TÍTULO DO CONTRATO (TEMPLATE OFICIAL - SEM BORDA)
@@ -699,7 +697,6 @@ export function LiveContractPreview({
               </div>
             </div>
           )}
-          </div>
         </div>
       </div>
     </ScrollArea>
