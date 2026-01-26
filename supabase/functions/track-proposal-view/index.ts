@@ -74,10 +74,12 @@ serve(async (req) => {
       || req.headers.get('cf-connecting-ip')
       || 'unknown';
 
-    const { proposalId, timeSpentSeconds, deviceType, userAgent, action, sessionId, referrer, fingerprint } = await req.json();
+    const body = await req.json();
+    const { proposalId, timeSpentSeconds, deviceType, userAgent, action, sessionId, referrer, fingerprint } = body;
 
     console.log(`📊 [TRACK-VIEW] Action: ${action}, Proposal: ${proposalId}, Time: ${timeSpentSeconds}s`);
     console.log(`🌐 IP: ${ipAddress}, Session: ${sessionId}, Referrer: ${referrer}`);
+    console.log(`📨 [TRACK-VIEW] Full body:`, JSON.stringify(body));
 
     if (!proposalId) {
       return new Response(JSON.stringify({ error: 'proposalId required' }), {
@@ -87,36 +89,50 @@ serve(async (req) => {
     }
 
     if (action === 'enter') {
-      // Obter geolocalização do IP (em background para não bloquear)
-      const geoData = await getGeoLocation(ipAddress);
+      console.log('🚀 [ENTER] Iniciando registro de visualização...');
       
-      console.log('📍 Geolocalização:', geoData);
+      // Obter geolocalização do IP com tratamento de erro isolado
+      let geoData = null;
+      try {
+        geoData = await getGeoLocation(ipAddress);
+        console.log('📍 [GEO] Geolocalização obtida:', JSON.stringify(geoData));
+      } catch (geoError) {
+        console.warn('⚠️ [GEO] Falha na geolocalização, continuando sem:', geoError);
+      }
+
+      // Preparar dados para inserção
+      const insertData = {
+        proposal_id: proposalId,
+        device_type: deviceType || 'unknown',
+        user_agent: userAgent || null,
+        time_spent_seconds: 0,
+        // Campos de rastreamento
+        ip_address: ipAddress,
+        city: geoData?.city || null,
+        region: geoData?.region || null,
+        country: geoData?.country || null,
+        country_code: geoData?.country_code || null,
+        latitude: geoData?.latitude || null,
+        longitude: geoData?.longitude || null,
+        timezone: geoData?.timezone || null,
+        isp: geoData?.isp || null,
+        fingerprint: fingerprint || null,
+        session_id: sessionId || null,
+        referrer_url: referrer || null,
+      };
+      
+      console.log('💾 [INSERT] Dados a inserir:', JSON.stringify(insertData));
 
       // Register new view with full tracking data
-      const { error: insertError } = await supabase
+      const { data: insertedData, error: insertError } = await supabase
         .from('proposal_views')
-        .insert({
-          proposal_id: proposalId,
-          device_type: deviceType || 'unknown',
-          user_agent: userAgent || null,
-          time_spent_seconds: 0,
-          // Novos campos de rastreamento
-          ip_address: ipAddress,
-          city: geoData?.city || null,
-          region: geoData?.region || null,
-          country: geoData?.country || null,
-          country_code: geoData?.country_code || null,
-          latitude: geoData?.latitude || null,
-          longitude: geoData?.longitude || null,
-          timezone: geoData?.timezone || null,
-          isp: geoData?.isp || null,
-          fingerprint: fingerprint || null,
-          session_id: sessionId || null,
-          referrer_url: referrer || null,
-        });
+        .insert(insertData)
+        .select();
 
       if (insertError) {
-        console.error('❌ Error inserting view:', insertError);
+        console.error('❌ [INSERT] ERRO:', JSON.stringify(insertError));
+      } else {
+        console.log('✅ [INSERT] Sucesso! ID:', insertedData?.[0]?.id);
       }
 
       // Update proposal counters AND status
