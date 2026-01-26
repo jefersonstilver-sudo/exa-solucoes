@@ -672,25 +672,17 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
           background: #fff;
         }
         
-        /* TEMPLATE OFICIAL (igual ao preview de propostas):
-           cabeçalho branco + logo oficial centralizada + borda inferior vermelha 3px */
-        .header {
-          width: 100%;
-          background: #ffffff;
-          color: #1a1a1a;
-          padding: 20px 0;
+        /* TEMPLATE OFICIAL (igual ao LiveContractPreview):
+           cabeçalho full-width com imagem oficial EXA */
+        .header-container {
+          width: calc(100% + 40px);
           margin: -15px -20px 25px -20px;
-          text-align: center;
-          border-radius: 0;
-          border-bottom: 3px solid #8B1A1A;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          display: block;
         }
         
-        .header-logo {
-          max-height: 55px;
-          width: auto;
+        .header-image {
+          width: 100%;
+          height: auto;
           display: block;
         }
         
@@ -1082,12 +1074,12 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
       </style>
     </head>
     <body>
-      <!-- HEADER COM GRADIENTE EXA -->
-      <div class="header">
+      <!-- HEADER OFICIAL EXA - Full Width -->
+      <div class="header-container">
         <img
-          class="header-logo"
-          src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0"
-          alt="EXA Mídia"
+          class="header-image"
+          src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png"
+          alt="EXA Header"
           crossorigin="anonymous"
         />
       </div>

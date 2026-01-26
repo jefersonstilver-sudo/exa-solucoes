@@ -47,52 +47,41 @@ const ComodatoTemplate: React.FC<ComodatoTemplateProps> = ({ data }) => {
     }
   };
 
-  const ExaLogo = () => (
-    <div className="flex items-center gap-3">
-      <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{stopColor: '#ffffff', stopOpacity: 1}} />
-            <stop offset="100%" style={{stopColor: '#f0f0f0', stopOpacity: 1}} />
-          </linearGradient>
-        </defs>
-        <rect x="5" y="5" width="90" height="90" rx="15" fill="url(#logoGrad)" stroke="#8B1A1A" strokeWidth="3"/>
-        <text x="50" y="65" textAnchor="middle" fontFamily="Arial Black, sans-serif" fontSize="38" fontWeight="900" fill="#8B1A1A">EXA</text>
-      </svg>
-      <div>
-        <h1 className="text-xl font-bold tracking-wide">EXA MÍDIA</h1>
-        <p className="text-red-100 text-xs mt-0.5">Soluções Digitais em Elevadores</p>
-      </div>
-    </div>
-  );
+  // URL oficial do cabeçalho EXA
+  const EXA_CONTRACT_HEADER_URL = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png";
 
   return (
-    <div className="p-8 bg-white text-gray-900 font-serif text-sm leading-relaxed">
-      {/* Header EXA com Logo */}
-      <div className="bg-gradient-to-r from-[#8B1A1A] to-[#A52020] text-white p-6 -m-8 mb-8 rounded-t-lg">
-        <div className="flex items-center justify-between">
-          <ExaLogo />
-          <div className="text-right">
-            <p className="text-sm font-semibold">CONTRATO DE COMODATO</p>
-            {data.numero_contrato && (
-              <p className="text-xs text-red-100 mt-1">Nº {data.numero_contrato}</p>
-            )}
-            <span className="inline-block mt-2 px-2 py-0.5 bg-white/20 text-white text-[10px] font-medium rounded">
-              EQUIPAMENTO DIGITAL
-            </span>
-          </div>
-        </div>
+    <div className="bg-white text-gray-900 font-serif text-sm leading-relaxed">
+      {/* Header Oficial EXA - Full Width */}
+      <div style={{
+        width: 'calc(100% + 64px)',
+        margin: '-32px -32px 24px -32px',
+        display: 'block'
+      }}>
+        <img 
+          src={EXA_CONTRACT_HEADER_URL} 
+          alt="EXA Header" 
+          style={{ width: '100%', height: 'auto', display: 'block' }}
+          crossOrigin="anonymous"
+        />
       </div>
 
-      {/* Título */}
-      <div className="text-center mb-8">
-        <h1 className="text-lg font-bold uppercase tracking-wide">
-          Contrato de Comodato de Equipamento Digital
-        </h1>
-        <p className="text-gray-600 text-sm mt-1">
-          Empréstimo Gratuito de Painel Digital para Publicidade
-        </p>
-      </div>
+      {/* Container com padding */}
+      <div className="px-8">
+        {/* Título */}
+        <div className="text-center mb-8">
+          <h1 className="text-lg font-bold uppercase tracking-wide">
+            Contrato de Comodato de Equipamento Digital
+          </h1>
+          {data.numero_contrato && (
+            <p className="text-gray-600 text-sm mt-1">
+              Contrato nº {data.numero_contrato}
+            </p>
+          )}
+          <p className="text-gray-500 text-xs mt-1">
+            Empréstimo Gratuito de Painel Digital para Publicidade
+          </p>
+        </div>
 
       {/* Partes */}
       <div className="mb-6 space-y-4">
@@ -313,9 +302,10 @@ const ComodatoTemplate: React.FC<ComodatoTemplateProps> = ({ data }) => {
           <div className="border-t border-gray-300 pt-2 mx-8">
             <p className="text-sm text-gray-600">Testemunha 2</p>
             <p className="text-xs text-gray-500">Nome: _______________________</p>
-            <p className="text-xs text-gray-500">CPF: _________________________</p>
+          <p className="text-xs text-gray-500">CPF: _________________________</p>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
