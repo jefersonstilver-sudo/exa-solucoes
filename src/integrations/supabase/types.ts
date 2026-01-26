@@ -10892,29 +10892,65 @@ export type Database = {
       }
       proposal_views: {
         Row: {
+          city: string | null
+          country: string | null
+          country_code: string | null
           created_at: string | null
           device_type: string | null
+          fingerprint: string | null
           id: string
+          ip_address: string | null
+          isp: string | null
+          latitude: number | null
+          longitude: number | null
           proposal_id: string
+          referrer_url: string | null
+          region: string | null
+          session_id: string | null
           time_spent_seconds: number | null
+          timezone: string | null
           user_agent: string | null
           viewed_at: string | null
         }
         Insert: {
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
           created_at?: string | null
           device_type?: string | null
+          fingerprint?: string | null
           id?: string
+          ip_address?: string | null
+          isp?: string | null
+          latitude?: number | null
+          longitude?: number | null
           proposal_id: string
+          referrer_url?: string | null
+          region?: string | null
+          session_id?: string | null
           time_spent_seconds?: number | null
+          timezone?: string | null
           user_agent?: string | null
           viewed_at?: string | null
         }
         Update: {
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
           created_at?: string | null
           device_type?: string | null
+          fingerprint?: string | null
           id?: string
+          ip_address?: string | null
+          isp?: string | null
+          latitude?: number | null
+          longitude?: number | null
           proposal_id?: string
+          referrer_url?: string | null
+          region?: string | null
+          session_id?: string | null
           time_spent_seconds?: number | null
+          timezone?: string | null
           user_agent?: string | null
           viewed_at?: string | null
         }

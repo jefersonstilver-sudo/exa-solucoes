@@ -160,22 +160,36 @@ const PropostaPublicaPage = () => {
   const pageLoadTime = React.useRef<number>(Date.now());
   const lastSentTime = React.useRef<number>(0);
   
-    // Register view on mount and heartbeat every 15 seconds
+  // Gerar session ID único para esta visita
+  const getSessionId = React.useCallback(() => {
+    const storageKey = 'pv_session_' + id;
+    const existing = sessionStorage.getItem(storageKey);
+    if (existing) return existing;
+    const newId = crypto.randomUUID();
+    sessionStorage.setItem(storageKey, newId);
+    return newId;
+  }, [id]);
+  
+  // Register view on mount and heartbeat every 15 seconds
   useEffect(() => {
     if (!id) return;
     
     const deviceType = /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+    const referrer = document.referrer || 'direct';
+    const sessionId = getSessionId();
     
-    // Register view entry ONCE
+    // Register view entry ONCE with full tracking data
     supabase.functions.invoke('track-proposal-view', {
       body: {
         proposalId: id,
         action: 'enter',
         deviceType,
-        userAgent: navigator.userAgent
+        userAgent: navigator.userAgent,
+        sessionId,
+        referrer
       }
     }).then(() => {
-      console.log('✅ View registered');
+      console.log('✅ View registered with session:', sessionId);
     }).catch(err => console.log('Track error:', err));
     
     // Heartbeat: send time every 15 seconds (works on mobile!)
@@ -188,7 +202,8 @@ const PropostaPublicaPage = () => {
           body: { 
             proposalId: id, 
             action: 'heartbeat', 
-            timeSpentSeconds: incrementalTime 
+            timeSpentSeconds: incrementalTime,
+            sessionId
           }
         }).then(() => {
           console.log(`⏱️ Heartbeat: +${incrementalTime}s`);
@@ -206,11 +221,12 @@ const PropostaPublicaPage = () => {
       const leaveData = JSON.stringify({ 
         proposalId: id, 
         action: 'leave', 
-        timeSpentSeconds: remaining 
+        timeSpentSeconds: remaining,
+        sessionId
       });
       
       navigator.sendBeacon?.(
-        `${import.meta.env.VITE_SUPABASE_URL || 'https://aakenoljsycyrcrchgxj.supabase.co'}/functions/v1/track-proposal-view`,
+        `https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/track-proposal-view`,
         new Blob([leaveData], { type: 'application/json' })
       );
     };
@@ -234,7 +250,7 @@ const PropostaPublicaPage = () => {
       const remaining = finalTime - lastSentTime.current;
       if (remaining > 0) {
         supabase.functions.invoke('track-proposal-view', {
-          body: { proposalId: id, action: 'leave', timeSpentSeconds: remaining }
+          body: { proposalId: id, action: 'leave', timeSpentSeconds: remaining, sessionId }
         }).catch(() => {});
       }
     };

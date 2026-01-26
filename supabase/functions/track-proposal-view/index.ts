@@ -6,6 +6,58 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Função para obter geolocalização do IP
+async function getGeoLocation(ip: string): Promise<any> {
+  if (!ip || ip === 'unknown' || ip === '::1' || ip === '127.0.0.1') {
+    return null;
+  }
+  
+  try {
+    // Tentar ipapi.co primeiro (mais preciso)
+    const response = await fetch(`https://ipapi.co/${ip}/json/`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (!data.error) {
+        return {
+          city: data.city || null,
+          region: data.region || null,
+          country: data.country_name || null,
+          country_code: data.country_code || null,
+          latitude: data.latitude || null,
+          longitude: data.longitude || null,
+          timezone: data.timezone || null,
+          isp: data.org || data.asn || null
+        };
+      }
+    }
+    
+    // Fallback: ip-api.com
+    const fallbackResponse = await fetch(`http://ip-api.com/json/${ip}?fields=status,city,regionName,country,countryCode,lat,lon,timezone,isp,org`);
+    if (fallbackResponse.ok) {
+      const data = await fallbackResponse.json();
+      if (data.status === 'success') {
+        return {
+          city: data.city || null,
+          region: data.regionName || null,
+          country: data.country || null,
+          country_code: data.countryCode || null,
+          latitude: data.lat || null,
+          longitude: data.lon || null,
+          timezone: data.timezone || null,
+          isp: data.isp || data.org || null
+        };
+      }
+    }
+  } catch (error) {
+    console.warn('⚠️ Erro ao obter geolocalização:', error);
+  }
+  
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -16,9 +68,16 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { proposalId, timeSpentSeconds, deviceType, userAgent, action } = await req.json();
+    // Capturar IP real do usuário
+    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
+      || req.headers.get('x-real-ip') 
+      || req.headers.get('cf-connecting-ip')
+      || 'unknown';
+
+    const { proposalId, timeSpentSeconds, deviceType, userAgent, action, sessionId, referrer, fingerprint } = await req.json();
 
     console.log(`📊 [TRACK-VIEW] Action: ${action}, Proposal: ${proposalId}, Time: ${timeSpentSeconds}s`);
+    console.log(`🌐 IP: ${ipAddress}, Session: ${sessionId}, Referrer: ${referrer}`);
 
     if (!proposalId) {
       return new Response(JSON.stringify({ error: 'proposalId required' }), {
@@ -28,7 +87,12 @@ serve(async (req) => {
     }
 
     if (action === 'enter') {
-      // Register new view
+      // Obter geolocalização do IP (em background para não bloquear)
+      const geoData = await getGeoLocation(ipAddress);
+      
+      console.log('📍 Geolocalização:', geoData);
+
+      // Register new view with full tracking data
       const { error: insertError } = await supabase
         .from('proposal_views')
         .insert({
@@ -36,6 +100,19 @@ serve(async (req) => {
           device_type: deviceType || 'unknown',
           user_agent: userAgent || null,
           time_spent_seconds: 0,
+          // Novos campos de rastreamento
+          ip_address: ipAddress,
+          city: geoData?.city || null,
+          region: geoData?.region || null,
+          country: geoData?.country || null,
+          country_code: geoData?.country_code || null,
+          latitude: geoData?.latitude || null,
+          longitude: geoData?.longitude || null,
+          timezone: geoData?.timezone || null,
+          isp: geoData?.isp || null,
+          fingerprint: fingerprint || null,
+          session_id: sessionId || null,
+          referrer_url: referrer || null,
         });
 
       if (insertError) {
@@ -68,13 +145,17 @@ serve(async (req) => {
         updates.status = 'visualizando';
         console.log('📊 Status atualizado para: visualizando');
         
-        // Registrar log de visualização
+        // Registrar log de visualização com dados de geolocalização
         await supabase.from('proposal_logs').insert({
           proposal_id: proposalId,
           action: 'visualizando',
           details: {
             device_type: deviceType,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            ip_address: ipAddress,
+            city: geoData?.city,
+            country: geoData?.country,
+            session_id: sessionId
           }
         });
       }
@@ -96,6 +177,9 @@ serve(async (req) => {
             metadata: {
               viewCount: newViewCount,
               deviceType,
+              ipAddress,
+              city: geoData?.city,
+              country: geoData?.country
             }
           }
         });
