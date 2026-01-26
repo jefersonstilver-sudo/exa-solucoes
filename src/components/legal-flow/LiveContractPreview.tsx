@@ -5,8 +5,8 @@ import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-// Logo EXA oficial - PADRÃO ÚNICO PARA TODOS OS CONTRATOS (mesma URL da home)
-const EXA_LOGO_URL = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0";
+// Header EXA oficial - IMAGEM COMPLETA COM FUNDO VERMELHO
+import exaContractHeader from '@/assets/exa-contract-header.png';
 
 interface LiveContractPreviewProps {
   data: LegalFlowData;
@@ -59,23 +59,17 @@ const getNumeroExtenso = (num: number) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const styles = {
-  // HEADER CORPORATIVO EXA — Fundo branco + borda inferior vermelha 3px
+  // HEADER CORPORATIVO EXA — Imagem full-width com fundo vermelho gradiente
   // Margin negativa para "quebrar" o padding do body e ocupar 100% da largura
   header: {
     width: 'calc(100% + 40px)',
-    background: '#ffffff',
-    padding: '20px 0',
     margin: '-15px -20px 25px -20px',
-    textAlign: 'center' as const,
-    borderBottom: '3px solid #8B1A1A',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    display: 'block',
   },
-  // Logo imagem oficial
-  headerLogo: {
-    maxHeight: '55px',
-    width: 'auto',
+  // Header imagem oficial (full-width)
+  headerImage: {
+    width: '100%',
+    height: 'auto',
     display: 'block',
   },
   // Título do contrato - SEM borda azul (conforme PDF oficial)
@@ -321,15 +315,13 @@ export function LiveContractPreview({
           `}</style>
 
           {/* ═══════════════════════════════════════════════════════════════════
-              CABEÇALHO CORPORATIVO EXA — CLONE 100% DO TEMPLATE OFICIAL
-              Fundo branco + logo imagem oficial + borda vermelha 3px
+              CABEÇALHO CORPORATIVO EXA — IMAGEM FULL-WIDTH COM FUNDO VERMELHO
           ═══════════════════════════════════════════════════════════════════ */}
           <div className="no-break" style={styles.header}>
             <img
-              style={styles.headerLogo}
-              src={EXA_LOGO_URL}
-              alt="EXA Publicidade Inteligente - Painéis Digitais para Elevadores"
-              crossOrigin="anonymous"
+              style={styles.headerImage}
+              src={exaContractHeader}
+              alt="EXA - Ecossistema de Mídia e Tecnologia"
             />
           </div>
 
