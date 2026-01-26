@@ -15,23 +15,29 @@ import { LiveContractPreview } from '@/components/legal-flow/LiveContractPreview
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, FileText } from 'lucide-react';
 
-// Scenario detection patterns
+// Scenario detection patterns - REFINED to avoid false positives
+// REGRA: NÃO sobrescreve tipo se já definido pelo usuário
 const SCENARIO_PATTERNS = {
   portal_cidade: {
     pattern: /portal\s*(da|de)?\s*cidade/i,
     tipo: 'permuta',
     suggestion: 'Detectei cenário "Portal da Cidade". Incluir gatilho de liberação de banner após 50 telas?',
-    gatilho: { condicao: 'Atingir 50 telas instaladas', acao: 'Liberar espaço de banner no portal', prazo: '30 dias após atingimento' }
+    gatilho: { condicao: 'Atingir 50 telas instaladas', acao: 'Liberar espaço de banner no portal', prazo: '30 dias após atingimento' },
+    requiresConfirmation: true,
   },
-  secovi: {
-    pattern: /secovi|sindicato|associação/i,
-    tipo: 'parceria_pj',
-    suggestion: 'Detectei parceria institucional tipo SECOVI. Configurar como Cooperação Institucional com troca de logos?',
+  // SECOVI/Sindicato - NÃO força tipo, pergunta sobre exclusividade
+  secovi_institucional: {
+    pattern: /secovi(?!\s*(da|de)\s*habitação)/i, // SECOVI sem "da Habitação" no nome jurídico
+    tipo: null, // NÃO sobrescreve - mantém tipo escolhido pelo usuário
+    suggestion: 'Parceria institucional detectada. Incluir cláusula de exclusividade de marca?',
+    requiresConfirmation: true,
   },
+  // Comodato - Pattern mais restritivo (exclui "Sindicato da Habitação")
   comodato: {
-    pattern: /pietro\s*angelo|síndico|comodato|elevador/i,
+    pattern: /(?<!sindicato\s*(da|de)?\s*)síndico|comodato|termo\s*de\s*cessão/i,
     tipo: 'comodato',
     suggestion: 'Detectei cenário de Comodato. Aplicar cláusula de isenção de energia e responsabilidade civil?',
+    requiresConfirmation: true,
   }
 };
 
@@ -123,6 +129,13 @@ export default function JuridicoWorkspacePage() {
   // State history for undo functionality
   const [stateHistory, setStateHistory] = useState<LegalFlowData[]>([]);
   const [previewKey, setPreviewKey] = useState(0); // Force re-render key
+  
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // CONTEXT LOCKS - Prevent scenario patterns from overwriting user choices
+  // ═══════════════════════════════════════════════════════════════════════════════
+  const [tipoLocked, setTipoLocked] = useState(false); // Lock when user selects type
+  const [scenarioConfirmed, setScenarioConfirmed] = useState(false); // Disable re-detection after confirm
+  const [confirmedScenarios, setConfirmedScenarios] = useState<Set<string>>(new Set()); // Track confirmed scenarios
 
   // Calculate health with exact algorithm
   const health = {
@@ -165,10 +178,23 @@ export default function JuridicoWorkspacePage() {
     const sanitizedContent = sanitizeToIndexa2026(content);
     addUserMessage(sanitizedContent);
 
-    // Detect scenario
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // SCENARIO DETECTION - Com proteção de contexto
+    // ═══════════════════════════════════════════════════════════════════════════════
     const scenario = detectScenario(sanitizedContent);
-    if (scenario) {
-      updateData({ tipo_contrato: scenario.tipo });
+    
+    // REGRA 1: Só detecta cenário se NÃO confirmou antes e NÃO tem CNPJ
+    // REGRA 2: Só sobrescreve tipo se NÃO estiver travado E cenário define tipo
+    const shouldShowScenario = scenario && 
+      !scenarioConfirmed && 
+      !confirmedScenarios.has(scenario.key) &&
+      !data.parceiro_documento; // Não sugere depois de ter CNPJ
+
+    if (shouldShowScenario) {
+      // Só atualiza tipo se NÃO estiver travado E cenário define tipo (não null)
+      if (!tipoLocked && scenario.tipo) {
+        updateData({ tipo_contrato: scenario.tipo });
+      }
       
       // If has gatilho, add it
       if ('gatilho' in scenario && scenario.gatilho) {
@@ -230,12 +256,16 @@ export default function JuridicoWorkspacePage() {
     } catch (error) {
       addAssistantMessage('Desculpe, ocorreu um erro ao processar. Pode tentar novamente?');
     }
-  }, [addUserMessage, addAssistantMessage, processWithAI, updateData, data]);
+  }, [addUserMessage, addAssistantMessage, processWithAI, updateData, data, tipoLocked, scenarioConfirmed, confirmedScenarios]);
 
   // Handle action click
   const handleActionClick = useCallback((value: string) => {
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // TYPE SELECTION - Lock tipo when user explicitly chooses
+    // ═══════════════════════════════════════════════════════════════════════════════
     if (value === 'anunciante' || value === 'comodato' || value === 'permuta') {
       updateData({ tipo_contrato: value });
+      setTipoLocked(true); // ⚡ LOCK! User made explicit choice
       addUserMessage(`Vou criar um contrato de ${value}`);
       
       setTimeout(() => {
@@ -249,7 +279,14 @@ export default function JuridicoWorkspacePage() {
       return;
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // SCENARIO CONFIRMATION - Mark as confirmed to prevent loops
+    // ═══════════════════════════════════════════════════════════════════════════════
     if (value.startsWith('confirm_')) {
+      const scenarioKey = value.replace('confirm_', '');
+      setConfirmedScenarios(prev => new Set([...prev, scenarioKey]));
+      setScenarioConfirmed(true); // Disable future scenario detection
+      
       addUserMessage('Sim, pode incluir');
       setTimeout(() => {
         addAssistantMessage('✓ Incluído! O que mais preciso saber sobre este contrato?');
@@ -258,6 +295,7 @@ export default function JuridicoWorkspacePage() {
     }
 
     if (value === 'continue') {
+      setScenarioConfirmed(true); // Also disable after "continue"
       addUserMessage('Não, pode continuar');
       setTimeout(() => {
         addAssistantMessage('Ok! Me conte mais sobre o contrato.');
