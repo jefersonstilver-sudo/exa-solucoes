@@ -1,116 +1,82 @@
 
-# Plano: Sistema de Rastreamento Avançado de Visualizações
+# Diagnóstico: Sistema de Rastreamento de Visualizações Não Está Funcionando
 
-## Objetivo
-Adicionar captura de **IP**, **geolocalização** e **fingerprint** às visualizações de propostas para identificar fraudes e acessos internos.
+## Problemas Identificados
 
----
+Após análise completa dos logs, banco de dados e código, identifiquei **3 problemas principais**:
 
-## Arquitetura da Solução
+### 1. Edge Function Não Foi Redeployed
+- Os logs mostram `Session: undefined, Referrer: undefined`
+- O código atualizado captura IP e faz geolocalização, mas os dados não estão chegando ao banco
+- **TODAS as visualizações recentes** (até 22:27 de hoje) têm `ip_address`, `city`, `country`, `session_id`, `referrer_url` como NULL
+- A Edge Function precisa ser redeployed para aplicar as alterações
 
-### 1. Atualizar Schema da Tabela `proposal_views`
+### 2. Logs de "enter" Ausentes
+- Não há logs de action "enter" (onde os dados de IP e geo são capturados)
+- Apenas logs de "heartbeat" aparecem
+- Isso sugere que o INSERT inicial está falhando silenciosamente
 
-Novos campos a adicionar:
-```sql
-ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS ip_address TEXT;
-ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS city TEXT;
-ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS region TEXT;
-ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS country TEXT;
-ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS country_code TEXT;
-ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS latitude DECIMAL(10,7);
-ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS longitude DECIMAL(10,7);
-ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS timezone TEXT;
-ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS isp TEXT;
-ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS fingerprint TEXT;
-ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS session_id TEXT;
-ALTER TABLE proposal_views ADD COLUMN IF NOT EXISTS referrer_url TEXT;
-```
+### 3. Visualizações Históricas Sem Dados
+- As 4 visualizações da proposta `da6bdf5a-c3fc-434d-901d-3405560e1f1a` foram criadas em 23/01/2026 (antes da atualização)
+- Esses registros nunca terão os novos campos preenchidos
 
 ---
 
-### 2. Atualizar Edge Function `track-proposal-view`
+## Plano de Correção
 
-**Captura de IP real do usuário:**
-```typescript
-const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
-  || req.headers.get('x-real-ip') 
-  || req.headers.get('cf-connecting-ip')
-  || 'unknown';
-```
+### Etapa 1: Redeploy da Edge Function
+Forçar o deploy da Edge Function `track-proposal-view` para garantir que a versão mais recente com captura de IP/Geo está ativa.
 
-**Geolocalização via API (ipapi.co):**
-```typescript
-const geoResponse = await fetch(`https://ipapi.co/${ipAddress}/json/`);
-const geoData = await geoResponse.json();
-// Retorna: city, region, country_name, latitude, longitude, timezone, org
-```
+### Etapa 2: Adicionar Logs de Debug na Edge Function
+Adicionar mais logs para rastrear:
+- Se a requisição está chegando corretamente
+- Se a geolocalização está sendo chamada
+- Se o INSERT está funcionando ou falhando
 
-**Persistir na inserção:**
-```typescript
-const { error: insertError } = await supabase
-  .from('proposal_views')
-  .insert({
-    proposal_id: proposalId,
-    device_type: deviceType || 'unknown',
-    user_agent: userAgent || null,
-    ip_address: ipAddress,
-    city: geoData?.city,
-    region: geoData?.region,
-    country: geoData?.country_name,
-    country_code: geoData?.country_code,
-    latitude: geoData?.latitude,
-    longitude: geoData?.longitude,
-    timezone: geoData?.timezone,
-    isp: geoData?.org,
-    fingerprint: fingerprint || null,
-    session_id: sessionId || null,
-    referrer_url: referrer || null,
-    time_spent_seconds: 0,
-  });
-```
+### Etapa 3: Testar com Nova Visualização
+Após o deploy, acessar a proposta pública e verificar:
+- Logs da Edge Function
+- Dados salvos no banco
+
+### Etapa 4: Melhorar Tratamento de Erros
+- Garantir que erros de geolocalização não bloqueiem o INSERT
+- Adicionar fallback se a API de geo falhar
 
 ---
 
-### 3. Atualizar Frontend `PropostaPublicaPage.tsx`
+## Correções Técnicas a Implementar
 
-Enviar dados adicionais na chamada de tracking:
+### Edge Function (`track-proposal-view/index.ts`)
+
 ```typescript
-// Gerar session ID único
-const sessionId = sessionStorage.getItem('pv_session') || crypto.randomUUID();
-sessionStorage.setItem('pv_session', sessionId);
+// 1. Adicionar mais logs no início
+console.log(`📨 [TRACK-VIEW] Full request body:`, JSON.stringify({ proposalId, action, sessionId, referrer, deviceType }));
 
-// Referrer
-const referrer = document.referrer || 'direct';
+// 2. Mover geolocalização para try/catch separado
+let geoData = null;
+try {
+  geoData = await getGeoLocation(ipAddress);
+  console.log('📍 Geolocalização obtida:', JSON.stringify(geoData));
+} catch (geoError) {
+  console.warn('⚠️ Falha na geolocalização, continuando sem:', geoError);
+}
 
-// Enviar na requisição
-supabase.functions.invoke('track-proposal-view', {
-  body: {
-    proposalId: id,
-    action: 'enter',
-    deviceType,
-    userAgent: navigator.userAgent,
-    sessionId,
-    referrer,
-    // fingerprint pode ser adicionado com biblioteca como FingerprintJS
-  }
-});
+// 3. Logar o objeto de insert antes de inserir
+console.log('💾 [INSERT] Dados a inserir:', JSON.stringify({
+  proposal_id: proposalId,
+  ip_address: ipAddress,
+  city: geoData?.city || null,
+  session_id: sessionId || null,
+  referrer_url: referrer || null,
+}));
+
+// 4. Logar resultado do insert
+if (insertError) {
+  console.error('❌ ERRO NO INSERT:', JSON.stringify(insertError));
+} else {
+  console.log('✅ INSERT realizado com sucesso');
+}
 ```
-
----
-
-### 4. Atualizar UI de Detalhes da Proposta
-
-Adicionar seção expandida com informações de rastreamento:
-
-**Card "Análise de Visualizações":**
-- 🌍 **Países de Origem**: Lista com bandeiras
-- 📍 **Cidades**: Mapa ou lista das localizações
-- 🖥️ **IPs Únicos**: Contagem e lista
-- 🕐 **Sessões Únicas**: Baseado em session_id
-- ⚠️ **Alertas de Fraude**:
-  - IPs internos da empresa (definir whitelist)
-  - Múltiplos acessos do mesmo IP em curto período
-  - Tempo de sessão anormalmente alto
 
 ---
 
@@ -118,62 +84,22 @@ Adicionar seção expandida com informações de rastreamento:
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `supabase/migrations/...` | Novo schema com campos de geolocalização |
-| `supabase/functions/track-proposal-view/index.ts` | Captura de IP e geolocalização |
-| `src/pages/public/PropostaPublicaPage.tsx` | Enviar sessionId e referrer |
-| `src/pages/admin/proposals/PropostaDetalhesPage.tsx` | Nova seção de análise de visualizações |
+| `supabase/functions/track-proposal-view/index.ts` | Adicionar logs extras e melhorar tratamento de erros |
 
 ---
 
-## Informações que Você Terá Após Implementação
+## Resultado Esperado
 
-| Dado | Exemplo |
-|------|---------|
-| IP | `177.52.xxx.xxx` |
-| País | `Brasil` 🇧🇷 |
-| Cidade | `São Paulo, SP` |
-| ISP/Org | `Vivo Fibra` |
-| Timezone | `America/Sao_Paulo` |
-| Dispositivo | `Desktop - Chrome 143` |
-| Tempo Ativo | `18min 32s` |
-| Sessão | `abc123-...` (agrupamento) |
-| Origem | `wa.me` (veio do WhatsApp) |
+Após a implementação:
+1. **Novas visualizações** terão IP, cidade, país, ISP, session_id e referrer preenchidos
+2. **Logs detalhados** aparecerão na Edge Function mostrando cada etapa
+3. **Alertas de fraude** funcionarão corretamente (IPs internos, sessões longas)
+4. **Visualizações antigas** continuarão como "Localização desconhecida" (dados históricos)
 
 ---
 
-## Detecção de Fraude
+## Observação Sobre Dados Históricos
 
-**Alertas automáticos para:**
-1. ⚠️ IP da empresa (whitelist configurável)
-2. ⚠️ Mesmo IP com múltiplas visualizações em < 1h
-3. ⚠️ Tempo de sessão > 1 hora (possivelmente página aberta sem interação)
-4. ⚠️ User-Agent de bot ou automatizado
+As 4 visualizações existentes foram criadas **antes** da atualização do sistema de rastreamento. Esses registros não podem ser enriquecidos retroativamente pois não temos os IPs originais.
 
----
-
-## Resultado Visual Esperado
-
-Na página de detalhes da proposta, você verá algo como:
-
-```
-┌─────────────────────────────────────────────────┐
-│  📊 Análise de Visualizações (12 acessos)      │
-├─────────────────────────────────────────────────┤
-│  🌍 Países: Brasil (10), Portugal (2)          │
-│  📍 Cidades: São Paulo (6), Rio (3), Lisboa (2)│
-│  🖥️ IPs Únicos: 4                              │
-│  ⏱️ Tempo Total: 2h 14min                       │
-├─────────────────────────────────────────────────┤
-│  ⚠️ ALERTAS                                     │
-│  • 3 acessos do IP 192.168.xxx (interno?)      │
-│  • Sessão #abc ficou 8h aberta                 │
-└─────────────────────────────────────────────────┘
-```
-
----
-
-## Considerações de Privacidade (LGPD)
-
-- IPs são dados pessoais - armazenar com justificativa legítima (segurança/fraude)
-- Considerar anonimização após 90 dias
-- Informar no rodapé da proposta que acessos são monitorados
+Somente **novas visualizações** a partir do deploy terão os dados completos.
