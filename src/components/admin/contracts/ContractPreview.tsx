@@ -46,7 +46,8 @@ interface ContractPreviewProps {
   onEdit?: () => void;
 }
 
-const EXA_LOGO_URL = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Exa%20sozinha.png";
+// URL oficial do cabeçalho EXA (imagem full-width)
+const EXA_CONTRACT_HEADER_URL = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png";
 
 const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, onEdit }) => {
   const { settings: companySettings, loading: loadingCompany } = useCompanySettings();
@@ -120,15 +121,23 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, on
       `}</style>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          CABEÇALHO COM LOGO
+          CABEÇALHO OFICIAL EXA - Full Width
       ═══════════════════════════════════════════════════════════════════ */}
-      <div className="contract-section" style={{ textAlign: 'center', marginBottom: '28px', borderBottom: '3px solid #8B1A1A', paddingBottom: '18px' }}>
+      <div style={{
+        width: 'calc(100% + 44mm)',
+        margin: '-18mm -22mm 15px -22mm',
+        display: 'block'
+      }}>
         <img 
-          src={EXA_LOGO_URL} 
-          alt="EXA Mídia" 
-          style={{ height: '55px', marginBottom: '14px' }}
+          src={EXA_CONTRACT_HEADER_URL} 
+          alt="EXA Header" 
+          style={{ width: '100%', height: 'auto', display: 'block' }}
           crossOrigin="anonymous"
         />
+      </div>
+
+      {/* Título do Contrato */}
+      <div className="contract-section" style={{ textAlign: 'center', marginBottom: '28px' }}>
         <h1 style={{ 
           fontSize: '16px', 
           fontWeight: '700', 

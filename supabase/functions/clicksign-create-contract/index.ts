@@ -906,71 +906,17 @@ function generateContractHtml(contrato: any, signatariosExa: any[], produtosExa:
           background: #ffffff;
         }
         
-        .header {
-          background: linear-gradient(135deg, #8B1A1A 0%, #A52020 50%, #C62828 100%);
-          color: white;
-          padding: 30px 40px;
-          margin-bottom: 30px;
-          border-radius: 0 0 20px 20px;
+        /* HEADER OFICIAL EXA - Full Width */
+        .header-container {
+          width: calc(100% + 80px);
+          margin: 0 -40px 30px -40px;
+          display: block;
         }
         
-        .header-content {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        
-        .logo-section {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-        }
-        
-        .logo-box {
-          width: 50px;
-          height: 50px;
-          background: rgba(255,255,255,0.95);
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 900;
-          font-size: 18px;
-          color: #8B1A1A;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        
-        .logo-text h1 {
-          font-size: 22px;
-          font-weight: 700;
-          letter-spacing: -0.5px;
-          margin-bottom: 2px;
-        }
-        
-        .logo-text p {
-          font-size: 11px;
-          opacity: 0.9;
-          font-weight: 400;
-        }
-        
-        .contract-badge {
-          text-align: right;
-        }
-        
-        .contract-badge .title {
-          font-size: 13px;
-          font-weight: 600;
-          opacity: 0.9;
-          margin-bottom: 5px;
-        }
-        
-        .contract-badge .number {
-          background: rgba(255,255,255,0.15);
-          padding: 8px 16px;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 700;
-          backdrop-filter: blur(10px);
+        .header-image {
+          width: 100%;
+          height: auto;
+          display: block;
         }
         
         .container {
@@ -1183,21 +1129,14 @@ function generateContractHtml(contrato: any, signatariosExa: any[], produtosExa:
       </style>
     </head>
     <body>
-      <!-- HEADER PROFISSIONAL IGUAL EMAIL BOAS-VINDAS -->
-      <div class="header">
-        <div class="header-content">
-          <div class="logo-section">
-            <div class="logo-box">EXA</div>
-            <div class="logo-text">
-              <h1>EXA MÍDIA</h1>
-              <p>Soluções Digitais em Elevadores</p>
-            </div>
-          </div>
-          <div class="contract-badge">
-            <div class="title">CONTRATO DE PUBLICIDADE</div>
-            <div class="number">Nº ${contrato.numero_contrato}</div>
-          </div>
-        </div>
+      <!-- HEADER OFICIAL EXA - Full Width -->
+      <div class="header-container">
+        <img
+          class="header-image"
+          src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png"
+          alt="EXA Header"
+          crossorigin="anonymous"
+        />
       </div>
       
       <div class="container">
@@ -1458,59 +1397,17 @@ function generateSindicoContractHtml(contrato: any, signatarioExa: any, dataAtua
           background: #ffffff;
         }
         
-        .header {
-          background: linear-gradient(135deg, #8B1A1A 0%, #A52020 50%, #C62828 100%);
-          color: white;
-          padding: 30px 40px;
-          margin-bottom: 30px;
-          border-radius: 0 0 20px 20px;
+        /* HEADER OFICIAL EXA - Full Width */
+        .header-container {
+          width: calc(100% + 80px);
+          margin: 0 -40px 30px -40px;
+          display: block;
         }
         
-        .header-content {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        
-        .logo-section {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-        }
-        
-        .logo-box {
-          width: 50px;
-          height: 50px;
-          background: rgba(255,255,255,0.95);
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 900;
-          font-size: 18px;
-          color: #8B1A1A;
-        }
-        
-        .logo-text h1 {
-          font-size: 22px;
-          font-weight: 700;
-        }
-        
-        .logo-text p {
-          font-size: 11px;
-          opacity: 0.9;
-        }
-        
-        .contract-badge {
-          text-align: right;
-        }
-        
-        .contract-badge .number {
-          background: rgba(255,255,255,0.15);
-          padding: 8px 16px;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 700;
+        .header-image {
+          width: 100%;
+          height: auto;
+          display: block;
         }
         
         .container {
@@ -1631,20 +1528,14 @@ function generateSindicoContractHtml(contrato: any, signatarioExa: any, dataAtua
       </style>
     </head>
     <body>
-      <div class="header">
-        <div class="header-content">
-          <div class="logo-section">
-            <div class="logo-box">EXA</div>
-            <div class="logo-text">
-              <h1>EXA MÍDIA</h1>
-              <p>Soluções Digitais em Elevadores</p>
-            </div>
-          </div>
-          <div class="contract-badge">
-            <div style="font-size: 13px; opacity: 0.9; margin-bottom: 5px;">CONTRATO DE COMODATO</div>
-            <div class="number">Nº ${contrato.numero_contrato}</div>
-          </div>
-        </div>
+      <!-- HEADER OFICIAL EXA - Full Width -->
+      <div class="header-container">
+        <img
+          class="header-image"
+          src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png"
+          alt="EXA Header"
+          crossorigin="anonymous"
+        />
       </div>
       
       <div class="container">
