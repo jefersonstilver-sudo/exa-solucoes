@@ -24,6 +24,7 @@ import { EditPaymentDialog } from '@/components/admin/proposals/EditPaymentDialo
 import { CCEmailsCard } from '@/components/admin/proposals/CCEmailsCard';
 import { AdminCloseProposalModal } from '@/components/admin/proposals/AdminCloseProposalModal';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
+import { ViewsAnalyticsCard } from '@/components/admin/proposals/ViewsAnalyticsCard';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +51,15 @@ interface ProposalView {
   user_agent: string | null;
   time_spent_seconds: number | null;
   viewed_at: string;
+  ip_address?: string | null;
+  city?: string | null;
+  region?: string | null;
+  country?: string | null;
+  country_code?: string | null;
+  isp?: string | null;
+  session_id?: string | null;
+  referrer_url?: string | null;
+  timezone?: string | null;
 }
 
 interface Installment {
@@ -118,7 +128,7 @@ const PropostaDetalhesPage = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from('proposal_views')
-        .select('*')
+        .select('*, ip_address, city, region, country, country_code, isp, session_id, referrer_url, timezone')
         .eq('proposal_id', id)
         .order('viewed_at', { ascending: false });
       return (data || []) as ProposalView[];
@@ -728,53 +738,19 @@ const PropostaDetalhesPage = () => {
           </Card>
         </motion.div>
 
-        {/* Engagement Metrics */}
+        {/* Views Analytics - Análise Avançada de Visualizações */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.35 }}
         >
-          <Card className="p-4 bg-white shadow-sm border-gray-100">
-            <div className="flex items-center gap-2 mb-3">
-              <Eye className="h-4 w-4 text-[#9C1E1E]" />
-              <h3 className="font-semibold text-sm text-gray-900">Engajamento do Cliente</h3>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center p-3 bg-gray-50 rounded-xl">
-                <Eye className="h-5 w-5 mx-auto text-purple-600 mb-1" />
-                <p className="text-xl font-bold text-gray-900">{proposal.view_count || 0}</p>
-                <p className="text-xs text-gray-500">Visualizações</p>
-              </div>
-              <div className="text-center p-3 bg-gray-50 rounded-xl">
-                <Clock className="h-5 w-5 mx-auto text-blue-600 mb-1" />
-                <p className="text-xl font-bold text-gray-900">{formatTimeSpent(proposal.total_time_spent_seconds)}</p>
-                <p className="text-xs text-gray-500">Tempo Total</p>
-              </div>
-              <div className="text-center p-3 bg-gray-50 rounded-xl">
-                <div className="flex justify-center gap-1 mb-1">
-                  {views.some(v => v.device_type === 'mobile') && <Smartphone className="h-4 w-4 text-gray-600" />}
-                  {views.some(v => v.device_type === 'desktop') && <Monitor className="h-4 w-4 text-gray-600" />}
-                </div>
-                <p className="text-xl font-bold text-gray-900">{views.length}</p>
-                <p className="text-xs text-gray-500">Sessões</p>
-              </div>
-            </div>
-            
-            {proposal.first_viewed_at && (
-              <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Primeira visita</span>
-                  <span className="font-medium">{format(new Date(proposal.first_viewed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
-                </div>
-                {proposal.last_viewed_at && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Última visita</span>
-                    <span className="font-medium">{format(new Date(proposal.last_viewed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </Card>
+          <ViewsAnalyticsCard 
+            views={views}
+            totalTimeSpent={proposal.total_time_spent_seconds || 0}
+            viewCount={proposal.view_count || 0}
+            firstViewedAt={proposal.first_viewed_at}
+            lastViewedAt={proposal.last_viewed_at}
+          />
         </motion.div>
 
         {/* CC Emails Card */}
