@@ -14,12 +14,15 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, CreditCard, Link2, Loader2, CheckCircle2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar, CreditCard, Link2, Loader2, CheckCircle2, CalendarClock, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/utils/format';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+
+type ModoAcao = 'pagar_agora' | 'agendar';
 
 interface ContaPagar {
   id: string;
@@ -52,8 +55,11 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
   conta,
   onSuccess
 }) => {
+  const [modoAcao, setModoAcao] = useState<ModoAcao>('pagar_agora');
   const [tipoPagamento, setTipoPagamento] = useState<'manual' | 'asaas'>('manual');
   const [dataPagamento, setDataPagamento] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [dataAgendada, setDataAgendada] = useState('');
+  const [autoPagar, setAutoPagar] = useState(false);
   const [observacao, setObservacao] = useState('');
   const [saidasAsaas, setSaidasAsaas] = useState<AsaasSaida[]>([]);
   const [selectedAsaasSaida, setSelectedAsaasSaida] = useState<string | null>(null);
@@ -93,7 +99,31 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
     try {
       const table = conta.tipo === 'fixa' ? 'despesas_fixas' : 'despesas_variaveis';
       
-      if (tipoPagamento === 'manual') {
+      // Modo Agendar
+      if (modoAcao === 'agendar') {
+        if (!dataAgendada) {
+          toast.error('Selecione a data para agendamento');
+          setSaving(false);
+          return;
+        }
+
+        const { error } = await (supabase as any)
+          .from(table)
+          .update({
+            status: 'agendado',
+            data_pagamento_agendado: dataAgendada,
+            auto_pagar_na_data: autoPagar,
+            observacao: observacao || null
+          })
+          .eq('id', conta.id);
+
+        if (error) throw error;
+        
+        toast.success(autoPagar 
+          ? `Pagamento agendado para ${format(new Date(dataAgendada), 'dd/MM/yyyy', { locale: ptBR })} (automático)`
+          : `Lembrete agendado para ${format(new Date(dataAgendada), 'dd/MM/yyyy', { locale: ptBR })}`
+        );
+      } else if (tipoPagamento === 'manual') {
         // Pagamento manual
         const { error } = await (supabase as any)
           .from(table)
@@ -101,6 +131,8 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
             status: 'pago',
             valor_pago: conta.valor_previsto,
             data_pagamento: dataPagamento,
+            data_pagamento_agendado: null,
+            auto_pagar_na_data: false,
             observacao: observacao || null
           })
           .eq('id', conta.id);
@@ -130,6 +162,8 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
             status: 'pago',
             valor_pago: conta.valor_previsto,
             data_pagamento: asaasSaida.data,
+            data_pagamento_agendado: null,
+            auto_pagar_na_data: false,
             asaas_saida_id: asaasSaida.id
           })
           .eq('id', conta.id);
@@ -175,8 +209,11 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
   };
 
   const resetForm = () => {
+    setModoAcao('pagar_agora');
     setTipoPagamento('manual');
     setDataPagamento(format(new Date(), 'yyyy-MM-dd'));
+    setDataAgendada('');
+    setAutoPagar(false);
     setObservacao('');
     setSelectedAsaasSaida(null);
   };
@@ -223,44 +260,128 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
             </div>
           </div>
 
-          {/* Tipo de pagamento */}
+          {/* Seleção de Ação: Pagar Agora vs Agendar */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Tipo de Pagamento</Label>
-            <RadioGroup
-              value={tipoPagamento}
-              onValueChange={(v) => setTipoPagamento(v as 'manual' | 'asaas')}
-              className="grid grid-cols-2 gap-3"
-            >
-              <Label
-                htmlFor="manual"
+            <Label className="text-sm font-medium">Ação</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div
+                onClick={() => setModoAcao('pagar_agora')}
                 className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                  tipoPagamento === 'manual'
+                  modoAcao === 'pagar_agora'
                     ? 'border-emerald-500 bg-emerald-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                <RadioGroupItem value="manual" id="manual" />
+                <CheckCircle2 className={`h-5 w-5 ${modoAcao === 'pagar_agora' ? 'text-emerald-600' : 'text-gray-400'}`} />
                 <div>
-                  <p className="font-medium text-sm">Pagamento Manual</p>
-                  <p className="text-xs text-gray-500">Registrar data e obs.</p>
+                  <p className="font-medium text-sm">Pagar Agora</p>
+                  <p className="text-xs text-gray-500">Registrar como pago</p>
                 </div>
-              </Label>
-              <Label
-                htmlFor="asaas"
+              </div>
+              <div
+                onClick={() => setModoAcao('agendar')}
                 className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                  tipoPagamento === 'asaas'
+                  modoAcao === 'agendar'
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                <RadioGroupItem value="asaas" id="asaas" />
+                <CalendarClock className={`h-5 w-5 ${modoAcao === 'agendar' ? 'text-blue-600' : 'text-gray-400'}`} />
                 <div>
-                  <p className="font-medium text-sm">Vincular ASAAS</p>
-                  <p className="text-xs text-gray-500">Conciliar saída</p>
+                  <p className="font-medium text-sm">Agendar</p>
+                  <p className="text-xs text-gray-500">Pagar em data futura</p>
                 </div>
-              </Label>
-            </RadioGroup>
+              </div>
+            </div>
           </div>
+
+          {/* Seção de Agendamento */}
+          {modoAcao === 'agendar' && (
+            <div className="space-y-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+              <div className="space-y-2">
+                <Label htmlFor="data-agendada" className="text-sm font-medium text-blue-700 flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  Data do Pagamento Agendado
+                </Label>
+                <Input
+                  id="data-agendada"
+                  type="date"
+                  value={dataAgendada}
+                  onChange={(e) => setDataAgendada(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="bg-white border-blue-200"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <Checkbox
+                    checked={autoPagar}
+                    onCheckedChange={(checked) => setAutoPagar(!!checked)}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-blue-700">
+                      Marcar como pago automaticamente
+                    </p>
+                    <p className="text-xs text-blue-600">
+                      O sistema marcará a conta como paga na data agendada.
+                    </p>
+                  </div>
+                </label>
+
+                {!autoPagar && (
+                  <div className="flex items-center gap-2 p-2 bg-amber-50 rounded-lg border border-amber-200">
+                    <Clock className="h-4 w-4 text-amber-600" />
+                    <p className="text-xs text-amber-700">
+                      Você receberá um lembrete na data para confirmar o pagamento.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tipo de pagamento - Só mostra se for Pagar Agora */}
+          {modoAcao === 'pagar_agora' && (
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Tipo de Pagamento</Label>
+              <RadioGroup
+                value={tipoPagamento}
+                onValueChange={(v) => setTipoPagamento(v as 'manual' | 'asaas')}
+                className="grid grid-cols-2 gap-3"
+              >
+                <Label
+                  htmlFor="manual"
+                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                    tipoPagamento === 'manual'
+                      ? 'border-emerald-500 bg-emerald-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <RadioGroupItem value="manual" id="manual" />
+                  <div>
+                    <p className="font-medium text-sm">Pagamento Manual</p>
+                    <p className="text-xs text-gray-500">Registrar data e obs.</p>
+                  </div>
+                </Label>
+                <Label
+                  htmlFor="asaas"
+                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                    tipoPagamento === 'asaas'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <RadioGroupItem value="asaas" id="asaas" />
+                  <div>
+                    <p className="font-medium text-sm">Vincular ASAAS</p>
+                    <p className="text-xs text-gray-500">Conciliar saída</p>
+                  </div>
+                </Label>
+              </RadioGroup>
+            </div>
+          )}
 
           {/* Campos do pagamento manual */}
           {tipoPagamento === 'manual' && (
@@ -364,6 +485,11 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Salvando...
+              </>
+            ) : modoAcao === 'agendar' ? (
+              <>
+                <CalendarClock className="h-4 w-4 mr-2" />
+                Agendar Pagamento
               </>
             ) : (
               <>

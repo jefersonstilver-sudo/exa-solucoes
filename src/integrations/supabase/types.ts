@@ -5243,6 +5243,7 @@ export type Database = {
         Row: {
           asaas_saida_id: string | null
           ativo: boolean | null
+          auto_pagar_na_data: boolean | null
           building_id: string | null
           categoria: string
           categoria_id: string | null
@@ -5251,16 +5252,27 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           data_pagamento: string | null
+          data_pagamento_agendado: string | null
           data_primeiro_lancamento: string | null
+          data_proximo_reajuste: string | null
           descricao: string
           dia_vencimento: number | null
+          dias_semana: string[] | null
           fornecedor_id: string | null
           id: string
+          intervalo_dias: number | null
+          lembrete_dias: number | null
           motivo_alteracao: string | null
           observacao: string | null
+          parcelas_pagas: number | null
           periodicidade: string
+          reajuste_percentual: number | null
+          reajuste_tipo: string | null
+          recorrencia_tipo: string | null
           responsavel_id: string | null
+          status: string | null
           subcategoria_id: string | null
+          total_parcelas: number | null
           updated_at: string | null
           updated_by: string | null
           valor: number
@@ -5269,6 +5281,7 @@ export type Database = {
         Insert: {
           asaas_saida_id?: string | null
           ativo?: boolean | null
+          auto_pagar_na_data?: boolean | null
           building_id?: string | null
           categoria: string
           categoria_id?: string | null
@@ -5277,16 +5290,27 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           data_pagamento?: string | null
+          data_pagamento_agendado?: string | null
           data_primeiro_lancamento?: string | null
+          data_proximo_reajuste?: string | null
           descricao: string
           dia_vencimento?: number | null
+          dias_semana?: string[] | null
           fornecedor_id?: string | null
           id?: string
+          intervalo_dias?: number | null
+          lembrete_dias?: number | null
           motivo_alteracao?: string | null
           observacao?: string | null
+          parcelas_pagas?: number | null
           periodicidade?: string
+          reajuste_percentual?: number | null
+          reajuste_tipo?: string | null
+          recorrencia_tipo?: string | null
           responsavel_id?: string | null
+          status?: string | null
           subcategoria_id?: string | null
+          total_parcelas?: number | null
           updated_at?: string | null
           updated_by?: string | null
           valor: number
@@ -5295,6 +5319,7 @@ export type Database = {
         Update: {
           asaas_saida_id?: string | null
           ativo?: boolean | null
+          auto_pagar_na_data?: boolean | null
           building_id?: string | null
           categoria?: string
           categoria_id?: string | null
@@ -5303,16 +5328,27 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           data_pagamento?: string | null
+          data_pagamento_agendado?: string | null
           data_primeiro_lancamento?: string | null
+          data_proximo_reajuste?: string | null
           descricao?: string
           dia_vencimento?: number | null
+          dias_semana?: string[] | null
           fornecedor_id?: string | null
           id?: string
+          intervalo_dias?: number | null
+          lembrete_dias?: number | null
           motivo_alteracao?: string | null
           observacao?: string | null
+          parcelas_pagas?: number | null
           periodicidade?: string
+          reajuste_percentual?: number | null
+          reajuste_tipo?: string | null
+          recorrencia_tipo?: string | null
           responsavel_id?: string | null
+          status?: string | null
           subcategoria_id?: string | null
+          total_parcelas?: number | null
           updated_at?: string | null
           updated_by?: string | null
           valor?: number
@@ -5454,6 +5490,7 @@ export type Database = {
       despesas_variaveis: {
         Row: {
           asaas_saida_id: string | null
+          auto_pagar_na_data: boolean | null
           building_id: string | null
           categoria: string
           categoria_id: string | null
@@ -5461,6 +5498,7 @@ export type Database = {
           created_at: string | null
           data: string
           data_pagamento: string | null
+          data_pagamento_agendado: string | null
           descricao: string
           fornecedor_id: string | null
           id: string
@@ -5468,6 +5506,7 @@ export type Database = {
           observacao: string | null
           pago: boolean | null
           registrado_por: string | null
+          status: string | null
           subcategoria_id: string | null
           updated_at: string | null
           updated_by: string | null
@@ -5476,6 +5515,7 @@ export type Database = {
         }
         Insert: {
           asaas_saida_id?: string | null
+          auto_pagar_na_data?: boolean | null
           building_id?: string | null
           categoria: string
           categoria_id?: string | null
@@ -5483,6 +5523,7 @@ export type Database = {
           created_at?: string | null
           data: string
           data_pagamento?: string | null
+          data_pagamento_agendado?: string | null
           descricao: string
           fornecedor_id?: string | null
           id?: string
@@ -5490,6 +5531,7 @@ export type Database = {
           observacao?: string | null
           pago?: boolean | null
           registrado_por?: string | null
+          status?: string | null
           subcategoria_id?: string | null
           updated_at?: string | null
           updated_by?: string | null
@@ -5498,6 +5540,7 @@ export type Database = {
         }
         Update: {
           asaas_saida_id?: string | null
+          auto_pagar_na_data?: boolean | null
           building_id?: string | null
           categoria?: string
           categoria_id?: string | null
@@ -5505,6 +5548,7 @@ export type Database = {
           created_at?: string | null
           data?: string
           data_pagamento?: string | null
+          data_pagamento_agendado?: string | null
           descricao?: string
           fornecedor_id?: string | null
           id?: string
@@ -5512,6 +5556,7 @@ export type Database = {
           observacao?: string | null
           pago?: boolean | null
           registrado_por?: string | null
+          status?: string | null
           subcategoria_id?: string | null
           updated_at?: string | null
           updated_by?: string | null
