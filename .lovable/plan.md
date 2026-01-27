@@ -1,159 +1,242 @@
 
-# Plano: Corrigir Contas Atrasadas + Adicionar Indicador de Total
+# Plano: Gestao de Segmentos de Negocio na Pagina de Propostas
 
-## Problemas Identificados
+## Objetivo
 
-### 1. Contas Atrasadas = R$ 0 (ERRO)
-O hook `useInadimplentes` busca dados da tabela `cobrancas` que está **VAZIA**.
+Adicionar uma area de configuracao de segmentos no header da pagina de Propostas Comerciais, permitindo visualizar, editar, ativar/desativar segmentos diretamente. A funcionalidade de criar novos segmentos inline no seletor de propostas sera mantida.
 
-Os dados reais de inadimplência estão na tabela `transacoes_asaas`:
-- **5 cobranças OVERDUE** totalizando **R$ 338,95**
-- Cliente: Jeferson Stilver (jefi92@gmail.com)
-- Vencidas em 11/01/2026
+---
 
-### 2. Falta Indicador de Total Consolidado
-O usuário espera ver abaixo dos 3 cards um resumo total:
+## Situacao Atual
+
+### Dados no Banco
+- **142 segmentos** cadastrados em **26 categorias**
+- Campos: `id`, `value`, `label`, `category`, `is_active`, `sort_order`, `created_by`, `created_at`
+- Todos os segmentos estao ativos (`is_active = true`)
+
+### Componentes Existentes
+- `BusinessSegmentSelector` - Seletor com busca e criacao inline (ja funciona)
+- `useBusinessSegments` - Hook com `createSegment` mas SEM `updateSegment` ou `deleteSegment`
+
+### O que Falta
+- Interface de gestao/administracao de segmentos
+- Funcoes de editar e ativar/desativar no hook
+- Acesso rapido a partir da pagina de Propostas
+
+---
+
+## Solucao Proposta
+
+### Layout Visual
+
+No header da pagina de Propostas, adicionar um botao "Configurar Segmentos" que abre um modal de gestao:
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  RESULTADO ATUAL  │  PROJEÇÃO DO MÊS  │  CONTAS ATRASADAS                   │
-│  R$ X.XXX         │  R$ X.XXX         │  R$ 338,95 (5)                      │
+│  Propostas Comerciais                               [Segmentos] [+ Nova]   │
+│  Crie e gerencie propostas                                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
 
+         ↓ Clique em "Segmentos" abre modal ↓
+
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          RESUMO DO MÊS                                      │
+│                     ⚙️  Gestao de Segmentos                               X │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Projeção do Mês (entradas)............... R$ 21.814,37                     │
-│  + Contas Atrasadas a Recuperar........... R$    338,95                     │
-│  - Saídas Projetadas...................... R$  8.720,00                     │
-│  ─────────────────────────────────────────────────────────                  │
-│  = SALDO ESPERADO......................... R$ 13.433,32                     │
+│  [🔍 Buscar segmento...]           [Categoria ▼]        [+ Novo Segmento]  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  TURISMO (8)                                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │ ✓ Atracoes Turisticas      [turismo]              [✏️] [🔄]        │   │
+│  │ ✓ Guias Turisticos         [turismo]              [✏️] [🔄]        │   │
+│  │ ✓ Agencias de Turismo      [turismo]              [✏️] [🔄]        │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  TECNOLOGIA (10)                                                           │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │ ✓ Lojas de Eletronicos     [tecnologia]           [✏️] [🔄]        │   │
+│  │ ✓ Shopping Eletronicos PY  [tecnologia]           [✏️] [🔄]        │   │
+│  │ ○ Celulares (inativo)      [tecnologia]           [✏️] [🔄]        │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
+
+Legenda:
+✓ = Segmento ativo
+○ = Segmento inativo
+✏️ = Editar nome/categoria
+🔄 = Ativar/Desativar
 ```
 
 ---
 
-## Correções Necessárias
+## Alteracoes Tecnicas
 
-### FASE 1: Corrigir Hook useInadimplentes
+### 1. Expandir Hook useBusinessSegments
 
-Alterar a fonte de dados de `cobrancas` para `transacoes_asaas`:
+Adicionar funcoes de update e toggle:
 
 ```typescript
-// ANTES - Busca de tabela vazia
-const { data, error } = await supabase
-  .from('cobrancas')
-  .select(`*, users:client_id (...)`)
-  .eq('status', 'vencido')
+// useBusinessSegments.ts - Novas funcoes
 
-// DEPOIS - Busca de transações ASAAS reais
-const { data, error } = await supabase
-  .from('transacoes_asaas')
-  .select('*')
-  .eq('status', 'OVERDUE')  // Status do ASAAS
-  .order('data_vencimento', { ascending: true })
+// Buscar TODOS os segmentos (incluindo inativos) para gestao
+const { data: allSegments } = useQuery({
+  queryKey: ['business-segments-all'],
+  queryFn: async () => {
+    const { data } = await supabase
+      .from('business_segments')
+      .select('*')
+      .order('category', { ascending: true })
+      .order('sort_order', { ascending: true });
+    return data;
+  }
+});
+
+// Atualizar segmento (nome, categoria)
+const updateSegmentMutation = useMutation({
+  mutationFn: async ({ id, label, category }: { id: string; label: string; category?: string }) => {
+    const { data, error } = await supabase
+      .from('business_segments')
+      .update({ label, category })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+});
+
+// Toggle ativo/inativo
+const toggleSegmentMutation = useMutation({
+  mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+    const { error } = await supabase
+      .from('business_segments')
+      .update({ is_active })
+      .eq('id', id);
+    if (error) throw error;
+  }
+});
 ```
 
-**Mapeamento de campos**:
-| Campo Antigo | Campo Novo (transacoes_asaas) |
-|--------------|-------------------------------|
-| client_id    | customer_id                   |
-| users.full_name | customer_name              |
-| users.email  | customer_email                |
-| valor        | valor                         |
-| data_vencimento | data_vencimento            |
-| dias_atraso  | CALCULAR: NOW() - data_vencimento |
+### 2. Criar Componente SegmentManagerModal
 
-### FASE 2: Adicionar Card de Resumo Consolidado
-
-Adicionar abaixo do grid 3x1 um card de resumo:
+Novo componente para gestao completa:
 
 ```typescript
-// Novo card de resumo após os 3 indicadores
-<Card className="bg-gradient-to-r from-slate-800 to-slate-700 text-white border-0 shadow-lg">
-  <CardContent className="p-4">
-    <div className="flex items-center justify-between mb-3">
-      <p className="text-sm font-medium text-slate-300">Resumo do Mês</p>
-      <Calculator className="h-5 w-5 text-slate-400" />
-    </div>
+// src/components/admin/proposals/SegmentManagerModal.tsx
+
+interface SegmentManagerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+// Features:
+// - Lista todos os segmentos agrupados por categoria
+// - Busca por nome
+// - Filtro por categoria
+// - Editar nome inline
+// - Toggle ativo/inativo com Switch
+// - Criar novo segmento
+// - Contagem por categoria
+```
+
+### 3. Atualizar PropostasPage.tsx
+
+Adicionar botao no header:
+
+```typescript
+// Linha ~717 - Header desktop
+<div className="flex items-center justify-between">
+  <div>
+    <h1 className="text-xl font-bold">Propostas Comerciais</h1>
+    <p className="text-sm text-muted-foreground">Crie e gerencie propostas</p>
+  </div>
+  
+  <div className="flex items-center gap-2">
+    {/* NOVO: Botao de Segmentos */}
+    <Button 
+      variant="outline"
+      onClick={() => setSegmentModalOpen(true)}
+      className="border-slate-300"
+    >
+      <Settings className="h-4 w-4 mr-2" />
+      Segmentos
+    </Button>
     
-    <div className="space-y-2 text-sm">
-      <div className="flex justify-between">
-        <span className="text-slate-300">Projeção (entradas)</span>
-        <span className="text-emerald-400 font-medium">
-          + {formatCurrency(resultadoData.entradasProjetadas)}
-        </span>
-      </div>
-      <div className="flex justify-between">
-        <span className="text-slate-300">Contas Atrasadas</span>
-        <span className="text-amber-400 font-medium">
-          + {formatCurrency(resultadoData.contasAtrasadasTotal)}
-        </span>
-      </div>
-      <div className="flex justify-between">
-        <span className="text-slate-300">Saídas Projetadas</span>
-        <span className="text-red-400 font-medium">
-          - {formatCurrency(resultadoData.saidasProjetadas)}
-        </span>
-      </div>
-      
-      <Separator className="bg-slate-600 my-2" />
-      
-      <div className="flex justify-between text-lg font-bold">
-        <span>Saldo Esperado</span>
-        <span className={saldoEsperado >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-          {formatCurrency(saldoEsperado)}
-        </span>
-      </div>
-    </div>
-  </CardContent>
-</Card>
+    <Button onClick={() => navigate(buildPath('propostas/nova'))} className="bg-[#9C1E1E]">
+      <Plus className="h-4 w-4 mr-2" />
+      Nova Proposta
+    </Button>
+  </div>
+</div>
+
+{/* Modal de Gestao */}
+<SegmentManagerModal 
+  isOpen={segmentModalOpen} 
+  onClose={() => setSegmentModalOpen(false)} 
+/>
 ```
 
 ---
 
-## Arquivos a Modificar
+## Arquivos a Modificar/Criar
 
-| Arquivo | Alteracao |
-|---------|-----------|
-| `src/hooks/financeiro/useInadimplentes.ts` | Alterar fonte de dados para `transacoes_asaas` |
-| `src/hooks/financeiro/useResultadoFinanceiro.ts` | Adicionar campo `saldoEsperado` |
-| `src/components/admin/financeiro/FinanceiroQuickNav.tsx` | Adicionar card de resumo consolidado |
-
----
-
-## Valores Esperados Apos Correcao
-
-| Indicador | Antes | Depois |
-|-----------|-------|--------|
-| Contas Atrasadas | R$ 0 | R$ 338,95 |
-| Qtd Inadimplentes | 0 | 5 (agrupado = 1 cliente) |
-| Saldo Esperado | N/A | R$ 13.433,32 |
+| Arquivo | Acao | Descricao |
+|---------|------|-----------|
+| `src/hooks/useBusinessSegments.ts` | **MODIFICAR** | Adicionar `allSegments`, `updateSegment`, `toggleSegment` |
+| `src/components/admin/proposals/SegmentManagerModal.tsx` | **CRIAR** | Modal de gestao completa |
+| `src/pages/admin/proposals/PropostasPage.tsx` | **MODIFICAR** | Adicionar botao e importar modal |
 
 ---
 
-## Resultado Visual
+## Funcionalidades do Modal
 
-```text
-┌────────────────┐ ┌────────────────┐ ┌────────────────┐
-│ RESULTADO ATUAL│ │PROJECAO DO MES │ │CONTAS ATRASADAS│
-│                │ │                │ │                │
-│  R$ -X.XXX     │ │  R$ 13.094     │ │  R$ 338,95     │
-│  Receita: X    │ │  Ent: 21.814   │ │  1 cliente     │
-│  Desp: X       │ │  Sai: 8.720    │ │  5 cobrancas   │
-└────────────────┘ └────────────────┘ └────────────────┘
+1. **Listagem Agrupada**
+   - Segmentos agrupados por categoria (accordion ou secoes)
+   - Contagem de segmentos por categoria
+   - Indicador visual de ativo/inativo
 
-┌────────────────────────────────────────────────────────┐
-│              📊 RESUMO CONSOLIDADO DO MES              │
-├────────────────────────────────────────────────────────┤
-│  Projecao (entradas)............... + R$ 21.814,37    │
-│  Contas Atrasadas.................. + R$    338,95    │
-│  Saidas Projetadas................. - R$  8.720,00    │
-│  ──────────────────────────────────────────────────    │
-│  SALDO ESPERADO.................... = R$ 13.433,32    │
-└────────────────────────────────────────────────────────┘
+2. **Busca e Filtro**
+   - Campo de busca por nome
+   - Dropdown para filtrar por categoria
+   - Opcao de mostrar apenas ativos/inativos
 
-┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐
-│A Rec│ │A Pag│ │Lanc.│ │Proj.│ │ DRE │ │Inv. │ ...
-└─────┘ └─────┘ └─────┘ └─────┘ └─────┘ └─────┘
-```
+3. **Edicao Inline**
+   - Clicar no icone de edicao abre input inline
+   - Salvar com Enter ou botao
+   - Cancelar com Esc
+
+4. **Toggle de Status**
+   - Switch para ativar/desativar
+   - Confirmacao antes de desativar
+   - Toast de sucesso/erro
+
+5. **Criar Novo**
+   - Botao "+ Novo Segmento" abre mini-form
+   - Campos: Nome, Categoria (dropdown)
+   - Validacao de duplicados
+
+---
+
+## Fluxo de Criacao na Proposta (Ja Existente)
+
+O `BusinessSegmentSelector` com `allowCreate={true}` continuara funcionando:
+
+1. Usuario digita nome que nao existe
+2. Aparece opcao "Criar [nome]"
+3. Clica e abre dialog de confirmacao
+4. Segmento e criado e selecionado automaticamente
+5. Fica disponivel em todo o sistema
+
+---
+
+## Resultado Esperado
+
+Apos implementacao:
+
+1. Botao "Segmentos" visivel no header da pagina de Propostas
+2. Modal com lista completa de 142+ segmentos organizados por categoria
+3. Capacidade de editar nome e categoria de qualquer segmento
+4. Toggle para ativar/desativar segmentos (inativos nao aparecem no seletor)
+5. Criar novos segmentos diretamente do modal
+6. Funcionalidade inline na proposta mantida (criar quando nao encontra)
