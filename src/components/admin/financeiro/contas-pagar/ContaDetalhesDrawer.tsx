@@ -105,7 +105,6 @@ export const ContaDetalhesDrawer: React.FC<ContaDetalhesDrawerProps> = ({
     setLoading(true);
 
     try {
-      // Buscar prédios vinculados
       const { data: prediosData } = await (supabase as any)
         .from('despesas_predios')
         .select('building_id')
@@ -123,7 +122,6 @@ export const ContaDetalhesDrawer: React.FC<ContaDetalhesDrawerProps> = ({
         setBuildings([]);
       }
 
-      // Buscar fornecedor
       const table = conta.tipo === 'fixa' ? 'despesas_fixas' : 'despesas_variaveis';
       const { data: despesaData } = await supabase
         .from(table)
@@ -174,13 +172,13 @@ export const ContaDetalhesDrawer: React.FC<ContaDetalhesDrawerProps> = ({
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'pago':
-        return { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200', label: 'Pago' };
+        return { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50', borderColor: 'border-emerald-200', label: 'Pago' };
       case 'pendente':
-        return { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200', label: 'Pendente' };
+        return { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', borderColor: 'border-amber-200', label: 'Pendente' };
       case 'atrasado':
-        return { icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50 border-red-200', label: 'Atrasado' };
+        return { icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50', borderColor: 'border-red-200', label: 'Atrasado' };
       default:
-        return { icon: Clock, color: 'text-gray-500', bg: 'bg-gray-50 border-gray-200', label: status };
+        return { icon: Clock, color: 'text-slate-500', bg: 'bg-slate-50', borderColor: 'border-slate-200', label: status };
     }
   };
 
@@ -192,28 +190,29 @@ export const ContaDetalhesDrawer: React.FC<ContaDetalhesDrawerProps> = ({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="w-full sm:max-w-[480px] p-0 flex flex-col">
-          <SheetHeader className="p-6 pb-0">
+        <SheetContent className="w-full sm:max-w-[480px] p-0 flex flex-col bg-white">
+          {/* Header com visual aprimorado */}
+          <SheetHeader className="p-6 pb-4 bg-gradient-to-b from-slate-50 to-white border-b border-slate-100">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <SheetTitle className="text-lg font-semibold text-gray-900 truncate">
+                <SheetTitle className="text-lg font-semibold text-slate-900 truncate">
                   {conta.nome}
                 </SheetTitle>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="outline" className="capitalize">
+                <div className="flex items-center gap-2 mt-3">
+                  <Badge variant="outline" className="capitalize bg-white border-slate-200 text-slate-600">
                     {conta.tipo}
                   </Badge>
-                  <Badge className={`${statusConfig.bg} ${statusConfig.color} border`}>
+                  <Badge className={`${statusConfig.bg} ${statusConfig.color} border ${statusConfig.borderColor}`}>
                     <StatusIcon className="h-3 w-3 mr-1" />
                     {statusConfig.label}
                   </Badge>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-gray-900">
+              <div className="text-right shrink-0">
+                <p className="text-2xl font-bold text-slate-900">
                   {formatCurrency(conta.valor_previsto)}
                 </p>
-                <p className="text-xs text-gray-500 flex items-center justify-end gap-1 mt-1">
+                <p className="text-xs text-slate-500 flex items-center justify-end gap-1.5 mt-1">
                   <Calendar className="h-3 w-3" />
                   {format(new Date(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
                 </p>
@@ -221,69 +220,67 @@ export const ContaDetalhesDrawer: React.FC<ContaDetalhesDrawerProps> = ({
             </div>
           </SheetHeader>
 
-          <Separator className="mt-4" />
-
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <TabsList className="grid grid-cols-5 mx-6 mt-4 h-9">
-              <TabsTrigger value="resumo" className="text-xs">Resumo</TabsTrigger>
-              <TabsTrigger value="predios" className="text-xs">Prédios</TabsTrigger>
-              <TabsTrigger value="docs" className="text-xs">Docs</TabsTrigger>
-              <TabsTrigger value="obs" className="text-xs">Obs</TabsTrigger>
-              <TabsTrigger value="historico" className="text-xs">Log</TabsTrigger>
+            <TabsList className="grid grid-cols-5 mx-6 mt-4 h-10 bg-slate-100 p-1 rounded-lg">
+              <TabsTrigger value="resumo" className="text-xs rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">Resumo</TabsTrigger>
+              <TabsTrigger value="predios" className="text-xs rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">Prédios</TabsTrigger>
+              <TabsTrigger value="docs" className="text-xs rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">Docs</TabsTrigger>
+              <TabsTrigger value="obs" className="text-xs rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">Obs</TabsTrigger>
+              <TabsTrigger value="historico" className="text-xs rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">Log</TabsTrigger>
             </TabsList>
 
             <ScrollArea className="flex-1 p-6">
               <TabsContent value="resumo" className="mt-0 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-xs text-gray-500 mb-1">Categoria</p>
-                    <p className="font-medium text-gray-900">{conta.categoria}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Categoria</p>
+                    <p className="font-semibold text-slate-900">{conta.categoria}</p>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-xs text-gray-500 mb-1">Tipo</p>
-                    <p className="font-medium text-gray-900 capitalize">{conta.tipo}</p>
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Tipo</p>
+                    <p className="font-semibold text-slate-900 capitalize">{conta.tipo}</p>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-xs text-gray-500 mb-1">Valor Previsto</p>
-                    <p className="font-medium text-gray-900">{formatCurrency(conta.valor_previsto)}</p>
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Valor Previsto</p>
+                    <p className="font-semibold text-slate-900">{formatCurrency(conta.valor_previsto)}</p>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-xs text-gray-500 mb-1">Valor Pago</p>
-                    <p className="font-medium text-gray-900">{formatCurrency(conta.valor_pago)}</p>
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Valor Pago</p>
+                    <p className="font-semibold text-emerald-600">{formatCurrency(conta.valor_pago)}</p>
                   </div>
                 </div>
 
                 {conta.responsavel && (
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-xs text-gray-500 mb-1">Responsável</p>
-                    <p className="font-medium text-gray-900">{conta.responsavel}</p>
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Responsável</p>
+                    <p className="font-medium text-slate-900">{conta.responsavel}</p>
                   </div>
                 )}
 
                 {conta.observacoes && (
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-xs text-gray-500 mb-1">Observações</p>
-                    <p className="text-sm text-gray-700">{conta.observacoes}</p>
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Observações</p>
+                    <p className="text-sm text-slate-700">{conta.observacoes}</p>
                   </div>
                 )}
               </TabsContent>
 
               <TabsContent value="predios" className="mt-0 space-y-4">
                 {loading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
                   </div>
                 ) : (
                   <>
                     {/* Fornecedor */}
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3 flex items-center gap-2">
                         <Truck className="h-4 w-4" />
                         Fornecedor
                       </p>
                       {fornecedor ? (
                         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                          <p className="font-medium text-blue-900">
+                          <p className="font-semibold text-blue-900">
                             {fornecedor.nome_fantasia || fornecedor.razao_social}
                           </p>
                           {fornecedor.nome_fantasia && (
@@ -291,15 +288,15 @@ export const ContaDetalhesDrawer: React.FC<ContaDetalhesDrawerProps> = ({
                           )}
                         </div>
                       ) : (
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
-                          <p className="text-sm text-gray-500">Nenhum fornecedor vinculado</p>
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+                          <p className="text-sm text-slate-500">Nenhum fornecedor vinculado</p>
                         </div>
                       )}
                     </div>
 
                     {/* Prédios */}
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3 flex items-center gap-2">
                         <Building2 className="h-4 w-4" />
                         Prédios Vinculados ({buildings.length})
                       </p>
@@ -308,21 +305,21 @@ export const ContaDetalhesDrawer: React.FC<ContaDetalhesDrawerProps> = ({
                           {buildings.map((building) => (
                             <div
                               key={building.id}
-                              className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center gap-3"
+                              className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3"
                             >
-                              <div className="h-8 w-8 rounded-lg bg-gray-200 flex items-center justify-center">
-                                <Building2 className="h-4 w-4 text-gray-500" />
+                              <div className="h-10 w-10 rounded-lg bg-slate-200 flex items-center justify-center">
+                                <Building2 className="h-5 w-5 text-slate-500" />
                               </div>
                               <div>
-                                <p className="font-medium text-gray-900 text-sm">{building.nome}</p>
-                                <p className="text-xs text-gray-500">{building.bairro}</p>
+                                <p className="font-medium text-slate-900 text-sm">{building.nome}</p>
+                                <p className="text-xs text-slate-500">{building.bairro}</p>
                               </div>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
-                          <p className="text-sm text-gray-500">Nenhum prédio vinculado</p>
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+                          <p className="text-sm text-slate-500">Nenhum prédio vinculado</p>
                         </div>
                       )}
                     </div>
@@ -331,42 +328,57 @@ export const ContaDetalhesDrawer: React.FC<ContaDetalhesDrawerProps> = ({
               </TabsContent>
 
               <TabsContent value="docs" className="mt-0">
-                <div className="text-center py-8">
-                  <FileText className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                  <p className="text-gray-500 text-sm">Nenhum documento anexado</p>
-                  <Button variant="outline" size="sm" className="mt-4">
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                    <FileText className="h-8 w-8 text-slate-400" />
+                  </div>
+                  <p className="text-slate-600 font-medium mb-1">Nenhum documento</p>
+                  <p className="text-sm text-slate-400 mb-4">Anexe comprovantes aqui</p>
+                  <Button variant="outline" size="sm" className="border-slate-200">
                     Anexar Comprovante
                   </Button>
                 </div>
               </TabsContent>
 
               <TabsContent value="obs" className="mt-0">
-                <div className="text-center py-8">
-                  <MessageSquare className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                  <p className="text-gray-500 text-sm">Nenhuma observação registrada</p>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                    <MessageSquare className="h-8 w-8 text-slate-400" />
+                  </div>
+                  <p className="text-slate-600 font-medium mb-1">Sem observações</p>
+                  <p className="text-sm text-slate-400">Nenhuma anotação registrada</p>
                 </div>
               </TabsContent>
 
               <TabsContent value="historico" className="mt-0">
-                <div className="text-center py-8">
-                  <History className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                  <p className="text-gray-500 text-sm">Histórico de alterações</p>
-                  <p className="text-xs text-gray-400 mt-1">Em breve</p>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                    <History className="h-8 w-8 text-slate-400" />
+                  </div>
+                  <p className="text-slate-600 font-medium mb-1">Histórico</p>
+                  <p className="text-sm text-slate-400">Em breve disponível</p>
                 </div>
               </TabsContent>
             </ScrollArea>
           </Tabs>
 
           {/* Footer com ações */}
-          <div className="border-t p-4 bg-gray-50/80 flex gap-2">
+          <div className="border-t border-slate-200 p-4 bg-slate-50 flex gap-2">
             {canEdit && (
-              <Button variant="outline" onClick={onEdit} className="flex-1 bg-white">
+              <Button 
+                variant="outline" 
+                onClick={onEdit} 
+                className="flex-1 bg-white border-slate-200 hover:bg-slate-50"
+              >
                 <Edit className="h-4 w-4 mr-2" />
                 Editar
               </Button>
             )}
             {canEdit && conta.status !== 'pago' && (
-              <Button onClick={onPagar} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
+              <Button 
+                onClick={onPagar} 
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+              >
                 <CreditCard className="h-4 w-4 mr-2" />
                 Pagar
               </Button>
@@ -386,19 +398,19 @@ export const ContaDetalhesDrawer: React.FC<ContaDetalhesDrawerProps> = ({
 
       {/* Dialog de confirmação de exclusão */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir conta?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-slate-900">Excluir conta?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500">
               Esta ação não pode ser desfeita. A conta "{conta.nome}" será excluída permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting} className="border-slate-200">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               {deleting ? 'Excluindo...' : 'Excluir'}
             </AlertDialogAction>
