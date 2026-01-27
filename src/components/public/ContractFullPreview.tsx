@@ -200,6 +200,25 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
 
       {/* Custom CSS for contract HTML - Responsivo Mobile */}
       <style>{`
+        /* HEADER OFICIAL - Full Width */
+        .contract-content .header-container {
+          width: calc(100% + 48px);
+          margin: -24px -24px 20px -24px;
+          display: block;
+        }
+        
+        .contract-content .header-image {
+          width: 100%;
+          height: auto;
+          display: block;
+          max-width: none;
+        }
+        
+        .contract-content img {
+          max-width: 100%;
+          height: auto;
+        }
+        
         .contract-content h1 {
           font-size: 18px;
           font-weight: 700;
@@ -261,10 +280,78 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
           margin-bottom: 8px;
         }
         
+        /* Estilos do contrato gerado pela edge function */
+        .contract-content .contract-title {
+          text-align: center;
+          margin: 30px 0;
+        }
+        .contract-content .contract-title h1 {
+          color: #8B1A1A;
+          font-size: 16pt;
+          margin: 0 0 10px 0;
+          font-weight: 600;
+        }
+        .contract-content .contract-number {
+          font-size: 12pt;
+          color: #666;
+        }
+        .contract-content .section-title {
+          background: linear-gradient(90deg, #8B1A1A, #A52020);
+          color: white;
+          padding: 10px 15px;
+          font-size: 12pt;
+          font-weight: 600;
+          margin-bottom: 15px;
+          border-radius: 4px;
+        }
+        .contract-content .info-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 15px;
+          margin: 15px 0;
+        }
+        .contract-content .info-card {
+          background: #f8f9fa;
+          border: 1px solid #e9ecef;
+          border-radius: 8px;
+          padding: 15px;
+        }
+        .contract-content .info-card-title {
+          font-weight: 600;
+          color: #8B1A1A;
+          margin-bottom: 10px;
+          font-size: 11pt;
+          border-bottom: 2px solid #8B1A1A;
+          padding-bottom: 5px;
+        }
+        .contract-content .info-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 5px 0;
+          border-bottom: 1px dotted #ddd;
+        }
+        .contract-content .info-row:last-child {
+          border-bottom: none;
+        }
+        .contract-content .info-label {
+          color: #666;
+          font-size: 10pt;
+        }
+        .contract-content .info-value {
+          font-weight: 500;
+          color: #1a1a1a;
+          text-align: right;
+          font-size: 10pt;
+        }
+        
         /* RESPONSIVO MOBILE */
         @media (max-width: 768px) {
           .contract-content {
             font-size: 9pt !important;
+          }
+          .contract-content .header-container {
+            width: calc(100% + 24px);
+            margin: -12px -12px 15px -12px;
           }
           .contract-content h1 {
             font-size: 14px;
