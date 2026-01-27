@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   Clock,
   AlertTriangle,
-  XCircle
+  XCircle,
+  CloudDownload
 } from 'lucide-react';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { supabase } from '@/integrations/supabase/client';
@@ -70,6 +71,7 @@ const ContasPagarPage: React.FC = () => {
   const [showPagarModal, setShowPagarModal] = useState(false);
   const [showEditarModal, setShowEditarModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [syncingAsaas, setSyncingAsaas] = useState(false);
 
   // Datas do tipo DATE no Postgres chegam como "YYYY-MM-DD".
   // Usar `new Date('YYYY-MM-DD')` causa shift de timezone (vira o dia anterior em -03:00).
@@ -257,6 +259,27 @@ const ContasPagarPage: React.FC = () => {
     setShowPagarModal(true);
   };
 
+  const handleSyncAsaas = async () => {
+    setSyncingAsaas(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-asaas-outflows');
+      
+      if (error) throw error;
+      
+      const summary = data?.summary;
+      if (summary) {
+        toast.success(`ASAAS sincronizado: ${summary.syncedCount || 0} saídas atualizadas`);
+      } else {
+        toast.success('Sincronização ASAAS concluída');
+      }
+    } catch (error) {
+      console.error('Erro ao sincronizar ASAAS:', error);
+      toast.error('Erro ao sincronizar com ASAAS');
+    } finally {
+      setSyncingAsaas(false);
+    }
+  };
+
   if (!permissions.canViewDespesas) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[60vh]">
@@ -291,6 +314,16 @@ const ContasPagarPage: React.FC = () => {
           <Button onClick={fetchContas} disabled={loading} variant="outline" size="sm" className="bg-white shadow-sm">
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Atualizar
+          </Button>
+          <Button 
+            onClick={handleSyncAsaas} 
+            disabled={syncingAsaas} 
+            variant="outline" 
+            size="sm" 
+            className="bg-white shadow-sm"
+          >
+            <CloudDownload className={`h-4 w-4 mr-2 ${syncingAsaas ? 'animate-pulse' : ''}`} />
+            {syncingAsaas ? 'Sincronizando...' : 'Sincronizar ASAAS'}
           </Button>
           {permissions.canCreate && (
             <Button size="sm" className="shadow-sm" onClick={() => setShowNovaDespesaModal(true)}>

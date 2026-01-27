@@ -15,7 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar, CreditCard, Link2, Loader2, CheckCircle2, CalendarClock, Clock } from 'lucide-react';
+import { Calendar, CreditCard, Link2, Loader2, CheckCircle2, CalendarClock, Clock, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/utils/format';
 import { format } from 'date-fns';
@@ -64,6 +64,7 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
   const [saidasAsaas, setSaidasAsaas] = useState<AsaasSaida[]>([]);
   const [selectedAsaasSaida, setSelectedAsaasSaida] = useState<string | null>(null);
   const [loadingSaidas, setLoadingSaidas] = useState(false);
+  const [syncingSaidas, setSyncingSaidas] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -89,6 +90,21 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
       toast.error('Erro ao carregar saídas ASAAS');
     } finally {
       setLoadingSaidas(false);
+    }
+  };
+
+  const handleSyncAndRefresh = async () => {
+    setSyncingSaidas(true);
+    try {
+      const { error } = await supabase.functions.invoke('sync-asaas-outflows');
+      if (error) throw error;
+      await fetchSaidasAsaas();
+      toast.success('Saídas ASAAS atualizadas');
+    } catch (error) {
+      console.error('Erro ao sincronizar ASAAS:', error);
+      toast.error('Erro ao sincronizar');
+    } finally {
+      setSyncingSaidas(false);
     }
   };
 
@@ -411,17 +427,43 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
           )}
 
           {/* Lista de saídas ASAAS */}
-          {tipoPagamento === 'asaas' && (
+          {tipoPagamento === 'asaas' && modoAcao === 'pagar_agora' && (
             <div className="space-y-2">
-              <Label>Selecione uma saída não conciliada</Label>
-              {loadingSaidas ? (
+              <div className="flex items-center justify-between">
+                <Label>Selecione uma saída não conciliada</Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {saidasAsaas.length} disponíveis
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSyncAndRefresh}
+                    disabled={syncingSaidas || loadingSaidas}
+                    className="h-7 px-2"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${syncingSaidas ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
+              </div>
+              {loadingSaidas || syncingSaidas ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : saidasAsaas.length === 0 ? (
-                <div className="text-center py-6 bg-gray-50 rounded-xl">
-                  <Link2 className="h-8 w-8 mx-auto text-gray-300 mb-2" />
-                  <p className="text-sm text-gray-500">Nenhuma saída disponível</p>
+                <div className="text-center py-6 bg-muted/50 rounded-xl">
+                  <Link2 className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+                  <p className="text-sm text-muted-foreground">Nenhuma saída disponível</p>
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    onClick={handleSyncAndRefresh}
+                    className="mt-2"
+                  >
+                    Sincronizar ASAAS
+                  </Button>
                 </div>
               ) : (
                 <ScrollArea className="h-[200px] border rounded-xl p-2">
