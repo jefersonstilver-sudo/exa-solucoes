@@ -15,7 +15,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar, CreditCard, Link2, Loader2, CheckCircle2, CalendarClock, Clock, RefreshCw } from 'lucide-react';
+import { 
+  Calendar, 
+  CreditCard, 
+  Link2, 
+  Loader2, 
+  CheckCircle2, 
+  CalendarClock, 
+  Clock, 
+  RefreshCw,
+  Wallet,
+  ArrowRight
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/utils/format';
 import { format } from 'date-fns';
@@ -115,7 +126,6 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
     try {
       const table = conta.tipo === 'fixa' ? 'despesas_fixas' : 'despesas_variaveis';
       
-      // Modo Agendar
       if (modoAcao === 'agendar') {
         if (!dataAgendada) {
           toast.error('Selecione a data para agendamento');
@@ -140,7 +150,6 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
           : `Lembrete agendado para ${format(new Date(dataAgendada), 'dd/MM/yyyy', { locale: ptBR })}`
         );
       } else if (tipoPagamento === 'manual') {
-        // Pagamento manual
         const { error } = await (supabase as any)
           .from(table)
           .update({
@@ -157,7 +166,6 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
         
         toast.success('Pagamento registrado com sucesso!');
       } else {
-        // Vincular a saída ASAAS
         if (!selectedAsaasSaida) {
           toast.error('Selecione uma saída ASAAS para vincular');
           setSaving(false);
@@ -171,7 +179,6 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
           return;
         }
 
-        // 1. Atualizar despesa como paga e vincular
         const { error: updateError } = await (supabase as any)
           .from(table)
           .update({
@@ -186,7 +193,6 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
 
         if (updateError) throw updateError;
 
-        // 2. Marcar saída ASAAS como conciliada
         const { data: userData } = await supabase.auth.getUser();
         const { error: asaasError } = await supabase
           .from('asaas_saidas')
@@ -199,7 +205,6 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
 
         if (asaasError) throw asaasError;
 
-        // 3. Registrar no histórico
         await supabase.from('lancamento_historico').insert({
           lancamento_id: asaasSaida.id,
           lancamento_tipo: 'asaas_saida',
@@ -238,76 +243,94 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-emerald-600" />
+      <DialogContent className="sm:max-w-[520px] p-0 gap-0 overflow-hidden bg-white">
+        {/* Header */}
+        <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-b from-slate-50 to-white border-b border-slate-100">
+          <DialogTitle className="flex items-center gap-3 text-lg font-semibold text-slate-900">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+              <CreditCard className="h-5 w-5 text-emerald-600" />
+            </div>
             Registrar Pagamento
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="px-6 py-5 space-y-5 max-h-[65vh] overflow-y-auto">
           {/* Resumo da conta */}
-          <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm text-gray-500">Conta</p>
-                <p className="font-medium text-gray-900">{conta.nome}</p>
+          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Conta</p>
+                <p className="font-semibold text-slate-900 truncate">{conta.nome}</p>
               </div>
-              <Badge variant="outline" className="capitalize">
+              <Badge variant="outline" className="capitalize shrink-0 bg-white border-slate-200">
                 {conta.tipo}
               </Badge>
             </div>
-            <Separator />
-            <div className="flex justify-between items-center">
+            <Separator className="my-3" />
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Valor</p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {formatCurrency(conta.valor_previsto)}
-                </p>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Valor</p>
+                <p className="text-xl font-bold text-slate-900">{formatCurrency(conta.valor_previsto)}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-500">Vencimento</p>
-                <p className="text-sm font-medium text-gray-900 flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Vencimento</p>
+                <p className="text-sm font-medium text-slate-700 flex items-center justify-end gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-slate-400" />
                   {format(new Date(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Seleção de Ação: Pagar Agora vs Agendar */}
+          {/* Seleção de Ação */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Ação</Label>
+            <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Ação</Label>
             <div className="grid grid-cols-2 gap-3">
-              <div
+              <button
+                type="button"
                 onClick={() => setModoAcao('pagar_agora')}
-                className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                  modoAcao === 'pagar_agora'
-                    ? 'border-emerald-500 bg-emerald-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`
+                  relative flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left
+                  ${modoAcao === 'pagar_agora'
+                    ? 'border-emerald-500 bg-emerald-50 shadow-sm'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                  }
+                `}
               >
-                <CheckCircle2 className={`h-5 w-5 ${modoAcao === 'pagar_agora' ? 'text-emerald-600' : 'text-gray-400'}`} />
-                <div>
-                  <p className="font-medium text-sm">Pagar Agora</p>
-                  <p className="text-xs text-gray-500">Registrar como pago</p>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${modoAcao === 'pagar_agora' ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+                  <CheckCircle2 className={`h-5 w-5 ${modoAcao === 'pagar_agora' ? 'text-emerald-600' : 'text-slate-400'}`} />
                 </div>
-              </div>
-              <div
+                <div>
+                  <p className={`font-semibold text-sm ${modoAcao === 'pagar_agora' ? 'text-emerald-900' : 'text-slate-700'}`}>Pagar Agora</p>
+                  <p className="text-xs text-slate-500">Registrar como pago</p>
+                </div>
+                {modoAcao === 'pagar_agora' && (
+                  <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500" />
+                )}
+              </button>
+              
+              <button
+                type="button"
                 onClick={() => setModoAcao('agendar')}
-                className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                  modoAcao === 'agendar'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`
+                  relative flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left
+                  ${modoAcao === 'agendar'
+                    ? 'border-blue-500 bg-blue-50 shadow-sm'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                  }
+                `}
               >
-                <CalendarClock className={`h-5 w-5 ${modoAcao === 'agendar' ? 'text-blue-600' : 'text-gray-400'}`} />
-                <div>
-                  <p className="font-medium text-sm">Agendar</p>
-                  <p className="text-xs text-gray-500">Pagar em data futura</p>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${modoAcao === 'agendar' ? 'bg-blue-100' : 'bg-slate-100'}`}>
+                  <CalendarClock className={`h-5 w-5 ${modoAcao === 'agendar' ? 'text-blue-600' : 'text-slate-400'}`} />
                 </div>
-              </div>
+                <div>
+                  <p className={`font-semibold text-sm ${modoAcao === 'agendar' ? 'text-blue-900' : 'text-slate-700'}`}>Agendar</p>
+                  <p className="text-xs text-slate-500">Pagar em data futura</p>
+                </div>
+                {modoAcao === 'agendar' && (
+                  <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-500" />
+                )}
+              </button>
             </div>
           </div>
 
@@ -315,9 +338,9 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
           {modoAcao === 'agendar' && (
             <div className="space-y-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
               <div className="space-y-2">
-                <Label htmlFor="data-agendada" className="text-sm font-medium text-blue-700 flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
-                  Data do Pagamento Agendado
+                <Label htmlFor="data-agendada" className="text-sm font-medium text-blue-800 flex items-center gap-1.5">
+                  <Clock className="h-4 w-4" />
+                  Data do Pagamento
                 </Label>
                 <Input
                   id="data-agendada"
@@ -325,43 +348,35 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
                   value={dataAgendada}
                   onChange={(e) => setDataAgendada(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
-                  className="bg-white border-blue-200"
+                  className="bg-white border-blue-200 focus:border-blue-400"
                 />
               </div>
 
-              <div className="space-y-3">
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <Checkbox
-                    checked={autoPagar}
-                    onCheckedChange={(checked) => setAutoPagar(!!checked)}
-                    className="mt-0.5"
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-blue-700">
-                      Marcar como pago automaticamente
-                    </p>
-                    <p className="text-xs text-blue-600">
-                      O sistema marcará a conta como paga na data agendada.
-                    </p>
-                  </div>
-                </label>
+              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg bg-white border border-blue-100 hover:border-blue-200 transition-colors">
+                <Checkbox
+                  checked={autoPagar}
+                  onCheckedChange={(checked) => setAutoPagar(!!checked)}
+                  className="mt-0.5"
+                />
+                <div>
+                  <p className="text-sm font-medium text-blue-800">Marcar como pago automaticamente</p>
+                  <p className="text-xs text-blue-600 mt-0.5">O sistema marcará a conta como paga na data agendada.</p>
+                </div>
+              </label>
 
-                {!autoPagar && (
-                  <div className="flex items-center gap-2 p-2 bg-amber-50 rounded-lg border border-amber-200">
-                    <Clock className="h-4 w-4 text-amber-600" />
-                    <p className="text-xs text-amber-700">
-                      Você receberá um lembrete na data para confirmar o pagamento.
-                    </p>
-                  </div>
-                )}
-              </div>
+              {!autoPagar && (
+                <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                  <Clock className="h-4 w-4 text-amber-600 shrink-0" />
+                  <p className="text-xs text-amber-700">Você receberá um lembrete na data para confirmar o pagamento.</p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Tipo de pagamento - Só mostra se for Pagar Agora */}
+          {/* Tipo de pagamento */}
           {modoAcao === 'pagar_agora' && (
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Tipo de Pagamento</Label>
+              <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Método de Pagamento</Label>
               <RadioGroup
                 value={tipoPagamento}
                 onValueChange={(v) => setTipoPagamento(v as 'manual' | 'asaas')}
@@ -369,30 +384,41 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
               >
                 <Label
                   htmlFor="manual"
-                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                    tipoPagamento === 'manual'
+                  className={`
+                    flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all
+                    ${tipoPagamento === 'manual'
                       ? 'border-emerald-500 bg-emerald-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                      : 'border-slate-200 bg-white hover:border-slate-300'
+                    }
+                  `}
                 >
-                  <RadioGroupItem value="manual" id="manual" />
+                  <RadioGroupItem value="manual" id="manual" className="sr-only" />
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${tipoPagamento === 'manual' ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+                    <Wallet className={`h-5 w-5 ${tipoPagamento === 'manual' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                  </div>
                   <div>
-                    <p className="font-medium text-sm">Pagamento Manual</p>
-                    <p className="text-xs text-gray-500">Registrar data e obs.</p>
+                    <p className={`font-semibold text-sm ${tipoPagamento === 'manual' ? 'text-emerald-900' : 'text-slate-700'}`}>Manual</p>
+                    <p className="text-xs text-slate-500">Registrar data</p>
                   </div>
                 </Label>
+                
                 <Label
                   htmlFor="asaas"
-                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                    tipoPagamento === 'asaas'
+                  className={`
+                    flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all
+                    ${tipoPagamento === 'asaas'
                       ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                      : 'border-slate-200 bg-white hover:border-slate-300'
+                    }
+                  `}
                 >
-                  <RadioGroupItem value="asaas" id="asaas" />
+                  <RadioGroupItem value="asaas" id="asaas" className="sr-only" />
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${tipoPagamento === 'asaas' ? 'bg-blue-100' : 'bg-slate-100'}`}>
+                    <Link2 className={`h-5 w-5 ${tipoPagamento === 'asaas' ? 'text-blue-600' : 'text-slate-400'}`} />
+                  </div>
                   <div>
-                    <p className="font-medium text-sm">Vincular ASAAS</p>
-                    <p className="text-xs text-gray-500">Conciliar saída</p>
+                    <p className={`font-semibold text-sm ${tipoPagamento === 'asaas' ? 'text-blue-900' : 'text-slate-700'}`}>ASAAS</p>
+                    <p className="text-xs text-slate-500">Vincular saída</p>
                   </div>
                 </Label>
               </RadioGroup>
@@ -400,26 +426,26 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
           )}
 
           {/* Campos do pagamento manual */}
-          {tipoPagamento === 'manual' && (
-            <div className="space-y-4">
+          {modoAcao === 'pagar_agora' && tipoPagamento === 'manual' && (
+            <div className="space-y-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
               <div className="space-y-2">
-                <Label htmlFor="dataPagamento">Data do Pagamento</Label>
+                <Label htmlFor="dataPagamento" className="text-sm font-medium text-slate-700">Data do Pagamento</Label>
                 <Input
                   id="dataPagamento"
                   type="date"
                   value={dataPagamento}
                   onChange={(e) => setDataPagamento(e.target.value)}
-                  className="bg-white"
+                  className="bg-white border-slate-200"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="observacao">Observação (opcional)</Label>
+                <Label htmlFor="observacao" className="text-sm font-medium text-slate-700">Observação <span className="text-slate-400 font-normal">(opcional)</span></Label>
                 <Textarea
                   id="observacao"
                   placeholder="Ex: Pago via PIX..."
                   value={observacao}
                   onChange={(e) => setObservacao(e.target.value)}
-                  className="bg-white resize-none"
+                  className="bg-white border-slate-200 resize-none"
                   rows={2}
                 />
               </div>
@@ -427,88 +453,97 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
           )}
 
           {/* Lista de saídas ASAAS */}
-          {tipoPagamento === 'asaas' && modoAcao === 'pagar_agora' && (
-            <div className="space-y-2">
+          {modoAcao === 'pagar_agora' && tipoPagamento === 'asaas' && (
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label>Selecione uma saída não conciliada</Label>
+                <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                  Saídas ASAAS Disponíveis
+                </Label>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">
+                  <Badge variant="secondary" className="bg-slate-100 text-slate-600 font-medium">
                     {saidasAsaas.length} disponíveis
-                  </span>
+                  </Badge>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     onClick={handleSyncAndRefresh}
                     disabled={syncingSaidas || loadingSaidas}
-                    className="h-7 px-2"
+                    className="h-8 w-8 p-0 hover:bg-slate-100"
                   >
-                    <RefreshCw className={`h-3.5 w-3.5 ${syncingSaidas ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-4 w-4 ${syncingSaidas ? 'animate-spin' : ''}`} />
                   </Button>
                 </div>
               </div>
+              
               {loadingSaidas || syncingSaidas ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <div className="flex flex-col items-center justify-center py-10 bg-slate-50 rounded-xl border border-slate-200">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
+                  <p className="text-sm text-slate-500">Carregando saídas...</p>
                 </div>
               ) : saidasAsaas.length === 0 ? (
-                <div className="text-center py-6 bg-muted/50 rounded-xl">
-                  <Link2 className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-                  <p className="text-sm text-muted-foreground">Nenhuma saída disponível</p>
+                <div className="text-center py-10 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                    <Link2 className="h-6 w-6 text-slate-400" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-600 mb-1">Nenhuma saída disponível</p>
+                  <p className="text-xs text-slate-400 mb-3">Sincronize para buscar novas transações</p>
                   <Button
                     type="button"
-                    variant="link"
+                    variant="outline"
                     size="sm"
                     onClick={handleSyncAndRefresh}
-                    className="mt-2"
+                    className="border-slate-200"
                   >
+                    <RefreshCw className="h-4 w-4 mr-2" />
                     Sincronizar ASAAS
                   </Button>
                 </div>
               ) : (
-                <ScrollArea className="h-[200px] border rounded-xl p-2">
+                <ScrollArea className="h-[220px] rounded-xl border border-slate-200 bg-white">
                   <RadioGroup
                     value={selectedAsaasSaida || ''}
                     onValueChange={setSelectedAsaasSaida}
-                    className="space-y-2"
+                    className="p-2 space-y-2"
                   >
                     {saidasAsaas.map((saida) => (
                       <Label
                         key={saida.id}
                         htmlFor={saida.id}
-                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                          selectedAsaasSaida === saida.id
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-100 hover:border-gray-200 bg-white'
-                        }`}
+                        className={`
+                          flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all
+                          ${selectedAsaasSaida === saida.id
+                            ? 'border-blue-500 bg-blue-50 shadow-sm'
+                            : 'border-slate-100 hover:border-slate-200 bg-white'
+                          }
+                        `}
                       >
-                        <RadioGroupItem value={saida.id} id={saida.id} />
+                        <RadioGroupItem value={saida.id} id={saida.id} className="sr-only" />
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${selectedAsaasSaida === saida.id ? 'bg-blue-100' : 'bg-slate-100'}`}>
+                          {selectedAsaasSaida === saida.id ? (
+                            <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                          ) : (
+                            <ArrowRight className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm font-medium truncate">
+                            <p className="text-sm font-medium text-slate-800 truncate">
                               {saida.descricao || 'Sem descrição'}
                             </p>
-                            <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">
+                            <p className="text-sm font-bold text-slate-900 whitespace-nowrap">
                               {formatCurrency(saida.valor)}
                             </p>
                           </div>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-slate-500">
                               {format(new Date(saida.data), 'dd/MM/yyyy', { locale: ptBR })}
                             </span>
-                            <Badge variant="outline" className="text-xs capitalize">
+                            <Badge variant="outline" className="text-[10px] h-5 px-1.5 capitalize bg-white">
                               {saida.asaas_tipo}
                             </Badge>
-                            {saida.status && (
-                              <Badge variant="secondary" className="text-xs">
-                                {saida.status}
-                              </Badge>
-                            )}
                           </div>
                         </div>
-                        {selectedAsaasSaida === saida.id && (
-                          <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                        )}
                       </Label>
                     ))}
                   </RadioGroup>
@@ -518,11 +553,20 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+        <DialogFooter className="px-6 py-4 bg-slate-50 border-t border-slate-200 gap-2 sm:gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)} 
+            disabled={saving}
+            className="flex-1 sm:flex-none border-slate-200 hover:bg-white"
+          >
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button 
+            onClick={handleSave} 
+            disabled={saving} 
+            className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+          >
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -531,12 +575,12 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
             ) : modoAcao === 'agendar' ? (
               <>
                 <CalendarClock className="h-4 w-4 mr-2" />
-                Agendar Pagamento
+                Agendar
               </>
             ) : (
               <>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Confirmar Pagamento
+                Confirmar
               </>
             )}
           </Button>

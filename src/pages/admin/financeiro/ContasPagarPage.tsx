@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -10,13 +9,16 @@ import {
   RefreshCw, 
   Plus, 
   Search,
-  ArrowDownCircle,
+  FileX2,
   Calendar,
   CheckCircle2,
   Clock,
   AlertTriangle,
   XCircle,
-  CloudDownload
+  CloudDownload,
+  TrendingDown,
+  Wallet,
+  CircleDollarSign
 } from 'lucide-react';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { supabase } from '@/integrations/supabase/client';
@@ -64,7 +66,6 @@ const ContasPagarPage: React.FC = () => {
   const [showNovaDespesaModal, setShowNovaDespesaModal] = useState(false);
   const permissions = useFinanceiroPermissions();
 
-  // Estados para interatividade
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
   const [showDetalhesDrawer, setShowDetalhesDrawer] = useState(false);
@@ -73,8 +74,6 @@ const ContasPagarPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [syncingAsaas, setSyncingAsaas] = useState(false);
 
-  // Datas do tipo DATE no Postgres chegam como "YYYY-MM-DD".
-  // Usar `new Date('YYYY-MM-DD')` causa shift de timezone (vira o dia anterior em -03:00).
   const toLocalDate = (value?: string | null) => {
     if (!value) return null;
     if (typeof value === 'string' && value.includes('T')) return new Date(value);
@@ -103,7 +102,6 @@ const ContasPagarPage: React.FC = () => {
           let dataVencimento: Date;
           let dataVencimentoStr: string;
 
-          // Priorizar data_primeiro_lancamento se existir (data específica definida pelo usuário)
           if (d.data_primeiro_lancamento) {
             dataVencimentoStr = d.data_primeiro_lancamento;
             dataVencimento = toLocalDate(d.data_primeiro_lancamento) ?? hoje;
@@ -198,15 +196,15 @@ const ContasPagarPage: React.FC = () => {
   const getStatusConfig = (status: ContaPagar['status']) => {
     switch (status) {
       case 'pago':
-        return { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-white border border-emerald-200', label: 'Pago' };
+        return { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50', borderColor: 'border-emerald-200', label: 'Pago' };
       case 'pendente':
-        return { icon: Clock, color: 'text-amber-600', bg: 'bg-white border border-amber-200', label: 'Pendente' };
+        return { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', borderColor: 'border-amber-200', label: 'Pendente' };
       case 'atrasado':
-        return { icon: AlertTriangle, color: 'text-red-600', bg: 'bg-white border border-red-200', label: 'Atrasado' };
+        return { icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50', borderColor: 'border-red-200', label: 'Atrasado' };
       case 'parcial':
-        return { icon: XCircle, color: 'text-orange-600', bg: 'bg-white border border-orange-200', label: 'Parcial' };
+        return { icon: XCircle, color: 'text-orange-600', bg: 'bg-orange-50', borderColor: 'border-orange-200', label: 'Parcial' };
       default:
-        return { icon: Clock, color: 'text-gray-500', bg: 'bg-white border border-gray-200', label: status };
+        return { icon: Clock, color: 'text-slate-500', bg: 'bg-slate-50', borderColor: 'border-slate-200', label: status };
     }
   };
 
@@ -282,147 +280,203 @@ const ContasPagarPage: React.FC = () => {
 
   if (!permissions.canViewDespesas) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-[60vh]">
-        <Card className="p-8 text-center bg-white shadow-sm">
-          <AlertTriangle className="h-12 w-12 mx-auto text-red-500 mb-4" />
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Acesso Restrito</h2>
-          <p className="text-gray-500 text-sm">Você não tem permissão para acessar despesas.</p>
-        </Card>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center max-w-sm">
+          <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="h-8 w-8 text-red-500" />
+          </div>
+          <h2 className="text-lg font-semibold text-slate-900 mb-2">Acesso Restrito</h2>
+          <p className="text-slate-500 text-sm">Você não tem permissão para acessar esta área.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(buildPath('financeiro'))}
-            className="h-9 w-9 rounded-xl bg-white/60 hover:bg-white border border-gray-200/50 shadow-sm"
-          >
-            <ArrowLeft className="h-4 w-4 text-gray-600" />
-          </Button>
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">Contas a Pagar</h1>
-            <p className="text-gray-500 text-sm">Gestão de despesas fixas e variáveis</p>
+    <div className="min-h-screen bg-slate-50">
+      {/* Header Corporativo */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <div className="px-4 md:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate(buildPath('financeiro'))}
+                className="h-10 w-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Contas a Pagar</h1>
+                <p className="text-sm text-slate-500">Gestão de despesas fixas e variáveis</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button 
+                onClick={fetchContas} 
+                disabled={loading} 
+                variant="outline" 
+                size="sm" 
+                className="h-9 bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+              <Button 
+                onClick={handleSyncAsaas} 
+                disabled={syncingAsaas} 
+                variant="outline" 
+                size="sm" 
+                className="h-9 bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+              >
+                <CloudDownload className={`h-4 w-4 mr-2 ${syncingAsaas ? 'animate-pulse' : ''}`} />
+                <span className="hidden sm:inline">{syncingAsaas ? 'Sincronizando...' : 'Sync ASAAS'}</span>
+                <span className="sm:hidden">ASAAS</span>
+              </Button>
+              {permissions.canCreate && (
+                <Button 
+                  size="sm" 
+                  className="h-9 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                  onClick={() => setShowNovaDespesaModal(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Nova Conta</span>
+                  <span className="sm:hidden">Nova</span>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={fetchContas} disabled={loading} variant="outline" size="sm" className="bg-white shadow-sm">
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Atualizar
-          </Button>
-          <Button 
-            onClick={handleSyncAsaas} 
-            disabled={syncingAsaas} 
-            variant="outline" 
-            size="sm" 
-            className="bg-white shadow-sm"
-          >
-            <CloudDownload className={`h-4 w-4 mr-2 ${syncingAsaas ? 'animate-pulse' : ''}`} />
-            {syncingAsaas ? 'Sincronizando...' : 'Sincronizar ASAAS'}
-          </Button>
-          {permissions.canCreate && (
-            <Button size="sm" className="shadow-sm" onClick={() => setShowNovaDespesaModal(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Conta
-            </Button>
-          )}
+      </header>
+
+      <main className="px-4 md:px-6 lg:px-8 py-6 space-y-6">
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                <Wallet className="h-5 w-5 text-slate-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Total</p>
+                <p className="text-lg font-bold text-slate-900 truncate">{formatCurrency(totais.total)}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-emerald-500">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Pago</p>
+                <p className="text-lg font-bold text-emerald-600 truncate">{formatCurrency(totais.pago)}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-amber-500">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+                <Clock className="h-5 w-5 text-amber-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Pendente</p>
+                <p className="text-lg font-bold text-amber-600 truncate">{formatCurrency(totais.pendente)}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-red-500">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Atrasado</p>
+                <p className="text-lg font-bold text-red-600 truncate">{formatCurrency(totais.atrasado)}</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Totais */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="bg-white shadow-sm border-l-4 border-l-gray-300">
-          <CardContent className="p-4">
-            <p className="text-xs text-gray-500 mb-1">Total</p>
-            <p className="text-lg font-semibold text-gray-900">{formatCurrency(totais.total)}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white shadow-sm border-l-4 border-l-emerald-500">
-          <CardContent className="p-4">
-            <p className="text-xs text-gray-500 mb-1">Pago</p>
-            <p className="text-lg font-semibold text-gray-900">{formatCurrency(totais.pago)}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white shadow-sm border-l-4 border-l-amber-500">
-          <CardContent className="p-4">
-            <p className="text-xs text-gray-500 mb-1">Pendente</p>
-            <p className="text-lg font-semibold text-gray-900">{formatCurrency(totais.pendente)}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white shadow-sm border-l-4 border-l-red-500">
-          <CardContent className="p-4">
-            <p className="text-xs text-gray-500 mb-1">Atrasado</p>
-            <p className="text-lg font-semibold text-gray-900">{formatCurrency(totais.atrasado)}</p>
-          </CardContent>
-        </Card>
-      </div>
+        {/* Bulk Actions */}
+        <BulkActionsBar
+          selectedCount={selectedIds.size}
+          onClear={() => setSelectedIds(new Set())}
+          onDelete={handleBulkDelete}
+          canDelete={permissions.canDelete}
+          isDeleting={isDeleting}
+        />
 
-      {/* Bulk Actions */}
-      <BulkActionsBar
-        selectedCount={selectedIds.size}
-        onClear={() => setSelectedIds(new Set())}
-        onDelete={handleBulkDelete}
-        canDelete={permissions.canDelete}
-        isDeleting={isDeleting}
-      />
-
-      {/* Filtros */}
-      <Card className="bg-white shadow-sm">
-        <CardContent className="p-4">
+        {/* Filtros */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Buscar por nome ou categoria..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 bg-gray-50 border-gray-200"
+                className="pl-10 h-10 bg-slate-50 border-slate-200 focus:bg-white focus:border-blue-300 transition-colors"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[140px] bg-gray-50 border-gray-200">
+              <SelectTrigger className="w-full sm:w-[150px] h-10 bg-slate-50 border-slate-200">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
+              <SelectContent className="bg-white border-slate-200 shadow-lg z-50">
+                <SelectItem value="todos">Todos os status</SelectItem>
                 <SelectItem value="pago">Pago</SelectItem>
                 <SelectItem value="pendente">Pendente</SelectItem>
                 <SelectItem value="atrasado">Atrasado</SelectItem>
               </SelectContent>
             </Select>
             <Select value={tipoFilter} onValueChange={setTipoFilter}>
-              <SelectTrigger className="w-full sm:w-[140px] bg-gray-50 border-gray-200">
+              <SelectTrigger className="w-full sm:w-[150px] h-10 bg-slate-50 border-slate-200">
                 <SelectValue placeholder="Tipo" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
+              <SelectContent className="bg-white border-slate-200 shadow-lg z-50">
+                <SelectItem value="todos">Todos os tipos</SelectItem>
                 <SelectItem value="fixa">Fixas</SelectItem>
                 <SelectItem value="variavel">Variáveis</SelectItem>
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Lista de Contas */}
-      <Card className="bg-white shadow-sm">
-        <CardContent className="p-4">
+        {/* Lista de Contas */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+            <div className="flex items-center justify-center py-16">
+              <div className="flex flex-col items-center gap-3">
+                <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-t-blue-600" />
+                <p className="text-sm text-slate-500">Carregando contas...</p>
+              </div>
             </div>
           ) : contasFiltradas.length === 0 ? (
-            <div className="text-center py-12">
-              <ArrowDownCircle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-              <p className="text-gray-500">Nenhuma conta encontrada</p>
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                <FileX2 className="h-8 w-8 text-slate-400" />
+              </div>
+              <p className="text-slate-600 font-medium mb-1">Nenhuma conta encontrada</p>
+              <p className="text-sm text-slate-400 text-center">Tente ajustar os filtros ou adicione uma nova conta.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y divide-slate-100">
+              {/* Header da tabela - Desktop */}
+              <div className="hidden lg:grid lg:grid-cols-12 gap-4 px-6 py-3 bg-slate-50 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <div className="col-span-1"></div>
+                <div className="col-span-4">Descrição</div>
+                <div className="col-span-2">Tipo</div>
+                <div className="col-span-2">Vencimento</div>
+                <div className="col-span-2 text-right">Valor</div>
+                <div className="col-span-1"></div>
+              </div>
+              
               {contasFiltradas.map((conta) => {
                 const statusConfig = getStatusConfig(conta.status);
                 const StatusIcon = statusConfig.icon;
@@ -433,61 +487,117 @@ const ContasPagarPage: React.FC = () => {
                   <div 
                     key={conta.id} 
                     onClick={() => handleContaClick(conta)}
-                    className={`p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md ${
-                      conta.status === 'atrasado' ? 'border-l-4 border-l-red-500 border-red-100' : 'border-gray-100 hover:border-blue-200'
-                    } ${selectedIds.has(conta.id) ? 'bg-blue-50 border-blue-200' : 'bg-white'}`}
+                    className={`
+                      group px-4 lg:px-6 py-4 cursor-pointer transition-all duration-150
+                      hover:bg-slate-50
+                      ${selectedIds.has(conta.id) ? 'bg-blue-50 hover:bg-blue-50' : ''}
+                      ${conta.status === 'atrasado' ? 'border-l-4 border-l-red-500' : ''}
+                    `}
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={selectedIds.has(conta.id)}
-                          onCheckedChange={() => toggleSelect(conta.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-1"
-                        />
-                        <div className={`p-2 rounded-lg ${statusConfig.bg}`}>
-                          <StatusIcon className={`h-4 w-4 ${statusConfig.color}`} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-gray-900">{conta.nome}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className="text-xs border-gray-200 text-gray-600">
-                              {conta.categoria}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs border-gray-200 text-gray-500">
-                              {conta.tipo === 'fixa' ? 'Fixa' : 'Variável'}
-                            </Badge>
+                    {/* Mobile Layout */}
+                    <div className="lg:hidden space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            checked={selectedIds.has(conta.id)}
+                            onCheckedChange={() => toggleSelect(conta.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-1"
+                          />
+                          <div>
+                            <p className="font-medium text-slate-900 line-clamp-1">{conta.nome}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-slate-200 text-slate-500">
+                                {conta.tipo === 'fixa' ? 'Fixa' : 'Variável'}
+                              </Badge>
+                              <Badge className={`text-[10px] h-5 px-1.5 ${statusConfig.bg} ${statusConfig.color} border ${statusConfig.borderColor}`}>
+                                {statusConfig.label}
+                              </Badge>
+                            </div>
                           </div>
                         </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-semibold text-slate-900">{formatCurrency(conta.valor_previsto)}</p>
+                        </div>
                       </div>
-                      
-                      <div className="flex items-center gap-4 sm:gap-6 flex-wrap sm:flex-nowrap">
-                        <div className="text-left sm:text-right min-w-[100px]">
-                          <p className="text-xs text-gray-500">Vencimento</p>
-                          <p className="text-sm font-medium text-gray-900 flex items-center gap-1">
-                            <Calendar className="h-3 w-3 text-gray-400" />
-                            {format(vencimento, 'dd/MM/yyyy', { locale: ptBR })}
-                          </p>
+                      <div className="flex items-center justify-between pl-8">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                          <Calendar className="h-3.5 w-3.5" />
+                          <span>{format(vencimento, 'dd/MM/yyyy', { locale: ptBR })}</span>
                           {diasRestantes < 0 && (
-                            <p className="text-xs text-red-600">{Math.abs(diasRestantes)} dias em atraso</p>
+                            <span className="text-red-600 font-medium">• {Math.abs(diasRestantes)}d atraso</span>
                           )}
-                          {diasRestantes >= 0 && diasRestantes <= 4 && conta.status !== 'pago' && (
-                            <p className="text-xs text-amber-600">{diasRestantes === 0 ? 'Vence hoje' : `${diasRestantes} dias`}</p>
+                          {diasRestantes === 0 && conta.status !== 'pago' && (
+                            <span className="text-amber-600 font-medium">• Vence hoje</span>
                           )}
                         </div>
-                        
-                        <div className="text-right min-w-[90px]">
-                          <p className="text-base font-semibold text-gray-900">{formatCurrency(conta.valor_previsto)}</p>
-                          <Badge className={`${statusConfig.bg} ${statusConfig.color} text-xs`}>
-                            {statusConfig.label}
-                          </Badge>
-                        </div>
-                        
                         {permissions.canEdit && conta.status !== 'pago' && (
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            className="h-9 bg-white shadow-sm"
+                            className="h-8 text-xs bg-white border-slate-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
+                            onClick={(e) => handlePagarClick(e, conta)}
+                          >
+                            Pagar
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Desktop Layout */}
+                    <div className="hidden lg:grid lg:grid-cols-12 gap-4 items-center">
+                      <div className="col-span-1 flex items-center gap-2">
+                        <Checkbox
+                          checked={selectedIds.has(conta.id)}
+                          onCheckedChange={() => toggleSelect(conta.id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className={`w-8 h-8 rounded-lg ${statusConfig.bg} flex items-center justify-center`}>
+                          <StatusIcon className={`h-4 w-4 ${statusConfig.color}`} />
+                        </div>
+                      </div>
+                      
+                      <div className="col-span-4">
+                        <p className="font-medium text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1">
+                          {conta.nome}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5">{conta.categoria}</p>
+                      </div>
+                      
+                      <div className="col-span-2">
+                        <Badge variant="outline" className="text-xs border-slate-200 text-slate-600">
+                          {conta.tipo === 'fixa' ? 'Fixa' : 'Variável'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="col-span-2">
+                        <div className="flex items-center gap-1.5 text-sm text-slate-700">
+                          <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                          {format(vencimento, 'dd/MM/yyyy', { locale: ptBR })}
+                        </div>
+                        {diasRestantes < 0 && (
+                          <p className="text-xs text-red-600 mt-0.5">{Math.abs(diasRestantes)} dias em atraso</p>
+                        )}
+                        {diasRestantes >= 0 && diasRestantes <= 4 && conta.status !== 'pago' && (
+                          <p className="text-xs text-amber-600 mt-0.5">
+                            {diasRestantes === 0 ? 'Vence hoje' : `Em ${diasRestantes} dias`}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="col-span-2 text-right">
+                        <p className="font-semibold text-slate-900">{formatCurrency(conta.valor_previsto)}</p>
+                        <Badge className={`text-[10px] mt-1 ${statusConfig.bg} ${statusConfig.color} border ${statusConfig.borderColor}`}>
+                          {statusConfig.label}
+                        </Badge>
+                      </div>
+                      
+                      <div className="col-span-1 flex justify-end">
+                        {permissions.canEdit && conta.status !== 'pago' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-8 opacity-0 group-hover:opacity-100 transition-opacity bg-white border-slate-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
                             onClick={(e) => handlePagarClick(e, conta)}
                           >
                             Pagar
@@ -500,8 +610,8 @@ const ContasPagarPage: React.FC = () => {
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </main>
 
       {/* Modals */}
       <NovaDespesaModal

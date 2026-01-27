@@ -26,20 +26,23 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center justify-between"
+        className="bg-white/95 backdrop-blur-sm border border-blue-200 rounded-xl p-3 flex items-center justify-between shadow-sm"
       >
         <div className="flex items-center gap-3">
-          <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-sm font-medium">
-            {selectedCount} {selectedCount === 1 ? 'selecionado' : 'selecionados'}
+          <div className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold tabular-nums">
+            {selectedCount}
           </div>
+          <span className="text-sm text-slate-600 font-medium">
+            {selectedCount === 1 ? 'item selecionado' : 'itens selecionados'}
+          </span>
           <Button
             variant="ghost"
             size="sm"
             onClick={onClear}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-100"
+            className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 h-8"
           >
             <X className="h-4 w-4 mr-1" />
-            Limpar seleção
+            Limpar
           </Button>
         </div>
 
@@ -49,10 +52,10 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
             size="sm"
             onClick={onDelete}
             disabled={isDeleting}
-            className="shadow-sm"
+            className="bg-red-600 hover:bg-red-700 shadow-sm h-8"
           >
-            <Trash2 className="h-4 w-4 mr-1" />
-            {isDeleting ? 'Excluindo...' : 'Excluir selecionados'}
+            <Trash2 className="h-4 w-4 mr-1.5" />
+            {isDeleting ? 'Excluindo...' : 'Excluir'}
           </Button>
         )}
       </motion.div>
