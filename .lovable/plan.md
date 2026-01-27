@@ -1,178 +1,157 @@
 
-# Plano: Exibir Status de Pagamento e Valores Corretamente na Lista de Contas a Pagar
+# Plano: Reconstruir Modal para Layout Vertical em Tela Cheia
 
-## Diagnóstico do Problema
+## Problema Identificado
 
-### Situacao Atual
-A interface lista as contas, mas **nao exibe informacoes cruciais de pagamento**:
+O modal atual usa `grid-cols-2` (duas colunas lado a lado), fazendo com que:
+1. A lista de saídas ASAAS fique espremida na coluna direita
+2. Os valores (R$) e descrições sejam cortados
+3. O scroll interno não consiga mostrar todo o conteúdo
 
-1. **Valor pago** vs **Valor previsto** - nao mostra se foi pago parcialmente
-2. **Data do pagamento** - nao mostra quando foi efetivamente pago
-3. **Status "Agendado"** - nao diferencia entre pendente e agendado
-4. **Indicador de auto-pagamento** - nao mostra se esta configurado para pagar automaticamente
+## Solução: Layout Vertical Full-Screen
 
-### Campos Disponiveis no Banco de Dados
-```text
-despesas_fixas / despesas_variaveis:
-- valor_pago (numeric) - Valor efetivamente pago
-- data_pagamento (date) - Data que foi pago
-- data_pagamento_agendado (date) - Data agendada para pagamento
-- auto_pagar_na_data (boolean) - Se vai pagar automaticamente
-- status (text) - 'pendente', 'pago', 'agendado', 'atrasado'
-```
+Mudar para layout empilhado onde a lista ASAAS aparece abaixo, com largura total.
 
-### Problema no Codigo
-O `fetchContas()` busca os dados, mas o mapeamento nao inclui `data_pagamento`, `data_pagamento_agendado` e `auto_pagar_na_data` na interface `ContaPagar`.
-
-## Solucao Proposta
-
-### Fase 1: Expandir Interface ContaPagar
-
-Adicionar os campos que faltam na interface TypeScript:
-
-```typescript
-interface ContaPagar {
-  id: string;
-  nome: string;
-  categoria: string;
-  valor_previsto: number;
-  valor_pago: number;
-  data_vencimento: string;
-  status: 'pago' | 'pendente' | 'atrasado' | 'parcial' | 'agendado';
-  tipo: 'fixa' | 'variavel';
-  responsavel?: string;
-  observacoes?: string;
-  // NOVOS CAMPOS
-  data_pagamento?: string;
-  data_pagamento_agendado?: string;
-  auto_pagar_na_data?: boolean;
-}
-```
-
-### Fase 2: Atualizar Mapeamento no fetchContas()
-
-Incluir os novos campos ao mapear os dados do banco:
-
-```typescript
-// Mapeamento de despesas_fixas
-{
-  // ... campos existentes
-  data_pagamento: d.data_pagamento,
-  data_pagamento_agendado: d.data_pagamento_agendado,
-  auto_pagar_na_data: d.auto_pagar_na_data,
-  status: d.status === 'agendado' ? 'agendado' : /* logica existente */
-}
-```
-
-### Fase 3: Adicionar Status "Agendado" na Configuracao de Status
-
-```typescript
-const getStatusConfig = (status: ContaPagar['status']) => {
-  switch (status) {
-    // ... existentes
-    case 'agendado':
-      return { 
-        icon: CalendarClock, 
-        color: 'text-blue-600', 
-        bg: 'bg-blue-50', 
-        borderColor: 'border-blue-200', 
-        label: 'Agendado' 
-      };
-  }
-}
-```
-
-### Fase 4: Redesenhar Item da Lista com Informacoes de Pagamento
-
-Novo layout visual para cada item:
+### Nova Estrutura Visual
 
 ```text
-DESKTOP:
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│ ☐ │ 🔵 │ Aluguel Sede         │ Fixa │ Venc: 10/02 │ R$ 3.500  │ ⚡ Agendado   │
-│   │    │ Imobiliária XYZ      │      │             │           │  15/02 (auto)  │
+│  💳 Registrar Pagamento                                                    [X]   │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │ CONTA                                              [Fixa]                   │ │
+│  │ Salário João                                                                │ │
+│  │ ──────────────────────────────────────────────────────────────────────────  │ │
+│  │ R$ 3.200,00                                      Vencimento: 14/01/2026     │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                  │
+│  AÇÃO   [ ✓ Pagar Agora ]  [ 📅 Agendar ]                                        │
+│                                                                                  │
+│  MÉTODO [ 💵 Manual ]  [ 🔗 ASAAS ]                                              │
+│                                                                                  │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│  SAÍDAS ASAAS DISPONÍVEIS (9)                          [🔄 Sincronizar]          │
+│  Selecione uma saída para vincular                                              │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│ ┌──────────────────────────────────────────────────────────────────────────────┐ │
+│ │ ○ │ Transferência ASAAS                     │ 25/01/2026 │ Transfer │ R$ 188 │ │
+│ ├──────────────────────────────────────────────────────────────────────────────┤ │
+│ │ ○ │ Transferência ASAAS                     │ 24/01/2026 │ Transfer │ R$ 120 │ │
+│ ├──────────────────────────────────────────────────────────────────────────────┤ │
+│ │ ○ │ Dois certificados pessoa física R$120   │ 16/01/2026 │ Transfer │ R$ 710 │ │
+│ ├──────────────────────────────────────────────────────────────────────────────┤ │
+│ │ ● │ Serviços programação João Tumiski       │ 15/01/2026 │ Transfer │ R$3200 │ │
+│ ├──────────────────────────────────────────────────────────────────────────────┤ │
+│ │ ○ │ Compra mercado limpeza cafe             │ 15/01/2026 │ Transfer │ R$ 196 │ │
+│ ├──────────────────────────────────────────────────────────────────────────────┤ │
+│ │ ○ │ Despesa fixa semanal combustivel        │ 10/01/2026 │ Transfer │ R$ 120 │ │
+│ └──────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                  │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│                                                 [Cancelar]   [✓ Confirmar]       │
 └──────────────────────────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│ ☐ │ ✅ │ Internet Janeiro     │ Fixa │ Venc: 05/01 │ R$ 189    │ ✓ Pago        │
-│   │    │ Provedor ABC         │      │             │ → R$ 189  │  12/01/2026    │
-└──────────────────────────────────────────────────────────────────────────────────┘
-
-MOBILE:
-┌────────────────────────────────────────┐
-│ ☐ Aluguel Sede                R$ 3.500│
-│   [Fixa] [🔵 Agendado 15/02 ⚡]        │
-│   📅 Vence: 10/02                      │
-└────────────────────────────────────────┘
 ```
 
-### Fase 5: Atualizar KPIs com Novo Status
+## Alteracoes Tecnicas
 
-Adicionar card para "Agendado":
+### 1. DialogContent - Tela Cheia Real
+```typescript
+// Antes
+className="w-[95vw] max-w-[1200px] h-[90vh] max-h-[850px]"
 
-```text
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│ Total        │ │ Pago         │ │ Agendado     │ │ Pendente     │ │ Atrasado     │
-│ R$ 45.000    │ │ R$ 28.000    │ │ R$ 8.500     │ │ R$ 3.500     │ │ R$ 5.000     │
-└──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘
+// Depois - Ocupar tela toda
+className="w-[98vw] max-w-[1400px] h-[95vh] max-h-[95vh]"
 ```
 
-## Arquivos a Modificar
+### 2. Layout Principal - Vertical
+```typescript
+// Antes
+<div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-0">
+
+// Depois - Sempre vertical com flex
+<div className="h-full flex flex-col overflow-hidden">
+  {/* Seção Superior - Resumo e Opções (altura fixa) */}
+  <div className="shrink-0 p-6 border-b">...</div>
+  
+  {/* Seção Inferior - Lista ASAAS (flex-1 para ocupar resto) */}
+  <div className="flex-1 overflow-hidden flex flex-col p-6">...</div>
+</div>
+```
+
+### 3. Seção Superior Compacta
+Reorganizar horizontalmente em uma linha:
+- Resumo da conta a esquerda
+- Opcoes de Acao e Metodo a direita
+
+```typescript
+<div className="flex flex-col lg:flex-row gap-6">
+  {/* Card Resumo */}
+  <div className="lg:w-1/3">...</div>
+  
+  {/* Opcoes lado a lado */}
+  <div className="lg:w-2/3 flex flex-col gap-4">
+    <div className="flex gap-4">
+      {/* Acao */}
+      {/* Metodo */}
+    </div>
+  </div>
+</div>
+```
+
+### 4. Lista ASAAS - Layout de Tabela
+Cada item como linha de tabela com colunas fixas:
+
+```typescript
+<div className="grid grid-cols-[40px_1fr_100px_80px_100px] items-center gap-3 p-3 border-b">
+  {/* Radio */}
+  <div>○</div>
+  
+  {/* Descricao - ocupa espaco flexivel */}
+  <div className="truncate font-medium">{descricao}</div>
+  
+  {/* Data - largura fixa */}
+  <div className="text-sm text-muted">25/01/2026</div>
+  
+  {/* Tipo Badge */}
+  <Badge>Transfer</Badge>
+  
+  {/* Valor - alinhado a direita */}
+  <div className="text-right font-bold text-blue-600">R$ 188,00</div>
+</div>
+```
+
+### 5. ScrollArea para Lista
+A lista fica dentro de um ScrollArea que ocupa todo espaco disponivel:
+
+```typescript
+<ScrollArea className="flex-1 border rounded-xl bg-white">
+  <div className="divide-y">
+    {saidasAsaas.map((saida) => (
+      <ListItem key={saida.id} saida={saida} />
+    ))}
+  </div>
+</ScrollArea>
+```
+
+## Arquivo a Modificar
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/pages/admin/financeiro/ContasPagarPage.tsx` | Interface, fetchContas, getStatusConfig, KPIs, renderizacao da lista |
+| `PagarContaModal.tsx` | Reconstrucao completa do layout de duas colunas para vertical |
 
-## Detalhes de Implementacao
+## Comportamento Mobile
 
-### Nova Logica de Status
-```typescript
-// Prioridade do status:
-// 1. Se status === 'pago' → pago
-// 2. Se data_pagamento_agendado preenchida → agendado  
-// 3. Se atrasado (vencimento < hoje) → atrasado
-// 4. Senao → pendente
-```
-
-### Exibicao de Valor Pago vs Previsto
-```typescript
-// Se pago e valor_pago diferente de valor_previsto
-{valor_pago !== valor_previsto && (
-  <span className="text-xs text-slate-400 line-through">
-    {formatCurrency(valor_previsto)}
-  </span>
-)}
-<span className="font-bold">
-  {formatCurrency(valor_pago > 0 ? valor_pago : valor_previsto)}
-</span>
-```
-
-### Indicador de Agendamento
-```typescript
-{status === 'agendado' && data_pagamento_agendado && (
-  <div className="flex items-center gap-1 text-xs text-blue-600">
-    <CalendarClock className="h-3 w-3" />
-    {format(new Date(data_pagamento_agendado), 'dd/MM')}
-    {auto_pagar_na_data && <Zap className="h-3 w-3" title="Pagamento automatico" />}
-  </div>
-)}
-```
-
-### Indicador de Pagamento Efetuado
-```typescript
-{status === 'pago' && data_pagamento && (
-  <div className="flex items-center gap-1 text-xs text-emerald-600">
-    <CheckCircle2 className="h-3 w-3" />
-    Pago em {format(new Date(data_pagamento), 'dd/MM')}
-  </div>
-)}
-```
+No mobile, o layout ja sera naturalmente vertical. A diferenca e que:
+- Resumo da conta empilha verticalmente
+- Lista ocupa largura total
+- Items da lista adaptam para mostrar valor em destaque
 
 ## Resultado Esperado
 
-1. **Status visual claro** - Usuario ve imediatamente se conta esta paga, agendada, pendente ou atrasada
-2. **Valores corretos** - Mostra valor pago vs previsto quando diferentes
-3. **Datas de pagamento** - Exibe quando foi pago ou quando esta agendado
-4. **Indicador de auto-pagamento** - Icone de raio mostra se sera pago automaticamente
-5. **KPIs atualizados** - Totais separados por status incluindo "Agendado"
-6. **Filtro por status** - Opcao "Agendado" no dropdown de filtro
+1. Lista de saidas ASAAS visivel por completo
+2. Valores monetarios claramente visiveis em cada linha
+3. Descricoes completas ou com truncate elegante
+4. Modal ocupa quase toda a tela
+5. Scroll suave na lista de saidas
+6. Layout responsivo para mobile
