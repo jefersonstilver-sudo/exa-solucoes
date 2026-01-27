@@ -1,199 +1,178 @@
 
 
-# Plano: Adicionar Indicador "A Receber" de Propostas no Dashboard Financeiro
+# Plano: Corrigir Indicador de Propostas + Adicionar Indicadores de Resultado
 
-## Objetivo
+## Problemas Identificados
 
-Exibir no card "Contas a Receber" do `FinanceiroQuickNav` o valor das propostas aceitas, com um **HoverCard** mostrando:
-1. Quantas propostas estao aceitas (aguardando pagamento)
-2. Quantas propostas estao pendentes de aceitacao
-3. Detalhes de forma de pagamento (PIX/Boleto/Cartao)
+### 1. Erro React.Fragment
+O console mostra:
+```
+Warning: Invalid prop `data-lov-id` supplied to `React.Fragment`
+```
 
-## Estrutura Visual do HoverCard
+**Causa**: Na linha 252-254, o `React.Fragment` com `key` recebe props adicionais do editor visual que não são permitidas em Fragments.
+
+**Solução**: Substituir `React.Fragment` por uma `div` simples.
+
+### 2. Indicadores de Resultado Faltando
+Não existem cards mostrando:
+- **Resultado Projetado** (lucro/prejuízo esperado)
+- **Resultado Atual** (lucro/prejuízo realizado)
+
+## Estrutura Visual Proposta
+
+Adicionar uma nova seção com 2 cards grandes antes do grid de navegação:
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│  📊 PROPOSTAS - A RECEBER                                   │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  VALOR TOTAL                                                │
-│  R$ 45.000,00                                               │
-│                                                             │
-│  ─────────────────────────────────────────────────────────  │
-│                                                             │
-│  ✅ Aceitas (aguardando pagamento)           3 propostas    │
-│  ⏳ Pendentes de aceitacao                  12 propostas    │
-│                                                             │
-│  ─────────────────────────────────────────────────────────  │
-│                                                             │
-│  FORMAS DE PAGAMENTO (das aceitas)                          │
-│  💳 PIX/Boleto: R$ 30.000  (2)                              │
-│  💰 Parcelado:  R$ 15.000  (1)                              │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                           📊 INDICADORES DE RESULTADO                         │
+├───────────────────────────────┬───────────────────────────────────────────────┤
+│                               │                                               │
+│  RESULTADO ATUAL              │  RESULTADO PROJETADO                          │
+│  Lucro/Prejuízo Realizado     │  Lucro/Prejuízo Esperado (30 dias)            │
+│                               │                                               │
+│    R$ 45.230,00               │    R$ 62.500,00                               │
+│    ▲ +12.5% vs mês anterior   │    ▲ +8.2% vs projeção anterior               │
+│                               │                                               │
+│  Receita: R$ 120.000          │  Entradas: R$ 150.000                         │
+│  Despesas: R$ 74.770          │  Saídas: R$ 87.500                            │
+│                               │                                               │
+└───────────────────────────────┴───────────────────────────────────────────────┘
+
+┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐
+│A Rec│ │A Pag│ │Lanç.│ │Proj.│ │ DRE │ │Inv. │ │Aport│ │Alert│ ...
+└─────┘ └─────┘ └─────┘ └─────┘ └─────┘ └─────┘ └─────┘ └─────┘
 ```
 
-## Alteracoes Tecnicas
+## Alterações Técnicas
 
-### 1. Criar Hook para Buscar Dados de Propostas
-
-Novo hook `usePropostasAReceber` que busca:
-- Propostas com status `aceita` (aceitas mas nao pagas)
-- Propostas pendentes (enviada, visualizada, pendente)
-- Agrupa por forma de pagamento
+### 1. Corrigir React.Fragment (FinanceiroQuickNav.tsx)
 
 ```typescript
-// src/hooks/financeiro/usePropostasAReceber.ts
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+// ANTES (linha 251-255)
+{navItems.map((item) => (
+  <React.Fragment key={item.id}>
+    {renderNavCard(item)}
+  </React.Fragment>
+))}
 
-interface PropostasAReceber {
-  valorTotal: number;
-  countAceitas: number;
-  countPendentes: number;
-  porFormaPagamento: {
-    pix_boleto: { valor: number; count: number };
-    parcelado: { valor: number; count: number };
-  };
+// DEPOIS - Usar div em vez de Fragment
+{navItems.map((item) => (
+  <div key={item.id}>
+    {renderNavCard(item)}
+  </div>
+))}
+```
+
+### 2. Criar Hook para Dados de Resultado
+
+Novo hook `useResultadoFinanceiro` que calcula:
+- Resultado atual do mês (receita - despesas - impostos)
+- Resultado projetado (entradas - saídas próximos 30 dias)
+
+```typescript
+// src/hooks/financeiro/useResultadoFinanceiro.ts
+interface ResultadoFinanceiro {
+  // Resultado Atual
+  resultadoAtual: number;
+  receitaRealizada: number;
+  despesasTotal: number;
+  variacaoMesAnterior: number;
+  
+  // Resultado Projetado
+  resultadoProjetado: number;
+  entradasProjetadas: number;
+  saidasProjetadas: number;
+  
   loading: boolean;
 }
-
-export const usePropostasAReceber = () => {
-  // Buscar propostas aceitas e pendentes
-  // Agrupar por payment_type
-  // Retornar metricas consolidadas
-};
 ```
 
-### 2. Atualizar FinanceiroQuickNav com HoverCard
+### 3. Adicionar Cards de Indicadores (FinanceiroQuickNav.tsx)
 
-Adicionar `HoverCard` no card "Contas a Receber" com:
-- Badge mostrando valor total
-- Conteudo expandido no hover
+Antes do grid de navegação, adicionar uma seção de indicadores:
 
 ```typescript
-// No card 'receber'
-<HoverCard openDelay={200}>
-  <HoverCardTrigger asChild>
-    <Card className="...">
-      <CardContent className="...">
-        <div className="p-2 rounded-lg bg-gray-50">
-          <ArrowUpCircle className="h-5 w-5 text-emerald-600" />
+<div className="space-y-4">
+  {/* Cards de Resultado */}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {/* Resultado Atual */}
+    <Card className="bg-gradient-to-br from-slate-50 to-white border shadow-md">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-500">Resultado Atual</p>
+            <p className={`text-2xl font-bold ${resultado >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              {formatCurrency(resultado)}
+            </p>
+            <p className="text-xs text-gray-400">
+              Receita: {formatCurrency(receita)} | Despesas: {formatCurrency(despesas)}
+            </p>
+          </div>
+          <div className={`p-3 rounded-xl ${resultado >= 0 ? 'bg-emerald-100' : 'bg-red-100'}`}>
+            {resultado >= 0 ? (
+              <TrendingUp className="h-6 w-6 text-emerald-600" />
+            ) : (
+              <TrendingDown className="h-6 w-6 text-red-600" />
+            )}
+          </div>
         </div>
-        <span className="text-xs font-medium">A Receber</span>
-        {/* Badge com valor */}
-        <Badge className="bg-emerald-100 text-emerald-700 text-xs">
-          {formatCurrency(propostasData.valorTotal)}
-        </Badge>
       </CardContent>
     </Card>
-  </HoverCardTrigger>
-  
-  <HoverCardContent side="bottom" className="w-72">
-    {/* Conteudo detalhado */}
-  </HoverCardContent>
-</HoverCard>
-```
 
-### 3. Estrutura do HoverCardContent
-
-```typescript
-<HoverCardContent side="bottom" className="w-80 p-4">
-  <div className="space-y-3">
-    {/* Header */}
-    <div className="flex items-center gap-2">
-      <FileText className="h-4 w-4 text-emerald-600" />
-      <span className="font-semibold text-sm">Propostas - A Receber</span>
-    </div>
-    
-    {/* Valor Total */}
-    <div className="text-center py-2 bg-emerald-50 rounded-lg">
-      <p className="text-2xl font-bold text-emerald-700">
-        {formatCurrency(propostasData.valorTotal)}
-      </p>
-      <p className="text-xs text-emerald-600">Valor Total Aceito</p>
-    </div>
-    
-    <Separator />
-    
-    {/* Contagem */}
-    <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <span className="text-sm flex items-center gap-1">
-          <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-          Aceitas (aguardando pgto)
-        </span>
-        <Badge variant="outline" className="bg-emerald-50">
-          {propostasData.countAceitas}
-        </Badge>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-sm flex items-center gap-1">
-          <Clock className="h-3 w-3 text-amber-500" />
-          Pendentes de aceitacao
-        </span>
-        <Badge variant="outline" className="bg-amber-50">
-          {propostasData.countPendentes}
-        </Badge>
-      </div>
-    </div>
-    
-    <Separator />
-    
-    {/* Formas de Pagamento */}
-    <div className="space-y-2">
-      <p className="text-xs font-medium text-gray-500 uppercase">
-        Formas de Pagamento
-      </p>
-      <div className="flex justify-between text-sm">
-        <span>PIX/Boleto:</span>
-        <span className="font-medium">
-          {formatCurrency(propostasData.porFormaPagamento.pix_boleto.valor)} 
-          ({propostasData.porFormaPagamento.pix_boleto.count})
-        </span>
-      </div>
-      <div className="flex justify-between text-sm">
-        <span>Parcelado:</span>
-        <span className="font-medium">
-          {formatCurrency(propostasData.porFormaPagamento.parcelado.valor)} 
-          ({propostasData.porFormaPagamento.parcelado.count})
-        </span>
-      </div>
-    </div>
+    {/* Resultado Projetado */}
+    <Card className="bg-gradient-to-br from-blue-50 to-white border shadow-md">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-500">Projeção 30 dias</p>
+            <p className={`text-2xl font-bold ${projetado >= 0 ? 'text-blue-600' : 'text-amber-600'}`}>
+              {formatCurrency(projetado)}
+            </p>
+            <p className="text-xs text-gray-400">
+              Entradas: {formatCurrency(entradas)} | Saídas: {formatCurrency(saidas)}
+            </p>
+          </div>
+          <div className={`p-3 rounded-xl ${projetado >= 0 ? 'bg-blue-100' : 'bg-amber-100'}`}>
+            <Target className="h-6 w-6 text-blue-600" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   </div>
-</HoverCardContent>
+
+  {/* Grid de navegação existente */}
+  <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
+    {navItems.map((item) => (...))}
+  </div>
+</div>
 ```
 
-## Arquivos a Criar/Modificar
+### 4. Fonte de Dados
 
-| Arquivo | Acao |
-|---------|------|
-| `src/hooks/financeiro/usePropostasAReceber.ts` | **CRIAR** - Hook para buscar dados de propostas |
-| `src/components/admin/financeiro/FinanceiroQuickNav.tsx` | **MODIFICAR** - Adicionar HoverCard no card "A Receber" |
+Os dados virão do `useFinanceiroData` que já existe no dashboard:
+- `metricas.resultado_liquido_mes` - Resultado atual
+- `metricas.receita_realizada` - Receita
+- `metricas.despesas_total` - Despesas
+- `projecao30d` do `useFluxoCaixa` - Projeções
 
-## Query do Supabase
+**Problema**: O `FinanceiroQuickNav` não recebe esses dados como props.
 
-```typescript
-// Propostas aceitas (nao pagas ainda)
-const { data: aceitas } = await supabase
-  .from('proposals')
-  .select('id, cash_total_value, payment_type')
-  .eq('status', 'aceita');
+**Solução**: Adicionar props ao componente ou criar um hook unificado.
 
-// Propostas pendentes de aceitacao
-const { data: pendentes } = await supabase
-  .from('proposals')
-  .select('id', { count: 'exact' })
-  .in('status', ['enviada', 'visualizada', 'pendente', 'atualizada']);
-```
+## Arquivos a Modificar/Criar
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/hooks/financeiro/useResultadoFinanceiro.ts` | **CRIAR** - Hook para calcular resultados |
+| `src/components/admin/financeiro/FinanceiroQuickNav.tsx` | **MODIFICAR** - Corrigir Fragment + Adicionar cards de resultado |
 
 ## Resultado Esperado
 
-1. Card "Contas a Receber" exibe badge com valor total das propostas aceitas
-2. Ao passar o mouse, HoverCard mostra:
-   - Valor total em destaque
-   - Quantidade de propostas aceitas vs pendentes
-   - Breakdown por forma de pagamento
-3. Clique ainda navega para a pagina de contas a receber
-4. Design consistente com outros HoverCards do sistema
+1. Erro de React.Fragment corrigido
+2. 2 cards grandes mostrando resultado atual e projetado
+3. Cores semânticas: verde = lucro, vermelho = prejuízo
+4. Detalhamento de receitas/despesas e entradas/saídas
+5. Indicador de propostas a receber continua funcionando com HoverCard
+6. Grid de navegação mantido abaixo dos indicadores
 
