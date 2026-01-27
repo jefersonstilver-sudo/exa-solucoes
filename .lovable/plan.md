@@ -1,214 +1,178 @@
 
-# Plano: Reconstrução do Layout Contas a Pagar - Design Corporativo Elegante
+# Plano: Exibir Status de Pagamento e Valores Corretamente na Lista de Contas a Pagar
 
-## Análise do Estado Atual
+## Diagnóstico do Problema
 
-Após análise dos arquivos, identifiquei os seguintes problemas de design:
+### Situacao Atual
+A interface lista as contas, mas **nao exibe informacoes cruciais de pagamento**:
 
-### Problemas Visuais Identificados
-1. **Inconsistência de espaçamento** - Padding e gaps irregulares
-2. **Cards sem hierarquia visual clara** - Todos os elementos têm o mesmo peso visual
-3. **Header desalinhado** - Botões sem agrupamento lógico
-4. **Modal de pagamento** - Lista de saídas ASAAS sem valores visíveis e layout confuso
-5. **Falta de tipografia corporativa** - Fontes sem hierarquia clara
-6. **Cores sem sistema** - Uso inconsistente de cores de status
-7. **Responsividade quebrada** - Mobile com elementos sobrepostos
+1. **Valor pago** vs **Valor previsto** - nao mostra se foi pago parcialmente
+2. **Data do pagamento** - nao mostra quando foi efetivamente pago
+3. **Status "Agendado"** - nao diferencia entre pendente e agendado
+4. **Indicador de auto-pagamento** - nao mostra se esta configurado para pagar automaticamente
 
-## Solução: Design System Corporativo
-
-### Arquitetura do Novo Layout
-
+### Campos Disponiveis no Banco de Dados
 ```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│  HEADER CORPORATIVO                                                     │
-│  ┌────────────────────────────────┬─────────────────────────────────────┤
-│  │ ← Contas a Pagar               │   [Atualizar] [Sync ASAAS] [+ Nova] │
-│  │    Gestão de despesas          │                                     │
-│  └────────────────────────────────┴─────────────────────────────────────┤
-├─────────────────────────────────────────────────────────────────────────┤
-│  KPI CARDS (Grid Responsivo 4 colunas → 2 colunas mobile)               │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐    │
-│  │ Total        │ │ Pago         │ │ Pendente     │ │ Atrasado     │    │
-│  │ R$ 45.000    │ │ R$ 28.000    │ │ R$ 12.000    │ │ R$ 5.000     │    │
-│  │ ████████████ │ │ ████████     │ │ ██████       │ │ ████         │    │
-│  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘    │
-├─────────────────────────────────────────────────────────────────────────┤
-│  FILTROS (Card Compacto)                                                │
-│  ┌──────────────────────────────────────────────────────────────────────┤
-│  │ [🔍 Buscar...          ] [Status ▼] [Tipo ▼]                         │
-│  └──────────────────────────────────────────────────────────────────────┤
-├─────────────────────────────────────────────────────────────────────────┤
-│  LISTA DE CONTAS (Table-like com hover elegante)                        │
-│  ┌──────────────────────────────────────────────────────────────────────┤
-│  │ ☐ │ ◉ │ Aluguel Sede           │ Fixa │ 10/02 │ R$ 3.500 │ [Pagar] │ │
-│  │ ☐ │ ⚠ │ Internet               │ Fixa │ 05/02 │ R$ 189   │ [Pagar] │ │
-│  │ ☐ │ ✓ │ Energia Janeiro        │ Var. │ 20/01 │ R$ 450   │  Pago   │ │
-│  └──────────────────────────────────────────────────────────────────────┤
-└─────────────────────────────────────────────────────────────────────────┘
+despesas_fixas / despesas_variaveis:
+- valor_pago (numeric) - Valor efetivamente pago
+- data_pagamento (date) - Data que foi pago
+- data_pagamento_agendado (date) - Data agendada para pagamento
+- auto_pagar_na_data (boolean) - Se vai pagar automaticamente
+- status (text) - 'pendente', 'pago', 'agendado', 'atrasado'
 ```
 
-### Paleta de Cores Corporativa
+### Problema no Codigo
+O `fetchContas()` busca os dados, mas o mapeamento nao inclui `data_pagamento`, `data_pagamento_agendado` e `auto_pagar_na_data` na interface `ContaPagar`.
 
-| Elemento | Cor | Uso |
-|----------|-----|-----|
-| Background | `#F8FAFC` (slate-50) | Fundo da página |
-| Cards | `#FFFFFF` | Superfícies principais |
-| Borders | `#E2E8F0` (slate-200) | Bordas sutis |
-| Primary | `#1E40AF` (blue-800) | Ações principais |
-| Success | `#059669` (emerald-600) | Status pago |
-| Warning | `#D97706` (amber-600) | Status pendente |
-| Danger | `#DC2626` (red-600) | Status atrasado |
-| Text Primary | `#0F172A` (slate-900) | Títulos |
-| Text Secondary | `#64748B` (slate-500) | Labels e subtítulos |
+## Solucao Proposta
 
-## Componentes a Redesenhar
+### Fase 1: Expandir Interface ContaPagar
 
-### 1. ContasPagarPage.tsx - Layout Principal
+Adicionar os campos que faltam na interface TypeScript:
 
-**Header Refinado:**
-- Título com ícone alinhado à esquerda
-- Subtítulo em texto secundário
-- Botões agrupados à direita com hierarquia visual
-
-**KPI Cards Aprimorados:**
-- Borda colorida à esquerda indicando tipo
-- Valor em destaque com tipografia bold
-- Label em texto pequeno e leve
-- Micro progress bar opcional
-
-**Filtros Compactos:**
-- Input de busca com ícone integrado
-- Selects com bordas arredondadas
-- Espaçamento uniforme (gap-3)
-
-**Lista de Contas:**
-- Layout de tabela responsiva
-- Hover com sombra sutil e borda azul
-- Status com ícones coloridos (não badges pesados)
-- Checkbox alinhado à esquerda
-- Botão de ação contextual
-
-### 2. PagarContaModal.tsx - Modal de Pagamento
-
-**Estrutura Limpa:**
-```text
-┌─────────────────────────────────────────────────────────────┐
-│  💳 Registrar Pagamento                                     │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │  Aluguel Sede                                    Fixa   ││
-│  │  ───────────────────────────────────────────────────────││
-│  │  R$ 3.500,00                        Vence: 10/02/2026   ││
-│  └─────────────────────────────────────────────────────────┘│
-├─────────────────────────────────────────────────────────────┤
-│  AÇÃO                                                       │
-│  [ ✓ Pagar Agora ] [ 📅 Agendar ]                           │
-├─────────────────────────────────────────────────────────────┤
-│  MÉTODO                                                     │
-│  [ 💵 Pagamento Manual ] [ 🔗 Vincular ASAAS ]              │
-├─────────────────────────────────────────────────────────────┤
-│  SAÍDAS ASAAS DISPONÍVEIS (11)          [🔄 Atualizar]      │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │ ○ Transferência - R$ 188,00 - 26/01   TRANSFER         ││
-│  │ ○ Certificados - R$ 710,00 - 17/01    BILL             ││
-│  │ ● Aluguel - R$ 3.500,00 - 10/01       BILL      ✓      ││
-│  └─────────────────────────────────────────────────────────┘│
-├─────────────────────────────────────────────────────────────┤
-│                             [Cancelar] [✓ Confirmar]        │
-└─────────────────────────────────────────────────────────────┘
+```typescript
+interface ContaPagar {
+  id: string;
+  nome: string;
+  categoria: string;
+  valor_previsto: number;
+  valor_pago: number;
+  data_vencimento: string;
+  status: 'pago' | 'pendente' | 'atrasado' | 'parcial' | 'agendado';
+  tipo: 'fixa' | 'variavel';
+  responsavel?: string;
+  observacoes?: string;
+  // NOVOS CAMPOS
+  data_pagamento?: string;
+  data_pagamento_agendado?: string;
+  auto_pagar_na_data?: boolean;
+}
 ```
 
-**Melhorias Específicas:**
-- Valor monetário visível em TODAS as saídas ASAAS (já está implementado, mas verificar exibição)
-- Contador de saídas disponíveis
-- Botão de sync inline no header da lista
-- Seleção com visual radio button + checkmark
-- Scroll suave na lista
+### Fase 2: Atualizar Mapeamento no fetchContas()
 
-### 3. ContaDetalhesDrawer.tsx - Drawer de Detalhes
+Incluir os novos campos ao mapear os dados do banco:
 
-**Estrutura Apple-like:**
-- Header com valor grande e destaque
-- Tabs mais compactas
-- Conteúdo com cards internos arredondados
-- Footer fixo com ações
+```typescript
+// Mapeamento de despesas_fixas
+{
+  // ... campos existentes
+  data_pagamento: d.data_pagamento,
+  data_pagamento_agendado: d.data_pagamento_agendado,
+  auto_pagar_na_data: d.auto_pagar_na_data,
+  status: d.status === 'agendado' ? 'agendado' : /* logica existente */
+}
+```
 
-### 4. EditarContaModal.tsx - Modal de Edição
+### Fase 3: Adicionar Status "Agendado" na Configuracao de Status
 
-**Layout de Formulário:**
-- Labels alinhados acima dos inputs
-- Grid 2 colunas para campos relacionados
-- DatePicker com popover elegante
-- Categoria com indentação visual
+```typescript
+const getStatusConfig = (status: ContaPagar['status']) => {
+  switch (status) {
+    // ... existentes
+    case 'agendado':
+      return { 
+        icon: CalendarClock, 
+        color: 'text-blue-600', 
+        bg: 'bg-blue-50', 
+        borderColor: 'border-blue-200', 
+        label: 'Agendado' 
+      };
+  }
+}
+```
 
-### 5. BulkActionsBar.tsx - Barra de Ações em Lote
+### Fase 4: Redesenhar Item da Lista com Informacoes de Pagamento
 
-**Refinamentos:**
-- Posição sticky no topo
-- Fundo com blur (glassmorphism sutil)
-- Badge com contador
-- Animação de entrada suave
+Novo layout visual para cada item:
+
+```text
+DESKTOP:
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│ ☐ │ 🔵 │ Aluguel Sede         │ Fixa │ Venc: 10/02 │ R$ 3.500  │ ⚡ Agendado   │
+│   │    │ Imobiliária XYZ      │      │             │           │  15/02 (auto)  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│ ☐ │ ✅ │ Internet Janeiro     │ Fixa │ Venc: 05/01 │ R$ 189    │ ✓ Pago        │
+│   │    │ Provedor ABC         │      │             │ → R$ 189  │  12/01/2026    │
+└──────────────────────────────────────────────────────────────────────────────────┘
+
+MOBILE:
+┌────────────────────────────────────────┐
+│ ☐ Aluguel Sede                R$ 3.500│
+│   [Fixa] [🔵 Agendado 15/02 ⚡]        │
+│   📅 Vence: 10/02                      │
+└────────────────────────────────────────┘
+```
+
+### Fase 5: Atualizar KPIs com Novo Status
+
+Adicionar card para "Agendado":
+
+```text
+┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+│ Total        │ │ Pago         │ │ Agendado     │ │ Pendente     │ │ Atrasado     │
+│ R$ 45.000    │ │ R$ 28.000    │ │ R$ 8.500     │ │ R$ 3.500     │ │ R$ 5.000     │
+└──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘
+```
 
 ## Arquivos a Modificar
 
-| Arquivo | Escopo da Alteração |
-|---------|---------------------|
-| `ContasPagarPage.tsx` | Layout completo, header, KPIs, lista |
-| `PagarContaModal.tsx` | Estrutura do modal, lista ASAAS |
-| `ContaDetalhesDrawer.tsx` | Ajustes visuais no drawer |
-| `EditarContaModal.tsx` | Refinamento do formulário |
-| `BulkActionsBar.tsx` | Posicionamento e visual |
+| Arquivo | Alteracao |
+|---------|-----------|
+| `src/pages/admin/financeiro/ContasPagarPage.tsx` | Interface, fetchContas, getStatusConfig, KPIs, renderizacao da lista |
 
-## Especificações Técnicas
+## Detalhes de Implementacao
 
-### Responsividade
+### Nova Logica de Status
+```typescript
+// Prioridade do status:
+// 1. Se status === 'pago' → pago
+// 2. Se data_pagamento_agendado preenchida → agendado  
+// 3. Se atrasado (vencimento < hoje) → atrasado
+// 4. Senao → pendente
+```
 
-**Mobile (< 640px):**
-- Header empilhado (título em cima, botões embaixo)
-- KPIs em grid 2x2
-- Lista com layout vertical (card-like)
-- Modais fullscreen
+### Exibicao de Valor Pago vs Previsto
+```typescript
+// Se pago e valor_pago diferente de valor_previsto
+{valor_pago !== valor_previsto && (
+  <span className="text-xs text-slate-400 line-through">
+    {formatCurrency(valor_previsto)}
+  </span>
+)}
+<span className="font-bold">
+  {formatCurrency(valor_pago > 0 ? valor_pago : valor_previsto)}
+</span>
+```
 
-**Tablet (640px - 1024px):**
-- Header em linha única
-- KPIs em grid 4x1
-- Lista com layout tabular simplificado
+### Indicador de Agendamento
+```typescript
+{status === 'agendado' && data_pagamento_agendado && (
+  <div className="flex items-center gap-1 text-xs text-blue-600">
+    <CalendarClock className="h-3 w-3" />
+    {format(new Date(data_pagamento_agendado), 'dd/MM')}
+    {auto_pagar_na_data && <Zap className="h-3 w-3" title="Pagamento automatico" />}
+  </div>
+)}
+```
 
-**Desktop (> 1024px):**
-- Layout completo com todos os elementos visíveis
-- Hover states ativos
-- Drawer lateral com largura máxima
-
-### Classes Tailwind Principais
-
-```css
-/* Container principal */
-.min-h-screen .bg-slate-50 .p-4 .md:p-6 .lg:p-8
-
-/* Cards KPI */
-.bg-white .rounded-xl .border .border-slate-200 .shadow-sm
-.hover:shadow-md .transition-shadow
-
-/* Lista items */
-.bg-white .rounded-lg .border .border-slate-100
-.hover:border-blue-200 .hover:shadow-sm .transition-all
-
-/* Status badges */
-.text-emerald-600 .bg-emerald-50  /* Pago */
-.text-amber-600 .bg-amber-50      /* Pendente */
-.text-red-600 .bg-red-50          /* Atrasado */
-
-/* Botões */
-.bg-blue-600 .hover:bg-blue-700  /* Primary */
-.bg-white .border .hover:bg-slate-50  /* Secondary */
+### Indicador de Pagamento Efetuado
+```typescript
+{status === 'pago' && data_pagamento && (
+  <div className="flex items-center gap-1 text-xs text-emerald-600">
+    <CheckCircle2 className="h-3 w-3" />
+    Pago em {format(new Date(data_pagamento), 'dd/MM')}
+  </div>
+)}
 ```
 
 ## Resultado Esperado
 
-1. **Visual corporativo limpo** - Cores neutras com acentos de cor para status
-2. **Hierarquia clara** - Tipografia com pesos distintos
-3. **Responsividade perfeita** - Mobile-first com breakpoints consistentes
-4. **UX melhorada** - Feedback visual em hover/focus
-5. **Consistência** - Design system aplicado em todos os componentes
-6. **Performance** - Animações leves e transições suaves
-
+1. **Status visual claro** - Usuario ve imediatamente se conta esta paga, agendada, pendente ou atrasada
+2. **Valores corretos** - Mostra valor pago vs previsto quando diferentes
+3. **Datas de pagamento** - Exibe quando foi pago ou quando esta agendado
+4. **Indicador de auto-pagamento** - Icone de raio mostra se sera pago automaticamente
+5. **KPIs atualizados** - Totais separados por status incluindo "Agendado"
+6. **Filtro por status** - Opcao "Agendado" no dropdown de filtro
