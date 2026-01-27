@@ -1133,7 +1133,7 @@ function generateContractHtml(contrato: any, signatariosExa: any[], produtosExa:
       <div class="header-container">
         <img
           class="header-image"
-          src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png"
+          src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/email-assets/exa-contract-header.png"
           alt="EXA Header"
           crossorigin="anonymous"
         />
@@ -1532,7 +1532,7 @@ function generateSindicoContractHtml(contrato: any, signatarioExa: any, dataAtua
       <div class="header-container">
         <img
           class="header-image"
-          src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png"
+          src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/email-assets/exa-contract-header.png"
           alt="EXA Header"
           crossorigin="anonymous"
         />

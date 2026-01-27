@@ -2,6 +2,7 @@ import React from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
+import exaContractHeader from '@/assets/exa-contract-header.png';
 
 interface ContractPreviewProps {
   data: {
@@ -46,8 +47,8 @@ interface ContractPreviewProps {
   onEdit?: () => void;
 }
 
-// URL oficial do cabeçalho EXA (imagem full-width)
-const EXA_CONTRACT_HEADER_URL = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png";
+// URL oficial do cabeçalho EXA (imagem full-width) - usando import local para evitar problemas de bucket privado
+const EXA_CONTRACT_HEADER_URL = exaContractHeader;
 
 const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, onEdit }) => {
   const { settings: companySettings, loading: loadingCompany } = useCompanySettings();

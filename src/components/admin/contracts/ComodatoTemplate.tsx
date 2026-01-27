@@ -1,6 +1,7 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import exaContractHeader from '@/assets/exa-contract-header.png';
 
 interface ComodatoTemplateProps {
   data: {
@@ -47,8 +48,8 @@ const ComodatoTemplate: React.FC<ComodatoTemplateProps> = ({ data }) => {
     }
   };
 
-  // URL oficial do cabeçalho EXA
-  const EXA_CONTRACT_HEADER_URL = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png";
+  // URL oficial do cabeçalho EXA - usando import local
+  const EXA_CONTRACT_HEADER_URL = exaContractHeader;
 
   return (
     <div className="bg-white text-gray-900 font-serif text-sm leading-relaxed">
