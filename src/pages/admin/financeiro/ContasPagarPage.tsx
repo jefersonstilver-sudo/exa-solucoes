@@ -18,7 +18,9 @@ import {
   CloudDownload,
   TrendingDown,
   Wallet,
-  CircleDollarSign
+  CircleDollarSign,
+  CalendarClock,
+  Zap
 } from 'lucide-react';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,10 +51,13 @@ interface ContaPagar {
   valor_previsto: number;
   valor_pago: number;
   data_vencimento: string;
-  status: 'pago' | 'pendente' | 'atrasado' | 'parcial';
+  status: 'pago' | 'pendente' | 'atrasado' | 'parcial' | 'agendado';
   tipo: 'fixa' | 'variavel';
   responsavel?: string;
   observacoes?: string;
+  data_pagamento?: string;
+  data_pagamento_agendado?: string;
+  auto_pagar_na_data?: boolean;
 }
 
 const ContasPagarPage: React.FC = () => {
@@ -115,11 +120,16 @@ const ContasPagarPage: React.FC = () => {
             dataVencimentoStr = format(hoje, 'yyyy-MM-dd');
           }
           const diasAtraso = differenceInDays(hoje, dataVencimento);
+          
+          // Lógica de status com prioridade
           let status: ContaPagar['status'] = 'pendente';
-
-          if (d.status === 'pago') status = 'pago';
-          else if (diasAtraso > 0) status = 'atrasado';
-          else if (diasAtraso >= -4) status = 'pendente';
+          if (d.status === 'pago') {
+            status = 'pago';
+          } else if (d.data_pagamento_agendado) {
+            status = 'agendado';
+          } else if (diasAtraso > 0) {
+            status = 'atrasado';
+          }
 
           return {
             id: d.id,
@@ -131,17 +141,26 @@ const ContasPagarPage: React.FC = () => {
             status,
             tipo: 'fixa' as const,
             responsavel: d.responsavel,
-            observacoes: d.observacao
+            observacoes: d.observacao,
+            data_pagamento: d.data_pagamento,
+            data_pagamento_agendado: d.data_pagamento_agendado,
+            auto_pagar_na_data: d.auto_pagar_na_data
           };
         }),
         ...(variaveis || []).map((d: any) => {
           const dataVencimentoStr = d.data ? String(d.data) : format(hoje, 'yyyy-MM-dd');
           const vencimento = toLocalDate(dataVencimentoStr) ?? hoje;
           const diasAtraso = differenceInDays(hoje, vencimento);
+          
+          // Lógica de status com prioridade
           let status: ContaPagar['status'] = 'pendente';
-
-          if (d.status === 'pago') status = 'pago';
-          else if (diasAtraso > 0) status = 'atrasado';
+          if (d.status === 'pago') {
+            status = 'pago';
+          } else if (d.data_pagamento_agendado) {
+            status = 'agendado';
+          } else if (diasAtraso > 0) {
+            status = 'atrasado';
+          }
 
           return {
             id: d.id,
@@ -153,7 +172,10 @@ const ContasPagarPage: React.FC = () => {
             status,
             tipo: 'variavel' as const,
             responsavel: d.responsavel,
-            observacoes: d.observacao
+            observacoes: d.observacao,
+            data_pagamento: d.data_pagamento,
+            data_pagamento_agendado: d.data_pagamento_agendado,
+            auto_pagar_na_data: d.auto_pagar_na_data
           };
         })
       ].sort((a, b) => {
@@ -187,16 +209,19 @@ const ContasPagarPage: React.FC = () => {
 
   const totais = useMemo(() => {
     const total = contasFiltradas.reduce((acc, c) => acc + c.valor_previsto, 0);
-    const pago = contasFiltradas.filter(c => c.status === 'pago').reduce((acc, c) => acc + c.valor_previsto, 0);
+    const pago = contasFiltradas.filter(c => c.status === 'pago').reduce((acc, c) => acc + (c.valor_pago || c.valor_previsto), 0);
+    const agendado = contasFiltradas.filter(c => c.status === 'agendado').reduce((acc, c) => acc + c.valor_previsto, 0);
     const pendente = contasFiltradas.filter(c => c.status === 'pendente').reduce((acc, c) => acc + c.valor_previsto, 0);
     const atrasado = contasFiltradas.filter(c => c.status === 'atrasado').reduce((acc, c) => acc + c.valor_previsto, 0);
-    return { total, pago, pendente, atrasado };
+    return { total, pago, agendado, pendente, atrasado };
   }, [contasFiltradas]);
 
   const getStatusConfig = (status: ContaPagar['status']) => {
     switch (status) {
       case 'pago':
         return { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50', borderColor: 'border-emerald-200', label: 'Pago' };
+      case 'agendado':
+        return { icon: CalendarClock, color: 'text-blue-600', bg: 'bg-blue-50', borderColor: 'border-blue-200', label: 'Agendado' };
       case 'pendente':
         return { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', borderColor: 'border-amber-200', label: 'Pendente' };
       case 'atrasado':
@@ -353,7 +378,7 @@ const ContasPagarPage: React.FC = () => {
 
       <main className="px-4 md:px-6 lg:px-8 py-6 space-y-6">
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
@@ -374,6 +399,18 @@ const ContasPagarPage: React.FC = () => {
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Pago</p>
                 <p className="text-lg font-bold text-emerald-600 truncate">{formatCurrency(totais.pago)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                <CalendarClock className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Agendado</p>
+                <p className="text-lg font-bold text-blue-600 truncate">{formatCurrency(totais.agendado)}</p>
               </div>
             </div>
           </div>
@@ -431,6 +468,7 @@ const ContasPagarPage: React.FC = () => {
               <SelectContent className="bg-white border-slate-200 shadow-lg z-50">
                 <SelectItem value="todos">Todos os status</SelectItem>
                 <SelectItem value="pago">Pago</SelectItem>
+                <SelectItem value="agendado">Agendado</SelectItem>
                 <SelectItem value="pendente">Pendente</SelectItem>
                 <SelectItem value="atrasado">Atrasado</SelectItem>
               </SelectContent>
@@ -517,17 +555,39 @@ const ContasPagarPage: React.FC = () => {
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="font-semibold text-slate-900">{formatCurrency(conta.valor_previsto)}</p>
+                          {conta.status === 'pago' && conta.valor_pago > 0 && conta.valor_pago !== conta.valor_previsto ? (
+                            <div>
+                              <p className="text-xs text-slate-400 line-through">{formatCurrency(conta.valor_previsto)}</p>
+                              <p className="font-semibold text-emerald-600">{formatCurrency(conta.valor_pago)}</p>
+                            </div>
+                          ) : (
+                            <p className="font-semibold text-slate-900">{formatCurrency(conta.valor_previsto)}</p>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center justify-between pl-8">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500 flex-wrap">
                           <Calendar className="h-3.5 w-3.5" />
                           <span>{format(vencimento, 'dd/MM/yyyy', { locale: ptBR })}</span>
-                          {diasRestantes < 0 && (
+                          {conta.status === 'pago' && conta.data_pagamento && (
+                            <span className="text-emerald-600 font-medium flex items-center gap-0.5">
+                              • <CheckCircle2 className="h-3 w-3" /> Pago em {format(toLocalDate(conta.data_pagamento) ?? new Date(), 'dd/MM')}
+                            </span>
+                          )}
+                          {conta.status === 'agendado' && conta.data_pagamento_agendado && (
+                            <span className="text-blue-600 font-medium flex items-center gap-0.5">
+                              • <CalendarClock className="h-3 w-3" /> Agendado {format(toLocalDate(conta.data_pagamento_agendado) ?? new Date(), 'dd/MM')}
+                              {conta.auto_pagar_na_data && (
+                                <span title="Pagamento automático">
+                                  <Zap className="h-3 w-3 text-yellow-500" />
+                                </span>
+                              )}
+                            </span>
+                          )}
+                          {diasRestantes < 0 && conta.status !== 'pago' && (
                             <span className="text-red-600 font-medium">• {Math.abs(diasRestantes)}d atraso</span>
                           )}
-                          {diasRestantes === 0 && conta.status !== 'pago' && (
+                          {diasRestantes === 0 && conta.status !== 'pago' && conta.status !== 'agendado' && (
                             <span className="text-amber-600 font-medium">• Vence hoje</span>
                           )}
                         </div>
@@ -586,10 +646,34 @@ const ContasPagarPage: React.FC = () => {
                       </div>
                       
                       <div className="col-span-2 text-right">
-                        <p className="font-semibold text-slate-900">{formatCurrency(conta.valor_previsto)}</p>
-                        <Badge className={`text-[10px] mt-1 ${statusConfig.bg} ${statusConfig.color} border ${statusConfig.borderColor}`}>
-                          {statusConfig.label}
-                        </Badge>
+                        {conta.status === 'pago' && conta.valor_pago > 0 && conta.valor_pago !== conta.valor_previsto ? (
+                          <div>
+                            <p className="text-xs text-slate-400 line-through">{formatCurrency(conta.valor_previsto)}</p>
+                            <p className="font-semibold text-emerald-600">{formatCurrency(conta.valor_pago)}</p>
+                          </div>
+                        ) : (
+                          <p className="font-semibold text-slate-900">{formatCurrency(conta.valor_previsto)}</p>
+                        )}
+                        <div className="flex items-center justify-end gap-1 mt-1">
+                          <Badge className={`text-[10px] ${statusConfig.bg} ${statusConfig.color} border ${statusConfig.borderColor}`}>
+                            {statusConfig.label}
+                          </Badge>
+                          {conta.status === 'pago' && conta.data_pagamento && (
+                            <span className="text-[10px] text-slate-400">
+                              {format(toLocalDate(conta.data_pagamento) ?? new Date(), 'dd/MM')}
+                            </span>
+                          )}
+                          {conta.status === 'agendado' && conta.data_pagamento_agendado && (
+                            <span className="text-[10px] text-blue-500 flex items-center gap-0.5">
+                              {format(toLocalDate(conta.data_pagamento_agendado) ?? new Date(), 'dd/MM')}
+                              {conta.auto_pagar_na_data && (
+                                <span title="Automático">
+                                  <Zap className="h-3 w-3 text-yellow-500" />
+                                </span>
+                              )}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="col-span-1 flex justify-end">

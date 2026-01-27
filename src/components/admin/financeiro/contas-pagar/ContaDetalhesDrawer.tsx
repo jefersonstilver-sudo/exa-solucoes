@@ -48,10 +48,13 @@ interface ContaPagar {
   valor_previsto: number;
   valor_pago: number;
   data_vencimento: string;
-  status: 'pago' | 'pendente' | 'atrasado' | 'parcial';
+  status: 'pago' | 'pendente' | 'atrasado' | 'parcial' | 'agendado';
   tipo: 'fixa' | 'variavel';
   responsavel?: string;
   observacoes?: string;
+  data_pagamento?: string;
+  data_pagamento_agendado?: string;
+  auto_pagar_na_data?: boolean;
 }
 
 interface ContaDetalhesDrawerProps {
