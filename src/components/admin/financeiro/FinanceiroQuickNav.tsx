@@ -28,7 +28,8 @@ import {
   CreditCard,
   Banknote,
   Loader2,
-  Target
+  Target,
+  AlertTriangle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
@@ -256,8 +257,8 @@ const FinanceiroQuickNav: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Cards de Resultado Atual e Projetado */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Cards de Resultado Atual, Projetado e Contas Atrasadas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Resultado Atual */}
         <Card className={`border shadow-md ${isLucroAtual ? 'bg-gradient-to-br from-emerald-50 to-white border-emerald-100' : 'bg-gradient-to-br from-red-50 to-white border-red-100'}`}>
           <CardContent className="p-4">
@@ -288,12 +289,12 @@ const FinanceiroQuickNav: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Resultado Projetado */}
+        {/* Resultado Projetado do Mês */}
         <Card className={`border shadow-md ${isLucroProjetado ? 'bg-gradient-to-br from-blue-50 to-white border-blue-100' : 'bg-gradient-to-br from-amber-50 to-white border-amber-100'}`}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm text-gray-500 font-medium">Projeção 30 dias</p>
+                <p className="text-sm text-gray-500 font-medium">Projeção do Mês</p>
                 {resultadoData.loading ? (
                   <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
                 ) : (
@@ -309,6 +310,34 @@ const FinanceiroQuickNav: React.FC = () => {
               </div>
               <div className={`p-3 rounded-xl ${isLucroProjetado ? 'bg-blue-100' : 'bg-amber-100'}`}>
                 <Target className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Contas Atrasadas */}
+        <Card className={`border shadow-md ${resultadoData.contasAtrasadasTotal > 0 ? 'bg-gradient-to-br from-red-50 to-white border-red-200' : 'bg-gradient-to-br from-gray-50 to-white border-gray-100'}`}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm text-gray-500 font-medium">Contas Atrasadas</p>
+                {resultadoData.loading ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                ) : (
+                  <>
+                    <p className={`text-2xl font-bold ${resultadoData.contasAtrasadasTotal > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                      {formatCurrency(resultadoData.contasAtrasadasTotal)}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {resultadoData.contasAtrasadasCount > 0 
+                        ? `${resultadoData.contasAtrasadasCount} cliente${resultadoData.contasAtrasadasCount > 1 ? 's' : ''} inadimplente${resultadoData.contasAtrasadasCount > 1 ? 's' : ''}`
+                        : 'Nenhuma conta em atraso ✓'}
+                    </p>
+                  </>
+                )}
+              </div>
+              <div className={`p-3 rounded-xl ${resultadoData.contasAtrasadasTotal > 0 ? 'bg-red-100' : 'bg-gray-100'}`}>
+                <AlertTriangle className={`h-6 w-6 ${resultadoData.contasAtrasadasTotal > 0 ? 'text-red-600' : 'text-gray-400'}`} />
               </div>
             </div>
           </CardContent>
