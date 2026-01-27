@@ -1,144 +1,108 @@
 
-# Plano: Sistema Avançado de Agendamento de Pagamentos
+# Plano: Corrigir Edição de Data de Vencimento no Contas a Pagar
 
-## Contexto Atual
+## Problema Identificado
 
-O módulo "Contas a Pagar" já possui:
-- **NovaDespesaModal**: Criação de despesas fixas e variáveis
-- **PagarContaModal**: Registro de pagamento (manual ou vinculado ao ASAAS)
-- **EditarContaModal**: Edição de valores, categoria, vencimento
-- **Periodicidade básica**: semanal, mensal, trimestral, semestral, anual
+### 1. Erro de Console (React.Fragment)
+Na linha 294-306 do `EditarContaModal.tsx`, o código usa `React.Fragment` para mapear categorias, mas o sistema está passando `data-lov-id` para o Fragment (que só aceita `key` e `children`).
 
-## O Que Está Faltando
+### 2. Data de Vencimento Não Editável
+O modal atual tem limitações:
 
-Com base na sua solicitação, as seguintes funcionalidades estão ausentes:
+| Tipo de Despesa | Campo Atual | Problema |
+|-----------------|-------------|----------|
+| Fixa (mensal) | `dia_vencimento` (1-28) | Não permite alterar mês/ano específico |
+| Fixa (semanal) | `data_primeiro_lancamento` | Funciona parcialmente |
+| Variável | `data` | O campo existe mas pode não estar funcionando corretamente |
 
-### 1. Agendamento do Primeiro Pagamento
-- Definir data específica para o primeiro pagamento
-- Escolher se o pagamento será à vista ou parcelado
-- Definir número de parcelas (se aplicável)
-
-### 2. Configuração de Recorrência Avançada
-- **Semanal**: Já existe, mas sem opção de escolher dias específicos
-- **Semestral**: Já existe como periodicidade
-- **Personalizado**: Falta opção de definir intervalo customizado (ex: a cada 45 dias)
-
-### 3. Opções Adicionais
-- Pausa automática após X pagamentos
-- Lembrete antes do vencimento
-- Reajuste automático (IPCA, IGP-M, valor fixo)
+O usuário quer poder **alterar a data completa** (dia/mês/ano) do lançamento, não apenas o dia do mês.
 
 ---
 
 ## Solução Proposta
 
-### Fase 1: Atualizar Schema do Banco de Dados
+### Etapa 1: Corrigir o Erro de React.Fragment
 
-Adicionar novas colunas à tabela `despesas_fixas`:
+Substituir `React.Fragment` por um `<div>` ou reestruturar o mapeamento de categorias para evitar o erro.
 
-```sql
-ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS total_parcelas INTEGER;
-ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS parcelas_pagas INTEGER DEFAULT 0;
-ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS recorrencia_tipo TEXT; -- 'infinita', 'limitada', 'personalizada'
-ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS intervalo_dias INTEGER; -- para recorrência personalizada
-ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS dias_semana TEXT[]; -- para semanal (ex: ['seg', 'qui'])
-ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS lembrete_dias INTEGER DEFAULT 3;
-ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS reajuste_tipo TEXT; -- 'nenhum', 'ipca', 'igpm', 'fixo'
-ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS reajuste_percentual DECIMAL(5,2);
+**Antes:**
+```typescript
+{categorias.filter(c => !c.parent_id).map(parent => (
+  <React.Fragment key={parent.id}>
+    <SelectItem value={parent.id}>...</SelectItem>
+    {categorias.filter(...).map(child => (...))}
+  </React.Fragment>
+))}
 ```
 
-### Fase 2: Atualizar NovaDespesaModal
+**Depois:**
+```typescript
+{categorias.filter(c => !c.parent_id).flatMap(parent => [
+  <SelectItem key={parent.id} value={parent.id}>...</SelectItem>,
+  ...categorias
+    .filter(c => c.parent_id === parent.id)
+    .map(child => (
+      <SelectItem key={child.id} value={child.id}>...</SelectItem>
+    ))
+])}
+```
 
-**Seção "Configuração de Recorrência":**
+### Etapa 2: Adicionar Campo de Data Completa para Despesas Fixas
 
+Para despesas fixas (não-semanais), adicionar um campo de data que permite alterar a data específica do próximo vencimento:
+
+**Novo layout:**
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│  🔄 Configuração de Recorrência                            │
+│  📅 Vencimento                                              │
 ├─────────────────────────────────────────────────────────────┤
+│  [Para despesas mensais/trimestrais/etc]                    │
 │                                                             │
-│  Tipo de Recorrência:                                       │
-│  ┌─────────┐ ┌─────────┐ ┌──────────────┐                  │
-│  │ Infinita│ │ Limitada│ │ Personalizada│                  │
-│  └─────────┘ └─────────┘ └──────────────┘                  │
+│  Próximo vencimento: [____10/02/2026____] (DatePicker)     │
 │                                                             │
-│  Frequência:                                                │
-│  ┌─────────┐ ┌─────────┐ ┌──────────┐ ┌──────────┐        │
-│  │ Semanal │ │ Mensal  │ │ Semestral│ │ Anual    │        │
-│  └─────────┘ └─────────┘ └──────────┘ └──────────┘        │
+│  Ou definir dia fixo: [__10__] de cada mês                 │
 │                                                             │
-│  [Se Limitada]                                              │
-│  Número de Parcelas: [___12___]                            │
+│  [Para despesas semanais]                                   │
+│  Data de início: [____27/01/2026____]                       │
 │                                                             │
-│  [Se Personalizada]                                         │
-│  A cada [___45___] dias                                     │
-│                                                             │
-│  [Se Semanal]                                               │
-│  Dias da Semana:                                            │
-│  ☑ Seg  ☐ Ter  ☐ Qua  ☑ Qui  ☐ Sex  ☐ Sáb  ☐ Dom         │
-│                                                             │
-├─────────────────────────────────────────────────────────────┤
-│  📅 Primeiro Pagamento                                      │
-│                                                             │
-│  Data de Início: [____27/01/2026____]                      │
-│                                                             │
-│  Lembrete: [__3__] dias antes do vencimento                │
-│                                                             │
-├─────────────────────────────────────────────────────────────┤
-│  📈 Reajuste Automático (opcional)                          │
-│                                                             │
-│  Tipo: ┌──────────┐                                         │
-│        │ Nenhum ▼ │  (Nenhum / IPCA / IGP-M / Fixo)        │
-│        └──────────┘                                         │
-│                                                             │
-│  [Se Fixo]                                                  │
-│  Percentual anual: [___5___] %                              │
-│                                                             │
+│  [Para despesas variáveis]                                  │
+│  Data: [____27/01/2026____]                                 │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Fase 3: Atualizar PagarContaModal
+### Etapa 3: Atualizar a Lógica de Salvamento
 
-**Adicionar opção de agendar pagamento futuro:**
+Modificar `handleSave()` para:
+1. Salvar `data_primeiro_lancamento` para TODAS as despesas fixas (não só semanais)
+2. Manter `dia_vencimento` como referência para recorrências futuras
+3. Permitir que ambos os campos coexistam
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│  💳 Registrar Pagamento                                     │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Ação:                                                      │
-│  ┌──────────────────┐ ┌──────────────────┐                 │
-│  │ ✓ Pagar Agora    │ │ 📅 Agendar       │                 │
-│  └──────────────────┘ └──────────────────┘                 │
-│                                                             │
-│  [Se Agendar]                                               │
-│  Data do Pagamento Agendado: [____30/01/2026____]          │
-│  Horário (opcional): [__09:00__]                            │
-│                                                             │
-│  ☐ Marcar como pago automaticamente na data                │
-│  ☐ Apenas lembrar-me na data                               │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+**Lógica atualizada:**
+```typescript
+if (conta.tipo === 'fixa') {
+  // Sempre permitir editar a data do próximo vencimento
+  updateData.data_primeiro_lancamento = formData.data_proximo_vencimento || null;
+  
+  // Manter dia_vencimento para cálculos futuros
+  if (formData.periodicidade !== 'semanal') {
+    updateData.dia_vencimento = formData.dia_vencimento;
+  }
+}
 ```
 
-### Fase 4: Atualizar ContaDetalhesDrawer
+### Etapa 4: Atualizar a Exibição na Lista
 
-**Exibir informações de recorrência:**
+Em `ContasPagarPage.tsx`, ajustar o cálculo de `data_vencimento` para usar `data_primeiro_lancamento` se disponível:
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│  📊 Resumo da Recorrência                                   │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Tipo: Mensal (Limitada)                                    │
-│  Parcelas: 8 de 12 pagas                                    │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 66%                          │
-│                                                             │
-│  Próximo vencimento: 10/02/2026                             │
-│  Valor: R$ 1.500,00                                         │
-│                                                             │
-│  Reajuste: IPCA (aplicado anualmente)                       │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+```typescript
+if (d.data_primeiro_lancamento) {
+  // Usa data específica se definida
+  dataVencimentoStr = d.data_primeiro_lancamento;
+  dataVencimento = toLocalDate(d.data_primeiro_lancamento) ?? hoje;
+} else if (d.dia_vencimento) {
+  // Calcula baseado no dia do mês
+  // ... código existente
+}
 ```
 
 ---
@@ -147,50 +111,53 @@ ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS reajuste_percentual DECIMAL(
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `supabase/migrations/...` | Adicionar novas colunas para recorrência avançada |
-| `src/components/admin/financeiro/NovaDespesaModal.tsx` | Adicionar seção de configuração de recorrência |
-| `src/components/admin/financeiro/contas-pagar/PagarContaModal.tsx` | Adicionar opção de agendar pagamento |
-| `src/components/admin/financeiro/contas-pagar/EditarContaModal.tsx` | Permitir edição de configurações de recorrência |
-| `src/components/admin/financeiro/contas-pagar/ContaDetalhesDrawer.tsx` | Exibir resumo de recorrência e progresso |
-| `src/pages/admin/financeiro/ContasPagarPage.tsx` | Adicionar filtro por tipo de recorrência |
+| `src/components/admin/financeiro/contas-pagar/EditarContaModal.tsx` | Corrigir Fragment + adicionar campo de data completa |
+| `src/pages/admin/financeiro/ContasPagarPage.tsx` | Ajustar lógica de exibição de data |
 
 ---
 
-## Fluxo de Uso Esperado
+## Interface do Campo de Data
 
-### Criar Nova Despesa com Recorrência Limitada:
-1. Usuário clica em "Nova Conta"
-2. Preenche descrição, valor, categoria
-3. Seleciona **Tipo de Recorrência: Limitada**
-4. Define **12 parcelas**
-5. Escolhe **Frequência: Mensal**
-6. Define **Primeiro Pagamento: 10/02/2026**
-7. Sistema gera 12 parcelas automaticamente
+O novo campo usará o padrão Shadcn com DatePicker:
 
-### Criar Despesa Personalizada:
-1. Seleciona **Tipo de Recorrência: Personalizada**
-2. Define **A cada 45 dias**
-3. Sistema calcula próximas datas automaticamente
-
-### Agendar Pagamento:
-1. Usuário clica em uma conta pendente
-2. Clica em "Pagar"
-3. Seleciona **Agendar**
-4. Define data futura (ex: 30/01/2026)
-5. Conta fica com status "Agendado" até a data
+```typescript
+<div className="space-y-2">
+  <Label htmlFor="data_vencimento">Data do Vencimento</Label>
+  <Popover>
+    <PopoverTrigger asChild>
+      <Button
+        variant="outline"
+        className={cn("w-full justify-start text-left font-normal bg-white")}
+      >
+        <CalendarIcon className="mr-2 h-4 w-4" />
+        {formData.data_proximo_vencimento 
+          ? format(toLocalDate(formData.data_proximo_vencimento), 'dd/MM/yyyy')
+          : <span className="text-muted-foreground">Selecionar data</span>
+        }
+      </Button>
+    </PopoverTrigger>
+    <PopoverContent className="w-auto p-0" align="start">
+      <Calendar
+        mode="single"
+        selected={toLocalDate(formData.data_proximo_vencimento)}
+        onSelect={(date) => setFormData(prev => ({ 
+          ...prev, 
+          data_proximo_vencimento: date ? format(date, 'yyyy-MM-dd') : '' 
+        }))}
+        className="p-3 pointer-events-auto"
+      />
+    </PopoverContent>
+  </Popover>
+</div>
+```
 
 ---
 
-## Considerações Técnicas
+## Resultado Esperado
 
-### Geração de Parcelas
-- Trigger no banco ou Edge Function para gerar parcelas baseado na configuração
-- Para recorrência "infinita", gerar apenas 12 meses à frente (rolling window)
+Após implementação:
 
-### Status de Pagamento
-- Novo status: `agendado` (além de `pendente`, `pago`, `atrasado`)
-- CRON job para verificar pagamentos agendados e marcar como pagos automaticamente
-
-### Reajustes
-- Aplicar reajuste anualmente na data de aniversário da despesa
-- Registrar histórico de reajustes para auditoria
+1. **Erro de console resolvido** - Sem mais warnings de React.Fragment
+2. **Data editável para despesas fixas** - Campo de data completa (dia/mês/ano)
+3. **Dia do mês opcional** - Para quem quer definir um padrão recorrente
+4. **Compatibilidade** - Mantém funcionamento para despesas semanais e variáveis
