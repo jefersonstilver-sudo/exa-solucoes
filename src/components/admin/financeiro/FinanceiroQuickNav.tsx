@@ -344,6 +344,56 @@ const FinanceiroQuickNav: React.FC = () => {
         </Card>
       </div>
 
+      {/* Card de Resumo Consolidado do Mês */}
+      <Card className="bg-gradient-to-r from-slate-800 to-slate-700 text-white border-0 shadow-lg">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-medium text-slate-300">📊 Resumo Consolidado do Mês</p>
+            <BarChart3 className="h-5 w-5 text-slate-400" />
+          </div>
+          
+          {resultadoData.loading ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+            </div>
+          ) : (
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-slate-300">Projeção (entradas)</span>
+                <span className="text-emerald-400 font-medium">
+                  + {formatCurrency(resultadoData.entradasProjetadas)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-300">Contas Atrasadas a Recuperar</span>
+                <span className="text-amber-400 font-medium">
+                  + {formatCurrency(resultadoData.contasAtrasadasTotal)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-300">Saídas Projetadas</span>
+                <span className="text-red-400 font-medium">
+                  - {formatCurrency(resultadoData.saidasProjetadas)}
+                </span>
+              </div>
+              
+              <Separator className="bg-slate-600 my-2" />
+              
+              <div className="flex justify-between text-lg font-bold">
+                <span>Saldo Esperado</span>
+                <span className={
+                  (resultadoData.entradasProjetadas + resultadoData.contasAtrasadasTotal - resultadoData.saidasProjetadas) >= 0 
+                    ? 'text-emerald-400' 
+                    : 'text-red-400'
+                }>
+                  {formatCurrency(resultadoData.entradasProjetadas + resultadoData.contasAtrasadasTotal - resultadoData.saidasProjetadas)}
+                </span>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Grid de navegação */}
       <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
         {navItems.map((item) => (

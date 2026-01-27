@@ -26,49 +26,42 @@ export const useInadimplentes = () => {
   const fetchInadimplentes = useCallback(async () => {
     setLoading(true);
     try {
-      // Primeiro atualizar dias de atraso
-      await supabase.rpc('atualizar_dias_atraso_cobrancas');
-
-      // Buscar cobranças vencidas
+      // Buscar transações OVERDUE do ASAAS (fonte real de inadimplência)
       const { data, error } = await supabase
-        .from('cobrancas')
-        .select(`
-          *,
-          users:client_id (
-            id,
-            full_name,
-            email,
-            phone
-          )
-        `)
-        .eq('status', 'vencido')
-        .order('dias_atraso', { ascending: false });
+        .from('transacoes_asaas')
+        .select('*')
+        .eq('status', 'OVERDUE')
+        .order('data_vencimento', { ascending: true });
 
       if (error) throw error;
 
       // Agrupar por cliente
       const porCliente = new Map<string, any>();
 
-      (data || []).forEach((c: any) => {
-        const clientId = c.client_id;
-        if (!clientId) return;
+      (data || []).forEach((t: any) => {
+        const customerId = t.customer_id || 'unknown';
+        
+        // Calcular dias de atraso
+        const vencimento = new Date(t.data_vencimento);
+        const hoje = new Date();
+        const diasAtraso = Math.floor((hoje.getTime() - vencimento.getTime()) / (1000 * 60 * 60 * 24));
 
-        if (!porCliente.has(clientId)) {
-          porCliente.set(clientId, {
-            client_id: clientId,
-            cliente_nome: c.users?.full_name || 'Cliente não identificado',
-            cliente_email: c.users?.email || '',
-            cliente_telefone: c.users?.phone,
+        if (!porCliente.has(customerId)) {
+          porCliente.set(customerId, {
+            client_id: customerId,
+            cliente_nome: t.customer_name || 'Cliente não identificado',
+            cliente_email: t.customer_email || '',
+            cliente_telefone: null,
             total_devido: 0,
             dias_atraso_max: 0,
             cobrancas_vencidas: 0,
-            ultima_cobranca: c.data_vencimento
+            ultima_cobranca: t.data_vencimento
           });
         }
 
-        const cliente = porCliente.get(clientId);
-        cliente.total_devido += Number(c.valor) || 0;
-        cliente.dias_atraso_max = Math.max(cliente.dias_atraso_max, c.dias_atraso || 0);
+        const cliente = porCliente.get(customerId);
+        cliente.total_devido += Number(t.valor) || 0;
+        cliente.dias_atraso_max = Math.max(cliente.dias_atraso_max, diasAtraso);
         cliente.cobrancas_vencidas += 1;
       });
 
