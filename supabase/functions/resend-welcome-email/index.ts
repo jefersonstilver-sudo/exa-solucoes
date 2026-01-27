@@ -68,6 +68,20 @@ serve(async (req) => {
 
     console.log(`📋 Usuário: ${userData.nome} (${userData.email}) - Role: ${userData.role}`);
 
+    // IMPORTANTE: Confirmar email automaticamente antes de enviar
+    // Isso garante que o usuário possa fazer login imediatamente após receber o email
+    console.log('🔓 Confirmando email do usuário...');
+    const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      email_confirm: true
+    });
+    
+    if (confirmError) {
+      console.error('⚠️ Erro ao confirmar email:', confirmError);
+      // Não falhar aqui, apenas logar o aviso
+    } else {
+      console.log('✅ Email confirmado automaticamente!');
+    }
+
     // Enviar email de boas-vindas
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     if (!resendApiKey) {
