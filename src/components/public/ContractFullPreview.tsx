@@ -1,6 +1,9 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { X, FileText, Printer, AlertCircle, FileWarning } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+// Header EXA oficial - IMAGEM LOCAL (evita problemas de bucket privado)
+import exaContractHeader from '@/assets/exa-contract-header.png';
 
 interface ContractFullPreviewProps {
   isOpen: boolean;
@@ -15,7 +18,23 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
 }) => {
   const contractRef = useRef<HTMLDivElement>(null);
 
-  if (!isOpen || !contractHtml) return null;
+  // Substituir URLs quebradas do header por import local
+  const processedHtml = useMemo(() => {
+    if (!contractHtml) return '';
+    
+    // Substituir todas as variantes de URL do header quebrado pelo import local
+    return contractHtml
+      .replace(
+        /src="https:\/\/aakenoljsycyrcrchgxj\.supabase\.co\/storage\/v1\/object\/public\/arquivos\/logo%20e%20icones\/exa-contract-header\.png"/g,
+        `src="${exaContractHeader}"`
+      )
+      .replace(
+        /src="https:\/\/aakenoljsycyrcrchgxj\.supabase\.co\/storage\/v1\/object\/public\/email-assets\/exa-contract-header\.png"/g,
+        `src="${exaContractHeader}"`
+      );
+  }, [contractHtml]);
+
+  if (!isOpen || !processedHtml) return null;
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
@@ -77,7 +96,7 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
         </head>
         <body>
           <div class="watermark">RASCUNHO</div>
-          ${contractHtml}
+          ${processedHtml}
         </body>
         </html>
       `);
@@ -164,7 +183,7 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
               }}
             >
               <div 
-                dangerouslySetInnerHTML={{ __html: contractHtml }}
+                dangerouslySetInnerHTML={{ __html: processedHtml }}
                 className="contract-content prose prose-sm max-w-none"
                 style={{
                   fontSize: '11pt',
