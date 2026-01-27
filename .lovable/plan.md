@@ -1,151 +1,74 @@
 
-# Plano: Adicionar Botao "Reenviar Email" no Alerta de Email Existente
+
+# Plano: Corrigir Header Corrompido do Contrato
 
 ## Problema Identificado
 
-Quando o usuario tenta criar uma conta com um email que ja existe (como `alencarlima22@outlook.com`), o sistema mostra o modal "Email Ja Cadastrado" mas **nao oferece a opcao de reenviar o email de boas-vindas** com a senha.
+### Causa Raiz
+A URL da imagem do header do contrato aponta para um bucket **privado**:
+```
+https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png
+```
 
-### Situacao Atual
-O modal atual oferece apenas:
-- Usar um email diferente
-- Editar a conta existente
-- Deletar e recriar (apenas para clientes)
+**Erro retornado:** `{"statusCode":"404","error":"Bucket not found","message":"Bucket not found"}`
 
-### O que Falta
-Botao "Reenviar Email de Boas-Vindas" que:
-1. Confirma o email no auth.users (email_confirm = true)
-2. Envia novamente o email com a senha temporaria (exa2025)
-3. Permite que o usuario faca login imediatamente
+O bucket `arquivos` foi configurado como `public: false`, quebrando todas as URLs publicas de imagens que dependem dele.
+
+### Arquivos Afetados
+| Arquivo | Problema |
+|---------|----------|
+| `supabase/functions/create-contract-from-proposal/index.ts` | URL da imagem quebrada (linha 1081) |
+| `supabase/functions/clicksign-create-contract/index.ts` | URL da imagem quebrada (linhas 1136 e 1535) |
+| `src/components/admin/contracts/ContractPreview.tsx` | URL da imagem quebrada (linha 50) |
+| `src/components/admin/contracts/ComodatoTemplate.tsx` | URL da imagem quebrada (linha 51) |
+
+### Componente que Funciona (Referencia)
+O arquivo `src/components/legal-flow/LiveContractPreview.tsx` usa a abordagem correta:
+```typescript
+import exaContractHeader from '@/assets/exa-contract-header.png';
+```
 
 ---
 
 ## Solucao Proposta
 
-### Layout Visual Atualizado
+### Etapa 1: Upload da Imagem para Bucket Publico
+Fazer upload de `src/assets/exa-contract-header.png` para o bucket `email-assets` (que e publico).
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  ⚠️  Email Ja Cadastrado                                                 X │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  Este email ja possui uma conta cadastrada:                                 │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │ EMAIL: alencarlima22@outlook.com                                     │   │
-│  │ NOME: Alencar Lima                                                   │   │
-│  │ TIPO: eletricista_                                                   │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                             │
-│  💡 O que fazer:                                                            │
-│  • Use um email diferente para criar a nova conta                          │
-│  • Ou edite a conta existente para alterar o tipo                          │
-│  • Ou reenvie o email de boas-vindas com a senha                           │  ← NOVO
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │ 📧 Reenviar Email de Boas-Vindas          [Loader se enviando]       │   │  ← NOVO
-│  │    O usuario recebera a senha temporaria (exa2025)                   │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                             │
-│  [Deletar e Recriar]                                        [Entendi]      │
-└─────────────────────────────────────────────────────────────────────────────┘
+Nova URL:
+```
+https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/email-assets/exa-contract-header.png
 ```
 
----
+### Etapa 2: Atualizar Edge Functions
+Alterar todas as Edge Functions para usar a nova URL publica:
 
-## Alteracoes Tecnicas
+**create-contract-from-proposal/index.ts (linha 1081):**
+```html
+<!-- ANTES -->
+src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png"
 
-### 1. Modificar ExistingUserAlert.tsx
+<!-- DEPOIS -->
+src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/email-assets/exa-contract-header.png"
+```
 
-Adicionar funcao de reenvio de email:
+**clicksign-create-contract/index.ts (linhas 1136 e 1535):**
+Mesma alteracao.
 
+### Etapa 3: Atualizar Componentes Frontend
+Alterar os componentes que usam URL hardcoded:
+
+**ContractPreview.tsx (linha 50):**
 ```typescript
-// Novo estado para controlar loading
-const [resending, setResending] = useState(false);
+// ANTES
+const EXA_CONTRACT_HEADER_URL = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png";
 
-// Nova funcao para reenviar email
-const handleResendWelcomeEmail = async () => {
-  try {
-    setResending(true);
-    
-    // Buscar ID do usuario pelo email
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', email)
-      .single();
-    
-    if (!userData) {
-      throw new Error('Usuario nao encontrado');
-    }
-    
-    // Chamar edge function para reenviar email
-    const { data, error } = await supabase.functions.invoke('resend-welcome-email', {
-      body: { userId: userData.id }
-    });
-    
-    if (error) throw error;
-    
-    toast.success('📧 Email reenviado com sucesso!', {
-      description: 'O usuario recebera a senha temporaria (exa2025)'
-    });
-    
-    onOpenChange(false);
-  } catch (error) {
-    toast.error('Erro ao reenviar email');
-  } finally {
-    setResending(false);
-  }
-};
+// DEPOIS - Usar import local (mais seguro)
+import exaContractHeader from '@/assets/exa-contract-header.png';
 ```
 
-### 2. Adicionar Botao no Modal
-
-No JSX, antes do rodape:
-
-```tsx
-{/* Botao de Reenviar Email */}
-<div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
-  <div className="flex items-center justify-between">
-    <div>
-      <p className="text-sm font-semibold text-green-900">
-        📧 Reenviar Email de Boas-Vindas
-      </p>
-      <p className="text-xs text-green-700">
-        O usuario recebera a senha temporaria (exa2025)
-      </p>
-    </div>
-    <Button
-      onClick={handleResendWelcomeEmail}
-      disabled={resending}
-      variant="outline"
-      className="border-green-300 text-green-700 hover:bg-green-100"
-    >
-      {resending ? (
-        <>
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Enviando...
-        </>
-      ) : (
-        <>
-          <Mail className="w-4 h-4 mr-2" />
-          Reenviar
-        </>
-      )}
-    </Button>
-  </div>
-</div>
-```
-
-### 3. Atualizar Edge Function resend-welcome-email
-
-Adicionar confirmacao automatica do email:
-
-```typescript
-// Confirmar email automaticamente antes de enviar
-await supabaseAdmin.auth.admin.updateUserById(userId, {
-  email_confirm: true
-});
-```
+**ComodatoTemplate.tsx (linha 51):**
+Mesma alteracao.
 
 ---
 
@@ -153,51 +76,38 @@ await supabaseAdmin.auth.admin.updateUserById(userId, {
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/components/admin/users/ExistingUserAlert.tsx` | Adicionar botao "Reenviar Email" |
-| `supabase/functions/resend-welcome-email/index.ts` | Confirmar email automaticamente |
+| `supabase/functions/create-contract-from-proposal/index.ts` | Nova URL publica |
+| `supabase/functions/clicksign-create-contract/index.ts` | Nova URL publica |
+| `src/components/admin/contracts/ContractPreview.tsx` | Import local ou nova URL |
+| `src/components/admin/contracts/ComodatoTemplate.tsx` | Import local ou nova URL |
 
 ---
 
-## Fluxo Apos Implementacao
+## Acao Imediata (SQL ou Dashboard)
 
-```text
-1. Admin tenta criar conta com email existente
-         │
-         ▼
-2. Modal "Email Ja Cadastrado" aparece
-         │
-         ▼
-3. Admin clica "📧 Reenviar Email de Boas-Vindas"
-         │
-         ▼
-4. Edge function:
-   a) Confirma email no auth.users (email_confirm = true)
-   b) Envia email com senha temporaria (exa2025)
-         │
-         ▼
-5. Usuario recebe email e consegue fazer login imediatamente
-```
+Para corrigir imediatamente, fazer upload da imagem para o bucket `email-assets` via Supabase Dashboard:
+1. Acessar Storage no Supabase
+2. Abrir bucket `email-assets`
+3. Upload de `exa-contract-header.png`
 
 ---
 
 ## Resultado Esperado
 
-1. Botao visivel no modal "Email Ja Cadastrado"
-2. Clique envia email de boas-vindas com senha
-3. Email do usuario e confirmado automaticamente
-4. Usuario consegue fazer login sem bloqueios
-5. Toast de sucesso confirma envio
+```text
+ANTES:
+┌─────────────────────────────────────────┐
+│ [EXA Header]  ← Texto quebrado (404)    │
+│ CONTRATO DE PRESTACAO DE SERVICOS...    │
+└─────────────────────────────────────────┘
 
----
-
-## Correcao Imediata para o Usuario Atual
-
-Para o usuario `alencarlima22@outlook.com`, executar este SQL para confirmar o email manualmente:
-
-```sql
-UPDATE auth.users 
-SET email_confirmed_at = NOW()
-WHERE email = 'alencarlima22@outlook.com';
+DEPOIS:
+┌─────────────────────────────────────────┐
+│ ██████████████████████████████████████  │
+│ █    exa                              █ │  ← Imagem oficial
+│ █    Ecosistema de midia e tecnologia █ │
+│ ██████████████████████████████████████  │
+│ CONTRATO DE PRESTACAO DE SERVICOS...    │
+└─────────────────────────────────────────┘
 ```
 
-Depois usar o botao "Reenviar Email" para enviar a senha.
