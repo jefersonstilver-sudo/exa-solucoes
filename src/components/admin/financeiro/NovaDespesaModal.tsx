@@ -20,8 +20,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { 
-  Calendar,
+  Calendar as CalendarIcon,
   DollarSign,
   Tag,
   FileText,
@@ -32,6 +38,7 @@ import {
   Wifi,
   Settings2
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -75,7 +82,7 @@ const DEFAULT_RECORRENCIA_CONFIG: RecorrenciaConfigData = {
   reajuste_percentual: null,
 };
 
-const DIAS_VENCIMENTO = [1, 5, 10, 15, 20, 25, 28];
+// Removido: const DIAS_VENCIMENTO - agora usamos DatePicker completo
 
 // Palavras-chave que exigem fornecedor obrigatório
 const INTERNET_KEYWORDS = ['internet', 'provedor', 'telecom', 'fibra', 'banda larga', 'wifi', 'conectividade'];
@@ -517,47 +524,54 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
             </div>
 
             {/* Dia de Vencimento ou Data do Primeiro Lançamento */}
-            {fixaForm.periodicidade === 'semanal' ? (
-              <div className="space-y-2">
-                <Label htmlFor="fixa-data-inicial" className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
-                  Data do Primeiro Lançamento
-                </Label>
-                <Input
-                  id="fixa-data-inicial"
-                  type="date"
-                  value={fixaForm.data_primeiro_lancamento}
-                  onChange={(e) => setFixaForm(prev => ({ ...prev, data_primeiro_lancamento: e.target.value }))}
-                  className="bg-gray-50 border-gray-200"
-                />
-                <p className="text-xs text-gray-500">
-                  As próximas parcelas serão geradas a cada semana a partir desta data.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
-                  Dia de Vencimento
-                </Label>
-                <div className="flex gap-2 flex-wrap">
-                  {DIAS_VENCIMENTO.map(dia => (
-                    <Badge
-                      key={dia}
-                      variant={fixaForm.dia_vencimento === dia ? 'default' : 'outline'}
-                      className={`cursor-pointer transition-all ${
-                        fixaForm.dia_vencimento === dia 
-                          ? 'bg-gray-900 text-white' 
-                          : 'bg-white hover:bg-gray-100 text-gray-700 border-gray-200'
-                      }`}
-                      onClick={() => setFixaForm(prev => ({ ...prev, dia_vencimento: dia }))}
-                    >
-                      Dia {dia}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Data do Primeiro Pagamento - DatePicker completo */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                <CalendarIcon className="h-3.5 w-3.5" />
+                Data do Primeiro Pagamento
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal bg-gray-50 border-gray-200",
+                      !fixaForm.data_primeiro_lancamento && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {fixaForm.data_primeiro_lancamento ? (
+                      format(new Date(fixaForm.data_primeiro_lancamento + 'T12:00:00'), "dd/MM/yyyy")
+                    ) : (
+                      <span>Selecione a data</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={fixaForm.data_primeiro_lancamento ? new Date(fixaForm.data_primeiro_lancamento + 'T12:00:00') : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        const formatted = format(date, 'yyyy-MM-dd');
+                        setFixaForm(prev => ({ 
+                          ...prev, 
+                          data_primeiro_lancamento: formatted,
+                          dia_vencimento: date.getDate()
+                        }));
+                      }
+                    }}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-gray-500">
+                {fixaForm.periodicidade === 'semanal' 
+                  ? 'As próximas parcelas serão geradas a cada semana a partir desta data.'
+                  : 'Os próximos pagamentos serão gerados conforme a periodicidade selecionada.'}
+              </p>
+            </div>
 
             {/* Configuração Avançada de Recorrência */}
             <div className="space-y-2">
@@ -657,7 +671,7 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="var-data" className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
+                  <CalendarIcon className="h-3.5 w-3.5" />
                   Data da Despesa
                 </Label>
                 <Input
