@@ -1,157 +1,199 @@
 
-# Plano: Reconstruir Modal para Layout Vertical em Tela Cheia
 
-## Problema Identificado
+# Plano: Adicionar Indicador "A Receber" de Propostas no Dashboard Financeiro
 
-O modal atual usa `grid-cols-2` (duas colunas lado a lado), fazendo com que:
-1. A lista de saídas ASAAS fique espremida na coluna direita
-2. Os valores (R$) e descrições sejam cortados
-3. O scroll interno não consiga mostrar todo o conteúdo
+## Objetivo
 
-## Solução: Layout Vertical Full-Screen
+Exibir no card "Contas a Receber" do `FinanceiroQuickNav` o valor das propostas aceitas, com um **HoverCard** mostrando:
+1. Quantas propostas estao aceitas (aguardando pagamento)
+2. Quantas propostas estao pendentes de aceitacao
+3. Detalhes de forma de pagamento (PIX/Boleto/Cartao)
 
-Mudar para layout empilhado onde a lista ASAAS aparece abaixo, com largura total.
-
-### Nova Estrutura Visual
+## Estrutura Visual do HoverCard
 
 ```text
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│  💳 Registrar Pagamento                                                    [X]   │
-├──────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                  │
-│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
-│  │ CONTA                                              [Fixa]                   │ │
-│  │ Salário João                                                                │ │
-│  │ ──────────────────────────────────────────────────────────────────────────  │ │
-│  │ R$ 3.200,00                                      Vencimento: 14/01/2026     │ │
-│  └─────────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                  │
-│  AÇÃO   [ ✓ Pagar Agora ]  [ 📅 Agendar ]                                        │
-│                                                                                  │
-│  MÉTODO [ 💵 Manual ]  [ 🔗 ASAAS ]                                              │
-│                                                                                  │
-├──────────────────────────────────────────────────────────────────────────────────┤
-│  SAÍDAS ASAAS DISPONÍVEIS (9)                          [🔄 Sincronizar]          │
-│  Selecione uma saída para vincular                                              │
-├──────────────────────────────────────────────────────────────────────────────────┤
-│ ┌──────────────────────────────────────────────────────────────────────────────┐ │
-│ │ ○ │ Transferência ASAAS                     │ 25/01/2026 │ Transfer │ R$ 188 │ │
-│ ├──────────────────────────────────────────────────────────────────────────────┤ │
-│ │ ○ │ Transferência ASAAS                     │ 24/01/2026 │ Transfer │ R$ 120 │ │
-│ ├──────────────────────────────────────────────────────────────────────────────┤ │
-│ │ ○ │ Dois certificados pessoa física R$120   │ 16/01/2026 │ Transfer │ R$ 710 │ │
-│ ├──────────────────────────────────────────────────────────────────────────────┤ │
-│ │ ● │ Serviços programação João Tumiski       │ 15/01/2026 │ Transfer │ R$3200 │ │
-│ ├──────────────────────────────────────────────────────────────────────────────┤ │
-│ │ ○ │ Compra mercado limpeza cafe             │ 15/01/2026 │ Transfer │ R$ 196 │ │
-│ ├──────────────────────────────────────────────────────────────────────────────┤ │
-│ │ ○ │ Despesa fixa semanal combustivel        │ 10/01/2026 │ Transfer │ R$ 120 │ │
-│ └──────────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                  │
-├──────────────────────────────────────────────────────────────────────────────────┤
-│                                                 [Cancelar]   [✓ Confirmar]       │
-└──────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  📊 PROPOSTAS - A RECEBER                                   │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  VALOR TOTAL                                                │
+│  R$ 45.000,00                                               │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  ✅ Aceitas (aguardando pagamento)           3 propostas    │
+│  ⏳ Pendentes de aceitacao                  12 propostas    │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  FORMAS DE PAGAMENTO (das aceitas)                          │
+│  💳 PIX/Boleto: R$ 30.000  (2)                              │
+│  💰 Parcelado:  R$ 15.000  (1)                              │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## Alteracoes Tecnicas
 
-### 1. DialogContent - Tela Cheia Real
-```typescript
-// Antes
-className="w-[95vw] max-w-[1200px] h-[90vh] max-h-[850px]"
+### 1. Criar Hook para Buscar Dados de Propostas
 
-// Depois - Ocupar tela toda
-className="w-[98vw] max-w-[1400px] h-[95vh] max-h-[95vh]"
+Novo hook `usePropostasAReceber` que busca:
+- Propostas com status `aceita` (aceitas mas nao pagas)
+- Propostas pendentes (enviada, visualizada, pendente)
+- Agrupa por forma de pagamento
+
+```typescript
+// src/hooks/financeiro/usePropostasAReceber.ts
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface PropostasAReceber {
+  valorTotal: number;
+  countAceitas: number;
+  countPendentes: number;
+  porFormaPagamento: {
+    pix_boleto: { valor: number; count: number };
+    parcelado: { valor: number; count: number };
+  };
+  loading: boolean;
+}
+
+export const usePropostasAReceber = () => {
+  // Buscar propostas aceitas e pendentes
+  // Agrupar por payment_type
+  // Retornar metricas consolidadas
+};
 ```
 
-### 2. Layout Principal - Vertical
-```typescript
-// Antes
-<div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-0">
+### 2. Atualizar FinanceiroQuickNav com HoverCard
 
-// Depois - Sempre vertical com flex
-<div className="h-full flex flex-col overflow-hidden">
-  {/* Seção Superior - Resumo e Opções (altura fixa) */}
-  <div className="shrink-0 p-6 border-b">...</div>
+Adicionar `HoverCard` no card "Contas a Receber" com:
+- Badge mostrando valor total
+- Conteudo expandido no hover
+
+```typescript
+// No card 'receber'
+<HoverCard openDelay={200}>
+  <HoverCardTrigger asChild>
+    <Card className="...">
+      <CardContent className="...">
+        <div className="p-2 rounded-lg bg-gray-50">
+          <ArrowUpCircle className="h-5 w-5 text-emerald-600" />
+        </div>
+        <span className="text-xs font-medium">A Receber</span>
+        {/* Badge com valor */}
+        <Badge className="bg-emerald-100 text-emerald-700 text-xs">
+          {formatCurrency(propostasData.valorTotal)}
+        </Badge>
+      </CardContent>
+    </Card>
+  </HoverCardTrigger>
   
-  {/* Seção Inferior - Lista ASAAS (flex-1 para ocupar resto) */}
-  <div className="flex-1 overflow-hidden flex flex-col p-6">...</div>
-</div>
+  <HoverCardContent side="bottom" className="w-72">
+    {/* Conteudo detalhado */}
+  </HoverCardContent>
+</HoverCard>
 ```
 
-### 3. Seção Superior Compacta
-Reorganizar horizontalmente em uma linha:
-- Resumo da conta a esquerda
-- Opcoes de Acao e Metodo a direita
+### 3. Estrutura do HoverCardContent
 
 ```typescript
-<div className="flex flex-col lg:flex-row gap-6">
-  {/* Card Resumo */}
-  <div className="lg:w-1/3">...</div>
-  
-  {/* Opcoes lado a lado */}
-  <div className="lg:w-2/3 flex flex-col gap-4">
-    <div className="flex gap-4">
-      {/* Acao */}
-      {/* Metodo */}
+<HoverCardContent side="bottom" className="w-80 p-4">
+  <div className="space-y-3">
+    {/* Header */}
+    <div className="flex items-center gap-2">
+      <FileText className="h-4 w-4 text-emerald-600" />
+      <span className="font-semibold text-sm">Propostas - A Receber</span>
+    </div>
+    
+    {/* Valor Total */}
+    <div className="text-center py-2 bg-emerald-50 rounded-lg">
+      <p className="text-2xl font-bold text-emerald-700">
+        {formatCurrency(propostasData.valorTotal)}
+      </p>
+      <p className="text-xs text-emerald-600">Valor Total Aceito</p>
+    </div>
+    
+    <Separator />
+    
+    {/* Contagem */}
+    <div className="space-y-2">
+      <div className="flex justify-between items-center">
+        <span className="text-sm flex items-center gap-1">
+          <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+          Aceitas (aguardando pgto)
+        </span>
+        <Badge variant="outline" className="bg-emerald-50">
+          {propostasData.countAceitas}
+        </Badge>
+      </div>
+      <div className="flex justify-between items-center">
+        <span className="text-sm flex items-center gap-1">
+          <Clock className="h-3 w-3 text-amber-500" />
+          Pendentes de aceitacao
+        </span>
+        <Badge variant="outline" className="bg-amber-50">
+          {propostasData.countPendentes}
+        </Badge>
+      </div>
+    </div>
+    
+    <Separator />
+    
+    {/* Formas de Pagamento */}
+    <div className="space-y-2">
+      <p className="text-xs font-medium text-gray-500 uppercase">
+        Formas de Pagamento
+      </p>
+      <div className="flex justify-between text-sm">
+        <span>PIX/Boleto:</span>
+        <span className="font-medium">
+          {formatCurrency(propostasData.porFormaPagamento.pix_boleto.valor)} 
+          ({propostasData.porFormaPagamento.pix_boleto.count})
+        </span>
+      </div>
+      <div className="flex justify-between text-sm">
+        <span>Parcelado:</span>
+        <span className="font-medium">
+          {formatCurrency(propostasData.porFormaPagamento.parcelado.valor)} 
+          ({propostasData.porFormaPagamento.parcelado.count})
+        </span>
+      </div>
     </div>
   </div>
-</div>
+</HoverCardContent>
 ```
 
-### 4. Lista ASAAS - Layout de Tabela
-Cada item como linha de tabela com colunas fixas:
+## Arquivos a Criar/Modificar
+
+| Arquivo | Acao |
+|---------|------|
+| `src/hooks/financeiro/usePropostasAReceber.ts` | **CRIAR** - Hook para buscar dados de propostas |
+| `src/components/admin/financeiro/FinanceiroQuickNav.tsx` | **MODIFICAR** - Adicionar HoverCard no card "A Receber" |
+
+## Query do Supabase
 
 ```typescript
-<div className="grid grid-cols-[40px_1fr_100px_80px_100px] items-center gap-3 p-3 border-b">
-  {/* Radio */}
-  <div>○</div>
-  
-  {/* Descricao - ocupa espaco flexivel */}
-  <div className="truncate font-medium">{descricao}</div>
-  
-  {/* Data - largura fixa */}
-  <div className="text-sm text-muted">25/01/2026</div>
-  
-  {/* Tipo Badge */}
-  <Badge>Transfer</Badge>
-  
-  {/* Valor - alinhado a direita */}
-  <div className="text-right font-bold text-blue-600">R$ 188,00</div>
-</div>
+// Propostas aceitas (nao pagas ainda)
+const { data: aceitas } = await supabase
+  .from('proposals')
+  .select('id, cash_total_value, payment_type')
+  .eq('status', 'aceita');
+
+// Propostas pendentes de aceitacao
+const { data: pendentes } = await supabase
+  .from('proposals')
+  .select('id', { count: 'exact' })
+  .in('status', ['enviada', 'visualizada', 'pendente', 'atualizada']);
 ```
-
-### 5. ScrollArea para Lista
-A lista fica dentro de um ScrollArea que ocupa todo espaco disponivel:
-
-```typescript
-<ScrollArea className="flex-1 border rounded-xl bg-white">
-  <div className="divide-y">
-    {saidasAsaas.map((saida) => (
-      <ListItem key={saida.id} saida={saida} />
-    ))}
-  </div>
-</ScrollArea>
-```
-
-## Arquivo a Modificar
-
-| Arquivo | Alteracao |
-|---------|-----------|
-| `PagarContaModal.tsx` | Reconstrucao completa do layout de duas colunas para vertical |
-
-## Comportamento Mobile
-
-No mobile, o layout ja sera naturalmente vertical. A diferenca e que:
-- Resumo da conta empilha verticalmente
-- Lista ocupa largura total
-- Items da lista adaptam para mostrar valor em destaque
 
 ## Resultado Esperado
 
-1. Lista de saidas ASAAS visivel por completo
-2. Valores monetarios claramente visiveis em cada linha
-3. Descricoes completas ou com truncate elegante
-4. Modal ocupa quase toda a tela
-5. Scroll suave na lista de saidas
-6. Layout responsivo para mobile
+1. Card "Contas a Receber" exibe badge com valor total das propostas aceitas
+2. Ao passar o mouse, HoverCard mostra:
+   - Valor total em destaque
+   - Quantidade de propostas aceitas vs pendentes
+   - Breakdown por forma de pagamento
+3. Clique ainda navega para a pagina de contas a receber
+4. Design consistente com outros HoverCards do sistema
+
