@@ -101,7 +101,8 @@ const ContasPagarPage: React.FC = () => {
           let dataVencimento: Date;
           let dataVencimentoStr: string;
 
-          if (d.periodicidade === 'semanal' && d.data_primeiro_lancamento) {
+          // Priorizar data_primeiro_lancamento se existir (data específica definida pelo usuário)
+          if (d.data_primeiro_lancamento) {
             dataVencimentoStr = d.data_primeiro_lancamento;
             dataVencimento = toLocalDate(d.data_primeiro_lancamento) ?? hoje;
           } else if (d.dia_vencimento) {
@@ -113,7 +114,6 @@ const ContasPagarPage: React.FC = () => {
             dataVencimento = hoje;
             dataVencimentoStr = format(hoje, 'yyyy-MM-dd');
           }
-
           const diasAtraso = differenceInDays(hoje, dataVencimento);
           let status: ContaPagar['status'] = 'pendente';
 
