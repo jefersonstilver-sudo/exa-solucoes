@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Crown, Shield, UserCheck, DollarSign, User, Trash2, Loader2 } from 'lucide-react';
+import { AlertTriangle, Crown, Shield, UserCheck, DollarSign, User, Trash2, Loader2, Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -75,6 +75,45 @@ const ExistingUserAlert: React.FC<ExistingUserAlertProps> = ({
   const roleInfo = getRoleInfo(role || '');
   const Icon = roleInfo.icon;
   const [deleting, setDeleting] = useState(false);
+  const [resending, setResending] = useState(false);
+
+  const handleResendWelcomeEmail = async () => {
+    try {
+      setResending(true);
+      console.log('📧 Reenviando email de boas-vindas para:', email);
+      
+      // Buscar ID do usuário pelo email
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+      
+      if (userError || !userData) {
+        throw new Error('Usuário não encontrado na base de dados');
+      }
+      
+      // Chamar edge function para reenviar email (também confirma o email)
+      const { data, error } = await supabase.functions.invoke('resend-welcome-email', {
+        body: { userId: userData.id }
+      });
+      
+      if (error) throw error;
+      
+      toast.success('📧 Email reenviado com sucesso!', {
+        description: 'O usuário receberá a senha temporária (exa2025) e poderá fazer login imediatamente.'
+      });
+      
+      onOpenChange(false);
+    } catch (error: any) {
+      console.error('❌ Erro ao reenviar email:', error);
+      toast.error('Erro ao reenviar email', {
+        description: error.message || 'Tente novamente em alguns instantes'
+      });
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleDelete = async () => {
     try {
@@ -196,12 +235,46 @@ const ExistingUserAlert: React.FC<ExistingUserAlertProps> = ({
             <ul className="text-sm text-blue-800 mt-2 space-y-1 ml-4 list-disc">
               <li>Use um email diferente para criar a nova conta</li>
               <li>Ou edite a conta existente para alterar o tipo</li>
+              <li>Ou reenvie o email de boas-vindas com a senha</li>
               {role === 'client' && (
                 <li className="text-red-700 font-semibold">
                   Ou delete esta conta e recrie com o tipo correto
                 </li>
               )}
             </ul>
+          </div>
+
+          {/* Botão de Reenviar Email de Boas-Vindas */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-green-900">
+                  📧 Reenviar Email de Boas-Vindas
+                </p>
+                <p className="text-xs text-green-700">
+                  O usuário receberá a senha temporária (exa2025)
+                </p>
+              </div>
+              <Button
+                onClick={handleResendWelcomeEmail}
+                disabled={resending || deleting}
+                variant="outline"
+                size="sm"
+                className="border-green-300 text-green-700 hover:bg-green-100 shrink-0"
+              >
+                {resending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-4 h-4 mr-2" />
+                    Reenviar
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
 
