@@ -42,7 +42,7 @@ export const createAdminUser = async (
       const { data: createResult, error: createError } = await supabaseServiceRole.auth.admin.createUser({
         email,
         password: defaultPassword,
-        email_confirm: false, // Enviar email de confirmação
+        email_confirm: true, // ✅ Confirmar email automaticamente (contas admin são criadas por admins de confiança)
         user_metadata: {
           role: adminType,
           created_by_admin: true,
