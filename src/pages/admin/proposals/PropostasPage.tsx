@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone, Bell, BellOff, RefreshCcw, Calendar, FileDown, Pencil } from 'lucide-react';
+import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone, Bell, BellOff, RefreshCcw, Calendar, FileDown, Pencil, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -25,6 +25,7 @@ import { ProposalsPeriodSelector, getDefaultPeriod, type PeriodRange } from '@/c
 import { SellerStatsPanel } from '@/components/admin/proposals/SellerStatsPanel';
 import { ProposalReminderIndicator } from '@/components/admin/proposals/ProposalReminderIndicator';
 import { ProposalTimeIndicator } from '@/components/admin/proposals/ProposalTimeIndicator';
+import SegmentManagerModal from '@/components/admin/proposals/SegmentManagerModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Proposal {
@@ -109,6 +110,7 @@ const PropostasPage = () => {
   const [proposalToRevalidate, setProposalToRevalidate] = useState<Proposal | null>(null);
   const [newExpirationDays, setNewExpirationDays] = useState<number>(7);
   const [isRevalidating, setIsRevalidating] = useState(false);
+  const [segmentModalOpen, setSegmentModalOpen] = useState(false);
 
   const { data: proposals = [], isLoading, refetch } = useQuery({
     queryKey: ['proposals'],
@@ -715,13 +717,23 @@ const PropostasPage = () => {
               <h1 className="text-xl font-bold text-foreground">Propostas Comerciais</h1>
               <p className="text-sm text-muted-foreground">Crie e gerencie propostas</p>
             </div>
-            <Button 
-              onClick={() => navigate(buildPath('propostas/nova'))}
-              className="bg-[#9C1E1E] hover:bg-[#7D1818]"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Proposta
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => setSegmentModalOpen(true)}
+                className="border-border"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Segmentos
+              </Button>
+              <Button 
+                onClick={() => navigate(buildPath('propostas/nova'))}
+                className="bg-[#9C1E1E] hover:bg-[#7D1818]"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Proposta
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -1269,6 +1281,12 @@ const PropostasPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Segment Manager Modal */}
+      <SegmentManagerModal 
+        isOpen={segmentModalOpen} 
+        onClose={() => setSegmentModalOpen(false)} 
+      />
     </div>
   );
 };
