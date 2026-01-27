@@ -17,9 +17,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Edit, Loader2, Save } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Edit, Loader2, Save, CalendarIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { format, parse } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface ContaPagar {
   id: string;
@@ -47,6 +56,13 @@ interface Categoria {
   parent_id: string | null;
 }
 
+// Parse date without timezone shift
+const toLocalDate = (value?: string | null): Date | undefined => {
+  if (!value) return undefined;
+  if (typeof value === 'string' && value.includes('T')) return new Date(value);
+  return parse(String(value), 'yyyy-MM-dd', new Date());
+};
+
 export const EditarContaModal: React.FC<EditarContaModalProps> = ({
   open,
   onOpenChange,
@@ -65,6 +81,7 @@ export const EditarContaModal: React.FC<EditarContaModalProps> = ({
     dia_vencimento: 10,
     data: '',
     data_primeiro_lancamento: '',
+    data_proximo_vencimento: '',
     periodicidade: 'mensal'
   });
 
@@ -84,6 +101,7 @@ export const EditarContaModal: React.FC<EditarContaModalProps> = ({
         dia_vencimento: 10,
         data: '',
         data_primeiro_lancamento: '',
+        data_proximo_vencimento: '',
         periodicidade: 'mensal'
       });
     }
@@ -119,6 +137,20 @@ export const EditarContaModal: React.FC<EditarContaModalProps> = ({
       if (error) throw error;
 
       if (data) {
+        // Calcular data_proximo_vencimento para despesas fixas
+        let dataProximoVencimento = '';
+        if (conta.tipo === 'fixa') {
+          if (data.data_primeiro_lancamento) {
+            dataProximoVencimento = data.data_primeiro_lancamento;
+          } else if (data.dia_vencimento) {
+            const hoje = new Date();
+            const ano = hoje.getFullYear();
+            const mes = hoje.getMonth();
+            const dataCalc = new Date(ano, mes, data.dia_vencimento);
+            dataProximoVencimento = format(dataCalc, 'yyyy-MM-dd');
+          }
+        }
+
         setFormData({
           descricao: data.descricao || data.nome || '',
           valor: data.valor || 0,
@@ -127,6 +159,7 @@ export const EditarContaModal: React.FC<EditarContaModalProps> = ({
           dia_vencimento: data.dia_vencimento || 10,
           data: data.data || '',
           data_primeiro_lancamento: data.data_primeiro_lancamento || '',
+          data_proximo_vencimento: dataProximoVencimento,
           periodicidade: data.periodicidade || 'mensal'
         });
       }
@@ -168,7 +201,18 @@ export const EditarContaModal: React.FC<EditarContaModalProps> = ({
         if (formData.periodicidade === 'semanal') {
           updateData.data_primeiro_lancamento = formData.data_primeiro_lancamento || null;
         } else {
-          updateData.dia_vencimento = formData.dia_vencimento;
+          // Para outras periodicidades, salvar tanto a data específica quanto o dia
+          updateData.data_primeiro_lancamento = formData.data_proximo_vencimento || null;
+          
+          // Extrair o dia da data selecionada para manter dia_vencimento atualizado
+          if (formData.data_proximo_vencimento) {
+            const dataSelected = toLocalDate(formData.data_proximo_vencimento);
+            if (dataSelected) {
+              updateData.dia_vencimento = dataSelected.getDate();
+            }
+          } else {
+            updateData.dia_vencimento = formData.dia_vencimento;
+          }
         }
       } else {
         updateData.data = formData.data || null;
@@ -189,6 +233,33 @@ export const EditarContaModal: React.FC<EditarContaModalProps> = ({
       toast.error('Erro ao atualizar conta');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setFormData(prev => ({ 
+        ...prev, 
+        data_proximo_vencimento: format(date, 'yyyy-MM-dd') 
+      }));
+    }
+  };
+
+  const handleDateSelectVariavel = (date: Date | undefined) => {
+    if (date) {
+      setFormData(prev => ({ 
+        ...prev, 
+        data: format(date, 'yyyy-MM-dd') 
+      }));
+    }
+  };
+
+  const handleDateSelectSemanal = (date: Date | undefined) => {
+    if (date) {
+      setFormData(prev => ({ 
+        ...prev, 
+        data_primeiro_lancamento: format(date, 'yyyy-MM-dd') 
+      }));
     }
   };
 
@@ -238,45 +309,94 @@ export const EditarContaModal: React.FC<EditarContaModalProps> = ({
               {conta.tipo === 'fixa' ? (
                 formData.periodicidade === 'semanal' ? (
                   <div className="space-y-2">
-                    <Label htmlFor="data_primeiro_lancamento">Data de Início</Label>
-                    <Input
-                      id="data_primeiro_lancamento"
-                      type="date"
-                      value={formData.data_primeiro_lancamento}
-                      onChange={(e) => setFormData(prev => ({ ...prev, data_primeiro_lancamento: e.target.value }))}
-                      className="bg-white"
-                    />
+                    <Label>Data de Início</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal bg-white",
+                            !formData.data_primeiro_lancamento && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {formData.data_primeiro_lancamento
+                            ? format(toLocalDate(formData.data_primeiro_lancamento)!, 'dd/MM/yyyy', { locale: ptBR })
+                            : <span>Selecionar data</span>
+                          }
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-50 bg-white" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={toLocalDate(formData.data_primeiro_lancamento)}
+                          onSelect={handleDateSelectSemanal}
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Label htmlFor="dia_vencimento">Dia do Vencimento</Label>
-                    <Select
-                      value={String(formData.dia_vencimento)}
-                      onValueChange={(v) => setFormData(prev => ({ ...prev, dia_vencimento: parseInt(v) }))}
-                    >
-                      <SelectTrigger className="bg-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
-                          <SelectItem key={day} value={String(day)}>
-                            Dia {day}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label>Data do Vencimento</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal bg-white",
+                            !formData.data_proximo_vencimento && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {formData.data_proximo_vencimento
+                            ? format(toLocalDate(formData.data_proximo_vencimento)!, 'dd/MM/yyyy', { locale: ptBR })
+                            : <span>Selecionar data</span>
+                          }
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-50 bg-white" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={toLocalDate(formData.data_proximo_vencimento)}
+                          onSelect={handleDateSelect}
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 )
               ) : (
                 <div className="space-y-2">
-                  <Label htmlFor="data">Data</Label>
-                  <Input
-                    id="data"
-                    type="date"
-                    value={formData.data}
-                    onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
-                    className="bg-white"
-                  />
+                  <Label>Data</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal bg-white",
+                          !formData.data && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formData.data
+                          ? format(toLocalDate(formData.data)!, 'dd/MM/yyyy', { locale: ptBR })
+                          : <span>Selecionar data</span>
+                        }
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 z-50 bg-white" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={toLocalDate(formData.data)}
+                        onSelect={handleDateSelectVariavel}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               )}
             </div>
@@ -284,27 +404,26 @@ export const EditarContaModal: React.FC<EditarContaModalProps> = ({
             <div className="space-y-2">
               <Label htmlFor="categoria">Categoria</Label>
               <Select
-                value={formData.categoria_id}
-                onValueChange={(v) => setFormData(prev => ({ ...prev, categoria_id: v }))}
+                value={formData.categoria_id || '__none__'}
+                onValueChange={(v) => setFormData(prev => ({ ...prev, categoria_id: v === '__none__' ? '' : v }))}
               >
                 <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Selecione uma categoria" />
                 </SelectTrigger>
-                <SelectContent>
-                  {categorias.filter(c => !c.parent_id).map(parent => (
-                    <React.Fragment key={parent.id}>
-                      <SelectItem value={parent.id} className="font-medium">
-                        {parent.nome}
-                      </SelectItem>
-                      {categorias
-                        .filter(c => c.parent_id === parent.id)
-                        .map(child => (
-                          <SelectItem key={child.id} value={child.id} className="pl-6">
-                            └ {child.nome}
-                          </SelectItem>
-                        ))}
-                    </React.Fragment>
-                  ))}
+                <SelectContent className="bg-white z-50">
+                  <SelectItem value="__none__">Sem categoria</SelectItem>
+                  {categorias.filter(c => !c.parent_id).flatMap(parent => [
+                    <SelectItem key={parent.id} value={parent.id} className="font-medium">
+                      {parent.nome}
+                    </SelectItem>,
+                    ...categorias
+                      .filter(c => c.parent_id === parent.id)
+                      .map(child => (
+                        <SelectItem key={child.id} value={child.id} className="pl-6">
+                          └ {child.nome}
+                        </SelectItem>
+                      ))
+                  ])}
                 </SelectContent>
               </Select>
             </div>
