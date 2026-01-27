@@ -415,13 +415,9 @@ const PropostasPage = () => {
       .filter(p => ['paga', 'convertida'].includes(p.status))
       .reduce((sum, p) => sum + (p.cash_total_value || 0), 0);
     
-    // Propostas aceitas mas ainda não pagas + pendentes/enviadas/visualizando = a receber
-    // CRÍTICO: Excluir propostas expiradas do "A Receber"
+    // A Receber = SOMENTE propostas ACEITAS pelo cliente (não pagas ainda)
     const valorAReceber = proposals
-      .filter(p => 
-        ['aceita', 'pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status) &&
-        !isExpiredProposal(p) // Excluir expiradas
-      )
+      .filter(p => p.status === 'aceita')
       .reduce((sum, p) => sum + (p.cash_total_value || 0), 0);
 
     // Propostas pendentes (não expiradas)
