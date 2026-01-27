@@ -41,7 +41,10 @@ interface ContaPagar {
   valor_previsto: number;
   data_vencimento: string;
   tipo: 'fixa' | 'variavel';
-  status: string;
+  status: 'pago' | 'pendente' | 'atrasado' | 'parcial' | 'agendado';
+  data_pagamento?: string;
+  data_pagamento_agendado?: string;
+  auto_pagar_na_data?: boolean;
 }
 
 interface AsaasSaida {
