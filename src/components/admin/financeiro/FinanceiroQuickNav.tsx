@@ -3,6 +3,7 @@
  * 
  * Grid de atalhos para as seções do financeiro
  * Inclui indicador de propostas a receber com HoverCard
+ * Inclui cards de Resultado Atual e Projetado
  */
 
 import React from 'react';
@@ -14,6 +15,7 @@ import {
   ArrowUpCircle, 
   ArrowDownCircle, 
   TrendingUp,
+  TrendingDown,
   BarChart3, 
   FileText, 
   Wallet, 
@@ -25,11 +27,13 @@ import {
   Clock,
   CreditCard,
   Banknote,
-  Loader2
+  Loader2,
+  Target
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { usePropostasAReceber } from '@/hooks/financeiro/usePropostasAReceber';
+import { useResultadoFinanceiro } from '@/hooks/financeiro/useResultadoFinanceiro';
 
 interface NavItem {
   id: string;
@@ -51,6 +55,7 @@ const FinanceiroQuickNav: React.FC = () => {
   const navigate = useNavigate();
   const { buildPath } = useAdminBasePath();
   const propostasData = usePropostasAReceber();
+  const resultadoData = useResultadoFinanceiro();
 
   const navItems: NavItem[] = [
     {
@@ -246,13 +251,78 @@ const FinanceiroQuickNav: React.FC = () => {
     );
   };
 
+  const isLucroAtual = resultadoData.resultadoAtual >= 0;
+  const isLucroProjetado = resultadoData.resultadoProjetado >= 0;
+
   return (
-    <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
-      {navItems.map((item) => (
-        <React.Fragment key={item.id}>
-          {renderNavCard(item)}
-        </React.Fragment>
-      ))}
+    <div className="space-y-4">
+      {/* Cards de Resultado Atual e Projetado */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Resultado Atual */}
+        <Card className={`border shadow-md ${isLucroAtual ? 'bg-gradient-to-br from-emerald-50 to-white border-emerald-100' : 'bg-gradient-to-br from-red-50 to-white border-red-100'}`}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm text-gray-500 font-medium">Resultado Atual</p>
+                {resultadoData.loading ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                ) : (
+                  <>
+                    <p className={`text-2xl font-bold ${isLucroAtual ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {formatCurrency(resultadoData.resultadoAtual)}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Receita: {formatCurrency(resultadoData.receitaRealizada)} | Despesas: {formatCurrency(resultadoData.despesasTotal)}
+                    </p>
+                  </>
+                )}
+              </div>
+              <div className={`p-3 rounded-xl ${isLucroAtual ? 'bg-emerald-100' : 'bg-red-100'}`}>
+                {isLucroAtual ? (
+                  <TrendingUp className="h-6 w-6 text-emerald-600" />
+                ) : (
+                  <TrendingDown className="h-6 w-6 text-red-600" />
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Resultado Projetado */}
+        <Card className={`border shadow-md ${isLucroProjetado ? 'bg-gradient-to-br from-blue-50 to-white border-blue-100' : 'bg-gradient-to-br from-amber-50 to-white border-amber-100'}`}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm text-gray-500 font-medium">Projeção 30 dias</p>
+                {resultadoData.loading ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                ) : (
+                  <>
+                    <p className={`text-2xl font-bold ${isLucroProjetado ? 'text-blue-600' : 'text-amber-600'}`}>
+                      {formatCurrency(resultadoData.resultadoProjetado)}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Entradas: {formatCurrency(resultadoData.entradasProjetadas)} | Saídas: {formatCurrency(resultadoData.saidasProjetadas)}
+                    </p>
+                  </>
+                )}
+              </div>
+              <div className={`p-3 rounded-xl ${isLucroProjetado ? 'bg-blue-100' : 'bg-amber-100'}`}>
+                <Target className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Grid de navegação */}
+      <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
+        {navItems.map((item) => (
+          <div key={item.id}>
+            {renderNavCard(item)}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
