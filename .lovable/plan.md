@@ -1,167 +1,144 @@
 
-# Diagnóstico: IA Jurídica Não Entende Contexto de Permuta com SECOVI
+# Plano: Sistema Avançado de Agendamento de Pagamentos
 
-## Problemas Identificados
+## Contexto Atual
 
-Após análise completa do código, identifiquei **4 problemas graves** que causam o comportamento errático:
+O módulo "Contas a Pagar" já possui:
+- **NovaDespesaModal**: Criação de despesas fixas e variáveis
+- **PagarContaModal**: Registro de pagamento (manual ou vinculado ao ASAAS)
+- **EditarContaModal**: Edição de valores, categoria, vencimento
+- **Periodicidade básica**: semanal, mensal, trimestral, semestral, anual
 
----
+## O Que Está Faltando
 
-### 1. SCENARIO_PATTERNS Força Tipo Errado
+Com base na sua solicitação, as seguintes funcionalidades estão ausentes:
 
-**Arquivo:** `JuridicoWorkspacePage.tsx` (linhas 26-30)
+### 1. Agendamento do Primeiro Pagamento
+- Definir data específica para o primeiro pagamento
+- Escolher se o pagamento será à vista ou parcelado
+- Definir número de parcelas (se aplicável)
 
-```typescript
-secovi: {
-  pattern: /secovi|sindicato|associação/i,
-  tipo: 'parceria_pj',  // ❌ ERRADO - deveria manter o tipo que o usuário escolheu (permuta)
-  suggestion: 'Detectei parceria institucional tipo SECOVI. Configurar como Cooperação Institucional com troca de logos?',
-}
-```
+### 2. Configuração de Recorrência Avançada
+- **Semanal**: Já existe, mas sem opção de escolher dias específicos
+- **Semestral**: Já existe como periodicidade
+- **Personalizado**: Falta opção de definir intervalo customizado (ex: a cada 45 dias)
 
-**Problema:** Sempre que a palavra "SECOVI" aparece, o sistema FORÇA `tipo: 'parceria_pj'`, ignorando completamente que você escolheu "permuta" no início.
-
----
-
-### 2. Detecção de Cenário Sobrescreve Escolha do Usuário
-
-**Arquivo:** `JuridicoWorkspacePage.tsx` (linhas 163-188)
-
-```typescript
-const handleSendMessage = useCallback(async (content: string) => {
-  // Sanitize input
-  const sanitizedContent = sanitizeToIndexa2026(content);
-  addUserMessage(sanitizedContent);
-
-  // Detect scenario - EXECUTA ANTES DA IA
-  const scenario = detectScenario(sanitizedContent);
-  if (scenario) {
-    updateData({ tipo_contrato: scenario.tipo }); // ❌ SOBRESCREVE O TIPO!
-    // ...
-  }
-});
-```
-
-**Problema:** A cada mensagem, o sistema busca padrões e SOBRESCREVE `tipo_contrato` para `parceria_pj`, resetando sua escolha de "permuta".
-
----
-
-### 3. Sugestão Repetitiva e Loop Infinito
-
-O padrão SECOVI retorna a mesma sugestão SEMPRE:
-
-```typescript
-suggestion: 'Detectei parceria institucional tipo SECOVI. Configurar como Cooperação Institucional com troca de logos?'
-```
-
-Mesmo após você responder "Sim" ou "Não", a próxima mensagem com "SECOVI" (como os dados do CNPJ) dispara o MESMO padrão novamente, criando um loop.
-
----
-
-### 4. Comodato Pattern Muito Agressivo
-
-```typescript
-comodato: {
-  pattern: /pietro\s*angelo|síndico|comodato|elevador/i,
-  // ...
-}
-```
-
-**Problema:** Se você menciona "síndico" (que existe nos dados do SECOVI: "SINDICATO DA HABITAÇÃO"), pode estar sendo capturado incorretamente, gerando template de comodato.
-
----
-
-## Fluxo Quebrado Demonstrado
-
-```text
-1. Usuário: "Vou criar um contrato de permuta"
-   → Sistema: tipo_contrato = 'permuta' ✅
-
-2. Usuário: "SECOVI - institucional"
-   → SCENARIO_PATTERNS detecta "secovi"
-   → tipo_contrato SOBRESCRITO para 'parceria_pj' ❌
-   → Mensagem: "Configurar como Cooperação Institucional?"
-
-3. Usuário: "Sim, pode incluir"
-   → Sistema NÃO altera tipo de volta para permuta
-
-4. Usuário: Fornece CNPJ/Razão Social com "SINDICATO DA HABITAÇÃO"
-   → SCENARIO_PATTERNS detecta "sindicato" novamente!
-   → Loop de sugestão reinicia
-```
+### 3. Opções Adicionais
+- Pausa automática após X pagamentos
+- Lembrete antes do vencimento
+- Reajuste automático (IPCA, IGP-M, valor fixo)
 
 ---
 
 ## Solução Proposta
 
-### Etapa 1: Não Sobrescrever Tipo Já Definido
+### Fase 1: Atualizar Schema do Banco de Dados
 
-Modificar a lógica de detecção de cenário para **respeitar a escolha inicial do usuário**:
+Adicionar novas colunas à tabela `despesas_fixas`:
 
-```typescript
-// NOVO: Só aplica tipo se NÃO tiver sido definido antes
-if (scenario && !data.tipo_contrato) {
-  updateData({ tipo_contrato: scenario.tipo });
-}
+```sql
+ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS total_parcelas INTEGER;
+ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS parcelas_pagas INTEGER DEFAULT 0;
+ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS recorrencia_tipo TEXT; -- 'infinita', 'limitada', 'personalizada'
+ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS intervalo_dias INTEGER; -- para recorrência personalizada
+ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS dias_semana TEXT[]; -- para semanal (ex: ['seg', 'qui'])
+ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS lembrete_dias INTEGER DEFAULT 3;
+ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS reajuste_tipo TEXT; -- 'nenhum', 'ipca', 'igpm', 'fixo'
+ALTER TABLE despesas_fixas ADD COLUMN IF NOT EXISTS reajuste_percentual DECIMAL(5,2);
 ```
 
-### Etapa 2: Remover Detecção Agressiva de Padrões
+### Fase 2: Atualizar NovaDespesaModal
 
-Criar uma flag `scenarioConfirmed` que, após confirmação, desabilita novas detecções:
+**Seção "Configuração de Recorrência":**
 
-```typescript
-const [scenarioConfirmed, setScenarioConfirmed] = useState(false);
-
-if (scenario && !scenarioConfirmed && !data.parceiro_documento) {
-  // Só sugere se não confirmou e não tem CNPJ ainda
-}
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  🔄 Configuração de Recorrência                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Tipo de Recorrência:                                       │
+│  ┌─────────┐ ┌─────────┐ ┌──────────────┐                  │
+│  │ Infinita│ │ Limitada│ │ Personalizada│                  │
+│  └─────────┘ └─────────┘ └──────────────┘                  │
+│                                                             │
+│  Frequência:                                                │
+│  ┌─────────┐ ┌─────────┐ ┌──────────┐ ┌──────────┐        │
+│  │ Semanal │ │ Mensal  │ │ Semestral│ │ Anual    │        │
+│  └─────────┘ └─────────┘ └──────────┘ └──────────┘        │
+│                                                             │
+│  [Se Limitada]                                              │
+│  Número de Parcelas: [___12___]                            │
+│                                                             │
+│  [Se Personalizada]                                         │
+│  A cada [___45___] dias                                     │
+│                                                             │
+│  [Se Semanal]                                               │
+│  Dias da Semana:                                            │
+│  ☑ Seg  ☐ Ter  ☐ Qua  ☑ Qui  ☐ Sex  ☐ Sáb  ☐ Dom         │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  📅 Primeiro Pagamento                                      │
+│                                                             │
+│  Data de Início: [____27/01/2026____]                      │
+│                                                             │
+│  Lembrete: [__3__] dias antes do vencimento                │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  📈 Reajuste Automático (opcional)                          │
+│                                                             │
+│  Tipo: ┌──────────┐                                         │
+│        │ Nenhum ▼ │  (Nenhum / IPCA / IGP-M / Fixo)        │
+│        └──────────┘                                         │
+│                                                             │
+│  [Se Fixo]                                                  │
+│  Percentual anual: [___5___] %                              │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Etapa 3: Criar Categoria Correta para Permuta Institucional
+### Fase 3: Atualizar PagarContaModal
 
-Adicionar novo tipo de cenário que NÃO sobrescreve:
+**Adicionar opção de agendar pagamento futuro:**
 
-```typescript
-secovi_permuta: {
-  pattern: /secovi|sindicato\s*(da|de)?\s*habitação/i,
-  // NÃO define tipo - mantém o escolhido pelo usuário
-  suggestion: 'Parceria institucional com SECOVI. Incluir cláusula de exclusividade de marca?',
-  requiresConfirmation: true,
-}
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  💳 Registrar Pagamento                                     │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Ação:                                                      │
+│  ┌──────────────────┐ ┌──────────────────┐                 │
+│  │ ✓ Pagar Agora    │ │ 📅 Agendar       │                 │
+│  └──────────────────┘ └──────────────────┘                 │
+│                                                             │
+│  [Se Agendar]                                               │
+│  Data do Pagamento Agendado: [____30/01/2026____]          │
+│  Horário (opcional): [__09:00__]                            │
+│                                                             │
+│  ☐ Marcar como pago automaticamente na data                │
+│  ☐ Apenas lembrar-me na data                               │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Etapa 4: Corrigir o Edge Function para Permuta
+### Fase 4: Atualizar ContaDetalhesDrawer
 
-O prompt da Edge Function tem exemplo de SECOVI como PERMUTA (linha 2 do few-shot), mas o frontend força para `parceria_pj`. Alinhar ambos:
+**Exibir informações de recorrência:**
 
-```typescript
-// Adicionar ao SCENARIO_PATTERNS
-secovi: {
-  pattern: /secovi/i,
-  tipo: 'permuta', // ✅ Alinhado com few-shot examples
-  suggestion: 'Parceria institucional tipo SECOVI. Configurar permuta de serviços?',
-}
-```
-
-### Etapa 5: Adicionar Lock de Contexto
-
-Quando usuário escolhe tipo inicial, criar lock que impede sobrescrita:
-
-```typescript
-const [tipoLocked, setTipoLocked] = useState(false);
-
-// Quando escolhe "permuta":
-handleActionClick = (value) => {
-  if (value === 'permuta') {
-    updateData({ tipo_contrato: 'permuta' });
-    setTipoLocked(true); // ⚡ LOCK!
-  }
-}
-
-// Na detecção de cenário:
-if (scenario && !tipoLocked) {
-  // Só sobrescreve se não estiver travado
-}
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  📊 Resumo da Recorrência                                   │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Tipo: Mensal (Limitada)                                    │
+│  Parcelas: 8 de 12 pagas                                    │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 66%                          │
+│                                                             │
+│  Próximo vencimento: 10/02/2026                             │
+│  Valor: R$ 1.500,00                                         │
+│                                                             │
+│  Reajuste: IPCA (aplicado anualmente)                       │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -170,37 +147,50 @@ if (scenario && !tipoLocked) {
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/pages/admin/contracts/JuridicoWorkspacePage.tsx` | Corrigir SCENARIO_PATTERNS e lógica de detecção |
-| `supabase/functions/juridico-brain/index.ts` | Garantir que tipo já definido NÃO seja resetado |
+| `supabase/migrations/...` | Adicionar novas colunas para recorrência avançada |
+| `src/components/admin/financeiro/NovaDespesaModal.tsx` | Adicionar seção de configuração de recorrência |
+| `src/components/admin/financeiro/contas-pagar/PagarContaModal.tsx` | Adicionar opção de agendar pagamento |
+| `src/components/admin/financeiro/contas-pagar/EditarContaModal.tsx` | Permitir edição de configurações de recorrência |
+| `src/components/admin/financeiro/contas-pagar/ContaDetalhesDrawer.tsx` | Exibir resumo de recorrência e progresso |
+| `src/pages/admin/financeiro/ContasPagarPage.tsx` | Adicionar filtro por tipo de recorrência |
 
 ---
 
-## Resultado Esperado
+## Fluxo de Uso Esperado
 
-```text
-1. Usuário: "Vou criar um contrato de permuta"
-   → tipo_contrato = 'permuta' (TRAVADO)
+### Criar Nova Despesa com Recorrência Limitada:
+1. Usuário clica em "Nova Conta"
+2. Preenche descrição, valor, categoria
+3. Seleciona **Tipo de Recorrência: Limitada**
+4. Define **12 parcelas**
+5. Escolhe **Frequência: Mensal**
+6. Define **Primeiro Pagamento: 10/02/2026**
+7. Sistema gera 12 parcelas automaticamente
 
-2. Usuário: "SECOVI - institucional"  
-   → Detecta SECOVI, MAS mantém tipo 'permuta'
-   → Mensagem: "Incluir cláusula de exclusividade de marca?"
+### Criar Despesa Personalizada:
+1. Seleciona **Tipo de Recorrência: Personalizada**
+2. Define **A cada 45 dias**
+3. Sistema calcula próximas datas automaticamente
 
-3. Usuário: "Sim"
-   → scenarioConfirmed = true (não pergunta mais)
-
-4. Usuário: Fornece CNPJ/dados
-   → REGEX-first atualiza dados
-   → tipo_contrato continua 'permuta' ✅
-   → Preview mostra "CONTRATO DE PERMUTA" ✅
-```
+### Agendar Pagamento:
+1. Usuário clica em uma conta pendente
+2. Clica em "Pagar"
+3. Seleciona **Agendar**
+4. Define data futura (ex: 30/01/2026)
+5. Conta fica com status "Agendado" até a data
 
 ---
 
-## Sumário Técnico
+## Considerações Técnicas
 
-| Problema | Causa | Solução |
-|----------|-------|---------|
-| IA repete mesma pergunta | SCENARIO_PATTERNS dispara a cada match | Flag `scenarioConfirmed` |
-| Tipo muda de permuta para parceria_pj | `updateData({ tipo_contrato: scenario.tipo })` | Respeitar tipo já definido |
-| Contrato gerado parece de síndico | Pattern `/síndico/` muito amplo | Refinar regex para excluir "Sindicato da Habitação" |
-| IA não entende contexto | Frontend intercepta ANTES da IA processar | Permitir IA processar quando tipo já definido |
+### Geração de Parcelas
+- Trigger no banco ou Edge Function para gerar parcelas baseado na configuração
+- Para recorrência "infinita", gerar apenas 12 meses à frente (rolling window)
+
+### Status de Pagamento
+- Novo status: `agendado` (além de `pendente`, `pago`, `atrasado`)
+- CRON job para verificar pagamentos agendados e marcar como pagos automaticamente
+
+### Reajustes
+- Aplicar reajuste anualmente na data de aniversário da despesa
+- Registrar histórico de reajustes para auditoria
