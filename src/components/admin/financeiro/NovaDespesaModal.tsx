@@ -29,7 +29,8 @@ import {
   TrendingDown,
   Loader2,
   Building2,
-  Wifi
+  Wifi,
+  Settings2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -37,6 +38,7 @@ import { format } from 'date-fns';
 import { CategoriaTreeSelect } from './categorias/CategoriaTreeSelect';
 import { useCategoriaHierarchy } from '@/hooks/useCategoriaHierarchy';
 import { useActiveBuildingNames } from '@/hooks/useActiveBuildingNames';
+import { RecorrenciaConfig, RecorrenciaConfigData, RecorrenciaTipo, ReajusteTipo, Periodicidade } from './RecorrenciaConfig';
 
 interface NovaDespesaModalProps {
   open: boolean;
@@ -55,8 +57,6 @@ interface BuildingOption {
   nome: string;
 }
 
-type Periodicidade = 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual';
-
 const PERIODICIDADE_OPTIONS: { value: Periodicidade; label: string; meses: number; semanas?: number }[] = [
   { value: 'semanal', label: 'Semanal', meses: 0.25, semanas: 1 },
   { value: 'mensal', label: 'Mensal', meses: 1 },
@@ -64,6 +64,16 @@ const PERIODICIDADE_OPTIONS: { value: Periodicidade; label: string; meses: numbe
   { value: 'semestral', label: 'Semestral', meses: 6 },
   { value: 'anual', label: 'Anual', meses: 12 },
 ];
+
+const DEFAULT_RECORRENCIA_CONFIG: RecorrenciaConfigData = {
+  recorrencia_tipo: 'infinita',
+  total_parcelas: null,
+  intervalo_dias: null,
+  dias_semana: [],
+  lembrete_dias: 3,
+  reajuste_tipo: 'nenhum',
+  reajuste_percentual: null,
+};
 
 const DIAS_VENCIMENTO = [1, 5, 10, 15, 20, 25, 28];
 
@@ -80,6 +90,8 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [buildings, setBuildings] = useState<BuildingOption[]>([]);
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
+  const [showRecorrenciaConfig, setShowRecorrenciaConfig] = useState(false);
+  const [recorrenciaConfig, setRecorrenciaConfig] = useState<RecorrenciaConfigData>(DEFAULT_RECORRENCIA_CONFIG);
   
   // Hook para obter nome da categoria
   const { getCategoriaPath } = useCategoriaHierarchy();
@@ -202,6 +214,15 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
         observacao: fixaForm.observacao.trim() || null,
         ativo: true,
         fornecedor_id: fixaForm.fornecedor_id || null,
+        recorrencia_tipo: recorrenciaConfig.recorrencia_tipo,
+        total_parcelas: recorrenciaConfig.recorrencia_tipo === 'limitada' ? recorrenciaConfig.total_parcelas : null,
+        intervalo_dias: recorrenciaConfig.recorrencia_tipo === 'personalizada' ? recorrenciaConfig.intervalo_dias : null,
+        dias_semana: fixaForm.periodicidade === 'semanal' && recorrenciaConfig.dias_semana.length > 0 
+          ? recorrenciaConfig.dias_semana 
+          : null,
+        lembrete_dias: recorrenciaConfig.lembrete_dias,
+        reajuste_tipo: recorrenciaConfig.reajuste_tipo,
+        reajuste_percentual: recorrenciaConfig.reajuste_tipo === 'fixo' ? recorrenciaConfig.reajuste_percentual : null,
       };
 
       // Para semanal, usa data_primeiro_lancamento; para outros, usa dia_vencimento
@@ -325,6 +346,8 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
       fornecedor_id: '',
     });
     setSelectedBuildings([]);
+    setShowRecorrenciaConfig(false);
+    setRecorrenciaConfig(DEFAULT_RECORRENCIA_CONFIG);
     setActiveTab('fixa');
   };
 
@@ -536,6 +559,27 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
               </div>
             )}
 
+            {/* Configuração Avançada de Recorrência */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowRecorrenciaConfig(!showRecorrenciaConfig)}
+                className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+              >
+                <Settings2 className="h-3.5 w-3.5" />
+                {showRecorrenciaConfig ? 'Ocultar configurações avançadas' : 'Configurações avançadas de recorrência'}
+              </button>
+              
+              {showRecorrenciaConfig && (
+                <RecorrenciaConfig
+                  config={recorrenciaConfig}
+                  onChange={setRecorrenciaConfig}
+                  periodicidade={fixaForm.periodicidade}
+                  className="mt-3 p-4 bg-gray-50/50 rounded-xl border border-gray-200"
+                />
+              )}
+            </div>
+
             {/* Observação */}
             <div className="space-y-2">
               <Label htmlFor="fixa-obs" className="text-sm font-medium text-gray-700">Observações (opcional)</Label>
@@ -552,7 +596,12 @@ export const NovaDespesaModal: React.FC<NovaDespesaModalProps> = ({
             <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
               <p className="flex items-center gap-1">
                 <Repeat className="h-3.5 w-3.5 text-gray-500" />
-                Despesas fixas geram parcelas automáticas para os próximos 12 períodos.
+                {recorrenciaConfig.recorrencia_tipo === 'limitada' 
+                  ? `Serão geradas ${recorrenciaConfig.total_parcelas || 'X'} parcelas.`
+                  : recorrenciaConfig.recorrencia_tipo === 'personalizada'
+                    ? `Parcelas a cada ${recorrenciaConfig.intervalo_dias || 'X'} dias.`
+                    : 'Despesas fixas geram parcelas automáticas (rolling 12 períodos).'
+                }
               </p>
             </div>
 
