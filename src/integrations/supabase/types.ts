@@ -7684,17 +7684,24 @@ export type Database = {
         Row: {
           building_id: string | null
           categoria_id: string | null
+          centro_custo_id: string | null
           comprovante_url: string | null
           created_at: string
           created_by: string | null
           data: string
+          data_payback: string | null
           descricao: string
           fornecedor_id: string | null
           id: string
+          investidor_id: string | null
+          investidor_nome: string | null
           motivo_alteracao: string | null
           observacao: string | null
+          payback_meses: number | null
           previsao_retorno: string | null
+          retorno_acumulado: number | null
           retorno_esperado: number | null
+          roi_realizado: number | null
           status: Database["public"]["Enums"]["investimento_status"]
           tipo: Database["public"]["Enums"]["investimento_tipo"]
           updated_at: string
@@ -7704,17 +7711,24 @@ export type Database = {
         Insert: {
           building_id?: string | null
           categoria_id?: string | null
+          centro_custo_id?: string | null
           comprovante_url?: string | null
           created_at?: string
           created_by?: string | null
           data?: string
+          data_payback?: string | null
           descricao: string
           fornecedor_id?: string | null
           id?: string
+          investidor_id?: string | null
+          investidor_nome?: string | null
           motivo_alteracao?: string | null
           observacao?: string | null
+          payback_meses?: number | null
           previsao_retorno?: string | null
+          retorno_acumulado?: number | null
           retorno_esperado?: number | null
+          roi_realizado?: number | null
           status?: Database["public"]["Enums"]["investimento_status"]
           tipo?: Database["public"]["Enums"]["investimento_tipo"]
           updated_at?: string
@@ -7724,17 +7738,24 @@ export type Database = {
         Update: {
           building_id?: string | null
           categoria_id?: string | null
+          centro_custo_id?: string | null
           comprovante_url?: string | null
           created_at?: string
           created_by?: string | null
           data?: string
+          data_payback?: string | null
           descricao?: string
           fornecedor_id?: string | null
           id?: string
+          investidor_id?: string | null
+          investidor_nome?: string | null
           motivo_alteracao?: string | null
           observacao?: string | null
+          payback_meses?: number | null
           previsao_retorno?: string | null
+          retorno_acumulado?: number | null
           retorno_esperado?: number | null
+          roi_realizado?: number | null
           status?: Database["public"]["Enums"]["investimento_status"]
           tipo?: Database["public"]["Enums"]["investimento_tipo"]
           updated_at?: string
@@ -7755,6 +7776,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "categorias_despesas"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investimentos_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investimentos_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "vw_custo_por_centro"
+            referencedColumns: ["centro_custo_id"]
           },
           {
             foreignKeyName: "investimentos_created_by_fkey"
@@ -11646,6 +11681,56 @@ export type Database = {
           },
         ]
       }
+      retornos_investimento: {
+        Row: {
+          categoria: string | null
+          comprovante_url: string | null
+          created_at: string | null
+          created_by: string | null
+          data: string
+          descricao: string
+          id: string
+          investimento_id: string
+          observacao: string | null
+          updated_at: string | null
+          valor: number
+        }
+        Insert: {
+          categoria?: string | null
+          comprovante_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data: string
+          descricao: string
+          id?: string
+          investimento_id: string
+          observacao?: string | null
+          updated_at?: string | null
+          valor: number
+        }
+        Update: {
+          categoria?: string | null
+          comprovante_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data?: string
+          descricao?: string
+          id?: string
+          investimento_id?: string
+          observacao?: string | null
+          updated_at?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retornos_investimento_investimento_id_fkey"
+            columns: ["investimento_id"]
+            isOneToOne: false
+            referencedRelation: "investimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_change_audit: {
         Row: {
           change_reason: string | null
@@ -14416,6 +14501,10 @@ export type Database = {
       calcular_impostos_mes: {
         Args: { p_competencia?: string }
         Returns: undefined
+      }
+      calcular_metricas_investimento: {
+        Args: { p_investimento_id: string }
+        Returns: Json
       }
       calcular_multa_juros: {
         Args: { p_data_vencimento: string; p_valor_original: number }
