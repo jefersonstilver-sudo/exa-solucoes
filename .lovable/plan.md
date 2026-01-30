@@ -1,170 +1,206 @@
 
+# Plano: Sistema Inteligente de Contratos Vinculados a Propostas
 
-# Plano: Botao de Download PDF Profissional (Sem Rascunho)
+## Problema Identificado
 
-## Resumo do Problema
+Atualmente existem 3 problemas no fluxo de contratos:
 
-O componente `ContractFullPreview.tsx` atualmente:
-1. Usa botao de **impressao** (Printer) ao inves de download
-2. Exibe marca d'agua "RASCUNHO" que nao deve aparecer no PDF final
-3. Nao possui logica inteligente de paginacao (corta frases no meio)
-4. Nao mostra os dados dos signatarios no preview
+1. **Duplicacao**: A Edge Function `create-contract-from-proposal` cria um novo contrato toda vez que e chamada, sem verificar se ja existe um para a proposta
+2. **Falta de Rastreamento na UI**: A proposta publica nao verifica se ja existe contrato gerado antes de exibir o botao "Ver Contrato"
+3. **Desconexao no Juridico**: O modulo Juridico (`ContratosPage.tsx`) lista todos os contratos sem indicar claramente quais vieram de propostas
+
+---
+
+## Dados Atuais do Sistema
+
+| Tabela | Campo | Uso |
+|--------|-------|-----|
+| `proposals` | `metadata.contract_id` | Armazena ID do contrato gerado |
+| `proposals` | `metadata.contract_created_at` | Timestamp da geracao |
+| `contratos_legais` | `proposta_id` | FK para proposta de origem |
+
+```text
+FLUXO ATUAL (problematico):
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Proposta      │───>│ Edge Function   │───>│ Novo Contrato   │
+│   (pendente)    │    │ (sempre cria)   │    │ (duplicado!)    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                  │
+                                  ▼
+                       ┌─────────────────────────┐
+                       │ Juridico lista TODOS    │
+                       │ (sem distinguir origem) │
+                       └─────────────────────────┘
+```
 
 ---
 
 ## Solucao Proposta
 
-### 1. Botao de Download PDF (Substituir Impressao)
+### Fase 1: Edge Function Inteligente (Idempotente)
 
-| Antes | Depois |
-|-------|--------|
-| Icone `Printer` | Icone `Download` |
-| Funcao `handlePrint()` | Funcao `handleDownloadPDF()` |
-| Abre janela de impressao | Gera PDF e baixa automaticamente |
+**Arquivo**: `supabase/functions/create-contract-from-proposal/index.ts`
 
+**Logica Nova**:
 ```text
-┌─────────────────────────────────────────┐
-│  [Download]  [X]                        │  <- Novo icone
-└─────────────────────────────────────────┘
+1. Buscar proposta
+2. VERIFICAR se ja existe contrato para esta proposta
+   - Se SIM (nao preview):
+     a. Checar se proposta foi alterada desde geracao
+     b. Se inalterada: retornar contrato existente
+     c. Se alterada: regenerar HTML e atualizar contrato existente
+   - Se NAO: criar novo contrato normalmente
+3. Usar UPSERT com conflict em proposta_id
 ```
 
-### 2. Remover Marca d'Agua "RASCUNHO"
+**Codigo a Adicionar (apos buscar proposta)**:
+```typescript
+// VERIFICAR SE JA EXISTE CONTRATO PARA ESTA PROPOSTA
+if (!preview_only) {
+  const { data: existingContract } = await supabase
+    .from('contratos_legais')
+    .select('id, numero_contrato, status, created_at')
+    .eq('proposta_id', proposalId)
+    .maybeSingle();
 
-**Arquivos afetados:**
-- Remover `<div class="watermark">RASCUNHO</div>` do HTML gerado
-- Remover o bloco JSX que renderiza a marca d'agua no preview
-
-### 3. Exportador PDF Inteligente
-
-Implementar logica de paginacao inteligente usando `jsPDF` + `html2canvas`:
-
-```text
-ANTES (corta frases):           DEPOIS (preserva blocos):
-┌────────────────────┐          ┌────────────────────┐
-│ CLAUSULA 5         │          │ CLAUSULA 5         │
-│ 5.1 O pagamento    │          │ 5.1 O pagamento    │
-│ sera realizado em  │          │ sera realizado em  │
-├────────────────────┤ <- CORTE │ parcelas mensais.  │
-│ parcelas mensais.  │          ├────────────────────┤ <- CORTE
-│                    │          │ CLAUSULA 6         │
-│ CLAUSULA 6         │          │ ...                │
-└────────────────────┘          └────────────────────┘
+  if (existingContract) {
+    console.log("📄 Contrato existente encontrado:", existingContract.numero_contrato);
+    
+    // Verificar se proposta foi modificada apos contrato
+    const proposalModified = proposal.last_modified_at 
+      ? new Date(proposal.last_modified_at) > new Date(existingContract.created_at)
+      : false;
+    
+    if (!proposalModified) {
+      // Retornar contrato existente sem duplicar
+      const contractHtml = generateContractHtml(existingContract, ...);
+      return Response({ success: true, contrato: existingContract, contractHtml });
+    }
+    
+    // Se modificada, atualizar contrato existente
+    // ... logica de update ao inves de insert
+  }
+}
 ```
 
-**Estrategia:**
-1. Identificar elementos com classe `.section`, `.no-break`, `.clause`
-2. Medir altura de cada bloco antes de renderizar
-3. Se um bloco ultrapassar o limite da pagina, mover inteiro para proxima pagina
-4. Usar `page-break-inside: avoid` como fallback CSS
+---
 
-### 4. Dados dos Signatarios
+### Fase 2: Proposta Publica - Exibir Contrato Existente
 
-O HTML do contrato ja inclui a secao de assinaturas (linhas 1545-1607 da Edge Function), porem os dados podem nao estar aparecendo corretamente no preview.
+**Arquivo**: `src/pages/public/PropostaPublicaPage.tsx`
 
-**Verificacao:**
-- Garantir que `exaSignatarios` esta sendo passado corretamente
-- Adicionar CSS para estilizar a secao `.signature-section`
+**Mudancas**:
+
+1. **Verificar metadata ao carregar proposta**:
+   - Se `metadata.contract_id` existe: mostrar botao "Visualizar Contrato" (em vez de "Gerar")
+   - Armazenar `hasExistingContract` e `existingContractId` no state
+
+2. **Handler `handleViewContract`**:
+   - Se contrato existente: buscar HTML do contrato existente
+   - Se nao existe: iniciar fluxo de coleta de dados + geracao
+
+3. **Indicador Visual**:
+   - Badge "Contrato ja gerado" na interface
+   - Botao diferenciado para visualizar vs gerar
+
+```text
+ANTES:                              DEPOIS:
+┌────────────────────────┐          ┌────────────────────────┐
+│ [Ver Contrato]         │          │ ✓ Contrato Gerado      │
+│ (sempre gera novo)     │          │ [Visualizar Contrato]  │
+└────────────────────────┘          │ (abre existente)       │
+                                    │                        │
+                                    │ [Regenerar] (se alt.)  │
+                                    └────────────────────────┘
+```
+
+---
+
+### Fase 3: Pagina de Propostas Admin - Vinculo Visual
+
+**Arquivo**: `src/pages/admin/proposals/PropostasPage.tsx`
+
+**Mudancas**:
+- Na listagem, exibir badge se proposta tem `metadata.contract_id`
+- Botao rapido para "Ver Contrato" que navega para `/juridico/{contract_id}`
+
+---
+
+### Fase 4: Modulo Juridico - Filtrar Origem
+
+**Arquivo**: `src/pages/admin/contracts/ContratosPage.tsx`
+
+**Mudancas**:
+
+1. **Novo Filtro**: Adicionar filtro "Origem"
+   - Todos
+   - De Propostas (proposta_id nao nulo)
+   - Manual (proposta_id nulo)
+
+2. **Badge Visual**: Em cada card de contrato, mostrar:
+   - "Via Proposta EXA-2026-XXXX" se veio de proposta
+   - Link clicavel para a proposta de origem
+
+3. **Evitar Duplicacao na Criacao Manual**:
+   - Se usuario tenta criar contrato para cliente que ja tem proposta com contrato: alertar
 
 ---
 
 ## Arquivos a Modificar
 
-| Arquivo | Alteracao |
-|---------|-----------|
-| `src/components/public/ContractFullPreview.tsx` | Substituir botao Print por Download, remover watermark, implementar `handleDownloadPDF()` |
-| CSS inline | Adicionar estilos para `.signature-section`, `.signature-box`, `.witness-section` |
+| Arquivo | Tipo | Descricao |
+|---------|------|-----------|
+| `supabase/functions/create-contract-from-proposal/index.ts` | Edge Function | Adicionar verificacao de contrato existente e logica de upsert |
+| `src/pages/public/PropostaPublicaPage.tsx` | React | Verificar e exibir contrato existente |
+| `src/pages/admin/proposals/PropostasPage.tsx` | React | Badge de contrato vinculado |
+| `src/pages/admin/contracts/ContratosPage.tsx` | React | Filtro por origem e badge visual |
 
 ---
 
-## Implementacao Tecnica
-
-### Funcao `handleDownloadPDF()`
-
-```typescript
-const handleDownloadPDF = async () => {
-  if (!contractRef.current) return;
-  setIsDownloading(true);
-
-  try {
-    // 1. Clonar elemento (sem marca d'agua)
-    const element = contractRef.current.querySelector('.contract-content');
-    
-    // 2. Renderizar com html2canvas
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff'
-    });
-    
-    // 3. Criar PDF com jsPDF
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    
-    // 4. Paginacao inteligente (nao cortar blocos)
-    // ... logica de secoes
-    
-    // 5. Download automatico
-    pdf.save(`contrato-exa-${Date.now()}.pdf`);
-  } finally {
-    setIsDownloading(false);
-  }
-};
-```
-
-### CSS para Secao de Assinaturas
-
-```css
-.contract-content .signature-section {
-  margin-top: 60px;
-  page-break-inside: avoid;
-}
-
-.contract-content .signatures-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 25px;
-}
-
-.contract-content .signature-box {
-  text-align: center;
-}
-
-.contract-content .signature-line {
-  border-top: 1px solid #333;
-  margin-top: 70px;
-  padding-top: 10px;
-}
-```
-
----
-
-## Resultado Esperado
+## Fluxo Final Esperado
 
 ```text
-ANTES:                              DEPOIS:
-┌────────────────────────┐          ┌────────────────────────┐
-│ [Printer] Rascunho     │          │ [Download] Contrato    │
-├────────────────────────┤          ├────────────────────────┤
-│                        │          │                        │
-│   R A S C U N H O      │          │ (sem marca d'agua)     │
-│                        │          │                        │
-│ Clausula 5...          │          │ Clausula 5...          │
-│ (cortada no meio)      │          │ (completa)             │
-│                        │          ├────────────────────────┤
-│ (sem assinaturas)      │          │ ASSINATURAS            │
-│                        │          │ __________________     │
-│                        │          │ Jeferson S. R. Encina  │
-│                        │          │ Socio - EXA Midia      │
-│                        │          │ CPF: xxx.xxx.xxx-xx    │
-└────────────────────────┘          └────────────────────────┘
+FLUXO NOVO (inteligente):
+┌─────────────────┐    ┌─────────────────────────┐    ┌─────────────────┐
+│   Proposta      │───>│ Contrato existe?        │───>│ Abrir Existente │
+│   (pendente)    │    │ (verifica proposta_id)  │    │ (sem duplicar)  │
+└─────────────────┘    └─────────────────────────┘    └─────────────────┘
+                                  │ NAO
+                                  ▼
+                       ┌─────────────────────────┐
+                       │ Coletar dados + Gerar   │
+                       │ (primeiro contrato)     │
+                       └─────────────────────────┘
+                                  │
+                                  ▼
+                       ┌─────────────────────────┐
+                       │ Juridico mostra badge:  │
+                       │ "Via Proposta EXA-XXX"  │
+                       └─────────────────────────┘
 ```
 
 ---
 
-## Dependencias Existentes
+## Deteccao de Alteracoes na Proposta
 
-O projeto ja possui as bibliotecas necessarias:
-- `jspdf` (versao ^3.0.4)
-- `html2canvas` (versao ^1.4.1)
+Para saber se o contrato precisa ser regenerado:
 
-Nao e necessario instalar nada novo.
+| Campo Verificado | Impacto |
+|------------------|---------|
+| `fidel_monthly_value` | Valor financeiro mudou |
+| `duration_months` | Prazo mudou |
+| `selected_buildings` | Predios mudaram |
+| `exclusividade_segmento` | Clausula de exclusividade |
+| `venda_futura` | Condicoes de cortesia |
+| `last_modified_at` | Timestamp geral |
 
+Se qualquer campo critico mudou apos `metadata.contract_created_at`, exibir botao "Regenerar Contrato" na proposta.
+
+---
+
+## Resultado Final
+
+1. **Zero Duplicacao**: Cada proposta tem no maximo 1 contrato vinculado
+2. **Rastreabilidade**: UI mostra claramente se contrato ja foi gerado
+3. **Flexibilidade**: Se proposta for alterada, usuario pode regenerar
+4. **Juridico Organizado**: Filtro por origem facilita gestao
