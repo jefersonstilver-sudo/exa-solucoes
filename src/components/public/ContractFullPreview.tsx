@@ -1,6 +1,8 @@
-import React, { useRef, useMemo } from 'react';
-import { X, FileText, Printer, AlertCircle, FileWarning } from 'lucide-react';
+import React, { useRef, useMemo, useState } from 'react';
+import { X, FileText, Download, AlertCircle, FileWarning, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 // Header EXA oficial - IMAGEM LOCAL (evita problemas de bucket privado)
 import exaContractHeader from '@/assets/exa-contract-header.png';
@@ -17,6 +19,7 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
   contractHtml
 }) => {
   const contractRef = useRef<HTMLDivElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Substituir URLs quebradas do header por import local
   const processedHtml = useMemo(() => {
@@ -36,75 +39,294 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
 
   if (!isOpen || !processedHtml) return null;
 
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Rascunho - Contrato EXA Mídia</title>
-          <meta charset="UTF-8">
-          <style>
-            @page {
-              size: A4;
-              margin: 15mm;
-            }
-            @media print {
-              body {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-              }
-              .watermark {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%) rotate(-30deg);
-                font-size: 80px;
-                font-weight: bold;
-                color: rgba(156, 30, 30, 0.08);
-                pointer-events: none;
-                z-index: 1000;
-              }
-            }
-            body {
-              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-              font-size: 11pt;
-              line-height: 1.6;
-              color: #1a1a1a;
-              background: white;
-              margin: 0;
-              padding: 0;
-              position: relative;
-            }
-            h1, h2, h3 {
-              page-break-after: avoid;
-            }
-            table, p {
-              page-break-inside: avoid;
-            }
-            .clausula {
-              page-break-inside: avoid;
-              margin-bottom: 16px;
-            }
-            .assinaturas {
-              page-break-inside: avoid;
-              margin-top: 40px;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="watermark">RASCUNHO</div>
-          ${processedHtml}
-        </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-      }, 500);
+  const handleDownloadPDF = async () => {
+    if (!contractRef.current) return;
+    setIsDownloading(true);
+
+    try {
+      // Criar container temporário para renderização limpa (sem watermark)
+      const tempContainer = document.createElement('div');
+      tempContainer.style.cssText = `
+        position: fixed;
+        left: -9999px;
+        top: 0;
+        width: 794px;
+        background: white;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 11pt;
+        line-height: 1.6;
+        color: #1a1a1a;
+        padding: 40px;
+      `;
+      
+      // Adicionar conteúdo HTML sem watermark
+      tempContainer.innerHTML = `
+        <style>
+          * { box-sizing: border-box; }
+          
+          .header-container {
+            width: 100%;
+            margin-bottom: 20px;
+          }
+          .header-image {
+            width: 100%;
+            height: auto;
+          }
+          h1 {
+            font-size: 18px;
+            font-weight: 700;
+            text-align: center;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+          }
+          h2, h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e5e5e5;
+            padding-bottom: 4px;
+            page-break-after: avoid;
+          }
+          p {
+            margin-bottom: 12px;
+            text-align: justify;
+            orphans: 3;
+            widows: 3;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 10pt;
+            page-break-inside: avoid;
+          }
+          th, td {
+            border: 1px solid #d1d5db;
+            padding: 8px 10px;
+            text-align: left;
+          }
+          th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+          }
+          ul, ol {
+            margin: 12px 0;
+            padding-left: 24px;
+          }
+          li {
+            margin-bottom: 8px;
+          }
+          
+          /* Estilos específicos do contrato */
+          .contract-title {
+            text-align: center;
+            margin: 30px 0;
+          }
+          .contract-title h1 {
+            color: #8B1A1A;
+            font-size: 16pt;
+            margin: 0 0 10px 0;
+          }
+          .contract-number {
+            font-size: 12pt;
+            color: #666;
+          }
+          .section-title {
+            background: linear-gradient(90deg, #8B1A1A, #A52020);
+            color: white;
+            padding: 10px 15px;
+            font-size: 12pt;
+            font-weight: 600;
+            margin-bottom: 15px;
+            border-radius: 4px;
+          }
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+          }
+          .info-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+          }
+          .info-card-title {
+            font-weight: 600;
+            color: #8B1A1A;
+            margin-bottom: 10px;
+            font-size: 11pt;
+            border-bottom: 2px solid #8B1A1A;
+            padding-bottom: 5px;
+          }
+          .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px dotted #ddd;
+          }
+          .info-row:last-child {
+            border-bottom: none;
+          }
+          .info-label {
+            color: #666;
+            font-size: 10pt;
+          }
+          .info-value {
+            font-weight: 500;
+            color: #1a1a1a;
+            text-align: right;
+            font-size: 10pt;
+          }
+          
+          /* Seção de assinaturas */
+          .signature-section {
+            margin-top: 60px;
+            page-break-inside: avoid;
+          }
+          .signatures-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 30px;
+          }
+          .signature-box {
+            text-align: center;
+            padding-top: 10px;
+          }
+          .signature-line {
+            border-top: 1px solid #333;
+            margin-top: 60px;
+            padding-top: 10px;
+          }
+          .signature-name {
+            font-weight: 600;
+            font-size: 11pt;
+            margin-bottom: 4px;
+          }
+          .signature-role {
+            font-size: 10pt;
+            color: #666;
+          }
+          .signature-doc {
+            font-size: 9pt;
+            color: #888;
+          }
+          
+          .witnesses-section {
+            margin-top: 50px;
+            page-break-inside: avoid;
+          }
+          .witnesses-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 20px;
+          }
+          .witness-box {
+            text-align: center;
+          }
+          .witness-line {
+            border-top: 1px solid #333;
+            margin-top: 50px;
+            padding-top: 10px;
+          }
+          
+          /* Cláusulas - evitar quebra no meio */
+          .clausula, .clause, .section, [class*="clausula"], [class*="clause"] {
+            page-break-inside: avoid;
+          }
+        </style>
+        ${processedHtml}
+      `;
+      
+      document.body.appendChild(tempContainer);
+
+      // Aguardar imagens carregarem
+      const images = tempContainer.querySelectorAll('img');
+      await Promise.all(
+        Array.from(images).map(img => {
+          if (img.complete) return Promise.resolve();
+          return new Promise(resolve => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        })
+      );
+
+      // Configurações do PDF A4
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 10;
+      const contentWidth = pageWidth - (margin * 2);
+      const contentHeight = pageHeight - (margin * 2);
+      
+      // Renderizar com html2canvas em alta qualidade
+      const canvas = await html2canvas(tempContainer, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        allowTaint: true,
+        windowWidth: 794
+      });
+
+      // Limpar container temporário
+      document.body.removeChild(tempContainer);
+
+      // Calcular proporções
+      const imgWidth = contentWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const totalPages = Math.ceil(imgHeight / contentHeight);
+
+      // Adicionar páginas com paginação inteligente
+      for (let i = 0; i < totalPages; i++) {
+        if (i > 0) {
+          pdf.addPage();
+        }
+
+        // Calcular posição de corte inteligente
+        const sourceY = i * (canvas.height / totalPages);
+        const sourceHeight = canvas.height / totalPages;
+
+        // Criar canvas temporário para a página atual
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sourceHeight;
+        
+        const ctx = pageCanvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(
+            canvas,
+            0, sourceY, canvas.width, sourceHeight,
+            0, 0, canvas.width, sourceHeight
+          );
+        }
+
+        const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+        pdf.addImage(pageImgData, 'JPEG', margin, margin, contentWidth, contentHeight);
+      }
+
+      // Download do PDF
+      const timestamp = new Date().toISOString().split('T')[0];
+      pdf.save(`contrato-exa-midia-${timestamp}.pdf`);
+
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      alert('Erro ao gerar o PDF. Por favor, tente novamente.');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -120,21 +342,23 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-bold">Rascunho do Contrato</h2>
-                  <span className="px-2 py-0.5 text-xs font-bold bg-amber-400 text-amber-900 rounded-full uppercase">
-                    Prévia
-                  </span>
+                  <h2 className="text-lg font-bold">Contrato</h2>
                 </div>
-                <p className="text-sm text-white/80">Gerado conforme as condições escolhidas na proposta</p>
+                <p className="text-sm text-white/80">Visualize e baixe o contrato completo</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button 
-                onClick={handlePrint}
-                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
-                title="Imprimir rascunho"
+                onClick={handleDownloadPDF}
+                disabled={isDownloading}
+                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors disabled:opacity-50"
+                title="Baixar PDF"
               >
-                <Printer className="h-5 w-5" />
+                {isDownloading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Download className="h-5 w-5" />
+                )}
               </button>
               <button 
                 onClick={onClose}
@@ -146,33 +370,22 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
           </div>
         </div>
 
-        {/* Draft Notice Banner */}
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-start gap-3">
-          <FileWarning className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-amber-800">
-            <p className="font-semibold mb-1">Este é apenas um rascunho para visualização</p>
-            <p className="text-amber-700">
-              O contrato final será enviado para seu e-mail <strong>após você aceitar a proposta e efetuar o pagamento</strong>. 
-              Nele você receberá o link para assinatura digital oficial via ClickSign.
+        {/* Info Banner */}
+        <div className="bg-emerald-50 border-b border-emerald-200 px-4 py-3 flex items-start gap-3">
+          <Download className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-emerald-800">
+            <p className="font-semibold mb-1">Clique no botão de download para baixar o PDF</p>
+            <p className="text-emerald-700">
+              O documento será gerado em formato A4, pronto para impressão e arquivo.
             </p>
           </div>
         </div>
 
-        {/* Contract Content - Scrollable */}
+        {/* Contract Content - Scrollable (SEM watermark) */}
         <div 
           ref={contractRef}
           className="flex-1 overflow-y-auto bg-gray-50 relative"
         >
-          {/* Watermark */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-            <span 
-              className="text-[80px] md:text-[120px] font-bold text-[#9C1E1E]/[0.04] select-none"
-              style={{ transform: 'rotate(-30deg)' }}
-            >
-              RASCUNHO
-            </span>
-          </div>
-          
           <div className="max-w-3xl mx-auto p-3 md:p-6 lg:p-8 relative z-20">
             {/* Paper effect */}
             <div 
@@ -195,25 +408,43 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
           </div>
         </div>
 
-        {/* Footer - Simplified */}
+        {/* Footer */}
         <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex-shrink-0">
           {/* Info */}
           <div className="flex items-start gap-2 text-sm text-gray-600 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
             <AlertCircle className="h-5 w-5 text-slate-500 flex-shrink-0 mt-0.5" />
             <span>
-              <strong>Próximos passos:</strong> Aceite a proposta → Efetue o pagamento → Receba o contrato final por e-mail para assinatura digital.
+              <strong>Próximos passos:</strong> Aceite a proposta → Efetue o pagamento → O contrato será enviado para assinatura digital.
             </span>
           </div>
 
-          {/* Action Button */}
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="w-full h-12 border-gray-300"
-          >
-            <X className="h-4 w-4 mr-2" />
-            Fechar Visualização
-          </Button>
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <Button
+              onClick={handleDownloadPDF}
+              disabled={isDownloading}
+              className="flex-1 h-12 bg-[#9C1E1E] hover:bg-[#7a1717]"
+            >
+              {isDownloading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Gerando PDF...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Baixar Contrato em PDF
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="h-12 border-gray-300 px-6"
+            >
+              Fechar
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -361,6 +592,58 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
           color: #1a1a1a;
           text-align: right;
           font-size: 10pt;
+        }
+        
+        /* Seção de assinaturas */
+        .contract-content .signature-section {
+          margin-top: 60px;
+          page-break-inside: avoid;
+        }
+        .contract-content .signatures-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 40px;
+          margin-top: 30px;
+        }
+        .contract-content .signature-box {
+          text-align: center;
+          padding-top: 10px;
+        }
+        .contract-content .signature-line {
+          border-top: 1px solid #333;
+          margin-top: 60px;
+          padding-top: 10px;
+        }
+        .contract-content .signature-name {
+          font-weight: 600;
+          font-size: 11pt;
+          margin-bottom: 4px;
+        }
+        .contract-content .signature-role {
+          font-size: 10pt;
+          color: #666;
+        }
+        .contract-content .signature-doc {
+          font-size: 9pt;
+          color: #888;
+        }
+        .contract-content .witnesses-section {
+          margin-top: 50px;
+          page-break-inside: avoid;
+        }
+        .contract-content .witnesses-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 40px;
+          margin-top: 20px;
+        }
+        .contract-content .witness-box {
+          text-align: center;
+        }
+        .contract-content .witness-line {
+          border-top: 1px solid #333;
+          margin-top: 50px;
+          padding-top: 10px;
         }
         
         /* RESPONSIVO MOBILE */
