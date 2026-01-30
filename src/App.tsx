@@ -220,6 +220,11 @@ const AppContent = () => {
           {/* Rotas principais */}
           <Route path="/" element={<Exa />} />
           <Route path="/coming-soon" element={<ComingSoonPage />} />
+          <Route path="/portrasdamarca" element={
+            <Suspense fallback={<GlobalLoadingPage message="" />}>
+              {React.createElement(lazy(() => import('./pages/PortrasDaMarca')))}
+            </Suspense>
+          } />
           
           {/* ROTAS PÚBLICAS DE EXIBIÇÃO - Novo padrão com nome+código */}
           
