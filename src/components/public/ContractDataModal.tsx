@@ -30,6 +30,7 @@ interface ContractDataModalProps {
   onComplete: (data: ContractData) => void;
   initialData?: Partial<ContractData>;
   isLoading?: boolean;
+  isEditing?: boolean;
 }
 
 export const ContractDataModal: React.FC<ContractDataModalProps> = ({
@@ -37,7 +38,8 @@ export const ContractDataModal: React.FC<ContractDataModalProps> = ({
   onClose,
   onComplete,
   initialData,
-  isLoading = false
+  isLoading = false,
+  isEditing = false
 }) => {
   const [formData, setFormData] = useState<ContractData>({
     primeiro_nome: '',
@@ -184,8 +186,12 @@ export const ContractDataModal: React.FC<ContractDataModalProps> = ({
                 <FileText className="h-5 w-5 text-[#9C1E1E]" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Dados para Contrato</h2>
-                <p className="text-xs text-gray-500">Complete seus dados para gerar o contrato</p>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {isEditing ? 'Editar Dados do Signatário' : 'Dados para Contrato'}
+                </h2>
+                <p className="text-xs text-gray-500">
+                  {isEditing ? 'Atualize os dados para a assinatura digital' : 'Complete seus dados para gerar o contrato'}
+                </p>
               </div>
             </div>
             <button 
@@ -365,12 +371,12 @@ export const ContractDataModal: React.FC<ContractDataModalProps> = ({
             {isLoading ? (
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Gerando Contrato...
+                {isEditing ? 'Atualizando...' : 'Gerando Contrato...'}
               </div>
             ) : (
               <div className="flex items-center gap-2">
                 <Check className="h-5 w-5" />
-                Continuar para Prévia do Contrato
+                {isEditing ? 'Salvar Alterações' : 'Continuar para Prévia do Contrato'}
               </div>
             )}
           </Button>

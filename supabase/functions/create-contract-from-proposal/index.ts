@@ -34,15 +34,10 @@ serve(async (req) => {
 
     console.log("📋 ProposalId:", proposalId);
     console.log("👁️ Preview Only:", preview_only);
-    console.log("👤 ClientData:", clientData ? JSON.stringify(clientData, null, 2) : "(não fornecido - modo preview)");
+    console.log("👤 ClientData:", clientData ? JSON.stringify(clientData, null, 2) : "(não fornecido)");
 
     if (!proposalId) {
       throw new Error("proposalId é obrigatório");
-    }
-
-    // Se for modo preview, não exige dados do cliente
-    if (!preview_only && (!clientData || !clientData.primeiro_nome || !clientData.cpf || !clientData.data_nascimento)) {
-      throw new Error("Dados do cliente incompletos (nome, CPF e data de nascimento são obrigatórios)");
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -66,65 +61,21 @@ serve(async (req) => {
 
     // =========================================================
     // VERIFICAR SE JÁ EXISTE CONTRATO PARA ESTA PROPOSTA (IDEMPOTENTE)
+    // IMPORTANTE: Verificar ANTES de validar clientData
     // =========================================================
     if (!preview_only) {
       const { data: existingContract } = await supabase
         .from('contratos_legais')
-        .select('id, numero_contrato, status, created_at, updated_at')
+        .select('id, numero_contrato, status, created_at, updated_at, cliente_nome, cliente_cpf, cliente_data_nascimento, cliente_email, cliente_telefone')
         .eq('proposta_id', proposalId)
         .maybeSingle();
 
       if (existingContract) {
         console.log("📄 Contrato existente encontrado:", existingContract.numero_contrato);
         
-        // Verificar se proposta foi modificada após geração do contrato
-        const proposalUpdatedAt = proposal.updated_at ? new Date(proposal.updated_at) : null;
-        const contractCreatedAt = new Date(existingContract.created_at);
-        const proposalModified = proposalUpdatedAt && proposalUpdatedAt > contractCreatedAt;
-        
-        if (proposalModified) {
-          console.log("⚠️ Proposta foi modificada após o contrato - regenerando HTML...");
-          // Buscar signatários e produtos para regenerar HTML
-          const { data: exaSignatarios } = await supabase
-            .from("signatarios_exa")
-            .select("*")
-            .eq("is_active", true)
-            .order('is_default', { ascending: false });
-
-          const { data: produtosExa } = await supabase
-            .from("produtos_exa")
-            .select("*");
-          
-          const { data: configExibicao } = await supabase
-            .from("configuracoes_exibicao")
-            .select("*")
-            .single();
-
-          // Buscar contrato completo para gerar HTML
-          const { data: fullContract } = await supabase
-            .from('contratos_legais')
-            .select('*')
-            .eq('id', existingContract.id)
-            .single();
-
-          const contractHtml = generateContractHtml(fullContract, exaSignatarios || [], produtosExa || [], configExibicao);
-
-          return new Response(
-            JSON.stringify({
-              success: true,
-              existing_contract: true,
-              proposal_modified: true,
-              contrato: fullContract,
-              contractHtml,
-              message: "Contrato existente retornado (proposta foi modificada)"
-            }),
-            { 
-              status: 200, 
-              headers: { ...corsHeaders, "Content-Type": "application/json" } 
-            }
-          );
-        } else {
-          console.log("✅ Proposta não foi modificada - retornando contrato existente");
+        // Se NÃO tem clientData, apenas retornar contrato existente (modo visualização)
+        if (!clientData) {
+          console.log("👁️ Modo visualização - retornando contrato existente");
           
           // Buscar signatários e produtos para gerar HTML
           const { data: exaSignatarios } = await supabase
@@ -155,10 +106,18 @@ serve(async (req) => {
             JSON.stringify({
               success: true,
               existing_contract: true,
-              proposal_modified: false,
+              view_mode: true,
               contrato: fullContract,
               contractHtml,
-              message: "Contrato existente retornado sem duplicação"
+              signatory_data: {
+                primeiro_nome: existingContract.cliente_nome?.split(' ')[0] || '',
+                sobrenome: existingContract.cliente_nome?.split(' ').slice(1).join(' ') || '',
+                cpf: existingContract.cliente_cpf || '',
+                data_nascimento: existingContract.cliente_data_nascimento || '',
+                email: existingContract.cliente_email || '',
+                telefone: existingContract.cliente_telefone || ''
+              },
+              message: "Contrato existente retornado para visualização"
             }),
             { 
               status: 200, 
@@ -166,7 +125,89 @@ serve(async (req) => {
             }
           );
         }
+        
+        // Se TEM clientData, significa modo de EDIÇÃO - atualizar signatário
+        console.log("✏️ Modo EDIÇÃO - atualizando dados do signatário");
+        
+        const { error: updateError } = await supabase
+          .from('contratos_legais')
+          .update({
+            cliente_nome: `${clientData.primeiro_nome} ${clientData.sobrenome}`.trim(),
+            cliente_cpf: clientData.cpf.replace(/\D/g, ''),
+            cliente_data_nascimento: clientData.data_nascimento,
+            cliente_email: clientData.email,
+            cliente_telefone: clientData.telefone || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingContract.id);
+        
+        if (updateError) {
+          console.error("❌ Erro ao atualizar signatário:", updateError);
+          throw new Error("Erro ao atualizar dados do signatário");
+        }
+        
+        // Atualizar também o registro de signatário na tabela contrato_signatarios
+        await supabase
+          .from('contrato_signatarios')
+          .update({
+            nome: clientData.primeiro_nome,
+            sobrenome: clientData.sobrenome,
+            cpf: clientData.cpf.replace(/\D/g, ''),
+            data_nascimento: clientData.data_nascimento,
+            email: clientData.email
+          })
+          .eq('contrato_id', existingContract.id)
+          .eq('tipo', 'cliente');
+        
+        // Buscar contrato atualizado
+        const { data: updatedContract } = await supabase
+          .from('contratos_legais')
+          .select('*')
+          .eq('id', existingContract.id)
+          .single();
+        
+        // Buscar signatários e produtos para regenerar HTML
+        const { data: exaSignatarios } = await supabase
+          .from("signatarios_exa")
+          .select("*")
+          .eq("is_active", true)
+          .order('is_default', { ascending: false });
+
+        const { data: produtosExa } = await supabase
+          .from("produtos_exa")
+          .select("*");
+        
+        const { data: configExibicao } = await supabase
+          .from("configuracoes_exibicao")
+          .select("*")
+          .single();
+
+        const contractHtml = generateContractHtml(updatedContract, exaSignatarios || [], produtosExa || [], configExibicao);
+
+        console.log("✅ Signatário atualizado com sucesso");
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            existing_contract: true,
+            updated: true,
+            contrato: updatedContract,
+            contractHtml,
+            message: "Dados do signatário atualizados com sucesso"
+          }),
+          { 
+            status: 200, 
+            headers: { ...corsHeaders, "Content-Type": "application/json" } 
+          }
+        );
       }
+    }
+
+    // =========================================================
+    // VALIDAR clientData - só se NÃO existe contrato e NÃO é preview
+    // =========================================================
+    if (!preview_only && (!clientData || !clientData.primeiro_nome || !clientData.cpf || !clientData.data_nascimento)) {
+      throw new Error("Dados do cliente incompletos (nome, CPF e data de nascimento são obrigatórios)");
     }
 
     // 2. Preparar dados do contrato
