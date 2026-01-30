@@ -1,148 +1,100 @@
 
-# Plano: Sistema Inteligente de Contratos Vinculados a Propostas
+# Plano: Corrigir Fluxo de Contrato Existente + Botao de Edicao
 
 ## Problema Identificado
 
-Atualmente existem 3 problemas no fluxo de contratos:
+### Erro Principal
+Quando o usuario clica em "Ver Contrato" e ja existe um contrato gerado:
 
-1. **Duplicacao**: A Edge Function `create-contract-from-proposal` cria um novo contrato toda vez que e chamada, sem verificar se ja existe um para a proposta
-2. **Falta de Rastreamento na UI**: A proposta publica nao verifica se ja existe contrato gerado antes de exibir o botao "Ver Contrato"
-3. **Desconexao no Juridico**: O modulo Juridico (`ContratosPage.tsx`) lista todos os contratos sem indicar claramente quais vieram de propostas
+1. O codigo envia `preview_only: false` + `clientData: null`
+2. A Edge Function valida `clientData` ANTES de verificar se existe contrato
+3. Resultado: **Erro 400** - "Dados do cliente incompletos"
 
----
-
-## Dados Atuais do Sistema
-
-| Tabela | Campo | Uso |
-|--------|-------|-----|
-| `proposals` | `metadata.contract_id` | Armazena ID do contrato gerado |
-| `proposals` | `metadata.contract_created_at` | Timestamp da geracao |
-| `contratos_legais` | `proposta_id` | FK para proposta de origem |
-
-```text
-FLUXO ATUAL (problematico):
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Proposta      │───>│ Edge Function   │───>│ Novo Contrato   │
-│   (pendente)    │    │ (sempre cria)   │    │ (duplicado!)    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                  │
-                                  ▼
-                       ┌─────────────────────────┐
-                       │ Juridico lista TODOS    │
-                       │ (sem distinguir origem) │
-                       └─────────────────────────┘
+### Fluxo Atual (quebrado)
 ```
+Usuario clica "Ver Contrato"
+       │
+       ▼
+hasExistingContract = true
+       │
+       ▼
+Chama Edge Function com:
+  preview_only: false
+  clientData: null
+       │
+       ▼
+Edge Function linha 44:
+  if (!preview_only && !clientData) → ERRO 400
+```
+
+### Duplicacao Detectada
+A proposta `b890fb70...` tem **5 contratos duplicados** - a idempotencia nao esta funcionando porque a verificacao de contrato existente so ocorre se `!preview_only`, mas o erro de validacao ocorre antes.
 
 ---
 
 ## Solucao Proposta
 
-### Fase 1: Edge Function Inteligente (Idempotente)
+### Fase 1: Corrigir Edge Function (Verificar Existente ANTES de Validar)
 
 **Arquivo**: `supabase/functions/create-contract-from-proposal/index.ts`
 
-**Logica Nova**:
-```text
-1. Buscar proposta
-2. VERIFICAR se ja existe contrato para esta proposta
-   - Se SIM (nao preview):
-     a. Checar se proposta foi alterada desde geracao
-     b. Se inalterada: retornar contrato existente
-     c. Se alterada: regenerar HTML e atualizar contrato existente
-   - Se NAO: criar novo contrato normalmente
-3. Usar UPSERT com conflict em proposta_id
+**Mudanca**: Mover a verificacao de contrato existente para ANTES da validacao de clientData
+
+```
+ANTES (ordem errada):
+1. Validar clientData → ERRO se null
+2. Verificar se existe contrato
+
+DEPOIS (ordem correta):
+1. Verificar se existe contrato → Retornar se sim
+2. Validar clientData (so se nao existe)
 ```
 
-**Codigo a Adicionar (apos buscar proposta)**:
-```typescript
-// VERIFICAR SE JA EXISTE CONTRATO PARA ESTA PROPOSTA
-if (!preview_only) {
-  const { data: existingContract } = await supabase
-    .from('contratos_legais')
-    .select('id, numero_contrato, status, created_at')
-    .eq('proposta_id', proposalId)
-    .maybeSingle();
+### Fase 2: Criar Novo Parametro `fetch_existing`
 
-  if (existingContract) {
-    console.log("📄 Contrato existente encontrado:", existingContract.numero_contrato);
-    
-    // Verificar se proposta foi modificada apos contrato
-    const proposalModified = proposal.last_modified_at 
-      ? new Date(proposal.last_modified_at) > new Date(existingContract.created_at)
-      : false;
-    
-    if (!proposalModified) {
-      // Retornar contrato existente sem duplicar
-      const contractHtml = generateContractHtml(existingContract, ...);
-      return Response({ success: true, contrato: existingContract, contractHtml });
-    }
-    
-    // Se modificada, atualizar contrato existente
-    // ... logica de update ao inves de insert
-  }
-}
-```
+Adicionar flag `fetch_existing: true` que indica "quero apenas buscar contrato existente":
 
----
+| Parametro | Comportamento |
+|-----------|---------------|
+| `preview_only: true` | Gera HTML virtual sem salvar |
+| `preview_only: false` + `clientData` | Cria/atualiza contrato |
+| `fetch_existing: true` | Busca contrato existente sem criar |
 
-### Fase 2: Proposta Publica - Exibir Contrato Existente
+### Fase 3: Adicionar Botao "Editar Dados do Signatario"
 
 **Arquivo**: `src/pages/public/PropostaPublicaPage.tsx`
 
 **Mudancas**:
 
-1. **Verificar metadata ao carregar proposta**:
-   - Se `metadata.contract_id` existe: mostrar botao "Visualizar Contrato" (em vez de "Gerar")
-   - Armazenar `hasExistingContract` e `existingContractId` no state
-
-2. **Handler `handleViewContract`**:
-   - Se contrato existente: buscar HTML do contrato existente
-   - Se nao existe: iniciar fluxo de coleta de dados + geracao
-
-3. **Indicador Visual**:
-   - Badge "Contrato ja gerado" na interface
-   - Botao diferenciado para visualizar vs gerar
-
-```text
-ANTES:                              DEPOIS:
-┌────────────────────────┐          ┌────────────────────────┐
-│ [Ver Contrato]         │          │ ✓ Contrato Gerado      │
-│ (sempre gera novo)     │          │ [Visualizar Contrato]  │
-└────────────────────────┘          │ (abre existente)       │
-                                    │                        │
-                                    │ [Regenerar] (se alt.)  │
-                                    └────────────────────────┘
+1. **Novo estado** para controlar modo de edicao:
+```typescript
+const [isEditingSignatory, setIsEditingSignatory] = useState(false);
 ```
 
----
+2. **Botao de Edicao** abaixo de "Ver Contrato" (quando contrato existe):
+```
+┌─────────────────────────────────────────────┐
+│  ✅ Contrato Gerado                         │
+│                                             │
+│  [📄 Visualizar Contrato]  (botao verde)    │
+│                                             │
+│  [✏️ Editar Dados do Signatario] (outline)  │
+└─────────────────────────────────────────────┘
+```
 
-### Fase 3: Pagina de Propostas Admin - Vinculo Visual
+3. **Fluxo de Edicao**:
+   - Clicar em "Editar Dados" → Abre `ContractDataModal`
+   - Pre-preenche com dados salvos no contrato existente
+   - Ao submeter → Chama Edge Function com `clientData` para ATUALIZAR contrato
+   - Regenera HTML do contrato
 
-**Arquivo**: `src/pages/admin/proposals/PropostasPage.tsx`
+### Fase 4: Buscar Dados do Signatario do Contrato Existente
 
-**Mudancas**:
-- Na listagem, exibir badge se proposta tem `metadata.contract_id`
-- Botao rapido para "Ver Contrato" que navega para `/juridico/{contract_id}`
+**Arquivo**: `src/pages/public/PropostaPublicaPage.tsx`
 
----
-
-### Fase 4: Modulo Juridico - Filtrar Origem
-
-**Arquivo**: `src/pages/admin/contracts/ContratosPage.tsx`
-
-**Mudancas**:
-
-1. **Novo Filtro**: Adicionar filtro "Origem"
-   - Todos
-   - De Propostas (proposta_id nao nulo)
-   - Manual (proposta_id nulo)
-
-2. **Badge Visual**: Em cada card de contrato, mostrar:
-   - "Via Proposta EXA-2026-XXXX" se veio de proposta
-   - Link clicavel para a proposta de origem
-
-3. **Evitar Duplicacao na Criacao Manual**:
-   - Se usuario tenta criar contrato para cliente que ja tem proposta com contrato: alertar
+Quando proposta carrega e tem `metadata.contract_id`:
+- Buscar dados do contrato (cliente_cpf, cliente_data_nascimento, etc.)
+- Armazenar em `existingContractData` para pre-preencher modal de edicao
 
 ---
 
@@ -150,57 +102,151 @@ ANTES:                              DEPOIS:
 
 | Arquivo | Tipo | Descricao |
 |---------|------|-----------|
-| `supabase/functions/create-contract-from-proposal/index.ts` | Edge Function | Adicionar verificacao de contrato existente e logica de upsert |
-| `src/pages/public/PropostaPublicaPage.tsx` | React | Verificar e exibir contrato existente |
-| `src/pages/admin/proposals/PropostasPage.tsx` | React | Badge de contrato vinculado |
-| `src/pages/admin/contracts/ContratosPage.tsx` | React | Filtro por origem e badge visual |
+| `supabase/functions/create-contract-from-proposal/index.ts` | Edge Function | Reordenar validacao, adicionar `fetch_existing` |
+| `src/pages/public/PropostaPublicaPage.tsx` | React | Botao editar, buscar dados existentes, modo edicao |
 
 ---
 
-## Fluxo Final Esperado
+## Fluxo Final Corrigido
 
-```text
-FLUXO NOVO (inteligente):
-┌─────────────────┐    ┌─────────────────────────┐    ┌─────────────────┐
-│   Proposta      │───>│ Contrato existe?        │───>│ Abrir Existente │
-│   (pendente)    │    │ (verifica proposta_id)  │    │ (sem duplicar)  │
-└─────────────────┘    └─────────────────────────┘    └─────────────────┘
-                                  │ NAO
-                                  ▼
-                       ┌─────────────────────────┐
-                       │ Coletar dados + Gerar   │
-                       │ (primeiro contrato)     │
-                       └─────────────────────────┘
-                                  │
-                                  ▼
-                       ┌─────────────────────────┐
-                       │ Juridico mostra badge:  │
-                       │ "Via Proposta EXA-XXX"  │
-                       └─────────────────────────┘
+```
+                                ┌─────────────────┐
+                                │ Usuario clica   │
+                                │ "Ver Contrato"  │
+                                └────────┬────────┘
+                                         │
+           ┌─────────────────────────────┴─────────────────────────────┐
+           │                                                           │
+           ▼                                                           ▼
+    hasExistingContract?                                         NAO EXISTE
+           │                                                           │
+           ▼                                                           ▼
+    Chama com fetch_existing: true                            Abre Modal de Dados
+           │                                                           │
+           ▼                                                           ▼
+    Edge Function busca contrato                              Usuario preenche
+    e retorna HTML                                                     │
+           │                                                           ▼
+           ▼                                                  Chama com clientData
+    Exibe ContractPreview                                              │
+           │                                                           ▼
+           ▼                                                  Cria contrato novo
+    [Editar Dados]                                                     │
+           │                                                           ▼
+           ▼                                                  Exibe ContractPreview
+    Abre Modal pre-preenchido
+           │
+           ▼
+    Submete alteracoes
+           │
+           ▼
+    Atualiza contrato existente
+           │
+           ▼
+    Exibe HTML atualizado
 ```
 
 ---
 
-## Deteccao de Alteracoes na Proposta
+## Codigo a Implementar
 
-Para saber se o contrato precisa ser regenerado:
+### Edge Function - Nova Estrutura
 
-| Campo Verificado | Impacto |
-|------------------|---------|
-| `fidel_monthly_value` | Valor financeiro mudou |
-| `duration_months` | Prazo mudou |
-| `selected_buildings` | Predios mudaram |
-| `exclusividade_segmento` | Clausula de exclusividade |
-| `venda_futura` | Condicoes de cortesia |
-| `last_modified_at` | Timestamp geral |
+```typescript
+// NOVA ORDEM DE VERIFICACAO
 
-Se qualquer campo critico mudou apos `metadata.contract_created_at`, exibir botao "Regenerar Contrato" na proposta.
+// 1. PRIMEIRO: Verificar se existe contrato (antes de validar clientData)
+if (!preview_only) {
+  const { data: existingContract } = await supabase
+    .from('contratos_legais')
+    .select('*')
+    .eq('proposta_id', proposalId)
+    .maybeSingle();
+
+  // Se existe E nao temos clientData, apenas retornar o existente
+  if (existingContract && !clientData) {
+    console.log("📄 Retornando contrato existente (fetch mode)");
+    const contractHtml = generateContractHtml(existingContract, ...);
+    return Response({ 
+      success: true, 
+      existing_contract: true,
+      contrato: existingContract,
+      contractHtml 
+    });
+  }
+
+  // Se existe E temos clientData, significa EDICAO
+  if (existingContract && clientData) {
+    console.log("✏️ Modo EDICAO - Atualizando dados do signatario");
+    // Atualizar contrato com novos dados
+    await supabase.from('contratos_legais').update({
+      cliente_nome: clientData.primeiro_nome + ' ' + clientData.sobrenome,
+      cliente_cpf: clientData.cpf,
+      cliente_data_nascimento: clientData.data_nascimento,
+      cliente_email: clientData.email,
+      // ...
+    }).eq('id', existingContract.id);
+    
+    // Regenerar HTML
+    // ...
+  }
+}
+
+// 2. DEPOIS: Validar clientData (so se nao existe contrato)
+if (!preview_only && !clientData) {
+  throw new Error("Dados do cliente sao obrigatorios para criar novo contrato");
+}
+```
+
+### React - Buscar Dados do Contrato Existente
+
+```typescript
+// No useEffect que carrega proposta
+if (metadata?.contract_id) {
+  // Buscar dados do contrato para pre-preencher modal de edicao
+  const { data: contractData } = await supabase
+    .from('contratos_legais')
+    .select('cliente_nome, cliente_cpf, cliente_data_nascimento, cliente_email, cliente_telefone')
+    .eq('id', metadata.contract_id)
+    .single();
+  
+  if (contractData) {
+    setExistingContractData(contractData);
+  }
+}
+```
+
+### React - Botao de Edicao
+
+```tsx
+{hasExistingContract && (
+  <div className="space-y-3">
+    <Button onClick={handleViewContract} className="w-full bg-emerald-600">
+      <FileText className="mr-2 h-4 w-4" />
+      Visualizar Contrato
+    </Button>
+    
+    <Button 
+      variant="outline" 
+      onClick={() => {
+        setIsEditingSignatory(true);
+        setShowContractDataModal(true);
+      }}
+      className="w-full border-amber-500 text-amber-600"
+    >
+      <Pencil className="mr-2 h-4 w-4" />
+      Editar Dados do Signatario
+    </Button>
+  </div>
+)}
+```
 
 ---
 
 ## Resultado Final
 
-1. **Zero Duplicacao**: Cada proposta tem no maximo 1 contrato vinculado
-2. **Rastreabilidade**: UI mostra claramente se contrato ja foi gerado
-3. **Flexibilidade**: Se proposta for alterada, usuario pode regenerar
-4. **Juridico Organizado**: Filtro por origem facilita gestao
+1. **Erro 400 corrigido**: Visualizar contrato existente sem pedir dados novamente
+2. **Botao de Edicao**: Permite alterar dados do signatario a qualquer momento
+3. **Pre-preenchimento**: Modal de edicao mostra dados atuais
+4. **Regeneracao**: Ao editar, contrato e atualizado (nao duplicado)
+5. **Zero Duplicacao**: Mesma proposta = maximo 1 contrato
