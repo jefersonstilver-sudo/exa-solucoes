@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink, Calendar, Globe, Users, Rocket, Lock } from 'lucide-react';
+import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink, Calendar, Globe, Users, Rocket, Lock, Pencil } from 'lucide-react';
 import { format, addDays, addMonths, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -159,6 +159,8 @@ const PropostaPublicaPage = () => {
   // Existing contract tracking
   const [existingContractId, setExistingContractId] = useState<string | null>(null);
   const [hasExistingContract, setHasExistingContract] = useState(false);
+  const [existingSignatoryData, setExistingSignatoryData] = useState<any>(null);
+  const [isEditingSignatory, setIsEditingSignatory] = useState(false);
 
   // Track page view time with heartbeat system (works on mobile!)
   const pageLoadTime = React.useRef<number>(Date.now());
@@ -621,14 +623,14 @@ const PropostaPublicaPage = () => {
       setContractLoadingMessage('Carregando seu contrato...');
       
       try {
-        // Chamar edge function com preview_only que vai retornar o contrato existente
+        // Chamar edge function SEM clientData para modo visualização
         const { data: contractResponse, error: contractError } = await supabase.functions.invoke(
           'create-contract-from-proposal',
           {
             body: {
               proposalId: proposal.id,
-              preview_only: false, // Vai detectar que já existe e retornar
-              clientData: null
+              preview_only: false
+              // Não enviar clientData = modo visualização
             }
           }
         );
@@ -642,6 +644,12 @@ const PropostaPublicaPage = () => {
           console.log('✅ Contrato existente carregado');
           setGeneratedContractHtml(contractResponse.contractHtml || '');
           setGeneratedContract(contractResponse.contrato);
+          
+          // Salvar dados do signatário para pré-preencher edição
+          if (contractResponse.signatory_data) {
+            setExistingSignatoryData(contractResponse.signatory_data);
+          }
+          
           setContractFlow('previewing');
           setShowContractPreview(true);
           return;
@@ -677,16 +685,40 @@ const PropostaPublicaPage = () => {
     setShowContractDataModal(true);
   };
 
+  // Handle edit signatory button click
+  const handleEditSignatory = () => {
+    if (!proposal) return;
+    
+    // Usar dados existentes do signatário se disponível
+    if (existingSignatoryData) {
+      setContractClientData(existingSignatoryData);
+    } else {
+      // Fallback: extrair da proposta
+      const nameParts = (proposal.client_name || '').split(' ');
+      setContractClientData({
+        primeiro_nome: nameParts[0] || '',
+        sobrenome: nameParts.slice(1).join(' ') || '',
+        email: proposal.client_email || '',
+        telefone: proposal.client_phone || '',
+        cpf: '',
+        data_nascimento: ''
+      });
+    }
+    
+    setIsEditingSignatory(true);
+    setShowContractDataModal(true);
+  };
+
   // Handle contract data collection complete
   const handleContractDataComplete = async (data: any) => {
     if (!proposal) return;
     
     setShowContractDataModal(false);
     setContractFlow('generating');
-    setContractLoadingMessage('Gerando seu contrato...');
+    setContractLoadingMessage(isEditingSignatory ? 'Atualizando dados...' : 'Gerando seu contrato...');
     
     try {
-      // Chamar edge function para criar contrato no Supabase
+      // Chamar edge function para criar/atualizar contrato no Supabase
       const { data: contractResponse, error: contractError } = await supabase.functions.invoke(
         'create-contract-from-proposal',
         {
@@ -705,32 +737,49 @@ const PropostaPublicaPage = () => {
       );
       
       if (contractError) {
-        console.error('Erro ao criar contrato:', contractError);
-        throw new Error('Erro ao gerar contrato no servidor');
+        console.error('Erro ao criar/atualizar contrato:', contractError);
+        throw new Error('Erro ao processar contrato no servidor');
       }
       
       if (!contractResponse?.success) {
         throw new Error(contractResponse?.error || 'Erro desconhecido ao criar contrato');
       }
       
-      console.log('✅ Contrato criado no Supabase:', contractResponse.contrato);
+      console.log('✅ Contrato processado no Supabase:', contractResponse.contrato);
       
       // Armazenar o HTML completo do contrato gerado pela edge function
       const contractHtmlContent = contractResponse.contractHtml || '';
       
-      setContractLoadingMessage('Contrato pronto!');
+      setContractLoadingMessage(isEditingSignatory ? 'Dados atualizados!' : 'Contrato pronto!');
       await new Promise(r => setTimeout(r, 500));
       
       setGeneratedContractHtml(contractHtmlContent);
       setGeneratedContract(contractResponse.contrato);
       setContractClientData(data);
+      setExistingSignatoryData(data); // Atualizar dados locais
       setContractFlow('previewing');
       setShowContractPreview(true);
       
+      // Se já existe contrato e estávamos editando, marcar como existente
+      if (contractResponse.existing_contract || contractResponse.updated) {
+        setHasExistingContract(true);
+        if (contractResponse.contrato?.id) {
+          setExistingContractId(contractResponse.contrato.id);
+        }
+      }
+      
+      // Reset editing state
+      setIsEditingSignatory(false);
+      
+      if (isEditingSignatory) {
+        toast.success('Dados do signatário atualizados!');
+      }
+      
     } catch (err: any) {
-      console.error('Erro ao gerar contrato:', err);
-      toast.error(err.message || 'Erro ao gerar contrato');
+      console.error('Erro ao processar contrato:', err);
+      toast.error(err.message || 'Erro ao processar contrato');
       setContractFlow('idle');
+      setIsEditingSignatory(false);
     }
   };
 
@@ -1619,16 +1668,18 @@ const PropostaPublicaPage = () => {
       )}
 
       {/* Contract Flow: Data Collection Modal */}
-      {contractFlow === 'collecting' && (
+      {(contractFlow === 'collecting' || isEditingSignatory) && (
         <ContractDataModal
           isOpen={showContractDataModal}
           onClose={() => {
             setShowContractDataModal(false);
             setContractFlow('idle');
+            setIsEditingSignatory(false);
           }}
           onComplete={handleContractDataComplete}
           initialData={contractClientData}
           isLoading={false}
+          isEditing={isEditingSignatory}
         />
       )}
 
@@ -2289,15 +2340,43 @@ const PropostaPublicaPage = () => {
 
                 {/* Botão Ver Contrato - Cortesia */}
                 {contractFlow !== 'accepted' && (
-                  <Button
-                    variant="outline"
-                    className="w-full h-10 text-sm border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
-                    onClick={handleViewContract}
-                    disabled={isSubmitting}
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Ver Contrato
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      className={`w-full h-10 text-sm ${
+                        hasExistingContract 
+                          ? 'border-emerald-500/50 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' 
+                          : 'border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5'
+                      }`}
+                      onClick={handleViewContract}
+                      disabled={isSubmitting}
+                    >
+                      {hasExistingContract ? (
+                        <>
+                          <Check className="h-4 w-4 mr-2" />
+                          Visualizar Contrato
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Ver Contrato
+                        </>
+                      )}
+                    </Button>
+                    
+                    {/* Botão de editar signatário - Cortesia */}
+                    {hasExistingContract && (
+                      <Button
+                        variant="outline"
+                        className="w-full h-9 text-xs border-amber-400/50 text-amber-700 bg-amber-50 hover:bg-amber-100"
+                        onClick={handleEditSignatory}
+                        disabled={isSubmitting}
+                      >
+                        <Pencil className="h-3 w-3 mr-2" />
+                        Editar Dados do Signatário
+                      </Button>
+                    )}
+                  </div>
                 )}
 
                 <Button
@@ -2338,15 +2417,43 @@ const PropostaPublicaPage = () => {
 
                 {/* Botão Ver Contrato - Pagamento Personalizado */}
                 {contractFlow !== 'accepted' && (
-                  <Button
-                    variant="outline"
-                    className="w-full h-10 text-sm border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5 rounded-xl"
-                    onClick={handleViewContract}
-                    disabled={isSubmitting}
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Ver Contrato
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      className={`w-full h-10 text-sm rounded-xl ${
+                        hasExistingContract 
+                          ? 'border-emerald-500/50 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' 
+                          : 'border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5'
+                      }`}
+                      onClick={handleViewContract}
+                      disabled={isSubmitting}
+                    >
+                      {hasExistingContract ? (
+                        <>
+                          <Check className="h-4 w-4 mr-2" />
+                          Visualizar Contrato
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Ver Contrato
+                        </>
+                      )}
+                    </Button>
+                    
+                    {/* Botão de editar signatário - Pagamento Personalizado */}
+                    {hasExistingContract && (
+                      <Button
+                        variant="outline"
+                        className="w-full h-9 text-xs border-amber-400/50 text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-xl"
+                        onClick={handleEditSignatory}
+                        disabled={isSubmitting}
+                      >
+                        <Pencil className="h-3 w-3 mr-2" />
+                        Editar Dados do Signatário
+                      </Button>
+                    )}
+                  </div>
                 )}
 
                 <Button
@@ -2387,28 +2494,43 @@ const PropostaPublicaPage = () => {
 
                 {/* Botão secundário: Ver Contrato antes */}
                 {contractFlow !== 'accepted' && (
-                  <Button
-                    variant="outline"
-                    className={`w-full h-10 text-sm ${
-                      hasExistingContract 
-                        ? 'border-emerald-500/50 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' 
-                        : 'border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5'
-                    }`}
-                    onClick={handleViewContract}
-                    disabled={isSubmitting}
-                  >
-                    {hasExistingContract ? (
-                      <>
-                        <Check className="h-4 w-4 mr-2" />
-                        Visualizar Contrato
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="h-4 w-4 mr-2" />
-                        Ver Contrato
-                      </>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      className={`w-full h-10 text-sm ${
+                        hasExistingContract 
+                          ? 'border-emerald-500/50 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' 
+                          : 'border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5'
+                      }`}
+                      onClick={handleViewContract}
+                      disabled={isSubmitting}
+                    >
+                      {hasExistingContract ? (
+                        <>
+                          <Check className="h-4 w-4 mr-2" />
+                          Visualizar Contrato
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Ver Contrato
+                        </>
+                      )}
+                    </Button>
+                    
+                    {/* Botão de editar signatário - só aparece se contrato já existe */}
+                    {hasExistingContract && (
+                      <Button
+                        variant="outline"
+                        className="w-full h-9 text-xs border-amber-400/50 text-amber-700 bg-amber-50 hover:bg-amber-100"
+                        onClick={handleEditSignatory}
+                        disabled={isSubmitting}
+                      >
+                        <Pencil className="h-3 w-3 mr-2" />
+                        Editar Dados do Signatário
+                      </Button>
                     )}
-                  </Button>
+                  </div>
                 )}
 
                 {/* Recusar */}
