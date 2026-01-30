@@ -1020,6 +1020,12 @@ const PropostasPage = () => {
                               compact 
                             />
                           )}
+                          {/* Badge de Contrato Gerado */}
+                          {(proposal.metadata as any)?.contract_id && (
+                            <Badge className="bg-purple-100 text-purple-700 text-[10px] px-1.5 py-0 border-0">
+                              📋 Contrato
+                            </Badge>
+                          )}
                         </div>
                         <h3 className="font-medium text-sm truncate">{proposal.client_name}</h3>
                         <div className="flex items-center gap-2 mt-1 flex-wrap text-xs text-muted-foreground">

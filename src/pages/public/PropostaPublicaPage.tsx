@@ -155,6 +155,10 @@ const PropostaPublicaPage = () => {
   const [generatedContract, setGeneratedContract] = useState<any>(null);
   const [generatedContractHtml, setGeneratedContractHtml] = useState<string>('');
   const [isGeneratingContract, setIsGeneratingContract] = useState(false);
+  
+  // Existing contract tracking
+  const [existingContractId, setExistingContractId] = useState<string | null>(null);
+  const [hasExistingContract, setHasExistingContract] = useState(false);
 
   // Track page view time with heartbeat system (works on mobile!)
   const pageLoadTime = React.useRef<number>(Date.now());
@@ -350,8 +354,15 @@ const PropostaPublicaPage = () => {
         console.log('✅ Proposta encontrada:', data);
         setProposal(data as Proposal);
 
-        // Detectar se é uma cortesia
+        // Detectar se já existe contrato gerado para esta proposta
         const metadata = data.metadata as any;
+        if (metadata?.contract_id) {
+          console.log('📄 Contrato já existe para esta proposta:', metadata.contract_id);
+          setExistingContractId(metadata.contract_id);
+          setHasExistingContract(true);
+        }
+
+        // Detectar se é uma cortesia
         if (metadata?.type === 'cortesia') {
           setIsCortesia(true);
           console.log('🎁 Proposta é uma CORTESIA');
@@ -597,12 +608,51 @@ const PropostaPublicaPage = () => {
     }
   };
 
-  // Handle "Ver Contrato" button - starts contract flow
+  // Handle "Ver Contrato" button - starts contract flow or opens existing
   const handleViewContract = async () => {
     if (!proposal) return;
     
     setContractFlow('loading');
     setContractLoadingMessage('Analisando seus dados...');
+    
+    // Se já existe contrato, buscar e exibir sem pedir dados novamente
+    if (hasExistingContract && existingContractId) {
+      console.log('📄 Buscando contrato existente:', existingContractId);
+      setContractLoadingMessage('Carregando seu contrato...');
+      
+      try {
+        // Chamar edge function com preview_only que vai retornar o contrato existente
+        const { data: contractResponse, error: contractError } = await supabase.functions.invoke(
+          'create-contract-from-proposal',
+          {
+            body: {
+              proposalId: proposal.id,
+              preview_only: false, // Vai detectar que já existe e retornar
+              clientData: null
+            }
+          }
+        );
+        
+        if (contractError) {
+          console.error('Erro ao buscar contrato:', contractError);
+          throw new Error('Erro ao carregar contrato');
+        }
+        
+        if (contractResponse?.success) {
+          console.log('✅ Contrato existente carregado');
+          setGeneratedContractHtml(contractResponse.contractHtml || '');
+          setGeneratedContract(contractResponse.contrato);
+          setContractFlow('previewing');
+          setShowContractPreview(true);
+          return;
+        }
+      } catch (err: any) {
+        console.error('Erro ao carregar contrato existente:', err);
+        toast.error('Erro ao carregar contrato');
+        setContractFlow('idle');
+        return;
+      }
+    }
     
     // Simulate analysis delay for UX
     await new Promise(r => setTimeout(r, 1200));
@@ -2339,12 +2389,25 @@ const PropostaPublicaPage = () => {
                 {contractFlow !== 'accepted' && (
                   <Button
                     variant="outline"
-                    className="w-full h-10 text-sm border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
+                    className={`w-full h-10 text-sm ${
+                      hasExistingContract 
+                        ? 'border-emerald-500/50 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' 
+                        : 'border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5'
+                    }`}
                     onClick={handleViewContract}
                     disabled={isSubmitting}
                   >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Ver Contrato
+                    {hasExistingContract ? (
+                      <>
+                        <Check className="h-4 w-4 mr-2" />
+                        Visualizar Contrato
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Ver Contrato
+                      </>
+                    )}
                   </Button>
                 )}
 
