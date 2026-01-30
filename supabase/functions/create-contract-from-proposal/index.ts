@@ -64,6 +64,111 @@ serve(async (req) => {
 
     console.log("✅ Proposta encontrada:", proposal.number);
 
+    // =========================================================
+    // VERIFICAR SE JÁ EXISTE CONTRATO PARA ESTA PROPOSTA (IDEMPOTENTE)
+    // =========================================================
+    if (!preview_only) {
+      const { data: existingContract } = await supabase
+        .from('contratos_legais')
+        .select('id, numero_contrato, status, created_at, updated_at')
+        .eq('proposta_id', proposalId)
+        .maybeSingle();
+
+      if (existingContract) {
+        console.log("📄 Contrato existente encontrado:", existingContract.numero_contrato);
+        
+        // Verificar se proposta foi modificada após geração do contrato
+        const proposalUpdatedAt = proposal.updated_at ? new Date(proposal.updated_at) : null;
+        const contractCreatedAt = new Date(existingContract.created_at);
+        const proposalModified = proposalUpdatedAt && proposalUpdatedAt > contractCreatedAt;
+        
+        if (proposalModified) {
+          console.log("⚠️ Proposta foi modificada após o contrato - regenerando HTML...");
+          // Buscar signatários e produtos para regenerar HTML
+          const { data: exaSignatarios } = await supabase
+            .from("signatarios_exa")
+            .select("*")
+            .eq("is_active", true)
+            .order('is_default', { ascending: false });
+
+          const { data: produtosExa } = await supabase
+            .from("produtos_exa")
+            .select("*");
+          
+          const { data: configExibicao } = await supabase
+            .from("configuracoes_exibicao")
+            .select("*")
+            .single();
+
+          // Buscar contrato completo para gerar HTML
+          const { data: fullContract } = await supabase
+            .from('contratos_legais')
+            .select('*')
+            .eq('id', existingContract.id)
+            .single();
+
+          const contractHtml = generateContractHtml(fullContract, exaSignatarios || [], produtosExa || [], configExibicao);
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              existing_contract: true,
+              proposal_modified: true,
+              contrato: fullContract,
+              contractHtml,
+              message: "Contrato existente retornado (proposta foi modificada)"
+            }),
+            { 
+              status: 200, 
+              headers: { ...corsHeaders, "Content-Type": "application/json" } 
+            }
+          );
+        } else {
+          console.log("✅ Proposta não foi modificada - retornando contrato existente");
+          
+          // Buscar signatários e produtos para gerar HTML
+          const { data: exaSignatarios } = await supabase
+            .from("signatarios_exa")
+            .select("*")
+            .eq("is_active", true)
+            .order('is_default', { ascending: false });
+
+          const { data: produtosExa } = await supabase
+            .from("produtos_exa")
+            .select("*");
+          
+          const { data: configExibicao } = await supabase
+            .from("configuracoes_exibicao")
+            .select("*")
+            .single();
+
+          // Buscar contrato completo
+          const { data: fullContract } = await supabase
+            .from('contratos_legais')
+            .select('*')
+            .eq('id', existingContract.id)
+            .single();
+
+          const contractHtml = generateContractHtml(fullContract, exaSignatarios || [], produtosExa || [], configExibicao);
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              existing_contract: true,
+              proposal_modified: false,
+              contrato: fullContract,
+              contractHtml,
+              message: "Contrato existente retornado sem duplicação"
+            }),
+            { 
+              status: 200, 
+              headers: { ...corsHeaders, "Content-Type": "application/json" } 
+            }
+          );
+        }
+      }
+    }
+
     // 2. Preparar dados do contrato
     const selectedBuildings = Array.isArray(proposal.selected_buildings) 
       ? proposal.selected_buildings 

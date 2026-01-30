@@ -62,6 +62,7 @@ const ContratosPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
   const [tipoFilter, setTipoFilter] = useState<string>('todos');
+  const [origemFilter, setOrigemFilter] = useState<string>('todos'); // NEW: Filter by origin
   const [activeTab, setActiveTab] = useState<string>('contratos');
   const [mainTab, setMainTab] = useState<'anunciantes' | 'sindicos'>('anunciantes');
   const [showSignatarios, setShowSignatarios] = useState(false);
@@ -129,11 +130,19 @@ const ContratosPage = () => {
     enabled: activeTab === 'pedidos-sem-contrato'
   });
 
-  const filteredContratos = contratos?.filter(c =>
-    c.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.numero_contrato?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.cliente_cnpj?.includes(searchTerm)
-  ) || [];
+  const filteredContratos = contratos?.filter(c => {
+    // Search filter
+    const matchesSearch = c.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.numero_contrato?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.cliente_cnpj?.includes(searchTerm);
+    
+    // Origin filter
+    const matchesOrigem = origemFilter === 'todos' ||
+      (origemFilter === 'proposta' && c.proposta_id) ||
+      (origemFilter === 'manual' && !c.proposta_id);
+    
+    return matchesSearch && matchesOrigem;
+  }) || [];
 
   const filteredPedidos = pedidosSemContrato?.filter(p =>
     p.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -393,6 +402,30 @@ const ContratosPage = () => {
               </div>
             </div>
 
+            {/* Origin Filter - NEW */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Origem:</span>
+              <div className="inline-flex gap-1.5">
+                {[
+                  { id: 'todos', label: 'Todos' },
+                  { id: 'proposta', label: '📋 Via Proposta' },
+                  { id: 'manual', label: '✍️ Manual' }
+                ].map(origem => (
+                  <button
+                    key={origem.id}
+                    onClick={() => setOrigemFilter(origem.id)}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                      origemFilter === origem.id
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-white/80 text-gray-600 border border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    {origem.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Contracts List */}
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
@@ -431,6 +464,12 @@ const ContratosPage = () => {
                             <Badge className={`${status.color} text-white text-[10px] px-1.5 py-0`}>
                               {status.label}
                             </Badge>
+                            {/* Indicador de origem - Via Proposta */}
+                            {contrato.proposta_id && (
+                              <Badge className="bg-purple-500 text-white text-[10px] px-1.5 py-0">
+                                📋 Via Proposta
+                              </Badge>
+                            )}
                             {/* Indicador de estado inconsistente */}
                             {contrato.status === 'enviado' && !contrato.clicksign_envelope_id && (
                               <Badge className="bg-red-600 text-white text-[10px] px-1.5 py-0 animate-pulse">
