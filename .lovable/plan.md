@@ -1,74 +1,69 @@
 
 
-# Plano: Corrigir Header Corrompido do Contrato
+# Plano: Botao de Download PDF Profissional (Sem Rascunho)
 
-## Problema Identificado
+## Resumo do Problema
 
-### Causa Raiz
-A URL da imagem do header do contrato aponta para um bucket **privado**:
-```
-https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png
-```
-
-**Erro retornado:** `{"statusCode":"404","error":"Bucket not found","message":"Bucket not found"}`
-
-O bucket `arquivos` foi configurado como `public: false`, quebrando todas as URLs publicas de imagens que dependem dele.
-
-### Arquivos Afetados
-| Arquivo | Problema |
-|---------|----------|
-| `supabase/functions/create-contract-from-proposal/index.ts` | URL da imagem quebrada (linha 1081) |
-| `supabase/functions/clicksign-create-contract/index.ts` | URL da imagem quebrada (linhas 1136 e 1535) |
-| `src/components/admin/contracts/ContractPreview.tsx` | URL da imagem quebrada (linha 50) |
-| `src/components/admin/contracts/ComodatoTemplate.tsx` | URL da imagem quebrada (linha 51) |
-
-### Componente que Funciona (Referencia)
-O arquivo `src/components/legal-flow/LiveContractPreview.tsx` usa a abordagem correta:
-```typescript
-import exaContractHeader from '@/assets/exa-contract-header.png';
-```
+O componente `ContractFullPreview.tsx` atualmente:
+1. Usa botao de **impressao** (Printer) ao inves de download
+2. Exibe marca d'agua "RASCUNHO" que nao deve aparecer no PDF final
+3. Nao possui logica inteligente de paginacao (corta frases no meio)
+4. Nao mostra os dados dos signatarios no preview
 
 ---
 
 ## Solucao Proposta
 
-### Etapa 1: Upload da Imagem para Bucket Publico
-Fazer upload de `src/assets/exa-contract-header.png` para o bucket `email-assets` (que e publico).
+### 1. Botao de Download PDF (Substituir Impressao)
 
-Nova URL:
-```
-https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/email-assets/exa-contract-header.png
-```
+| Antes | Depois |
+|-------|--------|
+| Icone `Printer` | Icone `Download` |
+| Funcao `handlePrint()` | Funcao `handleDownloadPDF()` |
+| Abre janela de impressao | Gera PDF e baixa automaticamente |
 
-### Etapa 2: Atualizar Edge Functions
-Alterar todas as Edge Functions para usar a nova URL publica:
-
-**create-contract-from-proposal/index.ts (linha 1081):**
-```html
-<!-- ANTES -->
-src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png"
-
-<!-- DEPOIS -->
-src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/email-assets/exa-contract-header.png"
+```text
+┌─────────────────────────────────────────┐
+│  [Download]  [X]                        │  <- Novo icone
+└─────────────────────────────────────────┘
 ```
 
-**clicksign-create-contract/index.ts (linhas 1136 e 1535):**
-Mesma alteracao.
+### 2. Remover Marca d'Agua "RASCUNHO"
 
-### Etapa 3: Atualizar Componentes Frontend
-Alterar os componentes que usam URL hardcoded:
+**Arquivos afetados:**
+- Remover `<div class="watermark">RASCUNHO</div>` do HTML gerado
+- Remover o bloco JSX que renderiza a marca d'agua no preview
 
-**ContractPreview.tsx (linha 50):**
-```typescript
-// ANTES
-const EXA_CONTRACT_HEADER_URL = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/exa-contract-header.png";
+### 3. Exportador PDF Inteligente
 
-// DEPOIS - Usar import local (mais seguro)
-import exaContractHeader from '@/assets/exa-contract-header.png';
+Implementar logica de paginacao inteligente usando `jsPDF` + `html2canvas`:
+
+```text
+ANTES (corta frases):           DEPOIS (preserva blocos):
+┌────────────────────┐          ┌────────────────────┐
+│ CLAUSULA 5         │          │ CLAUSULA 5         │
+│ 5.1 O pagamento    │          │ 5.1 O pagamento    │
+│ sera realizado em  │          │ sera realizado em  │
+├────────────────────┤ <- CORTE │ parcelas mensais.  │
+│ parcelas mensais.  │          ├────────────────────┤ <- CORTE
+│                    │          │ CLAUSULA 6         │
+│ CLAUSULA 6         │          │ ...                │
+└────────────────────┘          └────────────────────┘
 ```
 
-**ComodatoTemplate.tsx (linha 51):**
-Mesma alteracao.
+**Estrategia:**
+1. Identificar elementos com classe `.section`, `.no-break`, `.clause`
+2. Medir altura de cada bloco antes de renderizar
+3. Se um bloco ultrapassar o limite da pagina, mover inteiro para proxima pagina
+4. Usar `page-break-inside: avoid` como fallback CSS
+
+### 4. Dados dos Signatarios
+
+O HTML do contrato ja inclui a secao de assinaturas (linhas 1545-1607 da Edge Function), porem os dados podem nao estar aparecendo corretamente no preview.
+
+**Verificacao:**
+- Garantir que `exaSignatarios` esta sendo passado corretamente
+- Adicionar CSS para estilizar a secao `.signature-section`
 
 ---
 
@@ -76,38 +71,100 @@ Mesma alteracao.
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `supabase/functions/create-contract-from-proposal/index.ts` | Nova URL publica |
-| `supabase/functions/clicksign-create-contract/index.ts` | Nova URL publica |
-| `src/components/admin/contracts/ContractPreview.tsx` | Import local ou nova URL |
-| `src/components/admin/contracts/ComodatoTemplate.tsx` | Import local ou nova URL |
+| `src/components/public/ContractFullPreview.tsx` | Substituir botao Print por Download, remover watermark, implementar `handleDownloadPDF()` |
+| CSS inline | Adicionar estilos para `.signature-section`, `.signature-box`, `.witness-section` |
 
 ---
 
-## Acao Imediata (SQL ou Dashboard)
+## Implementacao Tecnica
 
-Para corrigir imediatamente, fazer upload da imagem para o bucket `email-assets` via Supabase Dashboard:
-1. Acessar Storage no Supabase
-2. Abrir bucket `email-assets`
-3. Upload de `exa-contract-header.png`
+### Funcao `handleDownloadPDF()`
+
+```typescript
+const handleDownloadPDF = async () => {
+  if (!contractRef.current) return;
+  setIsDownloading(true);
+
+  try {
+    // 1. Clonar elemento (sem marca d'agua)
+    const element = contractRef.current.querySelector('.contract-content');
+    
+    // 2. Renderizar com html2canvas
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff'
+    });
+    
+    // 3. Criar PDF com jsPDF
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    
+    // 4. Paginacao inteligente (nao cortar blocos)
+    // ... logica de secoes
+    
+    // 5. Download automatico
+    pdf.save(`contrato-exa-${Date.now()}.pdf`);
+  } finally {
+    setIsDownloading(false);
+  }
+};
+```
+
+### CSS para Secao de Assinaturas
+
+```css
+.contract-content .signature-section {
+  margin-top: 60px;
+  page-break-inside: avoid;
+}
+
+.contract-content .signatures-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 25px;
+}
+
+.contract-content .signature-box {
+  text-align: center;
+}
+
+.contract-content .signature-line {
+  border-top: 1px solid #333;
+  margin-top: 70px;
+  padding-top: 10px;
+}
+```
 
 ---
 
 ## Resultado Esperado
 
 ```text
-ANTES:
-┌─────────────────────────────────────────┐
-│ [EXA Header]  ← Texto quebrado (404)    │
-│ CONTRATO DE PRESTACAO DE SERVICOS...    │
-└─────────────────────────────────────────┘
-
-DEPOIS:
-┌─────────────────────────────────────────┐
-│ ██████████████████████████████████████  │
-│ █    exa                              █ │  ← Imagem oficial
-│ █    Ecosistema de midia e tecnologia █ │
-│ ██████████████████████████████████████  │
-│ CONTRATO DE PRESTACAO DE SERVICOS...    │
-└─────────────────────────────────────────┘
+ANTES:                              DEPOIS:
+┌────────────────────────┐          ┌────────────────────────┐
+│ [Printer] Rascunho     │          │ [Download] Contrato    │
+├────────────────────────┤          ├────────────────────────┤
+│                        │          │                        │
+│   R A S C U N H O      │          │ (sem marca d'agua)     │
+│                        │          │                        │
+│ Clausula 5...          │          │ Clausula 5...          │
+│ (cortada no meio)      │          │ (completa)             │
+│                        │          ├────────────────────────┤
+│ (sem assinaturas)      │          │ ASSINATURAS            │
+│                        │          │ __________________     │
+│                        │          │ Jeferson S. R. Encina  │
+│                        │          │ Socio - EXA Midia      │
+│                        │          │ CPF: xxx.xxx.xxx-xx    │
+└────────────────────────┘          └────────────────────────┘
 ```
+
+---
+
+## Dependencias Existentes
+
+O projeto ja possui as bibliotecas necessarias:
+- `jspdf` (versao ^3.0.4)
+- `html2canvas` (versao ^1.4.1)
+
+Nao e necessario instalar nada novo.
 
