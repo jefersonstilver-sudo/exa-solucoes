@@ -33,6 +33,15 @@ export const ItensPermutaEditor: React.FC<ItensPermutaEditorProps> = ({
     preco_unitario: 0,
   });
 
+  const handleQuickAddKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // UX: muita gente "preenche" o item e espera que ele conte na proposta.
+    // Permitir Enter para adicionar (sem depender do clique no +).
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addItem();
+    }
+  };
+
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
       style: 'currency',
@@ -134,6 +143,7 @@ export const ItensPermutaEditor: React.FC<ItensPermutaEditorProps> = ({
             <Input
               value={novoItem.nome}
               onChange={(e) => setNovoItem({ ...novoItem, nome: e.target.value })}
+              onKeyDown={handleQuickAddKeyDown}
               placeholder="Ex: Tablet Samsung Galaxy Tab A8"
               className="h-9 mt-1 bg-white"
             />
@@ -145,6 +155,7 @@ export const ItensPermutaEditor: React.FC<ItensPermutaEditorProps> = ({
               min={1}
               value={novoItem.quantidade}
               onChange={(e) => setNovoItem({ ...novoItem, quantidade: parseInt(e.target.value) || 1 })}
+              onKeyDown={handleQuickAddKeyDown}
               className="h-9 mt-1 bg-white"
             />
           </div>
@@ -158,6 +169,7 @@ export const ItensPermutaEditor: React.FC<ItensPermutaEditorProps> = ({
                 step={0.01}
                 value={novoItem.preco_unitario || ''}
                 onChange={(e) => setNovoItem({ ...novoItem, preco_unitario: parseFloat(e.target.value) || 0 })}
+                onKeyDown={handleQuickAddKeyDown}
                 className="h-9 pl-7 bg-white"
                 placeholder="0,00"
               />
@@ -174,6 +186,10 @@ export const ItensPermutaEditor: React.FC<ItensPermutaEditorProps> = ({
             </Button>
           </div>
         </div>
+
+        <p className="mt-2 text-[10px] text-muted-foreground">
+          Dica: pressione <span className="font-medium">Enter</span> para adicionar o item.
+        </p>
       </Card>
 
       {/* Valor Total e Opção de Ocultar */}
