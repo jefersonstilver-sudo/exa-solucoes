@@ -2139,12 +2139,12 @@ const PropostaPublicaPage = () => {
                   <div className="flex items-center justify-center gap-3 text-xs text-blue-600 pt-2">
                     <div className="flex items-center gap-1">
                       <Building2 className="h-3.5 w-3.5" />
-                      <span>{realTotalPanels} telas</span>
+                      <span>{isVendaFutura ? displayPanelsCount : realTotalPanels} telas</span>
                     </div>
                     <span>•</span>
                     <div className="flex items-center gap-1">
                       <Eye className="h-3.5 w-3.5" />
-                      <span>{((proposal.total_impressions_month || 0)).toLocaleString()} exib./mês</span>
+                      <span>{displayImpressions.toLocaleString()} exib./mês</span>
                     </div>
                   </div>
                 </div>
