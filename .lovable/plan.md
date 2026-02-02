@@ -1,84 +1,66 @@
 
-# Plano: Correções no Módulo de Permuta
+# Plano: Corrigir Permuta + Venda Futura e Melhorar Auditoria
 
-## Problemas a Corrigir
+## Problema Identificado
 
-### 1. Valor de Referência não salvo no Rascunho
-O campo `valor_referencia_monetaria` não está sendo incluído no auto-save de rascunho, fazendo com que o valor seja perdido se o usuário não enviar a proposta imediatamente.
+Quando uma proposta combina **Permuta + Venda Futura**, os valores exibidos na página pública estão incorretos:
 
-### 2. Texto Copiado incompleto
-A função `handleCopyProposalText` não inclui o "Valor de Referência Monetária" na seção de permuta, então o texto copiado não mostra "quanto custaria se fosse comprar".
+| Local | Valor Atual (Errado) | Valor Correto |
+|-------|---------------------|---------------|
+| Seção de Permuta - Telas | `realTotalPanels` (telas instaladas) | `displayPanelsCount` (telas contratadas) |
+| Seção de Permuta - Exibições | `proposal.total_impressions_month` | `displayImpressions` (projetadas) |
 
-### 3. Proposta existente sem dados
-A proposta `fc269217...` foi criada antes da implementação, então não tem `valor_referencia_monetaria` preenchido. É necessário editar e resalvar.
+**Exemplo:**
+- Cliente contrata 50 prédios via Venda Futura
+- Atualmente só existem 17 prédios instalados
+- Sistema está mostrando 17 telas na permuta
+- Deveria mostrar ~68 telas (50 prédios x 1.35)
 
 ---
 
 ## Correções Técnicas
 
-### Arquivo: `src/pages/admin/proposals/NovaPropostaPage.tsx`
+### Arquivo 1: `src/pages/public/PropostaPublicaPage.tsx`
 
-#### Correção 1: Adicionar `valor_referencia_monetaria` ao rascunho automático
-
-Localização: Linhas 900-952 (função de auto-save)
-
-Adicionar o campo no objeto `draftData`:
-
+#### Linha 2142 - Telas na seção de permuta
+**De:**
 ```typescript
-// Na linha ~929, após descricao_contrapartida
-descricao_contrapartida: modalidadeProposta === 'permuta' ? descricaoContrapartida : null,
-metodo_pagamento_alternativo: modalidadeProposta === 'permuta' ? 'permuta' : null,
-valor_referencia_monetaria: modalidadeProposta === 'permuta' ? valorReferenciaMonetaria : null, // ADICIONAR
+<span>{realTotalPanels} telas</span>
+```
+**Para:**
+```typescript
+<span>{isVendaFutura ? displayPanelsCount : realTotalPanels} telas</span>
 ```
 
-Também adicionar na lista de dependências do useEffect (linha ~993):
-
+#### Linha 2147 - Exibições na seção de permuta
+**De:**
 ```typescript
-modalidadeProposta, itensPermuta, valorTotalPermuta, ocultarValoresPublico,
-descricaoContrapartida, metodoPagamentoAlternativo, valorReferenciaMonetaria, // ADICIONAR
+<span>{((proposal.total_impressions_month || 0)).toLocaleString()} exib./mês</span>
+```
+**Para:**
+```typescript
+<span>{displayImpressions.toLocaleString()} exib./mês</span>
 ```
 
-#### Correção 2: Incluir Valor de Referência no texto copiado
+---
 
-Localização: Linhas 1240-1257 (seção de permuta no handleCopyProposalText)
+### Arquivo 2: `src/pages/admin/proposals/NovaPropostaPage.tsx`
 
-Atualizar para incluir o valor de referência:
+#### Melhorar texto copiado para Venda Futura + Permuta
 
+Na função `handleCopyProposalText`, quando é permuta + venda futura, incluir os números corretos:
+
+**Adicionar ao início da seção de PERMUTA (após linha 1244):**
 ```typescript
-if (modalidadeProposta === 'permuta') {
+// Se é venda futura + permuta, mostrar números projetados
+if (vendaFutura && prediosContratados > 0) {
+  const telasProjetadas = telasContratadas !== null ? telasContratadas : Math.ceil(prediosContratados * 1.35);
+  const exibicoesProjetadas = telasProjetadas * 11610;
   text += `
-💱 PERMUTA
-────────────────────────────────────────────────────
-• Modalidade: Permuta (não-monetária)
-`;
-  
-  // NOVO: Mostrar valor de referência monetária
-  if (valorReferenciaMonetaria > 0) {
-    const periodoMeses = isCustomDays ? Math.ceil(customDays / 30) : durationMonths;
-    const totalReferencia = isCustomDays 
-      ? (valorReferenciaMonetaria / 30) * customDays 
-      : valorReferenciaMonetaria * durationMonths;
-    text += `
-💰 VALOR DE REFERÊNCIA (Quanto Custaria em Dinheiro)
-• Valor Mensal: ${formatCurrency(valorReferenciaMonetaria)}
-• Total (${isCustomDays ? customDays + ' dias' : durationMonths + ' meses'}): ${formatCurrency(totalReferencia)}
-`;
-  }
-  
-  text += `
-📦 CONTRAPARTIDA (Equipamentos/Serviços)
-• Ocultar valores no público: ${ocultarValoresPublico ? 'Sim' : 'Não'}
-• Descrição: ${descricaoContrapartida || '(não informada)'}
-
-Itens de Permuta:
-`;
-  itensPermuta.forEach((item, index) => {
-    text += `${index + 1}. ${item.nome} (Qtd: ${item.quantidade})${!item.ocultar_preco ? ` - ${formatCurrency(item.preco_unitario)} cada = ${formatCurrency(item.preco_total)}` : ''}
-`;
-  });
-  text += `
-Valor Total Permuta: ${formatCurrency(valorTotalPermuta)}
-
+📊 MÉTRICAS DE VENDA FUTURA (Projetado)
+• Prédios Contratados: ${prediosContratados}
+• Telas Projetadas: ${telasProjetadas}
+• Exibições Projetadas/mês: ${formatNumber(exibicoesProjetadas)}
 `;
 }
 ```
@@ -87,50 +69,34 @@ Valor Total Permuta: ${formatCurrency(valorTotalPermuta)}
 
 ## Resultado Esperado
 
-### Texto Copiado (Antes)
-```
+### Na Página Pública (Permuta + Venda Futura)
+- **Antes:** "17 telas" (instaladas)
+- **Depois:** "68 telas" (contratadas na venda futura)
+
+### No Texto Copiado (Auditoria)
+```text
 💱 PERMUTA
 ────────────────────────────────────────────────────
 • Modalidade: Permuta (não-monetária)
-• Ocultar valores no público: Sim
-• Descrição da Contrapartida: (não informada)
 
-Itens de Permuta:
-1. Tablet Android 24" Touchscreen (Qtd: 90) - R$ 1.500,00 cada = R$ 135.000,00
-
-Valor Total Permuta: R$ 135.000,00
-```
-
-### Texto Copiado (Depois)
-```
-💱 PERMUTA
-────────────────────────────────────────────────────
-• Modalidade: Permuta (não-monetária)
+📊 MÉTRICAS DE VENDA FUTURA (Projetado)
+• Prédios Contratados: 50
+• Telas Projetadas: 68
+• Exibições Projetadas/mês: 788.880
 
 💰 VALOR DE REFERÊNCIA (Quanto Custaria em Dinheiro)
 • Valor Mensal: R$ 1.500,00
 • Total (12 meses): R$ 18.000,00
 
 📦 CONTRAPARTIDA (Equipamentos/Serviços)
-• Ocultar valores no público: Sim
-• Descrição: (não informada)
+• Ocultar valores no público: Não
+• Descrição: Tablets Android 24"
 
 Itens de Permuta:
 1. Tablet Android 24" Touchscreen (Qtd: 90) - R$ 1.500,00 cada = R$ 135.000,00
 
 Valor Total Permuta: R$ 135.000,00
 ```
-
----
-
-## Para a Proposta Existente
-
-Para a proposta `fc269217-3465-4ab4-a952-f079d1122a31` que já existe:
-1. Acessar modo edição: `/propostas/fc269217-3465-4ab4-a952-f079d1122a31/editar`
-2. Preencher o campo "Valor de Referência"
-3. Reenviar a proposta
-
-Ou posso atualizar diretamente no banco de dados se preferir.
 
 ---
 
@@ -138,14 +104,16 @@ Ou posso atualizar diretamente no banco de dados se preferir.
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Adicionar `valor_referencia_monetaria` ao rascunho + melhorar texto copiado |
+| `src/pages/public/PropostaPublicaPage.tsx` | Usar `displayPanelsCount` e `displayImpressions` na seção de permuta quando é Venda Futura |
+| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Incluir métricas de Venda Futura no texto copiado da permuta |
 
 ---
 
 ## Checklist
 
-- [ ] Adicionar `valor_referencia_monetaria` ao objeto draftData (auto-save)
-- [ ] Adicionar `valorReferenciaMonetaria` às dependências do useEffect de auto-save
-- [ ] Atualizar `handleCopyProposalText` para incluir valor de referência na seção de permuta
-- [ ] Testar: criar nova proposta de permuta → copiar texto → verificar se mostra valor de referência
-- [ ] Testar: editar proposta existente → preencher valor de referência → ver página pública
+- [ ] Corrigir linha 2142 para usar `displayPanelsCount` quando `isVendaFutura`
+- [ ] Corrigir linha 2147 para usar `displayImpressions`
+- [ ] Adicionar seção de métricas de Venda Futura no texto copiado
+- [ ] Testar: criar proposta Permuta + Venda Futura
+- [ ] Verificar: página pública mostra números projetados
+- [ ] Verificar: botão Copiar inclui métricas corretas
