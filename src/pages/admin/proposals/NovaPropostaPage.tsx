@@ -1244,6 +1244,18 @@ ${selectedBuildingsData.some((b: any) => b.is_manual) ? '\n* = Prédio adicionad
 ────────────────────────────────────────────────────
 • Modalidade: Permuta (não-monetária)
 `;
+
+      // Se é venda futura + permuta, mostrar números projetados
+      if (vendaFutura && prediosContratados > 0) {
+        const telasProjetadas = telasContratadas !== null ? telasContratadas : Math.ceil(prediosContratados * 1.35);
+        const exibicoesProjetadas = telasProjetadas * 11610;
+        text += `
+📊 MÉTRICAS DE VENDA FUTURA (Projetado)
+• Prédios Contratados: ${prediosContratados}
+• Telas Projetadas: ${telasProjetadas}
+• Exibições Projetadas/mês: ${formatNumber(exibicoesProjetadas)}
+`;
+      }
       
       // Mostrar valor de referência monetária (quanto custaria em dinheiro)
       if (valorReferenciaMonetaria > 0) {
