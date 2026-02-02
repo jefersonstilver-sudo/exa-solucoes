@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { 
   Send, 
@@ -18,8 +17,6 @@ import {
   Copy,
   Bug,
   X,
-  ChevronDown,
-  ChevronUp
 } from 'lucide-react';
 import { LegalFlowData } from '@/hooks/useLegalFlow';
 import { VoiceRecordButton } from './VoiceRecordButton';
@@ -48,7 +45,7 @@ interface ContractInterviewerProps {
 const INITIAL_MESSAGE: ChatMessage = {
   id: 'initial',
   role: 'assistant',
-  content: 'Olá Jeferson. Vamos iniciar a criação do contrato. É um contrato de **Anunciante**, **Síndico/Comodato** ou uma **Parceria Estratégica**?',
+  content: 'Olá! Vamos criar seu contrato. Qual o tipo?',
   timestamp: new Date(),
   actions: [
     { label: 'Anunciante', value: 'anunciante', icon: Building2 },
@@ -56,6 +53,47 @@ const INITIAL_MESSAGE: ChatMessage = {
     { label: 'Parceria/Permuta', value: 'permuta', icon: Handshake },
   ]
 };
+
+// Action Card Component - Premium Grid Style
+function ActionCard({ 
+  icon: Icon, 
+  label, 
+  subtitle, 
+  onClick,
+  disabled 
+}: { 
+  icon: React.ElementType; 
+  label: string; 
+  subtitle: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "flex flex-col items-center justify-center p-6 rounded-2xl border-2 transition-all duration-300",
+        "bg-white hover:bg-gradient-to-br hover:from-[#9C1E1E]/5 hover:to-transparent",
+        "border-gray-200 hover:border-[#9C1E1E]/40 hover:shadow-lg",
+        "group cursor-pointer",
+        disabled && "opacity-50 cursor-not-allowed"
+      )}
+    >
+      <div className={cn(
+        "w-14 h-14 rounded-2xl flex items-center justify-center mb-3 transition-all duration-300",
+        "bg-gradient-to-br from-gray-100 to-gray-50 group-hover:from-[#9C1E1E]/10 group-hover:to-[#9C1E1E]/5",
+        "shadow-sm group-hover:shadow-md"
+      )}>
+        <Icon className="h-7 w-7 text-gray-500 group-hover:text-[#9C1E1E] transition-colors" />
+      </div>
+      <span className="font-bold text-gray-900 text-base group-hover:text-[#9C1E1E] transition-colors">
+        {label}
+      </span>
+      <span className="text-xs text-gray-500 mt-1">{subtitle}</span>
+    </button>
+  );
+}
 
 export function ContractInterviewer({
   messages,
@@ -100,14 +138,14 @@ export function ContractInterviewer({
   };
 
   const formatMessageContent = (content: string) => {
-    // Simple markdown-like formatting
     return content
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 rounded">$1</code>');
+      .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 rounded text-[#9C1E1E]">$1</code>');
   };
 
   const allMessages = messages.length === 0 ? [INITIAL_MESSAGE] : messages;
+  const showInitialCards = messages.length === 0;
 
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
@@ -147,7 +185,6 @@ export function ContractInterviewer({
   };
 
   const copyDebugLogs = () => {
-    const logsText = debugLogs.join('\n');
     const fullDebug = JSON.stringify({
       timestamp: new Date().toISOString(),
       route: window.location.pathname,
@@ -245,7 +282,52 @@ export function ContractInterviewer({
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-4 max-w-full">
-          {allMessages.map((message) => (
+          {/* Initial Action Cards - Premium Grid */}
+          {showInitialCards && (
+            <div className="space-y-4">
+              <div className="flex gap-3 mb-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-[#9C1E1E] to-[#7D1818] text-white shadow-sm">
+                  <Bot className="h-4 w-4" />
+                </div>
+                <div className="flex-1">
+                  <div className="inline-block p-3 rounded-2xl text-sm shadow-sm bg-white border border-gray-100 text-gray-800 rounded-tl-sm">
+                    <div dangerouslySetInnerHTML={{ __html: formatMessageContent(INITIAL_MESSAGE.content) }} />
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    {INITIAL_MESSAGE.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Premium Action Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+                <ActionCard
+                  icon={Building2}
+                  label="Anunciante"
+                  subtitle="Venda de Mídia"
+                  onClick={() => onActionClick('anunciante')}
+                  disabled={isProcessing}
+                />
+                <ActionCard
+                  icon={Users}
+                  label="Síndico"
+                  subtitle="Comodato de Tela"
+                  onClick={() => onActionClick('comodato')}
+                  disabled={isProcessing}
+                />
+                <ActionCard
+                  icon={Handshake}
+                  label="Parceria"
+                  subtitle="Permuta Estratégica"
+                  onClick={() => onActionClick('permuta')}
+                  disabled={isProcessing}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Regular Messages */}
+          {!showInitialCards && allMessages.map((message) => (
             <div
               key={message.id}
               className={cn(
@@ -321,7 +403,7 @@ export function ContractInterviewer({
                           variant="outline"
                           size="sm"
                           onClick={() => onActionClick(action.value)}
-                          className="bg-white hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E]/30 hover:text-[#9C1E1E] transition-all"
+                          className="bg-white hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E]/30 hover:text-[#9C1E1E] transition-all rounded-xl"
                         >
                           {Icon && <Icon className="h-3.5 w-3.5 mr-1.5" />}
                           {action.label}
@@ -343,10 +425,10 @@ export function ContractInterviewer({
           ))}
 
           {/* Detected scenario hints */}
-          {currentData.tipo_contrato && !isProcessing && (
-            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-xl text-sm">
-              <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-              <span className="text-green-800">
+          {currentData.tipo_contrato && !isProcessing && messages.length > 0 && (
+            <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+              <span className="text-emerald-800">
                 Tipo detectado: <strong>{currentData.tipo_contrato}</strong>
                 {currentData.parceiro_nome && <> • Parceiro: <strong>{currentData.parceiro_nome}</strong></>}
               </span>
@@ -355,8 +437,8 @@ export function ContractInterviewer({
         </div>
       </ScrollArea>
 
-      {/* Input Area - Redesenhado */}
-      <div className="flex-shrink-0 p-4 border-t bg-white">
+      {/* Input Area - Premium Capsule Design */}
+      <div className="flex-shrink-0 p-4 bg-gradient-to-t from-white via-white to-transparent">
         {/* Quick prompts */}
         <div className="flex flex-wrap gap-1.5 mb-3">
           {[
@@ -379,13 +461,18 @@ export function ContractInterviewer({
           ))}
         </div>
 
-        {/* Input row */}
-        <div className="flex items-end gap-2">
+        {/* CAPSULE INPUT BAR - Flutuante unificada */}
+        <div className={cn(
+          "flex items-center gap-2 p-2 rounded-full",
+          "bg-white border border-gray-200 shadow-lg",
+          "focus-within:border-[#9C1E1E]/40 focus-within:shadow-xl focus-within:shadow-[#9C1E1E]/5",
+          "transition-all duration-300"
+        )}>
           {/* File upload button */}
           <Button
             variant="ghost"
             size="icon"
-            className="flex-shrink-0 h-10 w-10 text-gray-500 hover:text-[#9C1E1E] hover:bg-[#9C1E1E]/10"
+            className="flex-shrink-0 h-10 w-10 rounded-full text-gray-400 hover:text-[#9C1E1E] hover:bg-[#9C1E1E]/10"
             onClick={() => fileInputRef.current?.click()}
             disabled={isProcessing}
           >
@@ -399,7 +486,7 @@ export function ContractInterviewer({
             onChange={handleFileChange}
           />
 
-          {/* Voice button - Texto vai para o campo para revisão */}
+          {/* Voice button */}
           <VoiceRecordButton
             onTranscriptionComplete={(text) => {
               setInputValue(text);
@@ -409,31 +496,39 @@ export function ContractInterviewer({
             variant="inline"
           />
 
-          {/* Text input */}
-          <div className="flex-1">
-            <Textarea
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Descreva o contrato ou faça perguntas..."
-              className="min-h-[44px] max-h-32 resize-none rounded-xl border-gray-200 focus:border-[#9C1E1E]/30 focus:ring-[#9C1E1E]/20"
-              disabled={isProcessing}
-              rows={1}
-            />
-          </div>
+          {/* Text input - grows to fill */}
+          <textarea
+            ref={inputRef}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Descreva o contrato ou faça perguntas..."
+            className={cn(
+              "flex-1 min-h-[40px] max-h-24 py-2 px-1 resize-none",
+              "bg-transparent border-none outline-none focus:ring-0",
+              "text-gray-800 placeholder:text-gray-400",
+              "text-sm leading-relaxed"
+            )}
+            disabled={isProcessing}
+            rows={1}
+          />
 
-          {/* Send button */}
+          {/* Send button - perfect circle */}
           <Button
             onClick={handleSend}
             disabled={!inputValue.trim() || isProcessing}
-            className="flex-shrink-0 h-10 w-10 rounded-xl bg-gradient-to-br from-[#9C1E1E] to-[#7D1818] hover:from-[#8B1A1A] hover:to-[#6D1414] shadow-lg"
+            className={cn(
+              "flex-shrink-0 h-10 w-10 rounded-full shadow-lg transition-all duration-300",
+              inputValue.trim() 
+                ? "bg-gradient-to-br from-[#9C1E1E] to-[#7D1818] hover:from-[#8B1A1A] hover:to-[#6D1414] hover:scale-105" 
+                : "bg-gray-200 cursor-not-allowed"
+            )}
             size="icon"
           >
             {isProcessing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin text-white" />
             ) : (
-              <Send className="h-4 w-4" />
+              <Send className={cn("h-4 w-4", inputValue.trim() ? "text-white" : "text-gray-400")} />
             )}
           </Button>
         </div>
