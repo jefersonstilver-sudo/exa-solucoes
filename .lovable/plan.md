@@ -1,160 +1,208 @@
 
+# Plano: Corrigir Botão "Enviar" para Permuta + Implementar Auto-Save de Rascunho
 
-# Plano: Corrigir Fluxo de Permuta - Manter Período e Prédios, Esconder Apenas Valores Monetários
+## Problemas Identificados
 
-## O Problema Identificado
+### Problema 1: Botão "Enviar" Desativado para Propostas de Permuta
 
-A implementação atual está **correta em parte**, mas tem inconsistências:
+**Causa Raiz (Linha 2807):**
+```tsx
+disabled={selectedBuildings.length === 0 || (isCustomPayment ? customTotal <= 0 : !fidelValue)}
+```
 
-### Na Interface Admin (NovaPropostaPage.tsx)
+A condição `!fidelValue` exige valor monetário, mas em propostas de Permuta esse campo nem é exibido.
 
-Os seguintes campos **monetários** aparecem mesmo quando `modalidadeProposta === 'permuta'`:
+**Também na Linha 1210-1214 (`handleOpenSendDialog`):**
+```tsx
+if (!fidelValue || parseFloat(fidelValue) <= 0) {
+  toast.error('Preencha o valor mensal fidelidade');
+  return;
+}
+```
 
-1. **Valor Mensal (Fidelidade)** - linha 2069-2084
-2. **Desconto PIX à Vista** - linha 2086-2097
-3. **Sobrescrever valor à vista** - linha 2099-2113
-4. **Resumo de Valores** - linha 2115-2140
-5. **Detalhamento de Preços Corporativo** (grid de valores por local) - linha 2163-2259
+### Problema 2: Auto-Save (Rascunho) Não Implementado
 
-### Na Proposta Pública (PropostaPublicaPage.tsx)
-
-1. **Seção "Locais Contratados"** (linha 2335-2412) mostra valores monetários (Fidelidade/PIX) mesmo para permuta
-2. A seção de planos já está corretamente escondida para permuta
+A tabela `proposals` já tem `status` com default `'rascunho'`, mas não há lógica para salvar automaticamente enquanto o usuário digita.
 
 ---
 
 ## Solução
 
-### Lógica Correta
+### Parte 1: Corrigir Condição do Botão "Enviar"
 
-```
-PROPOSTA DE PERMUTA = (prédios selecionados) + (período do contrato) + (lista de equipamentos em troca)
-                       ✅ MOSTRA                ✅ MOSTRA              ✅ MOSTRA (substitui valores R$)
-```
+**Arquivo:** `src/pages/admin/proposals/NovaPropostaPage.tsx`
 
-### Parte 1: NovaPropostaPage.tsx - Esconder Campos Monetários para Permuta
+**Linha 2807 - Condição do disabled:**
 
-Adicionar condição `&& modalidadeProposta !== 'permuta'` nas seguintes seções:
+| Antes | Depois |
+|-------|--------|
+| `selectedBuildings.length === 0 \|\| (isCustomPayment ? customTotal <= 0 : !fidelValue)` | `selectedBuildings.length === 0 \|\| (modalidadeProposta === 'permuta' ? itensPermuta.length === 0 : (isCustomPayment ? customTotal <= 0 : !fidelValue))` |
 
-| Linha | Seção | Condição Atual | Nova Condição |
-|-------|-------|----------------|---------------|
-| 2069 | Valor Mensal (Fidelidade) | `!isCustomPayment` | `!isCustomPayment && modalidadeProposta !== 'permuta'` |
-| 2086 | Desconto PIX à Vista | `!isCustomPayment` | `!isCustomPayment && modalidadeProposta !== 'permuta'` |
-| 2100 | Sobrescrever valor à vista | `!isCustomPayment` | `!isCustomPayment && modalidadeProposta !== 'permuta'` |
-| 2116 | Resumo de Valores Padrão | `!isCustomPayment && fidelMonthly > 0` | `!isCustomPayment && fidelMonthly > 0 && modalidadeProposta !== 'permuta'` |
-| 2164 | Detalhamento Corporativo | `selectedBuildings.length > 0 && !isCustomPayment && !isCustomDays` | Adicionar `&& modalidadeProposta !== 'permuta'` |
+**Lógica:**
+- **Permuta**: Exigir pelo menos 1 item de permuta
+- **Monetária**: Manter lógica original (valor fidelidade ou parcelas customizadas)
 
-### Parte 2: PropostaPublicaPage.tsx - Ajustar Seção de Locais Contratados
+### Parte 2: Corrigir Validação em `handleOpenSendDialog`
 
-A seção "Locais Contratados" (linha 2335) deve:
+**Linhas 1199-1215 - Validação de valores:**
 
-1. **Continuar aparecendo** para permuta (mostra os prédios)
-2. **Esconder o grid de valores monetários** (Fidelidade/PIX À Vista) quando for permuta
-
-**Mudança na linha 2359-2399** (grid de resumo por modalidade):
-
-Adicionar condição para esconder quando permuta:
-
+Alterar para:
 ```tsx
-{/* Resumo por modalidade - ESCONDER para permuta */}
-{proposal.modalidade_proposta !== 'permuta' && (
-  <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-3">
-    {/* Fidelidade */}
-    ...
-    {/* À Vista */}
-    ...
-  </div>
-)}
+// Validação para pagamento personalizado
+if (isCustomPayment) {
+  const invalidInstallments = customInstallments.filter(p => !p.amount || parseFloat(p.amount) <= 0);
+  if (invalidInstallments.length > 0) {
+    toast.error('Preencha o valor de todas as parcelas');
+    return;
+  }
+  if (customTotal <= 0) {
+    toast.error('O total das parcelas deve ser maior que zero');
+    return;
+  }
+} else if (modalidadeProposta === 'permuta') {
+  // Validação específica para Permuta
+  if (itensPermuta.length === 0) {
+    toast.error('Adicione ao menos um item de permuta');
+    return;
+  }
+} else {
+  // Monetária padrão
+  if (!fidelValue || parseFloat(fidelValue) <= 0) {
+    toast.error('Preencha o valor mensal fidelidade');
+    return;
+  }
+}
 ```
 
-### Parte 3: Adicionar Período na Seção de Permuta (Proposta Pública)
+### Parte 3: Implementar Auto-Save de Rascunho
 
-Na seção de permuta (linha 2114-2192), adicionar informação do período do contrato:
+**Funcionalidade:** Salvar proposta como rascunho automaticamente após 3 segundos de inatividade (debounce).
 
+**Estados necessários:**
 ```tsx
-{/* Período do Contrato */}
-<div className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200">
-  <div className="flex items-center gap-2">
-    <Calendar className="h-4 w-4 text-amber-600" />
-    <span className="text-sm font-medium text-amber-800">Período do Contrato</span>
-  </div>
-  <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
-    {proposal.is_custom_days 
-      ? `${proposal.custom_days} ${proposal.custom_days === 1 ? 'dia' : 'dias'}`
-      : `${proposal.duration_months} ${proposal.duration_months === 1 ? 'mês' : 'meses'}`
+const [draftId, setDraftId] = useState<string | null>(null);
+const [isSavingDraft, setIsSavingDraft] = useState(false);
+const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+```
+
+**Hook de debounce:**
+```tsx
+// useEffect para auto-save com debounce de 3 segundos
+useEffect(() => {
+  // Só salva se tiver dados mínimos (nome do cliente)
+  if (!clientData.firstName.trim()) return;
+  
+  const timeoutId = setTimeout(async () => {
+    await saveDraft();
+  }, 3000);
+  
+  return () => clearTimeout(timeoutId);
+}, [clientData, selectedBuildings, durationMonths, fidelValue, itensPermuta, modalidadeProposta]);
+```
+
+**Função saveDraft:**
+```tsx
+const saveDraft = async () => {
+  if (isSavingDraft) return;
+  setIsSavingDraft(true);
+  
+  try {
+    const draftData = {
+      status: 'rascunho',
+      client_name: `${clientData.firstName} ${clientData.lastName}`.trim(),
+      client_first_name: clientData.firstName,
+      client_last_name: clientData.lastName,
+      client_company_name: clientData.companyName,
+      client_email: clientData.email,
+      client_phone: clientData.phoneFullNumber || clientData.phone,
+      selected_buildings: selectedBuildings,
+      duration_months: durationMonths,
+      fidel_monthly_value: parseFloat(fidelValue) || 0,
+      modalidade_proposta: modalidadeProposta,
+      itens_permuta: itensPermuta,
+      valor_total_permuta: valorTotalPermuta,
+      // ... outros campos
+    };
+    
+    if (draftId) {
+      // Atualizar rascunho existente
+      await supabase.from('proposals').update(draftData).eq('id', draftId);
+    } else {
+      // Criar novo rascunho
+      const { data } = await supabase.from('proposals')
+        .insert({ ...draftData, number: `RASCUNHO-${Date.now()}` })
+        .select('id')
+        .single();
+      if (data) setDraftId(data.id);
     }
-  </Badge>
-</div>
+    
+    setLastSavedAt(new Date());
+  } catch (error) {
+    console.error('Erro ao salvar rascunho:', error);
+  } finally {
+    setIsSavingDraft(false);
+  }
+};
 ```
 
----
-
-## Resultado Visual Esperado
-
-### Admin: Proposta de Permuta
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  💰 Tipo de Proposta                                        │
-│   [ Monetária ]  [✓ 🔄 Permuta/Equipamentos ]              │
-├─────────────────────────────────────────────────────────────┤
-│  📦 Equipamentos Ofertados                                  │
-│  • Tablet Samsung Galaxy Tab A8 (50 un.) R$ 44.950,00      │
-│  • Suporte de Parede (50 un.) R$ 6.000,00                  │
-│  TOTAL ESTIMADO: R$ 50.950,00                              │
-│  [x] Ocultar valores na proposta pública                   │
-├─────────────────────────────────────────────────────────────┤
-│  📅 Período do Contrato                                     │
-│  [1M] [3M] [6M] [✓12M] [18M] [24M]                        │
-├─────────────────────────────────────────────────────────────┤
-│  🏢 Prédios Selecionados (12 prédios, 17 telas)            │
-│  ✓ Torre Azul    ✓ Edifício Central   ✓ ...               │
-└─────────────────────────────────────────────────────────────┘
-
-  ❌ NÃO APARECE: Valor Mensal, Desconto PIX, Resumo de Valores
-```
-
-### Pública: Proposta de Permuta
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                  🤝 PROPOSTA DE PARCERIA                    │
-│              17 telas em 12 prédios • 12 meses              │
-├─────────────────────────────────────────────────────────────┤
-│  📅 Período: 12 meses                                       │
-├─────────────────────────────────────────────────────────────┤
-│  📦 CONTRAPARTIDA ACORDADA                                  │
-│  • Tablet Samsung Galaxy Tab A8 (50 unidades)              │
-│  • Suporte de Parede Articulado (50 unidades)              │
-├─────────────────────────────────────────────────────────────┤
-│  🏢 Locais Contratados (12 locais)                          │
-│  [Torre Azul] [Edifício Central] [...]                      │
-│                                                             │
-│  ❌ NÃO APARECE: Grid Fidelidade/PIX À Vista               │
-├─────────────────────────────────────────────────────────────┤
-│         [ ✅ Aceitar Parceria ]  [ ❌ Recusar ]             │
-└─────────────────────────────────────────────────────────────┘
+**Indicador visual de salvamento:**
+Adicionar no header ou footer do formulário:
+```tsx
+{lastSavedAt && (
+  <span className="text-xs text-muted-foreground flex items-center gap-1">
+    <CheckCircle className="h-3 w-3 text-green-500" />
+    Salvo às {format(lastSavedAt, 'HH:mm:ss')}
+  </span>
+)}
+{isSavingDraft && (
+  <span className="text-xs text-muted-foreground flex items-center gap-1">
+    <Loader2 className="h-3 w-3 animate-spin" />
+    Salvando...
+  </span>
+)}
 ```
 
 ---
 
 ## Arquivos a Modificar
 
-| Arquivo | Mudanças |
-|---------|----------|
-| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Adicionar condição `modalidadeProposta !== 'permuta'` em 5 seções de valores monetários |
-| `src/pages/public/PropostaPublicaPage.tsx` | 1) Esconder grid de valores na seção "Locais Contratados" para permuta 2) Adicionar período na seção de permuta |
+| Arquivo | Alterações |
+|---------|------------|
+| `src/pages/admin/proposals/NovaPropostaPage.tsx` | 1) Corrigir condição disabled do botão Enviar (linha 2807) 2) Corrigir validação handleOpenSendDialog (linhas 1199-1215) 3) Adicionar estados e lógica de auto-save 4) Adicionar indicador visual de salvamento |
 
 ---
 
-## Resumo
+## Resumo das Regras de Validação Corrigidas
 
-A proposta de permuta deve funcionar assim:
+| Modalidade | Condição para Ativar "Enviar" |
+|------------|-------------------------------|
+| **Monetária Padrão** | `selectedBuildings.length > 0` E `fidelValue > 0` |
+| **Monetária Personalizada** | `selectedBuildings.length > 0` E `customTotal > 0` |
+| **Permuta** | `selectedBuildings.length > 0` E `itensPermuta.length > 0` |
 
-- **Período**: O cliente recebe X equipamentos **por Y meses** de veiculação
-- **Prédios**: Os equipamentos são em troca de exibição em **Z prédios específicos**
-- **Valores internos**: Admin vê custo estimado dos equipamentos (para referência)
-- **Valores públicos**: Cliente não vê R$, apenas a lista de itens que precisa fornecer
+---
 
-O erro original foi condicionar seções inteiras demais. A correção é cirúrgica: apenas os campos de valor em R$ devem ser escondidos.
+## Fluxo de Auto-Save
 
+```
+Usuario digita → Debounce 3s → saveDraft() → Badge "Salvo às HH:MM:SS"
+                     ↓
+              Digita novamente → Reinicia timer
+```
+
+**Benefícios:**
+- Não perde dados se fechar a página sem querer
+- Rascunhos aparecem na listagem de propostas (filtráveis por status)
+- Pode continuar de onde parou ao reabrir
+
+---
+
+## Teste de Validação
+
+Após implementação, testar os cenários:
+
+1. Proposta Monetária: Preencher nome + prédio + valor → Botão ativa
+2. Proposta Permuta: Preencher nome + prédio + 1 item permuta → Botão ativa
+3. Proposta Permuta SEM itens: Nome + prédio apenas → Botão permanece desativado
+4. Auto-save: Preencher nome, esperar 3s, verificar toast/badge de salvamento
+5. Reload: Recarregar página, verificar se rascunho aparece na listagem
