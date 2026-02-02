@@ -2126,6 +2126,20 @@ const PropostaPublicaPage = () => {
                 </div>
               </div>
 
+              {/* Período do Contrato */}
+              <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm font-medium text-amber-800">Período do Contrato</span>
+                </div>
+                <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
+                  {proposal.is_custom_days 
+                    ? `${proposal.custom_days} ${proposal.custom_days === 1 ? 'dia' : 'dias'}`
+                    : `${proposal.duration_months} ${proposal.duration_months === 1 ? 'mês' : 'meses'}`
+                  }
+                </Badge>
+              </div>
+
               {/* Lista de Equipamentos */}
               {proposal.itens_permuta && proposal.itens_permuta.length > 0 && (
                 <div className="space-y-2">
@@ -2356,47 +2370,49 @@ const PropostaPublicaPage = () => {
               ))}
             </div>
 
-            {/* Resumo por modalidade - USA valores dinâmicos com exclusividade */}
-            <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-3">
-              {/* Fidelidade */}
-              <div className="p-2 bg-white rounded-lg border border-slate-200 space-y-1">
-                <div className="text-[9px] sm:text-[10px] font-medium text-slate-500 uppercase">
-                  Fidelidade ({proposal.duration_months}x)
+            {/* Resumo por modalidade - ESCONDER para permuta */}
+            {proposal.modalidade_proposta !== 'permuta' && (
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-3">
+                {/* Fidelidade */}
+                <div className="p-2 bg-white rounded-lg border border-slate-200 space-y-1">
+                  <div className="text-[9px] sm:text-[10px] font-medium text-slate-500 uppercase">
+                    Fidelidade ({proposal.duration_months}x)
+                  </div>
+                  <div className="flex justify-between text-[9px] sm:text-[10px]">
+                    <span>Por local:</span>
+                    <span className="font-medium">
+                      {(displayFidelMonthly / displayBuildingsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[9px] sm:text-[10px]">
+                    <span>Por tela:</span>
+                    <span className="font-medium">
+                      {(displayFidelMonthly / displayPanelsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-[9px] sm:text-[10px]">
-                  <span>Por local:</span>
-                  <span className="font-medium">
-                    {(displayFidelMonthly / displayBuildingsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
-                  </span>
-                </div>
-                <div className="flex justify-between text-[9px] sm:text-[10px]">
-                  <span>Por tela:</span>
-                  <span className="font-medium">
-                    {(displayFidelMonthly / displayPanelsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
-                  </span>
-                </div>
-              </div>
 
-              {/* À Vista */}
-              <div className="p-2 bg-gradient-to-br from-green-50 to-white rounded-lg border border-green-200 space-y-1">
-                <div className="text-[9px] sm:text-[10px] font-medium text-green-600 uppercase flex items-center gap-1">
-                  PIX À Vista
-                  <span className="bg-green-100 text-[7px] sm:text-[8px] px-1 rounded">-{proposal.discount_percent}%</span>
-                </div>
-                <div className="flex justify-between text-[9px] sm:text-[10px]">
-                  <span>Por local:</span>
-                  <span className="font-medium text-green-600">
-                    {((displayCashValue / proposal.duration_months) / displayBuildingsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
-                  </span>
-                </div>
-                <div className="flex justify-between text-[9px] sm:text-[10px]">
-                  <span>Por tela:</span>
-                  <span className="font-medium text-green-600">
-                    {((displayCashValue / proposal.duration_months) / displayPanelsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
-                  </span>
+                {/* À Vista */}
+                <div className="p-2 bg-gradient-to-br from-green-50 to-white rounded-lg border border-green-200 space-y-1">
+                  <div className="text-[9px] sm:text-[10px] font-medium text-green-600 uppercase flex items-center gap-1">
+                    PIX À Vista
+                    <span className="bg-green-100 text-[7px] sm:text-[8px] px-1 rounded">-{proposal.discount_percent}%</span>
+                  </div>
+                  <div className="flex justify-between text-[9px] sm:text-[10px]">
+                    <span>Por local:</span>
+                    <span className="font-medium text-green-600">
+                      {((displayCashValue / proposal.duration_months) / displayBuildingsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[9px] sm:text-[10px]">
+                    <span>Por tela:</span>
+                    <span className="font-medium text-green-600">
+                      {((displayCashValue / proposal.duration_months) / displayPanelsCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Condição Especial - Pré-Conclusão de Fase */}
             {isVendaFutura && (

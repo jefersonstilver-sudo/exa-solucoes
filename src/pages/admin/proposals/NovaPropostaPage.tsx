@@ -2066,8 +2066,8 @@ const NovaPropostaPage = () => {
               </div>
             </div>}
 
-          {/* Valor Mensal Fidelidade - Somente para pagamento padrão */}
-          {!isCustomPayment && <div className="mb-4">
+          {/* Valor Mensal Fidelidade - Somente para pagamento padrão e NÃO permuta */}
+          {!isCustomPayment && modalidadeProposta !== 'permuta' && <div className="mb-4">
               <div className="flex items-center justify-between mb-1">
                 <Label className="text-xs">Valor Mensal (Fidelidade)</Label>
                 {valorSugeridoMensal > 0 && <button onClick={() => setFidelValue(valorSugeridoMensal.toFixed(2))} className="text-[10px] text-primary hover:underline">
@@ -2083,8 +2083,8 @@ const NovaPropostaPage = () => {
                 </p>}
             </div>}
 
-          {/* Desconto PIX à Vista - Somente para pagamento padrão */}
-          {!isCustomPayment && <div className="mb-4">
+          {/* Desconto PIX à Vista - Somente para pagamento padrão e NÃO permuta */}
+          {!isCustomPayment && modalidadeProposta !== 'permuta' && <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <Label className="text-xs">Desconto PIX à Vista</Label>
                 <span className="text-sm font-medium text-primary">{discountPercent}% OFF</span>
@@ -2096,8 +2096,8 @@ const NovaPropostaPage = () => {
               </div>
             </div>}
 
-          {/* Sobrescrever valor à vista - Somente para pagamento padrão */}
-          {!isCustomPayment && <>
+          {/* Sobrescrever valor à vista - Somente para pagamento padrão e NÃO permuta */}
+          {!isCustomPayment && modalidadeProposta !== 'permuta' && <>
               <div className="flex items-center gap-3 mb-3">
                 <Switch checked={overwriteCashValue} onCheckedChange={setOverwriteCashValue} />
                 <Label className="text-xs">Definir valor à vista manualmente</Label>
@@ -2112,8 +2112,8 @@ const NovaPropostaPage = () => {
                 </div>}
             </>}
 
-          {/* Resumo de Valores - Padrão */}
-          {!isCustomPayment && fidelMonthly > 0 && <div className="p-3 bg-gray-50 rounded-lg space-y-2">
+          {/* Resumo de Valores - Padrão - NÃO permuta */}
+          {!isCustomPayment && fidelMonthly > 0 && modalidadeProposta !== 'permuta' && <div className="p-3 bg-gray-50 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Fidelidade ({durationMonths}x):</span>
                 <span className="font-medium">{formatCurrency(fidelMonthly)}/mês</span>
@@ -2160,8 +2160,8 @@ const NovaPropostaPage = () => {
               </div>
             </div>}
 
-          {/* Detalhamento de Preços Corporativo */}
-          {selectedBuildings.length > 0 && !isCustomPayment && !isCustomDays && (
+          {/* Detalhamento de Preços Corporativo - NÃO permuta */}
+          {selectedBuildings.length > 0 && !isCustomPayment && !isCustomDays && modalidadeProposta !== 'permuta' && (
             <Card className="p-3 bg-slate-50/80 border-slate-200 mt-3">
               <div className="flex items-center gap-2 mb-3">
                 <Building2 className="h-4 w-4 text-slate-600" />
