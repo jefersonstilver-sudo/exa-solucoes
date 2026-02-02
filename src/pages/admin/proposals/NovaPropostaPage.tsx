@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package } from 'lucide-react';
+import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package, Copy } from 'lucide-react';
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
@@ -1148,6 +1148,256 @@ const NovaPropostaPage = () => {
     } finally {
       setVerificandoExclusividade(false);
     }
+  };
+
+  // Função para copiar texto completo da proposta para validação
+  const handleCopyProposalText = () => {
+    const formatCurrency = (value: number) => {
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    };
+
+    const formatNumber = (value: number) => {
+      return new Intl.NumberFormat('pt-BR').format(value);
+    };
+
+    const formatDate = (date: Date) => {
+      return format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+    };
+
+    // Construir texto completo
+    let text = `═══════════════════════════════════════════════════
+           PROPOSTA EXA - VALIDAÇÃO COMPLETA
+═══════════════════════════════════════════════════
+
+`;
+
+    // DADOS DO CLIENTE
+    text += `📋 DADOS DO CLIENTE
+────────────────────────────────────────────────────
+• Nome: ${clientData.firstName} ${clientData.lastName}
+• Empresa: ${clientData.companyName || '(não informado)'}
+• País: ${clientData.country === 'BR' ? 'Brasil' : clientData.country === 'AR' ? 'Argentina' : 'Paraguai'}
+• ${getDocumentLabel()}: ${clientData.document || '(não informado)'}
+• Telefone: ${clientData.phone || '(não informado)'}
+• E-mail: ${clientData.email || '(não informado)'}
+• Endereço: ${clientData.address || '(não informado)'}
+
+`;
+
+    // PRÉDIOS SELECIONADOS
+    text += `🏢 PRÉDIOS SELECIONADOS (${selectedBuildingsData.length} prédios)
+────────────────────────────────────────────────────
+`;
+    selectedBuildingsData.forEach((b, index) => {
+      const isManual = (b as any).is_manual;
+      text += `${index + 1}. ${b.nome}${isManual ? ' *' : ''}
+   • Bairro: ${(b as any).bairro || 'N/A'}
+   • Telas: ${b.quantidade_telas || 0}
+   • Exibições/mês: ${formatNumber(b.visualizacoes_mes || 0)}
+`;
+    });
+
+    text += `
+TOTAIS:
+• Total de Telas: ${totalPanels}
+• Exibições Mensais: ${formatNumber(totalImpressionsAdjusted)}
+• Público Estimado: ${formatNumber(totalPublico)} pessoas
+${selectedBuildingsData.some((b: any) => b.is_manual) ? '\n* = Prédio adicionado manualmente' : ''}
+
+`;
+
+    // PRODUTO
+    text += `📦 PRODUTO
+────────────────────────────────────────────────────
+• Tipo: ${tipoProduto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal'}
+• Posições (Marcas): ${quantidadePosicoes}
+
+`;
+
+    // PERÍODO
+    text += `⏱️ PERÍODO
+────────────────────────────────────────────────────
+`;
+    if (isCustomDays) {
+      text += `• Tipo: Período em Dias
+• Duração: ${customDays} dias
+`;
+    } else if (isCustomPayment) {
+      text += `• Tipo: Pagamento Personalizado
+• Duração: ${customDurationMonths} meses
+• Número de Parcelas: ${customInstallments.length}
+`;
+    } else {
+      text += `• Tipo: Padrão
+• Duração: ${durationMonths} meses
+`;
+    }
+
+    // PAGAMENTO (monetário ou permuta)
+    if (modalidadeProposta === 'permuta') {
+      text += `
+💱 PERMUTA
+────────────────────────────────────────────────────
+• Modalidade: Permuta (não-monetária)
+• Ocultar valores no público: ${ocultarValoresPublico ? 'Sim' : 'Não'}
+• Descrição da Contrapartida: ${descricaoContrapartida || '(não informada)'}
+
+Itens de Permuta:
+`;
+      itensPermuta.forEach((item, index) => {
+        text += `${index + 1}. ${item.nome} (Qtd: ${item.quantidade})${!item.ocultar_preco ? ` - ${formatCurrency(item.preco_unitario)} cada = ${formatCurrency(item.preco_total)}` : ''}
+`;
+      });
+      text += `
+Valor Total Permuta: ${formatCurrency(valorTotalPermuta)}
+
+`;
+    } else {
+      text += `
+💰 PAGAMENTO (MONETÁRIO)
+────────────────────────────────────────────────────
+• Valor Mensal (Fidelidade): ${formatCurrency(fidelMonthly)}
+• Valor Sugerido (base): ${formatCurrency(valorSugeridoMensal)}/mês
+`;
+      if (isCustomPayment) {
+        text += `• Pagamento Personalizado: Sim
+• Total das Parcelas: ${formatCurrency(customTotal)}
+
+Parcelas:
+`;
+        customInstallments.forEach((p, index) => {
+          text += `  ${index + 1}. ${format(new Date(p.dueDate), 'dd/MM/yyyy')} - ${formatCurrency(parseFloat(p.amount) || 0)}
+`;
+        });
+      } else if (isCustomDays) {
+        text += `• Valor Total (${customDays} dias): ${formatCurrency(calculateDaysPrice)}
+`;
+      } else {
+        text += `• Desconto à Vista (PIX): ${discountPercent}%
+• Total à Vista: ${formatCurrency(cashTotal)}
+• Total Fidelidade (${durationMonths}x): ${formatCurrency(fidelTotal)}
+`;
+      }
+      text += `
+`;
+    }
+
+    // CONDIÇÕES COMERCIAIS
+    text += `📊 CONDIÇÕES COMERCIAIS
+────────────────────────────────────────────────────
+`;
+
+    // Venda Futura
+    if (vendaFutura) {
+      text += `🚀 Venda Futura: ATIVO
+   • Prédios Contratados: ${prediosContratados}
+   • Telas Estimadas: ${telasContratadas !== null ? telasContratadas : Math.ceil(prediosContratados * 1.35)}
+   • Prédios Instalados Atualmente: ${buildings.length}
+   • Prédios Pendentes: ${Math.max(0, prediosContratados - buildings.length)}
+
+`;
+    } else {
+      text += `🚀 Venda Futura: INATIVO
+
+`;
+    }
+
+    // Exclusividade de Segmento
+    if (oferecerExclusividade) {
+      text += `🔒 Exclusividade de Segmento: ATIVO
+   • Segmento: ${segmentoExclusivo}
+   • Acréscimo: ${exclusividadePercentual}%
+   • Valor Extra: ${formatCurrency(exclusividadeValorCalculado)}
+   • Disponibilidade Verificada: ${exclusividadeDisponivel === null ? 'Não verificado' : exclusividadeDisponivel ? 'Disponível' : 'Indisponível'}
+
+`;
+    } else {
+      text += `🔒 Exclusividade de Segmento: INATIVO
+
+`;
+    }
+
+    // Travamento de Preço
+    if (travamentoPrecoAtivo) {
+      const precoPorTela = travamentoModoCalculo === 'automatico' 
+        ? (totalPanels > 0 ? valorMensalEfetivo / totalPanels : 0)
+        : travamentoPrecoManual;
+      text += `📌 Travamento de Preço: ATIVO
+   • Modo de Cálculo: ${travamentoModoCalculo === 'automatico' ? 'Automático' : 'Manual'}
+   • Valor por Tela: ${formatCurrency(precoPorTela)}
+   • Limite de Telas: ${travamentoTelasLimite}
+   • Telas Atuais: ${totalPanels}
+
+`;
+    } else {
+      text += `📌 Travamento de Preço: INATIVO
+
+`;
+    }
+
+    // Multa de Rescisão
+    if (multaRescisaoAtiva) {
+      text += `⚖️ Multa de Rescisão: ATIVO
+   • Percentual: ${multaRescisaoPercentual}%
+
+`;
+    } else {
+      text += `⚖️ Multa de Rescisão: INATIVO
+
+`;
+    }
+
+    // VALIDADE
+    text += `⏳ VALIDADE
+────────────────────────────────────────────────────
+`;
+    if (validityHours === 0) {
+      text += `• Prazo: Indeterminada
+`;
+    } else if (validityHours === -1 && customDateRange?.to) {
+      text += `• Prazo: Personalizado
+• Expira em: ${formatDate(customDateRange.to)}
+`;
+    } else {
+      const expiresAt = new Date(Date.now() + validityHours * 60 * 60 * 1000);
+      text += `• Prazo: ${validityHours} horas
+• Expira em: ${formatDate(expiresAt)}
+`;
+    }
+
+    text += `
+`;
+
+    // CONFIGURAÇÕES ADICIONAIS
+    text += `📝 CONFIGURAÇÕES ADICIONAIS
+────────────────────────────────────────────────────
+• Título da Proposta: ${tituloProposta || '(sem título)'}
+• Exigir Contrato: ${exigirContrato ? 'Sim' : 'Não'}
+• Cobrança Futura: ${cobrancaFutura ? 'Sim' : 'Não'}
+• E-mails em Cópia (CC): ${ccEmails.length > 0 ? ccEmails.join(', ') : '(nenhum)'}
+
+`;
+
+    // VENDEDOR
+    text += `👤 VENDEDOR
+────────────────────────────────────────────────────
+• Nome: ${selectedSeller?.nome || selectedSeller?.email || 'Não selecionado'}
+• E-mail: ${selectedSeller?.email || '(não informado)'}
+• Telefone: ${selectedSeller?.telefone || '(não informado)'}
+
+`;
+
+    // RODAPÉ
+    text += `═══════════════════════════════════════════════════
+      Gerado em: ${formatDate(new Date())}
+═══════════════════════════════════════════════════`;
+
+    // Copiar para clipboard
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success('Texto completo da proposta copiado!');
+    }).catch(() => {
+      toast.error('Erro ao copiar texto');
+    });
   };
 
   // Mutation para salvar proposta (criar ou atualizar)
@@ -3092,6 +3342,17 @@ const NovaPropostaPage = () => {
           {/* Botão Preview */}
           <Button variant="outline" onClick={() => setShowPreviewModal(true)} disabled={selectedBuildings.length === 0} className="h-11 px-3 border-gray-200 text-gray-600 hover:bg-gray-50">
             <Eye className="h-4 w-4" />
+          </Button>
+          
+          {/* Botão Copiar Texto da Proposta */}
+          <Button 
+            variant="outline" 
+            onClick={handleCopyProposalText} 
+            disabled={selectedBuildings.length === 0}
+            className="h-11 px-3 border-blue-200 text-blue-600 hover:bg-blue-50"
+            title="Copiar texto completo da proposta para validação"
+          >
+            <Copy className="h-4 w-4" />
           </Button>
           
           {/* Botão Enviar Proposta */}
