@@ -1875,14 +1875,6 @@ const PropostaPublicaPage = () => {
           </Card>
         )}
 
-        {/* Título Personalizado da Proposta */}
-        {proposal.titulo && (
-          <div className="text-center py-2">
-            <h2 className="text-lg sm:text-xl font-bold text-[#9C1E1E]">
-              {proposal.titulo}
-            </h2>
-          </div>
-        )}
 
         {/* Banner de Múltiplas Marcas/Posições - aparece quando há mais de 1 posição */}
         {(proposal.quantidade_posicoes ?? 1) > 1 && (
