@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock } from 'lucide-react';
+import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package } from 'lucide-react';
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
@@ -40,6 +40,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ChevronsUpDown } from 'lucide-react';
 
 import { BusinessSegmentSelector } from '@/components/ui/business-segment-selector';
+import { ItensPermutaEditor } from '@/components/admin/proposals/ItensPermutaEditor';
+
 interface Building {
   id: string;
   nome: string;
@@ -233,6 +235,26 @@ const NovaPropostaPage = () => {
   // Estados para Multa de Rescisão
   const [multaRescisaoAtiva, setMultaRescisaoAtiva] = useState(true);
   const [multaRescisaoPercentual, setMultaRescisaoPercentual] = useState<number>(20);
+
+  // Estados para Proposta de Permuta (não-monetária)
+  const [modalidadeProposta, setModalidadeProposta] = useState<'monetaria' | 'permuta'>('monetaria');
+  const [itensPermuta, setItensPermuta] = useState<Array<{
+    id: string;
+    nome: string;
+    descricao?: string;
+    quantidade: number;
+    preco_unitario: number;
+    preco_total: number;
+    ocultar_preco: boolean;
+  }>>([]);
+  const [ocultarValoresPublico, setOcultarValoresPublico] = useState(false);
+  const [descricaoContrapartida, setDescricaoContrapartida] = useState('');
+  const [metodoPagamentoAlternativo, setMetodoPagamentoAlternativo] = useState<string | null>(null);
+
+  // Valor total da permuta (para referência interna)
+  const valorTotalPermuta = useMemo(() => {
+    return itensPermuta.reduce((sum, item) => sum + item.preco_total, 0);
+  }, [itensPermuta]);
 
   // Opções de período
   const periodOptions = [{
@@ -966,6 +988,13 @@ const NovaPropostaPage = () => {
         travamento_modo_calculo: travamentoPrecoAtivo ? travamentoModoCalculo : null,
         multa_rescisao_ativa: multaRescisaoAtiva,
         multa_rescisao_percentual: multaRescisaoAtiva ? multaRescisaoPercentual : null,
+        // Campos de Permuta (proposta não-monetária)
+        modalidade_proposta: modalidadeProposta,
+        itens_permuta: modalidadeProposta === 'permuta' ? itensPermuta : [],
+        valor_total_permuta: modalidadeProposta === 'permuta' ? valorTotalPermuta : 0,
+        ocultar_valores_publico: modalidadeProposta === 'permuta' ? ocultarValoresPublico : false,
+        descricao_contrapartida: modalidadeProposta === 'permuta' ? descricaoContrapartida : null,
+        metodo_pagamento_alternativo: modalidadeProposta === 'permuta' ? 'permuta' : null,
         // Validade da proposta - funciona tanto na criação quanto na edição
         expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to ? customDateRange.to.toISOString() : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
       };
@@ -1813,6 +1842,59 @@ const NovaPropostaPage = () => {
             <DollarSign className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Período e Valores</h2>
           </div>
+
+          {/* Toggle de Modalidade: Monetária vs Permuta */}
+          <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-sm font-semibold text-slate-700">Tipo de Proposta</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setModalidadeProposta('monetaria')}
+                className={`p-3 rounded-lg border-2 text-center transition-all ${
+                  modalidadeProposta === 'monetaria' 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <DollarSign className="h-4 w-4 text-emerald-600" />
+                  <span className="font-medium text-sm">Monetária</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground">Pagamento em R$</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setModalidadeProposta('permuta')}
+                className={`p-3 rounded-lg border-2 text-center transition-all ${
+                  modalidadeProposta === 'permuta' 
+                    ? 'border-amber-500 bg-amber-50' 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <RefreshCw className="h-4 w-4 text-amber-600" />
+                  <span className="font-medium text-sm">Permuta</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground">Equipamentos em troca</div>
+              </button>
+            </div>
+          </div>
+
+          {/* Seção de Permuta (Equipamentos) */}
+          {modalidadeProposta === 'permuta' && (
+            <div className="mb-6 p-4 bg-amber-50/50 rounded-xl border border-amber-200">
+              <ItensPermutaEditor
+                itens={itensPermuta}
+                onChange={setItensPermuta}
+                ocultarValoresPublico={ocultarValoresPublico}
+                onOcultarValoresChange={setOcultarValoresPublico}
+                descricaoContrapartida={descricaoContrapartida}
+                onDescricaoChange={setDescricaoContrapartida}
+              />
+            </div>
+          )}
 
           {/* Seletor de Período */}
           <div className="mb-4">

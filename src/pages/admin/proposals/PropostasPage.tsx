@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone, Bell, BellOff, RefreshCcw, Calendar, FileDown, Pencil, Settings, Files } from 'lucide-react';
+import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone, Bell, BellOff, RefreshCcw, Calendar, FileDown, Pencil, Settings, Files, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -68,6 +68,9 @@ interface Proposal {
   tipo_produto?: 'horizontal' | 'vertical_premium' | null;
   is_custom_days?: boolean | null;
   custom_days?: number | null;
+  // Campos de Permuta
+  modalidade_proposta?: 'monetaria' | 'permuta' | null;
+  valor_total_permuta?: number | null;
 }
 
 interface LiveViewNotification {
@@ -1125,17 +1128,29 @@ const PropostasPage = () => {
                           <span>•</span>
                           <span>{proposal.selected_buildings?.length || 0} prédio{(proposal.selected_buildings?.length || 0) !== 1 ? 's' : ''}</span>
                           <span>•</span>
-                          <span className="font-semibold text-foreground">
-                            {proposal.is_custom_days 
-                              ? formatCurrency(proposal.custom_installments?.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || proposal.cash_total_value || 0)
-                              : proposal.payment_type === 'pix_avista' || proposal.payment_type === 'cartao'
-                                ? formatCurrency(proposal.cash_total_value)
-                                : formatCurrency(proposal.fidel_monthly_value)
-                            }
-                            {!proposal.is_custom_days && proposal.payment_type !== 'pix_avista' && proposal.payment_type !== 'cartao' && (
-                              <span className="text-[10px] text-muted-foreground font-normal">/mês</span>
-                            )}
-                          </span>
+                          {proposal.modalidade_proposta === 'permuta' ? (
+                            <span className="flex items-center gap-1 text-amber-600 font-semibold">
+                              <RefreshCw className="h-3 w-3" />
+                              Permuta
+                              {proposal.valor_total_permuta && proposal.valor_total_permuta > 0 && (
+                                <span className="text-[10px] text-muted-foreground font-normal">
+                                  ({formatCurrencyCompact(proposal.valor_total_permuta)})
+                                </span>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="font-semibold text-foreground">
+                              {proposal.is_custom_days 
+                                ? formatCurrency(proposal.custom_installments?.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || proposal.cash_total_value || 0)
+                                : proposal.payment_type === 'pix_avista' || proposal.payment_type === 'cartao'
+                                  ? formatCurrency(proposal.cash_total_value)
+                                  : formatCurrency(proposal.fidel_monthly_value)
+                              }
+                              {!proposal.is_custom_days && proposal.payment_type !== 'pix_avista' && proposal.payment_type !== 'cartao' && (
+                                <span className="text-[10px] text-muted-foreground font-normal">/mês</span>
+                              )}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
                           <span className="text-xs text-muted-foreground">
