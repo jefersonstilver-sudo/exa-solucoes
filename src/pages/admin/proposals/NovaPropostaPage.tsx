@@ -482,6 +482,32 @@ const NovaPropostaPage = () => {
 
   // Popular campos quando proposta existente é carregada
   const [dataLoaded, setDataLoaded] = useState(false);
+  // Reset estado quando editProposalId mudar (evita "estado grudado" entre edições)
+  useEffect(() => {
+    if (editProposalId) {
+      console.log('🔄 Reset de estado para nova edição:', editProposalId);
+      setDataLoaded(false);
+      // Limpar estados críticos para evitar mostrar dados antigos
+      setSelectedBuildings([]);
+      setManualBuildings([]);
+      setItensPermuta([]);
+      setClientData({
+        firstName: '',
+        lastName: '',
+        companyName: '',
+        country: 'BR',
+        document: '',
+        phone: '',
+        phoneFullNumber: '',
+        phoneCountry: 'BR' as CountryCode,
+        email: '',
+        address: '',
+        latitude: null,
+        longitude: null
+      });
+    }
+  }, [editProposalId]);
+
   useEffect(() => {
     if (existingProposal && !dataLoaded && buildings.length > 0) {
       console.log('📝 Carregando dados da proposta para edição:', existingProposal.number);
@@ -506,31 +532,46 @@ const NovaPropostaPage = () => {
         longitude: existingProposal.client_longitude || null
       });
 
-      // Prédios selecionados
-      const selectedBuildingsList = Array.isArray(existingProposal.selected_buildings) 
-        ? existingProposal.selected_buildings 
-        : [];
-      const buildingIds = (selectedBuildingsList as any[])
-        .filter((b: any) => b.building_id && !b.is_manual)
-        .map((b: any) => b.building_id);
-      setSelectedBuildings(buildingIds);
+      // Prédios selecionados - normalização robusta para diferentes formatos
+      const rawSelectedBuildings = existingProposal.selected_buildings;
+      let buildingIds: string[] = [];
+      let manualBldgs: ManualBuilding[] = [];
 
-      // Prédios manuais
-      const manualBldgs = (selectedBuildingsList as any[])
-        .filter((b: any) => b.is_manual)
-        .map((b: any) => ({
-          id: b.building_id || `manual_${Date.now()}_${Math.random()}`,
-          nome: b.building_name || '',
-          bairro: b.bairro || 'N/A',
-          endereco: b.endereco || '',
-          quantidade_telas: b.quantidade_telas || 1,
-          numero_elevadores: b.quantidade_telas || 1,
-          visualizacoes_mes: b.visualizacoes_mes || 11610,
-          preco_base: b.preco_base || 0,
-          publico_estimado: b.publico_estimado || 100,
-          imagem_principal: null,
-          is_manual: true as const
-        }));
+      if (Array.isArray(rawSelectedBuildings)) {
+        // Verificar se é array de strings (IDs) ou array de objetos
+        if (rawSelectedBuildings.length > 0) {
+          const firstItem = rawSelectedBuildings[0];
+          
+          if (typeof firstItem === 'string') {
+            // Array de strings (IDs simples)
+            buildingIds = rawSelectedBuildings as string[];
+          } else if (typeof firstItem === 'object' && firstItem !== null) {
+            // Array de objetos - extrair IDs e prédios manuais
+            buildingIds = (rawSelectedBuildings as any[])
+              .filter((b: any) => b && (b.building_id || b.id) && !b.is_manual)
+              .map((b: any) => b.building_id || b.id);
+            
+            // Prédios manuais
+            manualBldgs = (rawSelectedBuildings as any[])
+              .filter((b: any) => b && b.is_manual)
+              .map((b: any) => ({
+                id: b.building_id || b.id || `manual_${Date.now()}_${Math.random()}`,
+                nome: b.building_name || b.nome || '',
+                bairro: b.bairro || 'N/A',
+                endereco: b.endereco || '',
+                quantidade_telas: b.quantidade_telas || 1,
+                numero_elevadores: b.quantidade_telas || 1,
+                visualizacoes_mes: b.visualizacoes_mes || 11610,
+                preco_base: b.preco_base || 0,
+                publico_estimado: b.publico_estimado || 100,
+                imagem_principal: null,
+                is_manual: true as const
+              }));
+          }
+        }
+      }
+
+      setSelectedBuildings(buildingIds);
       setManualBuildings(manualBldgs);
 
       // Configurações de pagamento
@@ -547,11 +588,15 @@ const NovaPropostaPage = () => {
           amount: String(p.amount || '')
         })));
         setCustomDurationMonths(existingProposal.duration_months || 12);
+      } else {
+        setIsCustomPayment(false);
       }
 
       if (existingProposal.is_custom_days) {
         setIsCustomDays(true);
         setCustomDays(existingProposal.custom_days || 15);
+      } else {
+        setIsCustomDays(false);
       }
 
       // Tipo de produto
@@ -589,9 +634,70 @@ const NovaPropostaPage = () => {
       setMultaRescisaoAtiva(existingProposal.multa_rescisao_ativa !== false);
       setMultaRescisaoPercentual(existingProposal.multa_rescisao_percentual || 20);
 
+      // ============================================
+      // CAMPOS DE PERMUTA - HIDRATAÇÃO COMPLETA
+      // ============================================
+      const modalidade = existingProposal.modalidade_proposta;
+      if (modalidade === 'monetaria' || modalidade === 'permuta') {
+        setModalidadeProposta(modalidade);
+      } else {
+        setModalidadeProposta('monetaria');
+      }
+
+      // Itens de permuta
+      const itensPermutaRaw = existingProposal.itens_permuta;
+      if (Array.isArray(itensPermutaRaw)) {
+        setItensPermuta(itensPermutaRaw.map((item: any) => ({
+          id: item.id || `item_${Date.now()}_${Math.random()}`,
+          nome: item.nome || '',
+          descricao: item.descricao || '',
+          quantidade: item.quantidade || 1,
+          preco_unitario: item.preco_unitario || 0,
+          preco_total: item.preco_total || 0,
+          ocultar_preco: item.ocultar_preco || false
+        })));
+      } else {
+        setItensPermuta([]);
+      }
+
+      setOcultarValoresPublico(existingProposal.ocultar_valores_publico === true);
+      setDescricaoContrapartida(existingProposal.descricao_contrapartida || '');
+      setMetodoPagamentoAlternativo(existingProposal.metodo_pagamento_alternativo || null);
+
+      // ============================================
+      // VALIDADE DA PROPOSTA - HIDRATAÇÃO COMPLETA
+      // ============================================
+      if (existingProposal.expires_at === null) {
+        // Validade indeterminada
+        setValidityHours(0);
+        setCustomDateRange(undefined);
+      } else if (existingProposal.expires_at) {
+        const expiresAt = new Date(existingProposal.expires_at);
+        const now = new Date();
+        const diffHours = Math.round((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60));
+        
+        // Verificar se bate com opções padrão
+        if (diffHours > 20 && diffHours < 28) {
+          setValidityHours(24);
+          setCustomDateRange(undefined);
+        } else if (diffHours > 68 && diffHours < 76) {
+          setValidityHours(72);
+          setCustomDateRange(undefined);
+        } else if (diffHours > 164 && diffHours < 172) {
+          setValidityHours(168);
+          setCustomDateRange(undefined);
+        } else {
+          // Data personalizada
+          setValidityHours(-1);
+          setCustomDateRange({ from: new Date(), to: expiresAt });
+        }
+      }
+
       // CC Emails
       if (existingProposal.cc_emails) {
         setCcEmails(existingProposal.cc_emails as string[]);
+      } else {
+        setCcEmails([]);
       }
 
       // Vendedor
@@ -602,7 +708,7 @@ const NovaPropostaPage = () => {
       setDataLoaded(true);
       toast.success(`Proposta ${existingProposal.number} carregada para edição`);
     }
-  }, [existingProposal, dataLoaded, buildings.length]);
+  }, [existingProposal, dataLoaded, buildings.length, editProposalId]);
 
   // Hooks para posições disponíveis e especificações de vídeo
   const { posicoesMap, isLoading: isLoadingPosicoes } = usePosicoesDisponiveis();
@@ -741,6 +847,12 @@ const NovaPropostaPage = () => {
     }
   }, [maxPosicoes, quantidadePosicoes]);
 
+  // Exibições mensais ajustadas pela quantidade de posições (movido para antes do auto-save)
+  const totalImpressionsAdjusted = useMemo(() => {
+    const exibicoesBase = specifications?.exibicoes.porMes ?? 11610;
+    return exibicoesBase * quantidadePosicoes * totalPanels;
+  }, [specifications, quantidadePosicoes, totalPanels]);
+
   // Auto-save de rascunho com debounce de 3 segundos
   useEffect(() => {
     // Só salva se tiver dados mínimos (nome do cliente) e não estiver em modo edição
@@ -752,32 +864,89 @@ const NovaPropostaPage = () => {
       setDraftError(null);
       
       try {
+        // FORMATO UNIFICADO: usar mesmo formato de selected_buildings do envio
+        const buildingsDataForDraft = selectedBuildingsData.map(b => ({
+          building_id: b.id,
+          building_name: b.nome,
+          bairro: b.bairro,
+          endereco: b.endereco || '',
+          quantidade_telas: b.quantidade_telas || (b as any).numero_elevadores || 0,
+          visualizacoes_mes: b.visualizacoes_mes,
+          preco_base: (b as any).preco_base || 0,
+          publico_estimado: b.publico_estimado,
+          is_manual: (b as any).is_manual || false
+        }));
+
+        // Valor mensal efetivo para o rascunho
+        const fidelMonthlyDraft = parseFloat(fidelValue) || 0;
+        const cashTotalDraft = modalidadeProposta === 'permuta' 
+          ? 0 
+          : fidelMonthlyDraft * durationMonths * (1 - discountPercent / 100);
+        
         const draftData = {
           status: 'rascunho',
+          // Cliente
           client_name: `${clientData.firstName} ${clientData.lastName}`.trim() || 'Rascunho',
           client_first_name: clientData.firstName || null,
           client_last_name: clientData.lastName || null,
           client_company_name: clientData.companyName || null,
+          client_country: clientData.country || 'BR',
+          client_cnpj: clientData.document || null,
           client_email: clientData.email || null,
           client_phone: clientData.phoneFullNumber || clientData.phone || null,
-          selected_buildings: selectedBuildings.length > 0 ? selectedBuildings : [],
-          duration_months: durationMonths,
-          fidel_monthly_value: parseFloat(fidelValue) || 0,
-          cash_total_value: parseFloat(fidelValue) || 0, // Campo obrigatório
-          total_panels: selectedBuildings.length, // Campo obrigatório
-          total_impressions_month: 0, // Campo obrigatório
+          client_address: clientData.address || null,
+          client_latitude: clientData.latitude || null,
+          client_longitude: clientData.longitude || null,
+          // Prédios - formato consistente com envio
+          selected_buildings: buildingsDataForDraft as Json,
+          total_panels: totalPanels,
+          total_impressions_month: totalImpressionsAdjusted,
+          // Período e pagamento
+          duration_months: isCustomDays ? 0 : durationMonths,
+          fidel_monthly_value: modalidadeProposta === 'permuta' ? 0 : fidelMonthlyDraft,
+          cash_total_value: modalidadeProposta === 'permuta' ? 0 : cashTotalDraft,
           discount_percent: discountPercent,
-          modalidade_proposta: modalidadeProposta,
-          itens_permuta: itensPermuta,
-          valor_total_permuta: valorTotalPermuta,
-          ocultar_valores_publico: ocultarValoresPublico,
-          descricao_contrapartida: descricaoContrapartida || null,
-          metodo_pagamento_alternativo: metodoPagamentoAlternativo,
-          titulo: tituloProposta || null,
-          quantidade_posicoes: quantidadePosicoes,
-          tipo_produto: tipoProduto,
+          payment_type: isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
           is_custom_days: isCustomDays,
           custom_days: isCustomDays ? customDays : null,
+          custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
+            installment: idx + 1,
+            due_date: formatDateForInput(p.dueDate),
+            amount: parseFloat(p.amount) || 0
+          })) as Json : null,
+          // Produto
+          tipo_produto: tipoProduto,
+          quantidade_posicoes: quantidadePosicoes,
+          titulo: tituloProposta || null,
+          // Permuta
+          modalidade_proposta: modalidadeProposta,
+          itens_permuta: modalidadeProposta === 'permuta' ? itensPermuta : [],
+          valor_total_permuta: modalidadeProposta === 'permuta' ? valorTotalPermuta : 0,
+          ocultar_valores_publico: modalidadeProposta === 'permuta' ? ocultarValoresPublico : false,
+          descricao_contrapartida: modalidadeProposta === 'permuta' ? descricaoContrapartida : null,
+          metodo_pagamento_alternativo: modalidadeProposta === 'permuta' ? 'permuta' : null,
+          // Configurações adicionais
+          cobranca_futura: cobrancaFutura,
+          exigir_contrato: exigirContrato,
+          venda_futura: vendaFutura,
+          predios_contratados: vendaFutura ? prediosContratados : selectedBuildingsData.length,
+          // Exclusividade
+          exclusividade_segmento: oferecerExclusividade,
+          segmento_exclusivo: oferecerExclusividade ? segmentoExclusivo : null,
+          exclusividade_percentual: oferecerExclusividade ? exclusividadePercentual : null,
+          // Travamento
+          travamento_preco_ativo: travamentoPrecoAtivo,
+          travamento_preco_valor: travamentoPrecoAtivo ? travamentoPrecoValor : null,
+          travamento_telas_limite: travamentoPrecoAtivo ? travamentoTelasLimite : null,
+          // Multa
+          multa_rescisao_ativa: multaRescisaoAtiva,
+          multa_rescisao_percentual: multaRescisaoAtiva ? multaRescisaoPercentual : null,
+          // CC Emails
+          cc_emails: ccEmails.length > 0 ? ccEmails : null,
+          // Validade
+          expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to 
+            ? customDateRange.to.toISOString() 
+            : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
         };
         
         if (draftId) {
@@ -808,17 +977,18 @@ const NovaPropostaPage = () => {
   }, [
     clientData.firstName, clientData.lastName, clientData.companyName, 
     clientData.email, clientData.phoneFullNumber, clientData.phone,
-    selectedBuildings, durationMonths, fidelValue, discountPercent,
+    clientData.country, clientData.document, clientData.address,
+    clientData.latitude, clientData.longitude,
+    selectedBuildings, selectedBuildingsData, durationMonths, fidelValue, discountPercent,
     modalidadeProposta, itensPermuta, valorTotalPermuta, ocultarValoresPublico,
     descricaoContrapartida, metodoPagamentoAlternativo, tituloProposta,
-    quantidadePosicoes, tipoProduto, isCustomDays, customDays, isEditMode, draftId, isSavingDraft
+    quantidadePosicoes, tipoProduto, isCustomDays, customDays, isEditMode, draftId, isSavingDraft,
+    totalPanels, totalImpressionsAdjusted, isCustomPayment, customInstallments,
+    cobrancaFutura, exigirContrato, vendaFutura, prediosContratados,
+    oferecerExclusividade, segmentoExclusivo, exclusividadePercentual,
+    travamentoPrecoAtivo, travamentoPrecoValor, travamentoTelasLimite,
+    multaRescisaoAtiva, multaRescisaoPercentual, ccEmails, validityHours, customDateRange
   ]);
-
-  // Exibições mensais ajustadas pela quantidade de posições
-  const totalImpressionsAdjusted = useMemo(() => {
-    const exibicoesBase = specifications?.exibicoes.porMes ?? 11610;
-    return exibicoesBase * quantidadePosicoes * totalPanels;
-  }, [specifications, quantidadePosicoes, totalPanels]);
 
   // Calcular preço para período em dias (< 30 dias = +10% acréscimo)
   const calculateDaysPrice = useMemo(() => {
@@ -987,6 +1157,11 @@ const NovaPropostaPage = () => {
       email: boolean;
       onlyLink?: boolean;
     }) => {
+      // GUARD: Em modo edição, impedir salvamento se dados ainda não carregaram
+      if (isEditMode && (!dataLoaded || isLoadingProposal || !existingProposal)) {
+        throw new Error('Aguarde o carregamento completo da proposta antes de salvar');
+      }
+      
       const {
         data: {
           user
@@ -1262,6 +1437,12 @@ const NovaPropostaPage = () => {
     }
   });
   const handleOpenSendDialog = () => {
+    // GUARD: Em modo edição, verificar se dados carregaram completamente
+    if (isEditMode && (!dataLoaded || isLoadingProposal)) {
+      toast.error('Aguarde o carregamento completo da proposta');
+      return;
+    }
+    
     if (!clientData.firstName.trim()) {
       toast.error('Preencha o primeiro nome do cliente');
       return;
@@ -2920,12 +3101,14 @@ const NovaPropostaPage = () => {
               selectedBuildings.length === 0 || 
               (modalidadeProposta === 'permuta' 
                 ? itensPermuta.length === 0 
-                : (isCustomPayment ? customTotal <= 0 : !fidelValue))
+                : (isCustomPayment ? customTotal <= 0 : !fidelValue)) ||
+              // GUARD: Desabilitar em modo edição até carregar completamente
+              (isEditMode && (!dataLoaded || isLoadingProposal))
             } 
             className="flex-1 h-11 gap-2"
           >
             <Send className="h-4 w-4" />
-            Enviar
+            {isEditMode && (!dataLoaded || isLoadingProposal) ? 'Carregando...' : 'Enviar'}
           </Button>
         </div>
       </div>
