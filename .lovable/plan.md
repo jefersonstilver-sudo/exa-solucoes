@@ -1,100 +1,141 @@
 
-# Plano: Corrigir Fluxo de Contrato Existente + Botao de Edicao
+# Plano: Corrigir Fluxo de Contrato Existente + Limpeza de Duplicados
 
-## Problema Identificado
+## Diagnostico Final
 
-### Erro Principal
-Quando o usuario clica em "Ver Contrato" e ja existe um contrato gerado:
+### O Que Esta Acontecendo
 
-1. O codigo envia `preview_only: false` + `clientData: null`
-2. A Edge Function valida `clientData` ANTES de verificar se existe contrato
-3. Resultado: **Erro 400** - "Dados do cliente incompletos"
+1. **Proposta tem `metadata.contract_id`** = `e6c09153-c094-4f0b-9941-ad610ba7f7eb`
+2. **Frontend detecta corretamente** `hasExistingContract = true`
+3. **Ao clicar "Ver Contrato"**, frontend chama Edge Function com `{ proposalId, preview_only: false }` (sem `clientData`)
+4. **A Edge Function DEPLOYADA** ainda esta na versao antiga (linha 131 valida `clientData` ANTES de verificar existencia)
+5. **Resultado**: Erro 400 "Dados do cliente incompletos"
 
-### Fluxo Atual (quebrado)
-```
-Usuario clica "Ver Contrato"
-       │
-       ▼
-hasExistingContract = true
-       │
-       ▼
-Chama Edge Function com:
-  preview_only: false
-  clientData: null
-       │
-       ▼
-Edge Function linha 44:
-  if (!preview_only && !clientData) → ERRO 400
+### Logs da Edge Function
+
+```text
+at Server.<anonymous> (file:///var/tmp/sb-compile-edge-runtime/create-contract-from-proposal/index.ts:131:13)
 ```
 
-### Duplicacao Detectada
-A proposta `b890fb70...` tem **5 contratos duplicados** - a idempotencia nao esta funcionando porque a verificacao de contrato existente so ocorre se `!preview_only`, mas o erro de validacao ocorre antes.
+A linha 131 no codigo local ja e diferente (o codigo local verifica existencia na linha 66), mas a versao deployada ainda nao foi atualizada.
+
+### Duplicacao Confirmada
+
+A proposta `b890fb70...` tem **10 contratos duplicados** na tabela `contratos_legais`, todos com `proposta_id` igual.
 
 ---
 
-## Solucao Proposta
+## Solucao em 3 Partes
 
-### Fase 1: Corrigir Edge Function (Verificar Existente ANTES de Validar)
+### Parte 1: Corrigir a Edge Function (Forcar Redeploy)
 
 **Arquivo**: `supabase/functions/create-contract-from-proposal/index.ts`
 
-**Mudanca**: Mover a verificacao de contrato existente para ANTES da validacao de clientData
+O codigo local ja esta correto, mas a Edge Function deployada esta desatualizada. Vou adicionar um comentario de versao para forcar um novo deploy:
 
-```
-ANTES (ordem errada):
-1. Validar clientData → ERRO se null
-2. Verificar se existe contrato
-
-DEPOIS (ordem correta):
-1. Verificar se existe contrato → Retornar se sim
-2. Validar clientData (so se nao existe)
+```typescript
+// VERSION: 2.0.0 - Idempotent contract creation with edit mode
+// DEPLOYED: 2026-01-31
 ```
 
-### Fase 2: Criar Novo Parametro `fetch_existing`
+Alem disso, vou adicionar um log extra no inicio para confirmar qual versao esta rodando:
 
-Adicionar flag `fetch_existing: true` que indica "quero apenas buscar contrato existente":
+```typescript
+console.log("🔧 VERSION: 2.0.0 - Idempotent Contract Flow");
+```
 
-| Parametro | Comportamento |
-|-----------|---------------|
-| `preview_only: true` | Gera HTML virtual sem salvar |
-| `preview_only: false` + `clientData` | Cria/atualiza contrato |
-| `fetch_existing: true` | Busca contrato existente sem criar |
+### Parte 2: Limpeza de Contratos Duplicados
 
-### Fase 3: Adicionar Botao "Editar Dados do Signatario"
+Executar operacao no banco para:
+1. Identificar o contrato mais recente (ja identificado: `e6c09153-c094-4f0b-9941-ad610ba7f7eb`)
+2. Deletar os 9 contratos duplicados
+3. Manter apenas o oficial vinculado a proposta
+
+**IDs a deletar** (todos exceto `e6c09153-c094-4f0b-9941-ad610ba7f7eb`):
+- `4840dc10-07c4-4494-825e-4d03223a4de6`
+- `0c11d02d-a9c4-4a9c-98fe-d3ed69065e3d`
+- `9ca20b16-905a-4123-a4f3-aa6806adcc71`
+- `d1b42edb-4c1a-4251-9c7a-7800c6bb137f`
+- `561599df-2cbb-4a4c-b4aa-828cf68de0e3`
+- `92f14337-bfbd-4b1a-b8cd-eb3dcd429fb1`
+- `2dd46717-2216-4ffc-8e5a-67446e0521fd`
+- `abbf5695-3e26-4545-b102-15921ff75b06`
+- `39256a43-eb63-4726-af89-94ae6c1cfdfc`
+
+### Parte 3: Logica do Botao "Editar Dados do Signatario"
+
+**Regra solicitada**: Exibir o botao APENAS quando ja existir signatario do tipo 'cliente' na tabela `contrato_signatarios`.
 
 **Arquivo**: `src/pages/public/PropostaPublicaPage.tsx`
 
 **Mudancas**:
 
-1. **Novo estado** para controlar modo de edicao:
+1. **Novo estado** para rastrear existencia de signatario:
 ```typescript
-const [isEditingSignatory, setIsEditingSignatory] = useState(false);
+const [hasSignatoryRegistered, setHasSignatoryRegistered] = useState(false);
 ```
 
-2. **Botao de Edicao** abaixo de "Ver Contrato" (quando contrato existe):
+2. **Buscar signatario ao carregar proposta** (no useEffect que detecta `metadata.contract_id`):
+```typescript
+// Se ja existe contrato, verificar se tem signatario cliente
+if (metadata?.contract_id) {
+  const { data: signatario } = await supabase
+    .from('contrato_signatarios')
+    .select('id')
+    .eq('contrato_id', metadata.contract_id)
+    .eq('tipo', 'cliente')
+    .maybeSingle();
+  
+  if (signatario) {
+    setHasSignatoryRegistered(true);
+  }
+}
 ```
-┌─────────────────────────────────────────────┐
-│  ✅ Contrato Gerado                         │
-│                                             │
-│  [📄 Visualizar Contrato]  (botao verde)    │
-│                                             │
-│  [✏️ Editar Dados do Signatario] (outline)  │
-└─────────────────────────────────────────────┘
+
+3. **Botao de Edicao condicional**:
+```tsx
+{hasExistingContract && hasSignatoryRegistered && (
+  <Button variant="outline" onClick={handleEditSignatory}>
+    <Pencil className="mr-2 h-4 w-4" />
+    Editar Dados do Signatario
+  </Button>
+)}
 ```
 
-3. **Fluxo de Edicao**:
-   - Clicar em "Editar Dados" → Abre `ContractDataModal`
-   - Pre-preenche com dados salvos no contrato existente
-   - Ao submeter → Chama Edge Function com `clientData` para ATUALIZAR contrato
-   - Regenera HTML do contrato
+---
 
-### Fase 4: Buscar Dados do Signatario do Contrato Existente
+## Fluxo Final Corrigido
 
-**Arquivo**: `src/pages/public/PropostaPublicaPage.tsx`
-
-Quando proposta carrega e tem `metadata.contract_id`:
-- Buscar dados do contrato (cliente_cpf, cliente_data_nascimento, etc.)
-- Armazenar em `existingContractData` para pre-preencher modal de edicao
+```text
+                   ┌─────────────────────────────────────┐
+                   │ Usuario abre proposta publica       │
+                   └─────────────────┬───────────────────┘
+                                     │
+                   ┌─────────────────▼───────────────────┐
+                   │ Detectar metadata.contract_id?      │
+                   └─────────────────┬───────────────────┘
+                                     │
+              ┌──────────────────────┴──────────────────────┐
+              │ SIM                                         │ NAO
+              ▼                                             ▼
+   ┌──────────────────────────┐              ┌──────────────────────────┐
+   │ hasExistingContract=true │              │ hasExistingContract=false│
+   │ Buscar signatario cliente│              └──────────────────────────┘
+   └──────────────────────────┘
+              │
+   ┌──────────▼──────────┐
+   │ Tem signatario?     │
+   └──────────┬──────────┘
+              │
+     ┌────────┴────────┐
+     │ SIM             │ NAO
+     ▼                 ▼
+┌──────────────┐  ┌──────────────┐
+│ Mostrar:     │  │ Mostrar:     │
+│ [Ver Contrato]│ │ [Ver Contrato]│
+│ [Editar Dados]│ │ (sem editar) │
+└──────────────┘  └──────────────┘
+```
 
 ---
 
@@ -102,151 +143,43 @@ Quando proposta carrega e tem `metadata.contract_id`:
 
 | Arquivo | Tipo | Descricao |
 |---------|------|-----------|
-| `supabase/functions/create-contract-from-proposal/index.ts` | Edge Function | Reordenar validacao, adicionar `fetch_existing` |
-| `src/pages/public/PropostaPublicaPage.tsx` | React | Botao editar, buscar dados existentes, modo edicao |
+| `supabase/functions/create-contract-from-proposal/index.ts` | Edge Function | Adicionar versao para forcar redeploy |
+| `src/pages/public/PropostaPublicaPage.tsx` | React | Verificar signatario antes de exibir botao de edicao |
 
 ---
 
-## Fluxo Final Corrigido
+## Operacao de Limpeza (Apos Aprovacao)
 
+Executar DELETE para remover contratos duplicados:
+
+```sql
+DELETE FROM contratos_legais 
+WHERE proposta_id = 'b890fb70-6c74-4b10-bc42-82204b9550ec' 
+AND id != 'e6c09153-c094-4f0b-9941-ad610ba7f7eb';
 ```
-                                ┌─────────────────┐
-                                │ Usuario clica   │
-                                │ "Ver Contrato"  │
-                                └────────┬────────┘
-                                         │
-           ┌─────────────────────────────┴─────────────────────────────┐
-           │                                                           │
-           ▼                                                           ▼
-    hasExistingContract?                                         NAO EXISTE
-           │                                                           │
-           ▼                                                           ▼
-    Chama com fetch_existing: true                            Abre Modal de Dados
-           │                                                           │
-           ▼                                                           ▼
-    Edge Function busca contrato                              Usuario preenche
-    e retorna HTML                                                     │
-           │                                                           ▼
-           ▼                                                  Chama com clientData
-    Exibe ContractPreview                                              │
-           │                                                           ▼
-           ▼                                                  Cria contrato novo
-    [Editar Dados]                                                     │
-           │                                                           ▼
-           ▼                                                  Exibe ContractPreview
-    Abre Modal pre-preenchido
-           │
-           ▼
-    Submete alteracoes
-           │
-           ▼
-    Atualiza contrato existente
-           │
-           ▼
-    Exibe HTML atualizado
+
+Deletar tambem os signatarios orfaos:
+
+```sql
+DELETE FROM contrato_signatarios 
+WHERE contrato_id IN (
+  '4840dc10-07c4-4494-825e-4d03223a4de6',
+  '0c11d02d-a9c4-4a9c-98fe-d3ed69065e3d',
+  '9ca20b16-905a-4123-a4f3-aa6806adcc71',
+  'd1b42edb-4c1a-4251-9c7a-7800c6bb137f',
+  '561599df-2cbb-4a4c-b4aa-828cf68de0e3',
+  '92f14337-bfbd-4b1a-b8cd-eb3dcd429fb1',
+  '2dd46717-2216-4ffc-8e5a-67446e0521fd',
+  'abbf5695-3e26-4545-b102-15921ff75b06',
+  '39256a43-eb63-4726-af89-94ae6c1cfdfc'
+);
 ```
 
 ---
 
-## Codigo a Implementar
+## Resultado Esperado
 
-### Edge Function - Nova Estrutura
-
-```typescript
-// NOVA ORDEM DE VERIFICACAO
-
-// 1. PRIMEIRO: Verificar se existe contrato (antes de validar clientData)
-if (!preview_only) {
-  const { data: existingContract } = await supabase
-    .from('contratos_legais')
-    .select('*')
-    .eq('proposta_id', proposalId)
-    .maybeSingle();
-
-  // Se existe E nao temos clientData, apenas retornar o existente
-  if (existingContract && !clientData) {
-    console.log("📄 Retornando contrato existente (fetch mode)");
-    const contractHtml = generateContractHtml(existingContract, ...);
-    return Response({ 
-      success: true, 
-      existing_contract: true,
-      contrato: existingContract,
-      contractHtml 
-    });
-  }
-
-  // Se existe E temos clientData, significa EDICAO
-  if (existingContract && clientData) {
-    console.log("✏️ Modo EDICAO - Atualizando dados do signatario");
-    // Atualizar contrato com novos dados
-    await supabase.from('contratos_legais').update({
-      cliente_nome: clientData.primeiro_nome + ' ' + clientData.sobrenome,
-      cliente_cpf: clientData.cpf,
-      cliente_data_nascimento: clientData.data_nascimento,
-      cliente_email: clientData.email,
-      // ...
-    }).eq('id', existingContract.id);
-    
-    // Regenerar HTML
-    // ...
-  }
-}
-
-// 2. DEPOIS: Validar clientData (so se nao existe contrato)
-if (!preview_only && !clientData) {
-  throw new Error("Dados do cliente sao obrigatorios para criar novo contrato");
-}
-```
-
-### React - Buscar Dados do Contrato Existente
-
-```typescript
-// No useEffect que carrega proposta
-if (metadata?.contract_id) {
-  // Buscar dados do contrato para pre-preencher modal de edicao
-  const { data: contractData } = await supabase
-    .from('contratos_legais')
-    .select('cliente_nome, cliente_cpf, cliente_data_nascimento, cliente_email, cliente_telefone')
-    .eq('id', metadata.contract_id)
-    .single();
-  
-  if (contractData) {
-    setExistingContractData(contractData);
-  }
-}
-```
-
-### React - Botao de Edicao
-
-```tsx
-{hasExistingContract && (
-  <div className="space-y-3">
-    <Button onClick={handleViewContract} className="w-full bg-emerald-600">
-      <FileText className="mr-2 h-4 w-4" />
-      Visualizar Contrato
-    </Button>
-    
-    <Button 
-      variant="outline" 
-      onClick={() => {
-        setIsEditingSignatory(true);
-        setShowContractDataModal(true);
-      }}
-      className="w-full border-amber-500 text-amber-600"
-    >
-      <Pencil className="mr-2 h-4 w-4" />
-      Editar Dados do Signatario
-    </Button>
-  </div>
-)}
-```
-
----
-
-## Resultado Final
-
-1. **Erro 400 corrigido**: Visualizar contrato existente sem pedir dados novamente
-2. **Botao de Edicao**: Permite alterar dados do signatario a qualquer momento
-3. **Pre-preenchimento**: Modal de edicao mostra dados atuais
-4. **Regeneracao**: Ao editar, contrato e atualizado (nao duplicado)
-5. **Zero Duplicacao**: Mesma proposta = maximo 1 contrato
+1. **Erro 400 corrigido**: Edge Function atualizada verifica existencia ANTES de validar clientData
+2. **Zero duplicacao futura**: Logica idempotente garante 1 contrato por proposta
+3. **Botao de edicao inteligente**: So aparece quando ja tem signatario registrado
+4. **Dados limpos**: Contratos duplicados removidos do banco
