@@ -251,6 +251,12 @@ const NovaPropostaPage = () => {
   const [descricaoContrapartida, setDescricaoContrapartida] = useState('');
   const [metodoPagamentoAlternativo, setMetodoPagamentoAlternativo] = useState<string | null>(null);
 
+  // Estados para Auto-Save de Rascunho
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [draftError, setDraftError] = useState<string | null>(null);
+
   // Valor total da permuta (para referência interna)
   const valorTotalPermuta = useMemo(() => {
     return itensPermuta.reduce((sum, item) => sum + item.preco_total, 0);
@@ -735,6 +741,79 @@ const NovaPropostaPage = () => {
     }
   }, [maxPosicoes, quantidadePosicoes]);
 
+  // Auto-save de rascunho com debounce de 3 segundos
+  useEffect(() => {
+    // Só salva se tiver dados mínimos (nome do cliente) e não estiver em modo edição
+    if (!clientData.firstName.trim() || isEditMode) return;
+    
+    const saveDraft = async () => {
+      if (isSavingDraft) return;
+      setIsSavingDraft(true);
+      setDraftError(null);
+      
+      try {
+        const draftData = {
+          status: 'rascunho',
+          client_name: `${clientData.firstName} ${clientData.lastName}`.trim() || 'Rascunho',
+          client_first_name: clientData.firstName || null,
+          client_last_name: clientData.lastName || null,
+          client_company_name: clientData.companyName || null,
+          client_email: clientData.email || null,
+          client_phone: clientData.phoneFullNumber || clientData.phone || null,
+          selected_buildings: selectedBuildings.length > 0 ? selectedBuildings : [],
+          duration_months: durationMonths,
+          fidel_monthly_value: parseFloat(fidelValue) || 0,
+          cash_total_value: parseFloat(fidelValue) || 0, // Campo obrigatório
+          total_panels: selectedBuildings.length, // Campo obrigatório
+          total_impressions_month: 0, // Campo obrigatório
+          discount_percent: discountPercent,
+          modalidade_proposta: modalidadeProposta,
+          itens_permuta: itensPermuta,
+          valor_total_permuta: valorTotalPermuta,
+          ocultar_valores_publico: ocultarValoresPublico,
+          descricao_contrapartida: descricaoContrapartida || null,
+          metodo_pagamento_alternativo: metodoPagamentoAlternativo,
+          titulo: tituloProposta || null,
+          quantidade_posicoes: quantidadePosicoes,
+          tipo_produto: tipoProduto,
+          is_custom_days: isCustomDays,
+          custom_days: isCustomDays ? customDays : null,
+        };
+        
+        if (draftId) {
+          // Atualizar rascunho existente
+          const { error } = await supabase.from('proposals').update(draftData).eq('id', draftId);
+          if (error) throw error;
+        } else {
+          // Criar novo rascunho
+          const { data, error } = await supabase.from('proposals')
+            .insert({ ...draftData, number: `RASCUNHO-${Date.now()}` })
+            .select('id')
+            .single();
+          if (error) throw error;
+          if (data) setDraftId(data.id);
+        }
+        
+        setLastSavedAt(new Date());
+      } catch (error) {
+        console.error('Erro ao salvar rascunho:', error);
+        setDraftError('Erro ao salvar');
+      } finally {
+        setIsSavingDraft(false);
+      }
+    };
+    
+    const timeoutId = setTimeout(saveDraft, 3000);
+    return () => clearTimeout(timeoutId);
+  }, [
+    clientData.firstName, clientData.lastName, clientData.companyName, 
+    clientData.email, clientData.phoneFullNumber, clientData.phone,
+    selectedBuildings, durationMonths, fidelValue, discountPercent,
+    modalidadeProposta, itensPermuta, valorTotalPermuta, ocultarValoresPublico,
+    descricaoContrapartida, metodoPagamentoAlternativo, tituloProposta,
+    quantidadePosicoes, tipoProduto, isCustomDays, customDays, isEditMode, draftId, isSavingDraft
+  ]);
+
   // Exibições mensais ajustadas pela quantidade de posições
   const totalImpressionsAdjusted = useMemo(() => {
     const exibicoesBase = specifications?.exibicoes.porMes ?? 11610;
@@ -1207,7 +1286,14 @@ const NovaPropostaPage = () => {
         toast.error('O total das parcelas deve ser maior que zero');
         return;
       }
+    } else if (modalidadeProposta === 'permuta') {
+      // Validação específica para Permuta
+      if (itensPermuta.length === 0) {
+        toast.error('Adicione ao menos um item de permuta');
+        return;
+      }
     } else {
+      // Monetária padrão
       if (!fidelValue || parseFloat(fidelValue) <= 0) {
         toast.error('Preencha o valor mensal fidelidade');
         return;
@@ -2792,6 +2878,30 @@ const NovaPropostaPage = () => {
 
       {/* Footer Fixo com Botões */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-200 p-4 z-20">
+        {/* Indicador de Auto-Save */}
+        {!isEditMode && clientData.firstName.trim() && (
+          <div className="flex justify-center mb-2">
+            {isSavingDraft && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-full">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Salvando rascunho...
+              </span>
+            )}
+            {!isSavingDraft && lastSavedAt && !draftError && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1.5 bg-green-50 text-green-700 px-2 py-1 rounded-full">
+                <CheckCircle className="h-3 w-3" />
+                Salvo às {format(lastSavedAt, 'HH:mm:ss')}
+              </span>
+            )}
+            {draftError && (
+              <span className="text-xs text-destructive flex items-center gap-1.5 bg-destructive/10 px-2 py-1 rounded-full">
+                <X className="h-3 w-3" />
+                {draftError}
+              </span>
+            )}
+          </div>
+        )}
+        
         <div className="flex gap-2 max-w-lg mx-auto">
           {/* Botão Cortesia */}
           <Button variant="outline" onClick={handleOpenCortesiaDialog} disabled={selectedBuildings.length === 0 || !clientData.email} className="h-11 px-3 border-pink-200 text-pink-600 hover:bg-pink-50">
@@ -2804,7 +2914,16 @@ const NovaPropostaPage = () => {
           </Button>
           
           {/* Botão Enviar Proposta */}
-          <Button onClick={handleOpenSendDialog} disabled={selectedBuildings.length === 0 || (isCustomPayment ? customTotal <= 0 : !fidelValue)} className="flex-1 h-11 gap-2">
+          <Button 
+            onClick={handleOpenSendDialog} 
+            disabled={
+              selectedBuildings.length === 0 || 
+              (modalidadeProposta === 'permuta' 
+                ? itensPermuta.length === 0 
+                : (isCustomPayment ? customTotal <= 0 : !fidelValue))
+            } 
+            className="flex-1 h-11 gap-2"
+          >
             <Send className="h-4 w-4" />
             Enviar
           </Button>
