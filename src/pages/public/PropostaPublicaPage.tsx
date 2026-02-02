@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink, Calendar, Globe, Users, Rocket, Lock, Pencil, Package, RefreshCw } from 'lucide-react';
+import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink, Calendar, Globe, Users, Rocket, Lock, Pencil, Package, RefreshCw, DollarSign } from 'lucide-react';
 import { format, addDays, addMonths, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -93,6 +93,7 @@ interface Proposal {
   ocultar_valores_publico?: boolean | null;
   descricao_contrapartida?: string | null;
   metodo_pagamento_alternativo?: string | null;
+  valor_referencia_monetaria?: number | null;
 }
 
 interface PaymentData {
@@ -2105,97 +2106,154 @@ const PropostaPublicaPage = () => {
 
         {/* SEÇÃO DE PERMUTA (Contrapartida) - Aparece quando é proposta de permuta */}
         {proposal.modalidade_proposta === 'permuta' && !isCortesia && (
-          <Card className="p-4 sm:p-5 border-2 border-amber-400 bg-gradient-to-br from-amber-50 to-white shadow-lg">
-            <div className="space-y-4">
-              {/* Header */}
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl">
-                  <RefreshCw className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-base sm:text-lg text-amber-900">Proposta de Parceria</h3>
-                  <p className="text-xs sm:text-sm text-amber-700">Acordo de permuta/troca</p>
-                </div>
-              </div>
+          <div className="space-y-4">
+            {/* Card de Valor de Referência (quanto custaria se fosse comprar) */}
+            {proposal.valor_referencia_monetaria && proposal.valor_referencia_monetaria > 0 && (
+              <Card className="p-4 sm:p-5 border-2 border-blue-400 bg-gradient-to-br from-blue-50 to-white shadow-lg">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl">
+                      <DollarSign className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-base sm:text-lg text-blue-900">Valor do Pacote</h3>
+                      <p className="text-xs sm:text-sm text-blue-700">Este pacote de mídia tem valor de mercado de:</p>
+                    </div>
+                  </div>
 
-              {/* Período do Contrato */}
-              <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-amber-600" />
-                  <span className="text-sm font-medium text-amber-800">Período do Contrato</span>
-                </div>
-                <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
-                  {proposal.is_custom_days 
-                    ? `${proposal.custom_days} ${proposal.custom_days === 1 ? 'dia' : 'dias'}`
-                    : `${proposal.duration_months} ${proposal.duration_months === 1 ? 'mês' : 'meses'}`
-                  }
-                </Badge>
-              </div>
+                  <div className="text-center py-4 bg-blue-100 rounded-xl">
+                    <div className="text-3xl sm:text-4xl font-bold text-blue-800">
+                      {(proposal.valor_referencia_monetaria * (proposal.is_custom_days 
+                        ? (proposal.custom_days || 30) / 30 
+                        : proposal.duration_months
+                      )).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </div>
+                    <p className="text-sm text-blue-700 mt-1">
+                      ({proposal.is_custom_days 
+                        ? `${proposal.custom_days} ${proposal.custom_days === 1 ? 'dia' : 'dias'}`
+                        : `${proposal.duration_months}x de ${proposal.valor_referencia_monetaria.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês`
+                      })
+                    </p>
+                  </div>
 
-              {/* Lista de Equipamentos */}
-              {proposal.itens_permuta && proposal.itens_permuta.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold text-amber-800 flex items-center gap-2">
-                    <Package className="h-4 w-4" />
-                    Contrapartida Acordada
-                  </h4>
+                  <div className="flex items-center justify-center gap-3 text-xs text-blue-600 pt-2">
+                    <div className="flex items-center gap-1">
+                      <Building2 className="h-3.5 w-3.5" />
+                      <span>{realTotalPanels} telas</span>
+                    </div>
+                    <span>•</span>
+                    <div className="flex items-center gap-1">
+                      <Eye className="h-3.5 w-3.5" />
+                      <span>{((proposal.total_impressions_month || 0)).toLocaleString()} exib./mês</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* Card de Acordo de Permuta */}
+            <Card className="p-4 sm:p-5 border-2 border-amber-400 bg-gradient-to-br from-amber-50 to-white shadow-lg">
+              <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl">
+                    <RefreshCw className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base sm:text-lg text-amber-900">
+                      {proposal.valor_referencia_monetaria && proposal.valor_referencia_monetaria > 0 
+                        ? 'Acordo de Permuta' 
+                        : 'Proposta de Parceria'
+                      }
+                    </h3>
+                    <p className="text-xs sm:text-sm text-amber-700">
+                      {proposal.valor_referencia_monetaria && proposal.valor_referencia_monetaria > 0 
+                        ? 'Em vez do pagamento monetário, esta proposta oferece:' 
+                        : 'Acordo de permuta/troca'
+                      }
+                    </p>
+                  </div>
+                </div>
+
+                {/* Período do Contrato */}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-amber-600" />
+                    <span className="text-sm font-medium text-amber-800">Período do Contrato</span>
+                  </div>
+                  <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
+                    {proposal.is_custom_days 
+                      ? `${proposal.custom_days} ${proposal.custom_days === 1 ? 'dia' : 'dias'}`
+                      : `${proposal.duration_months} ${proposal.duration_months === 1 ? 'mês' : 'meses'}`
+                    }
+                  </Badge>
+                </div>
+
+                {/* Lista de Equipamentos */}
+                {proposal.itens_permuta && proposal.itens_permuta.length > 0 && (
                   <div className="space-y-2">
-                    {proposal.itens_permuta.map((item: any, index: number) => (
-                      <div key={item.id || index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200">
-                        <div className="flex items-center gap-2">
-                          <span className="w-6 h-6 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center text-xs font-bold">
-                            {index + 1}
-                          </span>
-                          <div>
-                            <div className="font-medium text-sm text-foreground">{item.nome}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {item.quantidade} {item.quantidade === 1 ? 'unidade' : 'unidades'}
+                    <h4 className="text-sm font-semibold text-amber-800 flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Contrapartida Acordada
+                    </h4>
+                    <div className="space-y-2">
+                      {proposal.itens_permuta.map((item: any, index: number) => (
+                        <div key={item.id || index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200">
+                          <div className="flex items-center gap-2">
+                            <span className="w-6 h-6 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center text-xs font-bold">
+                              {index + 1}
+                            </span>
+                            <div>
+                              <div className="font-medium text-sm text-foreground">{item.nome}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {item.quantidade} {item.quantidade === 1 ? 'unidade' : 'unidades'}
+                              </div>
                             </div>
                           </div>
+                          {/* Só mostra preço se não estiver oculto */}
+                          {!proposal.ocultar_valores_publico && !item.ocultar_preco && (
+                            <div className="text-right">
+                              <div className="text-sm font-semibold text-amber-800">
+                                {(item.preco_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        {/* Só mostra preço se não estiver oculto */}
-                        {!proposal.ocultar_valores_publico && !item.ocultar_preco && (
-                          <div className="text-right">
-                            <div className="text-sm font-semibold text-amber-800">
-                              {(item.preco_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Descrição da Contrapartida */}
-              {proposal.descricao_contrapartida && (
-                <div className="p-3 bg-amber-100/50 rounded-lg">
-                  <p className="text-sm text-amber-900 italic">
-                    "{proposal.descricao_contrapartida}"
-                  </p>
-                </div>
-              )}
-
-              {/* Valor Total (se não oculto) */}
-              {!proposal.ocultar_valores_publico && proposal.valor_total_permuta && proposal.valor_total_permuta > 0 && (
-                <div className="p-3 bg-gradient-to-r from-amber-100 to-orange-100 rounded-lg border border-amber-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-amber-800">Valor Total Estimado:</span>
-                    <span className="text-lg font-bold text-amber-900">
-                      {proposal.valor_total_permuta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </span>
+                {/* Descrição da Contrapartida */}
+                {proposal.descricao_contrapartida && (
+                  <div className="p-3 bg-amber-100/50 rounded-lg">
+                    <p className="text-sm text-amber-900 italic">
+                      "{proposal.descricao_contrapartida}"
+                    </p>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Badge de Acordo */}
-              <div className="flex items-center justify-center">
-                <span className="bg-amber-500 text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-full shadow-md">
-                  🤝 Acordo de Parceria
-                </span>
+                {/* Valor Total (se não oculto) */}
+                {!proposal.ocultar_valores_publico && proposal.valor_total_permuta && proposal.valor_total_permuta > 0 && (
+                  <div className="p-3 bg-gradient-to-r from-amber-100 to-orange-100 rounded-lg border border-amber-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-amber-800">Valor Total Estimado:</span>
+                      <span className="text-lg font-bold text-amber-900">
+                        {proposal.valor_total_permuta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Badge de Acordo */}
+                <div className="flex items-center justify-center">
+                  <span className="bg-amber-500 text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-full shadow-md">
+                    🤝 Acordo de Parceria
+                  </span>
+                </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
         )}
 
         {/* Planos - NÃO APARECEM para cortesia NEM para permuta - Mobile Optimized */}
