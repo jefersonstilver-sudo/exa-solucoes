@@ -1,129 +1,166 @@
 
 
-# Plano: Redesign Completo da Seção de Permuta + Reorganização da Página
+# Plano: Cards Selecionáveis com Texto Explicativo Dinâmico
 
-## Resumo do Pedido
+## Objetivo
 
-1. **Cards lado a lado** - "Valor do Pacote" e "Acordo de Permuta" no mesmo estilo do ExclusivityChoiceCard
-2. **Texto explicativo automático** - Adicionar uma explicação abaixo da seção para o cliente entender claramente
-3. **Reorganizar ordem dos elementos**:
-   - Texto da proposta (ProposalSummaryText)
-   - "Conheça a EXA Mídia" (mover para cima)
-   - Período da Campanha
-   - Locais Contratados (mover para cima)
-   - Imagem âncora (ProductShowcaseCard)
-   - Nova seção de escolha Permuta (lado a lado)
-4. **Estilo minimalista corporativo** - Cores slate/vermelho (#9C1E1E) igual ao ExclusivityChoiceCard
+Permitir que o cliente escolha entre **Valor Monetário** ou **Acordo de Permuta**, com um texto explicativo que muda automaticamente conforme a opção selecionada.
 
 ---
 
-## Design Visual Proposto
+## Design Visual
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  🔄 Modalidade de Pagamento                                                 │
-│     Escolha como deseja formalizar esta parceria                            │
-├───────────────────────────────────┬─────────────────────────────────────────┤
-│  💵 VALOR MONETÁRIO               │  🤝 ACORDO DE PERMUTA  ✓ ESCOLHIDO      │
-│  ────────────────────             │  ────────────────────                   │
-│  Fidelidade                       │  Período                                │
-│  R$ 10.234,00/mês                 │  18 meses                               │
-│                                   │                                         │
-│  À Vista (18x)                    │  Contrapartida                          │
-│  R$ 184.212,00                    │  90x Tablet Android 24"                 │
-│                                   │                                         │
-│  Concorrentes podem               │  💰 Economia equivalente:               │
-│  anunciar nos mesmos prédios      │  R$ 184.212,00 em mídia                 │
-└───────────────────────────────────┴─────────────────────────────────────────┘
-│  💡 TEXTO EXPLICATIVO AUTOMÁTICO                                            │
-│  Esta proposta é um acordo de permuta/troca. Em vez de pagamento monetário, │
-│  você fornece equipamentos ou serviços para a EXA Mídia. O valor de         │
-│  referência mostra quanto você economizaria se fosse pagar em dinheiro.     │
-│  Ambas as opções oferecem exatamente a mesma cobertura de mídia.            │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────┐  ┌─────────────────────────────────┐
+│  ○ VALOR MONETÁRIO              │  │  ● ACORDO DE PERMUTA ✓          │
+│  ────────────────────           │  │  ────────────────────           │
+│  R$ 10.234,00/mês               │  │  18 meses                       │
+│  Total: R$ 184.212,00           │  │  90x Tablet Android 24"         │
+│                                 │  │                                 │
+│  [Clique para selecionar]       │  │  [Selecionado]                  │
+└─────────────────────────────────┘  └─────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│  💡 TEXTO DINÂMICO CONFORME SELEÇÃO                                     │
+│                                                                         │
+│  SE PERMUTA SELECIONADO:                                               │
+│  "Você fornece equipamentos/serviços para a EXA Mídia. Esta opção      │
+│   pode sair mais barata para sua empresa ao comparar com produtos       │
+│   a preço de custo em vez do valor de mercado."                        │
+│                                                                         │
+│  SE MONETÁRIO SELECIONADO:                                             │
+│  "Você paga R$ X por mês, totalizando R$ Y em Z meses. Ideal para      │
+│   quem prefere uma relação comercial tradicional e direta."            │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Nova Ordem da Página (para propostas de Permuta)
+## Alterações Técnicas
 
-| # | Seção | Status |
-|---|-------|--------|
-| 1 | Banner Cortesia | Mantém |
-| 2 | Banner Status | Mantém |
-| 3 | Aviso Validade | Mantém |
-| 4 | Banner Múltiplas Marcas | Mantém |
-| 5 | Resumo Rápido (grid métricas) | Mantém |
-| 6 | **ProposalSummaryText** | Mantém |
-| 7 | **"Conheça a EXA Mídia"** | **MOVER PARA CÁ** |
-| 8 | Período da Campanha | Mantém |
-| 9 | **Locais Contratados** | **MOVER PARA CÁ** |
-| 10 | **ProductShowcaseCard (mockup)** | Mantém após Locais |
-| 11 | Infográfico EXA | Mantém |
-| 12 | **Cards Permuta (lado a lado)** | **NOVO DESIGN** |
-| 13 | Botões de Ação | Mantém |
-| 14 | Baixar PDF | Mantém |
-| 15 | Contato Comercial | Mantém |
+### Arquivo: `src/components/public/proposal/PermutaChoiceCard.tsx`
 
----
+#### 1. Adicionar estado de seleção
 
-## Implementação Técnica
+```tsx
+import { useState } from 'react';
 
-### Arquivo: `src/pages/public/PropostaPublicaPage.tsx`
+const [selectedOption, setSelectedOption] = useState<'monetario' | 'permuta'>('permuta');
+```
 
-#### Alteração 1: Substituir seção de permuta (linhas 2107-2257)
+#### 2. Tornar os cards clicáveis
 
-Novo componente inline seguindo o padrão do ExclusivityChoiceCard:
+**Card Monetário (linha 95):**
+```tsx
+<div 
+  onClick={() => setSelectedOption('monetario')}
+  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
+    ${selectedOption === 'monetario' 
+      ? 'border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
+      : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
+    }`}
+>
+```
 
-- Header: `bg-gradient-to-br from-[#9C1E1E] to-[#7D1818]` com ícone RefreshCw branco
-- Container: `bg-gradient-to-br from-slate-50 to-white border-2 border-slate-200`
-- Card Monetário (esquerda): borda slate, cores slate
-- Card Permuta (direita): `border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white` + badge "ESCOLHIDO"
-- Texto explicativo no footer: `bg-slate-50 rounded-lg border border-slate-100`
+**Card Permuta (linha 126):**
+```tsx
+<div 
+  onClick={() => setSelectedOption('permuta')}
+  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
+    ${selectedOption === 'permuta' 
+      ? 'border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
+      : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
+    }`}
+>
+```
 
-#### Alteração 2: Mover "Conheça a EXA Mídia"
+#### 3. Badge e Checkmark dinâmicos
 
-Mover bloco das linhas 2719-2772 para logo após ProposalSummaryText (linha ~1945).
+Mover o badge "ESCOLHIDO" e o checkmark para aparecer apenas no card selecionado:
 
-#### Alteração 3: Mover "Locais Contratados"
+```tsx
+{selectedOption === 'monetario' && (
+  <>
+    <div className="absolute -top-2 left-3 bg-gradient-to-r from-[#9C1E1E] to-[#7D1818] text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+      <Check className="h-2.5 w-2.5" />
+      ESCOLHIDO
+    </div>
+    <div className="absolute -top-2 -right-2 p-1 bg-[#9C1E1E] rounded-full">
+      <Check className="h-3 w-3 text-white" />
+    </div>
+  </>
+)}
+```
 
-Mover bloco das linhas 2400-2478 para antes do ProductShowcaseCard.
+#### 4. Remover texto de "Economia" (linhas 156-161)
 
----
+Apagar completamente o bloco:
+```tsx
+// REMOVER:
+<div className="mt-3 pt-3 border-t border-[#9C1E1E]/10">
+  <p className="text-[10px] text-[#7D1818] flex items-center gap-1 font-medium">
+    <Gift className="h-3 w-3" />
+    Economia: {formatCurrency(valorTotalMonetario)}
+  </p>
+</div>
+```
 
-## Texto Explicativo Automático
+#### 5. Texto explicativo dinâmico (substituir linhas 194-210)
 
-O texto será dinâmico baseado nos dados da proposta:
-
-```text
-💡 Esta proposta é um acordo de permuta (troca). Em vez de pagamento em 
-dinheiro, você fornece [descrição_contrapartida] para a EXA Mídia.
-
-O "Valor Monetário" ao lado mostra quanto esta campanha custaria normalmente - 
-você economiza [valor_referencia x meses] ao optar pela permuta.
-
-Ambas as modalidades oferecem exatamente a mesma cobertura: [X] telas em 
-[Y] prédios com [Z] exibições mensais durante [N] meses.
+```tsx
+{/* Texto Explicativo Dinâmico */}
+<div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-100">
+  <div className="flex items-start gap-2">
+    <Lightbulb className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+    <div className="text-[10px] sm:text-xs text-slate-600 space-y-1">
+      {selectedOption === 'permuta' ? (
+        <>
+          <p>
+            <strong className="text-slate-700">Você escolheu o Acordo de Permuta.</strong>
+          </p>
+          <p>
+            Em vez de pagamento em dinheiro, você fornece {contrapartidaTexto.toLowerCase()} para a EXA Mídia.
+          </p>
+          <p>
+            <strong className="text-[#9C1E1E]">Esta opção pode sair mais barata para sua empresa</strong> ao comparar com produtos a preço de custo em vez do valor de mercado de {formatCurrency(valorTotalMonetario)}.
+          </p>
+        </>
+      ) : (
+        <>
+          <p>
+            <strong className="text-slate-700">Você escolheu o Valor Monetário.</strong>
+          </p>
+          <p>
+            O investimento é de <strong className="text-[#9C1E1E]">{formatCurrency(valorReferenciaMonetaria)}/mês</strong>, totalizando <strong className="text-[#9C1E1E]">{formatCurrency(valorTotalMonetario)}</strong> em {periodoTexto}.
+          </p>
+          <p>
+            Ideal para quem prefere uma relação comercial tradicional e direta, com pagamento via boleto, PIX ou cartão.
+          </p>
+        </>
+      )}
+    </div>
+  </div>
+</div>
 ```
 
 ---
 
-## Arquivos a Modificar
+## Resultado
 
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/pages/public/PropostaPublicaPage.tsx` | Redesign completo da seção de permuta + reorganização da ordem + texto explicativo |
+| Seleção | Texto Exibido |
+|---------|---------------|
+| **Permuta** | "Você fornece materiais para a EXA Mídia. Esta opção pode sair mais barata para sua empresa ao comparar com produtos a preço de custo..." |
+| **Monetário** | "O investimento é de R$ X/mês, totalizando R$ Y. Ideal para quem prefere uma relação comercial tradicional..." |
 
 ---
 
 ## Checklist
 
-- [ ] Criar novo design de permuta com grid 2 colunas igual ExclusivityChoiceCard
-- [ ] Aplicar cores slate/vermelho corporativo (#9C1E1E)
-- [ ] Adicionar badge "ESCOLHIDO" no card de permuta (pré-selecionado)
-- [ ] Adicionar texto explicativo automático no footer da seção
-- [ ] Mover "Conheça a EXA Mídia" para após ProposalSummaryText
-- [ ] Mover "Locais Contratados" para antes do ProductShowcaseCard
-- [ ] Testar em mobile (grid vira 1 coluna)
-- [ ] Verificar se todos os dados de permuta (itens, valores) aparecem corretamente
+- [ ] Adicionar `useState` para controlar seleção
+- [ ] Tornar ambos os cards clicáveis com `onClick`
+- [ ] Adicionar hover states (`hover:border-slate-300`, `hover:shadow-md`)
+- [ ] Mover badge "ESCOLHIDO" dinamicamente para o card selecionado
+- [ ] Remover texto fixo de "Economia"
+- [ ] Implementar texto explicativo dinâmico baseado na seleção
+- [ ] Testar interatividade em mobile
 
