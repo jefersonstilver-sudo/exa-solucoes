@@ -1,248 +1,240 @@
 
-# Plano: Duplicar Proposta + Exibir Nome do Cliente e Empresa Juntos
+# Plano: Propostas Não-Monetárias (Permuta) com Lista de Equipamentos
 
-## Resumo das Solicitacoes
+## Contexto e Objetivo
 
-1. **Duplicar proposta**: Ao selecionar uma proposta, deve haver a opcao de duplicar ela
-2. **Mostrar nome do cliente + empresa**: Sempre exibir ambos os nomes juntos na listagem (nao apenas a empresa do lado direito)
+O sistema atual de propostas suporta apenas valores monetários (R$ X/mês). A solicitação é criar uma modalidade alternativa onde:
 
----
-
-## Parte 1: Exibir Nome do Cliente + Empresa Juntos
-
-### Situacao Atual
-
-O card de proposta na listagem (`PropostasPage.tsx`) exibe:
-- **Esquerda**: Nome do cliente (`proposal.client_name`)
-- **Direita**: Nome da empresa (`proposal.client_company_name`) separado
-
-### Mudanca Proposta
-
-Exibir **nome do cliente + empresa juntos** na mesma linha:
-
-```
-Rachad Ihbraim • Chef das Arabias
-```
-
-Ou em duas linhas:
-```
-Rachad Ihbraim
-Chef das Arabias
-```
-
-### Arquivos a Modificar
-
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/pages/admin/proposals/PropostasPage.tsx` | Ajustar exibicao no card desktop (linha ~1030) |
-| `src/components/admin/proposals/ProposalMobileCard.tsx` | Ajustar exibicao no card mobile (linha ~147-170) |
-
-### Implementacao Desktop (PropostasPage.tsx)
-
-Linha atual (~1030):
-```tsx
-<h3 className="font-medium text-sm truncate">{proposal.client_name}</h3>
-```
-
-Nova exibicao:
-```tsx
-<div className="flex items-center gap-1.5 flex-wrap">
-  <h3 className="font-medium text-sm truncate">{proposal.client_name}</h3>
-  {proposal.client_company_name && (
-    <>
-      <span className="text-xs text-muted-foreground">•</span>
-      <span className="text-xs font-medium text-foreground truncate max-w-[150px]" title={proposal.client_company_name}>
-        {proposal.client_company_name}
-      </span>
-    </>
-  )}
-</div>
-```
-
-### Implementacao Mobile (ProposalMobileCard.tsx)
-
-Mesma logica: Juntar nome do cliente com a empresa no lado esquerdo, removendo a empresa do lado direito para evitar duplicacao.
+1. O cliente oferece **equipamentos** em troca de mídia (permuta)
+2. Cada equipamento tem um **custo estimado** (visível internamente, ocultável na proposta pública)
+3. Adicionar **métodos de pagamento alternativos** como "Permuta", "Patrocínio", "Cortesia Estratégica"
 
 ---
 
-## Parte 2: Funcionalidade de Duplicar Proposta
+## Arquitetura da Solução
 
-### Fluxo Proposto
+### Novos Campos na Tabela `proposals`
 
-1. Usuario seleciona proposta ou clica no menu (3 pontinhos)
-2. Aparece opcao "Duplicar Proposta"
-3. Ao clicar:
-   - Cria nova proposta com todos os dados copiados
-   - Altera numero da proposta para novo numero unico
-   - Reseta status para "pendente"
-   - Limpa campos de visualizacao/conversao
-   - Navega para a nova proposta ou exibe toast de sucesso
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `modalidade_proposta` | text | 'monetaria' (padrão) ou 'permuta' |
+| `itens_permuta` | jsonb | Lista de equipamentos: `[{ nome, quantidade, preco_unitario, preco_total, ocultar_preco }]` |
+| `valor_total_permuta` | numeric | Soma total dos itens (para referência interna) |
+| `ocultar_valores_publico` | boolean | Se true, esconde todos os preços na proposta pública |
+| `descricao_contrapartida` | text | Texto livre descrevendo a contrapartida (ex: "Fornecimento de tablets") |
+| `metodo_pagamento_alternativo` | text | 'permuta', 'patrocinio', 'cortesia_estrategica', null (padrão) |
 
-### Dados a Copiar
-
-| Campo | Comportamento |
-|-------|---------------|
-| `client_name`, `client_company_name`, `client_email`, `client_phone` | Copiar |
-| `selected_buildings` | Copiar |
-| `fidel_monthly_value`, `cash_total_value`, `duration_months` | Copiar |
-| `payment_type`, `custom_installments` | Copiar |
-| `tipo_produto`, `seller_name`, `seller_phone`, `seller_email` | Copiar |
-| `titulo`, `exclusividade_*`, `travamento_*` | Copiar |
-| `number` | Gerar NOVO |
-| `status` | Resetar para "pendente" |
-| `created_at` | Nova data |
-| `view_count`, `total_time_spent_seconds`, `first_viewed_at`, `last_viewed_at` | Resetar para null |
-| `is_viewing`, `last_heartbeat_at` | Resetar para null/false |
-| `converted_order_id` | null |
-| `metadata` | Limpar (remover contract_id) |
-
-### Locais de Implementacao
-
-#### 1. Adicionar no DropdownMenu (Desktop) - PropostasPage.tsx
-
-Linha ~1113, adicionar apos "Editar Proposta":
-```tsx
-<DropdownMenuItem onClick={() => handleDuplicateProposal(proposal)}>
-  <Copy className="h-4 w-4 mr-2" />
-  Duplicar Proposta
-</DropdownMenuItem>
-```
-
-#### 2. Criar Funcao `handleDuplicateProposal`
+### Estrutura do Item de Permuta (JSON)
 
 ```typescript
-const handleDuplicateProposal = async (proposal: Proposal) => {
-  try {
-    toast.loading('Duplicando proposta...', { id: 'duplicate' });
-    
-    // Gerar novo numero
-    const year = new Date().getFullYear();
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    const newNumber = `EXA-${year}-${randomNum}`;
-    
-    // Preparar dados para copia (excluir campos que nao devem ser copiados)
-    const { 
-      id, 
-      number, 
-      status, 
-      created_at, 
-      sent_at, 
-      view_count, 
-      total_time_spent_seconds, 
-      first_viewed_at, 
-      last_viewed_at, 
-      is_viewing, 
-      last_heartbeat_at, 
-      converted_order_id, 
-      metadata,
-      expires_at,
-      ...dataToCopy 
-    } = proposal;
-    
-    // Criar nova proposta
-    const { data: newProposal, error } = await supabase
-      .from('proposals')
-      .insert({
-        ...dataToCopy,
-        number: newNumber,
-        status: 'pendente',
-        metadata: {}, // Limpar metadata (contract_id, etc)
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // +7 dias
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    // Log da duplicacao
-    await supabase.from('proposal_logs').insert({
-      proposal_id: newProposal.id,
-      action: 'duplicada',
-      details: {
-        original_proposal_id: proposal.id,
-        original_number: proposal.number
-      }
-    });
-    
-    toast.success(`Proposta ${newNumber} criada!`, { id: 'duplicate' });
-    refetch();
-    
-    // Opcional: navegar para a nova proposta
-    // navigate(buildPath(`propostas/${newProposal.id}`));
-    
-  } catch (error) {
-    console.error('Erro ao duplicar proposta:', error);
-    toast.error('Erro ao duplicar proposta', { id: 'duplicate' });
-  }
-};
+interface ItemPermuta {
+  id: string;           // UUID para identificação
+  nome: string;         // Ex: "Tablet Samsung Galaxy Tab A8"
+  descricao?: string;   // Detalhes opcionais
+  quantidade: number;   // Ex: 50
+  preco_unitario: number; // Ex: 899.00
+  preco_total: number;  // Calculado: quantidade × preço unitário
+  ocultar_preco: boolean; // Se true, esconde este item específico na proposta pública
+}
 ```
 
-#### 3. Adicionar no Bulk Actions (quando seleciona proposta)
+---
 
-Na toolbar de bulk actions (linha ~949-967), adicionar botao de duplicar:
+## Parte 1: Migração do Banco de Dados
 
-```tsx
-{selectedCount === 1 && (
-  <Button 
-    size="sm" 
-    variant="outline"
-    onClick={() => {
-      const proposalId = Array.from(selectedIds)[0];
-      const proposal = proposals.find(p => p.id === proposalId);
-      if (proposal) handleDuplicateProposal(proposal);
-    }}
-    className="h-7 text-xs"
-  >
-    <Copy className="h-3 w-3 mr-1" />
-    Duplicar
-  </Button>
-)}
+```sql
+-- Adicionar novos campos à tabela proposals
+ALTER TABLE proposals 
+ADD COLUMN IF NOT EXISTS modalidade_proposta text DEFAULT 'monetaria',
+ADD COLUMN IF NOT EXISTS itens_permuta jsonb DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS valor_total_permuta numeric DEFAULT 0,
+ADD COLUMN IF NOT EXISTS ocultar_valores_publico boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS descricao_contrapartida text,
+ADD COLUMN IF NOT EXISTS metodo_pagamento_alternativo text;
+
+-- Constraint para validar modalidade
+ALTER TABLE proposals 
+ADD CONSTRAINT proposals_modalidade_check 
+CHECK (modalidade_proposta IN ('monetaria', 'permuta'));
+
+-- Constraint para métodos alternativos
+ALTER TABLE proposals 
+ADD CONSTRAINT proposals_metodo_alternativo_check 
+CHECK (metodo_pagamento_alternativo IS NULL OR metodo_pagamento_alternativo IN ('permuta', 'patrocinio', 'cortesia_estrategica', 'institucional'));
 ```
+
+---
+
+## Parte 2: Interface Administrativa (NovaPropostaPage.tsx)
+
+### 2.1 Toggle de Modalidade da Proposta
+
+Adicionar um seletor no topo da seção "Período e Valores":
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  💰 Tipo de Proposta                                        │
+│                                                             │
+│   [ 💵 Monetária ]  [ 🔄 Permuta/Equipamentos ]            │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 2.2 Seção de Equipamentos (quando Permuta selecionada)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  📦 Equipamentos Ofertados                                  │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Tablet Samsung Galaxy Tab A8                        │  │
+│  │  Qtd: 50  ×  R$ 899,00  =  R$ 44.950,00  [👁️] [🗑️]  │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Suporte de Parede Articulado                        │  │
+│  │  Qtd: 50  ×  R$ 120,00  =  R$ 6.000,00   [👁️] [🗑️]  │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                                                             │
+│           [ + Adicionar Equipamento ]                       │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│  VALOR TOTAL ESTIMADO:                    R$ 50.950,00      │
+│                                                             │
+│  [ ] Ocultar valores na proposta pública                    │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 2.3 Descrição da Contrapartida
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  📝 Descrição da Contrapartida                              │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │ Fornecimento de 50 tablets Samsung Galaxy Tab A8     │  │
+│  │ com suportes de parede para instalação nas           │  │
+│  │ portarias dos prédios, substituindo equipamentos     │  │
+│  │ obsoletos.                                           │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Parte 3: Proposta Pública (PropostaPublicaPage.tsx)
+
+### 3.1 Exibição Condicional
+
+Quando `modalidade_proposta === 'permuta'`:
+
+- **Remover**: Seção de pagamento PIX/Boleto/Cartão
+- **Mostrar**: Seção de "Contrapartida Acordada"
+- **Esconder valores** se `ocultar_valores_publico === true`
+
+### 3.2 Layout da Proposta Pública (Permuta)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  🤝 PROPOSTA DE PARCERIA                    │
+│                                                             │
+│              Torre Azul, Edifício Central...                │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  📦 CONTRAPARTIDA ACORDADA                                  │
+│                                                             │
+│  • Tablet Samsung Galaxy Tab A8 (50 unidades)              │
+│  • Suporte de Parede Articulado (50 unidades)              │
+│                                                             │
+│  "Fornecimento de equipamentos para modernização           │
+│   das portarias dos prédios parceiros."                     │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  📅 PERÍODO: 12 meses                                       │
+│  📺 TELAS: 17 telas em 12 prédios                          │
+│                                                             │
+│         [ ✅ Aceitar Parceria ]  [ ❌ Recusar ]             │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Parte 4: Fluxo de Aceitação (Permuta)
+
+Quando o cliente aceita uma proposta de permuta:
+
+1. **Status**: Atualiza para `aceita`
+2. **Contrato**: Gera contrato com cláusulas de permuta
+3. **Sem pagamento**: Pula toda a etapa de pagamento
+4. **Notificação**: Envia alerta para vendedor sobre aceitação
 
 ---
 
 ## Arquivos a Modificar
 
-| Arquivo | Mudancas |
-|---------|----------|
-| `src/pages/admin/proposals/PropostasPage.tsx` | 1) Exibir nome+empresa juntos no card desktop 2) Adicionar funcao `handleDuplicateProposal` 3) Adicionar item no DropdownMenu 4) Adicionar botao Duplicar na bulk toolbar |
-| `src/components/admin/proposals/ProposalMobileCard.tsx` | Exibir nome+empresa juntos no card mobile |
+| Arquivo | Modificações |
+|---------|--------------|
+| `NovaPropostaPage.tsx` | Adicionar toggle de modalidade, seção de equipamentos, checkbox de ocultar valores |
+| `PropostaPublicaPage.tsx` | Lógica condicional para exibir permuta, esconder pagamentos |
+| `ProposalMobileCard.tsx` | Badge indicando "Permuta" em propostas não-monetárias |
+| `PropostasPage.tsx` | Filtro por modalidade, exibição diferenciada |
+| `PropostaDetalhesPage.tsx` | Mostrar lista de equipamentos e valores internos |
 
 ---
 
-## Resultado Final
+## Estados do React (NovaPropostaPage.tsx)
 
-### Listagem Visual
+```typescript
+// Novos estados para permuta
+const [modalidadeProposta, setModalidadeProposta] = useState<'monetaria' | 'permuta'>('monetaria');
+const [itensPermuta, setItensPermuta] = useState<ItemPermuta[]>([]);
+const [ocultarValoresPublico, setOcultarValoresPublico] = useState(false);
+const [descricaoContrapartida, setDescricaoContrapartida] = useState('');
+const [metodoPagamentoAlternativo, setMetodoPagamentoAlternativo] = useState<string | null>(null);
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│ [✓] EXA-2026-6281  visualizando  0d • vence em 27d                 │
-│                                                                     │
-│     Rachad Ihbraim • Chef das Arabias                   Horizontal │
-│     12M • 17 predios • R$ 4.798,00/mes                  Jeferson   │
-│     02/02  R$ 4.798,00/mes  👁️ 1x ⏱️ 5min 35s              ⋮      │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-### Menu de Acoes
-
-```
-┌───────────────────────────────┐
-│ 👁️ Ver Preview               │
-│ 📄 Ver Detalhes              │
-│ ✏️ Editar Proposta           │
-│ 📋 Duplicar Proposta   ← NEW │
-│ 🔗 Copiar Link               │
-│ ─────────────────────────────│
-│ 💬 Reenviar WhatsApp         │
-│ ...                          │
-└───────────────────────────────┘
+// Cálculo do valor total
+const valorTotalPermuta = useMemo(() => {
+  return itensPermuta.reduce((sum, item) => sum + item.preco_total, 0);
+}, [itensPermuta]);
 ```
 
-### Bulk Actions (com 1 proposta selecionada)
+---
 
+## Diferenças Visuais na Listagem
+
+### Proposta Monetária (atual)
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│ 1 selecionada(s)              [Duplicar] [Limpar] [🗑️ Excluir]     │
-└─────────────────────────────────────────────────────────────────────┘
+EXA-2026-1234  |  Cliente ABC  |  R$ 4.798,00/mês  |  12M  |  pendente
 ```
+
+### Proposta Permuta (nova)
+```
+EXA-2026-1235  |  Cliente XYZ  |  🔄 Permuta (R$ 50.950 interno)  |  12M  |  pendente
+```
+
+O valor interno só aparece para admins, nunca na proposta pública (se ocultado).
+
+---
+
+## Benefícios da Solução
+
+1. **Flexibilidade**: Suporta tanto vendas monetárias quanto permutas
+2. **Transparência interna**: Valores de custo visíveis apenas para o time
+3. **Privacidade externa**: Cliente vê apenas a lista de itens (sem preços)
+4. **Rastreabilidade**: Histórico completo de equipamentos acordados
+5. **Integração com contratos**: Cláusulas específicas para permuta
+
+---
+
+## Estimativa de Implementação
+
+- **Migração DB**: ~10 minutos
+- **NovaPropostaPage.tsx**: ~150 linhas de código
+- **PropostaPublicaPage.tsx**: ~80 linhas de código
+- **Componentes auxiliares**: ~50 linhas
+- **Listagem/Detalhes**: ~40 linhas
