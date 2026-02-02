@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone, Bell, BellOff, RefreshCcw, Calendar, FileDown, Pencil, Settings } from 'lucide-react';
+import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone, Bell, BellOff, RefreshCcw, Calendar, FileDown, Pencil, Settings, Files } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -661,6 +661,73 @@ const PropostasPage = () => {
     }
   };
 
+  // Duplicar proposta
+  const handleDuplicateProposal = async (proposal: Proposal) => {
+    try {
+      toast.loading('Duplicando proposta...', { id: 'duplicate' });
+      
+      // Gerar novo número
+      const year = new Date().getFullYear();
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      const newNumber = `EXA-${year}-${randomNum}`;
+      
+      // Preparar dados para cópia (excluir campos que não devem ser copiados)
+      const { 
+        id, 
+        number, 
+        status, 
+        created_at, 
+        sent_at, 
+        view_count, 
+        total_time_spent_seconds, 
+        first_viewed_at, 
+        last_viewed_at, 
+        is_viewing, 
+        last_heartbeat_at, 
+        converted_order_id, 
+        metadata,
+        expires_at,
+        seller_name,
+        seller_phone,
+        seller_email,
+        ...dataToCopy 
+      } = proposal;
+      
+      // Criar nova proposta
+      const { data: newProposal, error } = await supabase
+        .from('proposals')
+        .insert({
+          ...dataToCopy,
+          number: newNumber,
+          status: 'pendente',
+          metadata: {}, // Limpar metadata (contract_id, etc)
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // +7 dias
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Log da duplicação
+      await supabase.from('proposal_logs').insert({
+        proposal_id: newProposal.id,
+        action: 'duplicada',
+        details: {
+          original_proposal_id: proposal.id,
+          original_number: proposal.number
+        }
+      });
+      
+      toast.success(`Proposta ${newNumber} criada!`, { id: 'duplicate' });
+      clearSelection();
+      refetch();
+      
+    } catch (error) {
+      console.error('Erro ao duplicar proposta:', error);
+      toast.error('Erro ao duplicar proposta', { id: 'duplicate' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 relative">
       {/* Live View Notifications */}
@@ -950,6 +1017,21 @@ const PropostasPage = () => {
               <Card className="p-2 bg-[#9C1E1E]/10 border-[#9C1E1E]/20 flex items-center justify-between">
                 <span className="text-xs font-medium text-[#9C1E1E]">{selectedCount} selecionada(s)</span>
                 <div className="flex gap-2">
+                  {selectedCount === 1 && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        const proposalId = Array.from(selectedIds)[0];
+                        const proposal = filteredProposals.find(p => p.id === proposalId);
+                        if (proposal) handleDuplicateProposal(proposal);
+                      }}
+                      className="h-7 text-xs"
+                    >
+                      <Files className="h-3 w-3 mr-1" />
+                      Duplicar
+                    </Button>
+                  )}
                   <Button size="sm" variant="ghost" onClick={clearSelection} className="h-7 text-xs">
                     Limpar
                   </Button>
@@ -1027,7 +1109,17 @@ const PropostasPage = () => {
                             </Badge>
                           )}
                         </div>
-                        <h3 className="font-medium text-sm truncate">{proposal.client_name}</h3>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="font-medium text-sm truncate">{proposal.client_name}</h3>
+                          {proposal.client_company_name && (
+                            <>
+                              <span className="text-xs text-muted-foreground">•</span>
+                              <span className="text-xs font-medium text-foreground truncate max-w-[150px]" title={proposal.client_company_name}>
+                                {proposal.client_company_name}
+                              </span>
+                            </>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 mt-1 flex-wrap text-xs text-muted-foreground">
                           <span>{proposal.duration_months}M</span>
                           <span>•</span>
@@ -1072,7 +1164,7 @@ const PropostasPage = () => {
                         </div>
                       </div>
 
-                      {/* Empresa + Vendedor + Produto - Lado Direito */}
+                      {/* Vendedor + Produto - Lado Direito (Empresa agora está junto do nome) */}
                       <div className="text-right min-w-[100px] flex-shrink-0 space-y-0.5">
                         {proposal.tipo_produto && (
                           <Badge className={proposal.tipo_produto === 'vertical_premium' 
@@ -1081,11 +1173,6 @@ const PropostasPage = () => {
                           }>
                             {proposal.tipo_produto === 'vertical_premium' ? '📺 Vertical' : '🖼️ Horizontal'}
                           </Badge>
-                        )}
-                        {proposal.client_company_name && (
-                          <p className="text-[11px] font-medium text-foreground truncate max-w-[120px]" title={proposal.client_company_name}>
-                            {proposal.client_company_name}
-                          </p>
                         )}
                         {proposal.seller_name && (
                           <p className="text-[10px] text-muted-foreground truncate max-w-[120px]" title={proposal.seller_name}>
@@ -1113,6 +1200,10 @@ const PropostasPage = () => {
                           <DropdownMenuItem onClick={() => navigate(buildPath(`propostas/${proposal.id}/editar`))}>
                             <Pencil className="h-4 w-4 mr-2" />
                             Editar Proposta
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDuplicateProposal(proposal)}>
+                            <Files className="h-4 w-4 mr-2" />
+                            Duplicar Proposta
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleCopyLink(proposal)}>
                             <Copy className="h-4 w-4 mr-2" />
