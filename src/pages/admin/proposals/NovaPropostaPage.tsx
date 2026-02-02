@@ -928,6 +928,7 @@ const NovaPropostaPage = () => {
           ocultar_valores_publico: modalidadeProposta === 'permuta' ? ocultarValoresPublico : false,
           descricao_contrapartida: modalidadeProposta === 'permuta' ? descricaoContrapartida : null,
           metodo_pagamento_alternativo: modalidadeProposta === 'permuta' ? 'permuta' : null,
+          valor_referencia_monetaria: modalidadeProposta === 'permuta' ? valorReferenciaMonetaria : null,
           // Configurações adicionais
           cobranca_futura: cobrancaFutura,
           exigir_contrato: exigirContrato,
@@ -984,7 +985,7 @@ const NovaPropostaPage = () => {
     clientData.latitude, clientData.longitude,
     selectedBuildings, selectedBuildingsData, durationMonths, fidelValue, discountPercent,
     modalidadeProposta, itensPermuta, valorTotalPermuta, ocultarValoresPublico,
-    descricaoContrapartida, metodoPagamentoAlternativo, tituloProposta,
+    descricaoContrapartida, metodoPagamentoAlternativo, valorReferenciaMonetaria, tituloProposta,
     quantidadePosicoes, tipoProduto, isCustomDays, customDays, isEditMode, draftId, isSavingDraft,
     totalPanels, totalImpressionsAdjusted, isCustomPayment, customInstallments,
     cobrancaFutura, exigirContrato, vendaFutura, prediosContratados,
@@ -1242,8 +1243,24 @@ ${selectedBuildingsData.some((b: any) => b.is_manual) ? '\n* = Prédio adicionad
 💱 PERMUTA
 ────────────────────────────────────────────────────
 • Modalidade: Permuta (não-monetária)
+`;
+      
+      // Mostrar valor de referência monetária (quanto custaria em dinheiro)
+      if (valorReferenciaMonetaria > 0) {
+        const totalReferencia = isCustomDays 
+          ? (valorReferenciaMonetaria / 30) * customDays 
+          : valorReferenciaMonetaria * durationMonths;
+        text += `
+💰 VALOR DE REFERÊNCIA (Quanto Custaria em Dinheiro)
+• Valor Mensal: ${formatCurrency(valorReferenciaMonetaria)}
+• Total (${isCustomDays ? customDays + ' dias' : durationMonths + ' meses'}): ${formatCurrency(totalReferencia)}
+`;
+      }
+      
+      text += `
+📦 CONTRAPARTIDA (Equipamentos/Serviços)
 • Ocultar valores no público: ${ocultarValoresPublico ? 'Sim' : 'Não'}
-• Descrição da Contrapartida: ${descricaoContrapartida || '(não informada)'}
+• Descrição: ${descricaoContrapartida || '(não informada)'}
 
 Itens de Permuta:
 `;
