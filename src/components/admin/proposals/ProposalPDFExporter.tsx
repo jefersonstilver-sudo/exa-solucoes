@@ -27,6 +27,23 @@ interface ProposalData {
   created_at: string;
   expires_at: string | null;
   tipo_produto?: 'horizontal' | 'vertical_premium';
+  // Campos para período em dias
+  is_custom_days?: boolean | null;
+  custom_days?: number | null;
+  // Campos de Permuta
+  modalidade_proposta?: 'monetaria' | 'permuta' | null;
+  itens_permuta?: Array<{
+    id: string;
+    nome: string;
+    quantidade: number;
+    preco_unitario: number;
+    preco_total: number;
+    ocultar_preco?: boolean;
+  }> | null;
+  valor_total_permuta?: number | null;
+  ocultar_valores_publico?: boolean | null;
+  descricao_contrapartida?: string | null;
+  valor_referencia_monetaria?: number | null;
 }
 
 interface ProductSpecs {
@@ -822,6 +839,124 @@ export class ProposalPDFExporter {
     }
   }
 
+  // Seção de Permuta (para propostas não-monetárias)
+  private drawPermutaConditions(proposal: ProposalData): void {
+    this.checkPageBreak(120);
+    
+    this.drawSectionTitle('ACORDO DE PERMUTA');
+    
+    const innerPadding = 5;
+    
+    // === BOX 1: VALOR DE REFERÊNCIA (quanto custaria) ===
+    if (proposal.valor_referencia_monetaria && proposal.valor_referencia_monetaria > 0) {
+      const periodo = proposal.is_custom_days 
+        ? (proposal.custom_days || 30) / 30 
+        : proposal.duration_months;
+      const valorTotalReferencia = proposal.valor_referencia_monetaria * periodo;
+      
+      this.setColor({ r: 239, g: 246, b: 255 }, 'fill'); // blue-50
+      this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, 38, 3, 3, 'F');
+      
+      // Borda azul
+      this.setColor({ r: 59, g: 130, b: 246 }, 'draw'); // blue-500
+      this.doc.setLineWidth(0.5);
+      this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, 38, 3, 3);
+      
+      // Label
+      this.setColor({ r: 30, g: 64, b: 175 }); // blue-800
+      this.doc.setFontSize(9);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text('VALOR DO PACOTE (Referencia de Mercado)', this.margin + 5, this.yPosition + 10);
+      
+      // Valor
+      this.doc.setFontSize(16);
+      this.doc.text(this.formatCurrency(valorTotalReferencia), this.margin + 5, this.yPosition + 24);
+      
+      // Detalhes
+      this.setColor({ r: 59, g: 130, b: 246 }); // blue-500
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'normal');
+      const detalhes = proposal.is_custom_days 
+        ? `${proposal.custom_days} dias`
+        : `${proposal.duration_months}x de ${this.formatCurrency(proposal.valor_referencia_monetaria)}/mes`;
+      this.doc.text(detalhes, this.margin + 5, this.yPosition + 32);
+      
+      this.yPosition += 44;
+    }
+    
+    // === BOX 2: CONTRAPARTIDA ACORDADA ===
+    const itemsCount = proposal.itens_permuta?.length || 0;
+    const boxHeight = 40 + (itemsCount * 14);
+    
+    this.setColor({ r: 255, g: 251, b: 235 }, 'fill'); // amber-50
+    this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, boxHeight, 3, 3, 'F');
+    
+    // Borda âmbar
+    this.setColor({ r: 251, g: 191, b: 36 }, 'draw'); // amber-400
+    this.doc.setLineWidth(0.5);
+    this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, boxHeight, 3, 3);
+    
+    // Título
+    this.setColor({ r: 180, g: 83, b: 9 }); // amber-700
+    this.doc.setFontSize(9);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text('CONTRAPARTIDA ACORDADA', this.margin + 5, this.yPosition + 10);
+    
+    // Período
+    this.setColor({ r: 146, g: 64, b: 14 }); // amber-800
+    this.doc.setFontSize(8);
+    this.doc.setFont('helvetica', 'normal');
+    const periodoText = proposal.is_custom_days 
+      ? `Periodo: ${proposal.custom_days} ${proposal.custom_days === 1 ? 'dia' : 'dias'}`
+      : `Periodo: ${proposal.duration_months} ${proposal.duration_months === 1 ? 'mes' : 'meses'}`;
+    this.doc.text(periodoText, this.margin + 5, this.yPosition + 18);
+    
+    // Lista de itens
+    let itemY = this.yPosition + 28;
+    if (proposal.itens_permuta && proposal.itens_permuta.length > 0) {
+      proposal.itens_permuta.forEach((item, index) => {
+        // Nome do item
+        this.setColor({ r: 146, g: 64, b: 14 }); // amber-800
+        this.doc.setFontSize(8);
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.text(`${index + 1}. ${item.nome} (${item.quantidade}x)`, this.margin + 8, itemY);
+        
+        // Valor (se não oculto)
+        if (!proposal.ocultar_valores_publico && !item.ocultar_preco) {
+          this.setColor({ r: 180, g: 83, b: 9 }); // amber-700
+          this.doc.setFont('helvetica', 'normal');
+          this.doc.text(this.formatCurrency(item.preco_total), this.pageWidth - this.margin - 5, itemY, { align: 'right' });
+        }
+        
+        itemY += 12;
+      });
+    }
+    
+    // Valor total (se não oculto)
+    if (!proposal.ocultar_valores_publico && proposal.valor_total_permuta && proposal.valor_total_permuta > 0) {
+      this.setColor({ r: 180, g: 83, b: 9 }); // amber-700
+      this.doc.setFontSize(9);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text(`Total Estimado: ${this.formatCurrency(proposal.valor_total_permuta)}`, this.margin + 5, itemY + 2);
+    }
+    
+    this.yPosition += boxHeight + 8;
+    
+    // Descrição da contrapartida (se houver)
+    if (proposal.descricao_contrapartida) {
+      this.setColor(this.colors.lightGray, 'fill');
+      this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, 20, 2, 2, 'F');
+      
+      this.setColor(this.colors.mediumGray);
+      this.doc.setFontSize(7);
+      this.doc.setFont('helvetica', 'italic');
+      const lines = this.doc.splitTextToSize(`"${proposal.descricao_contrapartida}"`, this.contentWidth - 10);
+      this.doc.text(lines, this.margin + 5, this.yPosition + 8);
+      
+      this.yPosition += 24;
+    }
+  }
+
   // FASE 3: Seção "Conheça a EXA" com 4 botões CLICÁVEIS (interativos)
   private drawVideoLinksSection(): void {
     this.checkPageBreak(52);
@@ -1024,8 +1159,12 @@ export class ProposalPDFExporter {
     // Infográfico EXA - Espaço é Posição
     await this.drawVerticalPremiumShowcase();
     
-    // Condições comerciais (com destaque no valor à vista)
-    this.drawCommercialConditions(proposal, isCortesia, baseTotalValue);
+    // Condições comerciais - diferenciado por modalidade
+    if (proposal.modalidade_proposta === 'permuta') {
+      this.drawPermutaConditions(proposal);
+    } else {
+      this.drawCommercialConditions(proposal, isCortesia, baseTotalValue);
+    }
     
     // PÁGINA 2 (se necessário, adiciona automaticamente)
     // Links de vídeo com botões CLICÁVEIS

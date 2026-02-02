@@ -250,6 +250,8 @@ const NovaPropostaPage = () => {
   const [ocultarValoresPublico, setOcultarValoresPublico] = useState(false);
   const [descricaoContrapartida, setDescricaoContrapartida] = useState('');
   const [metodoPagamentoAlternativo, setMetodoPagamentoAlternativo] = useState<string | null>(null);
+  // Valor de referência monetária para propostas de permuta (quanto custaria se fosse comprar)
+  const [valorReferenciaMonetaria, setValorReferenciaMonetaria] = useState<number>(0);
 
   // Estados para Auto-Save de Rascunho
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -663,6 +665,7 @@ const NovaPropostaPage = () => {
       setOcultarValoresPublico(existingProposal.ocultar_valores_publico === true);
       setDescricaoContrapartida(existingProposal.descricao_contrapartida || '');
       setMetodoPagamentoAlternativo(existingProposal.metodo_pagamento_alternativo || null);
+      setValorReferenciaMonetaria((existingProposal as any).valor_referencia_monetaria || 0);
 
       // ============================================
       // VALIDADE DA PROPOSTA - HIDRATAÇÃO COMPLETA
@@ -1499,6 +1502,7 @@ Parcelas:
         ocultar_valores_publico: modalidadeProposta === 'permuta' ? ocultarValoresPublico : false,
         descricao_contrapartida: modalidadeProposta === 'permuta' ? descricaoContrapartida : null,
         metodo_pagamento_alternativo: modalidadeProposta === 'permuta' ? 'permuta' : null,
+        valor_referencia_monetaria: modalidadeProposta === 'permuta' ? valorReferenciaMonetaria : null,
         // Validade da proposta - funciona tanto na criação quanto na edição
         expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to ? customDateRange.to.toISOString() : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
       };
@@ -2401,15 +2405,69 @@ Parcelas:
 
           {/* Seção de Permuta (Equipamentos) */}
           {modalidadeProposta === 'permuta' && (
-            <div className="mb-6 p-4 bg-amber-50/50 rounded-xl border border-amber-200">
-              <ItensPermutaEditor
-                itens={itensPermuta}
-                onChange={setItensPermuta}
-                ocultarValoresPublico={ocultarValoresPublico}
-                onOcultarValoresChange={setOcultarValoresPublico}
-                descricaoContrapartida={descricaoContrapartida}
-                onDescricaoChange={setDescricaoContrapartida}
-              />
+            <div className="mb-6 space-y-4">
+              {/* Valor de Referência Monetária (quanto custaria se fosse comprar) */}
+              <div className="p-4 bg-blue-50/80 rounded-xl border border-blue-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <DollarSign className="h-4 w-4 text-blue-600" />
+                  <h3 className="font-semibold text-sm text-blue-800">Valor de Referência (Quanto Custaria)</h3>
+                </div>
+                <p className="text-xs text-blue-700 mb-3">
+                  💡 Informe quanto custaria este pacote se fosse uma proposta monetária. Este valor será exibido ao cliente como referência do valor de mercado.
+                </p>
+                
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-xs text-blue-700">Valor Mensal de Referência</Label>
+                    <div className="relative mt-1">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
+                      <Input 
+                        type="number" 
+                        placeholder="0,00" 
+                        value={valorReferenciaMonetaria || ''} 
+                        onChange={e => setValorReferenciaMonetaria(parseFloat(e.target.value) || 0)} 
+                        className="pl-10 h-12 text-base bg-white border-blue-200"
+                      />
+                    </div>
+                    {valorSugeridoMensal > 0 && (
+                      <button 
+                        type="button"
+                        onClick={() => setValorReferenciaMonetaria(valorSugeridoMensal)} 
+                        className="text-[10px] text-blue-600 hover:underline mt-1"
+                      >
+                        Usar sugerido: {formatCurrency(valorSugeridoMensal)}
+                      </button>
+                    )}
+                  </div>
+
+                  {valorReferenciaMonetaria > 0 && durationMonths > 0 && (
+                    <div className="p-3 bg-blue-100 rounded-lg space-y-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-blue-700">Valor Mensal:</span>
+                        <span className="font-medium text-blue-800">{formatCurrency(valorReferenciaMonetaria)}/mês</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-blue-700 font-medium">Total ({isCustomDays ? `${customDays} dias` : `${durationMonths} meses`}):</span>
+                        <span className="font-bold text-blue-900">
+                          {formatCurrency(isCustomDays ? (valorReferenciaMonetaria / 30) * customDays : valorReferenciaMonetaria * durationMonths)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Equipamentos Ofertados */}
+              <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-200">
+                <ItensPermutaEditor
+                  itens={itensPermuta}
+                  onChange={setItensPermuta}
+                  ocultarValoresPublico={ocultarValoresPublico}
+                  onOcultarValoresChange={setOcultarValoresPublico}
+                  descricaoContrapartida={descricaoContrapartida}
+                  onDescricaoChange={setDescricaoContrapartida}
+                />
+              </div>
             </div>
           )}
 

@@ -11130,6 +11130,7 @@ export type Database = {
           travamento_telas_atuais: number | null
           travamento_telas_limite: number | null
           updated_at: string | null
+          valor_referencia_monetaria: number | null
           valor_total_permuta: number | null
           venda_futura: boolean | null
           view_count: number | null
@@ -11220,6 +11221,7 @@ export type Database = {
           travamento_telas_atuais?: number | null
           travamento_telas_limite?: number | null
           updated_at?: string | null
+          valor_referencia_monetaria?: number | null
           valor_total_permuta?: number | null
           venda_futura?: boolean | null
           view_count?: number | null
@@ -11310,6 +11312,7 @@ export type Database = {
           travamento_telas_atuais?: number | null
           travamento_telas_limite?: number | null
           updated_at?: string | null
+          valor_referencia_monetaria?: number | null
           valor_total_permuta?: number | null
           venda_futura?: boolean | null
           view_count?: number | null
