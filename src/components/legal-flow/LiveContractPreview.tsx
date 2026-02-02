@@ -54,25 +54,20 @@ const getNumeroExtenso = (num: number) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ESTILOS INLINE — VISUAL CLONE 100% DO TEMPLATE OFICIAL (create-contract-from-proposal)
-// Margens do template oficial: padding 15px 20px no body + margin 12mm 15mm no @page
+// ESTILOS INLINE — VISUAL CLONE 100% DO TEMPLATE OFICIAL
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const styles = {
-  // HEADER CORPORATIVO EXA — Imagem full-width com fundo vermelho gradiente
-  // Margin negativa para "quebrar" o padding do body e ocupar 100% da largura
   header: {
     width: 'calc(100% + 40px)',
     margin: '-15px -20px 15px -20px',
     display: 'block',
   },
-  // Header imagem oficial (full-width)
   headerImage: {
     width: '100%',
     height: 'auto',
     display: 'block',
   },
-  // Título do contrato - SEM borda azul (conforme PDF oficial)
   contractTitle: {
     textAlign: 'center' as const,
     margin: '30px 0',
@@ -87,7 +82,6 @@ const styles = {
     fontSize: '12pt',
     color: '#666666',
   },
-  // Seções - Gradiente vinho (conforme PDF oficial)
   section: {
     margin: '25px 0',
   },
@@ -100,7 +94,6 @@ const styles = {
     marginBottom: '15px',
     borderRadius: '4px',
   },
-  // Grid de info cards - LAYOUT DUAS COLUNAS (conforme PDF oficial)
   infoGrid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
@@ -137,7 +130,6 @@ const styles = {
     textAlign: 'right' as const,
     fontSize: '10pt',
   },
-  // Cláusulas - Espaçamento ABNT (line-height 1.8, justificado)
   clause: {
     margin: '20px 0',
     textAlign: 'justify' as const,
@@ -155,7 +147,6 @@ const styles = {
     lineHeight: 1.8,
     fontSize: '10.5pt',
   },
-  // Highlight box
   highlightBox: {
     background: '#fafafa',
     border: '1px solid #e0e0e0',
@@ -164,7 +155,6 @@ const styles = {
     padding: '15px',
     margin: '15px 0',
   },
-  // Assinaturas
   signatureSection: {
     marginTop: '60px',
     pageBreakInside: 'avoid' as const,
@@ -204,7 +194,6 @@ const styles = {
     color: '#999999',
     marginTop: '3px',
   },
-  // Testemunhas
   witnessesSection: {
     marginTop: '50px',
     paddingTop: '25px',
@@ -217,7 +206,6 @@ const styles = {
     marginBottom: '25px',
     fontSize: '10pt',
   },
-  // Rodapé
   footer: {
     marginTop: '50px',
     paddingTop: '15px',
@@ -242,6 +230,7 @@ export function LiveContractPreview({
     onManualEdit?.(field, value);
   }, [onUpdate, onManualEdit]);
 
+  // Editable Field Component - PLACEHOLDER DENTRO DA LINHA (não flutuante)
   const EditableField = ({ 
     field, 
     value, 
@@ -261,11 +250,12 @@ export function LiveContractPreview({
         outline: 'none',
         transition: 'all 0.2s',
         borderRadius: '2px',
-        padding: '0 2px',
-        backgroundColor: isEditable && !value ? '#fff9e6' : 'transparent',
+        padding: '2px 4px',
+        backgroundColor: isEditable && !value ? 'transparent' : 'transparent',
         cursor: isEditable ? 'text' : 'default',
-        color: !value ? '#999' : 'inherit',
+        color: !value ? '#9ca3af' : 'inherit',
         fontStyle: !value ? 'italic' : 'normal',
+        borderBottom: isEditable && !value ? '1px dashed #d1d5db' : 'none',
         ...style
       }}
     >
@@ -279,7 +269,15 @@ export function LiveContractPreview({
 
   return (
     <ScrollArea className="h-full">
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '32px', backgroundColor: '#e5e7eb', minHeight: '100%' }}>
+      {/* FUNDO CINZA LEVEMENTE MAIS ESCURO - para o papel "Pop out" */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        padding: '32px', 
+        backgroundColor: '#d1d5db', // bg-gray-300 - mais escuro para contraste
+        minHeight: '100%' 
+      }}>
+        {/* PAPEL A4 COM SOMBRA PROFUNDA */}
         <div 
           ref={containerRef}
           id="contract-preview"
@@ -292,10 +290,12 @@ export function LiveContractPreview({
             maxWidth: '210mm',
             width: '100%',
             minHeight: '297mm',
-            // Template oficial: padding 15px 20px (igual ao create-contract-from-proposal)
             padding: '15px 20px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            border: '1px solid #d1d5db',
+            // SOMBRA PROFUNDA E DIFUSA (shadow-2xl)
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 12px 24px -8px rgba(0, 0, 0, 0.15)',
+            // BORDA SUTIL
+            border: '1px solid rgba(209, 213, 219, 0.6)',
+            borderRadius: '4px',
             position: 'relative'
           }}
         >
@@ -314,9 +314,7 @@ export function LiveContractPreview({
             * { box-sizing: border-box; }
           `}</style>
 
-          {/* ═══════════════════════════════════════════════════════════════════
-              CABEÇALHO CORPORATIVO EXA — IMAGEM FULL-WIDTH COM FUNDO VERMELHO
-          ═══════════════════════════════════════════════════════════════════ */}
+          {/* CABEÇALHO CORPORATIVO EXA */}
           <div className="no-break" style={styles.header}>
             <img
               style={styles.headerImage}
@@ -325,9 +323,7 @@ export function LiveContractPreview({
             />
           </div>
 
-          {/* ═══════════════════════════════════════════════════════════════════
-              TÍTULO DO CONTRATO (TEMPLATE OFICIAL - SEM BORDA)
-          ═══════════════════════════════════════════════════════════════════ */}
+          {/* TÍTULO DO CONTRATO */}
           <div style={styles.contractTitle}>
             <h1 style={styles.contractTitleH1}>
               {getTituloContrato(data.tipo_contrato)}
@@ -337,9 +333,7 @@ export function LiveContractPreview({
             </div>
           </div>
 
-          {/* ═══════════════════════════════════════════════════════════════════
-              IDENTIFICAÇÃO DAS PARTES (SECTION COM GRADIENTE)
-          ═══════════════════════════════════════════════════════════════════ */}
+          {/* IDENTIFICAÇÃO DAS PARTES */}
           <div className="no-break" style={styles.section}>
             <div style={styles.sectionTitle}>
               IDENTIFICAÇÃO DAS PARTES
@@ -400,9 +394,7 @@ export function LiveContractPreview({
             </div>
           </div>
 
-          {/* ═══════════════════════════════════════════════════════════════════
-              CLÁUSULAS DO CONTRATO
-          ═══════════════════════════════════════════════════════════════════ */}
+          {/* CLÁUSULAS DO CONTRATO */}
           <div className="no-break" style={styles.section}>
             <div style={styles.sectionTitle}>
               CLÁUSULAS CONTRATUAIS
@@ -439,256 +431,132 @@ export function LiveContractPreview({
                       <strong>3.1.</strong> Pelo serviço objeto deste contrato, a CONTRATANTE pagará à CONTRATADA o valor de <strong>{formatCurrency(data.valor_financeiro)}</strong>.
                     </p>
                     <p style={{ margin: 0, textAlign: 'justify' }}>
-                      <strong>3.2.</strong> O atraso no pagamento implicará multa de 2% (dois por cento) sobre o valor devido, acrescido de juros de mora de 1% (um por cento) ao mês.
+                      <strong>3.2.</strong> O pagamento será realizado conforme condições acordadas entre as partes.
                     </p>
                   </div>
                 )}
 
-                {/* CLÁUSULA - OBRIGAÇÕES DA CONTRATADA */}
-                <div style={styles.clause}>
-                  <span style={styles.clauseTitle}>CLÁUSULA {data.valor_financeiro ? '4ª' : '3ª'} — DAS OBRIGAÇÕES DA CONTRATADA</span>
-                  <ul style={{ margin: '8px 0', paddingLeft: '20px', listStyleType: 'none' }}>
-                    <li style={{ margin: '4px 0' }}><strong>{data.valor_financeiro ? '4.1.' : '3.1.'}</strong> Manter os equipamentos em perfeito funcionamento;</li>
-                    <li style={{ margin: '4px 0' }}><strong>{data.valor_financeiro ? '4.2.' : '3.2.'}</strong> Garantir a exibição do conteúdo conforme especificações acordadas;</li>
-                    <li style={{ margin: '4px 0' }}><strong>{data.valor_financeiro ? '4.3.' : '3.3.'}</strong> Prestar suporte técnico em caso de falhas;</li>
-                    <li style={{ margin: '4px 0' }}><strong>{data.valor_financeiro ? '4.4.' : '3.4.'}</strong> Fornecer relatórios de exibição quando solicitado.</li>
-                  </ul>
-                </div>
-
-                {/* CLÁUSULA - OBRIGAÇÕES DO CONTRATANTE */}
-                <div style={styles.clause}>
-                  <span style={styles.clauseTitle}>CLÁUSULA {data.valor_financeiro ? '5ª' : '4ª'} — DAS OBRIGAÇÕES DA CONTRATANTE</span>
-                  <ul style={{ margin: '8px 0', paddingLeft: '20px', listStyleType: 'none' }}>
-                    <li style={{ margin: '4px 0' }}><strong>{data.valor_financeiro ? '5.1.' : '4.1.'}</strong> Efetuar os pagamentos nas datas acordadas;</li>
-                    <li style={{ margin: '4px 0' }}><strong>{data.valor_financeiro ? '5.2.' : '4.2.'}</strong> Fornecer o material publicitário em formato compatível;</li>
-                    <li style={{ margin: '4px 0' }}><strong>{data.valor_financeiro ? '5.3.' : '4.3.'}</strong> Garantir que o conteúdo não viole legislação vigente;</li>
-                    <li style={{ margin: '4px 0' }}><strong>{data.valor_financeiro ? '5.4.' : '4.4.'}</strong> Comunicar alterações no conteúdo com antecedência mínima de 48 horas.</li>
-                  </ul>
-                </div>
-
-                {/* CLÁUSULA - RESCISÃO */}
-                <div style={styles.clause}>
-                  <span style={styles.clauseTitle}>CLÁUSULA {data.valor_financeiro ? '6ª' : '5ª'} — DA RESCISÃO</span>
-                  <p style={{ margin: '8px 0 4px 0', textAlign: 'justify' }}>
-                    <strong>{data.valor_financeiro ? '6.1.' : '5.1.'}</strong> O presente contrato poderá ser rescindido por qualquer das partes mediante aviso prévio de 30 (trinta) dias.
-                  </p>
-                  <p style={{ margin: 0, textAlign: 'justify' }}>
-                    <strong>{data.valor_financeiro ? '6.2.' : '5.2.'}</strong> Em caso de rescisão antecipada pela CONTRATANTE, será devida multa de 20% (vinte por cento) sobre o valor remanescente do contrato.
-                  </p>
-                </div>
-
-                {/* CLÁUSULA - DIREITO DE IMAGEM */}
-                <div style={styles.clause}>
-                  <span style={styles.clauseTitle}>CLÁUSULA {data.valor_financeiro ? '7ª' : '6ª'} — DO DIREITO DE IMAGEM</span>
-                  <p style={{ margin: '8px 0 0 0', textAlign: 'justify' }}>
-                    <strong>{data.valor_financeiro ? '7.1.' : '6.1.'}</strong> A CONTRATANTE autoriza expressamente a CONTRATADA a utilizar imagens dos painéis em funcionamento, 
-                    incluindo o conteúdo publicitário veiculado, para fins de divulgação institucional, portfólio e marketing.
-                  </p>
-                </div>
-
-                {/* CLÁUSULA - FORO */}
-                <div style={styles.clause}>
-                  <span style={styles.clauseTitle}>CLÁUSULA {data.valor_financeiro ? '8ª' : '7ª'} — DO FORO</span>
-                  <p style={{ margin: '8px 0 0 0', textAlign: 'justify' }}>
-                    <strong>{data.valor_financeiro ? '8.1.' : '7.1.'}</strong> As partes elegem o foro da Comarca de <strong>{companySettings.foro_completo}</strong> para dirimir quaisquer controvérsias 
-                    oriundas deste contrato, renunciando a qualquer outro, por mais privilegiado que seja.
-                  </p>
-                </div>
+                {/* CLÁUSULA - OBRIGAÇÕES DO PARCEIRO (se houver) */}
+                {data.obrigacoes_parceiro.length > 0 && (
+                  <div style={styles.clause}>
+                    <span style={styles.clauseTitle}>CLÁUSULA {data.valor_financeiro ? '4' : '3'}ª — DAS OBRIGAÇÕES</span>
+                    <p style={{ margin: '8px 0 4px 0', textAlign: 'justify' }}>
+                      <strong>{data.valor_financeiro ? '4' : '3'}.1.</strong> A CONTRATANTE se obriga a:
+                    </p>
+                    <ul style={{ margin: '8px 0 0 20px', paddingLeft: '10px' }}>
+                      {data.obrigacoes_parceiro.map((obr, idx) => (
+                        <li key={idx} style={{ marginBottom: '4px', textAlign: 'justify' }}>{obr}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </>
             ) : (
-              /* ═════════════════════════════════════════════════════════════════
-                 CLÁUSULAS PARA CONTRATO DE COMODATO / TERMO DE ACEITE (SÍNDICO)
-              ═════════════════════════════════════════════════════════════════ */
+              /* Cláusulas para Comodato/Termo de Aceite */
               <>
                 <div style={styles.clause}>
                   <span style={styles.clauseTitle}>CLÁUSULA 1ª — DO OBJETO</span>
                   <p style={{ margin: '8px 0 0 0', textAlign: 'justify' }}>
-                    <strong>1.1.</strong> O presente contrato tem por objeto o empréstimo gratuito (comodato) de painel(éis) digital(is) 
-                    para instalação no(s) elevador(es) do edifício:{' '}
-                    <EditableField field="objeto" value={data.objeto} placeholder="[Nome e endereço do prédio]" />
+                    <strong>1.1.</strong> O presente termo tem por objeto a instalação e operação de equipamento de mídia digital em elevador, 
+                    conforme especificações técnicas a serem apresentadas pela COMODANTE.
                   </p>
                 </div>
 
                 <div style={styles.clause}>
-                  <span style={styles.clauseTitle}>CLÁUSULA 2ª — DA VIGÊNCIA</span>
+                  <span style={styles.clauseTitle}>CLÁUSULA 2ª — DA CESSÃO GRATUITA</span>
                   <p style={{ margin: '8px 0 0 0', textAlign: 'justify' }}>
-                    <strong>2.1.</strong> O presente contrato vigorará por prazo indeterminado, podendo ser rescindido por qualquer das partes 
-                    mediante aviso prévio de <strong>30 (trinta)</strong> dias.
+                    <strong>2.1.</strong> O COMODATÁRIO autoriza a instalação do equipamento em caráter de comodato, 
+                    sem qualquer ônus para o condomínio, ficando a COMODANTE responsável por todos os custos de instalação, 
+                    manutenção e operação do equipamento.
                   </p>
                 </div>
 
                 <div style={styles.clause}>
-                  <span style={styles.clauseTitle}>CLÁUSULA 3ª — DAS OBRIGAÇÕES DA COMODANTE (EXA)</span>
-                  <ul style={{ margin: '8px 0', paddingLeft: '20px', listStyleType: 'none' }}>
-                    <li style={{ margin: '4px 0' }}><strong>3.1.</strong> Fornecer os equipamentos em perfeito estado de funcionamento;</li>
-                    <li style={{ margin: '4px 0' }}><strong>3.2.</strong> Realizar a instalação e manutenção dos equipamentos;</li>
-                    <li style={{ margin: '4px 0' }}><strong>3.3.</strong> Prestar suporte técnico durante toda a vigência do contrato;</li>
-                    <li style={{ margin: '4px 0' }}><strong>3.4.</strong> Substituir equipamentos defeituosos sem custo para o COMODATÁRIO.</li>
-                  </ul>
-                </div>
-
-                <div style={styles.clause}>
-                  <span style={styles.clauseTitle}>CLÁUSULA 4ª — DAS OBRIGAÇÕES DO COMODATÁRIO</span>
-                  <ul style={{ margin: '8px 0', paddingLeft: '20px', listStyleType: 'none' }}>
-                    <li style={{ margin: '4px 0' }}><strong>4.1.</strong> Permitir o acesso da equipe técnica para instalação e manutenção;</li>
-                    <li style={{ margin: '4px 0' }}><strong>4.2.</strong> Comunicar imediatamente qualquer dano ou mau funcionamento;</li>
-                    <li style={{ margin: '4px 0' }}><strong>4.3.</strong> Não remover ou alterar os equipamentos sem autorização;</li>
-                    <li style={{ margin: '4px 0' }}><strong>4.4.</strong> Permitir a instalação de conexão de internet pela COMODANTE, se necessário.</li>
-                  </ul>
-                </div>
-
-                <div style={styles.clause}>
-                  <span style={styles.clauseTitle}>CLÁUSULA 5ª — DA PROPRIEDADE</span>
+                  <span style={styles.clauseTitle}>CLÁUSULA 3ª — DO PRAZO</span>
                   <p style={{ margin: '8px 0 0 0', textAlign: 'justify' }}>
-                    <strong>5.1.</strong> Os equipamentos objeto deste comodato permanecem de propriedade exclusiva da COMODANTE (EXA), 
-                    devendo ser restituídos ao término do contrato em perfeito estado de conservação, ressalvado o desgaste natural pelo uso.
-                  </p>
-                </div>
-
-                <div style={styles.clause}>
-                  <span style={styles.clauseTitle}>CLÁUSULA 6ª — DO DIREITO DE IMAGEM</span>
-                  <p style={{ margin: '8px 0 0 0', textAlign: 'justify' }}>
-                    <strong>6.1.</strong> O COMODATÁRIO autoriza expressamente a COMODANTE a utilizar imagens dos painéis instalados 
-                    para fins de divulgação institucional e comercialização de espaço publicitário a terceiros.
-                  </p>
-                </div>
-
-                <div style={styles.clause}>
-                  <span style={styles.clauseTitle}>CLÁUSULA 7ª — DO FORO</span>
-                  <p style={{ margin: '8px 0 0 0', textAlign: 'justify' }}>
-                    <strong>7.1.</strong> As partes elegem o foro da Comarca de <strong>{companySettings.foro_completo}</strong> para dirimir quaisquer controvérsias oriundas deste contrato.
+                    <strong>3.1.</strong> O presente termo terá vigência de <strong>{data.prazo_meses || 12} ({getNumeroExtenso(data.prazo_meses || 12)}) {(data.prazo_meses || 12) === 1 ? 'mês' : 'meses'}</strong>, 
+                    renovável automaticamente por igual período, salvo manifestação contrária de qualquer das partes com 30 dias de antecedência.
                   </p>
                 </div>
               </>
             )}
+
+            {/* GATILHOS CONDICIONAIS (se houver) */}
+            {data.gatilhos_condicionais.length > 0 && (
+              <div style={styles.highlightBox}>
+                <strong style={{ color: '#8B1A1A' }}>⚡ Gatilhos Condicionais</strong>
+                <ul style={{ margin: '10px 0 0 15px', paddingLeft: '5px' }}>
+                  {data.gatilhos_condicionais.map((g, idx) => (
+                    <li key={idx} style={{ marginBottom: '6px', fontSize: '10pt' }}>
+                      <strong>Condição:</strong> {g.condicao}<br/>
+                      <strong>Ação:</strong> {g.acao} <em>({g.prazo})</em>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
-          {/* ═══════════════════════════════════════════════════════════════════
-              CLÁUSULAS ESPECIAIS GERADAS PELA IA (se houver)
-          ═══════════════════════════════════════════════════════════════════ */}
-          {data.clausulas_geradas && data.clausulas_geradas.length > 0 && (
-            <div className="no-break" style={styles.section}>
-              <div style={styles.sectionTitle}>
-                CONDIÇÕES ESPECIAIS
-              </div>
-              {data.clausulas_geradas.map((clausula, idx) => (
-                <div key={idx} style={styles.clause}>
-                  <span style={styles.clauseTitle}>{clausula.titulo}</span>
-                  <p style={{ margin: '8px 0 0 0', textAlign: 'justify' }}>{clausula.conteudo}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ═══════════════════════════════════════════════════════════════════
-              BLOCO DE ASSINATURAS — LAYOUT SIDE-BY-SIDE (PADRÃO EXA)
-          ═══════════════════════════════════════════════════════════════════ */}
+          {/* ASSINATURAS */}
           <div className="no-break" style={styles.signatureSection}>
-            <div style={styles.sectionTitle}>
-              ASSINATURAS
+            <div style={styles.signatureIntro}>
+              E por estarem assim justas e contratadas, as partes firmam o presente instrumento em 2 (duas) vias de igual teor e forma.
             </div>
-            
-            <p style={{ textAlign: 'center', fontStyle: 'italic', color: '#666', marginBottom: '30px' }}>
-              E, por estarem assim justas e contratadas, as partes firmam o presente instrumento em 2 (duas) vias de igual teor.
-            </p>
 
-            <p style={{ textAlign: 'center', marginBottom: '40px' }}>
-              Foz do Iguaçu/PR, {formatDateExtended(data.data_inicio)}.
+            <p style={{ textAlign: 'center', marginBottom: '30px' }}>
+              Campo Grande/MS, {formatDateExtended(data.data_inicio)}
             </p>
 
             <div style={styles.signaturesGrid}>
-              {/* CONTRATANTE */}
               <div style={styles.signatureBox}>
-                <div style={styles.signatureLine}></div>
-                <p style={{ ...styles.signatureName, color: '#8B1A1A' }}>
-                  {isSindico ? 'COMODATÁRIO' : 'CONTRATANTE'}
-                </p>
-                <p style={styles.signatureName}>
-                  {data.parceiro_nome || '[Nome do Contratante]'}
-                </p>
-                {data.parceiro_documento && (
-                  <p style={styles.signatureDoc}>
-                    {data.parceiro_tipo_pessoa === 'PF' ? 'CPF' : 'CNPJ'}: {data.parceiro_documento}
-                  </p>
-                )}
+                <div style={styles.signatureLine}>
+                  <div style={styles.signatureName}>{companySettings.razao_social}</div>
+                  <div style={styles.signatureRole}>{isSindico ? 'COMODANTE' : 'CONTRATADA'}</div>
+                  <div style={styles.signatureDoc}>CNPJ: {companySettings.cnpj}</div>
+                </div>
               </div>
 
-              {/* CONTRATADA / EXA */}
               <div style={styles.signatureBox}>
-                <div style={styles.signatureLine}></div>
-                <p style={{ ...styles.signatureName, color: '#8B1A1A' }}>
-                  {isSindico ? 'COMODANTE' : 'CONTRATADA'}
-                </p>
-                <p style={styles.signatureName}>
-                  {companySettings.razao_social}
-                </p>
-                <p style={styles.signatureRole}>
-                  {companySettings.representante_nome}
-                </p>
-                <p style={styles.signatureDoc}>
-                  {companySettings.representante_cargo} — CPF: {companySettings.representante_cpf}
-                </p>
+                <div style={styles.signatureLine}>
+                  <div style={styles.signatureName}>
+                    {data.parceiro_nome || '[NOME DO PARCEIRO]'}
+                  </div>
+                  <div style={styles.signatureRole}>{isSindico ? 'COMODATÁRIO' : 'CONTRATANTE'}</div>
+                  <div style={styles.signatureDoc}>
+                    {data.parceiro_tipo_pessoa === 'PF' ? 'CPF' : 'CNPJ'}: {data.parceiro_documento || '[DOCUMENTO]'}
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* TESTEMUNHAS */}
             <div style={styles.witnessesSection}>
               <div style={styles.witnessesTitle}>TESTEMUNHAS</div>
-              <div style={{ ...styles.signaturesGrid, marginTop: '20px' }}>
+              <div style={styles.signaturesGrid}>
                 <div style={styles.signatureBox}>
-                  <div style={{ ...styles.signatureLine, marginTop: '50px' }}></div>
-                  <p style={styles.signatureName}>Testemunha 1</p>
-                  <p style={styles.signatureDoc}>Nome: _______________________</p>
-                  <p style={styles.signatureDoc}>CPF: ________________________</p>
+                  <div style={styles.signatureLine}>
+                    <div style={styles.signatureName}>________________________</div>
+                    <div style={styles.signatureRole}>Nome:</div>
+                    <div style={styles.signatureDoc}>CPF:</div>
+                  </div>
                 </div>
                 <div style={styles.signatureBox}>
-                  <div style={{ ...styles.signatureLine, marginTop: '50px' }}></div>
-                  <p style={styles.signatureName}>Testemunha 2</p>
-                  <p style={styles.signatureDoc}>Nome: _______________________</p>
-                  <p style={styles.signatureDoc}>CPF: ________________________</p>
+                  <div style={styles.signatureLine}>
+                    <div style={styles.signatureName}>________________________</div>
+                    <div style={styles.signatureRole}>Nome:</div>
+                    <div style={styles.signatureDoc}>CPF:</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ═══════════════════════════════════════════════════════════════════
-              RODAPÉ INSTITUCIONAL
-          ═══════════════════════════════════════════════════════════════════ */}
+          {/* RODAPÉ */}
           <div style={styles.footer}>
-            <p style={{ margin: 0, fontWeight: 600 }}>
-              {companySettings.razao_social}
-            </p>
-            <p style={{ margin: '4px 0' }}>
-              {companySettings.endereco_completo}
-            </p>
-            <p style={{ margin: 0 }}>
-              {companySettings.website} • {companySettings.email_institucional} • {companySettings.telefone_principal}
-            </p>
-            <p style={{ margin: '8px 0 0 0', fontSize: '8pt', color: '#999' }}>
-              Documento nº {numeroContrato} — Gerado eletronicamente
-            </p>
+            <strong style={{ color: '#8B1A1A' }}>INDEXA MIDIA LTDA</strong>
+            <br />
+            {companySettings.endereco_completo}
           </div>
-
-          {/* ═══════════════════════════════════════════════════════════════════
-              EMPTY STATE OVERLAY
-          ═══════════════════════════════════════════════════════════════════ */}
-          {!hasMinimalContent && (
-            <div style={{ 
-              position: 'absolute', 
-              inset: 0, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              background: 'rgba(255,255,255,0.95)', 
-              pointerEvents: 'none' 
-            }}>
-              <div style={{ textAlign: 'center', color: '#6b7280', padding: '32px' }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
-                <p style={{ fontSize: '16px', fontWeight: 500, marginBottom: '8px' }}>Converse com a IA para preencher o contrato</p>
-                <p style={{ fontSize: '14px', color: '#9ca3af' }}>ou clique nos campos para editar manualmente</p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </ScrollArea>
