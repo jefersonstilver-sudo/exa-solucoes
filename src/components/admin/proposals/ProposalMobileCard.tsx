@@ -143,11 +143,23 @@ export const ProposalMobileCard: React.FC<ProposalMobileCardProps> = ({
         </div>
       </div>
 
-      {/* Client name + Empresa/Vendedor */}
+      {/* Client name + Empresa */}
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-          <span className="font-medium text-foreground truncate text-sm">{proposal.client_name}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+              <span className="font-medium text-foreground truncate text-sm">{proposal.client_name}</span>
+              {proposal.client_company_name && (
+                <>
+                  <span className="text-xs text-muted-foreground">•</span>
+                  <span className="text-xs font-medium text-foreground truncate max-w-[120px]" title={proposal.client_company_name}>
+                    {proposal.client_company_name}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
         </div>
         <div className="text-right flex-shrink-0 space-y-0.5">
           {proposal.tipo_produto && (
@@ -157,11 +169,6 @@ export const ProposalMobileCard: React.FC<ProposalMobileCardProps> = ({
             }>
               {proposal.tipo_produto === 'vertical_premium' ? '📺 Vertical' : '🖼️ Horizontal'}
             </Badge>
-          )}
-          {proposal.client_company_name && (
-            <p className="text-[10px] font-medium text-foreground truncate max-w-[90px]" title={proposal.client_company_name}>
-              {proposal.client_company_name}
-            </p>
           )}
           {proposal.seller_name && (
             <p className="text-[9px] text-muted-foreground truncate max-w-[90px]" title={proposal.seller_name}>
