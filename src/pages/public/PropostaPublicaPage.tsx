@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink, Calendar, Globe, Users, Rocket, Lock, Pencil } from 'lucide-react';
+import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink, Calendar, Globe, Users, Rocket, Lock, Pencil, Package, RefreshCw } from 'lucide-react';
 import { format, addDays, addMonths, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -86,6 +86,13 @@ interface Proposal {
   travamento_telas_atuais?: number | null;
   travamento_telas_limite?: number | null;
   travamento_preco_por_tela?: number | null;
+  // Campos de Permuta (não-monetária)
+  modalidade_proposta?: 'monetaria' | 'permuta' | null;
+  itens_permuta?: any[] | null;
+  valor_total_permuta?: number | null;
+  ocultar_valores_publico?: boolean | null;
+  descricao_contrapartida?: string | null;
+  metodo_pagamento_alternativo?: string | null;
 }
 
 interface PaymentData {
@@ -2104,8 +2111,89 @@ const PropostaPublicaPage = () => {
           </Card>
         )}
 
-        {/* Planos - NÃO APARECEM para cortesia - Mobile Optimized */}
-        {!isCortesia && (
+        {/* SEÇÃO DE PERMUTA (Contrapartida) - Aparece quando é proposta de permuta */}
+        {proposal.modalidade_proposta === 'permuta' && !isCortesia && (
+          <Card className="p-4 sm:p-5 border-2 border-amber-400 bg-gradient-to-br from-amber-50 to-white shadow-lg">
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl">
+                  <RefreshCw className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base sm:text-lg text-amber-900">Proposta de Parceria</h3>
+                  <p className="text-xs sm:text-sm text-amber-700">Acordo de permuta/troca</p>
+                </div>
+              </div>
+
+              {/* Lista de Equipamentos */}
+              {proposal.itens_permuta && proposal.itens_permuta.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-amber-800 flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Contrapartida Acordada
+                  </h4>
+                  <div className="space-y-2">
+                    {proposal.itens_permuta.map((item: any, index: number) => (
+                      <div key={item.id || index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center text-xs font-bold">
+                            {index + 1}
+                          </span>
+                          <div>
+                            <div className="font-medium text-sm text-foreground">{item.nome}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {item.quantidade} {item.quantidade === 1 ? 'unidade' : 'unidades'}
+                            </div>
+                          </div>
+                        </div>
+                        {/* Só mostra preço se não estiver oculto */}
+                        {!proposal.ocultar_valores_publico && !item.ocultar_preco && (
+                          <div className="text-right">
+                            <div className="text-sm font-semibold text-amber-800">
+                              {(item.preco_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Descrição da Contrapartida */}
+              {proposal.descricao_contrapartida && (
+                <div className="p-3 bg-amber-100/50 rounded-lg">
+                  <p className="text-sm text-amber-900 italic">
+                    "{proposal.descricao_contrapartida}"
+                  </p>
+                </div>
+              )}
+
+              {/* Valor Total (se não oculto) */}
+              {!proposal.ocultar_valores_publico && proposal.valor_total_permuta && proposal.valor_total_permuta > 0 && (
+                <div className="p-3 bg-gradient-to-r from-amber-100 to-orange-100 rounded-lg border border-amber-200">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-amber-800">Valor Total Estimado:</span>
+                    <span className="text-lg font-bold text-amber-900">
+                      {proposal.valor_total_permuta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Badge de Acordo */}
+              <div className="flex items-center justify-center">
+                <span className="bg-amber-500 text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-full shadow-md">
+                  🤝 Acordo de Parceria
+                </span>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Planos - NÃO APARECEM para cortesia NEM para permuta - Mobile Optimized */}
+        {!isCortesia && proposal.modalidade_proposta !== 'permuta' && (
           <div className="space-y-2.5 sm:space-y-3">
             <h2 className="font-semibold text-sm sm:text-base flex items-center gap-2">
               <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#9C1E1E]" />

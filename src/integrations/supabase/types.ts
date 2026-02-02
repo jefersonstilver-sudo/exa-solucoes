@@ -11075,6 +11075,7 @@ export type Database = {
           custom_days: number | null
           custom_installments: Json | null
           data_inicio_cobranca: string | null
+          descricao_contrapartida: string | null
           discount_percent: number | null
           duration_months: number | null
           exclusividade_disponivel: boolean | null
@@ -11088,16 +11089,20 @@ export type Database = {
           id: string
           is_custom_days: boolean | null
           is_viewing: boolean | null
+          itens_permuta: Json | null
           last_heartbeat_at: string | null
           last_modified_at: string | null
           last_viewed_at: string | null
           meses_cortesia: number | null
           metadata: Json | null
+          metodo_pagamento_alternativo: string | null
+          modalidade_proposta: string | null
           modified_by: string | null
           multa_rescisao_ativa: boolean | null
           multa_rescisao_percentual: number | null
           needs_reacceptance: boolean | null
           number: string
+          ocultar_valores_publico: boolean | null
           payment_type: string | null
           pdf_url: string | null
           predios_contratados: number | null
@@ -11125,6 +11130,7 @@ export type Database = {
           travamento_telas_atuais: number | null
           travamento_telas_limite: number | null
           updated_at: string | null
+          valor_total_permuta: number | null
           venda_futura: boolean | null
           view_count: number | null
           viewed_at: string | null
@@ -11159,6 +11165,7 @@ export type Database = {
           custom_days?: number | null
           custom_installments?: Json | null
           data_inicio_cobranca?: string | null
+          descricao_contrapartida?: string | null
           discount_percent?: number | null
           duration_months?: number | null
           exclusividade_disponivel?: boolean | null
@@ -11172,16 +11179,20 @@ export type Database = {
           id?: string
           is_custom_days?: boolean | null
           is_viewing?: boolean | null
+          itens_permuta?: Json | null
           last_heartbeat_at?: string | null
           last_modified_at?: string | null
           last_viewed_at?: string | null
           meses_cortesia?: number | null
           metadata?: Json | null
+          metodo_pagamento_alternativo?: string | null
+          modalidade_proposta?: string | null
           modified_by?: string | null
           multa_rescisao_ativa?: boolean | null
           multa_rescisao_percentual?: number | null
           needs_reacceptance?: boolean | null
           number: string
+          ocultar_valores_publico?: boolean | null
           payment_type?: string | null
           pdf_url?: string | null
           predios_contratados?: number | null
@@ -11209,6 +11220,7 @@ export type Database = {
           travamento_telas_atuais?: number | null
           travamento_telas_limite?: number | null
           updated_at?: string | null
+          valor_total_permuta?: number | null
           venda_futura?: boolean | null
           view_count?: number | null
           viewed_at?: string | null
@@ -11243,6 +11255,7 @@ export type Database = {
           custom_days?: number | null
           custom_installments?: Json | null
           data_inicio_cobranca?: string | null
+          descricao_contrapartida?: string | null
           discount_percent?: number | null
           duration_months?: number | null
           exclusividade_disponivel?: boolean | null
@@ -11256,16 +11269,20 @@ export type Database = {
           id?: string
           is_custom_days?: boolean | null
           is_viewing?: boolean | null
+          itens_permuta?: Json | null
           last_heartbeat_at?: string | null
           last_modified_at?: string | null
           last_viewed_at?: string | null
           meses_cortesia?: number | null
           metadata?: Json | null
+          metodo_pagamento_alternativo?: string | null
+          modalidade_proposta?: string | null
           modified_by?: string | null
           multa_rescisao_ativa?: boolean | null
           multa_rescisao_percentual?: number | null
           needs_reacceptance?: boolean | null
           number?: string
+          ocultar_valores_publico?: boolean | null
           payment_type?: string | null
           pdf_url?: string | null
           predios_contratados?: number | null
@@ -11293,6 +11310,7 @@ export type Database = {
           travamento_telas_atuais?: number | null
           travamento_telas_limite?: number | null
           updated_at?: string | null
+          valor_total_permuta?: number | null
           venda_futura?: boolean | null
           view_count?: number | null
           viewed_at?: string | null
