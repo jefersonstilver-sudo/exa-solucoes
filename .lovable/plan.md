@@ -1,167 +1,199 @@
 
-# Plano: Botão "Copiar Texto da Proposta" para Validação
+# Plano: Mostrar Valor Monetário de Referência em Propostas de Permuta
 
-## Objetivo
-Adicionar um botão ao lado dos botões de Visualização e Enviar que copie TODOS os dados da proposta em formato texto legível, permitindo validação completa contra a proposta real.
+## Contexto do Problema
 
-## Localização
-Arquivo: `src/pages/admin/proposals/NovaPropostaPage.tsx`
-Linha: ~3086-3095 (área dos botões no footer fixo)
+Atualmente, quando uma proposta é configurada como **Permuta**, o sistema:
+- ❌ Zera o `fidel_monthly_value` (linha 906 do NovaPropostaPage)
+- ❌ Não mostra na proposta pública quanto custaria monetariamente
+- ❌ O PDF mostra R$ 0,00 nos planos de pagamento
 
-## Implementação
+**O que você precisa:**
+- ✅ Mostrar o valor que custaria se fosse comprar (referência monetária)
+- ✅ Mostrar que o cliente pode pagar em permuta com os equipamentos
+- ✅ Manter o controle de visibilidade dos valores dos equipamentos
 
-### 1. Adicionar ícone de cópia (import)
-Adicionar `Copy` aos imports do lucide-react (linha 4).
+---
 
-### 2. Criar função `handleCopyProposalText`
-Função que monta uma string completa e legível com TODOS os campos da proposta:
+## Solução Proposta
+
+### 1. Novo Campo: Valor de Referência Monetária
+
+Adicionar campo `valor_referencia_monetaria` que será preenchido mesmo em propostas de permuta para mostrar "quanto custaria se fosse comprar".
+
+### 2. Alterações no Admin (NovaPropostaPage.tsx)
+
+**a) Novo estado:**
+```typescript
+const [valorReferencia, setValorReferencia] = useState<number>(0);
+```
+
+**b) Na seção de permuta, MANTER o campo de valor mensal visível:**
+- Ao invés de ocultar os campos monetários quando `modalidadeProposta === 'permuta'`
+- Mostrar um campo "Valor de Referência (quanto custaria se fosse comprar)"
+- Este valor será usado para mostrar ao cliente a economia/benefício da permuta
+
+**c) Salvar no banco:**
+```typescript
+// No objeto de envio
+valor_referencia_monetaria: modalidadeProposta === 'permuta' ? valorReferencia : null,
+```
+
+### 3. Alterações na Página Pública (PropostaPublicaPage.tsx)
+
+Na seção de permuta, adicionar ANTES dos equipamentos:
 
 ```text
-═══════════════════════════════════════════════════
-           PROPOSTA EXA - VALIDAÇÃO COMPLETA
-═══════════════════════════════════════════════════
-
-📋 DADOS DO CLIENTE
-────────────────────────────────────────────────────
-• Nome: João Silva
-• Empresa: Empresa LTDA
-• País: Brasil
-• CNPJ: 12.345.678/0001-90
-• Telefone: +55 11 99999-9999
-• E-mail: joao@empresa.com
-• Endereço: Rua das Flores, 123
-
-🏢 PRÉDIOS SELECIONADOS (3 prédios)
-────────────────────────────────────────────────────
-1. Edifício Aurora
-   • Bairro: Centro
-   • Telas: 4
-   • Exibições/mês: 46.440
-
-2. Edifício Sol Nascente *
-   • Bairro: Manual
-   • Telas: 2
-   • Exibições/mês: 23.220
-
-TOTAIS:
-• Total de Telas: 6
-• Exibições Mensais: 69.660
-• Público Estimado: 1.200 pessoas
-
-📦 PRODUTO
-────────────────────────────────────────────────────
-• Tipo: Vertical Premium / Horizontal
-• Posições (Marcas): 1
-
-⏱️ PERÍODO
-────────────────────────────────────────────────────
-• Duração: 12 meses
-• Tipo: Padrão / Período em Dias (15 dias) / Personalizado
-
-💰 PAGAMENTO [MONETÁRIO]
-────────────────────────────────────────────────────
-• Valor Mensal (Fidelidade): R$ 1.500,00
-• Desconto à Vista: 10%
-• Total à Vista: R$ 16.200,00
-• Valor Sugerido (base): R$ 1.200,00/mês
-
-[OU SE PERMUTA]
-
-💱 PERMUTA
-────────────────────────────────────────────────────
-• Modalidade: Permuta
-• Ocultar valores no público: Sim/Não
-• Descrição da Contrapartida: ...
-
-Itens de Permuta:
-1. Produto ABC (Qtd: 10) - R$ 100,00 cada = R$ 1.000,00
-2. Serviço XYZ (Qtd: 1) - R$ 5.000,00
-
-Valor Total Permuta: R$ 6.000,00
-
-📊 CONDIÇÕES COMERCIAIS
-────────────────────────────────────────────────────
-🚀 Venda Futura: ATIVO
-   • Prédios Contratados: 50
-   • Telas Estimadas: 67
-
-🔒 Exclusividade de Segmento: ATIVO
-   • Segmento: Restaurantes
-   • Acréscimo: 35%
-   • Valor Extra: R$ 5.670,00
-
-📌 Travamento de Preço: ATIVO
-   • Valor por Tela: R$ 250,00
-   • Limite de Telas: 50
-
-⚖️ Multa de Rescisão: ATIVO
-   • Percentual: 20%
-
-⏳ VALIDADE
-────────────────────────────────────────────────────
-• Prazo: 24 horas / 72 horas / 7 dias / Personalizado / Indeterminada
-• Expira em: 15/01/2025 às 18:00
-
-📝 CONFIGURAÇÕES ADICIONAIS
-────────────────────────────────────────────────────
-• Título da Proposta: "Proposta Especial 2025"
-• Exigir Contrato: Sim/Não
-• Cobrança Futura: Sim/Não
-• E-mails em Cópia (CC): email1@test.com, email2@test.com
-
-👤 VENDEDOR
-────────────────────────────────────────────────────
-• Nome: Maria Vendedora
-• E-mail: maria@exa.com.br
-• Telefone: +55 11 98888-8888
-
-═══════════════════════════════════════════════════
-      Gerado em: 15/01/2025 às 14:30:00
-═══════════════════════════════════════════════════
+┌─────────────────────────────────────────────────────┐
+│ 💰 VALOR DO PACOTE                                  │
+│                                                     │
+│ Este pacote de mídia tem valor de mercado de:      │
+│           R$ 18.000,00                             │
+│           (12x de R$ 1.500,00)                     │
+│                                                     │
+├─────────────────────────────────────────────────────┤
+│ 🔄 ACORDO DE PERMUTA                                │
+│                                                     │
+│ Em vez do pagamento monetário, esta proposta        │
+│ oferece a seguinte condição de parceria:            │
+│                                                     │
+│ 📦 Contrapartida Acordada:                          │
+│ 1. Tablet Android 24" (90x) ........... R$ 135.000 │
+│                                                     │
+│ 🤝 Acordo de Parceria                               │
+└─────────────────────────────────────────────────────┘
 ```
 
-### 3. Adicionar botão no footer
-Inserir entre o botão de Preview (Eye) e o botão de Enviar:
+### 4. Alterações no PDF (ProposalPDFExporter.tsx)
 
-```tsx
-{/* Botão Copiar Texto da Proposta */}
-<Button 
-  variant="outline" 
-  onClick={handleCopyProposalText} 
-  disabled={selectedBuildings.length === 0}
-  className="h-11 px-3 border-blue-200 text-blue-600 hover:bg-blue-50"
-  title="Copiar texto completo da proposta"
->
-  <Copy className="h-4 w-4" />
-</Button>
+Adicionar à interface `ProposalData`:
+```typescript
+modalidade_proposta?: 'monetaria' | 'permuta' | null;
+itens_permuta?: Array<{...}> | null;
+valor_referencia_monetaria?: number | null;
+ocultar_valores_publico?: boolean | null;
 ```
 
-### 4. Feedback visual
-Usar `toast.success('Texto da proposta copiado!')` após copiar para clipboard.
+No método `generateProposalPDF`, verificar modalidade:
+```typescript
+if (proposal.modalidade_proposta === 'permuta') {
+  this.drawPermutaSection(proposal);
+} else {
+  this.drawCommercialConditions(proposal, isCortesia, baseTotalValue);
+}
+```
 
-## Campos Incluídos (checklist completo)
+---
 
-| Seção | Campos |
-|-------|--------|
-| Cliente | firstName, lastName, companyName, country, document, phone, email, address |
-| Prédios | Lista completa com nome, bairro, telas, exibições + indicador de manual (*) |
-| Totais | totalPanels, totalImpressionsAdjusted, totalPublico |
-| Produto | tipoProduto, quantidadePosicoes |
-| Período | durationMonths, isCustomDays, customDays, isCustomPayment |
-| Pagamento | fidelValue, discountPercent, cashTotal, valorSugeridoMensal |
-| Parcelas Custom | customInstallments (data + valor de cada) |
-| Permuta | modalidadeProposta, itensPermuta, valorTotalPermuta, ocultarValoresPublico, descricaoContrapartida |
-| Venda Futura | vendaFutura, prediosContratados, telasContratadas |
-| Exclusividade | oferecerExclusividade, segmentoExclusivo, exclusividadePercentual, exclusividadeValorCalculado |
-| Travamento | travamentoPrecoAtivo, travamentoPrecoValor, travamentoTelasLimite, travamentoModoCalculo |
-| Multa | multaRescisaoAtiva, multaRescisaoPercentual |
-| Validade | validityHours, customDateRange, expires_at calculado |
-| Extras | tituloProposta, ccEmails, exigirContrato, cobrancaFutura |
-| Vendedor | selectedSeller.nome, selectedSeller.email, selectedSeller.telefone |
+## Arquivos a Modificar
 
-## Notas técnicas
-- Usar `navigator.clipboard.writeText()` para copiar
-- Formatar valores monetários com `toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })`
-- Formatar datas com `format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })`
-- Indicar prédios manuais com asterisco (*)
-- Mostrar apenas seções relevantes (ex: se não for permuta, não mostrar seção de permuta)
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Adicionar campo `valorReferencia` + manter visível quando permuta + salvar no banco |
+| `src/pages/public/PropostaPublicaPage.tsx` | Mostrar "Valor do Pacote" antes da seção de permuta |
+| `src/components/admin/proposals/ProposalPDFExporter.tsx` | Adicionar seção de permuta no PDF |
+| **Banco de Dados** | Adicionar coluna `valor_referencia_monetaria` na tabela `proposals` (se ainda não existir) |
+
+---
+
+## Detalhes Técnicos
+
+### Interface Visual Admin
+
+Na seção de Período e Valores, quando `modalidadeProposta === 'permuta'`:
+
+```text
+┌─ Período e Valores ─────────────────────────────────┐
+│                                                     │
+│ [Monetária]  [Permuta ✓]                            │
+│                                                     │
+│ ┌─ Valor de Referência ────────────────────────────┐│
+│ │ 💡 Informe quanto custaria este pacote se fosse  ││
+│ │    uma proposta monetária (usado como referência)││
+│ │                                                  ││
+│ │ Valor Mensal: R$ [1.500,00]                      ││
+│ │                                                  ││
+│ │ Total em 12 meses: R$ 18.000,00                  ││
+│ └──────────────────────────────────────────────────┘│
+│                                                     │
+│ ┌─ Equipamentos Ofertados (Permuta) ───────────────┐│
+│ │ ...lista de equipamentos...                      ││
+│ └──────────────────────────────────────────────────┘│
+│                                                     │
+│ Período: [3] [6] [12] [24] [Dias]                   │
+└─────────────────────────────────────────────────────┘
+```
+
+### Interface Visual Página Pública
+
+```text
+┌─ Valor do Pacote ───────────────────────────────────┐
+│ 💰 Este pacote de mídia tem valor de:               │
+│                                                     │
+│     R$ 18.000,00                                    │
+│     (12x de R$ 1.500,00/mês)                        │
+│                                                     │
+│ 📊 Cobertura: 100 telas | 1.161.000 exibições/mês   │
+└─────────────────────────────────────────────────────┘
+
+┌─ Acordo de Permuta ─────────────────────────────────┐
+│ 🤝 Proposta de Parceria                             │
+│                                                     │
+│ Em vez do pagamento monetário, esta proposta        │
+│ oferece a seguinte condição de troca:               │
+│                                                     │
+│ 📦 Contrapartida:                                   │
+│ 1. Tablet Android 24" Touchscreen (90x)             │
+│    Valor: R$ 135.000,00                             │
+│                                                     │
+│ 📅 Período: 12 meses                                │
+│                                                     │
+│        [🤝 Acordo de Parceria]                      │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## Fluxo Completo
+
+```text
+ADMIN                           BANCO                    PÚBLICO/PDF
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Seleciona Permuta ────────────────────────────────────────────────
+   
+2. Preenche "Valor de 
+   Referência" (R$ 1.500/mês)   ──► valor_referencia_monetaria
+   
+3. Adiciona Equipamentos       ──► itens_permuta[]
+   (90x Tablet = R$ 135.000)
+   
+4. Seleciona período (12 meses) ──► duration_months
+   
+5. Toggle "Ocultar valores"    ──► ocultar_valores_publico
+   (por item ou global)
+
+6. Envia proposta ──────────────►  Salva no banco ──────────────────►
+                                                    
+                                   Página Pública exibe:
+                                   - "Valor do Pacote: R$ 18.000"
+                                   - "Acordo de Permuta"
+                                   - Lista de equipamentos
+                                   
+                                   PDF exibe a mesma estrutura
+```
+
+---
+
+## Checklist de Implementação
+
+- [ ] Verificar se coluna `valor_referencia_monetaria` existe no banco
+- [ ] Adicionar estado `valorReferencia` no NovaPropostaPage
+- [ ] Mostrar campo de valor de referência quando `modalidadeProposta === 'permuta'`
+- [ ] Salvar `valor_referencia_monetaria` no envio da proposta
+- [ ] Carregar `valor_referencia_monetaria` no modo edição
+- [ ] Atualizar PropostaPublicaPage para exibir "Valor do Pacote" antes de permuta
+- [ ] Atualizar ProposalPDFExporter para renderizar seção de permuta
+- [ ] Atualizar função `handleCopyProposalText` para incluir valor de referência
+- [ ] Testar fluxo completo: criar permuta → ver pública → baixar PDF
+
