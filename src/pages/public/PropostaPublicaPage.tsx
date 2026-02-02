@@ -161,6 +161,7 @@ const PropostaPublicaPage = () => {
   const [hasExistingContract, setHasExistingContract] = useState(false);
   const [existingSignatoryData, setExistingSignatoryData] = useState<any>(null);
   const [isEditingSignatory, setIsEditingSignatory] = useState(false);
+  const [hasSignatoryRegistered, setHasSignatoryRegistered] = useState(false);
 
   // Track page view time with heartbeat system (works on mobile!)
   const pageLoadTime = React.useRef<number>(Date.now());
@@ -362,6 +363,19 @@ const PropostaPublicaPage = () => {
           console.log('📄 Contrato já existe para esta proposta:', metadata.contract_id);
           setExistingContractId(metadata.contract_id);
           setHasExistingContract(true);
+          
+          // Verificar se já existe signatário do tipo 'cliente' registrado
+          const { data: signatario } = await supabase
+            .from('contrato_signatarios')
+            .select('id')
+            .eq('contrato_id', metadata.contract_id)
+            .eq('tipo', 'cliente')
+            .maybeSingle();
+          
+          if (signatario) {
+            console.log('👤 Signatário cliente já registrado:', signatario.id);
+            setHasSignatoryRegistered(true);
+          }
         }
 
         // Detectar se é uma cortesia
@@ -2364,8 +2378,8 @@ const PropostaPublicaPage = () => {
                       )}
                     </Button>
                     
-                    {/* Botão de editar signatário - Cortesia */}
-                    {hasExistingContract && (
+                    {/* Botão de editar signatário - Cortesia (só se signatário já registrado) */}
+                    {hasExistingContract && hasSignatoryRegistered && (
                       <Button
                         variant="outline"
                         className="w-full h-9 text-xs border-amber-400/50 text-amber-700 bg-amber-50 hover:bg-amber-100"
@@ -2441,8 +2455,8 @@ const PropostaPublicaPage = () => {
                       )}
                     </Button>
                     
-                    {/* Botão de editar signatário - Pagamento Personalizado */}
-                    {hasExistingContract && (
+                    {/* Botão de editar signatário - Pagamento Personalizado (só se signatário já registrado) */}
+                    {hasExistingContract && hasSignatoryRegistered && (
                       <Button
                         variant="outline"
                         className="w-full h-9 text-xs border-amber-400/50 text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-xl"
@@ -2518,8 +2532,8 @@ const PropostaPublicaPage = () => {
                       )}
                     </Button>
                     
-                    {/* Botão de editar signatário - só aparece se contrato já existe */}
-                    {hasExistingContract && (
+                    {/* Botão de editar signatário - só aparece se signatário já registrado */}
+                    {hasExistingContract && hasSignatoryRegistered && (
                       <Button
                         variant="outline"
                         className="w-full h-9 text-xs border-amber-400/50 text-amber-700 bg-amber-50 hover:bg-amber-100"

@@ -1,3 +1,6 @@
+// VERSION: 2.0.0 - Idempotent contract creation with edit mode
+// DEPLOYED: 2026-02-02
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -16,6 +19,7 @@ interface ContractClientData {
 }
 
 serve(async (req) => {
+  console.log("🔧 VERSION: 2.0.0 - Idempotent Contract Flow");
   console.log("╔══════════════════════════════════════════════════════════════╗");
   console.log("║ 📝 CREATE-CONTRACT-FROM-PROPOSAL - INÍCIO                    ║");
   console.log("╚══════════════════════════════════════════════════════════════╝");
