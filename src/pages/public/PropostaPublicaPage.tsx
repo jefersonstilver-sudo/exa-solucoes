@@ -1799,7 +1799,7 @@ const PropostaPublicaPage = () => {
               
               {/* Right: Client Logo (branca) - com signed URL para buckets privados */}
               {proposal.client_logo_url && (
-                <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20 p-2">
+                <div className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 flex items-center justify-center flex-shrink-0">
                   <ClientLogoDisplay 
                     logoUrl={proposal.client_logo_url}
                     className="w-full h-full object-contain filter brightness-0 invert"
