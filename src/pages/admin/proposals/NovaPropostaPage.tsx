@@ -673,6 +673,14 @@ const NovaPropostaPage = () => {
       setValorReferenciaMonetaria((existingProposal as any).valor_referencia_monetaria || 0);
 
       // ============================================
+      // LOGO DO CLIENTE - HIDRATAÇÃO
+      // ============================================
+      if (existingProposal.client_logo_url) {
+        setClientLogoUrl(existingProposal.client_logo_url);
+        console.log('🖼️ Logo do cliente carregada:', existingProposal.client_logo_url);
+      }
+
+      // ============================================
       // VALIDADE DA PROPOSTA - HIDRATAÇÃO COMPLETA
       // ============================================
       if (existingProposal.expires_at === null) {
@@ -3514,7 +3522,11 @@ Parcelas:
             className="flex-1 h-11 gap-2"
           >
             <Send className="h-4 w-4" />
-            {isEditMode && (!dataLoaded || isLoadingProposal) ? 'Carregando...' : 'Enviar'}
+            {isEditMode && (!dataLoaded || isLoadingProposal) 
+              ? 'Carregando...' 
+              : isEditMode 
+                ? 'Salvar e Enviar' 
+                : 'Enviar'}
           </Button>
         </div>
       </div>
@@ -3525,7 +3537,7 @@ Parcelas:
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Send className="h-5 w-5 text-primary" />
-              Enviar Proposta
+              {isEditMode ? 'Salvar Alterações e Enviar' : 'Enviar Proposta'}
             </DialogTitle>
           </DialogHeader>
 
