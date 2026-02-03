@@ -1,7 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Upload, X, Loader2, Sparkles, Check, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Loader2, Sparkles, Check, AlertCircle, Image as ImageIcon, Building2, User, FileText, Wand2 } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -9,6 +11,11 @@ interface ClientLogoUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogoProcessed: (logoUrl: string) => void;
+  // Props para preview real na proposta
+  previewCompanyName?: string;
+  previewClientName?: string;
+  previewClientDocLabel?: string;
+  previewClientDocValue?: string;
 }
 
 type ProcessingState = 'idle' | 'uploading' | 'processing' | 'done' | 'error';
@@ -16,22 +23,34 @@ type ProcessingState = 'idle' | 'uploading' | 'processing' | 'done' | 'error';
 export const ClientLogoUploadModal = ({
   isOpen,
   onClose,
-  onLogoProcessed
+  onLogoProcessed,
+  previewCompanyName = 'Nome da Empresa',
+  previewClientName = 'Nome do Responsável',
+  previewClientDocLabel = 'CNPJ',
+  previewClientDocValue = '00.000.000/0001-00'
 }: ClientLogoUploadModalProps) => {
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [originalUrl, setOriginalUrl] = useState<string | null>(null);
   const [processedUrl, setProcessedUrl] = useState<string | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<'original' | 'processed'>('processed');
   const [processingState, setProcessingState] = useState<ProcessingState>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [originalImageError, setOriginalImageError] = useState(false);
+  const [processedImageError, setProcessedImageError] = useState(false);
 
   const resetState = () => {
     setSelectedFile(null);
     setPreviewUrl(null);
+    setOriginalUrl(null);
     setProcessedUrl(null);
+    setSelectedVariant('processed');
     setProcessingState('idle');
     setErrorMessage(null);
     setDragOver(false);
+    setOriginalImageError(false);
+    setProcessedImageError(false);
   };
 
   const handleClose = () => {
@@ -40,19 +59,15 @@ export const ClientLogoUploadModal = ({
   };
 
   const validateFile = (file: File): boolean => {
-    // Validar tipo (PNG preferido, mas aceitar imagens em geral)
     const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       toast.error('Formato inválido. Use PNG, JPG ou WEBP.');
       return false;
     }
-
-    // Validar tamanho (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Arquivo muito grande. Máximo 5MB.');
       return false;
     }
-
     return true;
   };
 
@@ -61,8 +76,11 @@ export const ClientLogoUploadModal = ({
 
     setSelectedFile(file);
     setProcessingState('idle');
+    setOriginalUrl(null);
     setProcessedUrl(null);
     setErrorMessage(null);
+    setOriginalImageError(false);
+    setProcessedImageError(false);
 
     // Criar preview local
     const reader = new FileReader();
@@ -111,6 +129,8 @@ export const ClientLogoUploadModal = ({
 
     setProcessingState('uploading');
     setErrorMessage(null);
+    setOriginalImageError(false);
+    setProcessedImageError(false);
 
     try {
       // Converter arquivo para base64
@@ -137,13 +157,27 @@ export const ClientLogoUploadModal = ({
         throw new Error(error.message || 'Erro ao processar logo');
       }
 
-      if (!data?.success || !data?.logoUrl) {
+      if (!data?.success) {
         throw new Error(data?.error || 'Falha ao processar logo');
       }
 
-      setProcessedUrl(data.logoUrl);
+      // Salvar URLs com cache-busting para preview
+      const cacheBuster = `?v=${Date.now()}`;
+      setOriginalUrl(data.originalUrl ? data.originalUrl + cacheBuster : null);
+      setProcessedUrl(data.processedUrl ? data.processedUrl + cacheBuster : null);
+      
+      // Se não tiver processedUrl, selecionar original por padrão
+      if (!data.processedUrl) {
+        setSelectedVariant('original');
+      }
+
       setProcessingState('done');
-      toast.success('Logo processada com sucesso!');
+      
+      if (data.processed && data.processedUrl) {
+        toast.success('Logo processada com sucesso!');
+      } else {
+        toast.info('Logo enviada! Processamento IA indisponível, usando original.');
+      }
 
     } catch (error: any) {
       console.error('Error:', error);
@@ -154,20 +188,31 @@ export const ClientLogoUploadModal = ({
   };
 
   const handleConfirm = () => {
-    if (processedUrl) {
-      onLogoProcessed(processedUrl);
+    // Usar a URL sem cache-buster para salvar
+    let finalUrl: string | null = null;
+    
+    if (selectedVariant === 'processed' && processedUrl) {
+      finalUrl = processedUrl.split('?')[0]; // Remove cache-buster
+    } else if (originalUrl) {
+      finalUrl = originalUrl.split('?')[0];
+    }
+
+    if (finalUrl) {
+      onLogoProcessed(finalUrl);
       handleClose();
+    } else {
+      toast.error('Nenhuma logo disponível para aplicar.');
     }
   };
 
   const getProcessingMessage = () => {
     switch (processingState) {
       case 'uploading':
-        return 'Preparando imagem...';
+        return 'Enviando imagem...';
       case 'processing':
         return 'IA removendo fundo e otimizando...';
       case 'done':
-        return 'Logo pronta!';
+        return 'Pronto!';
       case 'error':
         return errorMessage || 'Erro no processamento';
       default:
@@ -175,20 +220,27 @@ export const ClientLogoUploadModal = ({
     }
   };
 
+  // Qual URL usar no preview da proposta
+  const previewLogoUrl = selectedVariant === 'processed' && processedUrl 
+    ? processedUrl 
+    : originalUrl;
+
+  const canConfirm = processingState === 'done' && (originalUrl || processedUrl);
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-slate-200">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+          <DialogTitle className="flex items-center gap-2 text-slate-800">
+            <Sparkles className="h-5 w-5 text-[#9C1E1E]" />
             Upload de Logo do Cliente
           </DialogTitle>
-          <DialogDescription>
-            Faça upload da logo. A IA irá remover o fundo e otimizar automaticamente.
+          <DialogDescription className="text-slate-600">
+            Faça upload da logo. Você pode usar a versão original ou processar com IA para remover o fundo.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Área de Upload */}
           {!selectedFile ? (
             <div
@@ -198,8 +250,8 @@ export const ClientLogoUploadModal = ({
               className={`
                 relative border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer
                 ${dragOver 
-                  ? 'border-primary bg-primary/5' 
-                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  ? 'border-[#9C1E1E] bg-[#9C1E1E]/5' 
+                  : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'
                 }
               `}
             >
@@ -209,83 +261,179 @@ export const ClientLogoUploadModal = ({
                 onChange={handleInputChange}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
-              <Upload className={`h-10 w-10 mx-auto mb-3 ${dragOver ? 'text-primary' : 'text-slate-400'}`} />
-              <p className="text-sm font-medium text-slate-700">
+              <Upload className={`h-12 w-12 mx-auto mb-3 ${dragOver ? 'text-[#9C1E1E]' : 'text-slate-400'}`} />
+              <p className="text-base font-medium text-slate-700">
                 Arraste a logo aqui ou clique para selecionar
               </p>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-sm text-slate-500 mt-1">
                 PNG, JPG ou WEBP até 5MB
               </p>
-              <p className="text-xs text-primary/80 mt-2 font-medium">
-                ✨ A IA remove o fundo automaticamente
+              <p className="text-sm text-[#9C1E1E] mt-3 font-medium flex items-center justify-center gap-1.5">
+                <Wand2 className="h-4 w-4" />
+                A IA pode remover o fundo automaticamente
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {/* Preview da Imagem */}
-              <div className="flex gap-4 items-start">
-                {/* Imagem Original */}
-                <div className="flex-1 text-center">
-                  <p className="text-xs text-slate-500 mb-2">Original</p>
-                  <div className="relative aspect-square rounded-lg border-2 border-slate-200 overflow-hidden bg-slate-100 flex items-center justify-center">
+            <div className="space-y-6">
+              {/* Grid de versões: Original | Processada */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Card Original */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-700">Original</h3>
+                    {processingState === 'done' && originalUrl && (
+                      <RadioGroup value={selectedVariant} onValueChange={(v) => setSelectedVariant(v as 'original' | 'processed')}>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="original" id="original" className="border-[#9C1E1E] text-[#9C1E1E]" />
+                          <Label htmlFor="original" className="text-xs cursor-pointer">Usar esta</Label>
+                        </div>
+                      </RadioGroup>
+                    )}
+                  </div>
+                  <div className={`
+                    relative aspect-square rounded-xl overflow-hidden flex items-center justify-center p-4
+                    bg-gradient-to-br from-slate-100 to-slate-200 border-2 transition-all
+                    ${selectedVariant === 'original' && processingState === 'done' 
+                      ? 'border-[#9C1E1E] ring-2 ring-[#9C1E1E]/20' 
+                      : 'border-slate-200'}
+                  `}>
                     {previewUrl && (
                       <img 
-                        src={previewUrl} 
+                        src={originalUrl || previewUrl} 
                         alt="Original" 
                         className="max-w-full max-h-full object-contain"
+                        onError={() => setOriginalImageError(true)}
                       />
+                    )}
+                    {originalImageError && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
+                        <div className="text-center text-slate-500">
+                          <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+                          <p className="text-xs">Erro ao carregar</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedVariant === 'original' && processingState === 'done' && (
+                      <div className="absolute top-2 right-2 bg-[#9C1E1E] text-white px-2 py-1 rounded-full text-xs font-medium">
+                        Selecionada
+                      </div>
                     )}
                   </div>
                 </div>
 
-                {/* Seta */}
-                <div className="flex items-center justify-center pt-8">
-                  <div className="text-slate-300">→</div>
-                </div>
-
-                {/* Imagem Processada */}
-                <div className="flex-1 text-center">
-                  <p className="text-xs text-slate-500 mb-2">Processada</p>
-                  <div className="relative aspect-square rounded-lg border-2 border-slate-200 overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                {/* Card Processada (IA) */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                      <Wand2 className="h-4 w-4 text-[#9C1E1E]" />
+                      Otimizada (IA)
+                    </h3>
+                    {processingState === 'done' && processedUrl && (
+                      <RadioGroup value={selectedVariant} onValueChange={(v) => setSelectedVariant(v as 'original' | 'processed')}>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="processed" id="processed" className="border-[#9C1E1E] text-[#9C1E1E]" />
+                          <Label htmlFor="processed" className="text-xs cursor-pointer">Usar esta</Label>
+                        </div>
+                      </RadioGroup>
+                    )}
+                  </div>
+                  <div className={`
+                    relative aspect-square rounded-xl overflow-hidden flex items-center justify-center p-4
+                    bg-gradient-to-r from-[#4a0f0f] via-[#6B1515] to-[#7D1818] border-2 transition-all
+                    ${selectedVariant === 'processed' && processingState === 'done' && processedUrl
+                      ? 'border-[#9C1E1E] ring-2 ring-[#9C1E1E]/20' 
+                      : 'border-white/20'}
+                  `}>
                     {processedUrl ? (
-                      <img 
-                        src={processedUrl} 
-                        alt="Processada" 
-                        className="max-w-full max-h-full object-contain p-2 filter brightness-0 invert"
-                      />
+                      <>
+                        <img 
+                          src={processedUrl} 
+                          alt="Processada" 
+                          className="max-w-full max-h-full object-contain filter brightness-0 invert"
+                          onError={() => setProcessedImageError(true)}
+                        />
+                        {processedImageError && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="text-center text-white/80">
+                              <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+                              <p className="text-xs">Erro ao carregar</p>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     ) : processingState === 'idle' ? (
-                      <div className="text-slate-600 text-center p-2">
-                        <ImageIcon className="h-8 w-8 mx-auto mb-1 opacity-50" />
-                        <p className="text-xs">Clique em processar</p>
+                      <div className="text-white/60 text-center p-4">
+                        <ImageIcon className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Clique em "Processar" para otimizar</p>
+                      </div>
+                    ) : processingState === 'uploading' || processingState === 'processing' ? (
+                      <div className="text-white text-center p-4">
+                        <Loader2 className="h-10 w-10 mx-auto mb-2 animate-spin" />
+                        <p className="text-sm font-medium">{getProcessingMessage()}</p>
+                      </div>
+                    ) : processingState === 'error' ? (
+                      <div className="text-white/80 text-center p-4">
+                        <AlertCircle className="h-10 w-10 mx-auto mb-2 text-red-300" />
+                        <p className="text-sm">{errorMessage || 'Erro no processamento'}</p>
+                        <p className="text-xs mt-1 opacity-70">Use a versão original</p>
                       </div>
                     ) : (
-                      <div className="text-white text-center p-2">
-                        <Loader2 className="h-8 w-8 mx-auto mb-1 animate-spin" />
-                        <p className="text-xs">{getProcessingMessage()}</p>
+                      <div className="text-white/60 text-center p-4">
+                        <ImageIcon className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">IA não retornou imagem</p>
                       </div>
                     )}
-                    {processingState === 'done' && (
-                      <div className="absolute top-2 right-2 p-1 bg-emerald-500 rounded-full">
-                        <Check className="h-3 w-3 text-white" />
+                    {selectedVariant === 'processed' && processingState === 'done' && processedUrl && (
+                      <div className="absolute top-2 right-2 bg-white text-[#9C1E1E] px-2 py-1 rounded-full text-xs font-medium">
+                        Selecionada
                       </div>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Status do Processamento */}
-              {processingState !== 'idle' && processingState !== 'done' && (
-                <div className={`flex items-center gap-2 p-3 rounded-lg ${
-                  processingState === 'error' 
-                    ? 'bg-red-50 text-red-700' 
-                    : 'bg-blue-50 text-blue-700'
-                }`}>
-                  {processingState === 'error' ? (
-                    <AlertCircle className="h-4 w-4" />
-                  ) : (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  )}
-                  <span className="text-sm">{getProcessingMessage()}</span>
+              {/* Preview na Proposta */}
+              {processingState === 'done' && previewLogoUrl && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-[#9C1E1E]" />
+                    Preview na Proposta
+                  </h3>
+                  <div className="bg-gradient-to-r from-[#4a0f0f] via-[#6B1515] to-[#7D1818] rounded-xl p-4 sm:p-6">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                      <div className="flex items-start justify-between gap-4">
+                        {/* Left: Company Info */}
+                        <div className="flex-1 text-white">
+                          <div className="text-lg sm:text-xl font-bold mb-1 flex items-center gap-2">
+                            <Building2 className="h-5 w-5 opacity-80" />
+                            {previewCompanyName || 'Nome da Empresa'}
+                          </div>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs sm:text-sm opacity-80">
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {previewClientName || 'Responsável'}
+                            </span>
+                            <span>{previewClientDocLabel}: {previewClientDocValue}</span>
+                          </div>
+                        </div>
+                        
+                        {/* Right: Client Logo */}
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20 p-2">
+                          <img 
+                            src={previewLogoUrl} 
+                            alt="Logo do cliente"
+                            className="w-full h-full object-contain filter brightness-0 invert"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 text-center">
+                    É assim que a logo aparecerá na proposta pública (sempre em branco)
+                  </p>
                 </div>
               )}
 
@@ -294,7 +442,7 @@ export const ClientLogoUploadModal = ({
                 variant="ghost"
                 size="sm"
                 onClick={resetState}
-                className="w-full"
+                className="w-full text-slate-600 hover:text-slate-800"
               >
                 <X className="h-4 w-4 mr-1" />
                 Escolher outra imagem
@@ -303,11 +451,11 @@ export const ClientLogoUploadModal = ({
           )}
 
           {/* Botões de Ação */}
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-3 pt-2 border-t border-slate-200">
             <Button 
               variant="outline" 
               onClick={handleClose}
-              className="flex-1"
+              className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-100"
             >
               Cancelar
             </Button>
@@ -315,9 +463,9 @@ export const ClientLogoUploadModal = ({
             {selectedFile && processingState === 'idle' && (
               <Button 
                 onClick={processLogoWithAI}
-                className="flex-1"
+                className="flex-1 bg-[#9C1E1E] hover:bg-[#7D1818] text-white"
               >
-                <Sparkles className="h-4 w-4 mr-1" />
+                <Wand2 className="h-4 w-4 mr-1.5" />
                 Processar com IA
               </Button>
             )}
@@ -325,20 +473,20 @@ export const ClientLogoUploadModal = ({
             {processingState === 'error' && (
               <Button 
                 onClick={processLogoWithAI}
-                className="flex-1"
+                className="flex-1 bg-[#9C1E1E] hover:bg-[#7D1818] text-white"
               >
-                <Sparkles className="h-4 w-4 mr-1" />
+                <Wand2 className="h-4 w-4 mr-1.5" />
                 Tentar Novamente
               </Button>
             )}
 
-            {processingState === 'done' && processedUrl && (
+            {canConfirm && (
               <Button 
                 onClick={handleConfirm}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                className="flex-1 bg-[#9C1E1E] hover:bg-[#7D1818] text-white"
               >
-                <Check className="h-4 w-4 mr-1" />
-                Usar esta Logo
+                <Check className="h-4 w-4 mr-1.5" />
+                Aplicar Logo
               </Button>
             )}
           </div>

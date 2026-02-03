@@ -13,11 +13,12 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64, fileName } = await req.json();
+    const { imageBase64, fileName, onlyUploadOriginal = false } = await req.json();
 
     console.log('[PROCESS-CLIENT-LOGO] 🎨 Iniciando processamento de logo:', {
       fileName,
       imageSize: imageBase64?.length || 0,
+      onlyUploadOriginal,
       timestamp: new Date().toISOString()
     });
 
@@ -25,12 +26,78 @@ serve(async (req) => {
       throw new Error('imageBase64 is required');
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Preparar dados do original
+    const originalBase64 = imageBase64.startsWith('data:') 
+      ? imageBase64.split(',')[1] 
+      : imageBase64;
+    const originalData = Uint8Array.from(atob(originalBase64), c => c.charCodeAt(0));
+
+    // Gerar nome único para o arquivo
+    const sanitizedFileName = (fileName || 'logo.png')
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]/g, '_')
+      .replace(/_+/g, '_');
+    
+    const timestamp = Date.now();
+    const originalPath = `proposal-client-logos/original/${timestamp}_${sanitizedFileName}`;
+    
+    console.log('[PROCESS-CLIENT-LOGO] 📤 Fazendo upload do original para:', originalPath);
+
+    // 1. SEMPRE fazer upload do original primeiro
+    const { error: originalUploadError } = await supabase.storage
+      .from('arquivos')
+      .upload(originalPath, originalData, {
+        contentType: 'image/png',
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (originalUploadError) {
+      console.error('[PROCESS-CLIENT-LOGO] ❌ Upload original error:', originalUploadError);
+      throw new Error(`Upload original failed: ${originalUploadError.message}`);
     }
 
-    // 1. Processar com Gemini Image (remoção de fundo + upscale)
+    // Obter URL pública do original
+    const { data: originalUrlData } = supabase.storage
+      .from('arquivos')
+      .getPublicUrl(originalPath);
+
+    const originalUrl = originalUrlData.publicUrl;
+    console.log('[PROCESS-CLIENT-LOGO] ✅ Original uploaded:', originalUrl.substring(0, 80) + '...');
+
+    // Se onlyUploadOriginal, retornar apenas o original
+    if (onlyUploadOriginal) {
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          originalUrl,
+          processedUrl: null,
+          processed: false
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 2. Processar com Gemini Image (remoção de fundo + upscale)
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      console.log('[PROCESS-CLIENT-LOGO] ⚠️ LOVABLE_API_KEY not configured, returning original only');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          originalUrl,
+          processedUrl: null,
+          processed: false,
+          message: 'AI processing not available'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log('[PROCESS-CLIENT-LOGO] 🤖 Enviando para Gemini Image API...');
     
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -77,20 +144,43 @@ This logo will be used on professional business documents and proposals.`
       // Handle rate limit
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: 'Rate limits exceeded. Please try again later.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ 
+            success: true, 
+            originalUrl,
+            processedUrl: null,
+            processed: false,
+            error: 'Rate limits exceeded. Please try again later.'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
       // Handle payment required
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: 'Payment required. Please add credits to continue.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ 
+            success: true, 
+            originalUrl,
+            processedUrl: null,
+            processed: false,
+            error: 'Payment required. Please add credits to continue.'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      throw new Error(`Gemini API error: ${response.status}`);
+      // Return original on API error
+      console.log('[PROCESS-CLIENT-LOGO] ⚠️ AI processing failed, returning original only');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          originalUrl,
+          processedUrl: null,
+          processed: false,
+          error: `AI error: ${response.status}`
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const aiResult = await response.json();
@@ -99,76 +189,68 @@ This logo will be used on professional business documents and proposals.`
     // Extrair a imagem processada
     const processedImageUrl = aiResult.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     
-    if (!processedImageUrl) {
-      console.log('[PROCESS-CLIENT-LOGO] ⚠️ IA não retornou imagem, usando original');
-      // Fallback: usar imagem original se IA não processar
-      // Mas ainda precisamos fazer upload para storage
+    if (!processedImageUrl || !processedImageUrl.startsWith('data:')) {
+      console.log('[PROCESS-CLIENT-LOGO] ⚠️ IA não retornou imagem válida, usando original');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          originalUrl,
+          processedUrl: null,
+          processed: false,
+          message: 'AI did not return processed image'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // 2. Upload para Supabase Storage
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    // 3. Upload da imagem processada
+    const processedBase64 = processedImageUrl.split(',')[1];
+    const processedData = Uint8Array.from(atob(processedBase64), c => c.charCodeAt(0));
+    const processedPath = `proposal-client-logos/processed/${timestamp}_${sanitizedFileName}`;
 
-    // Preparar imagem para upload
-    let imageDataToUpload: Uint8Array;
-    
-    if (processedImageUrl && processedImageUrl.startsWith('data:')) {
-      // Extrair base64 da data URL processada
-      const base64Data = processedImageUrl.split(',')[1];
-      imageDataToUpload = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-      console.log('[PROCESS-CLIENT-LOGO] ✅ Usando imagem processada pela IA');
-    } else {
-      // Fallback: usar imagem original
-      const originalBase64 = imageBase64.startsWith('data:') 
-        ? imageBase64.split(',')[1] 
-        : imageBase64;
-      imageDataToUpload = Uint8Array.from(atob(originalBase64), c => c.charCodeAt(0));
-      console.log('[PROCESS-CLIENT-LOGO] ⚠️ Usando imagem original (fallback)');
-    }
+    console.log('[PROCESS-CLIENT-LOGO] 📤 Fazendo upload da processada para:', processedPath);
 
-    // Gerar nome único para o arquivo
-    const sanitizedFileName = (fileName || 'logo.png')
-      .toLowerCase()
-      .replace(/[^a-z0-9._-]/g, '_')
-      .replace(/_+/g, '_');
-    
-    const storagePath = `proposal-client-logos/${Date.now()}_${sanitizedFileName}`;
-    
-    console.log('[PROCESS-CLIENT-LOGO] 📤 Fazendo upload para:', storagePath);
-
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: processedUploadError } = await supabase.storage
       .from('arquivos')
-      .upload(storagePath, imageDataToUpload, {
+      .upload(processedPath, processedData, {
         contentType: 'image/png',
         cacheControl: '3600',
         upsert: false
       });
 
-    if (uploadError) {
-      console.error('[PROCESS-CLIENT-LOGO] ❌ Upload error:', uploadError);
-      throw new Error(`Upload failed: ${uploadError.message}`);
+    if (processedUploadError) {
+      console.error('[PROCESS-CLIENT-LOGO] ❌ Upload processed error:', processedUploadError);
+      // Still return success with original
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          originalUrl,
+          processedUrl: null,
+          processed: false,
+          error: `Upload processed failed: ${processedUploadError.message}`
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // 3. Obter URL pública
-    const { data: publicUrlData } = supabase.storage
+    // Obter URL pública da processada
+    const { data: processedUrlData } = supabase.storage
       .from('arquivos')
-      .getPublicUrl(storagePath);
+      .getPublicUrl(processedPath);
 
-    const logoUrl = publicUrlData.publicUrl;
+    const processedUrl = processedUrlData.publicUrl;
 
     console.log('[PROCESS-CLIENT-LOGO] ✅ Logo processada com sucesso:', {
-      storagePath,
-      logoUrl: logoUrl.substring(0, 80) + '...'
+      originalUrl: originalUrl.substring(0, 60) + '...',
+      processedUrl: processedUrl.substring(0, 60) + '...'
     });
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        logoUrl,
-        storagePath,
-        processed: Boolean(processedImageUrl)
+        originalUrl,
+        processedUrl,
+        processed: true
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
