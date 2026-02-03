@@ -1555,26 +1555,42 @@ Parcelas:
       
       if (isEditMode && editProposalId) {
         // MODO EDIÇÃO - Atualizar proposta existente
+        // Se era rascunho, gerar novo número EXA ao publicar
+        let proposalNumber = existingProposal?.number;
+        if (existingProposal?.number?.startsWith('RASCUNHO-')) {
+          const year = new Date().getFullYear();
+          const randomNum = Math.floor(1000 + Math.random() * 9000);
+          proposalNumber = `EXA-${year}-${randomNum}`;
+          console.log('🚀 [PUBLICAR] Convertendo rascunho para proposta:', proposalNumber);
+        }
+        
         const { data, error } = await supabase
           .from('proposals')
-          .update(proposalData)
+          .update({
+            ...proposalData,
+            number: proposalNumber,
+            status: 'enviada',
+            sent_at: existingProposal?.sent_at || new Date().toISOString(),
+          })
           .eq('id', editProposalId)
           .select()
           .single();
         if (error) throw error;
         proposal = data;
         
-        // Log de edição
+        // Log de edição/publicação
+        const wasRascunho = existingProposal?.number?.startsWith('RASCUNHO-');
         await supabase.from('proposal_logs').insert({
           proposal_id: proposal.id,
-          action: 'editada',
+          action: wasRascunho ? 'publicada' : 'editada',
           details: {
             edited_by: user?.id,
-            buildings_count: selectedBuildings.length
+            buildings_count: selectedBuildings.length,
+            was_draft: wasRascunho
           }
         });
         
-        toast.success(`Proposta ${proposal.number} atualizada com sucesso!`);
+        toast.success(`Proposta ${proposal.number} ${wasRascunho ? 'publicada' : 'atualizada'} com sucesso!`);
       } else {
         // MODO CRIAÇÃO - Criar nova proposta
         const year = new Date().getFullYear();
@@ -1734,6 +1750,127 @@ Parcelas:
       toast.error('Erro ao criar proposta. Tente novamente.');
     }
   });
+
+  // ============================================
+  // FUNÇÃO SALVAR RASCUNHO MANUALMENTE
+  // ============================================
+  const handleSaveDraft = async () => {
+    if (isSavingDraft) return;
+    setIsSavingDraft(true);
+    
+    try {
+      const fullName = `${clientData.firstName} ${clientData.lastName}`.trim();
+      const buildingsData = selectedBuildingsData.map(b => ({
+        building_id: b.id,
+        building_name: b.nome,
+        building_bairro: b.bairro,
+        building_endereco: b.endereco,
+        quantidade_telas: b.quantidade_telas || 0,
+        numero_elevadores: b.numero_elevadores || 0,
+        preco_base: b.preco_base || 0,
+        preco_utilizado: b.preco_base || 0,
+        visualizacoes_mes: b.visualizacoes_mes || 0,
+        imagem_principal: b.imagem_principal || null,
+        is_manual: !!(b as any).is_manual
+      }));
+
+      const draftData = {
+        status: 'rascunho' as const,
+        client_name: fullName || 'Rascunho',
+        client_first_name: clientData.firstName.trim(),
+        client_last_name: clientData.lastName.trim(),
+        client_company_name: clientData.companyName || null,
+        client_cnpj: clientData.document || null,
+        client_phone: clientData.phoneFullNumber || clientData.phone || null,
+        client_email: clientData.email || null,
+        client_address: clientData.address || null,
+        client_country: clientData.country,
+        client_latitude: clientData.latitude,
+        client_longitude: clientData.longitude,
+        buildings: buildingsData as unknown as Json,
+        buildings_count: selectedBuildings.length,
+        duration_months: isCustomDays ? 1 : durationMonths,
+        duration_days: isCustomDays ? customDays : null,
+        monthly_value: parseFloat(fidelValue) || 0,
+        discount_percent: discountPercent,
+        total_value: isCustomPayment ? customTotal : cashTotal,
+        tipo_produto: tipoProduto,
+        quantidade_posicoes: quantidadePosicoes,
+        titulo: tituloProposta || null,
+        validity_hours: validityHours,
+        pagamento_customizado: isCustomPayment,
+        parcelas_customizadas: isCustomPayment ? customInstallments.map(p => ({
+          id: p.id,
+          dueDate: p.dueDate.toISOString(),
+          amount: parseFloat(p.amount) || 0
+        })) as unknown as Json : null,
+        duracao_meses_custom: isCustomPayment ? customDurationMonths : null,
+        venda_futura: vendaFutura,
+        predios_contratados: vendaFutura ? prediosContratados : null,
+        telas_contratadas: vendaFutura ? telasContratadas : null,
+        oferecer_exclusividade: oferecerExclusividade,
+        segmento_exclusivo: oferecerExclusividade ? segmentoExclusivo : null,
+        exclusividade_percentual: oferecerExclusividade ? exclusividadePercentual : null,
+        exclusividade_valor_extra: oferecerExclusividade ? exclusividadeValorCalculado : null,
+        travamento_preco_ativo: travamentoPrecoAtivo,
+        travamento_preco_valor: travamentoPrecoAtivo ? (travamentoModoCalculo === 'manual' ? travamentoPrecoManual : travamentoPrecoValor) : null,
+        travamento_telas_limite: travamentoPrecoAtivo ? travamentoTelasLimite : null,
+        multa_rescisao_ativa: multaRescisaoAtiva,
+        multa_rescisao_percentual: multaRescisaoAtiva ? multaRescisaoPercentual : null,
+        modalidade_proposta: modalidadeProposta,
+        itens_permuta: modalidadeProposta === 'permuta' ? itensPermuta as unknown as Json : null,
+        ocultar_valores_publico: modalidadeProposta === 'permuta' ? ocultarValoresPublico : false,
+        descricao_contrapartida: modalidadeProposta === 'permuta' ? descricaoContrapartida : null,
+        metodo_pagamento_alternativo: metodoPagamentoAlternativo,
+        valor_referencia_monetaria: valorReferenciaMonetaria,
+        client_logo_url: clientLogoUrl,
+        cc_emails: ccEmails.length > 0 ? ccEmails : null,
+        expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to ? customDateRange.to.toISOString() : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
+      };
+
+      if (isEditMode && editProposalId) {
+        // Atualizar proposta existente mantendo como rascunho
+        const { error } = await supabase.from('proposals').update(draftData).eq('id', editProposalId);
+        if (error) throw error;
+        toast.success('Rascunho atualizado!');
+      } else if (draftId) {
+        // Atualizar rascunho auto-salvo existente
+        const { error } = await supabase.from('proposals').update(draftData).eq('id', draftId);
+        if (error) throw error;
+        toast.success('Rascunho salvo!');
+      } else {
+        // Criar novo rascunho
+        const { data: { user } } = await supabase.auth.getUser();
+        const insertData = {
+          ...draftData,
+          created_by: selectedSellerId || user?.id
+        };
+        // @ts-ignore - number é valid field mas types não reconhece
+        insertData.number = `RASCUNHO-${Date.now()}`;
+        
+        const { data, error } = await supabase.from('proposals')
+          .insert(insertData as any)
+          .select('id')
+          .single();
+        if (error) throw error;
+        if (data) {
+          setDraftId(data.id);
+          // Atualizar URL para modo edição
+          navigate(buildPath(`/propostas/${data.id}/editar`), { replace: true });
+        }
+        toast.success('Rascunho criado!');
+      }
+      
+      setLastSavedAt(new Date());
+      queryClient.invalidateQueries({ queryKey: ['proposals'] });
+    } catch (error) {
+      console.error('Erro ao salvar rascunho:', error);
+      toast.error('Erro ao salvar rascunho');
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
   const handleOpenSendDialog = () => {
     // GUARD: Em modo edição, verificar se dados carregaram completamente
     if (isEditMode && (!dataLoaded || isLoadingProposal)) {
@@ -2144,11 +2281,23 @@ Parcelas:
               
               {clientLogoUrl ? (
                 <div className="mt-2 flex items-center gap-3">
-                  <div className="w-16 h-16 rounded-lg border-2 border-slate-200 overflow-hidden bg-slate-800 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-lg border-2 border-slate-200 overflow-hidden bg-slate-800 flex items-center justify-center" id="logo-preview-container">
                     <img 
                       src={clientLogoUrl} 
                       alt="Logo do cliente" 
                       className="w-full h-full object-contain p-1 filter brightness-0 invert"
+                      onError={(e) => {
+                        console.error('❌ [LOGO] Erro ao carregar preview:', clientLogoUrl);
+                        // Mostrar ícone de fallback em vez de imagem quebrada
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        const container = document.getElementById('logo-preview-container');
+                        if (container && !container.querySelector('.logo-fallback')) {
+                          const fallback = document.createElement('div');
+                          fallback.className = 'logo-fallback text-slate-400 text-xs text-center p-1';
+                          fallback.innerHTML = '⚠️<br>Erro';
+                          container.appendChild(fallback);
+                        }
+                      }}
                     />
                   </div>
                   <div className="flex gap-2">
@@ -3508,7 +3657,28 @@ Parcelas:
             <Copy className="h-4 w-4" />
           </Button>
           
-          {/* Botão Enviar Proposta */}
+          {/* Botão Salvar Rascunho - só aparece se for criação nova OU se já for rascunho */}
+          {(!isEditMode || existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-')) && (
+            <Button 
+              variant="outline"
+              onClick={handleSaveDraft}
+              disabled={
+                selectedBuildings.length === 0 || 
+                isSavingDraft ||
+                (isEditMode && (!dataLoaded || isLoadingProposal))
+              }
+              className="h-11 gap-2 border-slate-300"
+            >
+              {isSavingDraft ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4" />
+              )}
+              Salvar Rascunho
+            </Button>
+          )}
+          
+          {/* Botão Publicar Proposta */}
           <Button 
             onClick={handleOpenSendDialog} 
             disabled={
@@ -3524,9 +3694,7 @@ Parcelas:
             <Send className="h-4 w-4" />
             {isEditMode && (!dataLoaded || isLoadingProposal) 
               ? 'Carregando...' 
-              : isEditMode 
-                ? 'Salvar e Enviar' 
-                : 'Enviar'}
+              : 'Publicar'}
           </Button>
         </div>
       </div>
@@ -3537,7 +3705,11 @@ Parcelas:
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Send className="h-5 w-5 text-primary" />
-              {isEditMode ? 'Salvar Alterações e Enviar' : 'Enviar Proposta'}
+              {isEditMode && existingProposal?.number?.startsWith('RASCUNHO-') 
+                ? 'Publicar Proposta' 
+                : isEditMode 
+                  ? 'Atualizar e Enviar' 
+                  : 'Publicar Proposta'}
             </DialogTitle>
           </DialogHeader>
 
