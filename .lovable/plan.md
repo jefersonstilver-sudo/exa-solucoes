@@ -1,130 +1,145 @@
 
-# Plano: Correção dos Botões de Rascunho e Publicar
 
-## Problemas Identificados
+# Auditoria Completa: Erro ao Salvar Rascunho
 
-### 1. Botão "Salvar Rascunho" não aparece
-A condição atual (linha 3661) é:
-```tsx
-{(!isEditMode || existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-')) && (
-```
+## Diagnóstico Técnico
 
-**Problema**: Quando `existingProposal` ainda não carregou (está `undefined`), a condição `existingProposal?.status === 'rascunho'` retorna `undefined`, não `true`. Combinado com `!isEditMode` ser `false` (porque está em modo de edição), a condição inteira falha.
+### Causa Raiz Identificada
 
-### 2. Botão "Publicar" sempre mostra o mesmo texto
-Quando você está editando uma proposta **já publicada** (não é rascunho), o botão deveria mostrar "Salvar Alterações" em vez de "Publicar".
+O erro `PGRST204: Could not find the 'buildings' column of 'proposals' in the schema cache` acontece porque a função `handleSaveDraft` (linha 1757-1872) está enviando **nomes de colunas incorretos** que não existem na tabela `proposals`.
 
-### 3. Falta clareza entre estados
-O usuário precisa entender claramente:
-- **Rascunho**: pode salvar como rascunho OU publicar
-- **Publicada**: só pode salvar alterações (não pode voltar a ser rascunho)
+### Comparação: Auto-Save vs handleSaveDraft
 
----
+| Campo no Auto-Save (linha 917) | Campo no handleSaveDraft (linha 1790) | Coluna Real no Banco |
+|--------------------------------|---------------------------------------|----------------------|
+| `selected_buildings` | `buildings` | `selected_buildings` |
+| `total_panels` | `buildings_count` | **NÃO EXISTE** |
+| `total_impressions_month` | **AUSENTE** | `total_impressions_month` |
+| `fidel_monthly_value` | `monthly_value` | `fidel_monthly_value` |
+| `cash_total_value` | `total_value` | `cash_total_value` |
+| `cobranca_futura` | **AUSENTE** | `cobranca_futura` |
+| `exigir_contrato` | **AUSENTE** | `exigir_contrato` |
 
-## Correções Necessárias
+### Problema Principal
 
-### Correção 1: Ajustar condição do botão "Salvar Rascunho"
-
-A condição atual falha porque `existingProposal` pode estar carregando. Precisa aguardar o carregamento:
-
-**De (linha 3661):**
-```tsx
-{(!isEditMode || existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-')) && (
-```
-
-**Para:**
-```tsx
-{/* Botão Salvar Rascunho - aparece em criação OU quando editando rascunho (após carregar) */}
-{(!isEditMode || (isEditMode && dataLoaded && (existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-')))) && (
-```
-
-Isso garante que:
-- Em criação nova (`!isEditMode`): sempre mostra
-- Em edição: só mostra após carregar (`dataLoaded`) E se for rascunho
-
-### Correção 2: Texto dinâmico do botão principal
-
-O botão "Publicar" (linha 3692-3698) precisa mostrar texto diferente baseado no estado:
-
-**De:**
-```tsx
-<Send className="h-4 w-4" />
-{isEditMode && (!dataLoaded || isLoadingProposal) 
-  ? 'Carregando...' 
-  : 'Publicar'}
-```
-
-**Para:**
-```tsx
-<Send className="h-4 w-4" />
-{isEditMode && (!dataLoaded || isLoadingProposal) 
-  ? 'Carregando...' 
-  : isEditMode && existingProposal?.status !== 'rascunho' && !existingProposal?.number?.startsWith('RASCUNHO-')
-    ? 'Salvar Alterações'
-    : 'Publicar'}
-```
-
-Isso garante:
-- Carregando: mostra "Carregando..."
-- Edição de proposta já publicada: mostra "Salvar Alterações"
-- Criação ou edição de rascunho: mostra "Publicar"
-
-### Correção 3: Título do Dialog também dinâmico
-
-Atualizar o título do Dialog de envio (linha ~3769) para refletir o estado:
-
-**De:**
-```tsx
-<DialogTitle className="flex items-center gap-2">
-  <Send className="h-5 w-5 text-primary" />
-  {isEditMode ? 'Salvar Alterações e Enviar' : 'Enviar Proposta'}
-</DialogTitle>
-```
-
-**Para:**
-```tsx
-<DialogTitle className="flex items-center gap-2">
-  <Send className="h-5 w-5 text-primary" />
-  {isEditMode 
-    ? (existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-'))
-      ? 'Publicar Proposta'
-      : 'Salvar Alterações'
-    : 'Enviar Proposta'}
-</DialogTitle>
-```
+A função `handleSaveDraft` foi escrita com **nomes de campos inventados** (alucinação) que não correspondem ao schema real da tabela `proposals`. O auto-save (linha 902-967) usa os nomes corretos, mas alguém criou uma **segunda função de salvamento** (handleSaveDraft) que não segue o mesmo padrão.
 
 ---
 
-## Fluxo Visual Final
+## Campos Errados que Precisam ser Corrigidos
+
+### Na função handleSaveDraft (linhas 1777-1829):
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│ CRIAÇÃO NOVA (sem proposta ainda)                              │
-├─────────────────────────────────────────────────────────────────┤
-│ [Cortesia] [Preview] [Copiar] [Salvar Rascunho] [█ Publicar █] │
-│                                                                 │
-│ • Auto-save cria RASCUNHO-xxx em background                    │
-│ • "Salvar Rascunho" = salva manualmente como rascunho          │
-│ • "Publicar" = gera EXA-AAAA-XXXX + status enviada             │
-└─────────────────────────────────────────────────────────────────┘
+ERRADO                           →  CORRETO
+─────────────────────────────────────────────────────────
+buildings:                       →  selected_buildings:
+buildings_count:                 →  (REMOVER - não existe)
+monthly_value:                   →  fidel_monthly_value:
+total_value:                     →  cash_total_value:
+duration_months: isCustomDays?1  →  duration_months: isCustomDays?0
+duration_days:                   →  custom_days:
+(falta is_custom_days)           →  is_custom_days: isCustomDays
+(falta payment_type)             →  payment_type: ...
+(falta total_panels)             →  total_panels: ...
+(falta total_impressions_month)  →  total_impressions_month: ...
+(falta cobranca_futura)          →  cobranca_futura: ...
+(falta exigir_contrato)          →  exigir_contrato: ...
+(falta exclusividade_valor_extra)→  (usar nome correto)
+oferecer_exclusividade:          →  exclusividade_segmento:
+```
 
-┌─────────────────────────────────────────────────────────────────┐
-│ EDIÇÃO DE RASCUNHO (RASCUNHO-xxx ou status='rascunho')         │
-├─────────────────────────────────────────────────────────────────┤
-│ [Cortesia] [Preview] [Copiar] [Salvar Rascunho] [█ Publicar █] │
-│                                                                 │
-│ • "Salvar Rascunho" = mantém como rascunho                     │
-│ • "Publicar" = converte para EXA-AAAA-XXXX + status enviada    │
-└─────────────────────────────────────────────────────────────────┘
+---
 
-┌─────────────────────────────────────────────────────────────────┐
-│ EDIÇÃO DE PROPOSTA PUBLICADA (EXA-xxx ou status='enviada')     │
-├─────────────────────────────────────────────────────────────────┤
-│ [Cortesia] [Preview] [Copiar]         [█ Salvar Alterações █]  │
-│                                                                 │
-│ • SEM botão "Salvar Rascunho" (não pode voltar a ser rascunho) │
-│ • "Salvar Alterações" = atualiza mantendo status enviada       │
-└─────────────────────────────────────────────────────────────────┘
+## Correção Necessária
+
+### Reescrever o objeto `draftData` na função handleSaveDraft
+
+Precisa ser **idêntico** ao formato usado no auto-save (linhas 902-967), garantindo que:
+1. Todos os nomes de colunas correspondem ao schema real
+2. Não há campos inventados
+3. Todos os campos necessários estão presentes
+
+### Estrutura Correta do draftData
+
+```tsx
+const draftData = {
+  status: 'rascunho',
+  // Cliente
+  client_name: `${clientData.firstName} ${clientData.lastName}`.trim() || 'Rascunho',
+  client_first_name: clientData.firstName || null,
+  client_last_name: clientData.lastName || null,
+  client_company_name: clientData.companyName || null,
+  client_country: clientData.country || 'BR',
+  client_cnpj: clientData.document || null,
+  client_email: clientData.email || null,
+  client_phone: clientData.phoneFullNumber || clientData.phone || null,
+  client_address: clientData.address || null,
+  client_latitude: clientData.latitude || null,
+  client_longitude: clientData.longitude || null,
+  client_logo_url: clientLogoUrl || null,
+  
+  // Prédios - NOME CORRETO
+  selected_buildings: buildingsData as Json,
+  total_panels: totalPanels,
+  total_impressions_month: totalImpressionsAdjusted,
+  
+  // Período e pagamento - NOMES CORRETOS
+  duration_months: isCustomDays ? 0 : durationMonths,
+  fidel_monthly_value: modalidadeProposta === 'permuta' ? 0 : (parseFloat(fidelValue) || 0),
+  cash_total_value: modalidadeProposta === 'permuta' ? 0 : (isCustomPayment ? customTotal : cashTotal),
+  discount_percent: discountPercent,
+  payment_type: isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
+  is_custom_days: isCustomDays,
+  custom_days: isCustomDays ? customDays : null,
+  custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
+    installment: idx + 1,
+    due_date: formatDateForInput(p.dueDate),
+    amount: parseFloat(p.amount) || 0
+  })) as Json : null,
+  
+  // Produto
+  tipo_produto: tipoProduto,
+  quantidade_posicoes: quantidadePosicoes,
+  titulo: tituloProposta || null,
+  
+  // Permuta - campos corretos
+  modalidade_proposta: modalidadeProposta,
+  itens_permuta: modalidadeProposta === 'permuta' ? itensPermuta as Json : [],
+  valor_total_permuta: modalidadeProposta === 'permuta' ? valorTotalPermuta : 0,
+  ocultar_valores_publico: modalidadeProposta === 'permuta' ? ocultarValoresPublico : false,
+  descricao_contrapartida: modalidadeProposta === 'permuta' ? descricaoContrapartida : null,
+  metodo_pagamento_alternativo: modalidadeProposta === 'permuta' ? 'permuta' : null,
+  valor_referencia_monetaria: modalidadeProposta === 'permuta' ? valorReferenciaMonetaria : null,
+  
+  // Configurações adicionais
+  cobranca_futura: cobrancaFutura,
+  exigir_contrato: exigirContrato,
+  venda_futura: vendaFutura,
+  predios_contratados: vendaFutura ? prediosContratados : selectedBuildingsData.length,
+  
+  // Exclusividade - NOME CORRETO
+  exclusividade_segmento: oferecerExclusividade,
+  segmento_exclusivo: oferecerExclusividade ? segmentoExclusivo : null,
+  exclusividade_percentual: oferecerExclusividade ? exclusividadePercentual : null,
+  
+  // Travamento
+  travamento_preco_ativo: travamentoPrecoAtivo,
+  travamento_preco_valor: travamentoPrecoAtivo ? travamentoPrecoValor : null,
+  travamento_telas_limite: travamentoPrecoAtivo ? travamentoTelasLimite : null,
+  
+  // Multa
+  multa_rescisao_ativa: multaRescisaoAtiva,
+  multa_rescisao_percentual: multaRescisaoAtiva ? multaRescisaoPercentual : null,
+  
+  // CC Emails
+  cc_emails: ccEmails.length > 0 ? ccEmails : null,
+  
+  // Validade
+  expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to 
+    ? customDateRange.to.toISOString() 
+    : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
+};
 ```
 
 ---
@@ -133,63 +148,52 @@ Atualizar o título do Dialog de envio (linha ~3769) para refletir o estado:
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Ajustar condição do botão "Salvar Rascunho" + texto dinâmico do botão principal + título do Dialog |
+| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Reescrever o objeto `draftData` dentro de `handleSaveDraft` (linhas 1777-1829) usando os nomes de colunas corretos, idênticos ao auto-save |
 
 ---
 
-## Detalhes Técnicos
+## Resumo das Correções
 
-### Linha 3660-3679 (Botão Salvar Rascunho)
-```tsx
-{/* Botão Salvar Rascunho - aparece em criação OU quando editando rascunho (após carregar) */}
-{(!isEditMode || (isEditMode && dataLoaded && (existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-')))) && (
-  <Button 
-    variant="outline"
-    onClick={handleSaveDraft}
-    disabled={
-      selectedBuildings.length === 0 || 
-      isSavingDraft ||
-      (isEditMode && (!dataLoaded || isLoadingProposal))
-    }
-    className="h-11 gap-2 border-slate-300"
-  >
-    {isSavingDraft ? (
-      <Loader2 className="h-4 w-4 animate-spin" />
-    ) : (
-      <FileText className="h-4 w-4" />
-    )}
-    Salvar Rascunho
-  </Button>
-)}
-```
+### Campos para RENOMEAR:
+- `buildings` → `selected_buildings`
+- `monthly_value` → `fidel_monthly_value`
+- `total_value` → `cash_total_value`
+- `duration_days` → `custom_days`
+- `oferecer_exclusividade` → `exclusividade_segmento`
 
-### Linha 3692-3698 (Botão Principal)
-```tsx
-<Button 
-  onClick={handleOpenSendDialog} 
-  disabled={...}
-  className="flex-1 h-11 gap-2"
->
-  <Send className="h-4 w-4" />
-  {isEditMode && (!dataLoaded || isLoadingProposal) 
-    ? 'Carregando...' 
-    : isEditMode && existingProposal?.status !== 'rascunho' && !existingProposal?.number?.startsWith('RASCUNHO-')
-      ? 'Salvar Alterações'
-      : 'Publicar'}
-</Button>
-```
+### Campos para REMOVER (não existem no banco):
+- `buildings_count`
+
+### Campos para ADICIONAR:
+- `total_panels`
+- `total_impressions_month`
+- `payment_type`
+- `is_custom_days`
+- `cobranca_futura`
+- `exigir_contrato`
+- `valor_total_permuta`
 
 ---
 
 ## Checklist de Implementação
 
-### NovaPropostaPage.tsx
-- [ ] Ajustar condição do botão "Salvar Rascunho" (linha 3661) para considerar `dataLoaded`
-- [ ] Alterar texto do botão principal (linhas 3694-3697) para ser dinâmico baseado no estado
-- [ ] Alterar título do Dialog de envio para refletir o estado (publicar vs salvar alterações)
+### NovaPropostaPage.tsx (função handleSaveDraft)
+- [ ] Renomear `buildings` para `selected_buildings`
+- [ ] Remover campo `buildings_count`
+- [ ] Renomear `monthly_value` para `fidel_monthly_value`
+- [ ] Renomear `total_value` para `cash_total_value`
+- [ ] Renomear `duration_days` para `custom_days`
+- [ ] Adicionar `is_custom_days: isCustomDays`
+- [ ] Adicionar `payment_type`
+- [ ] Adicionar `total_panels` e `total_impressions_month`
+- [ ] Adicionar `cobranca_futura` e `exigir_contrato`
+- [ ] Adicionar `valor_total_permuta`
+- [ ] Renomear `oferecer_exclusividade` para `exclusividade_segmento`
+- [ ] Garantir formato de `custom_installments` igual ao auto-save
 
 ### Testes
-- [ ] Criar proposta nova → ver botão "Salvar Rascunho" + "Publicar"
-- [ ] Editar rascunho → ver botão "Salvar Rascunho" + "Publicar"
-- [ ] Editar proposta publicada → ver APENAS botão "Salvar Alterações" (sem Salvar Rascunho)
-- [ ] Publicar rascunho → verificar que gera número EXA + status enviada
+- [ ] Criar nova proposta → Clicar "Salvar Rascunho" → Verificar que salva sem erro
+- [ ] Editar rascunho existente → Clicar "Salvar Rascunho" → Verificar que atualiza sem erro
+- [ ] Verificar que auto-save continua funcionando
+- [ ] Verificar que "Publicar" continua funcionando
+
