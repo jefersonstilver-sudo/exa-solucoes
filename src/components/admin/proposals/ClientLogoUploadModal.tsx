@@ -187,6 +187,60 @@ export const ClientLogoUploadModal = ({
     }
   };
 
+  // Handler para usar o original (sem processamento IA)
+  const handleUseOriginal = async () => {
+    if (!selectedFile || !previewUrl) return;
+    
+    setProcessingState('uploading');
+    setErrorMessage(null);
+    setOriginalImageError(false);
+    setProcessedImageError(false);
+
+    try {
+      // Converter arquivo para base64
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(selectedFile);
+      const base64Data = await base64Promise;
+
+      // Chamar Edge Function apenas para upload (sem IA)
+      const { data, error } = await supabase.functions.invoke('process-client-logo', {
+        body: {
+          imageBase64: base64Data,
+          fileName: selectedFile.name,
+          onlyUploadOriginal: true
+        }
+      });
+
+      if (error) {
+        console.error('Error uploading original logo:', error);
+        throw new Error(error.message || 'Erro ao enviar logo');
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Falha ao enviar logo');
+      }
+
+      // Salvar URL com cache-busting para preview
+      const cacheBuster = `?v=${Date.now()}`;
+      setOriginalUrl(data.originalUrl ? data.originalUrl + cacheBuster : null);
+      setProcessedUrl(null);
+      setSelectedVariant('original');
+      setProcessingState('done');
+      
+      toast.success('Logo enviada com sucesso!');
+
+    } catch (error: any) {
+      console.error('Error:', error);
+      setProcessingState('error');
+      setErrorMessage(error.message || 'Erro ao enviar logo');
+      toast.error('Erro ao enviar logo. Tente novamente.');
+    }
+  };
+
   const handleConfirm = () => {
     // Usar a URL sem cache-buster para salvar
     let finalUrl: string | null = null;
@@ -292,22 +346,22 @@ export const ClientLogoUploadModal = ({
                   </div>
                   <div className={`
                     relative aspect-square rounded-xl overflow-hidden flex items-center justify-center p-4
-                    bg-gradient-to-br from-slate-100 to-slate-200 border-2 transition-all
+                    bg-gradient-to-r from-[#4a0f0f] via-[#6B1515] to-[#7D1818] border-2 transition-all
                     ${selectedVariant === 'original' && processingState === 'done' 
                       ? 'border-[#9C1E1E] ring-2 ring-[#9C1E1E]/20' 
-                      : 'border-slate-200'}
+                      : 'border-white/20'}
                   `}>
                     {previewUrl && (
                       <img 
                         src={originalUrl || previewUrl} 
                         alt="Original" 
-                        className="max-w-full max-h-full object-contain"
+                        className="max-w-full max-h-full object-contain filter brightness-0 invert"
                         onError={() => setOriginalImageError(true)}
                       />
                     )}
                     {originalImageError && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
-                        <div className="text-center text-slate-500">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center text-white/80">
                           <AlertCircle className="h-8 w-8 mx-auto mb-2" />
                           <p className="text-xs">Erro ao carregar</p>
                         </div>
@@ -461,13 +515,23 @@ export const ClientLogoUploadModal = ({
             </Button>
             
             {selectedFile && processingState === 'idle' && (
-              <Button 
-                onClick={processLogoWithAI}
-                className="flex-1 bg-[#9C1E1E] hover:bg-[#7D1818] text-white"
-              >
-                <Wand2 className="h-4 w-4 mr-1.5" />
-                Processar com IA
-              </Button>
+              <>
+                <Button 
+                  onClick={handleUseOriginal}
+                  variant="outline"
+                  className="flex-1 border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E]/10"
+                >
+                  <Check className="h-4 w-4 mr-1.5" />
+                  Usar Original
+                </Button>
+                <Button 
+                  onClick={processLogoWithAI}
+                  className="flex-1 bg-[#9C1E1E] hover:bg-[#7D1818] text-white"
+                >
+                  <Wand2 className="h-4 w-4 mr-1.5" />
+                  Otimizar com IA
+                </Button>
+              </>
             )}
 
             {processingState === 'error' && (
