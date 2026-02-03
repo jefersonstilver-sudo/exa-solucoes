@@ -1,152 +1,148 @@
 
-
-# Plano: Correção Completa de Logo e Sistema de Publicação com Dois Botões
+# Plano: Correção dos Botões de Rascunho e Publicar
 
 ## Problemas Identificados
 
-### 1. Logo Não Exibe no Formulário de Edição
-Na imagem, a logo mostra um ícone quebrado no preview do formulário. Isso acontece porque:
-- A URL pública do storage retorna **404** (confirmado nos console logs)
-- O bucket `arquivos` pode não ter políticas públicas para o path `proposal-client-logos/`
+### 1. Botão "Salvar Rascunho" não aparece
+A condição atual (linha 3661) é:
+```tsx
+{(!isEditMode || existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-')) && (
+```
 
-### 2. Logo Não Aparece na Proposta Pública
-Mesmo problema: a URL `https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/proposal-client-logos/original/...` retorna 404.
+**Problema**: Quando `existingProposal` ainda não carregou (está `undefined`), a condição `existingProposal?.status === 'rascunho'` retorna `undefined`, não `true`. Combinado com `!isEditMode` ser `false` (porque está em modo de edição), a condição inteira falha.
 
-### 3. Salvando Como Rascunho em vez de Publicar
-A proposta aparece com número `RASCUNHO-1770054462084` e status `rascunho` quando deveria ter sido publicada como `EXA-2026-XXXX`.
+### 2. Botão "Publicar" sempre mostra o mesmo texto
+Quando você está editando uma proposta **já publicada** (não é rascunho), o botão deveria mostrar "Salvar Alterações" em vez de "Publicar".
 
-**Causa:** Você quer **dois botões** separados:
-- "Salvar Rascunho" → mantém como rascunho
-- "Publicar" → transforma em `enviada` com número EXA
+### 3. Falta clareza entre estados
+O usuário precisa entender claramente:
+- **Rascunho**: pode salvar como rascunho OU publicar
+- **Publicada**: só pode salvar alterações (não pode voltar a ser rascunho)
 
 ---
 
-## Correções Propostas
+## Correções Necessárias
 
-### Correção 1: Bucket Storage com Política Pública
+### Correção 1: Ajustar condição do botão "Salvar Rascunho"
 
-Preciso criar uma política RLS de SELECT público para o bucket `arquivos` no path `proposal-client-logos/`:
+A condição atual falha porque `existingProposal` pode estar carregando. Precisa aguardar o carregamento:
 
-```sql
--- Permitir leitura pública das logos de cliente na proposta
-CREATE POLICY "Allow public read access to proposal client logos"
-ON storage.objects FOR SELECT
-USING (
-  bucket_id = 'arquivos' 
-  AND (storage.foldername(name))[1] = 'proposal-client-logos'
-);
-```
-
-Isso garante que qualquer pessoa (sem autenticação) pode acessar as logos.
-
-### Correção 2: Tratamento de Erro no Preview de Logo (NovaPropostaPage.tsx)
-
-Adicionar `onError` handler na imagem do preview no formulário para mostrar fallback quando a URL falhar:
-
+**De (linha 3661):**
 ```tsx
-// Linha 2148-2152
-<img 
-  src={clientLogoUrl} 
-  alt="Logo do cliente" 
-  className="w-full h-full object-contain p-1 filter brightness-0 invert"
-  onError={(e) => {
-    console.error('❌ [LOGO] Erro ao carregar preview:', clientLogoUrl);
-    // Esconder imagem quebrada e mostrar ícone de fallback
-    (e.target as HTMLImageElement).style.display = 'none';
-  }}
-/>
+{(!isEditMode || existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-')) && (
 ```
 
-### Correção 3: Dois Botões Separados (Salvar Rascunho + Publicar)
+**Para:**
+```tsx
+{/* Botão Salvar Rascunho - aparece em criação OU quando editando rascunho (após carregar) */}
+{(!isEditMode || (isEditMode && dataLoaded && (existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-')))) && (
+```
 
-Você pediu dois botões. Vou implementar:
+Isso garante que:
+- Em criação nova (`!isEditMode`): sempre mostra
+- Em edição: só mostra após carregar (`dataLoaded`) E se for rascunho
 
-1. **Botão "Salvar Rascunho"** (secundário)
-   - Salva/atualiza a proposta como `status: 'rascunho'`
-   - Número permanece `RASCUNHO-{timestamp}`
-   - Não dispara envio de WhatsApp/Email
+### Correção 2: Texto dinâmico do botão principal
 
-2. **Botão "Publicar"** (primário)
-   - Altera status para `enviada`
-   - Gera número `EXA-AAAA-XXXX` (se ainda não tiver)
-   - Abre dialog de envio (WhatsApp/Email/Link)
+O botão "Publicar" (linha 3692-3698) precisa mostrar texto diferente baseado no estado:
 
-**Estrutura Visual:**
+**De:**
+```tsx
+<Send className="h-4 w-4" />
+{isEditMode && (!dataLoaded || isLoadingProposal) 
+  ? 'Carregando...' 
+  : 'Publicar'}
+```
+
+**Para:**
+```tsx
+<Send className="h-4 w-4" />
+{isEditMode && (!dataLoaded || isLoadingProposal) 
+  ? 'Carregando...' 
+  : isEditMode && existingProposal?.status !== 'rascunho' && !existingProposal?.number?.startsWith('RASCUNHO-')
+    ? 'Salvar Alterações'
+    : 'Publicar'}
+```
+
+Isso garante:
+- Carregando: mostra "Carregando..."
+- Edição de proposta já publicada: mostra "Salvar Alterações"
+- Criação ou edição de rascunho: mostra "Publicar"
+
+### Correção 3: Título do Dialog também dinâmico
+
+Atualizar o título do Dialog de envio (linha ~3769) para refletir o estado:
+
+**De:**
+```tsx
+<DialogTitle className="flex items-center gap-2">
+  <Send className="h-5 w-5 text-primary" />
+  {isEditMode ? 'Salvar Alterações e Enviar' : 'Enviar Proposta'}
+</DialogTitle>
+```
+
+**Para:**
+```tsx
+<DialogTitle className="flex items-center gap-2">
+  <Send className="h-5 w-5 text-primary" />
+  {isEditMode 
+    ? (existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-'))
+      ? 'Publicar Proposta'
+      : 'Salvar Alterações'
+    : 'Enviar Proposta'}
+</DialogTitle>
+```
+
+---
+
+## Fluxo Visual Final
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│  [Copiar Texto]  [Salvar Rascunho]  [█ Publicar █]             │
+│ CRIAÇÃO NOVA (sem proposta ainda)                              │
+├─────────────────────────────────────────────────────────────────┤
+│ [Cortesia] [Preview] [Copiar] [Salvar Rascunho] [█ Publicar █] │
+│                                                                 │
+│ • Auto-save cria RASCUNHO-xxx em background                    │
+│ • "Salvar Rascunho" = salva manualmente como rascunho          │
+│ • "Publicar" = gera EXA-AAAA-XXXX + status enviada             │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ EDIÇÃO DE RASCUNHO (RASCUNHO-xxx ou status='rascunho')         │
+├─────────────────────────────────────────────────────────────────┤
+│ [Cortesia] [Preview] [Copiar] [Salvar Rascunho] [█ Publicar █] │
+│                                                                 │
+│ • "Salvar Rascunho" = mantém como rascunho                     │
+│ • "Publicar" = converte para EXA-AAAA-XXXX + status enviada    │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ EDIÇÃO DE PROPOSTA PUBLICADA (EXA-xxx ou status='enviada')     │
+├─────────────────────────────────────────────────────────────────┤
+│ [Cortesia] [Preview] [Copiar]         [█ Salvar Alterações █]  │
+│                                                                 │
+│ • SEM botão "Salvar Rascunho" (não pode voltar a ser rascunho) │
+│ • "Salvar Alterações" = atualiza mantendo status enviada       │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Correção 4: Lógica de Publicação vs Rascunho
-
-**Nova Mutation: `saveDraftMutation`**
-- Reutiliza a lógica do auto-save
-- Mostra toast de sucesso
-- Não redireciona (permite continuar editando)
-
-**Mutation Existente: `createProposalMutation`**
-- Renomear ação para "publicar"
-- Se proposta tem número `RASCUNHO-*`, gerar novo número `EXA-AAAA-XXXX`
-- Atualizar status para `enviada`
-- Redirecionar para lista após sucesso
-
 ---
 
-## Arquivos a Modificar
+## Arquivo a Modificar
 
 | Arquivo | Alteração |
 |---------|-----------|
-| **SQL Migration** | Adicionar política RLS pública para `proposal-client-logos/` |
-| `src/pages/admin/proposals/NovaPropostaPage.tsx` | 1) Adicionar botão "Salvar Rascunho" 2) Renomear botão existente para "Publicar" 3) Nova mutation para salvar rascunho manualmente 4) Adicionar `onError` no preview de logo |
-| `src/pages/public/PropostaPublicaPage.tsx` | (já corrigido) manter `onError` handler |
+| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Ajustar condição do botão "Salvar Rascunho" + texto dinâmico do botão principal + título do Dialog |
 
 ---
 
-## Fluxo Técnico
+## Detalhes Técnicos
 
-```text
-CRIAÇÃO DE PROPOSTA
-───────────────────────────────────────────────────────────────────
-                                    
-  [Auto-save 3s]                 [Salvar Rascunho]      [Publicar]
-        │                               │                    │
-        ▼                               ▼                    ▼
-  status: rascunho              status: rascunho      status: enviada
-  number: RASCUNHO-XXX          number: RASCUNHO-XXX  number: EXA-AAAA-XXXX
-  (background)                  toast + continua      dialog envio
-                                                      ↓
-                                                      WhatsApp/Email/Link
-                                                      ↓
-                                                      Redireciona para lista
-
-
-EDIÇÃO DE PROPOSTA EXISTENTE
-───────────────────────────────────────────────────────────────────
-
-  [Salvar Rascunho]          [Publicar]
-        │                         │
-        ▼                         ▼
-  Se já era rascunho:        Se já era enviada:
-    mantém rascunho            mantém número EXA
-                              
-  Se era enviada:            Se era rascunho:
-    ⚠️ NÃO pode voltar         gera novo número EXA
-    (desabilitar botão)        muda para enviada
-```
-
----
-
-## Detalhes de Implementação
-
-### 1. Botão "Salvar Rascunho" (novo)
-
-Localização: antes do botão "Publicar" (linha ~3511)
-
+### Linha 3660-3679 (Botão Salvar Rascunho)
 ```tsx
-{/* Botão Salvar Rascunho - só aparece se for criação nova OU se já for rascunho */}
-{(!isEditMode || existingProposal?.status === 'rascunho') && (
+{/* Botão Salvar Rascunho - aparece em criação OU quando editando rascunho (após carregar) */}
+{(!isEditMode || (isEditMode && dataLoaded && (existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-')))) && (
   <Button 
     variant="outline"
     onClick={handleSaveDraft}
@@ -167,63 +163,8 @@ Localização: antes do botão "Publicar" (linha ~3511)
 )}
 ```
 
-### 2. Função `handleSaveDraft`
-
+### Linha 3692-3698 (Botão Principal)
 ```tsx
-const handleSaveDraft = async () => {
-  if (isSavingDraft) return;
-  setIsSavingDraft(true);
-  
-  try {
-    const buildingsData = selectedBuildingsData.map(b => ({
-      building_id: b.id,
-      building_name: b.nome,
-      // ... (mesmo formato do auto-save)
-    }));
-
-    const draftData = {
-      status: 'rascunho',
-      client_name: `${clientData.firstName} ${clientData.lastName}`.trim() || 'Rascunho',
-      // ... (todos os campos de proposalData)
-      client_logo_url: clientLogoUrl,
-    };
-
-    if (isEditMode && editProposalId) {
-      // Atualizar proposta existente mantendo como rascunho
-      await supabase.from('proposals').update(draftData).eq('id', editProposalId);
-      toast.success('Rascunho atualizado!');
-    } else if (draftId) {
-      // Atualizar rascunho auto-salvo existente
-      await supabase.from('proposals').update(draftData).eq('id', draftId);
-      toast.success('Rascunho salvo!');
-    } else {
-      // Criar novo rascunho
-      const { data } = await supabase.from('proposals')
-        .insert({ ...draftData, number: `RASCUNHO-${Date.now()}` })
-        .select('id')
-        .single();
-      if (data) {
-        setDraftId(data.id);
-        // Atualizar URL para modo edição
-        navigate(buildPath(`/propostas/${data.id}/editar`), { replace: true });
-      }
-      toast.success('Rascunho criado!');
-    }
-    
-    setLastSavedAt(new Date());
-  } catch (error) {
-    console.error('Erro ao salvar rascunho:', error);
-    toast.error('Erro ao salvar rascunho');
-  } finally {
-    setIsSavingDraft(false);
-  }
-};
-```
-
-### 3. Renomear Botão Existente
-
-```tsx
-{/* Botão Publicar */}
 <Button 
   onClick={handleOpenSendDialog} 
   disabled={...}
@@ -232,56 +173,23 @@ const handleSaveDraft = async () => {
   <Send className="h-4 w-4" />
   {isEditMode && (!dataLoaded || isLoadingProposal) 
     ? 'Carregando...' 
-    : 'Publicar'}
+    : isEditMode && existingProposal?.status !== 'rascunho' && !existingProposal?.number?.startsWith('RASCUNHO-')
+      ? 'Salvar Alterações'
+      : 'Publicar'}
 </Button>
-```
-
-### 4. Lógica na Mutation para Gerar Número EXA
-
-Na `createProposalMutation`, antes de salvar, verificar:
-
-```tsx
-// Se está editando um rascunho, gerar novo número EXA
-let proposalNumber = existingProposal?.number;
-if (isEditMode && existingProposal?.number?.startsWith('RASCUNHO-')) {
-  const year = new Date().getFullYear();
-  const randomNum = Math.floor(1000 + Math.random() * 9000);
-  proposalNumber = `EXA-${year}-${randomNum}`;
-}
-
-// Atualizar com o novo número e status
-const { data, error } = await supabase
-  .from('proposals')
-  .update({
-    ...proposalData,
-    number: proposalNumber,
-    status: 'enviada',
-    sent_at: new Date().toISOString(),
-  })
-  .eq('id', editProposalId)
-  .select()
-  .single();
 ```
 
 ---
 
 ## Checklist de Implementação
 
-### SQL Migration
-- [ ] Criar política RLS pública para `proposal-client-logos/` no bucket `arquivos`
-
 ### NovaPropostaPage.tsx
-- [ ] Adicionar `onError` handler no preview de logo (linha ~2148)
-- [ ] Adicionar função `handleSaveDraft`
-- [ ] Adicionar botão "Salvar Rascunho" (antes do botão Publicar)
-- [ ] Renomear botão "Salvar e Enviar" para "Publicar"
-- [ ] Na mutation de publicar, gerar número EXA se proposta era rascunho
-- [ ] Condicionar botão "Salvar Rascunho" para aparecer só quando aplicável
+- [ ] Ajustar condição do botão "Salvar Rascunho" (linha 3661) para considerar `dataLoaded`
+- [ ] Alterar texto do botão principal (linhas 3694-3697) para ser dinâmico baseado no estado
+- [ ] Alterar título do Dialog de envio para refletir o estado (publicar vs salvar alterações)
 
 ### Testes
-- [ ] Criar proposta nova → auto-save cria rascunho
-- [ ] Clicar "Salvar Rascunho" → toast + continua editando
-- [ ] Clicar "Publicar" em rascunho → gera número EXA + abre dialog
-- [ ] Editar proposta já publicada → botão "Salvar Rascunho" não aparece
-- [ ] Verificar que logo aparece no formulário e na página pública
-
+- [ ] Criar proposta nova → ver botão "Salvar Rascunho" + "Publicar"
+- [ ] Editar rascunho → ver botão "Salvar Rascunho" + "Publicar"
+- [ ] Editar proposta publicada → ver APENAS botão "Salvar Alterações" (sem Salvar Rascunho)
+- [ ] Publicar rascunho → verificar que gera número EXA + status enviada
