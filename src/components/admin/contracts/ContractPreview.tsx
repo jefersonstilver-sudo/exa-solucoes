@@ -4,6 +4,16 @@ import { ptBR } from 'date-fns/locale';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import exaContractHeader from '@/assets/exa-contract-header.png';
 
+interface PermutaItem {
+  id?: string;
+  nome: string;
+  descricao?: string;
+  quantidade: number;
+  preco_unitario: number;
+  preco_total: number;
+  ocultar_preco?: boolean;
+}
+
 interface ContractPreviewProps {
   data: {
     tipo_contrato: string;
@@ -38,6 +48,10 @@ interface ContractPreviewProps {
     numero_telas_instaladas?: number;
     requer_internet?: boolean;
     prazo_aviso_rescisao?: number;
+    // Campos de permuta
+    modalidade_proposta?: 'monetaria' | 'permuta';
+    itens_permuta?: PermutaItem[];
+    valor_referencia_permuta?: number;
   };
   signatarios?: {
     cliente?: { nome: string; sobrenome?: string; email: string; cpf?: string; cargo?: string; };
@@ -81,7 +95,8 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, on
   const isVerticalPremium = data.tipo_produto === 'vertical_premium';
   const isSindico = data.tipo_contrato === 'sindico' || data.tipo_contrato === 'comodato' || data.tipo_contrato === 'termo_aceite';
   const isParceria = data.tipo_contrato === 'parceria_clt' || data.tipo_contrato === 'parceria_pj';
-  const isPermuta = data.tipo_contrato === 'permuta';
+  const isPermuta = data.tipo_contrato === 'permuta' || data.modalidade_proposta === 'permuta' || data.metodo_pagamento === 'permuta';
+  const itensPermuta = Array.isArray(data.itens_permuta) ? data.itens_permuta : [];
   const clienteNomeCompleto = data.cliente_sobrenome ? `${data.cliente_nome} ${data.cliente_sobrenome}` : data.cliente_nome;
 
   const totalImpMes = listaPredios.reduce((acc, p) => {
@@ -215,20 +230,38 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, signatarios, on
             </p>
           </div>
 
-          {/* CLÁUSULA 3 - VALOR E PAGAMENTO */}
+          {/* CLÁUSULA 3 - VALOR E PAGAMENTO (ou CONTRAPARTIDA para permuta) */}
           <div className="contract-section" style={{ marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>CLÁUSULA 3ª — DO VALOR E FORMA DE PAGAMENTO</h3>
-            <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
-              <strong>3.1.</strong> Pelo serviço objeto deste contrato, a CONTRATANTE pagará à CONTRATADA o valor mensal de <strong>{formatCurrency(data.valor_mensal)}</strong>, 
-              totalizando <strong>{formatCurrency(data.valor_total)}</strong> pelo período contratado.
-            </p>
-            <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
-              <strong>3.2.</strong> O pagamento será realizado via <strong>{data.metodo_pagamento === 'pix_avista' ? 'PIX à Vista' : data.metodo_pagamento === 'pix_fidelidade' ? 'PIX Fidelidade' : data.metodo_pagamento === 'boleto_fidelidade' ? 'Boleto Bancário' : data.metodo_pagamento || 'PIX/Boleto'}</strong>, 
-              com vencimento todo dia <strong>{data.dia_vencimento || 10}</strong> de cada mês, conforme cronograma constante no <strong>Anexo II</strong>.
-            </p>
-            <p style={{ margin: 0, textAlign: 'justify' }}>
-              <strong>3.3.</strong> O atraso no pagamento implicará multa de 2% (dois por cento) sobre o valor devido, acrescido de juros de mora de 1% (um por cento) ao mês.
-            </p>
+            <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#222', marginBottom: '6px' }}>
+              CLÁUSULA 3ª — {isPermuta ? 'DA CONTRAPARTIDA' : 'DO VALOR E FORMA DE PAGAMENTO'}
+            </h3>
+            {isPermuta ? (
+              <>
+                <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
+                  <strong>3.1.</strong> Como contrapartida aos serviços de publicidade prestados pela CONTRATADA, a CONTRATANTE se compromete a entregar os bens descritos no <strong>Anexo III</strong> deste instrumento.
+                </p>
+                <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
+                  <strong>3.2.</strong> O valor de referência dos serviços de publicidade é de <strong>{formatCurrency(data.valor_total)}</strong>, equivalente ao valor dos bens entregues em contrapartida. <strong>Não há circulação de valores monetários</strong> neste contrato.
+                </p>
+                <p style={{ margin: 0, textAlign: 'justify' }}>
+                  <strong>3.3.</strong> Os bens deverão ser entregues no prazo máximo de 30 (trinta) dias a contar da assinatura deste instrumento.
+                </p>
+              </>
+            ) : (
+              <>
+                <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
+                  <strong>3.1.</strong> Pelo serviço objeto deste contrato, a CONTRATANTE pagará à CONTRATADA o valor mensal de <strong>{formatCurrency(data.valor_mensal)}</strong>, 
+                  totalizando <strong>{formatCurrency(data.valor_total)}</strong> pelo período contratado.
+                </p>
+                <p style={{ margin: '0 0 6px 0', textAlign: 'justify' }}>
+                  <strong>3.2.</strong> O pagamento será realizado via <strong>{data.metodo_pagamento === 'pix_avista' ? 'PIX à Vista' : data.metodo_pagamento === 'pix_fidelidade' ? 'PIX Fidelidade' : data.metodo_pagamento === 'boleto_fidelidade' ? 'Boleto Bancário' : data.metodo_pagamento || 'PIX/Boleto'}</strong>, 
+                  com vencimento todo dia <strong>{data.dia_vencimento || 10}</strong> de cada mês, conforme cronograma constante no <strong>Anexo II</strong>.
+                </p>
+                <p style={{ margin: 0, textAlign: 'justify' }}>
+                  <strong>3.3.</strong> O atraso no pagamento implicará multa de 2% (dois por cento) sobre o valor devido, acrescido de juros de mora de 1% (um por cento) ao mês.
+                </p>
+              </>
+            )}
           </div>
 
           {/* CLÁUSULA 4 - OBRIGAÇÕES DA CONTRATADA */}

@@ -356,13 +356,26 @@ serve(async (req) => {
     // MODO COMPLETO - Salva contrato no banco
     // ==================================================
     
+    // ==================================================
+    // DETECTAR MODALIDADE: PERMUTA vs MONETÁRIA
+    // ==================================================
+    const isPermuta = proposal.modalidade_proposta === 'permuta' || proposal.metodo_pagamento_alternativo === 'permuta';
+    const itensPermuta = Array.isArray(proposal.itens_permuta) ? proposal.itens_permuta : [];
+    const valorReferenciaPermuta = proposal.valor_referencia_permuta || valorTotal;
+    
+    console.log("📋 Modalidade da proposta:", isPermuta ? 'PERMUTA' : 'MONETÁRIA');
+    if (isPermuta) {
+      console.log("📦 Itens de permuta:", itensPermuta.length);
+      console.log("💰 Valor de referência:", valorReferenciaPermuta);
+    }
+
     // 5. Criar contrato no banco (status rascunho)
     console.log("📝 Criando contrato no banco...");
     
     const contratoData = {
       numero_contrato: contratoNumber,
       proposta_id: proposalId,
-      tipo_contrato: 'anunciante',
+      tipo_contrato: isPermuta ? 'permuta' : 'anunciante',
       status: 'rascunho',
       
       // Dados do cliente
@@ -387,12 +400,14 @@ serve(async (req) => {
       total_paineis: selectedBuildings.reduce((sum: number, b: any) => sum + (b.quantidade_telas || 1), 0),
       
       // Pagamento
-      metodo_pagamento: isCustomPayment ? 'personalizado' : 'pix',
+      metodo_pagamento: isPermuta ? 'permuta' : (isCustomPayment ? 'personalizado' : 'pix'),
       parcelas: isCustomPayment ? customInstallments : null,
       
       // Produto - USA O TIPO DA PROPOSTA
       tipo_produto: proposal.tipo_produto || 'horizontal',
-      objeto: 'Contratação de espaço publicitário em painéis digitais de elevadores',
+      objeto: isPermuta 
+        ? 'Permuta de serviços de publicidade digital em painéis de elevadores por bens/serviços' 
+        : 'Contratação de espaço publicitário em painéis digitais de elevadores',
       
       // NOVOS CAMPOS - Condições avançadas da proposta
       quantidade_posicoes: proposal.quantidade_posicoes || 1,
@@ -416,7 +431,12 @@ serve(async (req) => {
       travamento_preco_valor: proposal.travamento_preco_valor || 0,
       travamento_telas_atuais: proposal.travamento_telas_atuais || null,
       travamento_telas_limite: proposal.travamento_telas_limite || null,
-      travamento_preco_por_tela: proposal.travamento_preco_por_tela || null
+      travamento_preco_por_tela: proposal.travamento_preco_por_tela || null,
+      
+      // CAMPOS DE PERMUTA
+      modalidade_proposta: isPermuta ? 'permuta' : 'monetaria',
+      itens_permuta: isPermuta ? itensPermuta : null,
+      valor_referencia_permuta: isPermuta ? valorReferenciaPermuta : null
     };
 
     const { data: contrato, error: contratoError } = await supabase
@@ -627,6 +647,11 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
     cep: '85852-000'
   };
 
+  // ========== DETECTAR SE É CONTRATO DE PERMUTA ==========
+  const isPermuta = contrato.tipo_contrato === 'permuta' || contrato.modalidade_proposta === 'permuta' || contrato.metodo_pagamento === 'permuta';
+  const itensPermuta = Array.isArray(contrato.itens_permuta) ? contrato.itens_permuta : [];
+  const valorReferenciaPermuta = contrato.valor_referencia_permuta || contrato.valor_total || 0;
+
   // Lista de prédios formatada
   const predios = contrato.lista_predios || [];
   const totalTelas = predios.reduce((sum: number, p: any) => sum + (p.quantidade_telas || 1), 0);
@@ -769,11 +794,62 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
   // Verificar se é cortesia
   const isCortesia = contrato.valor_total === 0;
   
-  // ========== OFFSET DE NUMERAÇÃO PARA EXCLUSIVIDADE E TRAVAMENTO ==========
+  // ========== OFFSET DE NUMERAÇÃO PARA EXCLUSIVIDADE, TRAVAMENTO E PERMUTA ==========
   // Adiciona +1 para cada cláusula extra (exclusividade e/ou travamento de preço)
+  // Para permuta, as cláusulas são diferentes então offset é calculado separadamente
   let clauseOffset = 0;
-  if (contrato.cliente_escolheu_exclusividade) clauseOffset += 1;
-  if (contrato.travamento_preco_ativo) clauseOffset += 1;
+  if (!isPermuta) {
+    if (contrato.cliente_escolheu_exclusividade) clauseOffset += 1;
+    if (contrato.travamento_preco_ativo) clauseOffset += 1;
+  }
+
+  // ========== GERAR HTML DE ITENS PERMUTADOS (ANEXO III) ==========
+  let itensPermutaHtml = '';
+  if (isPermuta && itensPermuta.length > 0) {
+    const totalItensPermuta = itensPermuta.reduce((sum: number, item: any) => sum + (item.preco_total || item.quantidade * item.preco_unitario || 0), 0);
+    itensPermutaHtml = `
+      <div class="section no-break">
+        <div class="section-title">ANEXO III — BENS OBJETO DA CONTRAPARTIDA</div>
+        <table>
+          <thead>
+            <tr style="background: #f8f9fa;">
+              <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: center; width: 50px;">#</th>
+              <th style="padding: 12px; border: 1px solid #e5e7eb;">Descrição do Item</th>
+              <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: center; width: 80px;">Qtd.</th>
+              <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: right; width: 120px;">Valor Unit.</th>
+              <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: right; width: 120px;">Valor Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itensPermuta.map((item: any, idx: number) => `
+              <tr>
+                <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center;">${idx + 1}</td>
+                <td style="padding: 10px; border: 1px solid #e5e7eb;">
+                  <strong>${item.nome || 'Item não especificado'}</strong>
+                  ${item.descricao ? `<br><span style="font-size: 9pt; color: #666;">${item.descricao}</span>` : ''}
+                </td>
+                <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center;">${item.quantidade || 1}</td>
+                <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: right;">${item.ocultar_preco ? '-' : formatCurrency(item.preco_unitario || 0)}</td>
+                <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: right; font-weight: 500;">${item.ocultar_preco ? '-' : formatCurrency(item.preco_total || item.quantidade * item.preco_unitario || 0)}</td>
+              </tr>
+            `).join('')}
+            <tr style="background: #f3f4f6;">
+              <td colspan="4" style="padding: 12px; border: 1px solid #e5e7eb; font-weight: 700;">VALOR TOTAL DA CONTRAPARTIDA</td>
+              <td style="padding: 12px; border: 1px solid #e5e7eb; text-align: right; font-weight: 700; color: #8B1A1A;">${formatCurrency(totalItensPermuta)}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="font-size: 9pt; color: #666; margin-top: 10px;">
+          <em>* Os valores acima são de referência para fins de equivalência e não constituem transação monetária.</em>
+        </p>
+      </div>
+    `;
+  }
+
+  // ========== TÍTULO DO CONTRATO BASEADO NO TIPO ==========
+  const tituloContrato = isPermuta 
+    ? 'CONTRATO DE PERMUTA DE SERVIÇOS'
+    : 'CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE PUBLICIDADE';
 
   return `
     <!DOCTYPE html>
@@ -1236,7 +1312,7 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
 
       <!-- TÍTULO DO CONTRATO -->
       <div class="contract-title">
-        <h1>CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE PUBLICIDADE</h1>
+        <h1>${tituloContrato}</h1>
         <div class="contract-number">
           Contrato nº <strong>${contrato.numero_contrato}</strong>
         </div>
@@ -1317,20 +1393,35 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
 
       <!-- CLÁUSULA 2: DO OBJETO -->
       <div class="section no-break">
-        <div class="section-title">CLÁUSULA 2ª - DO OBJETO</div>
+        <div class="section-title">CLÁUSULA 2ª - DO OBJETO${isPermuta ? ' E DA NATUREZA JURÍDICA' : ''}</div>
         <div class="clause">
-          <p><span class="clause-title">2.1.</span> O presente instrumento tem por objeto a prestação de serviços de publicidade em painéis digitais instalados em elevadores, mediante veiculação de material publicitário audiovisual do CONTRATANTE nos locais especificados neste contrato.</p>
-          
-          <p><span class="clause-title">2.2.</span> A CONTRATADA disponibilizará espaço publicitário em seus painéis digitais de alta definição, instalados em elevadores de condomínios residenciais e comerciais, para exibição do conteúdo publicitário do CONTRATANTE.</p>
-          
-          <p><span class="clause-title">2.3.</span> O serviço inclui:
-            <ul>
-              <li>Acesso à plataforma digital para upload e gestão do conteúdo publicitário;</li>
-              <li>Suporte técnico para adequação do material às especificações técnicas;</li>
-              <li>Monitoramento remoto do funcionamento dos equipamentos;</li>
-              <li>Relatórios de exibição quando solicitados.</li>
-            </ul>
-          </p>
+          ${isPermuta ? `
+            <p><span class="clause-title">2.1.</span> O presente instrumento tem natureza jurídica de <strong>PERMUTA DE SERVIÇOS</strong>, conforme artigos 533 a 535 do Código Civil Brasileiro, pelo qual a CONTRATADA fornecerá serviços de publicidade digital e a CONTRATANTE fornecerá bens/serviços em contrapartida, <strong>sem circulação de valores monetários</strong>.</p>
+            
+            <p><span class="clause-title">2.2.</span> A CONTRATADA se compromete a disponibilizar espaço publicitário em seus painéis digitais de alta definição, instalados em elevadores de condomínios residenciais e comerciais, para exibição do conteúdo publicitário do CONTRATANTE.</p>
+            
+            <p><span class="clause-title">2.3.</span> O serviço de publicidade inclui:
+              <ul>
+                <li>Veiculação de material publicitário audiovisual nos locais especificados;</li>
+                <li>Acesso à plataforma digital para upload e gestão do conteúdo;</li>
+                <li>Suporte técnico para adequação do material às especificações;</li>
+                <li>Monitoramento remoto do funcionamento dos equipamentos.</li>
+              </ul>
+            </p>
+          ` : `
+            <p><span class="clause-title">2.1.</span> O presente instrumento tem por objeto a prestação de serviços de publicidade em painéis digitais instalados em elevadores, mediante veiculação de material publicitário audiovisual do CONTRATANTE nos locais especificados neste contrato.</p>
+            
+            <p><span class="clause-title">2.2.</span> A CONTRATADA disponibilizará espaço publicitário em seus painéis digitais de alta definição, instalados em elevadores de condomínios residenciais e comerciais, para exibição do conteúdo publicitário do CONTRATANTE.</p>
+            
+            <p><span class="clause-title">2.3.</span> O serviço inclui:
+              <ul>
+                <li>Acesso à plataforma digital para upload e gestão do conteúdo publicitário;</li>
+                <li>Suporte técnico para adequação do material às especificações técnicas;</li>
+                <li>Monitoramento remoto do funcionamento dos equipamentos;</li>
+                <li>Relatórios de exibição quando solicitados.</li>
+              </ul>
+            </p>
+          `}
         </div>
       </div>
 
@@ -1412,11 +1503,26 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
         </div>
       </div>
 
-      <!-- CLÁUSULA 5: DO VALOR E FORMA DE PAGAMENTO -->
+      <!-- CLÁUSULA 5: ${isPermuta ? 'DA CONTRAPARTIDA' : 'DO VALOR E FORMA DE PAGAMENTO'} -->
       <div class="section no-break">
-        <div class="section-title">CLÁUSULA 5ª - DO VALOR E FORMA DE PAGAMENTO</div>
+        <div class="section-title">CLÁUSULA 5ª - ${isPermuta ? 'DA CONTRAPARTIDA' : 'DO VALOR E FORMA DE PAGAMENTO'}</div>
         <div class="clause">
-          ${isCortesia ? `
+          ${isPermuta ? `
+            <div class="highlight-box" style="background: #f0f9ff; border-left-color: #0284c7;">
+              <strong>CONTRATO DE PERMUTA - SEM TRANSAÇÃO MONETÁRIA</strong><br>
+              As partes pactuam a troca de serviços por bens conforme detalhado nesta cláusula e no Anexo III.
+            </div>
+            
+            <p><span class="clause-title">5.1.</span> Como contrapartida aos serviços de publicidade prestados pela CONTRATADA, a CONTRATANTE se compromete a entregar os bens descritos no <strong>Anexo III</strong> deste instrumento.</p>
+            
+            <p><span class="clause-title">5.2.</span> O valor de referência total dos serviços de publicidade é de <strong>${formatCurrency(valorReferenciaPermuta)}</strong>, equivalente ao valor dos bens entregues em contrapartida.</p>
+            
+            <p><span class="clause-title">5.3.</span> <strong>NÃO HÁ CIRCULAÇÃO DE VALORES MONETÁRIOS</strong> neste contrato. Os valores mencionados servem apenas como referência para fins de equivalência e eventual tributação.</p>
+            
+            <p><span class="clause-title">5.4.</span> Os bens deverão ser entregues pela CONTRATANTE à CONTRATADA no endereço ${exaData.endereco}, ${exaData.cidade}/${exaData.estado}, no prazo máximo de <strong>30 (trinta) dias</strong> a contar da assinatura deste instrumento, salvo prazo diverso estabelecido entre as partes.</p>
+            
+            <p><span class="clause-title">5.5.</span> A CONTRATADA poderá recusar itens que não atendam às especificações acordadas ou que apresentem defeitos, devendo comunicar a CONTRATANTE em até 48 (quarenta e oito) horas para substituição.</p>
+          ` : isCortesia ? `
             <div class="highlight-box cortesia">
               <strong>CONTRATO DE CORTESIA</strong><br>
               Este contrato é firmado a título de cortesia, sem ônus para o CONTRATANTE, conforme acordo comercial estabelecido entre as partes.
@@ -1436,6 +1542,52 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
           `}
         </div>
       </div>
+
+      ${isPermuta ? `
+      <!-- CLÁUSULA 6: DA GARANTIA DOS BENS (PERMUTA) -->
+      <div class="section no-break">
+        <div class="section-title">CLÁUSULA 6ª - DA GARANTIA DOS BENS</div>
+        <div class="clause">
+          <p><span class="clause-title">6.1.</span> A CONTRATANTE garante que os bens entregues em contrapartida:</p>
+          <ul>
+            <li><strong>a)</strong> São de sua propriedade legítima, livres de ônus, gravames ou restrições;</li>
+            <li><strong>b)</strong> Estão em perfeito estado de funcionamento e conservação;</li>
+            <li><strong>c)</strong> Possuem garantia de fábrica de no mínimo <strong>12 (doze) meses</strong>, quando aplicável;</li>
+            <li><strong>d)</strong> Acompanham nota fiscal e documentação de origem.</li>
+          </ul>
+          
+          <p><span class="clause-title">6.2.</span> Caso seja constatado vício oculto em qualquer dos bens entregues, a CONTRATANTE deverá substituí-lo no prazo de <strong>15 (quinze) dias</strong>, sob pena de resolução parcial ou total deste contrato.</p>
+          
+          <p><span class="clause-title">6.3.</span> A CONTRATANTE declara não haver qualquer litígio, penhora, alienação fiduciária ou outra restrição sobre os bens objeto da contrapartida.</p>
+        </div>
+      </div>
+      
+      <!-- CLÁUSULA 7: DA EQUIVALÊNCIA DE VALORES (PERMUTA) -->
+      <div class="section no-break">
+        <div class="section-title">CLÁUSULA 7ª - DA EQUIVALÊNCIA DE VALORES</div>
+        <div class="clause">
+          <p><span class="clause-title">7.1.</span> As partes declaram que os valores atribuídos aos serviços de publicidade (<strong>${formatCurrency(valorReferenciaPermuta)}</strong>) e aos bens permutados são <strong>equivalentes e justos</strong>, não havendo torna ou diferença a ser paga por qualquer das partes.</p>
+          
+          <p><span class="clause-title">7.2.</span> A valoração dos itens foi realizada de comum acordo entre as partes, refletindo o preço de mercado na data da celebração deste instrumento.</p>
+          
+          <p><span class="clause-title">7.3.</span> Cada parte será responsável pelos tributos incidentes sobre suas respectivas operações, conforme legislação vigente.</p>
+        </div>
+      </div>
+      
+      <!-- CLÁUSULA 8: DO INADIMPLEMENTO (PERMUTA) -->
+      <div class="section no-break">
+        <div class="section-title">CLÁUSULA 8ª - DO INADIMPLEMENTO</div>
+        <div class="clause">
+          <p><span class="clause-title">8.1.</span> O descumprimento por qualquer das partes de suas obrigações constituirá a outra parte em mora, autorizando a resolução do contrato após notificação com prazo de <strong>15 (quinze) dias</strong> para regularização.</p>
+          
+          <p><span class="clause-title">8.2.</span> A parte inadimplente responderá por perdas e danos, incluindo lucros cessantes e danos emergentes.</p>
+          
+          <p><span class="clause-title">8.3.</span> <strong>Em caso de não entrega dos bens</strong> pela CONTRATANTE no prazo estabelecido, esta deverá pagar à CONTRATADA o valor monetário equivalente de <strong>${formatCurrency(valorReferenciaPermuta)}</strong> no prazo de <strong>10 (dez) dias</strong>, acrescido de multa de 2% (dois por cento) e juros de 1% (um por cento) ao mês.</p>
+          
+          <p><span class="clause-title">8.4.</span> <strong>Em caso de não prestação dos serviços de publicidade</strong> pela CONTRATADA, esta deverá devolver os bens recebidos ou pagar o equivalente monetário, no mesmo prazo e condições do item anterior.</p>
+        </div>
+      </div>
+      ` : ''}
 
       ${contrato.cliente_escolheu_exclusividade ? `
       <!-- CLÁUSULA 6: DA EXCLUSIVIDADE DE SEGMENTO (CONDICIONAL) -->
@@ -1691,6 +1843,8 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
           <p><span class="clause-title">${13 + clauseOffset}.6.</span> Este contrato representa o acordo integral entre as partes, substituindo quaisquer entendimentos anteriores, verbais ou escritos.</p>
         </div>
       </div>
+
+      ${isPermuta ? itensPermutaHtml : ''}
 
       <!-- ÁREA DE ASSINATURAS -->
       <div class="signature-section">
