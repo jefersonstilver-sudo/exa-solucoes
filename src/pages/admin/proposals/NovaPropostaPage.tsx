@@ -3657,8 +3657,8 @@ Parcelas:
             <Copy className="h-4 w-4" />
           </Button>
           
-          {/* Botão Salvar Rascunho - só aparece se for criação nova OU se já for rascunho */}
-          {(!isEditMode || existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-')) && (
+          {/* Botão Salvar Rascunho - aparece em criação OU quando editando rascunho (após carregar) */}
+          {(!isEditMode || (isEditMode && dataLoaded && (existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-')))) && (
             <Button 
               variant="outline"
               onClick={handleSaveDraft}
@@ -3694,7 +3694,9 @@ Parcelas:
             <Send className="h-4 w-4" />
             {isEditMode && (!dataLoaded || isLoadingProposal) 
               ? 'Carregando...' 
-              : 'Publicar'}
+              : isEditMode && dataLoaded && existingProposal?.status !== 'rascunho' && !existingProposal?.number?.startsWith('RASCUNHO-')
+                ? 'Salvar Alterações'
+                : 'Publicar'}
           </Button>
         </div>
       </div>
@@ -3705,11 +3707,11 @@ Parcelas:
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Send className="h-5 w-5 text-primary" />
-              {isEditMode && existingProposal?.number?.startsWith('RASCUNHO-') 
-                ? 'Publicar Proposta' 
-                : isEditMode 
-                  ? 'Atualizar e Enviar' 
-                  : 'Publicar Proposta'}
+              {isEditMode 
+                ? (existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-'))
+                  ? 'Publicar Proposta'
+                  : 'Salvar Alterações'
+                : 'Publicar Proposta'}
             </DialogTitle>
           </DialogHeader>
 
