@@ -39,6 +39,7 @@ export const ClientLogoUploadModal = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [originalImageError, setOriginalImageError] = useState(false);
   const [processedImageError, setProcessedImageError] = useState(false);
+  const [attemptedProcessing, setAttemptedProcessing] = useState(false);
 
   const resetState = () => {
     setSelectedFile(null);
@@ -51,6 +52,7 @@ export const ClientLogoUploadModal = ({
     setDragOver(false);
     setOriginalImageError(false);
     setProcessedImageError(false);
+    setAttemptedProcessing(false);
   };
 
   const handleClose = () => {
@@ -127,6 +129,7 @@ export const ClientLogoUploadModal = ({
   const processLogoWithAI = async () => {
     if (!selectedFile || !previewUrl) return;
 
+    setAttemptedProcessing(true);
     setProcessingState('uploading');
     setErrorMessage(null);
     setOriginalImageError(false);
@@ -351,9 +354,10 @@ export const ClientLogoUploadModal = ({
                       ? 'border-[#9C1E1E] ring-2 ring-[#9C1E1E]/20' 
                       : 'border-white/20'}
                   `}>
-                    {previewUrl && (
+                    {previewUrl && !originalImageError && (
                       <img 
-                        src={originalUrl || previewUrl} 
+                        key={previewUrl}
+                        src={previewUrl} 
                         alt="Original" 
                         className="max-w-full max-h-full object-contain filter brightness-0 invert"
                         onError={() => setOriginalImageError(true)}
@@ -431,10 +435,15 @@ export const ClientLogoUploadModal = ({
                         <p className="text-sm">{errorMessage || 'Erro no processamento'}</p>
                         <p className="text-xs mt-1 opacity-70">Use a versão original</p>
                       </div>
-                    ) : (
+                    ) : attemptedProcessing ? (
                       <div className="text-white/60 text-center p-4">
                         <ImageIcon className="h-10 w-10 mx-auto mb-2 opacity-50" />
                         <p className="text-sm">IA não retornou imagem</p>
+                      </div>
+                    ) : (
+                      <div className="text-white/60 text-center p-4">
+                        <ImageIcon className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Clique em "Processar" para otimizar</p>
                       </div>
                     )}
                     {selectedVariant === 'processed' && processingState === 'done' && processedUrl && (
