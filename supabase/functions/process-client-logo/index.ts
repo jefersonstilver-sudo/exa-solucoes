@@ -116,13 +116,14 @@ serve(async (req) => {
                 type: 'text',
                 text: `Process this logo image:
 1. Remove the background completely - make it transparent
-2. Enhance the quality and resolution (upscale if needed)
-3. Keep the original logo colors and design intact
-4. Make the logo clean and professional
-5. Output as high-quality PNG with transparent background
-6. Center the logo in the output image
+2. Convert the logo to PURE WHITE color only - ALL parts of the logo must be white (#FFFFFF)
+3. This is CRITICAL: the final logo must be completely white, no other colors allowed
+4. Enhance the quality and resolution (upscale if needed)
+5. Make the logo clean and professional
+6. Output as high-quality PNG with transparent background
+7. Center the logo in the output image
 
-This logo will be used on professional business documents and proposals.`
+The output MUST be a white logo on transparent background. This will be used on dark red backgrounds in professional business documents.`
               },
               {
                 type: 'image_url',
