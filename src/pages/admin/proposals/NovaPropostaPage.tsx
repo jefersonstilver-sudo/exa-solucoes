@@ -42,6 +42,7 @@ import { ChevronsUpDown } from 'lucide-react';
 import { BusinessSegmentSelector } from '@/components/ui/business-segment-selector';
 import { ItensPermutaEditor } from '@/components/admin/proposals/ItensPermutaEditor';
 import { ClientLogoUploadModal } from '@/components/admin/proposals/ClientLogoUploadModal';
+import { ClientLogoPreview } from '@/components/admin/proposals/ClientLogoPreview';
 
 interface Building {
   id: string;
@@ -2294,46 +2295,11 @@ Parcelas:
               </Label>
               
               {clientLogoUrl ? (
-                <div className="mt-2 flex items-center gap-3">
-                  <div className="w-16 h-16 rounded-lg border-2 border-slate-200 overflow-hidden bg-slate-800 flex items-center justify-center" id="logo-preview-container">
-                    <img 
-                      src={clientLogoUrl} 
-                      alt="Logo do cliente" 
-                      className="w-full h-full object-contain p-1 filter brightness-0 invert"
-                      onError={(e) => {
-                        console.error('❌ [LOGO] Erro ao carregar preview:', clientLogoUrl);
-                        // Mostrar ícone de fallback em vez de imagem quebrada
-                        (e.target as HTMLImageElement).style.display = 'none';
-                        const container = document.getElementById('logo-preview-container');
-                        if (container && !container.querySelector('.logo-fallback')) {
-                          const fallback = document.createElement('div');
-                          fallback.className = 'logo-fallback text-slate-400 text-xs text-center p-1';
-                          fallback.innerHTML = '⚠️<br>Erro';
-                          container.appendChild(fallback);
-                        }
-                      }}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setShowLogoUploadModal(true)}
-                    >
-                      Trocar
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setClientLogoUrl(null)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                <ClientLogoPreview 
+                  logoUrl={clientLogoUrl}
+                  onReplace={() => setShowLogoUploadModal(true)}
+                  onRemove={() => setClientLogoUrl(null)}
+                />
               ) : (
                 <button
                   type="button"
