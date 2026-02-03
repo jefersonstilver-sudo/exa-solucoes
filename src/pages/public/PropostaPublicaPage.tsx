@@ -22,6 +22,7 @@ import { ProposalSummaryText } from '@/components/public/proposal/ProposalSummar
 import { ExclusivityChoiceCard } from '@/components/public/proposal/ExclusivityChoiceCard';
 import { ProposalBuildingCard } from '@/components/public/proposal/ProposalBuildingCard';
 import { PermutaChoiceCard } from '@/components/public/proposal/PermutaChoiceCard';
+import { ClientLogoDisplay } from '@/components/proposals/ClientLogoDisplay';
 
 // Contract flow type
 type ContractFlowStep = 'idle' | 'loading' | 'collecting' | 'generating' | 'previewing' | 'accepted';
@@ -1796,17 +1797,13 @@ const PropostaPublicaPage = () => {
                 )}
               </div>
               
-              {/* Right: Client Logo (branca) */}
+              {/* Right: Client Logo (branca) - com signed URL para buckets privados */}
               {proposal.client_logo_url && (
                 <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20 p-2">
-                  <img 
-                    src={proposal.client_logo_url} 
-                    alt="Logo do cliente"
+                  <ClientLogoDisplay 
+                    logoUrl={proposal.client_logo_url}
                     className="w-full h-full object-contain filter brightness-0 invert"
-                    onError={(e) => {
-                      console.error('❌ [LOGO] Erro ao carregar logo do cliente:', proposal.client_logo_url);
-                      (e.target as HTMLImageElement).parentElement!.style.display = 'none';
-                    }}
+                    containerClassName="w-full h-full"
                   />
                 </div>
               )}
