@@ -11058,6 +11058,7 @@ export type Database = {
           client_first_name: string | null
           client_last_name: string | null
           client_latitude: number | null
+          client_logo_url: string | null
           client_longitude: number | null
           client_name: string
           client_phone: string | null
@@ -11149,6 +11150,7 @@ export type Database = {
           client_first_name?: string | null
           client_last_name?: string | null
           client_latitude?: number | null
+          client_logo_url?: string | null
           client_longitude?: number | null
           client_name: string
           client_phone?: string | null
@@ -11240,6 +11242,7 @@ export type Database = {
           client_first_name?: string | null
           client_last_name?: string | null
           client_latitude?: number | null
+          client_logo_url?: string | null
           client_longitude?: number | null
           client_name?: string
           client_phone?: string | null

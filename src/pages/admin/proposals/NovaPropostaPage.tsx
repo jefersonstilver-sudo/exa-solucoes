@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package, Copy } from 'lucide-react';
+import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package, Copy, Image as ImageIcon } from 'lucide-react';
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
@@ -41,6 +41,7 @@ import { ChevronsUpDown } from 'lucide-react';
 
 import { BusinessSegmentSelector } from '@/components/ui/business-segment-selector';
 import { ItensPermutaEditor } from '@/components/admin/proposals/ItensPermutaEditor';
+import { ClientLogoUploadModal } from '@/components/admin/proposals/ClientLogoUploadModal';
 
 interface Building {
   id: string;
@@ -252,6 +253,10 @@ const NovaPropostaPage = () => {
   const [metodoPagamentoAlternativo, setMetodoPagamentoAlternativo] = useState<string | null>(null);
   // Valor de referência monetária para propostas de permuta (quanto custaria se fosse comprar)
   const [valorReferenciaMonetaria, setValorReferenciaMonetaria] = useState<number>(0);
+
+  // Estados para Logo do Cliente
+  const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null);
+  const [showLogoUploadModal, setShowLogoUploadModal] = useState(false);
 
   // Estados para Auto-Save de Rascunho
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -1532,6 +1537,8 @@ Parcelas:
         descricao_contrapartida: modalidadeProposta === 'permuta' ? descricaoContrapartida : null,
         metodo_pagamento_alternativo: modalidadeProposta === 'permuta' ? 'permuta' : null,
         valor_referencia_monetaria: modalidadeProposta === 'permuta' ? valorReferenciaMonetaria : null,
+        // Logo do Cliente (processada por IA)
+        client_logo_url: clientLogoUrl,
         // Validade da proposta - funciona tanto na criação quanto na edição
         expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to ? customDateRange.to.toISOString() : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
       };
@@ -2118,6 +2125,57 @@ Parcelas:
               latitude: null,
               longitude: null
             }))} placeholder="Digite o endereço completo da empresa..." className="mt-1 h-12 text-base" />}
+            </div>
+
+            {/* Upload de Logo do Cliente */}
+            <div className="md:col-span-2 mt-3">
+              <Label className="text-xs flex items-center gap-1.5">
+                <ImageIcon className="h-3 w-3" />
+                Logo do Cliente (opcional)
+              </Label>
+              
+              {clientLogoUrl ? (
+                <div className="mt-2 flex items-center gap-3">
+                  <div className="w-16 h-16 rounded-lg border-2 border-slate-200 overflow-hidden bg-slate-800 flex items-center justify-center">
+                    <img 
+                      src={clientLogoUrl} 
+                      alt="Logo do cliente" 
+                      className="w-full h-full object-contain p-1 filter brightness-0 invert"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowLogoUploadModal(true)}
+                    >
+                      Trocar
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setClientLogoUrl(null)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowLogoUploadModal(true)}
+                  className="mt-2 w-full p-4 border-2 border-dashed border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-colors text-center"
+                >
+                  <ImageIcon className="h-6 w-6 text-slate-400 mx-auto mb-1" />
+                  <span className="text-sm text-slate-500">Adicionar logo</span>
+                  <span className="text-xs text-slate-400 block mt-0.5">
+                    PNG até 5MB - A IA remove fundo e otimiza automaticamente
+                  </span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -3783,6 +3841,16 @@ Parcelas:
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Upload de Logo do Cliente */}
+      <ClientLogoUploadModal
+        isOpen={showLogoUploadModal}
+        onClose={() => setShowLogoUploadModal(false)}
+        onLogoProcessed={(logoUrl) => {
+          setClientLogoUrl(logoUrl);
+          setShowLogoUploadModal(false);
+        }}
+      />
     </div>;
 };
 export default NovaPropostaPage;

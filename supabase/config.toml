@@ -596,3 +596,6 @@ verify_jwt = false
 [[cron]]
 function_name = "generate-daily-tasks"
 schedule = "0 5 * * *"
+
+[functions.process-client-logo]
+verify_jwt = false

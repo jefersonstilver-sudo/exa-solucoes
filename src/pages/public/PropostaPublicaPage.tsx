@@ -42,6 +42,7 @@ interface Proposal {
   client_address?: string | null;
   client_latitude?: number | null;
   client_longitude?: number | null;
+  client_logo_url?: string | null;
   selected_buildings: any[];
   total_panels: number;
   total_impressions_month: number;
@@ -1767,29 +1768,45 @@ const PropostaPublicaPage = () => {
           
           {/* Client Info - Prominent Section */}
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-white/20">
-            {/* Company Name - Large & Bold */}
-            {proposal.client_company_name && (
-              <div className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 flex items-center gap-2">
-                <Building2 className="h-5 w-5 sm:h-6 sm:w-6 opacity-80" />
-                {proposal.client_company_name}
+            <div className="flex items-start justify-between gap-4">
+              {/* Left: Company Info */}
+              <div className="flex-1">
+                {/* Company Name - Large & Bold */}
+                {proposal.client_company_name && (
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 flex items-center gap-2">
+                    <Building2 className="h-5 w-5 sm:h-6 sm:w-6 opacity-80" />
+                    {proposal.client_company_name}
+                  </div>
+                )}
+                
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm sm:text-base opacity-90">
+                  <div>
+                    {isCortesia ? 'Presenteado:' : 'Responsável:'}{' '}
+                    <strong>{proposal.client_name}</strong>
+                  </div>
+                  {proposal.client_cnpj && (
+                    <div className="text-white/80">CNPJ: <strong>{proposal.client_cnpj}</strong></div>
+                  )}
+                </div>
+                
+                {proposal.client_address && (
+                  <div className="flex items-center gap-1.5 text-xs sm:text-sm opacity-70 mt-2">
+                    📍 {proposal.client_address}
+                  </div>
+                )}
               </div>
-            )}
-            
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm sm:text-base opacity-90">
-              <div>
-                {isCortesia ? 'Presenteado:' : 'Responsável:'}{' '}
-                <strong>{proposal.client_name}</strong>
-              </div>
-              {proposal.client_cnpj && (
-                <div className="text-white/80">CNPJ: <strong>{proposal.client_cnpj}</strong></div>
+              
+              {/* Right: Client Logo (branca) */}
+              {proposal.client_logo_url && (
+                <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20 p-2">
+                  <img 
+                    src={proposal.client_logo_url} 
+                    alt="Logo do cliente"
+                    className="w-full h-full object-contain filter brightness-0 invert"
+                  />
+                </div>
               )}
             </div>
-            
-            {proposal.client_address && (
-              <div className="flex items-center gap-1.5 text-xs sm:text-sm opacity-70 mt-2">
-                📍 {proposal.client_address}
-              </div>
-            )}
           </div>
           
           {/* Status Badges */}
