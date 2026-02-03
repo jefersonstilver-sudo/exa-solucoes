@@ -3850,6 +3850,10 @@ Parcelas:
           setClientLogoUrl(logoUrl);
           setShowLogoUploadModal(false);
         }}
+        previewCompanyName={clientData.companyName}
+        previewClientName={`${clientData.firstName} ${clientData.lastName}`.trim()}
+        previewClientDocLabel={getDocumentLabel()}
+        previewClientDocValue={clientData.document || getDocumentPlaceholder()}
       />
     </div>;
 };
