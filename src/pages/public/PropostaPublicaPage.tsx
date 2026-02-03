@@ -1803,6 +1803,10 @@ const PropostaPublicaPage = () => {
                     src={proposal.client_logo_url} 
                     alt="Logo do cliente"
                     className="w-full h-full object-contain filter brightness-0 invert"
+                    onError={(e) => {
+                      console.error('❌ [LOGO] Erro ao carregar logo do cliente:', proposal.client_logo_url);
+                      (e.target as HTMLImageElement).parentElement!.style.display = 'none';
+                    }}
                   />
                 </div>
               )}
