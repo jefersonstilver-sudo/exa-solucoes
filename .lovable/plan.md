@@ -1,193 +1,173 @@
 
-## Objetivo (corrigir totalmente, sem mexer no resto do fluxo)
-1) **Modal de upload de logo**: ficar maior, “EXA Premium / glass / corporativo”, **sem botões verdes**, com **fundo vermelho (igual o header da proposta)** nas prévias e com **opção de escolher “Original” ou “Otimizada por IA”**.  
-2) **Logo processada não aparecendo**: diagnosticar e eliminar as causas comuns (renderização invisível, falha de URL, cache, upload/retorno incompleto).  
-3) **Preview real de como ficará na proposta**: dentro do modal, renderizar um mini “header” (igual PropostaPublicaPage) usando a logo escolhida.
+# Plano: Correções no Modal de Upload de Logo
+
+## Problemas Identificados na Imagem
+
+1. **Card "Original" com fundo cinza** - Deveria ter fundo vermelho igual ao card "Otimizada (IA)"
+2. **Falta botão "Usar Original"** - Quando a logo já vem sem fundo (PNG branco), o usuário deveria poder usá-la diretamente sem processar com IA
+3. **Logo sempre deve ser BRANCA** - O sistema não deve permitir logos coloridas; quando for colorida, a IA deve processar para converter em branco
 
 ---
 
-## Diagnóstico do que está acontecendo hoje (com base no código + request de rede)
-- A chamada `POST /functions/v1/process-client-logo` está retornando **200** com:
-  - `success: true`
-  - `logoUrl` válido
-  - `processed: true`
-- No `ClientLogoUploadModal.tsx`, o preview “Processada” usa:
-  - background escuro “slate”
-  - um badge verde “done”
-  - e confirma com botão verde (`bg-emerald-600`)
-- Há 2 problemas principais reportados:
-  1) **“Não apareceu a logo processada”**: mesmo com `logoUrl` retornado, a imagem pode estar:
-     - invisível por filtro/contraste (logo muito clara + filtro invert/brightness),
-     - quebrando no `<img>` por erro de load (CORS/403/policy), ou
-     - cache/tempo de render (menos provável, mas possível).
-  2) **“O fundo ali deve ser vermelho igual o da proposta”**: hoje o fundo do preview processado é slate escuro, não o vermelho do header (`from-[#4a0f0f] via-[#6B1515] to-[#7D1818]`).
+## Alterações Propostas
+
+### 1. Card "Original" com fundo vermelho (igual ao Processada)
+
+**Linha 293-300 do `ClientLogoUploadModal.tsx`:**
+
+De:
+```tsx
+bg-gradient-to-br from-slate-100 to-slate-200 border-2 transition-all
+```
+
+Para:
+```tsx
+bg-gradient-to-r from-[#4a0f0f] via-[#6B1515] to-[#7D1818] border-2 transition-all
+```
+
+E na imagem do original, aplicar o mesmo filtro branco:
+```tsx
+className="max-w-full max-h-full object-contain filter brightness-0 invert"
+```
 
 ---
 
-## Mudanças planejadas (alto nível)
+### 2. Adicionar botão "Usar Original" (ao lado do "Processar com IA")
 
-### A) Reestruturar o modal para 3 painéis (maior e com preview fiel)
-Vamos refazer o layout do `ClientLogoUploadModal.tsx` para um modal maior (desktop), com:
-1) **Original (upload)**  
-2) **Otimizada (IA)** (com botão “Processar” e estado de loading)  
-3) **Preview na Proposta** (mini header vermelho igual ao da proposta pública)
+Na seção de botões (linhas 463-471), quando houver arquivo selecionado e estado idle, mostrar **DOIS botões**:
 
-E com seleção explícita:
-- Um seletor tipo “radio”/toggle:
-  - “Usar Original”
-  - “Usar Otimizada (IA)”
+```tsx
+{selectedFile && processingState === 'idle' && (
+  <>
+    <Button 
+      onClick={handleUseOriginal}
+      variant="outline"
+      className="flex-1 border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E]/10"
+    >
+      <Check className="h-4 w-4 mr-1.5" />
+      Usar Original
+    </Button>
+    <Button 
+      onClick={processLogoWithAI}
+      className="flex-1 bg-[#9C1E1E] hover:bg-[#7D1818] text-white"
+    >
+      <Wand2 className="h-4 w-4 mr-1.5" />
+      Otimizar com IA
+    </Button>
+  </>
+)}
+```
 
-O botão final será algo como:
-- “Aplicar logo selecionada” (estilo EXA, **vermelho**, sem verde)
+Nova função `handleUseOriginal`:
+```tsx
+const handleUseOriginal = async () => {
+  if (!selectedFile || !previewUrl) return;
+  
+  setProcessingState('uploading');
+  
+  try {
+    const { data, error } = await supabase.functions.invoke('process-client-logo', {
+      body: {
+        imageBase64: previewUrl,
+        fileName: selectedFile.name,
+        onlyUploadOriginal: true  // <-- Sinaliza para não processar com IA
+      }
+    });
 
-### B) Garantir “usar original” (persistência real, não só preview local)
-Hoje só temos:
-- original: apenas `dataURL` local
-- processada: `logoUrl` (storage)
+    if (error || !data?.success) throw new Error(data?.error || 'Erro ao enviar');
 
-Para permitir “usar original”, precisamos ter uma URL persistida também. Existem duas formas; vamos adotar a mais sólida e consistente:
-
-**B1) Ajustar a Edge Function `process-client-logo` para retornar 2 URLs:**
-- `originalUrl`: sempre faz upload do original em `proposal-client-logos/original/...`
-- `processedUrl`: quando IA retornar imagem, faz upload em `proposal-client-logos/processed/...`
-- `processed`: boolean
-- `success`
-
-Assim o modal poderá:
-- mostrar as duas versões com URL real
-- permitir escolher qual salvar em `client_logo_url`
-
-Isso também ajuda a resolver o caso “processada não apareceu”: poderemos logar/inspecionar qual URL está falhando e exibir fallback.
-
-### C) Corrigir por que “logo processada não aparece” (hardening no modal)
-No `ClientLogoUploadModal.tsx`:
-1) Adicionar handler `onError` no `<img>` do preview processado e original:
-   - exibir mensagem “Não foi possível carregar a imagem” + CTA “Reprocessar”/“Reenviar”
-2) Aplicar **cache-busting leve** no preview (apenas no modal):
-   - `?v=${Date.now()}` ao setar URL em state (não na URL salva na proposta)
-3) Revisar filtro para “logo sempre branca”:
-   - manter `filter brightness-0 invert` para garantir branco,
-   - mas evitar duplicar filtros que possam “sumir” a imagem em casos específicos.  
-   Estratégia:
-   - No preview: permitir alternar “mostrar como branco (padrão)” vs “mostrar original” (apenas no modal, para debug visual).
-   - Na proposta pública: continua sempre branca como você pediu.
-
-### D) Fundo vermelho (igual proposta) nos cards de preview
-Substituir o fundo do card “Processada” (e também do preview final) para o mesmo padrão do header da proposta:
-- `bg-gradient-to-r from-[#4a0f0f] via-[#6B1515] to-[#7D1818]`
-- borda translúcida `border-white/20`
-- glass `backdrop-blur-sm`
-- para ficar “EXA Premium” e consistente.
-
-### E) Sem botões verdes e UI corporativa/glass
-No `ClientLogoUploadModal.tsx`:
-- Remover:
-  - badge verde (`bg-emerald-500`)
-  - botão verde “Usar esta Logo”
-- Trocar por:
-  - botões com estilo EXA (vermelho / slate / glass)
-  - “Aplicar” em vermelho (ex.: gradiente ou `bg-[#9C1E1E] hover:bg-[#7D1818]`)
-  - “Cancelar” outline glass (sem verde)
-- Aumentar largura do modal:
-  - `DialogContent` para `sm:max-w-3xl` (ou 4xl dependendo do layout final)
-  - manter responsivo (no mobile continua empilhado)
+    setOriginalUrl(data.originalUrl + `?v=${Date.now()}`);
+    setSelectedVariant('original');
+    setProcessingState('done');
+    toast.success('Logo enviada com sucesso!');
+  } catch (error: any) {
+    setProcessingState('error');
+    setErrorMessage(error.message);
+    toast.error('Erro ao enviar logo');
+  }
+};
+```
 
 ---
 
-## Ajustes específicos por arquivo
+### 3. Forçar logo sempre BRANCA (filtro visual)
 
-### 1) `src/components/admin/proposals/ClientLogoUploadModal.tsx`
-**Alterações principais:**
-- Props novas (para preview real):
-  - `previewCompanyName?: string`
-  - `previewClientName?: string`
-  - `previewClientDocLabel?: string` (CNPJ/CUIT/RUC)
-  - `previewClientDocValue?: string`
-  - (opcional) `proposalNumber?: string` para ficar idêntico ao header
-- Estados:
-  - `originalUrl` (string | null) — vindo da Edge Function
-  - `processedUrl` (string | null) — vindo da Edge Function
-  - `selectedVariant: 'original' | 'processed'`
-- Fluxo:
-  1) Usuário seleciona PNG
-  2) Modal mostra “Original” (preview local) + botão “Enviar/Preparar Original”
-     - ou já dispara um “upload original” automático via Edge Function (recomendado para simplificar)
-  3) Usuário clica “Processar com IA” (opcional)
-  4) Modal mostra “Otimizada”
-  5) Usuário escolhe qual usar (Original/Otimizada)
-  6) “Aplicar logo selecionada” salva a URL escolhida via `onLogoProcessed(chosenUrl)`
+O filtro `brightness-0 invert` já transforma qualquer cor em branco para exibição.
 
-**UI (layout):**
-- Grid 2 colunas (desktop): Original | Otimizada
-- Abaixo, “Preview na Proposta” (full width)
-- “Preview na Proposta” deve simular:
-  - fundo vermelho gradiente
-  - card com `bg-white/10 backdrop-blur-sm`
-  - logo no canto direito dentro de container parecido com PropostaPublicaPage
-  - logo com filtro para branco
+Porém, a regra de negócio pede:
+- **Logo colorida → IA DEVE processar para torná-la branca**
 
-### 2) `supabase/functions/process-client-logo/index.ts`
-**Alterações:**
-- Passar a retornar:
-  - `originalUrl`
-  - `processedUrl` (se existir; se não, null)
-  - `processed: boolean`
-- Sempre fazer upload do original.
-- Se IA devolver imagem, fazer upload da processada também.
-- Manter logs robustos para debug.
+Para isso, precisamos **atualizar o prompt da Edge Function** para instruir a IA a converter para branco:
 
-**Entrada esperada:**
-- `imageBase64`
-- `fileName`
-- (opcional) `onlyUploadOriginal: boolean` para permitir uma chamada “rápida” sem IA, caso você queira performance.
+**Na Edge Function (`process-client-logo/index.ts`), linha 117-125:**
 
-### 3) `src/pages/admin/proposals/NovaPropostaPage.tsx`
-**Alterações pequenas e relacionadas (sem mexer no restante da tela):**
-- Passar props de preview para o modal usando os campos já existentes:
-  - companyName, clientName, document label/value.
-- Ajustar callback do modal:
-  - receber `logoUrl` final (original ou processada) e setar `clientLogoUrl`.
-- (Opcional, mas recomendado para UX): quando `existingProposal` carregar em modo edição, inicializar `clientLogoUrl` com `existingProposal.client_logo_url` para aparecer no formulário imediatamente.
+De:
+```text
+3. Keep the original logo colors and design intact
+```
+
+Para:
+```text
+3. Convert the logo to pure WHITE color only (all parts of the logo should be white)
+4. The output should be white logo on transparent background
+5. This is critical: the final logo must be completely white, no other colors
+```
 
 ---
 
-## Critérios de aceite (o que você vai validar)
-1) No modal:
-   - aparece **Original** e **Otimizada**
-   - consigo escolher “usar original” ou “usar otimizada”
-   - **sem botões verdes**
-   - fundos de preview em **vermelho igual proposta**
-   - preview “como ficará na proposta” aparece e muda quando eu alterno a opção.
-2) A “logo processada” passa a aparecer sempre:
-   - se a IA falhar, modal mostra mensagem clara e permite seguir com “Original”.
-3) Ao “Aplicar”, a proposta salva `client_logo_url` com a versão escolhida e na proposta pública a logo aparece do jeito esperado (branca).
+## Arquivos a Modificar
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/components/admin/proposals/ClientLogoUploadModal.tsx` | Fundo vermelho no card Original + botão "Usar Original" + filtro branco |
+| `supabase/functions/process-client-logo/index.ts` | Atualizar prompt para converter logo em branco |
 
 ---
 
-## Checklist de implementação (ordem)
-1) Ajustar Edge Function `process-client-logo` para retornar `originalUrl` e `processedUrl`.
-2) Refatorar `ClientLogoUploadModal`:
-   - layout maior (glass)
-   - seleção original vs processada
-   - preview real no header vermelho
-   - remover verde
-   - hardening de erro de imagem + cache-busting no preview
-3) Ajustar `NovaPropostaPage`:
-   - passar dados para preview
-   - inicializar `clientLogoUrl` no modo edição (se estiver faltando)
-4) Teste end-to-end:
-   - upload original
-   - processar com IA
-   - alternar e aplicar
-   - salvar proposta
-   - abrir proposta pública e ver logo branca no local correto
+## Resultado Visual Esperado
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Upload de Logo do Cliente                                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────┐   ┌─────────────────────────┐                 │
+│  │  ORIGINAL               │   │  OTIMIZADA (IA)         │                 │
+│  │  ═══════════════════    │   │  ═══════════════════    │                 │
+│  │  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓   │   │  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓   │                 │
+│  │  ▓  FUNDO VERMELHO  ▓   │   │  ▓  FUNDO VERMELHO  ▓   │                 │
+│  │  ▓    [LOGO]        ▓   │   │  ▓    [LOGO]        ▓   │                 │
+│  │  ▓   BRANCA         ▓   │   │  ▓   BRANCA         ▓   │                 │
+│  │  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓   │   │  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓   │                 │
+│  └─────────────────────────┘   └─────────────────────────┘                 │
+│                                                                             │
+│              ╳ Escolher outra imagem                                        │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ┌────────────────────────┐   ┌────────────────────────┐                   │
+│  │   ✓ Usar Original      │   │   ✨ Otimizar com IA   │                   │
+│  │   (outline vermelho)   │   │   (vermelho sólido)    │                   │
+│  └────────────────────────┘   └────────────────────────┘                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## Observações de design (fidelidade EXA)
-- Reusar o mesmo gradiente do header em `PropostaPublicaPage`:
-  - `from-[#4a0f0f] via-[#6B1515] to-[#7D1818]`
-- Elementos glass:
-  - `bg-white/10 backdrop-blur-sm border border-white/20`
-- Acentos e botões:
-  - vermelho EXA (`#9C1E1E` / `#C7141A`) e variantes, nunca verde
+## Checklist de Implementação
+
+### Modal (`ClientLogoUploadModal.tsx`)
+- [ ] Mudar fundo do card Original para gradiente vermelho `from-[#4a0f0f] via-[#6B1515] to-[#7D1818]`
+- [ ] Aplicar filtro branco `filter brightness-0 invert` na imagem original
+- [ ] Adicionar função `handleUseOriginal` que chama Edge Function com `onlyUploadOriginal: true`
+- [ ] Mostrar dois botões lado a lado: "Usar Original" (outline) e "Otimizar com IA" (sólido)
+- [ ] Ajustar mensagens de erro para branco (texto legível sobre fundo vermelho)
+
+### Edge Function (`process-client-logo`)
+- [ ] Atualizar prompt para instruir IA a converter logo para BRANCO
+- [ ] Garantir que o fluxo `onlyUploadOriginal` continua funcionando
+
+### Testes
+- [ ] Upload de logo PNG branca sem fundo → aparece corretamente nos dois cards
+- [ ] Upload de logo colorida → IA processa e converte para branco
+- [ ] Botão "Usar Original" funciona e salva a logo
+- [ ] Botão "Otimizar com IA" funciona e salva a logo processada
