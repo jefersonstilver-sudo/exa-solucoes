@@ -1,213 +1,111 @@
 
 
-# Reconstrucao Completa do PDF de Proposta Comercial
+# Plano: Corrigir Label do Documento Conforme o Pais
 
-## Problema Principal: Logo do Cliente AUSENTE
+## Problema Identificado
 
-O arquivo `ProposalPDFExporter.tsx` **nao inclui** o campo `client_logo_url` na interface `ProposalData` (linhas 10-47) e nenhum metodo renderiza a logo do cliente no PDF. O campo existe no banco de dados e na pagina publica, mas foi ignorado no exportador de PDF.
+Na pagina publica da proposta comercial (`PropostaPublicaPage.tsx`), na linha 1789, o label do documento esta hardcoded como "CNPJ":
 
----
-
-## Diagnostico Tecnico Completo
-
-### 1. Logo do Cliente Faltando
-
-| Local | Status |
-|-------|--------|
-| Banco de dados (`proposals.client_logo_url`) | Existe |
-| Pagina publica (`PropostaPublicaPage.tsx`) | Funcionando |
-| Interface PDF (`ProposalData` linha 10-47) | **FALTANDO** |
-| Header do PDF (`drawElegantHeader`) | **FALTANDO** |
-
-### 2. Erros de Acentuacao (jsPDF)
-
-O jsPDF nao suporta caracteres Unicode nativamente. Textos como "Duracao", "Exibicoes/mes", "Aprovacao" aparecem corrompidos.
-
-### 3. Layout Desorganizado
-
-- Imagem `drawVerticalPremiumShowcase()` ocupa espaco desnecessario
-- Cards de pagamento com alturas inconsistentes
-- Tabela de predios com colunas truncadas
-
----
-
-## Solucao Proposta
-
-### Novo Layout do Header (com Logo do Cliente)
-
-```text
-+--------------------------------------------------+
-|                                                  |
-|  [LOGO EXA]   PROPOSTA COMERCIAL   [LOGO CLIENTE]|
-|               Publicidade Elevadores             |
-|                                                  |
-|  Emitido: 03/02/2026          Vendedor: Joao     |
-|  ------------------------------------------------|
+```tsx
+<div className="text-white/80">CNPJ: <strong>{proposal.client_cnpj}</strong></div>
 ```
 
-A logo do cliente sera exibida no canto superior direito, em preto (para impressao), ao lado da logo EXA que fica no canto esquerdo.
+Isso esta incorreto porque o sistema suporta tres paises:
 
----
+| Pais | Codigo | Documento Correto |
+|------|--------|-------------------|
+| Brasil | BR | CNPJ |
+| Argentina | AR | CUIT |
+| Paraguai | PY | RUC |
 
-## Alteracoes Tecnicas
+## Documentacao Existente no Sistema
 
-### Arquivo: `src/components/admin/proposals/ProposalPDFExporter.tsx`
+O sistema ja possui a logica correta implementada em dois lugares:
 
-#### 1. Adicionar campo na interface ProposalData (linha 27)
-
+**1. NovaPropostaPage.tsx (linhas 113-124):**
 ```typescript
-interface ProposalData {
-  // ... campos existentes ...
-  client_logo_url?: string | null;  // ADICIONAR
-}
-```
-
-#### 2. Modificar drawElegantHeader para incluir logo do cliente
-
-No metodo `drawElegantHeader` (linha 275), adicionar logica para carregar e renderizar a logo do cliente no canto direito do header, usando signed URL para buckets privados.
-
-```typescript
-private async drawElegantHeader(proposal: ProposalData, sellerName: string, isCortesia: boolean = false): Promise<void> {
-  // ... logo EXA no lado esquerdo (ja existe) ...
-  
-  // NOVO: Logo do cliente no lado direito
-  if (proposal.client_logo_url) {
-    try {
-      // Gerar signed URL se for Supabase Storage
-      let logoUrl = proposal.client_logo_url;
-      const storagePattern = /\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/;
-      const match = logoUrl.match(storagePattern);
-      
-      if (match) {
-        const bucketName = match[1];
-        const filePath = match[2].split('?')[0];
-        const { data: signedData } = await supabase.storage
-          .from(bucketName)
-          .createSignedUrl(filePath, 3600);
-        if (signedData?.signedUrl) {
-          logoUrl = signedData.signedUrl;
-        }
-      }
-      
-      const clientLogoData = await this.loadImageAsDataURLBlack(logoUrl);
-      // Posicionar no canto direito, antes do titulo
-      this.doc.addImage(clientLogoData, 'PNG', this.pageWidth - this.margin - 25, 10, 22, 18);
-    } catch (err) {
-      console.error('Erro ao carregar logo do cliente:', err);
-    }
+const getDocumentLabel = () => {
+  switch (clientData.country) {
+    case 'BR': return 'CNPJ';
+    case 'AR': return 'CUIT';
+    case 'PY': return 'RUC';
+    default: return 'Documento';
   }
-  
-  // ... resto do header ...
+};
+```
+
+**2. ProposalPDFExporter.tsx (linhas 435-442):**
+```typescript
+private getDocumentLabel(country?: 'BR' | 'AR' | 'PY' | null): string {
+  switch (country) {
+    case 'BR': return 'CNPJ';
+    case 'AR': return 'CUIT';
+    case 'PY': return 'RUC';
+    default: return 'CNPJ/Documento';
+  }
 }
 ```
 
-#### 3. Criar funcao de normalizacao de acentos
+## Alteracoes Necessarias
 
+### Arquivo: `src/pages/public/PropostaPublicaPage.tsx`
+
+#### 1. Adicionar campo `client_country` na interface Proposal (linha 40)
+
+O campo `client_country` existe no banco de dados e e carregado via `select('*')` (linha 352), mas nao esta declarado na interface TypeScript.
+
+**Antes (linha 40):**
 ```typescript
-private normalizeText(text: string): string {
-  const accentsMap: Record<string, string> = {
-    'a': 'a', 'a': 'a', 'a': 'a', 'a': 'a',
-    'e': 'e', 'e': 'e', 'e': 'e',
-    'i': 'i', 'i': 'i', 'i': 'i',
-    'o': 'o', 'o': 'o', 'o': 'o', 'o': 'o',
-    'u': 'u', 'u': 'u', 'u': 'u',
-    'c': 'c', 'n': 'n',
-    // maiusculas
-    'A': 'A', 'A': 'A', 'A': 'A', 'A': 'A',
-    'E': 'E', 'E': 'E', 'E': 'E',
-    'I': 'I', 'I': 'I', 'I': 'I',
-    'O': 'O', 'O': 'O', 'O': 'O', 'O': 'O',
-    'U': 'U', 'U': 'U', 'U': 'U',
-    'C': 'C', 'N': 'N'
-  };
-  return text.split('').map(char => accentsMap[char] || char).join('');
-}
+client_cnpj: string | null;
 ```
 
-#### 4. Remover imagem grande desnecessaria
-
-No metodo `generateProposalPDF` (linha 1160), remover ou comentar:
-
+**Depois:**
 ```typescript
-// REMOVER esta linha:
-// await this.drawVerticalPremiumShowcase();
+client_cnpj: string | null;
+client_country?: 'BR' | 'AR' | 'PY' | null;
 ```
 
-#### 5. Aplicar normalizacao em todos os textos
+#### 2. Criar funcao helper para obter label do documento (apos a linha 100)
 
-Substituir textos estaticos por versoes normalizadas:
-- "Duracao" (ja sem acento)
-- "Exibicoes/mes" 
-- "Aprovacao do conteudo em ate 48 horas uteis"
-- Etc.
-
-#### 6. Ajustar larguras da tabela de predios
+Adicionar funcao que retorna o label correto baseado no pais:
 
 ```typescript
-const cols = [
-  { label: '#', x: this.margin + 2, w: 8 },           // NOVO: numeracao
-  { label: 'PREDIO', x: this.margin + 11, w: 55 },    // Ajustado
-  { label: 'BAIRRO', x: this.margin + 68, w: 32 },    // Ajustado
-  { label: 'ENDERECO', x: this.margin + 102, w: 42 }, // Ajustado
-  { label: 'TELAS', x: this.margin + 146, w: 14 },
-  { label: 'IMP/MES', x: this.margin + 162, w: 20 }
-];
+// Helper para obter label do documento baseado no pais
+const getDocumentLabel = (country?: 'BR' | 'AR' | 'PY' | null): string => {
+  switch (country) {
+    case 'BR': return 'CNPJ';
+    case 'AR': return 'CUIT';
+    case 'PY': return 'RUC';
+    default: return 'CNPJ';
+  }
+};
 ```
 
----
+#### 3. Atualizar exibicao do documento (linha 1789)
 
-## Nova Ordem das Secoes
+**Antes:**
+```tsx
+{proposal.client_cnpj && (
+  <div className="text-white/80">CNPJ: <strong>{proposal.client_cnpj}</strong></div>
+)}
+```
 
-1. Header (Logo EXA esquerda + Logo Cliente direita)
-2. Identificacao da Proposta
-3. Dados do Cliente (compacto, 2 colunas)
-4. Produto Escolhido (mockup + specs)
-5. Locais Contratados (tabela com numeracao)
-6. Investimento (cards alinhados)
-7. Termos e Condicoes (lista compacta)
-8. Footer (QR Code + Contato Vendedor)
-
-**REMOVIDO**: `drawVerticalPremiumShowcase()` (imagem grande)
-
----
-
-## Checklist de Implementacao
-
-### Interface e Dados
-- [ ] Adicionar `client_logo_url` na interface `ProposalData`
-
-### Logo do Cliente
-- [ ] Implementar logica de signed URL no `drawElegantHeader`
-- [ ] Carregar logo em preto usando `loadImageAsDataURLBlack`
-- [ ] Posicionar no canto superior direito (antes do titulo)
-
-### Normalizacao de Texto
-- [ ] Criar metodo `normalizeText()`
-- [ ] Aplicar em titulos de secao
-- [ ] Aplicar em condicoes gerais
-- [ ] Aplicar em labels da tabela
-
-### Layout
-- [ ] Remover `drawVerticalPremiumShowcase()`
-- [ ] Ajustar colunas da tabela de predios
-- [ ] Adicionar coluna de numeracao (#)
-- [ ] Uniformizar altura dos cards de pagamento
-
-### Testes
-- [ ] Gerar PDF com logo do cliente
-- [ ] Gerar PDF sem logo do cliente (fallback)
-- [ ] Verificar que textos nao estao corrompidos
-- [ ] Verificar que cabe em 1-2 paginas
-
----
+**Depois:**
+```tsx
+{proposal.client_cnpj && (
+  <div className="text-white/80">{getDocumentLabel(proposal.client_country)}: <strong>{proposal.client_cnpj}</strong></div>
+)}
+```
 
 ## Resultado Esperado
 
-PDF profissional com:
-- Logo do cliente no header (preto, lado direito)
-- Logo EXA no header (preto, lado esquerdo)
-- Textos sem caracteres corrompidos
-- Layout compacto (1-2 paginas)
-- Predios em lista/tabela com numeracao
-- Espacamentos consistentes
+- Para clientes brasileiros: exibira "CNPJ: 12.345.678/0001-90"
+- Para clientes argentinos: exibira "CUIT: 20-12345678-3"
+- Para clientes paraguaios: exibira "RUC: 80012345-6"
+
+## Arquivos a Modificar
+
+| Arquivo | Alteracao |
+|---------|-----------|
+| `src/pages/public/PropostaPublicaPage.tsx` | Adicionar campo na interface + criar helper + atualizar linha 1789 |
 
