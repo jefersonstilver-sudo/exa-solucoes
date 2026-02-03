@@ -1776,56 +1776,70 @@ Parcelas:
 
       const draftData = {
         status: 'rascunho' as const,
+        // Cliente
         client_name: fullName || 'Rascunho',
-        client_first_name: clientData.firstName.trim(),
-        client_last_name: clientData.lastName.trim(),
+        client_first_name: clientData.firstName || null,
+        client_last_name: clientData.lastName || null,
         client_company_name: clientData.companyName || null,
+        client_country: clientData.country || 'BR',
         client_cnpj: clientData.document || null,
-        client_phone: clientData.phoneFullNumber || clientData.phone || null,
         client_email: clientData.email || null,
+        client_phone: clientData.phoneFullNumber || clientData.phone || null,
         client_address: clientData.address || null,
-        client_country: clientData.country,
-        client_latitude: clientData.latitude,
-        client_longitude: clientData.longitude,
-        buildings: buildingsData as unknown as Json,
-        buildings_count: selectedBuildings.length,
-        duration_months: isCustomDays ? 1 : durationMonths,
-        duration_days: isCustomDays ? customDays : null,
-        monthly_value: parseFloat(fidelValue) || 0,
+        client_latitude: clientData.latitude || null,
+        client_longitude: clientData.longitude || null,
+        client_logo_url: clientLogoUrl || null,
+        // Prédios - NOMES CORRETOS conforme schema
+        selected_buildings: buildingsData as unknown as Json,
+        total_panels: totalPanels,
+        total_impressions_month: totalImpressionsAdjusted,
+        // Período e pagamento - NOMES CORRETOS
+        duration_months: isCustomDays ? 0 : durationMonths,
+        fidel_monthly_value: modalidadeProposta === 'permuta' ? 0 : (parseFloat(fidelValue) || 0),
+        cash_total_value: modalidadeProposta === 'permuta' ? 0 : (isCustomPayment ? customTotal : cashTotal),
         discount_percent: discountPercent,
-        total_value: isCustomPayment ? customTotal : cashTotal,
+        payment_type: isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
+        is_custom_days: isCustomDays,
+        custom_days: isCustomDays ? customDays : null,
+        custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
+          installment: idx + 1,
+          due_date: formatDateForInput(p.dueDate),
+          amount: parseFloat(p.amount) || 0
+        })) as unknown as Json : null,
+        // Produto
         tipo_produto: tipoProduto,
         quantidade_posicoes: quantidadePosicoes,
         titulo: tituloProposta || null,
-        validity_hours: validityHours,
-        pagamento_customizado: isCustomPayment,
-        parcelas_customizadas: isCustomPayment ? customInstallments.map(p => ({
-          id: p.id,
-          dueDate: p.dueDate.toISOString(),
-          amount: parseFloat(p.amount) || 0
-        })) as unknown as Json : null,
-        duracao_meses_custom: isCustomPayment ? customDurationMonths : null,
-        venda_futura: vendaFutura,
-        predios_contratados: vendaFutura ? prediosContratados : null,
-        telas_contratadas: vendaFutura ? telasContratadas : null,
-        oferecer_exclusividade: oferecerExclusividade,
-        segmento_exclusivo: oferecerExclusividade ? segmentoExclusivo : null,
-        exclusividade_percentual: oferecerExclusividade ? exclusividadePercentual : null,
-        exclusividade_valor_extra: oferecerExclusividade ? exclusividadeValorCalculado : null,
-        travamento_preco_ativo: travamentoPrecoAtivo,
-        travamento_preco_valor: travamentoPrecoAtivo ? (travamentoModoCalculo === 'manual' ? travamentoPrecoManual : travamentoPrecoValor) : null,
-        travamento_telas_limite: travamentoPrecoAtivo ? travamentoTelasLimite : null,
-        multa_rescisao_ativa: multaRescisaoAtiva,
-        multa_rescisao_percentual: multaRescisaoAtiva ? multaRescisaoPercentual : null,
+        // Permuta - campos corretos
         modalidade_proposta: modalidadeProposta,
-        itens_permuta: modalidadeProposta === 'permuta' ? itensPermuta as unknown as Json : null,
+        itens_permuta: modalidadeProposta === 'permuta' ? itensPermuta as unknown as Json : [],
+        valor_total_permuta: modalidadeProposta === 'permuta' ? valorTotalPermuta : 0,
         ocultar_valores_publico: modalidadeProposta === 'permuta' ? ocultarValoresPublico : false,
         descricao_contrapartida: modalidadeProposta === 'permuta' ? descricaoContrapartida : null,
-        metodo_pagamento_alternativo: metodoPagamentoAlternativo,
-        valor_referencia_monetaria: valorReferenciaMonetaria,
-        client_logo_url: clientLogoUrl,
+        metodo_pagamento_alternativo: modalidadeProposta === 'permuta' ? 'permuta' : null,
+        valor_referencia_monetaria: modalidadeProposta === 'permuta' ? valorReferenciaMonetaria : null,
+        // Configurações adicionais
+        cobranca_futura: cobrancaFutura,
+        exigir_contrato: exigirContrato,
+        venda_futura: vendaFutura,
+        predios_contratados: vendaFutura ? prediosContratados : selectedBuildingsData.length,
+        // Exclusividade - NOME CORRETO
+        exclusividade_segmento: oferecerExclusividade,
+        segmento_exclusivo: oferecerExclusividade ? segmentoExclusivo : null,
+        exclusividade_percentual: oferecerExclusividade ? exclusividadePercentual : null,
+        // Travamento
+        travamento_preco_ativo: travamentoPrecoAtivo,
+        travamento_preco_valor: travamentoPrecoAtivo ? travamentoPrecoValor : null,
+        travamento_telas_limite: travamentoPrecoAtivo ? travamentoTelasLimite : null,
+        // Multa
+        multa_rescisao_ativa: multaRescisaoAtiva,
+        multa_rescisao_percentual: multaRescisaoAtiva ? multaRescisaoPercentual : null,
+        // CC Emails
         cc_emails: ccEmails.length > 0 ? ccEmails : null,
-        expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to ? customDateRange.to.toISOString() : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
+        // Validade
+        expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to 
+          ? customDateRange.to.toISOString() 
+          : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
       };
 
       if (isEditMode && editProposalId) {
