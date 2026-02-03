@@ -283,7 +283,7 @@ export const ClientLogoUploadModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-slate-200">
+      <DialogContent className="sm:max-w-3xl bg-white/80 backdrop-blur-2xl border-white/40 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-slate-800">
             <Sparkles className="h-5 w-5 text-[#9C1E1E]" />
@@ -294,15 +294,15 @@ export const ClientLogoUploadModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Área de Upload */}
           {!selectedFile ? (
             <div
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
-              className={`
-                relative border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer
+            className={`
+                relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer
                 ${dragOver 
                   ? 'border-[#9C1E1E] bg-[#9C1E1E]/5' 
                   : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'
@@ -328,11 +328,11 @@ export const ClientLogoUploadModal = ({
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Grid de versões: Original | Processada */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Card Original */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-slate-700">Original</h3>
                     {processingState === 'done' && originalUrl && (
@@ -345,7 +345,7 @@ export const ClientLogoUploadModal = ({
                     )}
                   </div>
                   <div className={`
-                    relative aspect-square rounded-xl overflow-hidden flex items-center justify-center p-4
+                    relative h-36 rounded-lg overflow-hidden flex items-center justify-center p-4
                     bg-gradient-to-r from-[#4a0f0f] via-[#6B1515] to-[#7D1818] border-2 transition-all
                     ${selectedVariant === 'original' && processingState === 'done' 
                       ? 'border-[#9C1E1E] ring-2 ring-[#9C1E1E]/20' 
@@ -376,7 +376,7 @@ export const ClientLogoUploadModal = ({
                 </div>
 
                 {/* Card Processada (IA) */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                       <Wand2 className="h-4 w-4 text-[#9C1E1E]" />
@@ -392,7 +392,7 @@ export const ClientLogoUploadModal = ({
                     )}
                   </div>
                   <div className={`
-                    relative aspect-square rounded-xl overflow-hidden flex items-center justify-center p-4
+                    relative h-36 rounded-lg overflow-hidden flex items-center justify-center p-4
                     bg-gradient-to-r from-[#4a0f0f] via-[#6B1515] to-[#7D1818] border-2 transition-all
                     ${selectedVariant === 'processed' && processingState === 'done' && processedUrl
                       ? 'border-[#9C1E1E] ring-2 ring-[#9C1E1E]/20' 
@@ -446,50 +446,7 @@ export const ClientLogoUploadModal = ({
                 </div>
               </div>
 
-              {/* Preview na Proposta */}
-              {processingState === 'done' && previewLogoUrl && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                    <FileText className="h-4 w-4 text-[#9C1E1E]" />
-                    Preview na Proposta
-                  </h3>
-                  <div className="bg-gradient-to-r from-[#4a0f0f] via-[#6B1515] to-[#7D1818] rounded-xl p-4 sm:p-6">
-                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                      <div className="flex items-start justify-between gap-4">
-                        {/* Left: Company Info */}
-                        <div className="flex-1 text-white">
-                          <div className="text-lg sm:text-xl font-bold mb-1 flex items-center gap-2">
-                            <Building2 className="h-5 w-5 opacity-80" />
-                            {previewCompanyName || 'Nome da Empresa'}
-                          </div>
-                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs sm:text-sm opacity-80">
-                            <span className="flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              {previewClientName || 'Responsável'}
-                            </span>
-                            <span>{previewClientDocLabel}: {previewClientDocValue}</span>
-                          </div>
-                        </div>
-                        
-                        {/* Right: Client Logo */}
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20 p-2">
-                          <img 
-                            src={previewLogoUrl} 
-                            alt="Logo do cliente"
-                            className="w-full h-full object-contain filter brightness-0 invert"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-xs text-slate-500 text-center">
-                    É assim que a logo aparecerá na proposta pública (sempre em branco)
-                  </p>
-                </div>
-              )}
+              {/* Seção Preview na Proposta removida para layout compacto */}
 
               {/* Botão para trocar arquivo */}
               <Button
