@@ -1,166 +1,300 @@
 
+# Plano: Logo do Cliente na Proposta + Processamento IA
 
-# Plano: Cards Selecionáveis com Texto Explicativo Dinâmico
+## Resumo do Pedido
 
-## Objetivo
-
-Permitir que o cliente escolha entre **Valor Monetário** ou **Acordo de Permuta**, com um texto explicativo que muda automaticamente conforme a opção selecionada.
+1. **Exibir logo do cliente na proposta pública** - No card slate do header (lado direito, conforme marcação na imagem)
+2. **Logo sempre em versão branca** - Como o exemplo NewZone Importados mostrado
+3. **Campo de upload no formulário de criação** - Abaixo do campo CNPJ
+4. **Processamento com IA** - Upscale, remoção de fundo, deixar em alta definição
+5. **Exibir logo também no PDF** - Manter fidelidade visual com a proposta online
 
 ---
 
-## Design Visual
+## Design Visual na Proposta Pública
+
+A logo do cliente aparecerá no card slate do header (onde você marcou o retângulo vermelho):
 
 ```text
-┌─────────────────────────────────┐  ┌─────────────────────────────────┐
-│  ○ VALOR MONETÁRIO              │  │  ● ACORDO DE PERMUTA ✓          │
-│  ────────────────────           │  │  ────────────────────           │
-│  R$ 10.234,00/mês               │  │  18 meses                       │
-│  Total: R$ 184.212,00           │  │  90x Tablet Android 24"         │
-│                                 │  │                                 │
-│  [Clique para selecionar]       │  │  [Selecionado]                  │
-└─────────────────────────────────┘  └─────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  bg-white/10 backdrop-blur-sm rounded-xl                                    │
+│                                                                             │
+│  🏢 New Zone Importados                              ┌──────────────────┐  │
+│  Responsável: Paola Doldan   CNPJ: 12.345.678/9000-00│  [LOGO CLIENTE]  │  │
+│  📍 Endereço...                                      │   (branca)       │  │
+│                                                      └──────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
-┌─────────────────────────────────────────────────────────────────────────┐
-│  💡 TEXTO DINÂMICO CONFORME SELEÇÃO                                     │
-│                                                                         │
-│  SE PERMUTA SELECIONADO:                                               │
-│  "Você fornece equipamentos/serviços para a EXA Mídia. Esta opção      │
-│   pode sair mais barata para sua empresa ao comparar com produtos       │
-│   a preço de custo em vez do valor de mercado."                        │
-│                                                                         │
-│  SE MONETÁRIO SELECIONADO:                                             │
-│  "Você paga R$ X por mês, totalizando R$ Y em Z meses. Ideal para      │
-│   quem prefere uma relação comercial tradicional e direta."            │
-└─────────────────────────────────────────────────────────────────────────┘
+- Layout flex com `flex-row items-center justify-between`
+- Logo no lado direito com tamanho fixo (~80x80px em desktop, ~60x60px mobile)
+- Logo sempre renderizada em **branco** usando filtro CSS `brightness(0) invert(1)`
+- Fallback gracioso se não houver logo (espaço não aparece)
+
+---
+
+## Design do Campo de Upload no Formulário Admin
+
+Será adicionado logo **abaixo do campo CNPJ** (após linha 2066):
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  CNPJ                                                                        │
+│  [12.345.678/0001-00]  [🔍]                                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Logo do Cliente (opcional)                                                  │
+│                                                                              │
+│  SEM LOGO:                         COM LOGO:                                │
+│  ┌────────────────────────┐        ┌─────────┐ ┌────────┐ ┌────┐            │
+│  │    🖼️                   │        │  LOGO   │ │ Trocar │ │ ✕  │           │
+│  │   Adicionar logo       │        │ (prev)  │ └────────┘ └────┘            │
+│  │   PNG até 5MB          │        └─────────┘                              │
+│  │   IA otimiza auto      │                                                  │
+│  └────────────────────────┘                                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Alterações Técnicas
+## Processamento de IA da Logo
 
-### Arquivo: `src/components/public/proposal/PermutaChoiceCard.tsx`
+### Edge Function: `process-client-logo`
 
-#### 1. Adicionar estado de seleção
+Fluxo de processamento usando a API Lovable AI (Gemini):
 
-```tsx
-import { useState } from 'react';
-
-const [selectedOption, setSelectedOption] = useState<'monetario' | 'permuta'>('permuta');
+```text
+1. Receber imagem base64 do cliente
+2. Enviar para Gemini Image com prompt:
+   "Remove the background from this logo image completely. 
+    Enhance quality and resolution. Make the logo clean 
+    with transparent background. Keep original colors. 
+    Output high-quality PNG suitable for professional documents."
+3. Receber imagem processada
+4. Upload para Supabase Storage: proposal-client-logos/
+5. Retornar URL pública
 ```
 
-#### 2. Tornar os cards clicáveis
+### Tecnologia
 
-**Card Monetário (linha 95):**
-```tsx
-<div 
-  onClick={() => setSelectedOption('monetario')}
-  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
-    ${selectedOption === 'monetario' 
-      ? 'border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
-      : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
-    }`}
->
+- Modelo: `google/gemini-2.5-flash-image` (via ai.gateway.lovable.dev)
+- Funcionalidades: remoção de fundo + upscale + otimização
+- Armazenamento: bucket `arquivos` / pasta `proposal-client-logos/`
+
+---
+
+## Alterações no Banco de Dados
+
+### Nova coluna na tabela `proposals`
+
+```sql
+ALTER TABLE proposals 
+ADD COLUMN client_logo_url TEXT DEFAULT NULL;
+
+COMMENT ON COLUMN proposals.client_logo_url IS 
+  'URL da logo do cliente processada por IA para exibição na proposta';
 ```
 
-**Card Permuta (linha 126):**
-```tsx
-<div 
-  onClick={() => setSelectedOption('permuta')}
-  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
-    ${selectedOption === 'permuta' 
-      ? 'border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
-      : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
-    }`}
->
+---
+
+## Arquivos a Criar/Modificar
+
+| Arquivo | Ação | Descrição |
+|---------|------|-----------|
+| `src/pages/admin/proposals/NovaPropostaPage.tsx` | MODIFICAR | Adicionar estado + campo de upload + integração com modal |
+| `src/components/admin/proposals/ClientLogoUploadModal.tsx` | CRIAR | Modal de upload com processamento IA e preview |
+| `src/pages/public/PropostaPublicaPage.tsx` | MODIFICAR | Exibir logo do cliente no header slate (lado direito, branca) |
+| `src/components/admin/proposals/ProposalPDFExporter.tsx` | MODIFICAR | Incluir logo do cliente no PDF |
+| `supabase/functions/process-client-logo/index.ts` | CRIAR | Edge Function para processar logo com IA |
+| Migração SQL | EXECUTAR | Adicionar coluna `client_logo_url` |
+
+---
+
+## Detalhes de Implementação
+
+### 1. NovaPropostaPage.tsx
+
+**Novo estado** (após linha 254):
+```typescript
+const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null);
+const [showLogoUploadModal, setShowLogoUploadModal] = useState(false);
+const [isProcessingLogo, setIsProcessingLogo] = useState(false);
 ```
 
-#### 3. Badge e Checkmark dinâmicos
-
-Mover o badge "ESCOLHIDO" e o checkmark para aparecer apenas no card selecionado:
-
+**Novo campo UI** (após linha 2066, abaixo do CNPJ):
 ```tsx
-{selectedOption === 'monetario' && (
-  <>
-    <div className="absolute -top-2 left-3 bg-gradient-to-r from-[#9C1E1E] to-[#7D1818] text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-      <Check className="h-2.5 w-2.5" />
-      ESCOLHIDO
+{/* Upload de Logo do Cliente */}
+<div className="md:col-span-2 mt-3">
+  <Label className="text-xs flex items-center gap-1.5">
+    <ImageIcon className="h-3 w-3" />
+    Logo do Cliente (opcional)
+  </Label>
+  
+  {clientLogoUrl ? (
+    <div className="mt-2 flex items-center gap-3">
+      <div className="w-16 h-16 rounded-lg border-2 border-slate-200 
+                      overflow-hidden bg-slate-800 flex items-center justify-center">
+        <img 
+          src={clientLogoUrl} 
+          alt="Logo" 
+          className="w-full h-full object-contain filter brightness-0 invert" 
+        />
+      </div>
+      <Button variant="outline" size="sm" onClick={() => setShowLogoUploadModal(true)}>
+        Trocar
+      </Button>
+      <Button variant="ghost" size="sm" onClick={() => setClientLogoUrl(null)}>
+        <X className="h-4 w-4" />
+      </Button>
     </div>
-    <div className="absolute -top-2 -right-2 p-1 bg-[#9C1E1E] rounded-full">
-      <Check className="h-3 w-3 text-white" />
-    </div>
-  </>
-)}
-```
-
-#### 4. Remover texto de "Economia" (linhas 156-161)
-
-Apagar completamente o bloco:
-```tsx
-// REMOVER:
-<div className="mt-3 pt-3 border-t border-[#9C1E1E]/10">
-  <p className="text-[10px] text-[#7D1818] flex items-center gap-1 font-medium">
-    <Gift className="h-3 w-3" />
-    Economia: {formatCurrency(valorTotalMonetario)}
-  </p>
+  ) : (
+    <button
+      type="button"
+      onClick={() => setShowLogoUploadModal(true)}
+      className="mt-2 w-full p-4 border-2 border-dashed border-slate-200 
+                 rounded-lg hover:border-slate-300 transition-colors text-center"
+    >
+      <ImageIcon className="h-6 w-6 text-slate-400 mx-auto mb-1" />
+      <span className="text-sm text-slate-500">Adicionar logo</span>
+      <span className="text-xs text-slate-400 block">
+        PNG até 5MB - A IA remove fundo e otimiza automaticamente
+      </span>
+    </button>
+  )}
 </div>
 ```
 
-#### 5. Texto explicativo dinâmico (substituir linhas 194-210)
+### 2. ClientLogoUploadModal.tsx (Novo)
+
+Componente com:
+- Área de drag-and-drop
+- Validação: PNG, max 5MB
+- Chamada à Edge Function para processamento
+- Preview antes/depois
+- Estados de loading com mensagens amigáveis
+- Botões: Cancelar / Confirmar
+
+### 3. PropostaPublicaPage.tsx
+
+No header slate (linha 1769), modificar para layout flexível:
 
 ```tsx
-{/* Texto Explicativo Dinâmico */}
-<div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-100">
-  <div className="flex items-start gap-2">
-    <Lightbulb className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
-    <div className="text-[10px] sm:text-xs text-slate-600 space-y-1">
-      {selectedOption === 'permuta' ? (
-        <>
-          <p>
-            <strong className="text-slate-700">Você escolheu o Acordo de Permuta.</strong>
-          </p>
-          <p>
-            Em vez de pagamento em dinheiro, você fornece {contrapartidaTexto.toLowerCase()} para a EXA Mídia.
-          </p>
-          <p>
-            <strong className="text-[#9C1E1E]">Esta opção pode sair mais barata para sua empresa</strong> ao comparar com produtos a preço de custo em vez do valor de mercado de {formatCurrency(valorTotalMonetario)}.
-          </p>
-        </>
-      ) : (
-        <>
-          <p>
-            <strong className="text-slate-700">Você escolheu o Valor Monetário.</strong>
-          </p>
-          <p>
-            O investimento é de <strong className="text-[#9C1E1E]">{formatCurrency(valorReferenciaMonetaria)}/mês</strong>, totalizando <strong className="text-[#9C1E1E]">{formatCurrency(valorTotalMonetario)}</strong> em {periodoTexto}.
-          </p>
-          <p>
-            Ideal para quem prefere uma relação comercial tradicional e direta, com pagamento via boleto, PIX ou cartão.
-          </p>
-        </>
+<div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-white/20">
+  <div className="flex items-start justify-between gap-4">
+    {/* Left: Company Info */}
+    <div className="flex-1">
+      {proposal.client_company_name && (
+        <div className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 flex items-center gap-2">
+          <Building2 className="h-5 w-5 sm:h-6 sm:w-6 opacity-80" />
+          {proposal.client_company_name}
+        </div>
       )}
+      {/* ... resto das infos ... */}
     </div>
+    
+    {/* Right: Client Logo (branca) */}
+    {proposal.client_logo_url && (
+      <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 
+                      bg-white/10 rounded-xl flex items-center justify-center 
+                      flex-shrink-0 border border-white/20 p-2">
+        <img 
+          src={proposal.client_logo_url} 
+          alt="Logo do cliente"
+          className="w-full h-full object-contain filter brightness-0 invert"
+        />
+      </div>
+    )}
   </div>
 </div>
 ```
 
+### 4. Edge Function: process-client-logo
+
+```typescript
+// supabase/functions/process-client-logo/index.ts
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+serve(async (req) => {
+  // 1. Receber imagem base64
+  const { imageBase64, fileName } = await req.json();
+  
+  // 2. Processar com Gemini (remoção de fundo + upscale)
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash-image",
+      messages: [{
+        role: "user",
+        content: [
+          { type: "text", text: "Remove background completely, enhance quality..." },
+          { type: "image_url", image_url: { url: `data:image/png;base64,${imageBase64}` } }
+        ]
+      }],
+      modalities: ["image", "text"]
+    }),
+  });
+
+  // 3. Upload para Storage
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  const storagePath = `proposal-client-logos/${Date.now()}_${fileName}`;
+  await supabase.storage.from("arquivos").upload(storagePath, buffer);
+
+  // 4. Retornar URL
+  return new Response(JSON.stringify({ 
+    success: true, 
+    logoUrl: publicUrl 
+  }));
+});
+```
+
 ---
 
-## Resultado
+## Checklist de Implementação
 
-| Seleção | Texto Exibido |
-|---------|---------------|
-| **Permuta** | "Você fornece materiais para a EXA Mídia. Esta opção pode sair mais barata para sua empresa ao comparar com produtos a preço de custo..." |
-| **Monetário** | "O investimento é de R$ X/mês, totalizando R$ Y. Ideal para quem prefere uma relação comercial tradicional..." |
+### Banco de Dados
+- [ ] Criar migração para adicionar coluna `client_logo_url` na tabela `proposals`
+
+### Backend
+- [ ] Criar Edge Function `process-client-logo` com integração Lovable AI
+- [ ] Deploy da Edge Function
+
+### Admin (Formulário de Criação)
+- [ ] Adicionar estados `clientLogoUrl`, `showLogoUploadModal`, `isProcessingLogo`
+- [ ] Criar componente `ClientLogoUploadModal.tsx`
+- [ ] Adicionar campo de upload abaixo do CNPJ
+- [ ] Salvar `client_logo_url` no create/update da proposta
+
+### Proposta Pública
+- [ ] Modificar header slate para exibir logo do cliente no lado direito
+- [ ] Aplicar filtro CSS `brightness-0 invert` para logo branca
+- [ ] Fallback gracioso quando não houver logo
+
+### PDF
+- [ ] Carregar logo do cliente no PDF
+- [ ] Posicionar no header correspondente
+- [ ] Aplicar tratamento para impressão (preto sobre fundo claro ou branco sobre fundo escuro)
+
+### Testes
+- [ ] Testar upload de logo com diferentes formatos
+- [ ] Verificar processamento IA (remoção de fundo)
+- [ ] Testar exibição na proposta pública (mobile e desktop)
+- [ ] Testar geração de PDF com logo
 
 ---
 
-## Checklist
+## Estimativa de Esforço
 
-- [ ] Adicionar `useState` para controlar seleção
-- [ ] Tornar ambos os cards clicáveis com `onClick`
-- [ ] Adicionar hover states (`hover:border-slate-300`, `hover:shadow-md`)
-- [ ] Mover badge "ESCOLHIDO" dinamicamente para o card selecionado
-- [ ] Remover texto fixo de "Economia"
-- [ ] Implementar texto explicativo dinâmico baseado na seleção
-- [ ] Testar interatividade em mobile
+| Componente | Complexidade |
+|------------|--------------|
+| Migração SQL | Baixa |
+| Edge Function IA | Média |
+| ClientLogoUploadModal | Média |
+| Campo no NovaPropostaPage | Baixa |
+| Exibição na PropostaPublicaPage | Baixa |
+| Integração no PDF | Média |
 
+**Total**: 3-4 ciclos de implementação
