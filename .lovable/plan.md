@@ -1,150 +1,148 @@
 
 
-# Plano: Correção Completa do Modal de Upload de Logo
+# Plano: Correção de Logo e Botão de Edição de Proposta
 
-## Problemas Identificados na Imagem
+## Problemas Identificados
 
-1. **Card Original mostra "Erro ao carregar"** - A imagem do preview local (`previewUrl`) está sendo ignorada e tentando carregar `originalUrl` que ainda não existe
-2. **Card Processada mostra "IA não retornou imagem"** - O estado `processingState === 'done'` mas sem `processedUrl` cai no fallback errado
-3. **"Preview na Proposta" ainda está visível** - A seção deveria ter sido removida completamente mas aparece na imagem
-4. **Layout desajustado com scroll** - Os cards ainda parecem grandes demais
+### 1. Logo Corrompida na Proposta Pública
+A URL da logo (`https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/proposal-client-logos/original/...`) retorna 404. Causas possíveis:
+- Permissões públicas do bucket `arquivos` não incluem o path `proposal-client-logos/`
+- RLS do storage bloqueando acesso anônimo
+
+### 2. Logo Desaparece ao Editar
+No bloco de hidratação em `NovaPropostaPage.tsx` (linhas 518-719), o campo `client_logo_url` **não está sendo carregado**. O código hidrata todos os campos de `clientData`, configurações de pagamento, exclusividade, travamento de preço, permuta, mas **esquece de carregar a logo do cliente**.
+
+### 3. Salvar como Rascunho em vez de Publicar
+O botão "Enviar" não deixa claro que em modo de edição vai **atualizar a proposta existente** em vez de criar um rascunho novo. Precisa de texto diferente para o modo de edição.
 
 ---
 
-## Causa Raiz dos Erros
+## Correções Propostas
 
-### Erro 1: Original não carrega
+### Correção 1: Logo na Proposta Pública (PropostaPublicaPage.tsx)
 
-Na linha 356, o código usa:
+Adicionar tratamento de erro na imagem com fallback e log para debug:
+
 ```tsx
-src={originalUrl || previewUrl}
+// Linhas ~1800-1808
+{proposal.client_logo_url && (
+  <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20 p-2">
+    <img 
+      src={proposal.client_logo_url} 
+      alt="Logo do cliente"
+      className="w-full h-full object-contain filter brightness-0 invert"
+      onError={(e) => {
+        console.error('❌ [LOGO] Erro ao carregar logo do cliente:', proposal.client_logo_url);
+        // Esconder o container se a imagem falhar
+        (e.target as HTMLImageElement).parentElement!.style.display = 'none';
+      }}
+    />
+  </div>
+)}
 ```
 
-O problema é que quando `originalUrl` é `null` e o componente renderiza, ele tenta mostrar `previewUrl`. Porém, se houver um erro no carregamento anterior (state persiste), mostra "Erro ao carregar".
+### Correção 2: Hidratar Logo no Modo de Edição (NovaPropostaPage.tsx)
 
-**Solução**: Sempre usar `previewUrl` para o preview local no card Original, e apenas substituir por `originalUrl` quando ele existir e for válido.
+No bloco `useEffect` de hidratação (após linha ~673), adicionar:
 
-### Erro 2: "IA não retornou imagem"
-
-Na linha 434-438, o fallback para quando `processingState === 'done'` mas não tem `processedUrl`:
 ```tsx
-} else {
-  <div className="text-white/60 text-center p-4">
-    <ImageIcon className="h-10 w-10 mx-auto mb-2 opacity-50" />
-    <p className="text-sm">IA não retornou imagem</p>
-  </div>
+// Após setValorReferenciaMonetaria
+// ============================================
+// LOGO DO CLIENTE - HIDRATAÇÃO
+// ============================================
+if (existingProposal.client_logo_url) {
+  setClientLogoUrl(existingProposal.client_logo_url);
+  console.log('🖼️ Logo do cliente carregada:', existingProposal.client_logo_url);
 }
 ```
 
-Isso aparece mesmo quando o usuário ainda não tentou processar. A lógica precisa considerar se o usuário já tentou processar ou não.
+### Correção 3: Botão de Edição com Texto Claro (NovaPropostaPage.tsx)
 
-### Erro 3: Preview na Proposta ainda visível
+Atualizar o botão "Enviar" (linha ~3514-3518) para mostrar texto diferente em modo de edição:
 
-A imagem mostra o "Preview na Proposta" ainda aparecendo, o que indica que a remoção não foi aplicada corretamente ou há outro componente renderizando isso.
+```tsx
+<Button 
+  onClick={handleOpenSendDialog} 
+  disabled={...} 
+  className="flex-1 h-11 gap-2"
+>
+  <Send className="h-4 w-4" />
+  {isEditMode && (!dataLoaded || isLoadingProposal) 
+    ? 'Carregando...' 
+    : isEditMode 
+      ? 'Salvar e Enviar' 
+      : 'Enviar'}
+</Button>
+```
+
+E no título do Dialog de envio (linha ~3528):
+
+```tsx
+<DialogTitle className="flex items-center gap-2">
+  <Send className="h-5 w-5 text-primary" />
+  {isEditMode ? 'Salvar Alterações e Enviar' : 'Enviar Proposta'}
+</DialogTitle>
+```
 
 ---
 
-## Correções Necessárias
+## Arquivos a Modificar
 
-### 1. Corrigir lógica do Card Original (linhas 354-361)
-
-**De:**
-```tsx
-{previewUrl && (
-  <img 
-    src={originalUrl || previewUrl} 
-    alt="Original" 
-    className="max-w-full max-h-full object-contain filter brightness-0 invert"
-    onError={() => setOriginalImageError(true)}
-  />
-)}
-{originalImageError && (
-```
-
-**Para:**
-```tsx
-{previewUrl && !originalImageError && (
-  <img 
-    src={previewUrl} 
-    alt="Original" 
-    className="max-w-full max-h-full object-contain filter brightness-0 invert"
-    onError={() => setOriginalImageError(true)}
-  />
-)}
-{originalImageError && (
-```
-
-O preview local **sempre deve ser visível** porque é a imagem que o usuário selecionou do computador. Não depende de upload.
-
-### 2. Corrigir lógica do Card Processada (linhas 401-438)
-
-O estado `processingState === 'done'` mas sem `processedUrl` só deve mostrar "IA não retornou" se realmente tentou processar. Adicionar um state para rastrear se tentou processar:
-
-**Novo state:**
-```tsx
-const [attemptedProcessing, setAttemptedProcessing] = useState(false);
-```
-
-E atualizar a lógica:
-- Quando `processingState === 'idle'` e não tentou processar: mostrar "Clique para otimizar"
-- Quando `processingState === 'done'` e `attemptedProcessing` mas sem `processedUrl`: mostrar "IA não retornou"
-- Quando tem `processedUrl`: mostrar a imagem
-
-### 3. Remover seção "Preview na Proposta"
-
-A linha 449 mostra apenas um comentário, mas a seção original pode não ter sido removida. Verificar se há código adicional no arquivo que precisa ser removido.
-
-### 4. Garantir layout compacto sem scroll
-
-- Cards com `h-36` (já aplicado)
-- Espaçamentos `gap-4` e `space-y-4` (já aplicados)
-- Modal `sm:max-w-3xl` (já aplicado)
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/pages/public/PropostaPublicaPage.tsx` | Adicionar `onError` handler na imagem da logo para esconder se falhar |
+| `src/pages/admin/proposals/NovaPropostaPage.tsx` | 1) Adicionar hidratação de `client_logo_url` no useEffect 2) Alterar texto do botão para modo edição |
 
 ---
 
-## Estrutura Final do Modal
+## Visão Técnica
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│  ✨ Upload de Logo do Cliente                                   │
-│  Faça upload da logo...                                         │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌────────────────────────┐   ┌────────────────────────┐       │
-│  │  Original   [○ Usar]   │   │  ✨ Otimizada [○ Usar] │       │
-│  │  ▓▓▓ FUNDO VERMELHO ▓▓ │   │  ▓▓▓ FUNDO VERMELHO ▓▓ │ h-36 │
-│  │  ▓   [LOGO BRANCA]   ▓ │   │  ▓  Clique Processar  ▓ │       │
-│  │  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │   │  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │       │
-│  └────────────────────────┘   └────────────────────────┘       │
-│                                                                 │
-│              ╳ Escolher outra imagem                            │
-├─────────────────────────────────────────────────────────────────┤
-│  [Cancelar]  [✓ Usar Original]  [✨ Otimizar com IA]           │
-└─────────────────────────────────────────────────────────────────┘
+FLUXO DE EDIÇÃO DE PROPOSTA
+
+Usuário clica "Editar" → NovaPropostaPage carrega com editProposalId
+    │
+    ▼
+useEffect detecta existingProposal e buildings carregados
+    │
+    ├── Hidrata clientData (nome, email, CNPJ...)
+    ├── Hidrata selectedBuildings + manualBuildings
+    ├── Hidrata configurações de pagamento
+    ├── Hidrata permuta, exclusividade, travamento
+    ├── [FALTANDO] client_logo_url ◄── PROBLEMA CRÍTICO
+    └── setDataLoaded(true)
+    
+Usuário clica "Salvar e Enviar" → 
+    Mutation atualiza proposta existente em vez de criar nova
 ```
+
+---
+
+## Investigação Adicional Necessária
+
+O erro 404 da logo indica que:
+1. O bucket `arquivos` pode não ter permissões públicas para o path `proposal-client-logos/`
+2. Pode haver uma RLS Policy restritiva no Storage
+
+**Recomendação**: Após implementar as correções de código, verificar no Supabase Dashboard:
+- Storage > Policies do bucket `arquivos`
+- Garantir que existe uma policy `SELECT` para `anon` ou `public`
 
 ---
 
 ## Checklist de Implementação
 
-### ClientLogoUploadModal.tsx
+### NovaPropostaPage.tsx
+- [ ] Adicionar `setClientLogoUrl(existingProposal.client_logo_url)` no bloco de hidratação (~linha 674)
+- [ ] Alterar texto do botão de envio para modo edição (~linha 3517)
+- [ ] Alterar título do Dialog para modo edição (~linha 3528)
 
-1. **Linha 354-361**: Corrigir para sempre usar `previewUrl` no card Original (não tentar carregar `originalUrl`)
-2. **Adicionar state**: `attemptedProcessing` para rastrear se tentou processar com IA
-3. **Linha 127**: No início de `processLogoWithAI`, setar `setAttemptedProcessing(true)`
-4. **Linha 43**: No `resetState`, adicionar `setAttemptedProcessing(false)`
-5. **Linhas 418-438**: Ajustar lógica para usar `attemptedProcessing` em vez de mostrar "IA não retornou" quando nem tentou
-6. **Verificar remoção completa** da seção "Preview na Proposta"
-7. **Adicionar key única** nos elementos de imagem para forçar re-render quando URLs mudam
+### PropostaPublicaPage.tsx
+- [ ] Adicionar `onError` handler na imagem da logo (~linha 1802)
 
----
-
-## Resultado Esperado
-
-- Card Original sempre mostra a imagem selecionada (preview local)
-- Card Processada mostra "Clique para processar" quando ainda não tentou
-- Card Processada mostra "IA não retornou" apenas se realmente tentou e falhou
-- Card Processada mostra a logo processada quando tem sucesso
-- Sem scroll no modal
-- Layout minimalista glass
-- Sem a seção "Preview na Proposta"
+### Testes
+- [ ] Criar proposta com logo → verificar que logo aparece na página pública
+- [ ] Editar proposta existente → verificar que logo é carregada no formulário
+- [ ] Salvar edição → verificar que logo persiste
+- [ ] Verificar que botão mostra "Salvar e Enviar" no modo edição
 
