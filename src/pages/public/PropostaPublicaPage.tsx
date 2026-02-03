@@ -38,6 +38,7 @@ interface Proposal {
   client_name: string;
   client_company_name?: string | null;
   client_cnpj: string | null;
+  client_country?: 'BR' | 'AR' | 'PY' | null;
   client_phone: string | null;
   client_email: string | null;
   client_address?: string | null;
@@ -113,6 +114,16 @@ interface PaymentData {
   monthlyValue?: number;
   totalMonths?: number;
 }
+
+// Helper para obter label do documento baseado no país
+const getDocumentLabel = (country?: 'BR' | 'AR' | 'PY' | null): string => {
+  switch (country) {
+    case 'BR': return 'CNPJ';
+    case 'AR': return 'CUIT';
+    case 'PY': return 'RUC';
+    default: return 'CNPJ';
+  }
+};
 
 const PropostaPublicaPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -1786,7 +1797,7 @@ const PropostaPublicaPage = () => {
                     <strong>{proposal.client_name}</strong>
                   </div>
                   {proposal.client_cnpj && (
-                    <div className="text-white/80">CNPJ: <strong>{proposal.client_cnpj}</strong></div>
+                    <div className="text-white/80">{getDocumentLabel(proposal.client_country)}: <strong>{proposal.client_cnpj}</strong></div>
                   )}
                 </div>
                 
