@@ -313,6 +313,10 @@ serve(async (req) => {
         travamento_telas_limite: proposal.travamento_telas_limite || null,
         travamento_preco_por_tela: proposal.travamento_preco_por_tela || null,
         
+        // MULTA RESCISÓRIA
+        multa_rescisao_ativa: proposal.multa_rescisao_ativa !== false, // default true
+        multa_rescisao_percentual: proposal.multa_rescisao_percentual || 20,
+        
         created_at: new Date().toISOString()
       };
 
@@ -436,7 +440,11 @@ serve(async (req) => {
       // CAMPOS DE PERMUTA
       modalidade_proposta: isPermuta ? 'permuta' : 'monetaria',
       itens_permuta: isPermuta ? itensPermuta : null,
-      valor_referencia_permuta: isPermuta ? valorReferenciaPermuta : null
+      valor_referencia_permuta: isPermuta ? valorReferenciaPermuta : null,
+      
+      // MULTA RESCISÓRIA (campos da proposta)
+      multa_rescisao_ativa: proposal.multa_rescisao_ativa !== false, // default true
+      multa_rescisao_percentual: proposal.multa_rescisao_percentual || 20
     };
 
     const { data: contrato, error: contratoError } = await supabase
@@ -793,6 +801,27 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
 
   // Verificar se é cortesia
   const isCortesia = contrato.valor_total === 0;
+  
+  // ========== MULTA RESCISÓRIA (DINÂMICA) ==========
+  const multaRescisaoAtiva = contrato.multa_rescisao_ativa !== false; // default true
+  const multaRescisaoPercentual = contrato.multa_rescisao_percentual || 20;
+  
+  // Função auxiliar para número por extenso (1-50)
+  const numeroExtenso = (n: number): string => {
+    const extenso: Record<number, string> = {
+      0: 'zero', 1: 'um', 2: 'dois', 3: 'três', 4: 'quatro', 5: 'cinco',
+      6: 'seis', 7: 'sete', 8: 'oito', 9: 'nove', 10: 'dez',
+      11: 'onze', 12: 'doze', 13: 'treze', 14: 'quatorze', 15: 'quinze',
+      16: 'dezesseis', 17: 'dezessete', 18: 'dezoito', 19: 'dezenove', 20: 'vinte',
+      21: 'vinte e um', 22: 'vinte e dois', 23: 'vinte e três', 24: 'vinte e quatro', 25: 'vinte e cinco',
+      26: 'vinte e seis', 27: 'vinte e sete', 28: 'vinte e oito', 29: 'vinte e nove', 30: 'trinta',
+      31: 'trinta e um', 32: 'trinta e dois', 33: 'trinta e três', 34: 'trinta e quatro', 35: 'trinta e cinco',
+      36: 'trinta e seis', 37: 'trinta e sete', 38: 'trinta e oito', 39: 'trinta e nove', 40: 'quarenta',
+      41: 'quarenta e um', 42: 'quarenta e dois', 43: 'quarenta e três', 44: 'quarenta e quatro', 45: 'quarenta e cinco',
+      46: 'quarenta e seis', 47: 'quarenta e sete', 48: 'quarenta e oito', 49: 'quarenta e nove', 50: 'cinquenta'
+    };
+    return extenso[n] || String(n);
+  };
   
   // ========== OFFSET DE NUMERAÇÃO PARA EXCLUSIVIDADE, TRAVAMENTO E PERMUTA ==========
   // Adiciona +1 para cada cláusula extra (exclusividade e/ou travamento de preço)
@@ -1582,7 +1611,11 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
           
           <p><span class="clause-title">8.2.</span> A parte inadimplente responderá por perdas e danos, incluindo lucros cessantes e danos emergentes.</p>
           
-          <p><span class="clause-title">8.3.</span> <strong>Em caso de não entrega dos bens</strong> pela CONTRATANTE no prazo estabelecido, esta deverá pagar à CONTRATADA o valor monetário equivalente de <strong>${formatCurrency(valorReferenciaPermuta)}</strong> no prazo de <strong>10 (dez) dias</strong>, acrescido de multa de 2% (dois por cento) e juros de 1% (um por cento) ao mês.</p>
+          ${multaRescisaoAtiva ? `
+            <p><span class="clause-title">8.3.</span> <strong>Em caso de não entrega dos bens</strong> pela CONTRATANTE no prazo estabelecido, esta deverá pagar à CONTRATADA o valor monetário equivalente de <strong>${formatCurrency(valorReferenciaPermuta)}</strong> no prazo de <strong>10 (dez) dias</strong>, acrescido de multa de ${multaRescisaoPercentual}% (${numeroExtenso(multaRescisaoPercentual)} por cento) e juros de 1% (um por cento) ao mês.</p>
+          ` : `
+            <p><span class="clause-title">8.3.</span> <strong>Em caso de não entrega dos bens</strong> pela CONTRATANTE no prazo estabelecido, esta deverá pagar à CONTRATADA o valor monetário equivalente de <strong>${formatCurrency(valorReferenciaPermuta)}</strong> no prazo de <strong>10 (dez) dias</strong>, acrescido apenas de juros de 1% (um por cento) ao mês, sem aplicação de multa rescisória.</p>
+          `}
           
           <p><span class="clause-title">8.4.</span> <strong>Em caso de não prestação dos serviços de publicidade</strong> pela CONTRATADA, esta deverá devolver os bens recebidos ou pagar o equivalente monetário, no mesmo prazo e condições do item anterior.</p>
         </div>
@@ -1787,7 +1820,11 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
           </p>
           
           ${!isCortesia ? `
-            <p><span class="clause-title">${11 + clauseOffset}.2.</span> Em caso de rescisão antecipada por iniciativa do CONTRATANTE, sem justa causa, será devida multa rescisória correspondente a <strong>20% (vinte por cento)</strong> do valor restante do contrato.</p>
+            ${multaRescisaoAtiva ? `
+              <p><span class="clause-title">${11 + clauseOffset}.2.</span> Em caso de rescisão antecipada por iniciativa do CONTRATANTE, sem justa causa, será devida multa rescisória correspondente a <strong>${multaRescisaoPercentual}% (${numeroExtenso(multaRescisaoPercentual)} por cento)</strong> do valor restante do contrato.</p>
+            ` : `
+              <p><span class="clause-title">${11 + clauseOffset}.2.</span> Este contrato <strong>não prevê aplicação de multa rescisória</strong> em caso de rescisão antecipada por qualquer das partes, devendo apenas ser respeitado o aviso prévio de 30 (trinta) dias.</p>
+            `}
             
             <p><span class="clause-title">${11 + clauseOffset}.3.</span> Em caso de rescisão por culpa da CONTRATADA, esta deverá restituir ao CONTRATANTE os valores pagos proporcionalmente ao período não usufruído.</p>
           ` : `

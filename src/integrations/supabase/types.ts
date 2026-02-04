@@ -3945,6 +3945,8 @@ export type Database = {
           meses_cortesia: number | null
           metodo_pagamento: string | null
           modo_entrada: string | null
+          multa_rescisao_ativa: boolean | null
+          multa_rescisao_percentual: number | null
           numero_contrato: string
           numero_telas_instaladas: number | null
           objeto: string
@@ -4028,6 +4030,8 @@ export type Database = {
           meses_cortesia?: number | null
           metodo_pagamento?: string | null
           modo_entrada?: string | null
+          multa_rescisao_ativa?: boolean | null
+          multa_rescisao_percentual?: number | null
           numero_contrato: string
           numero_telas_instaladas?: number | null
           objeto?: string
@@ -4111,6 +4115,8 @@ export type Database = {
           meses_cortesia?: number | null
           metodo_pagamento?: string | null
           modo_entrada?: string | null
+          multa_rescisao_ativa?: boolean | null
+          multa_rescisao_percentual?: number | null
           numero_contrato?: string
           numero_telas_instaladas?: number | null
           objeto?: string
