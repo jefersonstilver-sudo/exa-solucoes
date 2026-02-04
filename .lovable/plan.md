@@ -1,124 +1,141 @@
 
 
-# Plano: Implementar Multa Rescisória Dinâmica nos Contratos
+# Plano: Multa de Rescisão Bilateral (Cliente + EXA)
 
-## Problema Identificado
+## Contexto
 
-Atualmente, a configuração de multa rescisória feita na proposta (**ativa/inativa + percentual**) **NÃO é aplicada** no contrato gerado. O valor está **hardcoded em 20%** na Edge Function, ignorando completamente as configurações definidas pelo administrador.
+Atualmente o sistema permite configurar multa de rescisão apenas para o **CONTRATANTE (cliente)**. O usuário solicitou adicionar a possibilidade de configurar também uma multa para a **CONTRATADA (EXA/empresa)**, criando uma proteção contratual bilateral.
 
-## Diagnóstico Técnico
+## Situação Atual
 
-| Componente | Status | Detalhes |
-|------------|--------|----------|
-| NovaPropostaPage.tsx | ✅ OK | Possui switch e slider para configurar multa (0-50%) |
-| Tabela `proposals` | ✅ OK | Campos `multa_rescisao_ativa` e `multa_rescisao_percentual` existem |
-| Tabela `contratos_legais` | ❌ FALTA | Não possui os campos de multa |
-| Edge Function | ❌ ERRO | Ignora campos da proposta, usa 20% fixo na cláusula 11.2 |
+| Campo | Existe | Descrição |
+|-------|--------|-----------|
+| `multa_rescisao_ativa` | Sim | Se a multa do **cliente** está ativa |
+| `multa_rescisao_percentual` | Sim | Percentual da multa do **cliente** (0-50%) |
+| Multa da EXA | **NÃO EXISTE** | Precisa ser criada |
 
-## Fluxo do Problema
-
-```text
-Admin configura proposta:
-┌──────────────────────────────────────┐
-│ [✓] Multa de Rescisão: ATIVA         │
-│ Percentual: 35%                      │
-└──────────────────────────────────────┘
-            ↓
-Contrato gerado (cláusula 11.2):
-┌──────────────────────────────────────┐
-│ "...multa de 20% (vinte por cento)   │ ← IGNORA CONFIGURAÇÃO!
-│ do valor restante do contrato."      │
-└──────────────────────────────────────┘
-```
-
-## Correções Necessárias
+## Mudanças Necessárias
 
 ### Fase 1: Banco de Dados
 
-Adicionar colunas à tabela `contratos_legais`:
+Adicionar 2 novas colunas nas tabelas `proposals` e `contratos_legais`:
 
 ```sql
+-- Tabela proposals
+ALTER TABLE proposals 
+ADD COLUMN multa_rescisao_exa_ativa boolean DEFAULT true,
+ADD COLUMN multa_rescisao_exa_percentual numeric DEFAULT 20;
+
+-- Tabela contratos_legais
 ALTER TABLE contratos_legais 
-ADD COLUMN multa_rescisao_ativa boolean DEFAULT true,
-ADD COLUMN multa_rescisao_percentual numeric DEFAULT 20;
+ADD COLUMN multa_rescisao_exa_ativa boolean DEFAULT true,
+ADD COLUMN multa_rescisao_exa_percentual numeric DEFAULT 20;
 ```
 
-### Fase 2: Edge Function (create-contract-from-proposal)
+### Fase 2: Interface (NovaPropostaPage.tsx)
 
-#### 2.1. Ler campos da proposta
+Adicionar novos estados e UI para configurar a multa da EXA:
 
-No objeto `contratoData` (linha ~375-440), adicionar:
-
+**Novos Estados:**
 ```typescript
-// MULTA DE RESCISÃO
-multa_rescisao_ativa: proposal.multa_rescisao_ativa !== false, // default true
-multa_rescisao_percentual: proposal.multa_rescisao_percentual || 20,
+const [multaRescisaoExaAtiva, setMultaRescisaoExaAtiva] = useState(true);
+const [multaRescisaoExaPercentual, setMultaRescisaoExaPercentual] = useState<number>(20);
 ```
 
-#### 2.2. Passar valores para o gerador de HTML
+**Nova UI** (abaixo do card de multa do cliente):
+- Card com título "Multa de Rescisão da CONTRATADA (EXA)"
+- Switch para ativar/desativar
+- Slider para definir percentual (0-50%)
+- Texto explicativo: "Em caso de rescisão antecipada por culpa da EXA, a empresa pagará X% sobre o valor restante do contrato"
 
-Atualizar a função `generateContractHtml()` para receber e usar esses valores.
+### Fase 3: Persistência
 
-#### 2.3. Modificar Cláusula 11.2 (Rescisão)
+Atualizar os 3 pontos de salvamento da proposta:
+1. **handleSaveClick** (linha ~958): Adicionar campos `multa_rescisao_exa_ativa` e `multa_rescisao_exa_percentual`
+2. **saveDraft** (linha ~1537): Adicionar os mesmos campos
+3. **handleSubmit** (linha ~1834): Adicionar os mesmos campos
 
-**Antes (linha 1790):**
+### Fase 4: Carregamento de Proposta Existente
+
+Ao carregar proposta para edição (linha ~642), ler também:
 ```typescript
-<p>...multa rescisória correspondente a <strong>20% (vinte por cento)</strong>...</p>
+setMultaRescisaoExaAtiva(existingProposal.multa_rescisao_exa_ativa !== false);
+setMultaRescisaoExaPercentual(existingProposal.multa_rescisao_exa_percentual || 20);
 ```
 
-**Depois:**
-```typescript
-// Se multa ativa
-${multaRescisaoAtiva ? `
-  <p><span class="clause-title">${11 + clauseOffset}.2.</span> Em caso de rescisão antecipada por iniciativa do CONTRATANTE, sem justa causa, será devida multa rescisória correspondente a <strong>${multaPercentual}% (${extenso(multaPercentual)} por cento)</strong> do valor restante do contrato.</p>
-` : `
-  <p><span class="clause-title">${11 + clauseOffset}.2.</span> Este contrato não prevê aplicação de multa rescisória em caso de rescisão antecipada por qualquer das partes.</p>
-`}
-```
+### Fase 5: Edge Function (create-contract-from-proposal)
 
-### Fase 3: Atualizar Contratos de Permuta
+Modificar o gerador de contrato para incluir a cláusula bilateral:
 
-A mesma lógica deve ser aplicada aos contratos de permuta (cláusula 8.3). Se `multa_rescisao_ativa = false`, remover a menção à multa no inadimplemento.
+**Cláusula 11.2** (atual - multa do cliente):
+> "Em caso de rescisão antecipada por iniciativa do CONTRATANTE..."
 
-## Resultado Esperado
+**Nova Cláusula 11.3** (multa da EXA):
+> "Em caso de rescisão antecipada por culpa da CONTRATADA, esta deverá pagar ao CONTRATANTE multa rescisória correspondente a X% (por extenso) do valor restante do contrato, além da restituição proporcional dos valores pagos pelo período não usufruído."
 
-### Cenário 1: Multa Ativa (30%)
-```text
-Cláusula 11.2. Em caso de rescisão antecipada por iniciativa do 
-CONTRATANTE, será devida multa rescisória correspondente a 
-30% (trinta por cento) do valor restante do contrato.
-```
+### Fase 6: Contrato de Permuta
 
-### Cenário 2: Multa Desativada
-```text
-Cláusula 11.2. Este contrato não prevê aplicação de multa 
-rescisória em caso de rescisão antecipada por qualquer das partes.
-```
+Para contratos de permuta, ajustar a cláusula 8.3 para incluir também a multa bilateral sobre o valor de referência.
+
+---
 
 ## Arquivos a Modificar
 
 | Arquivo | Alteração |
 |---------|-----------|
-| **Migração SQL** | Criar colunas na tabela `contratos_legais` |
-| `supabase/functions/create-contract-from-proposal/index.ts` | Ler campos da proposta e gerar cláusula dinâmica |
+| **Migração SQL** | Criar 4 novas colunas (2 em proposals, 2 em contratos_legais) |
+| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Adicionar estados, UI e persistência |
+| `supabase/functions/create-contract-from-proposal/index.ts` | Ler novos campos e gerar cláusula bilateral |
 
-## Detalhes de Implementação
+---
 
-### Tabela: contratos_legais
+## Resultado Esperado na UI
 
-```sql
-ALTER TABLE contratos_legais 
-ADD COLUMN IF NOT EXISTS multa_rescisao_ativa boolean DEFAULT true,
-ADD COLUMN IF NOT EXISTS multa_rescisao_percentual numeric DEFAULT 20;
+A seção de "Multa de Rescisão" será expandida com 2 cards:
 
-COMMENT ON COLUMN contratos_legais.multa_rescisao_ativa IS 'Se a multa rescisória está ativa neste contrato';
-COMMENT ON COLUMN contratos_legais.multa_rescisao_percentual IS 'Percentual da multa rescisória (0-50)';
+**Card 1 - Multa do Cliente:**
+- Switch: Ativar multa do cliente
+- Slider: Percentual (0-50%)
+- Texto: "Em caso de rescisão antecipada pelo cliente, ele pagará X% sobre o valor remanescente"
+
+**Card 2 - Multa da EXA:**
+- Switch: Ativar multa da empresa
+- Slider: Percentual (0-50%)  
+- Texto: "Em caso de rescisão por culpa da EXA, a empresa pagará X% sobre o valor remanescente"
+
+---
+
+## Resultado no Contrato Gerado
+
+### Cenário 1: Ambas ativas (30% cliente, 20% EXA)
+```text
+Cláusula 11.2. Em caso de rescisão antecipada por iniciativa do 
+CONTRATANTE, sem justa causa, será devida multa rescisória 
+correspondente a 30% (trinta por cento) do valor restante.
+
+Cláusula 11.3. Em caso de rescisão antecipada por culpa da 
+CONTRATADA, esta deverá pagar ao CONTRATANTE multa rescisória 
+correspondente a 20% (vinte por cento) do valor restante, além 
+da restituição proporcional dos valores pagos.
 ```
 
-### Edge Function: Modificações
+### Cenário 2: Apenas multa do cliente ativa
+```text
+Cláusula 11.2. Em caso de rescisão antecipada por iniciativa do 
+CONTRATANTE, sem justa causa, será devida multa rescisória 
+correspondente a 30% (trinta por cento) do valor restante.
 
-1. **contratoData** (linha ~435): Adicionar campos de multa
-2. **generateContractHtml**: Adicionar parâmetros `multaRescisaoAtiva` e `multaRescisaoPercentual`
-3. **Cláusula 11** (linha ~1789): Renderizar condicionalmente baseado na configuração
-4. **Contratos de Permuta**: Ajustar cláusula 8.3 para respeitar configuração de multa
+Cláusula 11.3. Em caso de rescisão por culpa da CONTRATADA, 
+esta deverá restituir ao CONTRATANTE os valores pagos 
+proporcionalmente ao período não usufruído, sem aplicação 
+de multa rescisória.
+```
+
+### Cenário 3: Ambas desativadas
+```text
+Cláusula 11.2. Este contrato não prevê aplicação de multa 
+rescisória em caso de rescisão antecipada por qualquer das 
+partes, devendo apenas ser respeitado o aviso prévio de 
+30 (trinta) dias e a restituição proporcional quando aplicável.
+```
 
