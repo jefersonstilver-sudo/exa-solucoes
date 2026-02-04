@@ -3946,6 +3946,8 @@ export type Database = {
           metodo_pagamento: string | null
           modo_entrada: string | null
           multa_rescisao_ativa: boolean | null
+          multa_rescisao_exa_ativa: boolean | null
+          multa_rescisao_exa_percentual: number | null
           multa_rescisao_percentual: number | null
           numero_contrato: string
           numero_telas_instaladas: number | null
@@ -4031,6 +4033,8 @@ export type Database = {
           metodo_pagamento?: string | null
           modo_entrada?: string | null
           multa_rescisao_ativa?: boolean | null
+          multa_rescisao_exa_ativa?: boolean | null
+          multa_rescisao_exa_percentual?: number | null
           multa_rescisao_percentual?: number | null
           numero_contrato: string
           numero_telas_instaladas?: number | null
@@ -4116,6 +4120,8 @@ export type Database = {
           metodo_pagamento?: string | null
           modo_entrada?: string | null
           multa_rescisao_ativa?: boolean | null
+          multa_rescisao_exa_ativa?: boolean | null
+          multa_rescisao_exa_percentual?: number | null
           multa_rescisao_percentual?: number | null
           numero_contrato?: string
           numero_telas_instaladas?: number | null
@@ -11106,6 +11112,8 @@ export type Database = {
           modalidade_proposta: string | null
           modified_by: string | null
           multa_rescisao_ativa: boolean | null
+          multa_rescisao_exa_ativa: boolean | null
+          multa_rescisao_exa_percentual: number | null
           multa_rescisao_percentual: number | null
           needs_reacceptance: boolean | null
           number: string
@@ -11198,6 +11206,8 @@ export type Database = {
           modalidade_proposta?: string | null
           modified_by?: string | null
           multa_rescisao_ativa?: boolean | null
+          multa_rescisao_exa_ativa?: boolean | null
+          multa_rescisao_exa_percentual?: number | null
           multa_rescisao_percentual?: number | null
           needs_reacceptance?: boolean | null
           number: string
@@ -11290,6 +11300,8 @@ export type Database = {
           modalidade_proposta?: string | null
           modified_by?: string | null
           multa_rescisao_ativa?: boolean | null
+          multa_rescisao_exa_ativa?: boolean | null
+          multa_rescisao_exa_percentual?: number | null
           multa_rescisao_percentual?: number | null
           needs_reacceptance?: boolean | null
           number?: string
