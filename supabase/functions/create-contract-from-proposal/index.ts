@@ -313,9 +313,13 @@ serve(async (req) => {
         travamento_telas_limite: proposal.travamento_telas_limite || null,
         travamento_preco_por_tela: proposal.travamento_preco_por_tela || null,
         
-        // MULTA RESCISÓRIA
+        // MULTA RESCISÓRIA (Cliente)
         multa_rescisao_ativa: proposal.multa_rescisao_ativa !== false, // default true
         multa_rescisao_percentual: proposal.multa_rescisao_percentual || 20,
+        
+        // MULTA RESCISÓRIA (EXA)
+        multa_rescisao_exa_ativa: proposal.multa_rescisao_exa_ativa !== false, // default true
+        multa_rescisao_exa_percentual: proposal.multa_rescisao_exa_percentual || 20,
         
         created_at: new Date().toISOString()
       };
@@ -442,9 +446,13 @@ serve(async (req) => {
       itens_permuta: isPermuta ? itensPermuta : null,
       valor_referencia_permuta: isPermuta ? valorReferenciaPermuta : null,
       
-      // MULTA RESCISÓRIA (campos da proposta)
+      // MULTA RESCISÓRIA (Cliente)
       multa_rescisao_ativa: proposal.multa_rescisao_ativa !== false, // default true
-      multa_rescisao_percentual: proposal.multa_rescisao_percentual || 20
+      multa_rescisao_percentual: proposal.multa_rescisao_percentual || 20,
+      
+      // MULTA RESCISÓRIA (EXA)
+      multa_rescisao_exa_ativa: proposal.multa_rescisao_exa_ativa !== false, // default true
+      multa_rescisao_exa_percentual: proposal.multa_rescisao_exa_percentual || 20
     };
 
     const { data: contrato, error: contratoError } = await supabase
@@ -802,9 +810,14 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
   // Verificar se é cortesia
   const isCortesia = contrato.valor_total === 0;
   
-  // ========== MULTA RESCISÓRIA (DINÂMICA) ==========
+  // ========== MULTA RESCISÓRIA (DINÂMICA - BILATERAL) ==========
+  // Multa do Cliente (CONTRATANTE)
   const multaRescisaoAtiva = contrato.multa_rescisao_ativa !== false; // default true
   const multaRescisaoPercentual = contrato.multa_rescisao_percentual || 20;
+  
+  // Multa da EXA (CONTRATADA)
+  const multaRescisaoExaAtiva = contrato.multa_rescisao_exa_ativa !== false; // default true
+  const multaRescisaoExaPercentual = contrato.multa_rescisao_exa_percentual || 20;
   
   // Função auxiliar para número por extenso (1-50)
   const numeroExtenso = (n: number): string => {
@@ -1617,7 +1630,11 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
             <p><span class="clause-title">8.3.</span> <strong>Em caso de não entrega dos bens</strong> pela CONTRATANTE no prazo estabelecido, esta deverá pagar à CONTRATADA o valor monetário equivalente de <strong>${formatCurrency(valorReferenciaPermuta)}</strong> no prazo de <strong>10 (dez) dias</strong>, acrescido apenas de juros de 1% (um por cento) ao mês, sem aplicação de multa rescisória.</p>
           `}
           
-          <p><span class="clause-title">8.4.</span> <strong>Em caso de não prestação dos serviços de publicidade</strong> pela CONTRATADA, esta deverá devolver os bens recebidos ou pagar o equivalente monetário, no mesmo prazo e condições do item anterior.</p>
+          ${multaRescisaoExaAtiva ? `
+            <p><span class="clause-title">8.4.</span> <strong>Em caso de não prestação dos serviços de publicidade</strong> pela CONTRATADA, esta deverá devolver os bens recebidos ou pagar o equivalente monetário de <strong>${formatCurrency(valorReferenciaPermuta)}</strong>, acrescido de multa de ${multaRescisaoExaPercentual}% (${numeroExtenso(multaRescisaoExaPercentual)} por cento) e juros de 1% (um por cento) ao mês.</p>
+          ` : `
+            <p><span class="clause-title">8.4.</span> <strong>Em caso de não prestação dos serviços de publicidade</strong> pela CONTRATADA, esta deverá devolver os bens recebidos ou pagar o equivalente monetário, acrescido apenas de juros de 1% (um por cento) ao mês, sem aplicação de multa rescisória.</p>
+          `}
         </div>
       </div>
       ` : ''}
@@ -1823,10 +1840,14 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
             ${multaRescisaoAtiva ? `
               <p><span class="clause-title">${11 + clauseOffset}.2.</span> Em caso de rescisão antecipada por iniciativa do CONTRATANTE, sem justa causa, será devida multa rescisória correspondente a <strong>${multaRescisaoPercentual}% (${numeroExtenso(multaRescisaoPercentual)} por cento)</strong> do valor restante do contrato.</p>
             ` : `
-              <p><span class="clause-title">${11 + clauseOffset}.2.</span> Este contrato <strong>não prevê aplicação de multa rescisória</strong> em caso de rescisão antecipada por qualquer das partes, devendo apenas ser respeitado o aviso prévio de 30 (trinta) dias.</p>
+              <p><span class="clause-title">${11 + clauseOffset}.2.</span> Este contrato <strong>não prevê aplicação de multa rescisória para o CONTRATANTE</strong> em caso de rescisão antecipada, devendo apenas ser respeitado o aviso prévio de 30 (trinta) dias.</p>
             `}
             
-            <p><span class="clause-title">${11 + clauseOffset}.3.</span> Em caso de rescisão por culpa da CONTRATADA, esta deverá restituir ao CONTRATANTE os valores pagos proporcionalmente ao período não usufruído.</p>
+            ${multaRescisaoExaAtiva ? `
+              <p><span class="clause-title">${11 + clauseOffset}.3.</span> Em caso de rescisão antecipada por culpa da CONTRATADA, esta deverá pagar ao CONTRATANTE multa rescisória correspondente a <strong>${multaRescisaoExaPercentual}% (${numeroExtenso(multaRescisaoExaPercentual)} por cento)</strong> do valor restante do contrato, além da restituição proporcional dos valores pagos pelo período não usufruído.</p>
+            ` : `
+              <p><span class="clause-title">${11 + clauseOffset}.3.</span> Em caso de rescisão por culpa da CONTRATADA, esta deverá restituir ao CONTRATANTE os valores pagos proporcionalmente ao período não usufruído, <strong>sem aplicação de multa rescisória</strong>.</p>
+            `}
           ` : `
             <p><span class="clause-title">${11 + clauseOffset}.2.</span> Por tratar-se de cortesia, qualquer das partes poderá rescindir o contrato mediante comunicação prévia de 15 (quinze) dias, sem aplicação de multas.</p>
           `}

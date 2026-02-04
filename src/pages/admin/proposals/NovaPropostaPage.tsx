@@ -234,9 +234,13 @@ const NovaPropostaPage = () => {
   const [travamentoModoCalculo, setTravamentoModoCalculo] = useState<'automatico' | 'manual'>('automatico');
   const [travamentoPrecoManual, setTravamentoPrecoManual] = useState<number>(0);
 
-  // Estados para Multa de Rescisão
+  // Estados para Multa de Rescisão (Cliente)
   const [multaRescisaoAtiva, setMultaRescisaoAtiva] = useState(true);
   const [multaRescisaoPercentual, setMultaRescisaoPercentual] = useState<number>(20);
+
+  // Estados para Multa de Rescisão (EXA/Empresa)
+  const [multaRescisaoExaAtiva, setMultaRescisaoExaAtiva] = useState(true);
+  const [multaRescisaoExaPercentual, setMultaRescisaoExaPercentual] = useState<number>(20);
 
   // Estados para Proposta de Permuta (não-monetária)
   const [modalidadeProposta, setModalidadeProposta] = useState<'monetaria' | 'permuta'>('monetaria');
@@ -638,9 +642,13 @@ const NovaPropostaPage = () => {
       setTravamentoPrecoValor(existingProposal.travamento_preco_valor || 0);
       setTravamentoTelasLimite(existingProposal.travamento_telas_limite || 50);
 
-      // Multa de rescisão
+      // Multa de rescisão (Cliente)
       setMultaRescisaoAtiva(existingProposal.multa_rescisao_ativa !== false);
       setMultaRescisaoPercentual(existingProposal.multa_rescisao_percentual || 20);
+
+      // Multa de rescisão (EXA)
+      setMultaRescisaoExaAtiva((existingProposal as any).multa_rescisao_exa_ativa !== false);
+      setMultaRescisaoExaPercentual((existingProposal as any).multa_rescisao_exa_percentual || 20);
 
       // ============================================
       // CAMPOS DE PERMUTA - HIDRATAÇÃO COMPLETA
@@ -956,9 +964,12 @@ const NovaPropostaPage = () => {
           travamento_preco_ativo: travamentoPrecoAtivo,
           travamento_preco_valor: travamentoPrecoAtivo ? travamentoPrecoValor : null,
           travamento_telas_limite: travamentoPrecoAtivo ? travamentoTelasLimite : null,
-          // Multa
+          // Multa (Cliente)
           multa_rescisao_ativa: multaRescisaoAtiva,
           multa_rescisao_percentual: multaRescisaoAtiva ? multaRescisaoPercentual : null,
+          // Multa (EXA)
+          multa_rescisao_exa_ativa: multaRescisaoExaAtiva,
+          multa_rescisao_exa_percentual: multaRescisaoExaAtiva ? multaRescisaoExaPercentual : null,
           // CC Emails
           cc_emails: ccEmails.length > 0 ? ccEmails : null,
           // Validade
@@ -1538,6 +1549,8 @@ Parcelas:
         travamento_modo_calculo: travamentoPrecoAtivo ? travamentoModoCalculo : null,
         multa_rescisao_ativa: multaRescisaoAtiva,
         multa_rescisao_percentual: multaRescisaoAtiva ? multaRescisaoPercentual : null,
+        multa_rescisao_exa_ativa: multaRescisaoExaAtiva,
+        multa_rescisao_exa_percentual: multaRescisaoExaAtiva ? multaRescisaoExaPercentual : null,
         // Campos de Permuta (proposta não-monetária)
         modalidade_proposta: modalidadeProposta,
         itens_permuta: modalidadeProposta === 'permuta' ? itensPermuta : [],
@@ -1832,9 +1845,12 @@ Parcelas:
         travamento_preco_ativo: travamentoPrecoAtivo,
         travamento_preco_valor: travamentoPrecoAtivo ? travamentoPrecoValor : null,
         travamento_telas_limite: travamentoPrecoAtivo ? travamentoTelasLimite : null,
-        // Multa
+        // Multa (Cliente)
         multa_rescisao_ativa: multaRescisaoAtiva,
         multa_rescisao_percentual: multaRescisaoAtiva ? multaRescisaoPercentual : null,
+        // Multa (EXA)
+        multa_rescisao_exa_ativa: multaRescisaoExaAtiva,
+        multa_rescisao_exa_percentual: multaRescisaoExaAtiva ? multaRescisaoExaPercentual : null,
         // CC Emails
         cc_emails: ccEmails.length > 0 ? ccEmails : null,
         // Validade
@@ -3415,7 +3431,7 @@ Parcelas:
               )}
             </div>
 
-            {/* Card: Multa de Rescisão de Contrato */}
+            {/* Card: Multa de Rescisão do Cliente */}
             <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -3423,9 +3439,9 @@ Parcelas:
                     <FileText className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <p className="font-medium text-sm">Multa de Rescisão</p>
+                    <p className="font-medium text-sm">Multa do Cliente (CONTRATANTE)</p>
                     <p className="text-xs text-muted-foreground">
-                      Penalidade por quebra antecipada de contrato
+                      Penalidade se o cliente rescindir o contrato
                     </p>
                   </div>
                 </div>
@@ -3463,7 +3479,7 @@ Parcelas:
                   {/* Explicação */}
                   <div className="p-3 bg-rose-50/80 rounded-lg border border-rose-200">
                     <p className="text-xs text-rose-700">
-                      Em caso de rescisão antecipada, o cliente pagará <span className="font-bold">{multaRescisaoPercentual}%</span> sobre o valor remanescente do contrato.
+                      Em caso de rescisão antecipada pelo cliente, ele pagará <span className="font-bold">{multaRescisaoPercentual}%</span> sobre o valor remanescente do contrato.
                     </p>
                   </div>
                 </div>
@@ -3474,7 +3490,72 @@ Parcelas:
                 <div className="p-3 bg-emerald-50/80 rounded-lg border border-emerald-200">
                   <p className="text-xs text-emerald-700 flex items-center gap-2">
                     <CheckCircle className="h-3.5 w-3.5" />
-                    Contrato sem multa de rescisão
+                    Contrato sem multa para o cliente
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Card: Multa de Rescisão da EXA (CONTRATADA) */}
+            <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-amber-600 to-amber-800 rounded-lg">
+                    <Building2 className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Multa da EXA (CONTRATADA)</p>
+                    <p className="text-xs text-muted-foreground">
+                      Penalidade se a EXA descumprir o contrato
+                    </p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={multaRescisaoExaAtiva} 
+                  onCheckedChange={setMultaRescisaoExaAtiva} 
+                  className="data-[state=checked]:bg-amber-600" 
+                />
+              </div>
+
+              {/* Conteúdo expandido quando ativado */}
+              {multaRescisaoExaAtiva && (
+                <div className="space-y-3 pt-3 border-t border-slate-200">
+                  {/* Slider de Percentual */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs text-slate-600">Percentual da Multa</Label>
+                      <span className="text-lg font-bold text-amber-700">{multaRescisaoExaPercentual}%</span>
+                    </div>
+                    <Slider
+                      value={[multaRescisaoExaPercentual]}
+                      onValueChange={(values) => setMultaRescisaoExaPercentual(values[0])}
+                      min={0}
+                      max={50}
+                      step={5}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span>0%</span>
+                      <span>25%</span>
+                      <span>50%</span>
+                    </div>
+                  </div>
+
+                  {/* Explicação */}
+                  <div className="p-3 bg-amber-50/80 rounded-lg border border-amber-200">
+                    <p className="text-xs text-amber-700">
+                      Em caso de rescisão por culpa da EXA, a empresa pagará <span className="font-bold">{multaRescisaoExaPercentual}%</span> sobre o valor remanescente do contrato.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Preview quando desativado */}
+              {!multaRescisaoExaAtiva && (
+                <div className="p-3 bg-emerald-50/80 rounded-lg border border-emerald-200">
+                  <p className="text-xs text-emerald-700 flex items-center gap-2">
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Contrato sem multa para a EXA
                   </p>
                 </div>
               )}
