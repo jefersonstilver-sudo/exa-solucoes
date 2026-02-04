@@ -675,6 +675,7 @@ const PropostasPage = () => {
       const newNumber = `EXA-${year}-${randomNum}`;
       
       // Preparar dados para cópia (excluir campos que não devem ser copiados)
+      // Cast para any porque a interface Proposal não declara todos os campos do banco
       const { 
         id, 
         number, 
@@ -693,10 +694,23 @@ const PropostasPage = () => {
         seller_name,
         seller_phone,
         seller_email,
+        // CAMPOS CRÍTICOS - devem ser excluídos para evitar erro de duplicação
+        access_token,           // UNIQUE constraint - causa erro de duplicação
+        updated_at,             // Será gerado automaticamente
+        viewed_at,              // Dados de visualização da proposta original
+        responded_at,           // Resposta da proposta original
+        // CAMPOS DE ACEITE - devem ser limpos para nova proposta
+        contract_accepted_at,   // Aceite do contrato original
+        contract_accepted_ip,   // IP do aceite original
+        contract_accepted_user_agent, // User-agent do aceite original
+        contract_terms_version, // Versão do contrato original
+        needs_reacceptance,     // Flag de re-aceite original
+        last_modified_at,       // Data de modificação original
+        modified_by,            // Usuário que modificou original
         ...dataToCopy 
-      } = proposal;
+      } = proposal as any;
       
-      // Criar nova proposta
+      // Criar nova proposta com campos de aceite explicitamente limpos
       const { data: newProposal, error } = await supabase
         .from('proposals')
         .insert({
@@ -705,6 +719,13 @@ const PropostasPage = () => {
           status: 'pendente',
           metadata: {}, // Limpar metadata (contract_id, etc)
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // +7 dias
+          // Garantir que campos de aceite estão limpos (nova proposta precisa de novo aceite)
+          contract_accepted_at: null,
+          contract_accepted_ip: null,
+          contract_accepted_user_agent: null,
+          contract_terms_version: null,
+          needs_reacceptance: false,
+          // access_token será gerado automaticamente pelo banco (DEFAULT gen_random_uuid())
         })
         .select()
         .single();
