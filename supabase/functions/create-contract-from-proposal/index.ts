@@ -68,11 +68,15 @@ serve(async (req) => {
     // IMPORTANTE: Verificar ANTES de validar clientData
     // =========================================================
     if (!preview_only) {
-      const { data: existingContract } = await supabase
+      // Buscar o contrato mais recente para esta proposta (pode haver duplicados)
+      const { data: existingContracts } = await supabase
         .from('contratos_legais')
         .select('id, numero_contrato, status, created_at, updated_at, cliente_nome, cliente_cpf, cliente_data_nascimento, cliente_email, cliente_telefone')
         .eq('proposta_id', proposalId)
-        .maybeSingle();
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      const existingContract = existingContracts?.[0] || null;
 
       if (existingContract) {
         console.log("📄 Contrato existente encontrado:", existingContract.numero_contrato);
