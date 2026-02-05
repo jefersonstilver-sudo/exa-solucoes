@@ -2,7 +2,7 @@
 // DEPLOYED: 2026-02-02
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@^2.49.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -69,13 +69,25 @@ serve(async (req) => {
     // =========================================================
     if (!preview_only) {
       // Buscar o contrato mais recente para esta proposta (pode haver duplicados)
-      const { data: existingContracts } = await supabase
-        .from('contratos_legais')
-        .select('id, numero_contrato, status, created_at, updated_at, cliente_nome, cliente_cpf, cliente_data_nascimento, cliente_email, cliente_telefone')
-        .eq('proposta_id', proposalId)
-        .order('created_at', { ascending: false })
+      const {
+        data: existingContracts,
+        error: existingContractsError,
+      } = await supabase
+        .from("contratos_legais")
+        .select(
+          "id, numero_contrato, status, created_at, updated_at, cliente_nome, cliente_cpf, cliente_data_nascimento, cliente_email, cliente_telefone",
+        )
+        .eq("proposta_id", proposalId)
+        .order("created_at", { ascending: false })
         .limit(1);
-      
+
+      if (existingContractsError) {
+        console.error(
+          "❌ Erro ao buscar contrato existente (query contratos_legais):",
+          existingContractsError,
+        );
+      }
+
       const existingContract = existingContracts?.[0] || null;
 
       if (existingContract) {
