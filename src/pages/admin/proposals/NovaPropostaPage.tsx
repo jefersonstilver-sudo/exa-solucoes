@@ -185,6 +185,9 @@ const NovaPropostaPage = () => {
 
   // Estado para quantidade de posições (marcas)
   const [quantidadePosicoes, setQuantidadePosicoes] = useState(1);
+  
+  // Estado para rastrear se usuário alterou posições após carregar proposta (modo edição)
+  const [posicoesChangedByUser, setPosicoesChangedByUser] = useState(false);
 
   // Estados para prédios manuais
   const [manualBuildings, setManualBuildings] = useState<ManualBuilding[]>([]);
@@ -503,6 +506,7 @@ const NovaPropostaPage = () => {
     if (editProposalId) {
       console.log('🔄 Reset de estado para nova edição:', editProposalId);
       setDataLoaded(false);
+      setPosicoesChangedByUser(false); // Resetar flag de posições
       // Limpar estados críticos para evitar mostrar dados antigos
       setSelectedBuildings([]);
       setManualBuildings([]);
@@ -1114,17 +1118,25 @@ const NovaPropostaPage = () => {
 
   // Auto-sincronizar fidelValue com valor sugerido quando não está em edição manual
   useEffect(() => {
-    // Condições para NÃO atualizar automaticamente:
-    if (isEditMode) return; // Em edição, manter valor do banco
+    // Em modo edição:
+    // - Bloquear se dados ainda não carregaram
+    // - Bloquear se usuário NÃO alterou posições (preservar valor do banco)
+    // - PERMITIR se usuário ALTEROU posições manualmente
+    if (isEditMode && !posicoesChangedByUser) {
+      console.log('🛡️ Modo edição: preservando fidelValue do banco (posições não alteradas)');
+      return;
+    }
+    
     if (fidelValueManuallyEdited) return; // Usuário editou manualmente
     if (modalidadeProposta === 'permuta') return; // Permuta não usa fidelValue
     if (isCustomPayment) return; // Pagamento customizado usa outra lógica
     
     if (valorSugeridoMensal > 0) {
-      console.log('🔄 Auto-sync fidelValue:', valorSugeridoMensal);
+      console.log('🔄 Auto-sync fidelValue:', valorSugeridoMensal, 
+        isEditMode ? '(posições alteradas pelo usuário)' : '(nova proposta)');
       setFidelValue(valorSugeridoMensal.toFixed(2));
     }
-  }, [valorSugeridoMensal, fidelValueManuallyEdited, modalidadeProposta, isCustomPayment, isEditMode]);
+  }, [valorSugeridoMensal, fidelValueManuallyEdited, modalidadeProposta, isCustomPayment, isEditMode, posicoesChangedByUser]);
 
   // Cálculos de valores
   const fidelMonthly = parseFloat(fidelValue) || 0;
@@ -2579,7 +2591,13 @@ Parcelas:
                   <div className="flex items-center gap-4">
                     <Slider
                       value={[quantidadePosicoes]}
-                      onValueChange={(v) => setQuantidadePosicoes(v[0])}
+                      onValueChange={(v) => {
+                        setQuantidadePosicoes(v[0]);
+                        // Se em modo edição e dados já carregaram, marcar como mudança do usuário
+                        if (isEditMode && dataLoaded) {
+                          setPosicoesChangedByUser(true);
+                        }
+                      }}
                       min={1}
                       max={tipoProduto === 'horizontal' ? maxPosicoes : Math.min(3, maxPosicoes)}
                       step={1}
