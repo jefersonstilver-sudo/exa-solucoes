@@ -1,109 +1,174 @@
 
 
-# Análise Completa: Configuração de Multa de Rescisão
+# Auditoria e Correção: Frases Cortadas no PDF do Contrato
 
-## Diagnóstico
+## Problema Identificado
 
-Analisei completamente o código e identifiquei a situação:
+Analisando o PDF enviado e as imagens, identifiquei dois tipos de corte:
 
-### ✅ O Código Está CORRETO
+| Local | Exemplo | Causa |
+|-------|---------|-------|
+| **Tabela de Prédios** | CEP "85852-150" cortado e aparecendo na próxima página | html2canvas corta canvas em altura fixa, sem respeitar limites de tabela |
+| **Títulos de Cláusulas** | "CLÁUSULA 8ª - DOS DIREITOS..." cortada pela metade (texto branco sobre fundo vermelho) | Mesma causa: quebra por pixel, não por elemento |
 
-O arquivo `src/pages/admin/proposals/NovaPropostaPage.tsx` já possui **TODA a implementação** correta para ambas as multas:
+## Causa Técnica
 
-| Componente | Linha | Status |
-|------------|-------|--------|
-| Switch Multa Cliente | 3448-3452 | ✅ Implementado |
-| Slider Multa Cliente | 3464-3471 | ✅ Implementado |
-| Switch Multa EXA | 3513-3517 | ✅ Implementado |
-| Slider Multa EXA | 3529-3536 | ✅ Implementado |
-| Estados React | 237-243 | ✅ Implementado |
-| Carregamento (edit) | 645-651 | ✅ Implementado |
-| Salvamento | 969-972, 1550-1553, 1850-1853 | ✅ Implementado |
+O arquivo `src/components/public/ContractFullPreview.tsx` (linhas 292-315) usa **corte linear por pixels**:
 
-### Estrutura Atual no Código
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│ Multa do Cliente (CONTRATANTE)              [SWITCH] ────── │
-│ Penalidade se o cliente rescindir o contrato                │
-├─────────────────────────────────────────────────────────────┤
-│ Percentual da Multa                                   10%   │
-│ ═══════════●════════════════════════════════════════════    │
-│ 0%                    25%                           50%     │
-│ ┌───────────────────────────────────────────────────────┐   │
-│ │ Em caso de rescisão antecipada pelo cliente, ele      │   │
-│ │ pagará 10% sobre o valor remanescente do contrato.    │   │
-│ └───────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│ Multa da EXA (CONTRATADA)                   [SWITCH] ────── │
-│ Penalidade se a EXA descumprir o contrato                   │
-├─────────────────────────────────────────────────────────────┤
-│ Percentual da Multa                                   20%   │
-│ ════════════════●═══════════════════════════════════════    │
-│ 0%                    25%                           50%     │
-│ ┌───────────────────────────────────────────────────────┐   │
-│ │ Em caso de rescisão por culpa da EXA, a empresa       │   │
-│ │ pagará 20% sobre o valor remanescente do contrato.    │   │
-│ └───────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Código dos Switches (Atual)
-
-**Multa do Cliente (linhas 3448-3452):**
 ```typescript
-<Switch 
-  checked={multaRescisaoAtiva} 
-  onCheckedChange={setMultaRescisaoAtiva} 
-  className="data-[state=checked]:bg-rose-600" 
-/>
+// PROBLEMA: Corta por altura fixa de pixels
+const sourceY = i * (canvas.height / totalPages);
+const sourceHeight = canvas.height / totalPages;
+
+// Desenha o pedaço cortado
+ctx.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, ...);
 ```
 
-**Multa da EXA (linhas 3513-3517):**
-```typescript
-<Switch 
-  checked={multaRescisaoExaAtiva} 
-  onCheckedChange={setMultaRescisaoExaAtiva} 
-  className="data-[state=checked]:bg-amber-600" 
-/>
+Isso **ignora** se uma frase ou elemento HTML está no meio daquela altura.
+
+## Solução Proposta: Paginação Inteligente por Seções
+
+Implementar um sistema de **quebra inteligente por elementos DOM** em vez de corte por pixels:
+
+### 1. Marcar Seções no HTML (Edge Function)
+
+Na função `generateContractHtml`, envolver cada cláusula, tabela e seção com uma classe `.contract-section`:
+
+```html
+<div class="contract-section">
+  <h2 class="section-title">CLÁUSULA 8ª - DOS DIREITOS...</h2>
+  <p>8.1. O CONTRATANTE declara...</p>
+</div>
 ```
 
-## O Problema
+### 2. Implementar Algoritmo de Paginação por Seções
 
-O que você está vendo pode ser uma **versão em cache** do aplicativo. O código mais recente já inclui os switches para ambas as multas.
+No `ContractFullPreview.tsx`, substituir o corte por pixels pelo seguinte algoritmo:
 
-## Ação Recomendada
+```
+Para cada seção do contrato:
+1. Calcular altura da seção em pixels
+2. Verificar se cabe na página atual
+3. Se não cabe:
+   a. Finalizar página atual
+   b. Iniciar nova página
+   c. Colocar seção inteira na nova página
+4. Renderizar seção por seção, nunca cortando no meio
+```
 
-**Não é necessária nenhuma alteração de código** - a implementação já está completa e correta.
+### 3. Regras de Quebra
 
-Para ver os controles corretamente:
-1. **Recarregue a página** (Ctrl+Shift+R ou Cmd+Shift+R)
-2. **Ou limpe o cache do navegador**
-3. **Ou aguarde o build ser concluído**
+| Elemento | Regra |
+|----------|-------|
+| Título de Cláusula | NUNCA separar do primeiro parágrafo |
+| Tabela | NUNCA quebrar no meio de uma linha |
+| Parágrafo longo | Permitir quebra, mas apenas entre linhas de texto |
+| Seção de Assinaturas | NUNCA quebrar (fica inteira na última página) |
 
-## Verificação do Fluxo Completo
+## Arquivos a Modificar
 
-| Passo | Status |
-|-------|--------|
-| 1. Admin configura multas na proposta | ✅ UI com switches + sliders |
-| 2. Valores salvos no banco (proposals) | ✅ campos multa_rescisao_*_ativa/percentual |
-| 3. Proposta carregada para edição | ✅ Hidratação correta dos estados |
-| 4. Edge Function lê valores | ✅ Implementado |
-| 5. Contrato gerado com cláusulas dinâmicas | ✅ Cláusulas 11.2, 11.3, 8.3, 8.4 |
+### Arquivo 1: Edge Function - Adicionar Marcadores de Seção
 
-## Conclusão
+**Arquivo:** `supabase/functions/create-contract-from-proposal/index.ts`
 
-A funcionalidade de **Multa de Rescisão Bilateral** (Cliente + EXA) está **100% implementada**:
+**Mudanças:**
+- Envolver cada cláusula com `<div class="contract-section no-break">`
+- Envolver tabelas com `<div class="contract-section table-section no-break">`
+- Manter títulos de seção (vermelho) juntos com o primeiro parágrafo
 
-- ✅ Switch para ativar/desativar multa do cliente
-- ✅ Slider para definir percentual do cliente (0-50%)
-- ✅ Switch para ativar/desativar multa da EXA
-- ✅ Slider para definir percentual da EXA (0-50%)
-- ✅ Persistência no banco de dados
-- ✅ Carga correta ao editar proposta existente
-- ✅ Geração dinâmica de cláusulas no contrato
+### Arquivo 2: ContractFullPreview - Paginação Inteligente
 
-**Se após recarregar a página os switches ainda não aparecerem**, me avise para investigarmos mais a fundo.
+**Arquivo:** `src/components/public/ContractFullPreview.tsx`
+
+**Mudanças:**
+- Substituir algoritmo de corte por pixels por algoritmo de paginação por seções
+- Implementar função `captureSection()` que renderiza cada seção separadamente
+- Calcular dinamicamente quantas seções cabem em cada página A4
+- Garantir que `.section-title` sempre acompanha o conteúdo seguinte
+
+### Arquivo 3: ContractPDFExporter (Fallback Admin)
+
+**Arquivo:** `src/components/admin/contracts/ContractPDFExporter.tsx`
+
+**Mudanças:**
+- Aplicar a mesma lógica de paginação inteligente
+- O método `generateBase64FromElement` já tem lógica parcial (busca `.contract-section`), mas precisa melhorar o cálculo de altura
+
+## Resultado Esperado
+
+Após a implementação:
+
+1. **Tabelas** nunca terão linhas cortadas entre páginas
+2. **Títulos de cláusulas** (fundo vermelho) sempre estarão na mesma página que o primeiro parágrafo
+3. **Parágrafos longos** podem quebrar, mas apenas entre linhas completas
+4. **Seção de assinaturas** sempre fica inteira na última página
+5. **Sistema de auditoria** (logs) para detectar problemas de paginação futuros
+
+## Detalhes Técnicos da Implementação
+
+### Nova Lógica de Paginação (Pseudocódigo)
+
+```javascript
+async function generatePDFWithSmartBreaks(element) {
+  const sections = element.querySelectorAll('.contract-section');
+  const pdf = new jsPDF('portrait', 'mm', 'a4');
+  
+  const PAGE_HEIGHT_PX = 1050; // Altura útil A4 em pixels (com margens)
+  let currentPageHeight = 0;
+  let currentPageSections = [];
+  const pages = [];
+  
+  for (const section of sections) {
+    const sectionHeight = section.getBoundingClientRect().height;
+    
+    // Se seção não cabe na página atual
+    if (currentPageHeight + sectionHeight > PAGE_HEIGHT_PX && currentPageSections.length > 0) {
+      // Finalizar página atual
+      pages.push([...currentPageSections]);
+      currentPageSections = [];
+      currentPageHeight = 0;
+    }
+    
+    // Adicionar seção à página atual
+    currentPageSections.push(section);
+    currentPageHeight += sectionHeight;
+  }
+  
+  // Última página
+  if (currentPageSections.length > 0) {
+    pages.push(currentPageSections);
+  }
+  
+  // Renderizar cada página
+  for (let i = 0; i < pages.length; i++) {
+    if (i > 0) pdf.addPage();
+    
+    const pageContent = createTempContainer(pages[i]);
+    const canvas = await html2canvas(pageContent);
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), ...);
+  }
+  
+  return pdf;
+}
+```
+
+### Validações de Qualidade (Auditoria)
+
+O sistema incluirá logs de auditoria:
+
+```javascript
+console.log(`📄 Contrato: ${sections.length} seções identificadas`);
+console.log(`📄 Páginas geradas: ${pages.length}`);
+for (let i = 0; i < pages.length; i++) {
+  console.log(`  Página ${i+1}: ${pages[i].length} seções`);
+}
+```
+
+## Plano de Testes
+
+Após implementação, testar com:
+1. Contrato com tabela de 20+ prédios (deve paginar corretamente)
+2. Contrato com muitas cláusulas especiais
+3. Contrato de permuta (tem Anexo III extra)
+4. Contrato curto (1-2 páginas)
 
