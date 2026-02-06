@@ -121,7 +121,7 @@ const PropostasPage = () => {
       const { data, error } = await supabase
         .from('proposals')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: false });
       
       if (error) throw error;
       
