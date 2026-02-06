@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package, Copy, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package, Copy, Image as ImageIcon, AlertTriangle } from 'lucide-react';
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
@@ -870,11 +870,20 @@ const NovaPropostaPage = () => {
   }, [posicoesMap, selectedBuildings, tipoProduto, specifications]);
 
   // Resetar quantidade de posições se exceder o máximo disponível
+  // APENAS para novas propostas - em modo edição, preservar valor salvo
   React.useEffect(() => {
+    // Não resetar automaticamente em modo edição - respeitar valor do banco
+    // O usuário verá um aviso e pode ajustar manualmente se necessário
+    if (isEditMode) {
+      console.log('🛡️ Modo edição: preservando quantidade_posicoes =', quantidadePosicoes);
+      return;
+    }
+    
     if (quantidadePosicoes > maxPosicoes) {
+      console.log('📉 Ajustando posições de', quantidadePosicoes, 'para', maxPosicoes);
       setQuantidadePosicoes(Math.max(1, maxPosicoes));
     }
-  }, [maxPosicoes, quantidadePosicoes]);
+  }, [maxPosicoes, quantidadePosicoes, isEditMode]);
 
   // Exibições mensais ajustadas pela quantidade de posições (movido para antes do auto-save)
   const totalImpressionsAdjusted = useMemo(() => {
@@ -2589,6 +2598,29 @@ Parcelas:
                 <p className="text-xs text-muted-foreground mt-3 bg-muted/50 p-2 rounded">
                   💡 O cliente pode adquirir múltiplas posições para exibir vídeos de marcas diferentes no mesmo painel
                 </p>
+
+                {/* Alerta se valor salvo excede disponibilidade atual */}
+                {isEditMode && quantidadePosicoes > maxPosicoes && (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-2 text-amber-700">
+                      <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium">Atenção: Disponibilidade alterada</p>
+                        <p className="mt-1">
+                          Esta proposta foi salva com <strong>{quantidadePosicoes} posições</strong>, 
+                          mas atualmente só há <strong>{maxPosicoes}</strong> disponível(is) nos prédios selecionados.
+                        </p>
+                        <button 
+                          type="button"
+                          onClick={() => setQuantidadePosicoes(Math.max(1, maxPosicoes))}
+                          className="mt-2 text-xs font-medium text-primary hover:underline"
+                        >
+                          Ajustar para {maxPosicoes} posição(ões)
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </Card>
