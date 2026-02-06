@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package, Copy, Image as ImageIcon, AlertTriangle, Trophy } from 'lucide-react';
+import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package, Copy, Image as ImageIcon, AlertTriangle, Trophy, Info } from 'lucide-react';
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
@@ -3180,9 +3180,15 @@ Parcelas:
           {/* Detalhamento de Preços Corporativo - NÃO permuta */}
           {selectedBuildings.length > 0 && !isCustomPayment && !isCustomDays && modalidadeProposta !== 'permuta' && (
             <Card className="p-3 bg-slate-50/80 border-slate-200 mt-3">
+              {/* Cabeçalho com indicador de posições */}
               <div className="flex items-center gap-2 mb-3">
                 <Building2 className="h-4 w-4 text-slate-600" />
                 <h3 className="font-semibold text-sm text-slate-800">Detalhamento por Local</h3>
+                {quantidadePosicoes > 1 && (
+                  <span className="text-[9px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium">
+                    {quantidadePosicoes}x posições
+                  </span>
+                )}
               </div>
 
               {/* Tabela de Prédios */}
@@ -3190,26 +3196,43 @@ Parcelas:
                 <div className="grid grid-cols-4 gap-2 p-2 bg-slate-100 text-[10px] font-medium text-slate-600">
                   <span>Prédio</span>
                   <span className="text-center">Telas</span>
-                  <span className="text-right">R$/Local</span>
-                  <span className="text-right">R$/Tela</span>
+                  <span className="text-right">
+                    {quantidadePosicoes > 1 ? `R$/Local (${quantidadePosicoes}x)` : 'R$/Local'}
+                  </span>
+                  <span className="text-right">
+                    {quantidadePosicoes > 1 ? `R$/Tela (${quantidadePosicoes}x)` : 'R$/Tela'}
+                  </span>
                 </div>
                 <div className="divide-y divide-slate-100 max-h-24 overflow-y-auto">
                   {selectedBuildingsData.map((building) => {
-                    const precoBase = (building as any).preco_base || 0;
+                    const precoBasePorPosicao = (building as any).preco_base || 0;
+                    const precoBaseTotal = precoBasePorPosicao * quantidadePosicoes;
                     const telas = building.quantidade_telas || 1;
-                    const precoPorTela = telas > 0 ? precoBase / telas : 0;
+                    const precoPorTela = telas > 0 ? precoBaseTotal / telas : 0;
                     
                     return (
                       <div key={building.id} className="grid grid-cols-4 gap-2 p-2 text-[10px] bg-white">
                         <span className="truncate">{building.nome}</span>
                         <span className="text-center">{telas}</span>
-                        <span className="text-right font-medium">{formatCurrency(precoBase)}</span>
+                        <span className="text-right font-medium">{formatCurrency(precoBaseTotal)}</span>
                         <span className="text-right text-muted-foreground">{formatCurrency(precoPorTela)}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
+
+              {/* Linha explicativa do cálculo - aparece com 2+ posições */}
+              {quantidadePosicoes > 1 && (
+                <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg mb-3">
+                  <div className="flex items-center gap-2 text-xs text-blue-700">
+                    <Info className="h-3 w-3 flex-shrink-0" />
+                    <span>
+                      <strong>Cálculo:</strong> Valor base × {quantidadePosicoes} posições = valores acima
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Indicador de Venda Futura */}
               {vendaFutura && prediosContratados > 0 && (
