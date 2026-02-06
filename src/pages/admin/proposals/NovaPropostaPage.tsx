@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package, Copy, Image as ImageIcon, AlertTriangle, Trophy, Info } from 'lucide-react';
+import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package, Copy, Image as ImageIcon, AlertTriangle, Trophy, Info, Layers } from 'lucide-react';
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
@@ -3263,10 +3263,28 @@ Parcelas:
               )}
 
               {/* Resumo Consolidado por Modalidade */}
+              {quantidadePosicoes > 1 && (
+                <div className="mb-2 p-1.5 bg-primary/10 rounded-lg flex items-center justify-center gap-1">
+                  <Layers className="h-3 w-3 text-primary" />
+                  <span className="text-[10px] font-medium text-primary">
+                    Valores calculados para {quantidadePosicoes} posições por local
+                  </span>
+                </div>
+              )}
+              
               <div className="grid grid-cols-2 gap-3">
                 {/* Fidelidade */}
                 <div className="p-2 bg-white rounded-lg border border-slate-200 space-y-1">
-                  <div className="text-[10px] font-medium text-slate-500 uppercase mb-1">Fidelidade ({durationMonths}x)</div>
+                  <div className="text-[10px] font-medium text-slate-500 uppercase mb-1 flex items-center gap-1">
+                    Fidelidade ({durationMonths}x)
+                    {quantidadePosicoes > 1 && (
+                      <span className="text-[8px] px-1 py-0.5 bg-primary/10 text-primary rounded">
+                        {quantidadePosicoes}x pos.
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Por local/mês - TOTAL com todas as posições */}
                   <div className="flex justify-between text-[10px]">
                     <span>Por local/mês:</span>
                     <span className="font-medium">
@@ -3275,6 +3293,21 @@ Parcelas:
                         : 0)}
                     </span>
                   </div>
+                  
+                  {/* Por posição/mês - valor unitário (só aparece com 2+ posições) */}
+                  {quantidadePosicoes > 1 && (
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span className="italic text-[9px]">↳ cada posição:</span>
+                      <span className="italic text-[9px]">
+                        {formatCurrency(
+                          (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) > 0 
+                          ? (fidelMonthly / quantidadePosicoes) / (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) 
+                          : 0
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between text-[10px]">
                     <span>Por tela/mês:</span>
                     <span className="font-medium">
@@ -3292,7 +3325,14 @@ Parcelas:
                   <div className="text-[10px] font-medium text-green-600 uppercase flex items-center gap-1 mb-1">
                     PIX À Vista
                     <span className="bg-green-100 text-green-700 text-[8px] px-1 rounded">-{discountPercent}%</span>
+                    {quantidadePosicoes > 1 && (
+                      <span className="text-[8px] px-1 py-0.5 bg-green-100 text-green-700 rounded">
+                        {quantidadePosicoes}x pos.
+                      </span>
+                    )}
                   </div>
+                  
+                  {/* Por local/mês - TOTAL com todas as posições */}
                   <div className="flex justify-between text-[10px]">
                     <span>Por local/mês:</span>
                     <span className="font-medium text-green-600">
@@ -3301,6 +3341,21 @@ Parcelas:
                         : 0)}
                     </span>
                   </div>
+                  
+                  {/* Por posição/mês - valor unitário (só aparece com 2+ posições) */}
+                  {quantidadePosicoes > 1 && (
+                    <div className="flex justify-between text-[10px] text-green-600/70">
+                      <span className="italic text-[9px]">↳ cada posição:</span>
+                      <span className="italic text-[9px]">
+                        {formatCurrency(
+                          (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) > 0 && durationMonths > 0 
+                          ? ((cashTotal / durationMonths) / quantidadePosicoes) / (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) 
+                          : 0
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between text-[10px]">
                     <span>Por tela/mês:</span>
                     <span className="font-medium text-green-600">
