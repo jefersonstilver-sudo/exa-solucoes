@@ -586,6 +586,7 @@ const NovaPropostaPage = () => {
         }
       }
 
+      console.log('🏢 Prédios hidratados para edição:', buildingIds.length, 'IDs:', buildingIds.slice(0, 3));
       setSelectedBuildings(buildingIds);
       setManualBuildings(manualBldgs);
 
@@ -2533,54 +2534,63 @@ Parcelas:
         </Card>
 
         {/* Quantidade de Posições (Marcas) - Logo após seleção de prédios */}
-        {selectedBuildings.length > 0 && (
+        {(selectedBuildings.length > 0 || (isEditMode && !dataLoaded)) && (
           <Card className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20">
-            <div className="flex items-center gap-2 mb-3">
-              <Users className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold text-foreground">Quantidade de Posições (Marcas)</h3>
-              <Badge variant="secondary" className="ml-auto text-xs">
-                {tipoProduto === 'horizontal' ? 'Horizontal' : 'Vertical Premium'}
-              </Badge>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-4">
-                <Slider
-                  value={[quantidadePosicoes]}
-                  onValueChange={(v) => setQuantidadePosicoes(v[0])}
-                  min={1}
-                  max={tipoProduto === 'horizontal' ? maxPosicoes : Math.min(3, maxPosicoes)}
-                  step={1}
-                  disabled={(tipoProduto === 'horizontal' ? maxPosicoes : Math.min(3, maxPosicoes)) <= 1}
-                  className="flex-1"
-                />
-                <Badge variant="outline" className="text-lg px-4 py-2 bg-background font-bold min-w-[60px] justify-center">
-                  {quantidadePosicoes}x
-                </Badge>
+            {isEditMode && !dataLoaded ? (
+              <div className="flex items-center gap-3 py-2">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <span className="text-sm text-muted-foreground">Carregando configurações de posições...</span>
               </div>
-
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>1 marca</span>
-                <span>{tipoProduto === 'horizontal' ? maxPosicoes : Math.min(3, maxPosicoes)} marcas disponíveis</span>
-              </div>
-
-              {quantidadePosicoes > 1 && (
-                <div className="bg-background/80 rounded-lg p-3 space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Exibições por marca/mês:</span>
-                    <span className="font-medium">{(specifications?.exibicoes.porMes ?? 11610).toLocaleString()}x</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total exibições/mês ({quantidadePosicoes} marcas × {totalPanels} telas):</span>
-                    <span className="font-bold text-primary">{totalImpressionsAdjusted.toLocaleString()}x</span>
-                  </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-foreground">Quantidade de Posições (Marcas)</h3>
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {tipoProduto === 'horizontal' ? 'Horizontal' : 'Vertical Premium'}
+                  </Badge>
                 </div>
-              )}
-            </div>
 
-            <p className="text-xs text-muted-foreground mt-3 bg-muted/50 p-2 rounded">
-              💡 O cliente pode adquirir múltiplas posições para exibir vídeos de marcas diferentes no mesmo painel
-            </p>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4">
+                    <Slider
+                      value={[quantidadePosicoes]}
+                      onValueChange={(v) => setQuantidadePosicoes(v[0])}
+                      min={1}
+                      max={tipoProduto === 'horizontal' ? maxPosicoes : Math.min(3, maxPosicoes)}
+                      step={1}
+                      disabled={(tipoProduto === 'horizontal' ? maxPosicoes : Math.min(3, maxPosicoes)) <= 1}
+                      className="flex-1"
+                    />
+                    <Badge variant="outline" className="text-lg px-4 py-2 bg-background font-bold min-w-[60px] justify-center">
+                      {quantidadePosicoes}x
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>1 marca</span>
+                    <span>{tipoProduto === 'horizontal' ? maxPosicoes : Math.min(3, maxPosicoes)} marcas disponíveis</span>
+                  </div>
+
+                  {quantidadePosicoes > 1 && (
+                    <div className="bg-background/80 rounded-lg p-3 space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Exibições por marca/mês:</span>
+                        <span className="font-medium">{(specifications?.exibicoes.porMes ?? 11610).toLocaleString()}x</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Total exibições/mês ({quantidadePosicoes} marcas × {totalPanels} telas):</span>
+                        <span className="font-bold text-primary">{totalImpressionsAdjusted.toLocaleString()}x</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <p className="text-xs text-muted-foreground mt-3 bg-muted/50 p-2 rounded">
+                  💡 O cliente pode adquirir múltiplas posições para exibir vídeos de marcas diferentes no mesmo painel
+                </p>
+              </>
+            )}
           </Card>
         )}
 
