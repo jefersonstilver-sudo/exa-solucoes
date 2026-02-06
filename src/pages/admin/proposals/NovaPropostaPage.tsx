@@ -489,7 +489,10 @@ const NovaPropostaPage = () => {
       if (error) throw error;
       return data;
     },
-    enabled: isEditMode
+    enabled: isEditMode,
+    staleTime: 0,              // Sempre considerar dados como "stale"
+    refetchOnMount: 'always',  // Sempre buscar ao montar componente
+    gcTime: 0,                 // Não manter em cache quando componente desmonta
   });
 
   // Popular campos quando proposta existente é carregada
@@ -1745,6 +1748,10 @@ Parcelas:
       queryClient.invalidateQueries({
         queryKey: ['proposals']
       });
+      // Invalidar cache específico da proposta editada
+      if (editProposalId) {
+        queryClient.invalidateQueries({ queryKey: ['proposal-for-edit', editProposalId] });
+      }
       if (onlyLink) {
         // Copiar link para clipboard
         const proposalUrl = `${window.location.origin}/proposta/${proposal.id}`;
@@ -1894,6 +1901,10 @@ Parcelas:
       
       setLastSavedAt(new Date());
       queryClient.invalidateQueries({ queryKey: ['proposals'] });
+      // Invalidar cache específico da proposta editada
+      if (editProposalId) {
+        queryClient.invalidateQueries({ queryKey: ['proposal-for-edit', editProposalId] });
+      }
     } catch (error) {
       console.error('Erro ao salvar rascunho:', error);
       toast.error('Erro ao salvar rascunho');
@@ -2158,10 +2169,21 @@ Parcelas:
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Nome *</Label>
-                <AutocompleteInput fieldType="client_name" placeholder="Primeiro nome" value={clientData.firstName} onChange={value => setClientData(prev => ({
+              <AutocompleteInput fieldType="client_name" placeholder="Primeiro nome" value={clientData.firstName} onChange={value => setClientData(prev => ({
                 ...prev,
                 firstName: value
               }))} onSelectSuggestion={entry => {
+                // Em modo edição com dados carregados, apenas atualizar o campo específico
+                if (isEditMode && dataLoaded) {
+                  const nameParts = entry.field_value.split(' ');
+                  setClientData(prev => ({
+                    ...prev,
+                    firstName: nameParts[0] || prev.firstName,
+                    lastName: nameParts.slice(1).join(' ') || prev.lastName
+                  }));
+                  return;
+                }
+                // Comportamento padrão para nova proposta
                 const meta = entry.metadata || {};
                 setClientData(prev => ({
                   ...prev,
@@ -2189,6 +2211,15 @@ Parcelas:
               ...prev,
               companyName: value
             }))} onSelectSuggestion={entry => {
+              // Em modo edição com dados carregados, apenas atualizar o campo específico
+              if (isEditMode && dataLoaded) {
+                setClientData(prev => ({
+                  ...prev,
+                  companyName: entry.field_value
+                }));
+                return;
+              }
+              // Comportamento padrão para nova proposta
               const meta = entry.metadata || {};
               setClientData(prev => ({
                 ...prev,
@@ -2260,6 +2291,15 @@ Parcelas:
               ...prev,
               email: value
             }))} onSelectSuggestion={entry => {
+              // Em modo edição com dados carregados, apenas atualizar o campo específico
+              if (isEditMode && dataLoaded) {
+                setClientData(prev => ({
+                  ...prev,
+                  email: entry.field_value
+                }));
+                return;
+              }
+              // Comportamento padrão para nova proposta
               const meta = entry.metadata || {};
               setClientData(prev => ({
                 ...prev,
