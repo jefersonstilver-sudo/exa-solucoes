@@ -1,94 +1,99 @@
 
+# Correção: Exibição de Valores no Resumo - Mostrar Totais por Local com Múltiplas Posições
 
-# Correção: Valores do Resumo Não Multiplicam por Posições em Modo Edição
+## O Problema Identificado
 
-## Problema Identificado
+Quando você seleciona **2 posições**, o cálculo está funcionando corretamente:
+- `valorSugeridoMensal` = R$ 7.890,00 (já multiplicado por 2)
+- `fidelTotal` = R$ 94.680,00 (correto)
 
-Na imagem você mostra:
-- **Tabela de Detalhamento**: Valores corretos (R$ 378,00 para 2x posições)
-- **Resumo Fidelidade/PIX À Vista**: Valores SEM multiplicação (Por local/mês = R$ 157,80)
-
-### Causa Raiz
-
-O `useEffect` de auto-sync (linha 1118) bloqueia **qualquer** atualização em modo edição:
-
-```typescript
-useEffect(() => {
-  if (isEditMode) return; // ← PROBLEMA: bloqueia mesmo quando usuário altera posições
-  // ...
-  setFidelValue(valorSugeridoMensal.toFixed(2));
-}, [valorSugeridoMensal, ...]);
+**MAS o resumo está DIVIDINDO de volta:**
+```
+Por local/mês = R$ 7.890 / 50 prédios = R$ 157,80
 ```
 
-Quando você muda de 1 para 2 posições no slider:
-- `valorSugeridoMensal` recalcula corretamente (dobra)
-- Mas `fidelValue` **não atualiza** porque `isEditMode = true`
-- O resumo usa `fidelMonthly = parseFloat(fidelValue)` que continua com valor antigo
+Quando deveria mostrar:
+```
+Por local/mês = R$ 315,60 (2 posições × R$ 157,80 base)
+```
+
+**O problema:** O resumo mostra "por local" mas não indica que são 2 posições por local!
 
 ---
 
 ## Solução
 
-### Mudança 1: Criar estado para rastrear mudança de posições pelo usuário
+### Mudança 1: Mostrar claramente os valores COM indicador de posições
 
-Adicionar um estado `posicoesChangedByUser` que detecta quando o usuário alterou manualmente a quantidade de posições após o carregamento inicial.
+Atualizar o resumo para mostrar que os valores já incluem as múltiplas posições:
 
-```typescript
-const [posicoesChangedByUser, setPosicoesChangedByUser] = useState(false);
-```
-
-### Mudança 2: Marcar quando usuário altera posições
-
-No slider de posições, marcar que foi alterado pelo usuário:
-
-```typescript
-<Slider
-  value={[quantidadePosicoes]}
-  onValueChange={(v) => {
-    setQuantidadePosicoes(v[0]);
-    // Se já carregou os dados e está alterando, marcar como mudança do usuário
-    if (isEditMode && dataLoaded) {
-      setPosicoesChangedByUser(true);
-    }
-  }}
-  ...
-/>
-```
-
-### Mudança 3: Permitir auto-sync quando usuário altera posições
-
-Atualizar o `useEffect` para permitir recálculo quando posições mudam:
-
-```typescript
-useEffect(() => {
-  // Em modo edição, só bloquear se:
-  // 1. Dados ainda não carregaram completamente, OU
-  // 2. Usuário NÃO alterou posições (manter valor do banco)
-  if (isEditMode && !posicoesChangedByUser) return;
+```tsx
+{/* Fidelidade */}
+<div className="p-2 bg-white rounded-lg border border-slate-200 space-y-1">
+  <div className="text-[10px] font-medium text-slate-500 uppercase mb-1">
+    Fidelidade ({durationMonths}x)
+    {quantidadePosicoes > 1 && (
+      <span className="ml-1 text-primary">• {quantidadePosicoes}x posições</span>
+    )}
+  </div>
   
-  if (fidelValueManuallyEdited) return;
-  if (modalidadeProposta === 'permuta') return;
-  if (isCustomPayment) return;
+  {/* Por local/mês - TOTAL (já com posições) */}
+  <div className="flex justify-between text-[10px]">
+    <span>Por local/mês {quantidadePosicoes > 1 ? `(${quantidadePosicoes}x)` : ''}:</span>
+    <span className="font-medium">
+      {formatCurrency((vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) > 0 
+        ? fidelMonthly / (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) 
+        : 0)}
+    </span>
+  </div>
   
-  if (valorSugeridoMensal > 0) {
-    console.log('🔄 Auto-sync fidelValue (posições alteradas pelo usuário):', valorSugeridoMensal);
-    setFidelValue(valorSugeridoMensal.toFixed(2));
-  }
-}, [valorSugeridoMensal, fidelValueManuallyEdited, modalidadeProposta, isCustomPayment, isEditMode, posicoesChangedByUser]);
+  {/* NOVA LINHA: Por posição/mês (valor unitário) - aparece só com múltiplas posições */}
+  {quantidadePosicoes > 1 && (
+    <div className="flex justify-between text-[10px] text-muted-foreground">
+      <span className="italic">Por posição/mês:</span>
+      <span className="italic">
+        {formatCurrency((vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) > 0 
+          ? (fidelMonthly / quantidadePosicoes) / (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) 
+          : 0)}
+      </span>
+    </div>
+  )}
+  
+  {/* Por tela/mês */}
+  <div className="flex justify-between text-[10px]">
+    <span>Por tela/mês:</span>
+    <span className="font-medium">
+      {formatCurrency(totalPanels > 0 ? fidelMonthly / totalPanels : 0)}
+    </span>
+  </div>
+  
+  {/* Total Final */}
+  <div className="flex justify-between text-xs pt-1 border-t border-slate-100">
+    <span className="font-medium">Total:</span>
+    <span className="font-bold">{formatCurrency(fidelTotal)}</span>
+  </div>
+</div>
 ```
 
-### Mudança 4: Resetar flag quando carregar nova proposta
+### Mudança 2: Atualizar também o bloco PIX À Vista
 
-No useEffect de reset de estado (linha 502):
+Aplicar a mesma lógica ao bloco verde de PIX À Vista, mostrando:
+- Por local/mês (total com posições)
+- Por posição/mês (valor unitário quando >1 posição)
+- Indicador visual de quantas posições
 
-```typescript
-useEffect(() => {
-  if (editProposalId) {
-    setDataLoaded(false);
-    setPosicoesChangedByUser(false); // Resetar flag
-    // ...
-  }
-}, [editProposalId]);
+### Mudança 3: Adicionar badge visual no cabeçalho do resumo
+
+```tsx
+{/* Indicador de Múltiplas Posições no topo do resumo */}
+{quantidadePosicoes > 1 && (
+  <div className="mb-2 p-1.5 bg-primary/10 rounded-lg flex items-center justify-center gap-1">
+    <Layers className="h-3 w-3 text-primary" />
+    <span className="text-[10px] font-medium text-primary">
+      Valores calculados para {quantidadePosicoes} posições por local
+    </span>
+  </div>
+)}
 ```
 
 ---
@@ -97,119 +102,158 @@ useEffect(() => {
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Adicionar estado `posicoesChangedByUser` |
-| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Atualizar `onValueChange` do Slider |
-| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Atualizar lógica do useEffect de auto-sync |
-| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Resetar flag no useEffect de reset |
+| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Adicionar indicador de posições no título Fidelidade |
+| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Adicionar linha "Por posição/mês" quando >1 posição |
+| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Replicar mudanças no bloco PIX À Vista |
+| `src/pages/admin/proposals/NovaPropostaPage.tsx` | Adicionar badge explicativo no topo do grid de resumo |
 
 ---
 
 ## Código Específico
 
-### Passo 1: Novo estado (após linha 188)
+### Linhas 3265-3315 - Atualizar blocos de resumo
 
-```typescript
-// Estado para rastrear se usuário alterou posições após carregar proposta
-const [posicoesChangedByUser, setPosicoesChangedByUser] = useState(false);
+```tsx
+{/* Resumo Consolidado por Modalidade */}
+{quantidadePosicoes > 1 && (
+  <div className="mb-2 p-1.5 bg-primary/10 rounded-lg flex items-center justify-center gap-1">
+    <Layers className="h-3 w-3 text-primary" />
+    <span className="text-[10px] font-medium text-primary">
+      Valores calculados para {quantidadePosicoes} posições por local
+    </span>
+  </div>
+)}
+
+<div className="grid grid-cols-2 gap-3">
+  {/* Fidelidade */}
+  <div className="p-2 bg-white rounded-lg border border-slate-200 space-y-1">
+    <div className="text-[10px] font-medium text-slate-500 uppercase mb-1 flex items-center gap-1">
+      Fidelidade ({durationMonths}x)
+      {quantidadePosicoes > 1 && (
+        <span className="text-[8px] px-1 py-0.5 bg-primary/10 text-primary rounded">
+          {quantidadePosicoes}x pos.
+        </span>
+      )}
+    </div>
+    
+    {/* Por local/mês - TOTAL com todas as posições */}
+    <div className="flex justify-between text-[10px]">
+      <span>Por local/mês:</span>
+      <span className="font-medium">
+        {formatCurrency(
+          (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) > 0 
+          ? fidelMonthly / (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) 
+          : 0
+        )}
+      </span>
+    </div>
+    
+    {/* Por posição/mês - valor unitário (só aparece com 2+ posições) */}
+    {quantidadePosicoes > 1 && (
+      <div className="flex justify-between text-[10px] text-muted-foreground">
+        <span className="italic text-[9px]">↳ cada posição:</span>
+        <span className="italic text-[9px]">
+          {formatCurrency(
+            (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) > 0 
+            ? (fidelMonthly / quantidadePosicoes) / (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) 
+            : 0
+          )}
+        </span>
+      </div>
+    )}
+    
+    <div className="flex justify-between text-[10px]">
+      <span>Por tela/mês:</span>
+      <span className="font-medium">
+        {formatCurrency(totalPanels > 0 ? fidelMonthly / totalPanels : 0)}
+      </span>
+    </div>
+    
+    <div className="flex justify-between text-xs pt-1 border-t border-slate-100">
+      <span className="font-medium">Total:</span>
+      <span className="font-bold">{formatCurrency(fidelTotal)}</span>
+    </div>
+  </div>
+
+  {/* PIX À Vista - mesma estrutura */}
+  <div className="p-2 bg-gradient-to-br from-green-50 to-white rounded-lg border border-green-200 space-y-1">
+    <div className="text-[10px] font-medium text-green-600 uppercase flex items-center gap-1 mb-1">
+      PIX À Vista
+      <span className="bg-green-100 text-green-700 text-[8px] px-1 rounded">-{discountPercent}%</span>
+      {quantidadePosicoes > 1 && (
+        <span className="text-[8px] px-1 py-0.5 bg-green-100 text-green-700 rounded">
+          {quantidadePosicoes}x pos.
+        </span>
+      )}
+    </div>
+    
+    {/* Por local/mês - TOTAL com todas as posições */}
+    <div className="flex justify-between text-[10px]">
+      <span>Por local/mês:</span>
+      <span className="font-medium text-green-600">
+        {formatCurrency(
+          (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) > 0 && durationMonths > 0 
+          ? (cashTotal / durationMonths) / (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) 
+          : 0
+        )}
+      </span>
+    </div>
+    
+    {/* Por posição/mês - valor unitário (só aparece com 2+ posições) */}
+    {quantidadePosicoes > 1 && (
+      <div className="flex justify-between text-[10px] text-green-600/70">
+        <span className="italic text-[9px]">↳ cada posição:</span>
+        <span className="italic text-[9px]">
+          {formatCurrency(
+            (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) > 0 && durationMonths > 0 
+            ? ((cashTotal / durationMonths) / quantidadePosicoes) / (vendaFutura && prediosContratados > 0 ? prediosContratados : selectedBuildingsData.length) 
+            : 0
+          )}
+        </span>
+      </div>
+    )}
+    
+    <div className="flex justify-between text-[10px]">
+      <span>Por tela/mês:</span>
+      <span className="font-medium text-green-600">
+        {formatCurrency(totalPanels > 0 && durationMonths > 0 ? (cashTotal / durationMonths) / totalPanels : 0)}
+      </span>
+    </div>
+    
+    <div className="flex justify-between text-xs pt-1 border-t border-green-100">
+      <span className="font-medium">Total:</span>
+      <span className="font-bold text-green-600">{formatCurrency(cashTotal)}</span>
+    </div>
+  </div>
+</div>
 ```
 
-### Passo 2: Atualizar Slider (linha 2582)
+### Import adicional
 
-```typescript
-<Slider
-  value={[quantidadePosicoes]}
-  onValueChange={(v) => {
-    setQuantidadePosicoes(v[0]);
-    // Se em modo edição e dados já carregaram, marcar como mudança do usuário
-    if (isEditMode && dataLoaded) {
-      setPosicoesChangedByUser(true);
-    }
-  }}
-  min={1}
-  max={tipoProduto === 'horizontal' ? maxPosicoes : Math.min(3, maxPosicoes)}
-  step={1}
-  className="flex-1"
-/>
-```
-
-### Passo 3: Atualizar useEffect de auto-sync (linha 1115-1127)
-
-```typescript
-// Auto-sincronizar fidelValue com valor sugerido
-useEffect(() => {
-  // Em modo edição:
-  // - Bloquear se dados ainda não carregaram
-  // - Bloquear se usuário NÃO alterou posições (preservar valor do banco)
-  // - PERMITIR se usuário ALTEROU posições manualmente
-  if (isEditMode && !posicoesChangedByUser) {
-    console.log('🛡️ Modo edição: preservando fidelValue do banco (posições não alteradas)');
-    return;
-  }
-  
-  if (fidelValueManuallyEdited) return;
-  if (modalidadeProposta === 'permuta') return;
-  if (isCustomPayment) return;
-  
-  if (valorSugeridoMensal > 0) {
-    console.log('🔄 Auto-sync fidelValue:', valorSugeridoMensal, 
-      isEditMode ? '(posições alteradas pelo usuário)' : '(nova proposta)');
-    setFidelValue(valorSugeridoMensal.toFixed(2));
-  }
-}, [valorSugeridoMensal, fidelValueManuallyEdited, modalidadeProposta, isCustomPayment, isEditMode, posicoesChangedByUser]);
-```
-
-### Passo 4: Resetar flag no useEffect de reset (linha 506)
-
-```typescript
-useEffect(() => {
-  if (editProposalId) {
-    console.log('🔄 Reset de estado para nova edição:', editProposalId);
-    setDataLoaded(false);
-    setPosicoesChangedByUser(false); // Resetar flag de posições
-    // ... resto do código
-  }
-}, [editProposalId]);
-```
+Adicionar `Layers` aos imports do lucide-react.
 
 ---
 
 ## Resultado Esperado
 
-### Cenário: Editar proposta com 1 posição → Mudar para 2
-
-**ANTES (bug):**
-1. Carrega proposta: fidelValue = R$ 3.945,00 (1 posição)
-2. Muda slider para 2 posições
-3. fidelValue continua R$ 3.945,00 ❌
-4. Resumo mostra valores sem multiplicação ❌
-
-**DEPOIS (corrigido):**
-1. Carrega proposta: fidelValue = R$ 3.945,00 (1 posição)
-2. Muda slider para 2 posições
-3. fidelValue atualiza para R$ 7.890,00 ✅
-4. Resumo mostra valores multiplicados ✅
-5. Por local/mês = R$ 7.890,00 / 50 prédios = R$ 157,80 (correto para 2x posições)
-
----
-
-## Fluxo de Dados Corrigido
-
+### Com 1 posição:
 ```
-Usuário altera posições (2x)
-       ↓
-setQuantidadePosicoes(2)
-setPosicoesChangedByUser(true)  ← NOVO
-       ↓
-valorSugeridoMensal recalcula (dobra)
-       ↓
-useEffect detecta:
-  - isEditMode? SIM
-  - posicoesChangedByUser? SIM → PERMITE atualização
-       ↓
-setFidelValue(valorSugeridoMensal)  ← AGORA FUNCIONA
-       ↓
-fidelMonthly = parseFloat(fidelValue) → Valor correto
-       ↓
-Resumo exibe valores multiplicados ✅
+Fidelidade (12x)
+Por local/mês: R$ 78,90
+Por tela/mês: R$ 15,78
+Total: R$ 47.340,00
 ```
 
+### Com 2 posições:
+```
+Fidelidade (12x) [2x pos.]
+
+[Banner: Valores calculados para 2 posições por local]
+
+Por local/mês: R$ 157,80      ← DOBROU!
+  ↳ cada posição: R$ 78,90    ← Valor unitário para referência
+Por tela/mês: R$ 31,56        ← DOBROU!
+Total: R$ 94.680,00           ← DOBROU!
+```
+
+Agora fica **completamente claro** que os valores são para 2 posições!
