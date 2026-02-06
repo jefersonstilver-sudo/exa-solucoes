@@ -113,8 +113,11 @@ export class ContractPDFExporter {
       
       breakableElements.forEach(el => {
         const rect = (el as HTMLElement).getBoundingClientRect();
-        const relativeBottom = rect.bottom - containerRect.top;
-        elementBottoms.push(relativeBottom);
+        // Usar rect.top para cortar ANTES do elemento, eliminando linha fantasma
+        const relativeTop = rect.top - containerRect.top;
+        if (relativeTop > 0) {
+          elementBottoms.push(relativeTop);
+        }
       });
       
       const sortedBreaks = [...new Set(elementBottoms)].sort((a, b) => a - b);

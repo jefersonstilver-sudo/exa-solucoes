@@ -298,9 +298,11 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
       const elementBottoms: number[] = [];
       breakableElements.forEach(el => {
         const rect = (el as HTMLElement).getBoundingClientRect();
-        // Posição relativa ao container (em pixels do DOM, não do canvas)
-        const relativeBottom = rect.bottom - containerRect.top;
-        elementBottoms.push(relativeBottom);
+        // Usar rect.top para cortar ANTES do elemento, eliminando linha fantasma
+        const relativeTop = rect.top - containerRect.top;
+        if (relativeTop > 0) {
+          elementBottoms.push(relativeTop);
+        }
       });
       
       // Ordenar e remover duplicados
