@@ -1,133 +1,116 @@
 
-# Diagnóstico: Funcionalidade de Múltiplas Posições
+# Diagnóstico: Seletor de Posições Não Aparece em Modo de Edição
 
-## ✅ FUNCIONALIDADE EXISTE E ESTÁ FUNCIONANDO
+## Análise Completa
 
-Após análise completa do código, a funcionalidade de **"Quantidade de Posições (Marcas)"** existe e está plenamente operacional. O problema é **onde ela aparece** e **quando ela aparece**.
+Após análise detalhada do código, banco de dados e logs, confirmei que:
 
----
+1. ✅ **O código está correto** - A seção de "Quantidade de Posições (Marcas)" está posicionada corretamente após a seleção de prédios (linha 2536)
+2. ✅ **A condição está correta** - Apenas `selectedBuildings.length > 0` (sem restrição de produto)
+3. ✅ **Os dados estão salvos** - A proposta tem 17 prédios e `quantidade_posicoes = 1` no banco
+4. ✅ **A hidratação acontece** - O log "📝 Carregando dados da proposta" aparece
 
-## 📍 Localização Atual
+## Problema Identificado
 
-O seletor de posições está **dentro da seção "Período e Valores"** (linhas 2778-2825 de `NovaPropostaPage.tsx`), **não na seção de Prédios**.
+O problema é uma **condição de corrida (race condition)** entre:
+- O reset de `selectedBuildings` para `[]` (linha 506)
+- A hidratação que popula os prédios novamente (linha 589)
 
-```
-Estrutura da página:
-├── Vendedor Responsável
-├── Dados do Cliente
-├── Prédios                    ← Você está olhando aqui
-├── Venda Futura
-├── Período e Valores          ← O seletor de posições está AQUI
-│   ├── Tipo de Proposta (Monetária/Permuta)
-│   ├── Seletor de Período (1, 3, 6, 12 meses)
-│   └── ⭐ Quantidade de Posições (Marcas) ← ESTÁ AQUI
-├── Valores e Pagamentos
-└── ...
-```
+Durante um breve momento entre o reset e a hidratação, `selectedBuildings.length === 0`, o que pode fazer a seção não aparecer.
 
----
+Além disso, quando você está scrollando a página, a seção **pode estar presente mas fora da área visível**.
 
-## 🚫 Condições que ESCONDEM o Seletor
+## Solução Proposta
 
-O seletor **NÃO APARECE** quando:
+### Mudança 1: Adicionar indicador visual de carregamento
 
-1. **Produto = VERTICAL PREMIUM** selecionado
-   - Condição: `tipoProduto === 'horizontal'`
-   - Vertical Premium permite máximo 3 posições vs Horizontal permite 15
-
-2. **Nenhum prédio selecionado**
-   - Condição: `selectedBuildings.length > 0`
-
-**Código atual (linha 2779):**
-```typescript
-{tipoProduto === 'horizontal' && selectedBuildings.length > 0 && (
-  <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-primary/10 ...">
-    {/* Seletor de posições */}
-  </div>
-)}
-```
-
----
-
-## 📋 O Que Está Funcionando Corretamente
-
-| Item | Status | Localização |
-|------|--------|-------------|
-| Estado `quantidadePosicoes` | ✅ Existe | Linha 186 |
-| Salvamento no banco | ✅ Funciona | Linha 947 |
-| Carregamento ao editar | ✅ Funciona | Linha 624 |
-| Cálculo de exibições multiplicadas | ✅ Funciona | Linhas 878-882 |
-| Valor sugerido multiplicado | ✅ Funciona | Linha 1091 |
-| Exibição na proposta pública | ✅ Funciona | Linhas 1917-1949 |
-| Cláusula no contrato | ✅ Funciona | Linha 1545 |
-
----
-
-## 🔧 Solução Proposta
-
-Mover o seletor de "Quantidade de Posições" para **logo abaixo da seleção de prédios**, tornando-o mais visível e intuitivo.
-
-### Mudanças Necessárias
-
-**Arquivo:** `src/pages/admin/proposals/NovaPropostaPage.tsx`
-
-1. **Remover** o seletor da seção "Período e Valores" (linhas 2778-2825)
-
-2. **Adicionar** o seletor **dentro da seção de Prédios**, logo após a lista de prédios selecionados (após linha ~2533)
-
-3. **Opcionalmente**: Habilitar também para Vertical Premium (com limite de 3 posições ao invés de 15)
-
-### Código a Mover
-
-O bloco inteiro (linhas 2778-2825) será movido para logo após o fechamento do Card de Prédios (linha ~2533):
+Mostrar a seção de posições em estado de "loading" enquanto os prédios estão sendo carregados, para garantir que ela sempre apareça após os prédios:
 
 ```tsx
-{/* Seção de Prédios */}
-<Card>
-  {/* Lista de prédios... */}
-</Card>
-
-{/* NOVO LOCAL - Quantidade de Posições (Marcas) */}
-{selectedBuildings.length > 0 && (
-  <Card className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 ...">
-    <div className="flex items-center gap-2 mb-3">
-      <Users className="h-5 w-5 text-primary" />
-      <h3 className="font-semibold">Quantidade de Posições (Marcas)</h3>
-    </div>
-    {/* Slider e informações... */}
+{/* Quantidade de Posições - Sempre visível em modo edição com loading state */}
+{(selectedBuildings.length > 0 || (isEditMode && !dataLoaded)) && (
+  <Card className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20">
+    {(!dataLoaded && isEditMode) ? (
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        <span className="text-sm text-muted-foreground">Carregando posições...</span>
+      </div>
+    ) : (
+      <>
+        {/* Conteúdo normal do seletor de posições */}
+      </>
+    )}
   </Card>
 )}
 ```
 
-### Benefícios
+### Mudança 2: Forçar re-render após hidratação
 
-1. **Visibilidade imediata** após selecionar prédios
-2. **Contexto lógico** - posições estão relacionadas aos prédios
-3. **Menos scroll** necessário para acessar a funcionalidade
-4. **Opcional**: Habilitar para ambos os produtos (Horizontal e Vertical Premium)
+Adicionar um `console.log` de debug e garantir que a hidratação está atualizando o estado corretamente:
+
+```tsx
+// Após setSelectedBuildings na hidratação
+console.log('🏢 Prédios carregados para edição:', buildingIds.length, buildingIds);
+```
+
+### Mudança 3: Garantir scroll correto
+
+A seção de posições está **logo após os prédios** - verifique se você está scrollando até ela. A ordem é:
+1. Dados do Cliente
+2. **Prédios** (com a lista)
+3. **Quantidade de Posições (Marcas)** ← Logo abaixo
+4. Venda Futura
+5. Período e Valores
 
 ---
 
-## 📄 Contrato - Já Está Funcionando
+## Arquivos a Modificar
 
-O contrato **já inclui** a cláusula de múltiplas posições quando `quantidade_posicoes > 1`:
+| Arquivo | Mudança |
+|---------|---------|
+| `NovaPropostaPage.tsx` | Adicionar loading state para seção de posições |
+| `NovaPropostaPage.tsx` | Adicionar console.log de debug para prédios |
 
-```html
-<!-- Cláusula 4.4 (gerada automaticamente) -->
-<p><strong>MÚLTIPLAS POSIÇÕES:</strong> O CONTRATANTE contratou 
-<strong>3 posições</strong> no ciclo de exibição, o que significa 
-que seu material será exibido 3x mais vezes por ciclo, multiplicando 
-proporcionalmente o número total de exibições.</p>
+---
+
+## Código Específico
+
+**Linha ~2536 - Atualizar condição e adicionar loading:**
+
+```tsx
+{/* Quantidade de Posições (Marcas) - Logo após seleção de prédios */}
+{(selectedBuildings.length > 0 || (isEditMode && !dataLoaded && isLoadingProposal)) && (
+  <Card className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20">
+    {isEditMode && !dataLoaded ? (
+      <div className="flex items-center gap-3 py-2">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        <span className="text-sm text-muted-foreground">Carregando configurações de posições...</span>
+      </div>
+    ) : (
+      <>
+        <div className="flex items-center gap-2 mb-3">
+          <Users className="h-5 w-5 text-primary" />
+          <h3 className="font-semibold text-foreground">Quantidade de Posições (Marcas)</h3>
+          {/* ... resto do conteúdo */}
+        </div>
+        {/* ... slider e info */}
+      </>
+    )}
+  </Card>
+)}
+```
+
+**Linha ~589 - Adicionar log de debug:**
+
+```tsx
+console.log('🏢 Prédios hidratados para edição:', buildingIds.length, 'IDs:', buildingIds.slice(0, 3));
+setSelectedBuildings(buildingIds);
 ```
 
 ---
 
-## Resumo da Implementação
+## Resultado Esperado
 
-| Etapa | Descrição |
-|-------|-----------|
-| 1 | Cortar o bloco de código do seletor de posições (linhas 2778-2825) |
-| 2 | Colar após a seção de Prédios (após linha ~2533) |
-| 3 | Remover condição `tipoProduto === 'horizontal'` (opcional - permite para Vertical também) |
-| 4 | Ajustar `maxPosicoes` para respeitar limite do produto selecionado |
-| 5 | Testar salvamento e carregamento |
+1. Em modo de edição, a seção de posições sempre aparece (com loading ou com slider)
+2. O slider funciona corretamente após os dados serem carregados
+3. Logs de debug ajudam a diagnosticar se os prédios estão sendo carregados
