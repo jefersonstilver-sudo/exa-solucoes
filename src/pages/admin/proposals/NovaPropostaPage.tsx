@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package, Copy, Image as ImageIcon, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package, Copy, Image as ImageIcon, AlertTriangle, Trophy } from 'lucide-react';
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
@@ -156,6 +156,7 @@ const NovaPropostaPage = () => {
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
   const [durationMonths, setDurationMonths] = useState(6);
   const [fidelValue, setFidelValue] = useState('');
+  const [fidelValueManuallyEdited, setFidelValueManuallyEdited] = useState(false);
   const [discountPercent, setDiscountPercent] = useState(10);
   const [overwriteCashValue, setOverwriteCashValue] = useState(false);
   const [cashValue, setCashValue] = useState('');
@@ -1110,6 +1111,20 @@ const NovaPropostaPage = () => {
     });
     return valorAjustado;
   }, [selectedBuildingsData, durationMonths, quantidadePosicoes]);
+
+  // Auto-sincronizar fidelValue com valor sugerido quando não está em edição manual
+  useEffect(() => {
+    // Condições para NÃO atualizar automaticamente:
+    if (isEditMode) return; // Em edição, manter valor do banco
+    if (fidelValueManuallyEdited) return; // Usuário editou manualmente
+    if (modalidadeProposta === 'permuta') return; // Permuta não usa fidelValue
+    if (isCustomPayment) return; // Pagamento customizado usa outra lógica
+    
+    if (valorSugeridoMensal > 0) {
+      console.log('🔄 Auto-sync fidelValue:', valorSugeridoMensal);
+      setFidelValue(valorSugeridoMensal.toFixed(2));
+    }
+  }, [valorSugeridoMensal, fidelValueManuallyEdited, modalidadeProposta, isCustomPayment, isEditMode]);
 
   // Cálculos de valores
   const fidelMonthly = parseFloat(fidelValue) || 0;
@@ -2599,6 +2614,75 @@ Parcelas:
                   💡 O cliente pode adquirir múltiplas posições para exibir vídeos de marcas diferentes no mesmo painel
                 </p>
 
+                {/* Card de Vantagens Competitivas - Aparece com 2+ posições */}
+                {quantidadePosicoes > 1 && (
+                  <div className="mt-4 p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Trophy className="h-5 w-5 text-green-600" />
+                      <h4 className="font-bold text-green-800">
+                        Vantagem Competitiva: {quantidadePosicoes} Posições
+                      </h4>
+                    </div>
+                    
+                    {/* Comparação Horizontal vs Vertical */}
+                    {tipoProduto === 'horizontal' && (
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="p-3 bg-white rounded-lg border-2 border-primary/30">
+                          <div className="flex items-center gap-1 mb-2">
+                            <CheckCircle className="h-4 w-4 text-primary" />
+                            <span className="text-xs font-bold text-primary">HORIZONTAL</span>
+                          </div>
+                          <ul className="text-xs space-y-1 text-muted-foreground">
+                            <li>• Até 15 marcas/painel</li>
+                            <li>• Menor custo/exibição</li>
+                            <li>• {quantidadePosicoes * (specifications?.horizontal.maxVideosPorPedido || 4)} vídeos simultâneos</li>
+                          </ul>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <span className="text-xs font-medium text-gray-500">VERTICAL</span>
+                          <ul className="text-xs space-y-1 text-gray-400 mt-2">
+                            <li>• Máximo 3 marcas</li>
+                            <li>• Custo 5x maior</li>
+                            <li>• Apenas 1 vídeo</li>
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Benefícios das Posições */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-green-600">📈</span>
+                        <span className="text-green-800">
+                          <strong>+{((quantidadePosicoes - 1) * 100)}%</strong> de exibições vs 1 posição
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-green-600">🧠</span>
+                        <span className="text-green-800">
+                          Memorização <strong>{quantidadePosicoes}x mais forte</strong> na mente dos moradores
+                        </span>
+                      </div>
+                      {tipoProduto === 'horizontal' && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-green-600">🎬</span>
+                          <span className="text-green-800">
+                            <strong>{quantidadePosicoes * (specifications?.horizontal.maxVideosPorPedido || 4)}</strong> vídeos diferentes em rotação automática
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Alerta de vantagem sobre concorrentes */}
+                    <div className="mt-3 p-2 bg-green-100 rounded-lg">
+                      <p className="text-xs text-green-700">
+                        💡 <strong>Vantagem sobre concorrentes:</strong> Se outro anunciante comprar 1 posição, 
+                        você terá <strong>{quantidadePosicoes}x mais presença</strong> no mesmo prédio!
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Alerta se valor salvo excede disponibilidade atual */}
                 {isEditMode && quantidadePosicoes > maxPosicoes && (
                   <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
@@ -2978,8 +3062,39 @@ Parcelas:
               </div>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                <Input type="number" placeholder="0,00" value={fidelValue} onChange={e => setFidelValue(e.target.value)} className="pl-10 h-12 text-base" />
+                <Input 
+                  type="number" 
+                  placeholder="0,00" 
+                  value={fidelValue} 
+                  onChange={e => {
+                    setFidelValue(e.target.value);
+                    setFidelValueManuallyEdited(true);
+                  }} 
+                  className="pl-10 h-12 text-base" 
+                />
               </div>
+              
+              {/* Alerta se valor editado manualmente difere do sugerido */}
+              {fidelValueManuallyEdited && valorSugeridoMensal > 0 && 
+               Math.abs(parseFloat(fidelValue || '0') - valorSugeridoMensal) > 1 && (
+                <div className="flex items-center gap-2 p-2 mt-1 bg-amber-50 border border-amber-200 rounded-lg">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                  <span className="text-xs text-amber-700">
+                    Valor difere do sugerido ({formatCurrency(valorSugeridoMensal)})
+                  </span>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setFidelValue(valorSugeridoMensal.toFixed(2));
+                      setFidelValueManuallyEdited(false);
+                    }} 
+                    className="text-xs font-medium text-primary hover:underline ml-auto"
+                  >
+                    Sincronizar
+                  </button>
+                </div>
+              )}
+              
               {fidelMonthly > 0 && <p className="text-xs text-muted-foreground mt-1">
                   Total: {formatCurrency(fidelTotal)} em {durationMonths}x de {formatCurrency(fidelMonthly)}
                 </p>}
