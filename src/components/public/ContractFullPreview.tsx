@@ -44,7 +44,9 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
     setIsDownloading(true);
 
     try {
-      // Criar container temporário para renderização limpa (sem watermark)
+      console.log('📄 [ContractPDF] Iniciando geração com paginação inteligente...');
+      
+      // Criar container temporário para renderização limpa
       const tempContainer = document.createElement('div');
       tempContainer.style.cssText = `
         position: fixed;
@@ -59,7 +61,7 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
         padding: 40px;
       `;
       
-      // Adicionar conteúdo HTML sem watermark
+      // Adicionar estilos e conteúdo
       tempContainer.innerHTML = `
         <style>
           * { box-sizing: border-box; }
@@ -87,7 +89,6 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
             margin-bottom: 12px;
             border-bottom: 1px solid #e5e5e5;
             padding-bottom: 4px;
-            page-break-after: avoid;
           }
           p {
             margin-bottom: 12px;
@@ -100,7 +101,6 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
             border-collapse: collapse;
             margin: 16px 0;
             font-size: 10pt;
-            page-break-inside: avoid;
           }
           th, td {
             border: 1px solid #d1d5db;
@@ -132,6 +132,9 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
           .contract-number {
             font-size: 12pt;
             color: #666;
+          }
+          .section {
+            margin: 25px 0;
           }
           .section-title {
             background: linear-gradient(90deg, #8B1A1A, #A52020);
@@ -185,7 +188,6 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
           /* Seção de assinaturas */
           .signature-section {
             margin-top: 60px;
-            page-break-inside: avoid;
           }
           .signatures-grid {
             display: grid;
@@ -218,7 +220,6 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
           
           .witnesses-section {
             margin-top: 50px;
-            page-break-inside: avoid;
           }
           .witnesses-grid {
             display: grid;
@@ -233,11 +234,6 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
             border-top: 1px solid #333;
             margin-top: 50px;
             padding-top: 10px;
-          }
-          
-          /* Cláusulas - evitar quebra no meio */
-          .clausula, .clause, .section, [class*="clausula"], [class*="clause"] {
-            page-break-inside: avoid;
           }
         </style>
         ${processedHtml}
@@ -257,6 +253,17 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
         })
       );
 
+      // ======= PAGINAÇÃO INTELIGENTE POR SEÇÕES =======
+      // Identificar todas as seções do contrato
+      const sections = tempContainer.querySelectorAll('.section, .signature-section, .witnesses-section, .contract-title, .header-container, .footer');
+      
+      console.log(`📋 [ContractPDF] ${sections.length} seções identificadas para paginação`);
+
+      // Se não encontrar seções marcadas, criar seções a partir de divs principais
+      const sectionsArray: Element[] = sections.length > 0 
+        ? Array.from(sections) 
+        : Array.from(tempContainer.children);
+
       // Configurações do PDF A4
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -264,66 +271,126 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
         format: 'a4'
       });
 
-      const pageWidth = 210;
-      const pageHeight = 297;
-      const margin = 10;
-      const contentWidth = pageWidth - (margin * 2);
-      const contentHeight = pageHeight - (margin * 2);
+      const pageWidthMM = 210;
+      const pageHeightMM = 297;
+      const marginMM = 12;
+      const contentWidthMM = pageWidthMM - (marginMM * 2); // 186mm
+      const contentHeightMM = pageHeightMM - (marginMM * 2); // 273mm
       
-      // Renderizar com html2canvas em alta qualidade
-      const canvas = await html2canvas(tempContainer, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        allowTaint: true,
-        windowWidth: 794
-      });
+      // Escala: 794px = 186mm de conteúdo útil
+      const pxPerMM = 794 / contentWidthMM; // ~4.27 px/mm
+      const maxPageHeightPx = contentHeightMM * pxPerMM; // ~1165px por página
 
-      // Limpar container temporário
-      document.body.removeChild(tempContainer);
+      console.log(`📏 [ContractPDF] Altura máxima por página: ${Math.round(maxPageHeightPx)}px`);
 
-      // Calcular proporções
-      const imgWidth = contentWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const totalPages = Math.ceil(imgHeight / contentHeight);
+      // Agrupar seções em páginas lógicas
+      const pages: Element[][] = [];
+      let currentPage: Element[] = [];
+      let currentHeightPx = 0;
 
-      // Adicionar páginas com paginação inteligente
-      for (let i = 0; i < totalPages; i++) {
-        if (i > 0) {
+      for (let i = 0; i < sectionsArray.length; i++) {
+        const section = sectionsArray[i] as HTMLElement;
+        const sectionRect = section.getBoundingClientRect();
+        const sectionHeightPx = sectionRect.height;
+
+        // Log para auditoria
+        const sectionClass = section.className || 'sem-classe';
+        const sectionPreview = section.textContent?.substring(0, 50) || '';
+        
+        // Se adicionar esta seção ultrapassar a altura da página
+        if (currentHeightPx + sectionHeightPx > maxPageHeightPx && currentPage.length > 0) {
+          console.log(`📄 [ContractPDF] Página ${pages.length + 1} fechada com ${currentPage.length} seções (${Math.round(currentHeightPx)}px)`);
+          pages.push([...currentPage]);
+          currentPage = [];
+          currentHeightPx = 0;
+        }
+
+        // Adicionar seção à página atual
+        currentPage.push(section);
+        currentHeightPx += sectionHeightPx;
+        
+        console.log(`  → Seção ${i + 1}: ${Math.round(sectionHeightPx)}px (${sectionClass.substring(0, 30)}) "${sectionPreview.substring(0, 30)}..."`);
+      }
+
+      // Última página
+      if (currentPage.length > 0) {
+        console.log(`📄 [ContractPDF] Página ${pages.length + 1} (última) com ${currentPage.length} seções (${Math.round(currentHeightPx)}px)`);
+        pages.push(currentPage);
+      }
+
+      console.log(`📊 [ContractPDF] Total: ${pages.length} páginas geradas`);
+
+      // Renderizar cada página
+      for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+        if (pageIndex > 0) {
           pdf.addPage();
         }
 
-        // Calcular posição de corte inteligente
-        const sourceY = i * (canvas.height / totalPages);
-        const sourceHeight = canvas.height / totalPages;
+        // Criar container temporário para esta página específica
+        const pageContainer = document.createElement('div');
+        pageContainer.style.cssText = `
+          width: 794px;
+          background: white;
+          padding: 0;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          font-size: 11pt;
+          line-height: 1.6;
+          color: #1a1a1a;
+        `;
 
-        // Criar canvas temporário para a página atual
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sourceHeight;
-        
-        const ctx = pageCanvas.getContext('2d');
-        if (ctx) {
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-          ctx.drawImage(
-            canvas,
-            0, sourceY, canvas.width, sourceHeight,
-            0, 0, canvas.width, sourceHeight
-          );
-        }
+        // Copiar as seções desta página
+        pages[pageIndex].forEach(section => {
+          const clone = section.cloneNode(true) as HTMLElement;
+          pageContainer.appendChild(clone);
+        });
 
-        const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
-        pdf.addImage(pageImgData, 'JPEG', margin, margin, contentWidth, contentHeight);
+        // Adicionar ao DOM temporariamente
+        const renderContainer = document.createElement('div');
+        renderContainer.style.cssText = `
+          position: fixed;
+          left: -9999px;
+          top: 0;
+          width: 794px;
+          background: white;
+          padding: 40px;
+        `;
+        renderContainer.appendChild(pageContainer);
+        document.body.appendChild(renderContainer);
+
+        // Capturar com html2canvas
+        const canvas = await html2canvas(renderContainer, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          allowTaint: true,
+          width: 794
+        });
+
+        // Limpar
+        document.body.removeChild(renderContainer);
+
+        // Calcular altura proporcional em mm
+        const imgHeightMM = (canvas.height / canvas.width) * contentWidthMM;
+
+        // Adicionar ao PDF
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        pdf.addImage(imgData, 'JPEG', marginMM, marginMM, contentWidthMM, Math.min(imgHeightMM, contentHeightMM));
+
+        console.log(`✅ [ContractPDF] Página ${pageIndex + 1}/${pages.length} renderizada`);
       }
+
+      // Limpar container principal
+      document.body.removeChild(tempContainer);
 
       // Download do PDF
       const timestamp = new Date().toISOString().split('T')[0];
       pdf.save(`contrato-exa-midia-${timestamp}.pdf`);
 
+      console.log('✅ [ContractPDF] PDF gerado com sucesso!');
+
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
+      console.error('❌ [ContractPDF] Erro ao gerar PDF:', error);
       alert('Erro ao gerar o PDF. Por favor, tente novamente.');
     } finally {
       setIsDownloading(false);
