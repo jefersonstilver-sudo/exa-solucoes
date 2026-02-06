@@ -1764,6 +1764,12 @@ const PropostaPublicaPage = () => {
                   <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-2">
                     Proposta Comercial
                   </h1>
+                  {/* Título Customizado da Proposta */}
+                  {proposal.titulo && (
+                    <p className="text-lg sm:text-xl md:text-2xl font-medium text-white/90 mb-2">
+                      {proposal.titulo}
+                    </p>
+                  )}
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                     <span className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
                       <Video className="h-3 w-3 sm:h-4 sm:w-4" />
