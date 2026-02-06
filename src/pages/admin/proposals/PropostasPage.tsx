@@ -71,6 +71,8 @@ interface Proposal {
   // Campos de Permuta
   modalidade_proposta?: 'monetaria' | 'permuta' | null;
   valor_total_permuta?: number | null;
+  // Título customizado
+  titulo?: string | null;
 }
 
 interface LiveViewNotification {
@@ -1112,6 +1114,11 @@ const PropostasPage = () => {
                           <span className="font-mono text-xs font-semibold text-[#9C1E1E]">
                             {proposal.number}
                           </span>
+                          {proposal.titulo && (
+                            <span className="text-xs font-medium text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded truncate max-w-[180px]" title={proposal.titulo}>
+                              {proposal.titulo}
+                            </span>
+                          )}
                           {getStatusBadge(proposal.status, proposal)}
                           <ProposalTimeIndicator 
                             createdAt={proposal.created_at}
