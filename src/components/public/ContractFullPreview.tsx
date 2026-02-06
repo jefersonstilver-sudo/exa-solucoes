@@ -1,5 +1,5 @@
 import React, { useRef, useMemo, useState } from 'react';
-import { X, FileText, Download, AlertCircle, FileWarning, Loader2 } from 'lucide-react';
+import { X, FileText, Download, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -39,14 +39,21 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
 
   if (!isOpen || !processedHtml) return null;
 
+  /**
+   * ALGORITMO V3.0 - Canvas Único com Pontos de Quebra Seguros
+   * 
+   * Em vez de agrupar seções (que pode comprimir seções grandes),
+   * renderizamos TODO o conteúdo em um único canvas e depois
+   * identificamos pontos seguros para corte (entre linhas de tabela, parágrafos, etc.)
+   */
   const handleDownloadPDF = async () => {
     if (!contractRef.current) return;
     setIsDownloading(true);
 
     try {
-      console.log('📄 [ContractPDF] Iniciando geração com paginação inteligente...');
+      console.log('📄 [ContractPDF v3.0] Iniciando geração com pontos de quebra seguros...');
       
-      // Criar container temporário para renderização limpa
+      // Criar container temporário para renderização
       const tempContainer = document.createElement('div');
       tempContainer.style.cssText = `
         position: fixed;
@@ -61,7 +68,7 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
         padding: 40px;
       `;
       
-      // Adicionar estilos e conteúdo
+      // Adicionar estilos e conteúdo (CSS com word-break para evitar truncamento)
       tempContainer.innerHTML = `
         <style>
           * { box-sizing: border-box; }
@@ -95,17 +102,22 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
             text-align: justify;
             orphans: 3;
             widows: 3;
+            word-break: break-word;
+            overflow-wrap: break-word;
           }
           table {
             width: 100%;
             border-collapse: collapse;
             margin: 16px 0;
             font-size: 10pt;
+            table-layout: fixed;
           }
           th, td {
             border: 1px solid #d1d5db;
             padding: 8px 10px;
             text-align: left;
+            word-break: break-word;
+            overflow-wrap: break-word;
           }
           th {
             background-color: #f3f4f6;
@@ -177,12 +189,16 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
           .info-label {
             color: #666;
             font-size: 10pt;
+            flex-shrink: 0;
+            max-width: 40%;
           }
           .info-value {
             font-weight: 500;
             color: #1a1a1a;
             text-align: right;
             font-size: 10pt;
+            word-break: break-word;
+            overflow-wrap: break-word;
           }
           
           /* Seção de assinaturas */
@@ -253,18 +269,45 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
         })
       );
 
-      // ======= PAGINAÇÃO INTELIGENTE POR SEÇÕES =======
-      // Identificar todas as seções do contrato
-      const sections = tempContainer.querySelectorAll('.section, .signature-section, .witnesses-section, .contract-title, .header-container, .footer');
+      // Forçar reflow
+      await new Promise(r => setTimeout(r, 100));
+
+      // ======= CAPTURAR CANVAS COMPLETO =======
+      console.log('📸 [ContractPDF v3.0] Capturando canvas completo...');
       
-      console.log(`📋 [ContractPDF] ${sections.length} seções identificadas para paginação`);
+      const fullCanvas = await html2canvas(tempContainer, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        allowTaint: true,
+        width: 794
+      });
 
-      // Se não encontrar seções marcadas, criar seções a partir de divs principais
-      const sectionsArray: Element[] = sections.length > 0 
-        ? Array.from(sections) 
-        : Array.from(tempContainer.children);
+      console.log(`📐 [ContractPDF v3.0] Canvas total: ${fullCanvas.width}x${fullCanvas.height}px`);
 
-      // Configurações do PDF A4
+      // ======= IDENTIFICAR PONTOS DE QUEBRA SEGUROS =======
+      // Elementos que podem servir de "fronteira" para quebra de página
+      const breakableElements = tempContainer.querySelectorAll(
+        'tr, p, .section, .clause, .info-row, .signature-section, .witnesses-section, h2, h3, .section-title'
+      );
+      
+      const containerRect = tempContainer.getBoundingClientRect();
+      
+      // Coletar posições Y de todos os elementos quebráveis
+      const elementBottoms: number[] = [];
+      breakableElements.forEach(el => {
+        const rect = (el as HTMLElement).getBoundingClientRect();
+        // Posição relativa ao container (em pixels do DOM, não do canvas)
+        const relativeBottom = rect.bottom - containerRect.top;
+        elementBottoms.push(relativeBottom);
+      });
+      
+      // Ordenar e remover duplicados
+      const sortedBreaks = [...new Set(elementBottoms)].sort((a, b) => a - b);
+      console.log(`📍 [ContractPDF v3.0] ${sortedBreaks.length} pontos de quebra identificados`);
+
+      // ======= CONFIGURAÇÕES DO PDF A4 =======
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -277,120 +320,108 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
       const contentWidthMM = pageWidthMM - (marginMM * 2); // 186mm
       const contentHeightMM = pageHeightMM - (marginMM * 2); // 273mm
       
-      // Escala: 794px = 186mm de conteúdo útil
-      const pxPerMM = 794 / contentWidthMM; // ~4.27 px/mm
-      const maxPageHeightPx = contentHeightMM * pxPerMM; // ~1165px por página
+      // O canvas foi renderizado com scale: 2, então as dimensões reais são 2x
+      const canvasScale = 2;
+      const domWidthPx = 794; // Largura do DOM
+      
+      // Altura máxima do DOM por página (antes do scale)
+      const pxPerMM = domWidthPx / contentWidthMM;
+      const maxDomHeightPerPage = contentHeightMM * pxPerMM; // ~1165px do DOM
+      
+      console.log(`📏 [ContractPDF v3.0] Altura máxima DOM por página: ${Math.round(maxDomHeightPerPage)}px`);
 
-      console.log(`📏 [ContractPDF] Altura máxima por página: ${Math.round(maxPageHeightPx)}px`);
-
-      // Agrupar seções em páginas lógicas
-      const pages: Element[][] = [];
-      let currentPage: Element[] = [];
-      let currentHeightPx = 0;
-
-      for (let i = 0; i < sectionsArray.length; i++) {
-        const section = sectionsArray[i] as HTMLElement;
-        const sectionRect = section.getBoundingClientRect();
-        const sectionHeightPx = sectionRect.height;
-
-        // Log para auditoria
-        const sectionClass = section.className || 'sem-classe';
-        const sectionPreview = section.textContent?.substring(0, 50) || '';
-        
-        // Se adicionar esta seção ultrapassar a altura da página
-        if (currentHeightPx + sectionHeightPx > maxPageHeightPx && currentPage.length > 0) {
-          console.log(`📄 [ContractPDF] Página ${pages.length + 1} fechada com ${currentPage.length} seções (${Math.round(currentHeightPx)}px)`);
-          pages.push([...currentPage]);
-          currentPage = [];
-          currentHeightPx = 0;
+      // ======= DIVIDIR EM PÁGINAS USANDO PONTOS SEGUROS =======
+      const pageBreaks: number[] = [0]; // Começa em 0
+      let lastBreak = 0;
+      
+      for (const breakPoint of sortedBreaks) {
+        // Se este ponto ultrapassa a altura máxima desde o último break
+        if (breakPoint - lastBreak > maxDomHeightPerPage) {
+          // Voltar para o último ponto seguro que ainda cabia
+          const previousSafe = sortedBreaks
+            .filter(bp => bp > lastBreak && bp <= lastBreak + maxDomHeightPerPage)
+            .pop();
+          
+          if (previousSafe && previousSafe !== lastBreak) {
+            pageBreaks.push(previousSafe);
+            lastBreak = previousSafe;
+          } else {
+            // Se não encontrou ponto seguro, forçar quebra na altura máxima
+            pageBreaks.push(lastBreak + maxDomHeightPerPage);
+            lastBreak = lastBreak + maxDomHeightPerPage;
+          }
         }
-
-        // Adicionar seção à página atual
-        currentPage.push(section);
-        currentHeightPx += sectionHeightPx;
-        
-        console.log(`  → Seção ${i + 1}: ${Math.round(sectionHeightPx)}px (${sectionClass.substring(0, 30)}) "${sectionPreview.substring(0, 30)}..."`);
+      }
+      
+      // Adicionar fim do documento
+      const totalDomHeight = tempContainer.scrollHeight;
+      if (pageBreaks[pageBreaks.length - 1] < totalDomHeight) {
+        pageBreaks.push(totalDomHeight);
       }
 
-      // Última página
-      if (currentPage.length > 0) {
-        console.log(`📄 [ContractPDF] Página ${pages.length + 1} (última) com ${currentPage.length} seções (${Math.round(currentHeightPx)}px)`);
-        pages.push(currentPage);
-      }
+      console.log(`📄 [ContractPDF v3.0] ${pageBreaks.length - 1} páginas calculadas`);
+      pageBreaks.forEach((bp, i) => {
+        if (i > 0) {
+          console.log(`  Página ${i}: DOM ${Math.round(pageBreaks[i-1])}px → ${Math.round(bp)}px (${Math.round(bp - pageBreaks[i-1])}px)`);
+        }
+      });
 
-      console.log(`📊 [ContractPDF] Total: ${pages.length} páginas geradas`);
-
-      // Renderizar cada página
-      for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+      // ======= RENDERIZAR CADA PÁGINA =======
+      for (let pageIndex = 0; pageIndex < pageBreaks.length - 1; pageIndex++) {
         if (pageIndex > 0) {
           pdf.addPage();
         }
 
-        // Criar container temporário para esta página específica
-        const pageContainer = document.createElement('div');
-        pageContainer.style.cssText = `
-          width: 794px;
-          background: white;
-          padding: 0;
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          font-size: 11pt;
-          line-height: 1.6;
-          color: #1a1a1a;
-        `;
-
-        // Copiar as seções desta página
-        pages[pageIndex].forEach(section => {
-          const clone = section.cloneNode(true) as HTMLElement;
-          pageContainer.appendChild(clone);
-        });
-
-        // Adicionar ao DOM temporariamente
-        const renderContainer = document.createElement('div');
-        renderContainer.style.cssText = `
-          position: fixed;
-          left: -9999px;
-          top: 0;
-          width: 794px;
-          background: white;
-          padding: 40px;
-        `;
-        renderContainer.appendChild(pageContainer);
-        document.body.appendChild(renderContainer);
-
-        // Capturar com html2canvas
-        const canvas = await html2canvas(renderContainer, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#ffffff',
-          logging: false,
-          allowTaint: true,
-          width: 794
-        });
-
-        // Limpar
-        document.body.removeChild(renderContainer);
+        const startY = pageBreaks[pageIndex];
+        const endY = pageBreaks[pageIndex + 1];
+        const sliceHeight = endY - startY;
+        
+        // Converter para coordenadas do canvas (com scale)
+        const canvasStartY = Math.round(startY * canvasScale);
+        const canvasSliceHeight = Math.round(sliceHeight * canvasScale);
+        const canvasWidth = fullCanvas.width;
+        
+        // Criar canvas para esta fatia
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvasWidth;
+        pageCanvas.height = canvasSliceHeight;
+        
+        const ctx = pageCanvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          
+          // Copiar a fatia do canvas principal
+          ctx.drawImage(
+            fullCanvas,
+            0, canvasStartY,                    // Source X, Y
+            canvasWidth, canvasSliceHeight,     // Source width, height
+            0, 0,                               // Dest X, Y
+            canvasWidth, canvasSliceHeight      // Dest width, height
+          );
+        }
 
         // Calcular altura proporcional em mm
-        const imgHeightMM = (canvas.height / canvas.width) * contentWidthMM;
+        const imgHeightMM = (pageCanvas.height / pageCanvas.width) * contentWidthMM;
 
         // Adicionar ao PDF
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgData = pageCanvas.toDataURL('image/jpeg', 0.95);
         pdf.addImage(imgData, 'JPEG', marginMM, marginMM, contentWidthMM, Math.min(imgHeightMM, contentHeightMM));
 
-        console.log(`✅ [ContractPDF] Página ${pageIndex + 1}/${pages.length} renderizada`);
+        console.log(`✅ [ContractPDF v3.0] Página ${pageIndex + 1} renderizada (${Math.round(sliceHeight)}px → ${Math.round(imgHeightMM)}mm)`);
       }
 
-      // Limpar container principal
+      // Limpar container
       document.body.removeChild(tempContainer);
 
       // Download do PDF
       const timestamp = new Date().toISOString().split('T')[0];
       pdf.save(`contrato-exa-midia-${timestamp}.pdf`);
 
-      console.log('✅ [ContractPDF] PDF gerado com sucesso!');
+      console.log('✅ [ContractPDF v3.0] PDF gerado com sucesso!');
 
     } catch (error) {
-      console.error('❌ [ContractPDF] Erro ao gerar PDF:', error);
+      console.error('❌ [ContractPDF v3.0] Erro ao gerar PDF:', error);
       alert('Erro ao gerar o PDF. Por favor, tente novamente.');
     } finally {
       setIsDownloading(false);
@@ -504,267 +535,9 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
                 </>
               )}
             </Button>
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="h-12 border-gray-300 px-6"
-            >
-              Fechar
-            </Button>
           </div>
         </div>
       </div>
-
-      {/* Custom CSS for contract HTML - Responsivo Mobile */}
-      <style>{`
-        /* HEADER OFICIAL - Full Width */
-        .contract-content .header-container {
-          width: calc(100% + 48px);
-          margin: -24px -24px 20px -24px;
-          display: block;
-        }
-        
-        .contract-content .header-image {
-          width: 100%;
-          height: auto;
-          display: block;
-          max-width: none;
-        }
-        
-        .contract-content img {
-          max-width: 100%;
-          height: auto;
-        }
-        
-        .contract-content h1 {
-          font-size: 18px;
-          font-weight: 700;
-          margin-bottom: 20px;
-          text-align: center;
-          color: #1a1a1a;
-        }
-        .contract-content h2 {
-          font-size: 14px;
-          font-weight: 700;
-          margin-top: 24px;
-          margin-bottom: 12px;
-          color: #1a1a1a;
-          border-bottom: 1px solid #e5e5e5;
-          padding-bottom: 4px;
-        }
-        .contract-content p {
-          margin-bottom: 12px;
-          text-align: justify;
-        }
-        .contract-content table {
-          width: 100%;
-          border-collapse: collapse;
-          margin: 16px 0;
-          font-size: 10pt;
-        }
-        .contract-content table th,
-        .contract-content table td {
-          border: 1px solid #d1d5db;
-          padding: 8px 10px;
-          text-align: left;
-        }
-        .contract-content table th {
-          background-color: #f3f4f6;
-          font-weight: 600;
-        }
-        .contract-content .assinaturas {
-          margin-top: 40px;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 40px;
-          justify-content: space-between;
-        }
-        .contract-content .assinatura-box {
-          flex: 1;
-          min-width: 200px;
-          text-align: center;
-          padding-top: 60px;
-          border-top: 1px solid #1a1a1a;
-        }
-        .contract-content strong {
-          font-weight: 600;
-        }
-        .contract-content ul, .contract-content ol {
-          margin: 12px 0;
-          padding-left: 24px;
-        }
-        .contract-content li {
-          margin-bottom: 8px;
-        }
-        
-        /* Estilos do contrato gerado pela edge function */
-        .contract-content .contract-title {
-          text-align: center;
-          margin: 30px 0;
-        }
-        .contract-content .contract-title h1 {
-          color: #8B1A1A;
-          font-size: 16pt;
-          margin: 0 0 10px 0;
-          font-weight: 600;
-        }
-        .contract-content .contract-number {
-          font-size: 12pt;
-          color: #666;
-        }
-        .contract-content .section-title {
-          background: linear-gradient(90deg, #8B1A1A, #A52020);
-          color: white;
-          padding: 10px 15px;
-          font-size: 12pt;
-          font-weight: 600;
-          margin-bottom: 15px;
-          border-radius: 4px;
-        }
-        .contract-content .info-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 15px;
-          margin: 15px 0;
-        }
-        .contract-content .info-card {
-          background: #f8f9fa;
-          border: 1px solid #e9ecef;
-          border-radius: 8px;
-          padding: 15px;
-        }
-        .contract-content .info-card-title {
-          font-weight: 600;
-          color: #8B1A1A;
-          margin-bottom: 10px;
-          font-size: 11pt;
-          border-bottom: 2px solid #8B1A1A;
-          padding-bottom: 5px;
-        }
-        .contract-content .info-row {
-          display: flex;
-          justify-content: space-between;
-          padding: 5px 0;
-          border-bottom: 1px dotted #ddd;
-        }
-        .contract-content .info-row:last-child {
-          border-bottom: none;
-        }
-        .contract-content .info-label {
-          color: #666;
-          font-size: 10pt;
-        }
-        .contract-content .info-value {
-          font-weight: 500;
-          color: #1a1a1a;
-          text-align: right;
-          font-size: 10pt;
-        }
-        
-        /* Seção de assinaturas */
-        .contract-content .signature-section {
-          margin-top: 60px;
-          page-break-inside: avoid;
-        }
-        .contract-content .signatures-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 40px;
-          margin-top: 30px;
-        }
-        .contract-content .signature-box {
-          text-align: center;
-          padding-top: 10px;
-        }
-        .contract-content .signature-line {
-          border-top: 1px solid #333;
-          margin-top: 60px;
-          padding-top: 10px;
-        }
-        .contract-content .signature-name {
-          font-weight: 600;
-          font-size: 11pt;
-          margin-bottom: 4px;
-        }
-        .contract-content .signature-role {
-          font-size: 10pt;
-          color: #666;
-        }
-        .contract-content .signature-doc {
-          font-size: 9pt;
-          color: #888;
-        }
-        .contract-content .witnesses-section {
-          margin-top: 50px;
-          page-break-inside: avoid;
-        }
-        .contract-content .witnesses-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 40px;
-          margin-top: 20px;
-        }
-        .contract-content .witness-box {
-          text-align: center;
-        }
-        .contract-content .witness-line {
-          border-top: 1px solid #333;
-          margin-top: 50px;
-          padding-top: 10px;
-        }
-        
-        /* RESPONSIVO MOBILE */
-        @media (max-width: 768px) {
-          .contract-content {
-            font-size: 9pt !important;
-          }
-          .contract-content .header-container {
-            width: calc(100% + 24px);
-            margin: -12px -12px 15px -12px;
-          }
-          .contract-content h1 {
-            font-size: 14px;
-          }
-          .contract-content h2 {
-            font-size: 12px;
-          }
-          .contract-content .info-grid {
-            display: block !important;
-          }
-          .contract-content .info-card {
-            margin-bottom: 12px;
-          }
-          .contract-content .signatures-grid,
-          .contract-content .witnesses-grid {
-            display: block !important;
-          }
-          .contract-content .signature-box,
-          .contract-content .witness-box {
-            margin-bottom: 30px;
-          }
-          .contract-content table {
-            display: block;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            font-size: 8pt;
-          }
-          .contract-content table th,
-          .contract-content table td {
-            padding: 6px 8px;
-            white-space: nowrap;
-            min-width: 60px;
-          }
-          .contract-content ul, .contract-content ol {
-            padding-left: 16px;
-          }
-          .contract-content .section-title {
-            font-size: 10pt !important;
-            padding: 8px 10px !important;
-          }
-        }
-      `}</style>
     </div>
   );
 };
-
-export default ContractFullPreview;

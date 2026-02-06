@@ -33,29 +33,16 @@ interface ContractData {
 
 export class ContractPDFExporter {
   /**
-   * Captura o elemento HTML do preview e converte para PDF
-   * Isso garante que o PDF seja IDÊNTICO ao que é mostrado na tela
+   * VERSÃO 3.0 - Canvas Único com Pontos de Quebra Seguros
    * 
-   * VERSÃO 2.0: Paginação inteligente por seções DOM
-   * Nunca corta frases, tabelas ou cláusulas no meio
+   * Captura TODO o HTML em um canvas único e divide em páginas
+   * usando pontos de quebra seguros (entre linhas de tabela, parágrafos, etc.)
+   * Isso evita distorção vertical e cortes no meio de elementos.
    */
   static async exportFromElement(element: HTMLElement, filename: string): Promise<void> {
     try {
-      console.log('📄 [ContractPDFExporter] Iniciando exportação com paginação inteligente...');
+      console.log('📄 [ContractPDFExporter v3.0] Iniciando exportação com pontos de quebra seguros...');
       
-      // Identificar todas as seções do contrato
-      const sections = element.querySelectorAll('.section, .signature-section, .witnesses-section, .contract-title, .header-container, .footer');
-      
-      console.log(`📋 [ContractPDFExporter] ${sections.length} seções identificadas`);
-
-      // Se não encontrar seções marcadas, usar método de fallback com recorte melhorado
-      if (sections.length === 0) {
-        console.log('⚠️ [ContractPDFExporter] Nenhuma seção encontrada, usando método de fallback');
-        return this.exportWithSmartCrop(element, filename);
-      }
-
-      const sectionsArray = Array.from(sections);
-
       // Dimensões A4 em mm
       const pageWidthMM = 210;
       const pageHeightMM = 297;
@@ -63,192 +50,108 @@ export class ContractPDFExporter {
       const contentWidthMM = pageWidthMM - (marginMM * 2); // 186mm
       const contentHeightMM = pageHeightMM - (marginMM * 2); // 273mm
       
-      // Escala aproximada: elemento renderizado a 794px de largura
-      const renderWidth = 794;
-      const pxPerMM = renderWidth / contentWidthMM;
-      const maxPageHeightPx = contentHeightMM * pxPerMM; // ~1165px por página
-
-      console.log(`📏 [ContractPDFExporter] Altura máxima por página: ${Math.round(maxPageHeightPx)}px`);
-
-      // Agrupar seções em páginas lógicas
-      const pages: Element[][] = [];
-      let currentPage: Element[] = [];
-      let currentHeightPx = 0;
-
-      for (let i = 0; i < sectionsArray.length; i++) {
-        const section = sectionsArray[i] as HTMLElement;
-        const sectionRect = section.getBoundingClientRect();
-        const sectionHeightPx = sectionRect.height;
-
-        // Se adicionar esta seção ultrapassar a altura da página
-        if (currentHeightPx + sectionHeightPx > maxPageHeightPx && currentPage.length > 0) {
-          console.log(`📄 [ContractPDFExporter] Página ${pages.length + 1} fechada com ${currentPage.length} seções`);
-          pages.push([...currentPage]);
-          currentPage = [];
-          currentHeightPx = 0;
+      // Criar container temporário com largura fixa
+      const tempContainer = document.createElement('div');
+      tempContainer.style.cssText = `
+        position: fixed;
+        left: -9999px;
+        top: 0;
+        width: 794px;
+        background: white;
+        padding: 40px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 11pt;
+        line-height: 1.6;
+        color: #1a1a1a;
+      `;
+      
+      // Clonar conteúdo e adicionar estilos para word-break
+      const style = document.createElement('style');
+      style.textContent = `
+        * { box-sizing: border-box; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { 
+          word-break: break-word; 
+          overflow-wrap: break-word; 
+          padding: 8px 10px; 
+          border: 1px solid #d1d5db; 
         }
+        p, .info-value { 
+          word-break: break-word; 
+          overflow-wrap: break-word; 
+        }
+      `;
+      tempContainer.appendChild(style);
+      
+      const contentClone = element.cloneNode(true) as HTMLElement;
+      tempContainer.appendChild(contentClone);
+      document.body.appendChild(tempContainer);
 
-        currentPage.push(section);
-        currentHeightPx += sectionHeightPx;
-      }
+      // Aguardar renderização
+      await new Promise(r => setTimeout(r, 100));
 
-      // Última página
-      if (currentPage.length > 0) {
-        pages.push(currentPage);
-      }
-
-      console.log(`📊 [ContractPDFExporter] Total: ${pages.length} páginas geradas`);
-
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
+      // Capturar canvas completo
+      console.log('📸 [ContractPDFExporter v3.0] Capturando canvas completo...');
+      
+      const fullCanvas = await html2canvas(tempContainer, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: 794
       });
 
-      // Renderizar cada página
-      for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
-        if (pageIndex > 0) {
-          pdf.addPage();
+      console.log(`📐 [ContractPDFExporter v3.0] Canvas: ${fullCanvas.width}x${fullCanvas.height}px`);
+
+      // Identificar pontos de quebra seguros
+      const breakableElements = tempContainer.querySelectorAll(
+        'tr, p, .section, .clause, .info-row, .signature-section, .witnesses-section, h2, h3, .section-title'
+      );
+      
+      const containerRect = tempContainer.getBoundingClientRect();
+      const elementBottoms: number[] = [];
+      
+      breakableElements.forEach(el => {
+        const rect = (el as HTMLElement).getBoundingClientRect();
+        const relativeBottom = rect.bottom - containerRect.top;
+        elementBottoms.push(relativeBottom);
+      });
+      
+      const sortedBreaks = [...new Set(elementBottoms)].sort((a, b) => a - b);
+      console.log(`📍 [ContractPDFExporter v3.0] ${sortedBreaks.length} pontos de quebra identificados`);
+
+      // Configurações de escala
+      const canvasScale = 2;
+      const domWidthPx = 794;
+      const pxPerMM = domWidthPx / contentWidthMM;
+      const maxDomHeightPerPage = contentHeightMM * pxPerMM;
+
+      // Calcular quebras de página
+      const pageBreaks: number[] = [0];
+      let lastBreak = 0;
+      
+      for (const breakPoint of sortedBreaks) {
+        if (breakPoint - lastBreak > maxDomHeightPerPage) {
+          const previousSafe = sortedBreaks
+            .filter(bp => bp > lastBreak && bp <= lastBreak + maxDomHeightPerPage)
+            .pop();
+          
+          if (previousSafe && previousSafe !== lastBreak) {
+            pageBreaks.push(previousSafe);
+            lastBreak = previousSafe;
+          } else {
+            pageBreaks.push(lastBreak + maxDomHeightPerPage);
+            lastBreak = lastBreak + maxDomHeightPerPage;
+          }
         }
-
-        // Criar container temporário para esta página
-        const pageContainer = document.createElement('div');
-        pageContainer.style.cssText = `
-          width: ${renderWidth}px;
-          background: white;
-          padding: 40px;
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          font-size: 11pt;
-          line-height: 1.6;
-          color: #1a1a1a;
-          position: fixed;
-          left: -9999px;
-          top: 0;
-        `;
-
-        // Copiar as seções desta página
-        pages[pageIndex].forEach(section => {
-          const clone = section.cloneNode(true) as HTMLElement;
-          clone.style.marginBottom = '16px';
-          pageContainer.appendChild(clone);
-        });
-
-        document.body.appendChild(pageContainer);
-
-        // Capturar com html2canvas
-        const canvas = await html2canvas(pageContainer, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          width: renderWidth,
-        });
-
-        document.body.removeChild(pageContainer);
-
-        // Calcular altura proporcional em mm
-        const imgHeightMM = (canvas.height / canvas.width) * contentWidthMM;
-
-        // Adicionar ao PDF
-        const imgData = canvas.toDataURL('image/jpeg', 0.92);
-        pdf.addImage(imgData, 'JPEG', marginMM, marginMM, contentWidthMM, Math.min(imgHeightMM, contentHeightMM));
-
-        console.log(`✅ [ContractPDFExporter] Página ${pageIndex + 1}/${pages.length} renderizada`);
       }
-
-      pdf.save(filename);
-      console.log('✅ [ContractPDFExporter] PDF exportado com sucesso!');
-    } catch (error) {
-      console.error('❌ [ContractPDFExporter] Erro ao gerar PDF:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Método de fallback com recorte inteligente
-   * Usado quando não há seções marcadas no HTML
-   */
-  static async exportWithSmartCrop(element: HTMLElement, filename: string): Promise<void> {
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-      windowWidth: element.scrollWidth,
-      windowHeight: element.scrollHeight,
-    });
-
-    const a4WidthMM = 210;
-    const a4HeightMM = 297;
-    const marginMM = 12;
-    const contentWidthMM = a4WidthMM - (marginMM * 2);
-    const contentHeightMM = a4HeightMM - (marginMM * 2);
-
-    const pxPerMM = canvas.width / contentWidthMM;
-    const pageHeightPx = contentHeightMM * pxPerMM;
-    const totalPages = Math.ceil(canvas.height / pageHeightPx);
-
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
-
-    for (let page = 0; page < totalPages; page++) {
-      if (page > 0) pdf.addPage();
-
-      const srcY = page * pageHeightPx;
-      const srcHeight = Math.min(pageHeightPx, canvas.height - srcY);
-
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = srcHeight;
       
-      const ctx = tempCanvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-        ctx.drawImage(canvas, 0, srcY, canvas.width, srcHeight, 0, 0, canvas.width, srcHeight);
+      const totalDomHeight = tempContainer.scrollHeight;
+      if (pageBreaks[pageBreaks.length - 1] < totalDomHeight) {
+        pageBreaks.push(totalDomHeight);
       }
 
-      const pageImgData = tempCanvas.toDataURL('image/jpeg', 0.92);
-      const destHeightMM = srcHeight / pxPerMM;
-      pdf.addImage(pageImgData, 'JPEG', marginMM, marginMM, contentWidthMM, destHeightMM);
-    }
-
-    pdf.save(filename);
-  }
-
-  /**
-   * Gera PDF do elemento HTML e retorna como base64
-   * Usado para enviar ao ClickSign
-   * 
-   * VERSÃO 2.0: Paginação inteligente por seções DOM
-   * Identifica seções com .section, .signature-section, etc.
-   * Garante que nenhuma seção seja cortada no meio
-   */
-  static async generateBase64FromElement(element: HTMLElement): Promise<string> {
-    try {
-      console.log('📄 [ContractPDFExporter] Gerando PDF base64 com paginação inteligente...');
-      
-      // Dimensões A4 em mm
-      const a4WidthMM = 210;
-      const a4HeightMM = 297;
-      const marginMM = 12;
-      const contentWidthMM = a4WidthMM - (marginMM * 2); // 186mm
-      const contentHeightMM = a4HeightMM - (marginMM * 2); // 273mm
-
-      // Identificar todas as seções do contrato (mesmos seletores do HTML gerado)
-      const sections = element.querySelectorAll('.section, .signature-section, .witnesses-section, .contract-title, .header-container, .footer, .contract-section');
-      console.log(`📋 [ContractPDFExporter] ${sections.length} seções identificadas`);
-
-      // Se não encontrar seções marcadas, usar método de recorte melhorado
-      if (sections.length === 0) {
-        console.log('⚠️ [ContractPDFExporter] Nenhuma seção encontrada, usando método de fallback');
-        return this.generateBase64WithCrop(element);
-      }
-
-      const sectionsArray = Array.from(sections);
+      console.log(`📄 [ContractPDFExporter v3.0] ${pageBreaks.length - 1} páginas calculadas`);
 
       // Criar PDF
       const pdf = new jsPDF({
@@ -257,156 +160,206 @@ export class ContractPDFExporter {
         format: 'a4',
       });
 
-      // Escala para conversão px -> mm
-      const renderWidthPx = 794;
-      const pxPerMM = renderWidthPx / contentWidthMM;
-      const maxPageHeightPx = contentHeightMM * pxPerMM; // ~1165px
-
-      console.log(`📏 [ContractPDFExporter] Altura máxima por página: ${Math.round(maxPageHeightPx)}px`);
-
-      // Agrupar seções em páginas lógicas
-      const pages: Element[][] = [];
-      let currentPage: Element[] = [];
-      let currentHeightPx = 0;
-
-      for (let i = 0; i < sectionsArray.length; i++) {
-        const section = sectionsArray[i] as HTMLElement;
-        const rect = section.getBoundingClientRect();
-        const sectionHeightPx = rect.height;
-
-        // Se adicionar esta seção ultrapassar a altura da página
-        if (currentHeightPx + sectionHeightPx > maxPageHeightPx && currentPage.length > 0) {
-          console.log(`📄 [ContractPDFExporter] Página ${pages.length + 1} fechada com ${currentPage.length} seções`);
-          pages.push([...currentPage]);
-          currentPage = [];
-          currentHeightPx = 0;
-        }
-
-        currentPage.push(section);
-        currentHeightPx += sectionHeightPx;
-      }
-      
-      // Adicionar última página
-      if (currentPage.length > 0) {
-        pages.push(currentPage);
-      }
-
-      console.log(`📊 [ContractPDFExporter] Total: ${pages.length} páginas geradas`);
-
       // Renderizar cada página
-      for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+      for (let pageIndex = 0; pageIndex < pageBreaks.length - 1; pageIndex++) {
         if (pageIndex > 0) {
           pdf.addPage();
         }
 
-        // Criar container temporário para esta página
-        const tempContainer = document.createElement('div');
-        tempContainer.style.cssText = `
-          width: ${renderWidthPx}px;
-          background: white;
-          padding: 40px;
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          font-size: 11pt;
-          line-height: 1.6;
-          color: #1a1a1a;
-          position: fixed;
-          left: -9999px;
-          top: 0;
-        `;
+        const startY = pageBreaks[pageIndex];
+        const endY = pageBreaks[pageIndex + 1];
+        const sliceHeight = endY - startY;
+        
+        const canvasStartY = Math.round(startY * canvasScale);
+        const canvasSliceHeight = Math.round(sliceHeight * canvasScale);
+        const canvasWidth = fullCanvas.width;
+        
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvasWidth;
+        pageCanvas.height = canvasSliceHeight;
+        
+        const ctx = pageCanvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(
+            fullCanvas,
+            0, canvasStartY,
+            canvasWidth, canvasSliceHeight,
+            0, 0,
+            canvasWidth, canvasSliceHeight
+          );
+        }
 
-        // Copiar as seções desta página
-        pages[pageIndex].forEach(section => {
-          const clone = section.cloneNode(true) as HTMLElement;
-          clone.style.marginBottom = '16px';
-          tempContainer.appendChild(clone);
-        });
-
-        document.body.appendChild(tempContainer);
-
-        // Capturar esta página
-        const canvas = await html2canvas(tempContainer, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          width: renderWidthPx,
-        });
-
-        // Limpar
-        document.body.removeChild(tempContainer);
-
-        // Calcular altura proporcional em mm
-        const imgHeightMM = (canvas.height / canvas.width) * contentWidthMM;
-
-        // Adicionar ao PDF
-        const imgData = canvas.toDataURL('image/jpeg', 0.92);
+        const imgHeightMM = (pageCanvas.height / pageCanvas.width) * contentWidthMM;
+        const imgData = pageCanvas.toDataURL('image/jpeg', 0.92);
         pdf.addImage(imgData, 'JPEG', marginMM, marginMM, contentWidthMM, Math.min(imgHeightMM, contentHeightMM));
 
-        console.log(`✅ [ContractPDFExporter] Página ${pageIndex + 1}/${pages.length} renderizada`);
+        console.log(`✅ [ContractPDFExporter v3.0] Página ${pageIndex + 1} renderizada`);
       }
 
-      // Retornar como base64
-      const pdfBase64 = pdf.output('datauristring').split(',')[1];
-      const sizeKB = Math.round(pdfBase64.length * 0.75 / 1024);
-      console.log(`✅ [ContractPDFExporter] PDF gerado: ${pages.length} páginas, ~${sizeKB}KB`);
+      // Limpar
+      document.body.removeChild(tempContainer);
+      pdf.save(filename);
       
-      return pdfBase64;
+      console.log('✅ [ContractPDFExporter v3.0] PDF exportado com sucesso!');
     } catch (error) {
-      console.error('❌ [ContractPDFExporter] Erro ao gerar PDF:', error);
+      console.error('❌ [ContractPDFExporter v3.0] Erro ao gerar PDF:', error);
       throw error;
     }
   }
 
   /**
-   * Método de fallback com recorte simples (quando não há seções marcadas)
+   * Gera PDF do elemento HTML e retorna como base64
+   * Usado para enviar ao ClickSign
+   * 
+   * VERSÃO 3.0: Canvas único com pontos de quebra seguros
    */
-  static async generateBase64WithCrop(element: HTMLElement): Promise<string> {
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-      windowWidth: element.scrollWidth,
-      windowHeight: element.scrollHeight,
-    });
-
-    const a4WidthMM = 210;
-    const a4HeightMM = 297;
-    const marginMM = 10;
-    const contentWidthMM = a4WidthMM - (marginMM * 2);
-    const contentHeightMM = a4HeightMM - (marginMM * 2);
-
-    const pxPerMM = canvas.width / contentWidthMM;
-    const pageHeightPx = contentHeightMM * pxPerMM;
-    const totalPages = Math.ceil(canvas.height / pageHeightPx);
-
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
-
-    for (let page = 0; page < totalPages; page++) {
-      if (page > 0) pdf.addPage();
-
-      const srcY = page * pageHeightPx;
-      const srcHeight = Math.min(pageHeightPx, canvas.height - srcY);
-
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = srcHeight;
+  static async generateBase64FromElement(element: HTMLElement): Promise<string> {
+    try {
+      console.log('📄 [ContractPDFExporter v3.0] Gerando PDF base64...');
       
-      const ctx = tempCanvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(canvas, 0, srcY, canvas.width, srcHeight, 0, 0, canvas.width, srcHeight);
+      const pageWidthMM = 210;
+      const pageHeightMM = 297;
+      const marginMM = 12;
+      const contentWidthMM = pageWidthMM - (marginMM * 2);
+      const contentHeightMM = pageHeightMM - (marginMM * 2);
+      
+      // Criar container temporário
+      const tempContainer = document.createElement('div');
+      tempContainer.style.cssText = `
+        position: fixed;
+        left: -9999px;
+        top: 0;
+        width: 794px;
+        background: white;
+        padding: 40px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 11pt;
+        line-height: 1.6;
+        color: #1a1a1a;
+      `;
+      
+      const style = document.createElement('style');
+      style.textContent = `
+        * { box-sizing: border-box; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { word-break: break-word; overflow-wrap: break-word; }
+        p, .info-value { word-break: break-word; overflow-wrap: break-word; }
+      `;
+      tempContainer.appendChild(style);
+      
+      const contentClone = element.cloneNode(true) as HTMLElement;
+      tempContainer.appendChild(contentClone);
+      document.body.appendChild(tempContainer);
+
+      await new Promise(r => setTimeout(r, 100));
+
+      // Capturar canvas completo
+      const fullCanvas = await html2canvas(tempContainer, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: 794
+      });
+
+      // Identificar pontos de quebra
+      const breakableElements = tempContainer.querySelectorAll(
+        'tr, p, .section, .clause, .info-row, .signature-section, .witnesses-section, h2, h3, .section-title'
+      );
+      
+      const containerRect = tempContainer.getBoundingClientRect();
+      const elementBottoms: number[] = [];
+      
+      breakableElements.forEach(el => {
+        const rect = (el as HTMLElement).getBoundingClientRect();
+        elementBottoms.push(rect.bottom - containerRect.top);
+      });
+      
+      const sortedBreaks = [...new Set(elementBottoms)].sort((a, b) => a - b);
+
+      const canvasScale = 2;
+      const domWidthPx = 794;
+      const pxPerMM = domWidthPx / contentWidthMM;
+      const maxDomHeightPerPage = contentHeightMM * pxPerMM;
+
+      const pageBreaks: number[] = [0];
+      let lastBreak = 0;
+      
+      for (const breakPoint of sortedBreaks) {
+        if (breakPoint - lastBreak > maxDomHeightPerPage) {
+          const previousSafe = sortedBreaks
+            .filter(bp => bp > lastBreak && bp <= lastBreak + maxDomHeightPerPage)
+            .pop();
+          
+          if (previousSafe && previousSafe !== lastBreak) {
+            pageBreaks.push(previousSafe);
+            lastBreak = previousSafe;
+          } else {
+            pageBreaks.push(lastBreak + maxDomHeightPerPage);
+            lastBreak = lastBreak + maxDomHeightPerPage;
+          }
+        }
+      }
+      
+      const totalDomHeight = tempContainer.scrollHeight;
+      if (pageBreaks[pageBreaks.length - 1] < totalDomHeight) {
+        pageBreaks.push(totalDomHeight);
       }
 
-      const pageImgData = tempCanvas.toDataURL('image/jpeg', 0.92);
-      const destHeightMM = srcHeight / pxPerMM;
-      pdf.addImage(pageImgData, 'JPEG', marginMM, marginMM, contentWidthMM, destHeightMM);
-    }
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
 
-    return pdf.output('datauristring').split(',')[1];
+      for (let pageIndex = 0; pageIndex < pageBreaks.length - 1; pageIndex++) {
+        if (pageIndex > 0) {
+          pdf.addPage();
+        }
+
+        const startY = pageBreaks[pageIndex];
+        const endY = pageBreaks[pageIndex + 1];
+        const sliceHeight = endY - startY;
+        
+        const canvasStartY = Math.round(startY * canvasScale);
+        const canvasSliceHeight = Math.round(sliceHeight * canvasScale);
+        const canvasWidth = fullCanvas.width;
+        
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvasWidth;
+        pageCanvas.height = canvasSliceHeight;
+        
+        const ctx = pageCanvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(
+            fullCanvas,
+            0, canvasStartY,
+            canvasWidth, canvasSliceHeight,
+            0, 0,
+            canvasWidth, canvasSliceHeight
+          );
+        }
+
+        const imgHeightMM = (pageCanvas.height / pageCanvas.width) * contentWidthMM;
+        const imgData = pageCanvas.toDataURL('image/jpeg', 0.92);
+        pdf.addImage(imgData, 'JPEG', marginMM, marginMM, contentWidthMM, Math.min(imgHeightMM, contentHeightMM));
+      }
+
+      document.body.removeChild(tempContainer);
+
+      const pdfBase64 = pdf.output('datauristring').split(',')[1];
+      const sizeKB = Math.round(pdfBase64.length * 0.75 / 1024);
+      console.log(`✅ [ContractPDFExporter v3.0] PDF gerado: ${pageBreaks.length - 1} páginas, ~${sizeKB}KB`);
+      
+      return pdfBase64;
+    } catch (error) {
+      console.error('❌ [ContractPDFExporter v3.0] Erro ao gerar PDF:', error);
+      throw error;
+    }
   }
 
   /**
@@ -498,11 +451,31 @@ export class ContractPDFExporter {
     doc.setTextColor(colors.darkGray.r, colors.darkGray.g, colors.darkGray.b);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Valor Mensal: ${formatCurrency(contract.valor_mensal || 0)}`, margin + 5, yPos + 16);
-    doc.text(`Valor Total: ${formatCurrency(contract.valor_total || 0)}`, margin + 80, yPos + 16);
-    doc.text(`Duração: ${contract.plano_meses || 1} meses`, margin + 5, yPos + 22);
+    
+    const valorMensal = contract.valor_mensal || 0;
+    const valorTotal = contract.valor_total || 0;
+    doc.text(`Valor Mensal: ${formatCurrency(valorMensal)}`, margin + 5, yPos + 16);
+    doc.text(`Valor Total: ${formatCurrency(valorTotal)}`, margin + 5, yPos + 22);
 
     yPos += 35;
+
+    // Período
+    doc.setFillColor(colors.lightGray.r, colors.lightGray.g, colors.lightGray.b);
+    doc.roundedRect(margin, yPos, contentWidth, 20, 3, 3, 'F');
+
+    doc.setTextColor(colors.exaRed.r, colors.exaRed.g, colors.exaRed.b);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PERÍODO', margin + 5, yPos + 8);
+
+    doc.setTextColor(colors.darkGray.r, colors.darkGray.g, colors.darkGray.b);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    const dataInicio = contract.data_inicio ? formatDate(contract.data_inicio) : 'A definir';
+    const dataFim = contract.data_fim ? formatDate(contract.data_fim) : 'A definir';
+    doc.text(`De ${dataInicio} a ${dataFim} (${contract.plano_meses || 0} meses)`, margin + 5, yPos + 16);
+
+    yPos += 30;
 
     // Prédios
     const predios = contract.lista_predios || [];
@@ -510,80 +483,22 @@ export class ContractPDFExporter {
       doc.setTextColor(colors.exaRed.r, colors.exaRed.g, colors.exaRed.b);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text(`LOCAIS CONTRATADOS (${predios.length} prédios)`, margin, yPos);
-
+      doc.text('LOCAIS CONTRATADOS', margin, yPos);
       yPos += 8;
 
-      // Header da tabela
-      doc.setFillColor(colors.darkGray.r, colors.darkGray.g, colors.darkGray.b);
-      doc.rect(margin, yPos, contentWidth, 7, 'F');
-      doc.setTextColor(colors.white.r, colors.white.g, colors.white.b);
+      doc.setTextColor(colors.darkGray.r, colors.darkGray.g, colors.darkGray.b);
       doc.setFontSize(8);
-      doc.text('PRÉDIO', margin + 3, yPos + 5);
-      doc.text('BAIRRO', margin + 80, yPos + 5);
-      doc.text('TELAS', margin + 140, yPos + 5);
-
-      yPos += 9;
-
-      // Linhas da tabela
+      doc.setFont('helvetica', 'normal');
+      
       predios.forEach((predio: any, index: number) => {
         if (yPos > 270) {
           doc.addPage();
           yPos = 20;
         }
-
-        if (index % 2 === 0) {
-          doc.setFillColor(colors.lightGray.r, colors.lightGray.g, colors.lightGray.b);
-          doc.rect(margin, yPos, contentWidth, 6, 'F');
-        }
-
-        doc.setTextColor(colors.darkGray.r, colors.darkGray.g, colors.darkGray.b);
-        doc.setFontSize(8);
-        const nome = (predio.building_name || predio.nome || '').substring(0, 35);
-        const bairro = (predio.bairro || '').substring(0, 20);
-        doc.text(nome, margin + 3, yPos + 4);
-        doc.text(bairro, margin + 80, yPos + 4);
-        doc.text(String(predio.quantidade_telas || 1), margin + 140, yPos + 4);
-
-        yPos += 6;
+        doc.text(`${index + 1}. ${predio.building_name || predio.nome || 'Prédio'}`, margin + 5, yPos);
+        yPos += 5;
       });
     }
-
-    yPos += 10;
-
-    // Cláusulas resumidas
-    if (yPos > 250) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    doc.setTextColor(colors.exaRed.r, colors.exaRed.g, colors.exaRed.b);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('CLÁUSULAS PRINCIPAIS', margin, yPos);
-
-    yPos += 8;
-
-    const clauses = [
-      '1. DO OBJETO: Veiculação de publicidade em painéis digitais EXA.',
-      '2. VIGÊNCIA: Conforme período contratado.',
-      '3. PAGAMENTO: Conforme condições acordadas.',
-      '4. OBRIGAÇÕES: EXA garante exibição conforme contratado.',
-      '5. RESCISÃO: Mediante aviso prévio de 30 dias.',
-    ];
-
-    doc.setTextColor(colors.darkGray.r, colors.darkGray.g, colors.darkGray.b);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-
-    clauses.forEach((clause) => {
-      if (yPos > 280) {
-        doc.addPage();
-        yPos = 20;
-      }
-      doc.text(clause, margin, yPos);
-      yPos += 6;
-    });
 
     // Rodapé
     const pageCount = doc.getNumberOfPages();
@@ -592,15 +507,13 @@ export class ContractPDFExporter {
       doc.setFontSize(8);
       doc.setTextColor(colors.mediumGray.r, colors.mediumGray.g, colors.mediumGray.b);
       doc.text(
-        `Página ${i} de ${pageCount} | ExaMídia - Indexa Midia LTDA - CNPJ: 38.142.638/0001-30`,
+        `Página ${i} de ${pageCount} | EXA Mídia - Contrato ${contract.numero_contrato}`,
         pageWidth / 2,
         290,
         { align: 'center' }
       );
     }
 
-    doc.save(`Contrato_${contract.numero_contrato}.pdf`);
+    doc.save(`contrato-${contract.numero_contrato}.pdf`);
   }
 }
-
-export default ContractPDFExporter;

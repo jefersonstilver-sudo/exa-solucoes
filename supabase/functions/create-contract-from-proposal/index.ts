@@ -1045,6 +1045,9 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
           color: #1a1a1a;
           text-align: right;
           font-size: 10pt;
+          word-break: break-word;
+          overflow-wrap: break-word;
+          max-width: 60%;
         }
         
         .clause {
@@ -1090,6 +1093,7 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
           width: 100%;
           border-collapse: collapse;
           margin: 15px 0;
+          table-layout: fixed;
         }
         
         th {
@@ -1099,11 +1103,15 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
           text-align: left;
           font-weight: 600;
           color: #333;
+          word-break: break-word;
+          overflow-wrap: break-word;
         }
         
         td {
           padding: 8px 10px;
           border: 1px solid #ddd;
+          word-break: break-word;
+          overflow-wrap: break-word;
         }
         
         .signature-section {
