@@ -1,19 +1,56 @@
 
-# Adicionar Selecao de Lead e Multi-Select de Propostas no CreateTaskModal
 
-## O que sera feito
+# Implementar Lead, Propostas e Recorrencia no CreateTaskModal
 
-Quando o tipo de evento for **Reuniao**, o modal exibira dois novos campos logo abaixo do "Tipo de Reuniao":
+## Diagnostico: O que esta faltando
 
-1. **Busca de Lead/Contato** - Campo de busca com autocomplete que consulta a tabela `contacts` por nome, empresa ou telefone. Ao selecionar, preenche `cliente_id` da task. Pode ser usado sozinho (sem propostas).
+Apos analise completa do arquivo `CreateTaskModal.tsx` (695 linhas), confirmei que:
 
-2. **Multi-select de Propostas** - Quando um lead estiver selecionado, carrega automaticamente TODAS as propostas desse lead (filtrando por `client_phone` ou `client_name` na tabela `proposals`). O usuario pode selecionar 1, 2 ou mais propostas. Cada proposta selecionada sera salva na tabela `task_propostas` (N:N). Pode ser usado sozinho (sem lead), com busca manual por numero da proposta.
+1. **Busca de Lead** - NAO EXISTE. O campo `cliente_id` existe na tabela `tasks` mas nunca e preenchido no modal.
+2. **Multi-select de Propostas** - NAO EXISTE. A tabela `task_propostas` (N:N) ja foi criada no banco mas nao ha nenhum codigo no modal para usa-la.
+3. **Recorrencia** - NAO EXISTE. A tabela `task_rotinas` existe com campos `frequencia`, `dias_semana`, `dia_mes`, mas o modal nao tem toggle nem opcoes de recorrencia.
 
-### Regras de uso flexivel:
-- Somente lead (sem propostas) - OK
-- Somente propostas (sem lead) - OK (busca geral)
-- Lead + 1 proposta - OK
-- Lead + varias propostas - OK
+Toda a infraestrutura de banco esta pronta (tabelas `contacts`, `proposals`, `task_propostas`, `task_rotinas`, campo `cliente_id` em `tasks`). Falta apenas o codigo frontend.
+
+---
+
+## O que sera implementado
+
+### 1. Busca de Lead/Contato (autocomplete)
+
+Aparece quando `tipoEvento === 'reuniao'`, logo abaixo do "Tipo de Reuniao":
+
+- Input com icone de busca
+- Ao digitar 2+ caracteres, busca na tabela `contacts` por `nome`, `empresa` ou `telefone` (debounce 300ms, limite 8 resultados)
+- Dropdown mostrando: nome, empresa, temperatura (badge colorido)
+- Ao selecionar: exibe badge com nome + empresa e botao X para remover
+- Ao remover lead: limpa propostas selecionadas tambem
+- Campo OPCIONAL - pode criar reuniao sem lead
+
+**Dados disponiveis na tabela `contacts`:**
+- `id`, `nome`, `sobrenome`, `empresa`, `telefone`, `email`, `temperatura`
+
+### 2. Multi-select de Propostas
+
+Aparece abaixo do campo de lead quando `tipoEvento === 'reuniao'`:
+
+- Quando lead selecionado: busca automatica na tabela `proposals` filtrando por `client_phone` (match com telefone do lead) ou `client_name` (match com nome do lead)
+- Lista de checkboxes com cada proposta encontrada
+- Cada item mostra: numero (ex: EXA-2026-8549), status (badge), valor mensal (R$ formatado)
+- Pode selecionar 1, 2 ou quantas quiser
+- Sem lead selecionado: mensagem "Selecione um lead para ver propostas vinculadas"
+- Campo OPCIONAL - pode ter lead sem propostas
+
+**Dados disponiveis na tabela `proposals`:**
+- `id`, `number`, `client_name`, `client_phone`, `status`, `fidel_monthly_value`, `duration_months`
+
+### 3. Toggle de Recorrencia
+
+Aparece para TODOS os tipos de evento, antes da descricao:
+
+- Switch "Tarefa recorrente" (on/off)
+- Quando ativado, mostra select de frequencia: Diaria, Semanal, Mensal
+- Informativo de que tarefas recorrentes serao geradas automaticamente
 
 ---
 
@@ -23,52 +60,36 @@ Quando o tipo de evento for **Reuniao**, o modal exibira dois novos campos logo 
 `src/components/admin/agenda/CreateTaskModal.tsx`
 
 ### Novos estados
-```typescript
-const [searchLead, setSearchLead] = useState('');
-const [selectedLead, setSelectedLead] = useState<{id: string; nome: string; empresa?: string; telefone?: string} | null>(null);
-const [leadResults, setLeadResults] = useState([]);
-const [selectedPropostas, setSelectedPropostas] = useState<string[]>([]);
+
+```text
+searchLead (string) - texto digitado na busca
+selectedLead (objeto ou null) - lead selecionado {id, nome, empresa, telefone}
+leadResults (array) - resultados da busca
+showLeadDropdown (boolean) - controlar visibilidade do dropdown
+leadPropostas (array) - propostas encontradas para o lead
+selectedPropostas (string[]) - IDs das propostas selecionadas
+isRecorrente (boolean) - toggle de recorrencia
+frequenciaRecorrencia (string) - 'diaria' | 'semanal' | 'mensal'
 ```
 
-### Query 1: Busca de leads
-Quando `searchLead` tiver 2+ caracteres, buscar na tabela `contacts`:
-```sql
-SELECT id, nome, sobrenome, empresa, telefone, email, temperatura
-FROM contacts
-WHERE nome ILIKE '%termo%' OR empresa ILIKE '%termo%' OR telefone ILIKE '%termo%'
-LIMIT 8
-```
-Debounce de 300ms. Exibir como dropdown abaixo do input.
+### Logica de busca de leads (useEffect com debounce)
 
-### Query 2: Propostas do lead selecionado
-Quando `selectedLead` mudar, buscar propostas:
-```sql
-SELECT id, number, status, fidel_monthly_value, client_name, duration_months
-FROM proposals
-WHERE client_phone = lead.telefone OR client_name ILIKE lead.nome
-ORDER BY created_at DESC
-```
+Quando `searchLead` tem 2+ caracteres e `tipoEvento === 'reuniao'`:
+- Query: `supabase.from('contacts').select('id, nome, sobrenome, empresa, telefone, email, temperatura').or('nome.ilike.%termo%,empresa.ilike.%termo%,telefone.ilike.%termo%').limit(8)`
+- Debounce 300ms via setTimeout
 
-### UI dos novos campos (abaixo do "Tipo de Reuniao")
+### Logica de busca de propostas (useEffect)
 
-**Lead:**
-- Input com icone de busca
-- Dropdown com resultados (nome, empresa, temperatura como badge colorido)
-- Ao selecionar: exibir badge com nome + empresa e botao X para remover
-- Ao remover lead: limpar propostas selecionadas
+Quando `selectedLead` muda e tem valor:
+- Query: `supabase.from('proposals').select('id, number, status, fidel_monthly_value, client_name, duration_months').or('client_phone.eq.lead.telefone,client_name.ilike.%lead.nome%').order('created_at', { ascending: false })`
 
-**Propostas:**
-- Se lead selecionado: lista de checkboxes com propostas encontradas
-- Cada item mostra: numero (EXA-2025-XXXX), status (badge), valor mensal (R$)
-- Se nao houver lead: mensagem "Selecione um lead para ver propostas vinculadas"
-- Pode selecionar 1, 2 ou mais
+### Mutacao atualizada
 
-### Salvamento (mutacao atualizada)
+1. Trocar `.insert({...})` por `.insert({...}).select('id').single()` para obter o ID da task
+2. Incluir `cliente_id: selectedLead?.id || null` no insert
+3. Apos criar task, inserir em `task_propostas`:
 
-1. Alterar insert para `.insert({...}).select('id').single()` para obter o ID da task criada
-2. Setar `cliente_id: selectedLead?.id || null` no insert
-3. Apos obter `task.id`, inserir em `task_propostas`:
-```typescript
+```text
 if (selectedPropostas.length > 0) {
   await supabase.from('task_propostas').insert(
     selectedPropostas.map(pid => ({ task_id: taskId, proposta_id: pid }))
@@ -76,10 +97,28 @@ if (selectedPropostas.length > 0) {
 }
 ```
 
-### Reset do form
-Adicionar `setSelectedLead(null)`, `setSelectedPropostas([])`, `setSearchLead('')`, `setLeadResults([])`.
+### Reset do formulario
 
-### Campos condicionais
-Os novos campos so aparecem quando `tipoEvento === 'reuniao'`. Nenhum outro tipo de evento e afetado.
+Adicionar limpeza: `setSelectedLead(null)`, `setSelectedPropostas([])`, `setSearchLead('')`, `setLeadResults([])`, `setLeadPropostas([])`, `setIsRecorrente(false)`, `setFrequenciaRecorrencia('semanal')`.
 
-Nenhum outro arquivo sera modificado.
+### Posicao dos novos campos no formulario
+
+```text
+1. Tipo de Evento (ja existe)
+2. Subtipo de Reuniao (ja existe, condicional)
+3. >>> NOVO: Busca de Lead (condicional: tipoEvento === 'reuniao')
+4. >>> NOVO: Multi-select Propostas (condicional: tipoEvento === 'reuniao')
+5. Titulo (ja existe)
+6. Data/Hora (ja existe)
+7. Prioridade (ja existe)
+8. Responsaveis (ja existe)
+9. Alertas WhatsApp (ja existe)
+10. >>> NOVO: Toggle Recorrencia (todos os tipos)
+11. Descricao (ja existe)
+12. Botoes (ja existe)
+```
+
+### Nenhum outro arquivo sera modificado
+
+Apenas `CreateTaskModal.tsx` sera alterado. Todas as demais paginas (Minha Manha, Central de Tarefas, Agenda) continuam funcionando normalmente.
+
