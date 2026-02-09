@@ -2,25 +2,10 @@ import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
-import TaskCard from './TaskCard';
-
-interface NotionTask {
-  id: string;
-  nome: string;
-  prioridade: string | null;
-  status: string | null;
-  responsavel: string | null;
-  responsavel_avatar: string | null;
-  data: string | null;
-  finalizado_por: string | null;
-  categoria: string | null;
-  notion_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import TaskCard, { type AgendaTask } from './TaskCard';
 
 interface DraggableTaskCardProps {
-  task: NotionTask;
+  task: AgendaTask;
   showCompleteButton?: boolean;
 }
 
@@ -42,7 +27,6 @@ const DraggableTaskCard = ({ task, showCompleteButton = true }: DraggableTaskCar
       style={style} 
       className={`relative group ${isDragging ? 'z-50' : ''}`}
     >
-      {/* Drag handle indicator */}
       <div 
         {...listeners} 
         {...attributes}

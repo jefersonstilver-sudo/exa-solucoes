@@ -8,31 +8,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
-  AlertCircle, 
   CheckCircle, 
   Clock, 
   Calendar,
   AlertTriangle,
-  ExternalLink
 } from 'lucide-react';
-import { format, parseISO, isBefore } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import TaskCard from './TaskCard';
-
-interface NotionTask {
-  id: string;
-  nome: string;
-  prioridade: string | null;
-  status: string | null;
-  responsavel: string | null;
-  responsavel_avatar: string | null;
-  data: string | null;
-  finalizado_por: string | null;
-  categoria: string | null;
-  notion_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import TaskCard, { type AgendaTask } from './TaskCard';
 
 type FilterType = 'pending' | 'overdue' | 'completed' | 'today';
 
@@ -40,7 +21,7 @@ interface TaskListModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   filterType: FilterType;
-  tasks: NotionTask[];
+  tasks: AgendaTask[];
   onTaskComplete?: (taskId: string) => void;
 }
 
