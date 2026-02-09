@@ -120,7 +120,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   // Form state
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
-  const [dataPrevista, setDataPrevista] = useState<Date | undefined>();
+  const [datasPrevistas, setDatasPrevistas] = useState<Date[]>([]);
   const [horarioLimite, setHorarioLimite] = useState('');
   const [prioridade, setPrioridade] = useState<string>('media');
   const [responsaveisIds, setResponsaveisIds] = useState<string[]>([]);
@@ -284,48 +284,56 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Usuário não autenticado');
+      if (datasPrevistas.length === 0) throw new Error('Selecione pelo menos 1 data');
 
-      const { data: taskData, error } = await supabase
-        .from('tasks')
-        .insert({
-          titulo,
-          descricao: descricao || null,
-          data_prevista: dataPrevista ? format(dataPrevista, 'yyyy-MM-dd') : null,
-          horario_limite: horarioLimite || null,
-          horario_inicio: horarioInicio || null,
-          prioridade: prioridade as 'emergencia' | 'alta' | 'media' | 'baixa',
-          status: 'pendente' as const,
-          origem: 'manual' as const,
-          todos_responsaveis: responsaveisIds.length === 0,
-          created_by: user.id,
-          tipo_evento: tipoEvento,
-          subtipo_reuniao: subtipoReuniao || null,
-          local_evento: localEvento || null,
-          link_reuniao: linkReuniao || null,
-          escopo,
-          cliente_id: selectedLead?.id || null,
-        })
-        .select('id')
-        .single();
-      
-      if (error) throw error;
+      const baseFields = {
+        titulo,
+        descricao: descricao || null,
+        horario_limite: horarioLimite || null,
+        horario_inicio: horarioInicio || null,
+        prioridade: prioridade as 'emergencia' | 'alta' | 'media' | 'baixa',
+        status: 'pendente' as const,
+        origem: 'manual' as const,
+        todos_responsaveis: responsaveisIds.length === 0,
+        created_by: user.id,
+        tipo_evento: tipoEvento,
+        subtipo_reuniao: subtipoReuniao || null,
+        local_evento: localEvento || null,
+        link_reuniao: linkReuniao || null,
+        escopo,
+        cliente_id: selectedLead?.id || null,
+      };
 
-      const taskId = taskData?.id;
+      for (const data of datasPrevistas) {
+        const { data: taskData, error } = await supabase
+          .from('tasks')
+          .insert({
+            ...baseFields,
+            data_prevista: format(data, 'yyyy-MM-dd'),
+          })
+          .select('id')
+          .single();
 
-      // Salvar propostas vinculadas (N:N)
-      if (taskId && selectedPropostas.length > 0) {
-        const { error: propError } = await supabase
-          .from('task_propostas')
-          .insert(
-            selectedPropostas.map(pid => ({ task_id: taskId, proposta_id: pid }))
-          );
-        if (propError) {
-          console.error('Erro ao vincular propostas:', propError);
+        if (error) throw error;
+
+        const taskId = taskData?.id;
+
+        // Vincular propostas para cada task criada
+        if (taskId && selectedPropostas.length > 0) {
+          const { error: propError } = await supabase
+            .from('task_propostas')
+            .insert(
+              selectedPropostas.map(pid => ({ task_id: taskId, proposta_id: pid }))
+            );
+          if (propError) {
+            console.error('Erro ao vincular propostas:', propError);
+          }
         }
       }
     },
     onSuccess: () => {
-      toast.success('Tarefa criada com sucesso!');
+      const count = datasPrevistas.length;
+      toast.success(count > 1 ? `${count} tarefas criadas com sucesso!` : 'Tarefa criada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['minha-manha-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['central-tarefas'] });
       queryClient.invalidateQueries({ queryKey: ['agenda-tasks'] });
@@ -340,7 +348,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   const resetForm = () => {
     setTitulo('');
     setDescricao('');
-    setDataPrevista(undefined);
+    setDatasPrevistas([]);
     setHorarioLimite('');
     setPrioridade('media');
     setResponsaveisIds([]);
@@ -363,10 +371,27 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
     setFrequenciaRecorrencia('semanal');
   };
 
+  const addDataPrevista = (date: Date | undefined) => {
+    if (!date) return;
+    // Evitar duplicatas
+    const exists = datasPrevistas.some(d => format(d, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
+    if (!exists) {
+      setDatasPrevistas(prev => [...prev, date]);
+    }
+  };
+
+  const removeDataPrevista = (index: number) => {
+    setDatasPrevistas(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!titulo.trim()) {
       toast.error('O título da tarefa é obrigatório');
+      return;
+    }
+    if (datasPrevistas.length === 0) {
+      toast.error('Selecione pelo menos 1 data');
       return;
     }
     createMutation.mutate();
@@ -658,46 +683,92 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
         />
       </div>
 
-      {/* Data e Hora - Layout mais destacado */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="space-y-2">
-          <Label className="flex items-center gap-1.5 text-sm font-medium">
-            <CalendarIcon className="h-3.5 w-3.5 text-primary" />
-            Data
-          </Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal h-11 border-2",
-                  !dataPrevista && "text-muted-foreground",
-                  dataPrevista && "border-primary/30 bg-primary/5"
-                )}
-              >
-                {dataPrevista ? (
-                  <span className="font-medium">{format(dataPrevista, "dd/MM/yyyy", { locale: ptBR })}</span>
-                ) : (
-                  "Selecionar"
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={dataPrevista}
-                onSelect={setDataPrevista}
-                initialFocus
-                locale={ptBR}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+      {/* Datas e Hora */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-1.5 text-sm font-medium">
+          <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+          Datas *
+        </Label>
 
+        {/* Lista de datas selecionadas */}
+        {datasPrevistas.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {datasPrevistas.map((data, index) => (
+              <div
+                key={index}
+                className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-primary rounded-full px-3 py-1 text-sm font-medium"
+              >
+                <CalendarIcon className="h-3 w-3" />
+                {format(data, "dd/MM/yyyy", { locale: ptBR })}
+                {datasPrevistas.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeDataPrevista(index)}
+                    className="ml-0.5 p-0.5 rounded-full hover:bg-destructive/20 hover:text-destructive transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Botão para adicionar data */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal h-11 border-2 border-dashed",
+                datasPrevistas.length === 0 && "text-muted-foreground"
+              )}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {datasPrevistas.length === 0 ? 'Selecionar data' : 'Adicionar outra data'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={undefined}
+              onSelect={addDataPrevista}
+              initialFocus
+              locale={ptBR}
+              className="pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
+
+        {datasPrevistas.length > 1 && (
+          <p className="text-xs text-muted-foreground">
+            ℹ️ Será criada uma tarefa idêntica para cada data selecionada ({datasPrevistas.length} tarefas)
+          </p>
+        )}
+      </div>
+
+      {/* Horários */}
+      <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label className="flex items-center gap-1.5 text-sm font-medium">
             <Clock className="h-3.5 w-3.5 text-primary" />
-            Hora
+            Hora Início
+          </Label>
+          <Input
+            type="time"
+            value={horarioInicio}
+            onChange={(e) => setHorarioInicio(e.target.value)}
+            className={cn(
+              "h-11 border-2",
+              horarioInicio && "border-primary/30 bg-primary/5"
+            )}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1.5 text-sm font-medium">
+            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+            Hora Limite
           </Label>
           <Input
             type="time"
@@ -918,7 +989,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
               />
             </div>
 
-            {!dataPrevista && !horarioLimite && (
+            {datasPrevistas.length === 0 && !horarioLimite && (
               <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
                 ⚠️ Defina data e hora para os alertas funcionarem
               </p>
