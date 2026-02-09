@@ -1,124 +1,80 @@
 
 
-# Implementar Lead, Propostas e Recorrencia no CreateTaskModal
+# Adicionar Multiplas Datas Personalizadas no CreateTaskModal
 
-## Diagnostico: O que esta faltando
+## O que sera feito
 
-Apos analise completa do arquivo `CreateTaskModal.tsx` (695 linhas), confirmei que:
+Permitir que o usuario selecione **2, 3 ou mais datas** ao criar uma tarefa. Em vez de um unico date picker, havera um sistema de "adicionar datas" com botao "+".
 
-1. **Busca de Lead** - NAO EXISTE. O campo `cliente_id` existe na tabela `tasks` mas nunca e preenchido no modal.
-2. **Multi-select de Propostas** - NAO EXISTE. A tabela `task_propostas` (N:N) ja foi criada no banco mas nao ha nenhum codigo no modal para usa-la.
-3. **Recorrencia** - NAO EXISTE. A tabela `task_rotinas` existe com campos `frequencia`, `dias_semana`, `dia_mes`, mas o modal nao tem toggle nem opcoes de recorrencia.
+## Como funciona
 
-Toda a infraestrutura de banco esta pronta (tabelas `contacts`, `proposals`, `task_propostas`, `task_rotinas`, campo `cliente_id` em `tasks`). Falta apenas o codigo frontend.
+Como a tabela `tasks` tem apenas **um campo `data_prevista`** (uma data por registro), a abordagem sera:
 
----
+- O usuario seleciona varias datas no modal (ex: 10/02, 12/02, 15/02)
+- Ao salvar, o sistema cria **uma task identica para cada data** selecionada
+- Todas as tasks terao o mesmo titulo, descricao, responsaveis, lead, propostas, etc.
+- Isso garante que cada data aparece corretamente no calendario/agenda sem alterar o banco de dados
 
-## O que sera implementado
+## Interface do usuario
 
-### 1. Busca de Lead/Contato (autocomplete)
-
-Aparece quando `tipoEvento === 'reuniao'`, logo abaixo do "Tipo de Reuniao":
-
-- Input com icone de busca
-- Ao digitar 2+ caracteres, busca na tabela `contacts` por `nome`, `empresa` ou `telefone` (debounce 300ms, limite 8 resultados)
-- Dropdown mostrando: nome, empresa, temperatura (badge colorido)
-- Ao selecionar: exibe badge com nome + empresa e botao X para remover
-- Ao remover lead: limpa propostas selecionadas tambem
-- Campo OPCIONAL - pode criar reuniao sem lead
-
-**Dados disponiveis na tabela `contacts`:**
-- `id`, `nome`, `sobrenome`, `empresa`, `telefone`, `email`, `temperatura`
-
-### 2. Multi-select de Propostas
-
-Aparece abaixo do campo de lead quando `tipoEvento === 'reuniao'`:
-
-- Quando lead selecionado: busca automatica na tabela `proposals` filtrando por `client_phone` (match com telefone do lead) ou `client_name` (match com nome do lead)
-- Lista de checkboxes com cada proposta encontrada
-- Cada item mostra: numero (ex: EXA-2026-8549), status (badge), valor mensal (R$ formatado)
-- Pode selecionar 1, 2 ou quantas quiser
-- Sem lead selecionado: mensagem "Selecione um lead para ver propostas vinculadas"
-- Campo OPCIONAL - pode ter lead sem propostas
-
-**Dados disponiveis na tabela `proposals`:**
-- `id`, `number`, `client_name`, `client_phone`, `status`, `fidel_monthly_value`, `duration_months`
-
-### 3. Toggle de Recorrencia
-
-Aparece para TODOS os tipos de evento, antes da descricao:
-
-- Switch "Tarefa recorrente" (on/off)
-- Quando ativado, mostra select de frequencia: Diaria, Semanal, Mensal
-- Informativo de que tarefas recorrentes serao geradas automaticamente
-
----
+1. O campo "Data" atual sera substituido por uma lista de datas com botao "+" para adicionar mais
+2. Cada data pode ser removida individualmente (botao X)
+3. Pelo menos 1 data e obrigatoria
+4. Sem limite maximo, mas visualmente otimizado para 2-5 datas
+5. Hora inicio e hora limite aplicam-se a todas as datas igualmente
 
 ## Detalhes Tecnicos
 
 ### Arquivo modificado
 `src/components/admin/agenda/CreateTaskModal.tsx`
 
-### Novos estados
+### Mudanca de estado
 
-```text
-searchLead (string) - texto digitado na busca
-selectedLead (objeto ou null) - lead selecionado {id, nome, empresa, telefone}
-leadResults (array) - resultados da busca
-showLeadDropdown (boolean) - controlar visibilidade do dropdown
-leadPropostas (array) - propostas encontradas para o lead
-selectedPropostas (string[]) - IDs das propostas selecionadas
-isRecorrente (boolean) - toggle de recorrencia
-frequenciaRecorrencia (string) - 'diaria' | 'semanal' | 'mensal'
+Trocar:
+```
+const [dataPrevista, setDataPrevista] = useState<Date | undefined>();
+```
+Por:
+```
+const [datasPrevistas, setDatasPrevistas] = useState<Date[]>([]);
 ```
 
-### Logica de busca de leads (useEffect com debounce)
+### Nova UI de datas
 
-Quando `searchLead` tem 2+ caracteres e `tipoEvento === 'reuniao'`:
-- Query: `supabase.from('contacts').select('id, nome, sobrenome, empresa, telefone, email, temperatura').or('nome.ilike.%termo%,empresa.ilike.%termo%,telefone.ilike.%termo%').limit(8)`
-- Debounce 300ms via setTimeout
-
-### Logica de busca de propostas (useEffect)
-
-Quando `selectedLead` muda e tem valor:
-- Query: `supabase.from('proposals').select('id, number, status, fidel_monthly_value, client_name, duration_months').or('client_phone.eq.lead.telefone,client_name.ilike.%lead.nome%').order('created_at', { ascending: false })`
+- Lista vertical de badges mostrando cada data selecionada (dd/MM/yyyy) com botao X
+- Botao "+ Adicionar data" que abre um Popover com Calendar
+- Ao selecionar uma data no calendario, ela e adicionada ao array (sem duplicatas)
+- Se so tiver 1 data, nao mostra o X (obrigatorio ter pelo menos 1)
 
 ### Mutacao atualizada
 
-1. Trocar `.insert({...})` por `.insert({...}).select('id').single()` para obter o ID da task
-2. Incluir `cliente_id: selectedLead?.id || null` no insert
-3. Apos criar task, inserir em `task_propostas`:
+Em vez de um unico insert, fara um insert por data:
 
-```text
-if (selectedPropostas.length > 0) {
-  await supabase.from('task_propostas').insert(
-    selectedPropostas.map(pid => ({ task_id: taskId, proposta_id: pid }))
-  );
+```
+for (const data of datasPrevistas) {
+  const { data: taskData } = await supabase.from('tasks').insert({
+    ...campos,
+    data_prevista: format(data, 'yyyy-MM-dd'),
+  }).select('id').single();
+
+  // Vincular propostas e responsaveis para cada task criada
+  if (taskData?.id && selectedPropostas.length > 0) {
+    await supabase.from('task_propostas').insert(
+      selectedPropostas.map(pid => ({ task_id: taskData.id, proposta_id: pid }))
+    );
+  }
 }
 ```
 
 ### Reset do formulario
 
-Adicionar limpeza: `setSelectedLead(null)`, `setSelectedPropostas([])`, `setSearchLead('')`, `setLeadResults([])`, `setLeadPropostas([])`, `setIsRecorrente(false)`, `setFrequenciaRecorrencia('semanal')`.
+Trocar `setDataPrevista(undefined)` por `setDatasPrevistas([])`.
 
-### Posicao dos novos campos no formulario
+### Validacao
 
-```text
-1. Tipo de Evento (ja existe)
-2. Subtipo de Reuniao (ja existe, condicional)
-3. >>> NOVO: Busca de Lead (condicional: tipoEvento === 'reuniao')
-4. >>> NOVO: Multi-select Propostas (condicional: tipoEvento === 'reuniao')
-5. Titulo (ja existe)
-6. Data/Hora (ja existe)
-7. Prioridade (ja existe)
-8. Responsaveis (ja existe)
-9. Alertas WhatsApp (ja existe)
-10. >>> NOVO: Toggle Recorrencia (todos os tipos)
-11. Descricao (ja existe)
-12. Botoes (ja existe)
-```
+Exigir pelo menos 1 data selecionada antes de permitir salvar. Mostrar toast de erro se nenhuma data for escolhida.
 
 ### Nenhum outro arquivo sera modificado
 
-Apenas `CreateTaskModal.tsx` sera alterado. Todas as demais paginas (Minha Manha, Central de Tarefas, Agenda) continuam funcionando normalmente.
+Apenas `CreateTaskModal.tsx`. A agenda, central de tarefas e minha manha continuam funcionando normalmente pois cada task criada tera sua propria `data_prevista`.
 
