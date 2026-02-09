@@ -28,7 +28,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar as CalendarIcon, Loader2, Plus, Clock, Bell, BellRing, Users, ChevronDown, Building2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Plus, Clock, Bell, BellRing, Users, ChevronDown, Building2, Video, MapPin, Megaphone } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -79,6 +79,13 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   const [alarmeOpen, setAlarmeOpen] = useState(false);
   const [alarmePadrao, setAlarmePadrao] = useState(true);
   const [alarmeInsistente, setAlarmeInsistente] = useState(false);
+  // Novos campos Fase 1
+  const [tipoEvento, setTipoEvento] = useState<string>('tarefa');
+  const [subtipoReuniao, setSubtipoReuniao] = useState<string>('');
+  const [localEvento, setLocalEvento] = useState('');
+  const [linkReuniao, setLinkReuniao] = useState('');
+  const [escopo, setEscopo] = useState<string>('individual');
+  const [horarioInicio, setHorarioInicio] = useState('');
 
   // Buscar departamentos
   const { data: departments = [] } = useQuery({
@@ -145,11 +152,17 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
           descricao: descricao || null,
           data_prevista: dataPrevista ? format(dataPrevista, 'yyyy-MM-dd') : null,
           horario_limite: horarioLimite || null,
+          horario_inicio: horarioInicio || null,
           prioridade: prioridade as 'emergencia' | 'alta' | 'media' | 'baixa',
           status: 'pendente' as const,
           origem: 'manual' as const,
           todos_responsaveis: responsaveisIds.length === 0,
           created_by: user.id,
+          tipo_evento: tipoEvento,
+          subtipo_reuniao: subtipoReuniao || null,
+          local_evento: localEvento || null,
+          link_reuniao: linkReuniao || null,
+          escopo,
         });
       
       if (error) throw error;
@@ -158,6 +171,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
       toast.success('Tarefa criada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['minha-manha-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['central-tarefas'] });
+      queryClient.invalidateQueries({ queryKey: ['agenda-tasks'] });
       resetForm();
       onOpenChange(false);
     },
@@ -175,6 +189,12 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
     setResponsaveisIds([]);
     setAlarmePadrao(true);
     setAlarmeInsistente(false);
+    setTipoEvento('tarefa');
+    setSubtipoReuniao('');
+    setLocalEvento('');
+    setLinkReuniao('');
+    setEscopo('individual');
+    setHorarioInicio('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -278,6 +298,40 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
         Criado por: <span className="font-medium">{userProfile?.nome || user?.email}</span>
       </div>
 
+      {/* Tipo de Evento */}
+      <div className="space-y-2">
+        <Label>Tipo de Evento</Label>
+        <Select value={tipoEvento} onValueChange={setTipoEvento}>
+          <SelectTrigger className="h-11">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="tarefa">✅ Tarefa</SelectItem>
+            <SelectItem value="reuniao">📹 Reunião</SelectItem>
+            <SelectItem value="compromisso">📍 Compromisso</SelectItem>
+            <SelectItem value="aviso">📢 Aviso</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Subtipo Reunião */}
+      {tipoEvento === 'reuniao' && (
+        <div className="space-y-2">
+          <Label>Tipo de Reunião</Label>
+          <Select value={subtipoReuniao} onValueChange={setSubtipoReuniao}>
+            <SelectTrigger className="h-11">
+              <SelectValue placeholder="Selecionar..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="lead">🎯 Com Lead</SelectItem>
+              <SelectItem value="interna">🏢 Interna</SelectItem>
+              <SelectItem value="externa">🌐 Externa</SelectItem>
+              <SelectItem value="fornecedor">🤝 Fornecedor</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Título da Tarefa */}
       <div className="space-y-2">
         <Label htmlFor="titulo">Título *</Label>
@@ -285,14 +339,14 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
           id="titulo"
           value={titulo}
           onChange={(e) => setTitulo(e.target.value)}
-          placeholder="O que precisa ser feito?"
+          placeholder={tipoEvento === 'reuniao' ? 'Assunto da reunião' : tipoEvento === 'compromisso' ? 'Descrição do compromisso' : tipoEvento === 'aviso' ? 'Título do aviso' : 'O que precisa ser feito?'}
           className="h-11"
           autoFocus
         />
       </div>
 
       {/* Data e Hora - Layout mais destacado */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <div className="space-y-2">
           <Label className="flex items-center gap-1.5 text-sm font-medium">
             <CalendarIcon className="h-3.5 w-3.5 text-primary" />

@@ -4,23 +4,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  RefreshCw, 
   Calendar, 
   Clock, 
-  AlertCircle, 
   CheckCircle, 
   Loader2, 
   ChevronLeft, 
   ChevronRight,
   Filter,
-  ExternalLink,
   AlertTriangle,
   List,
   LayoutGrid,
   Plus
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, addMonths, subMonths, startOfWeek, endOfWeek, isBefore, parseISO, isSameDay } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, startOfWeek, endOfWeek, isBefore, parseISO, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   DropdownMenu,
@@ -35,42 +32,23 @@ import CreateTaskModal from '@/components/admin/agenda/CreateTaskModal';
 import EditTaskModal from '@/components/admin/agenda/EditTaskModal';
 import TaskListModal from '@/components/admin/agenda/TaskListModal';
 import ScheduleTimeModal from '@/components/admin/agenda/ScheduleTimeModal';
-import TaskCard from '@/components/admin/agenda/TaskCard';
+import TaskCard, { type AgendaTask } from '@/components/admin/agenda/TaskCard';
 import DraggableTaskCard from '@/components/admin/agenda/DraggableTaskCard';
 import DroppableCalendarDay from '@/components/admin/agenda/DroppableCalendarDay';
-import AgendaAlertContactsButton from '@/components/admin/agenda/AgendaAlertContactsButton';
 import { useActivityLogger } from '@/hooks/useActivityLogger';
 import { useAuth } from '@/hooks/useAuth';
 
-interface NotionTask {
-  id: string;
-  nome: string;
-  prioridade: string | null;
-  status: string | null;
-  responsavel: string | null;
-  responsavel_avatar: string | null;
-  data: string | null;
-  finalizado_por: string | null;
-  categoria: string | null;
-  notion_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
+const PRIORIDADE_OPTIONS = ['emergencia', 'alta', 'media', 'baixa'];
+const STATUS_OPTIONS = ['pendente', 'em_andamento', 'aguardando_aprovacao', 'aguardando_insumo', 'concluida', 'nao_realizada', 'cancelada'];
 
-const STATUS_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  'NÃO REALIZADO': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
-  'REALIZADO': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
-  'Concluído': { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
-};
-
-const PRIORIDADE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  'Alta': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
-  'Baixa': { bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200' },
-};
-
-const getStatusColor = (status: string | null) => {
-  if (!status) return { bg: 'bg-gray-50', text: 'text-gray-500', border: 'border-gray-200' };
-  return STATUS_COLORS[status] || { bg: 'bg-gray-50', text: 'text-gray-500', border: 'border-gray-200' };
+const STATUS_LABELS: Record<string, string> = {
+  'pendente': 'Pendente',
+  'em_andamento': 'Em andamento',
+  'aguardando_aprovacao': 'Aguardando aprovação',
+  'aguardando_insumo': 'Aguardando insumo',
+  'concluida': 'Concluída',
+  'nao_realizada': 'Não realizada',
+  'cancelada': 'Cancelada',
 };
 
 const AgendaPage = () => {
@@ -79,73 +57,36 @@ const AgendaPage = () => {
   const { userProfile } = useAuth();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['NÃO REALIZADO', 'REALIZADO', 'Concluído']);
-  const [selectedPrioridades, setSelectedPrioridades] = useState<string[]>(['Alta', 'Baixa']);
-  const [activeTask, setActiveTask] = useState<NotionTask | null>(null);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['pendente', 'em_andamento', 'aguardando_aprovacao', 'aguardando_insumo']);
+  const [selectedPrioridades, setSelectedPrioridades] = useState<string[]>(PRIORIDADE_OPTIONS);
+  const [activeTask, setActiveTask] = useState<AgendaTask | null>(null);
   
-  // Modal states
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [listModalOpen, setListModalOpen] = useState(false);
   const [listModalFilter, setListModalFilter] = useState<'pending' | 'overdue' | 'completed' | 'today'>('pending');
   
-  // Schedule modal states (for drag-and-drop)
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
-  const [scheduleModalTask, setScheduleModalTask] = useState<NotionTask | null>(null);
+  const [scheduleModalTask, setScheduleModalTask] = useState<AgendaTask | null>(null);
   const [scheduleModalDate, setScheduleModalDate] = useState<string | null>(null);
   
-  // Edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editModalTask, setEditModalTask] = useState<NotionTask | null>(null);
+  const [editModalTask, setEditModalTask] = useState<AgendaTask | null>(null);
 
-  // Fetch tasks
+  // Fetch tasks from canonical table
   const { data: tasks, isLoading } = useQuery({
-    queryKey: ['notion-tasks'],
+    queryKey: ['agenda-tasks'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('notion_tasks' as any)
-        .select('*')
-        .order('data', { ascending: true, nullsFirst: false });
+        .from('tasks')
+        .select('id, titulo, descricao, prioridade, status, data_prevista, horario_limite, horario_inicio, created_by, created_at, updated_at, tipo_evento, subtipo_reuniao, departamento_id, local_evento, link_reuniao, escopo, concluida_por, data_conclusao')
+        .order('data_prevista', { ascending: true, nullsFirst: false });
       
       if (error) throw error;
-      return (data || []) as unknown as NotionTask[];
+      return (data || []) as AgendaTask[];
     }
   });
 
-  // Fetch sync logs
-  const { data: syncLogs } = useQuery({
-    queryKey: ['notion-task-sync-logs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('notion_task_sync_logs' as any)
-        .select('*')
-        .order('sync_started_at', { ascending: false })
-        .limit(1);
-      
-      if (error) throw error;
-      return data as any[] || [];
-    }
-  });
-
-  // Sync mutation
-  const syncMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('sync-notion-tasks', {
-        body: { force: true }
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      toast.success(`Sincronização concluída! ${data?.stats?.created || 0} criadas, ${data?.stats?.updated || 0} atualizadas`);
-      queryClient.invalidateQueries({ queryKey: ['notion-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['notion-task-sync-logs'] });
-    },
-    onError: (error: any) => {
-      toast.error(`Erro na sincronização: ${error.message}`);
-    }
-  });
-
-  // Update task date mutation (for drag-and-drop with time selection)
+  // Update task date mutation (for drag-and-drop)
   const updateTaskMutation = useMutation({
     mutationFn: async ({ 
       taskId, 
@@ -158,24 +99,27 @@ const AgendaPage = () => {
       hora: string; 
       tipoHorario: 'fixo' | 'ate';
     }) => {
-      const { data, error } = await supabase.functions.invoke('update-notion-task', {
-        body: { 
-          taskId, 
-          updates: { 
-            data: newDate,
-            hora,
-            tipo_horario: tipoHorario,
-          },
-          userId: userProfile?.id 
-        }
-      });
+      const updateData: any = {
+        data_prevista: newDate,
+      };
+      if (tipoHorario === 'fixo') {
+        updateData.horario_inicio = hora;
+      } else {
+        updateData.horario_limite = hora;
+      }
+
+      const { error } = await supabase
+        .from('tasks')
+        .update(updateData)
+        .eq('id', taskId);
+      
       if (error) throw error;
-      return data;
     },
-    onSuccess: (data) => {
-      const syncInfo = data?.notion_synced ? ' (sincronizado com Notion)' : '';
-      toast.success(`Tarefa reagendada com sucesso!${syncInfo}`);
-      queryClient.invalidateQueries({ queryKey: ['notion-tasks'] });
+    onSuccess: () => {
+      toast.success('Tarefa reagendada com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['agenda-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['minha-manha-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['central-tarefas'] });
       setScheduleModalOpen(false);
       setScheduleModalTask(null);
       setScheduleModalDate(null);
@@ -185,23 +129,21 @@ const AgendaPage = () => {
     }
   });
 
-  // Filter tasks for calendar view
+  // Filter tasks
   const filteredTasks = useMemo(() => {
     return tasks?.filter(t => {
-      const statusMatch = selectedStatuses.length === 0 || 
-        (t.status && selectedStatuses.includes(t.status));
-      const prioridadeMatch = selectedPrioridades.length === 0 || 
-        !t.prioridade || selectedPrioridades.includes(t.prioridade);
+      const statusMatch = selectedStatuses.length === 0 || selectedStatuses.includes(t.status);
+      const prioridadeMatch = selectedPrioridades.length === 0 || selectedPrioridades.includes(t.prioridade);
       return statusMatch && prioridadeMatch;
     }) || [];
   }, [tasks, selectedStatuses, selectedPrioridades]);
 
   // Group tasks by date
   const tasksByDate = useMemo(() => {
-    const map = new Map<string, NotionTask[]>();
+    const map = new Map<string, AgendaTask[]>();
     filteredTasks.forEach(t => {
-      if (t.data) {
-        const dateKey = t.data.split('T')[0];
+      if (t.data_prevista) {
+        const dateKey = t.data_prevista.split('T')[0];
         if (!map.has(dateKey)) map.set(dateKey, []);
         map.get(dateKey)!.push(t);
       }
@@ -209,50 +151,40 @@ const AgendaPage = () => {
     return map;
   }, [filteredTasks]);
 
-  // Pending tasks - ONLY those without date and not completed (for drag section)
   const pendingTasksWithoutDate = useMemo(() => {
-    return tasks?.filter(t => t.status !== 'Concluído' && !t.data) || [];
+    return tasks?.filter(t => !['concluida', 'cancelada', 'nao_realizada'].includes(t.status) && !t.data_prevista) || [];
   }, [tasks]);
 
-  // All pending tasks (for stats and modal)
   const allPendingTasks = useMemo(() => {
-    return tasks?.filter(t => t.status !== 'Concluído') || [];
+    return tasks?.filter(t => !['concluida', 'cancelada', 'nao_realizada'].includes(t.status)) || [];
   }, [tasks]);
 
-  // Overdue tasks
   const overdueTasks = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return tasks?.filter(t => {
-      if (!t.data) return false;
-      if (t.status === 'Concluído') return false;
-      const taskDate = parseISO(t.data);
-      return isBefore(taskDate, today);
+      if (!t.data_prevista) return false;
+      if (['concluida', 'cancelada', 'nao_realizada'].includes(t.status)) return false;
+      return isBefore(parseISO(t.data_prevista), today);
     }) || [];
   }, [tasks]);
 
-  // Completed tasks
   const completedTasks = useMemo(() => {
-    return tasks?.filter(t => t.status === 'Concluído') || [];
+    return tasks?.filter(t => t.status === 'concluida') || [];
   }, [tasks]);
 
-  // Today's tasks
   const todayTasks = useMemo(() => {
     const todayStr = format(new Date(), 'yyyy-MM-dd');
-    return tasks?.filter(t => t.data === todayStr) || [];
+    return tasks?.filter(t => t.data_prevista === todayStr) || [];
   }, [tasks]);
 
-  // Stats
-  const stats = useMemo(() => {
-    return {
-      pending: allPendingTasks.length,
-      overdue: overdueTasks.length,
-      completed: completedTasks.length,
-      today: todayTasks.length,
-    };
-  }, [allPendingTasks, overdueTasks, completedTasks, todayTasks]);
+  const stats = useMemo(() => ({
+    pending: allPendingTasks.length,
+    overdue: overdueTasks.length,
+    completed: completedTasks.length,
+    today: todayTasks.length,
+  }), [allPendingTasks, overdueTasks, completedTasks, todayTasks]);
 
-  // Get filtered tasks for modal
   const getFilteredTasksForModal = () => {
     switch (listModalFilter) {
       case 'pending': return allPendingTasks;
@@ -263,19 +195,16 @@ const AgendaPage = () => {
     }
   };
 
-  // Handle task click from calendar
-  const handleTaskClick = (task: NotionTask) => {
+  const handleTaskClick = (task: AgendaTask) => {
     setEditModalTask(task);
     setEditModalOpen(true);
   };
 
-  // Open list modal with filter
   const openListModal = (filter: 'pending' | 'overdue' | 'completed' | 'today') => {
     setListModalFilter(filter);
     setListModalOpen(true);
   };
 
-  // Calendar grid
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
@@ -283,69 +212,40 @@ const AgendaPage = () => {
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   const weekDays = ['dom.', 'seg.', 'ter.', 'qua.', 'qui.', 'sex.', 'sáb.'];
 
-  const lastSync = syncLogs?.[0];
-
-  const getTimeSinceLastSync = () => {
-    if (!lastSync?.sync_started_at) return null;
-    const lastSyncDate = new Date(lastSync.sync_started_at);
-    const now = new Date();
-    const diffMs = now.getTime() - lastSyncDate.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    if (diffMins < 1) return 'agora';
-    if (diffMins < 60) return `${diffMins} min`;
-    return `${Math.floor(diffMins / 60)}h`;
-  };
-
-  // Drag-and-drop handlers
   const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    const task = active.data.current?.task as NotionTask | undefined;
-    if (task) {
-      setActiveTask(task);
-    }
+    const task = event.active.data.current?.task as AgendaTask | undefined;
+    if (task) setActiveTask(task);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveTask(null);
-
     if (!over) return;
 
     const taskId = active.id as string;
     const newDate = over.id as string;
-    const task = active.data.current?.task as NotionTask | undefined;
-
+    const task = active.data.current?.task as AgendaTask | undefined;
     if (!task) return;
+    if (task.data_prevista?.split('T')[0] === newDate) return;
 
-    // If dropped on the same date, do nothing
-    if (task.data?.split('T')[0] === newDate) return;
-
-    // Open the schedule modal instead of saving directly
     setScheduleModalTask(task);
     setScheduleModalDate(newDate);
     setScheduleModalOpen(true);
   };
 
-  // Handle schedule confirmation from modal
   const handleScheduleConfirm = (hora: string, tipoHorario: 'fixo' | 'ate') => {
     if (!scheduleModalTask || !scheduleModalDate) return;
-
-    // Update the task with date, time, and time type
     updateTaskMutation.mutate({ 
       taskId: scheduleModalTask.id, 
       newDate: scheduleModalDate,
       hora,
       tipoHorario,
     });
-
-    // Log the activity
     logUpdate('agenda_task', scheduleModalTask.id, {
       action: 'drag_reschedule',
-      task_name: scheduleModalTask.nome,
-      previous_date: scheduleModalTask.data,
+      task_name: scheduleModalTask.titulo,
+      previous_date: scheduleModalTask.data_prevista,
       new_date: scheduleModalDate,
-      hora,
-      tipo_horario: tipoHorario,
     });
   };
 
@@ -360,20 +260,9 @@ const AgendaPage = () => {
             </div>
             Agenda
           </h1>
-          <div className="flex items-center gap-3 mt-1 ml-11">
-            <p className="text-xs text-gray-500">
-              {tasks?.length || 0} tarefas
-            </p>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] text-emerald-600 font-medium">Sincronizado</span>
-            </div>
-            {getTimeSinceLastSync() && (
-              <span className="text-[10px] text-gray-400">
-                Última sync: {getTimeSinceLastSync()}
-              </span>
-            )}
-          </div>
+          <p className="text-xs text-gray-500 mt-1 ml-11">
+            {tasks?.length || 0} tarefas no sistema
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -382,7 +271,7 @@ const AgendaPage = () => {
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Nova Tarefa
+            Novo Evento
           </Button>
           <div className="flex items-center rounded-lg border border-gray-200 p-1">
             <Button
@@ -402,50 +291,24 @@ const AgendaPage = () => {
               <List className="h-4 w-4" />
             </Button>
           </div>
-          <Button
-            onClick={() => syncMutation.mutate()}
-            disabled={syncMutation.isPending}
-            size="sm"
-            variant="outline"
-          >
-            {syncMutation.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
-            )}
-            Sincronizar
-          </Button>
-          <AgendaAlertContactsButton />
         </div>
       </div>
 
-      {/* Stats - Clickable Cards */}
+      {/* Stats */}
       <div className="grid grid-cols-4 gap-3">
-        <button
-          onClick={() => openListModal('pending')}
-          className="bg-amber-50 rounded-xl p-3 border border-amber-200 text-left hover:shadow-md hover:scale-[1.02] transition-all"
-        >
+        <button onClick={() => openListModal('pending')} className="bg-amber-50 rounded-xl p-3 border border-amber-200 text-left hover:shadow-md hover:scale-[1.02] transition-all">
           <div className="text-xl md:text-2xl font-bold text-amber-700">{stats.pending}</div>
           <div className="text-[10px] text-amber-600">Pendentes</div>
         </button>
-        <button
-          onClick={() => openListModal('overdue')}
-          className="bg-red-50 rounded-xl p-3 border border-red-200 text-left hover:shadow-md hover:scale-[1.02] transition-all"
-        >
+        <button onClick={() => openListModal('overdue')} className="bg-red-50 rounded-xl p-3 border border-red-200 text-left hover:shadow-md hover:scale-[1.02] transition-all">
           <div className="text-xl md:text-2xl font-bold text-red-700">{stats.overdue}</div>
           <div className="text-[10px] text-red-600">Atrasadas</div>
         </button>
-        <button
-          onClick={() => openListModal('completed')}
-          className="bg-emerald-50 rounded-xl p-3 border border-emerald-200 text-left hover:shadow-md hover:scale-[1.02] transition-all"
-        >
+        <button onClick={() => openListModal('completed')} className="bg-emerald-50 rounded-xl p-3 border border-emerald-200 text-left hover:shadow-md hover:scale-[1.02] transition-all">
           <div className="text-xl md:text-2xl font-bold text-emerald-700">{stats.completed}</div>
           <div className="text-[10px] text-emerald-600">Concluídas</div>
         </button>
-        <button
-          onClick={() => openListModal('today')}
-          className="bg-blue-50 rounded-xl p-3 border border-blue-200 text-left hover:shadow-md hover:scale-[1.02] transition-all"
-        >
+        <button onClick={() => openListModal('today')} className="bg-blue-50 rounded-xl p-3 border border-blue-200 text-left hover:shadow-md hover:scale-[1.02] transition-all">
           <div className="text-xl md:text-2xl font-bold text-blue-700">{stats.today}</div>
           <div className="text-[10px] text-blue-600">Hoje</div>
         </button>
@@ -462,36 +325,19 @@ const AgendaPage = () => {
           onDragEnd={handleDragEnd}
         >
           <div className="space-y-6">
-            {/* Calendar - Full Width */}
             <div className="bg-white rounded-2xl border border-gray-200 p-4">
-              {/* Calendar Header */}
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
                 <div className="flex items-center gap-3">
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    className="h-8 w-8 p-0"
-                    onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                  >
+                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <h2 className="font-semibold text-gray-900 min-w-[160px] text-center capitalize">
                     {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
                   </h2>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    className="h-8 w-8 p-0"
-                    onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                  >
+                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="ml-2 h-7 px-3 text-xs"
-                    onClick={() => setCurrentMonth(new Date())}
-                  >
+                  <Button size="sm" variant="outline" className="ml-2 h-7 px-3 text-xs" onClick={() => setCurrentMonth(new Date())}>
                     Hoje
                   </Button>
                 </div>
@@ -504,36 +350,32 @@ const AgendaPage = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="min-w-[180px]">
                     <DropdownMenuLabel className="text-xs text-gray-500">Status</DropdownMenuLabel>
-                    {Object.keys(STATUS_COLORS).map(status => (
+                    {STATUS_OPTIONS.map(status => (
                       <DropdownMenuCheckboxItem
                         key={status}
                         checked={selectedStatuses.includes(status)}
                         onCheckedChange={() => {
                           setSelectedStatuses(prev => 
-                            prev.includes(status) 
-                              ? prev.filter(s => s !== status)
-                              : [...prev, status]
+                            prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
                           );
                         }}
                         className="text-xs"
                       >
-                        {status}
+                        {STATUS_LABELS[status] || status}
                       </DropdownMenuCheckboxItem>
                     ))}
                     <DropdownMenuSeparator />
                     <DropdownMenuLabel className="text-xs text-gray-500">Prioridade</DropdownMenuLabel>
-                    {Object.keys(PRIORIDADE_COLORS).map(prio => (
+                    {PRIORIDADE_OPTIONS.map(prio => (
                       <DropdownMenuCheckboxItem
                         key={prio}
                         checked={selectedPrioridades.includes(prio)}
                         onCheckedChange={() => {
                           setSelectedPrioridades(prev => 
-                            prev.includes(prio) 
-                              ? prev.filter(p => p !== prio)
-                              : [...prev, prio]
+                            prev.includes(prio) ? prev.filter(p => p !== prio) : [...prev, prio]
                           );
                         }}
-                        className="text-xs"
+                        className="text-xs capitalize"
                       >
                         {prio}
                       </DropdownMenuCheckboxItem>
@@ -542,7 +384,6 @@ const AgendaPage = () => {
                 </DropdownMenu>
               </div>
 
-              {/* Weekday Headers */}
               <div className="grid grid-cols-7 gap-1 mb-1">
                 {weekDays.map(day => (
                   <div key={day} className="text-center text-xs text-gray-400 font-medium py-2 uppercase">
@@ -551,13 +392,11 @@ const AgendaPage = () => {
                 ))}
               </div>
 
-              {/* Calendar Grid with Droppable Cells */}
               <div className="grid grid-cols-7 gap-1">
                 {calendarDays.map(day => {
                   const dateKey = format(day, 'yyyy-MM-dd');
                   const dayTasks = tasksByDate.get(dateKey) || [];
                   const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
-
                   return (
                     <DroppableCalendarDay
                       key={dateKey}
@@ -571,7 +410,7 @@ const AgendaPage = () => {
               </div>
             </div>
 
-            {/* Pending Tasks Section with Draggable Cards - Only tasks WITHOUT date */}
+            {/* Pending without date */}
             <div className="bg-white rounded-2xl border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
                 <div className="flex items-center gap-2">
@@ -580,16 +419,9 @@ const AgendaPage = () => {
                   <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
                     {pendingTasksWithoutDate.length}
                   </Badge>
-                  <span className="text-[10px] text-gray-400 ml-2">
-                    Arraste para agendar
-                  </span>
+                  <span className="text-[10px] text-gray-400 ml-2">Arraste para agendar</span>
                 </div>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="text-xs text-gray-500"
-                  onClick={() => openListModal('pending')}
-                >
+                <Button size="sm" variant="ghost" className="text-xs text-gray-500" onClick={() => openListModal('pending')}>
                   Ver todas
                 </Button>
               </div>
@@ -608,11 +440,7 @@ const AgendaPage = () => {
               )}
               {pendingTasksWithoutDate.length > 9 && (
                 <div className="text-center mt-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => openListModal('pending')}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => openListModal('pending')}>
                     Ver mais {pendingTasksWithoutDate.length - 9} tarefas
                   </Button>
                 </div>
@@ -620,7 +448,6 @@ const AgendaPage = () => {
             </div>
           </div>
 
-          {/* Drag Overlay for visual feedback */}
           <DragOverlay>
             {activeTask ? (
               <div className="opacity-90 rotate-3 scale-105">
@@ -630,7 +457,6 @@ const AgendaPage = () => {
           </DragOverlay>
         </DndContext>
       ) : (
-        /* List View */
         <div className="space-y-4">
           {Array.from(tasksByDate.entries()).map(([date, dayTasks]) => (
             <div key={date} className="bg-white rounded-xl border border-gray-200 p-4">
@@ -651,9 +477,7 @@ const AgendaPage = () => {
               <h3 className="font-semibold text-amber-700 text-sm mb-3 flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 Sem Data Definida
-                <Badge className="bg-amber-100 text-amber-700 text-[10px]">
-                  {pendingTasksWithoutDate.length}
-                </Badge>
+                <Badge className="bg-amber-100 text-amber-700 text-[10px]">{pendingTasksWithoutDate.length}</Badge>
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {pendingTasksWithoutDate.map(task => (
@@ -666,10 +490,7 @@ const AgendaPage = () => {
       )}
 
       {/* Modals */}
-      <CreateTaskModal 
-        open={createModalOpen} 
-        onOpenChange={setCreateModalOpen} 
-      />
+      <CreateTaskModal open={createModalOpen} onOpenChange={setCreateModalOpen} />
       <TaskListModal
         open={listModalOpen}
         onOpenChange={setListModalOpen}

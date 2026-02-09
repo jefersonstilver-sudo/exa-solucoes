@@ -1,28 +1,13 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { format, isToday } from 'date-fns';
-import TaskCard from './TaskCard';
-
-interface NotionTask {
-  id: string;
-  nome: string;
-  prioridade: string | null;
-  status: string | null;
-  responsavel: string | null;
-  responsavel_avatar: string | null;
-  data: string | null;
-  finalizado_por: string | null;
-  categoria: string | null;
-  notion_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import TaskCard, { type AgendaTask } from './TaskCard';
 
 interface DroppableCalendarDayProps {
   day: Date;
-  tasks: NotionTask[];
+  tasks: AgendaTask[];
   isCurrentMonth: boolean;
-  onTaskClick?: (task: NotionTask) => void;
+  onTaskClick?: (task: AgendaTask) => void;
 }
 
 const DroppableCalendarDay = ({ day, tasks, isCurrentMonth, onTaskClick }: DroppableCalendarDayProps) => {

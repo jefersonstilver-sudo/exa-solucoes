@@ -12563,6 +12563,90 @@ export type Database = {
           },
         ]
       }
+      task_participantes: {
+        Row: {
+          confirmado: boolean | null
+          contato_nome: string | null
+          contato_telefone: string | null
+          created_at: string | null
+          id: string
+          task_id: string
+          tipo: string | null
+          user_id: string | null
+        }
+        Insert: {
+          confirmado?: boolean | null
+          contato_nome?: string | null
+          contato_telefone?: string | null
+          created_at?: string | null
+          id?: string
+          task_id: string
+          tipo?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          confirmado?: boolean | null
+          contato_nome?: string | null
+          contato_telefone?: string | null
+          created_at?: string | null
+          id?: string
+          task_id?: string
+          tipo?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_participantes_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_participantes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_participantes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_propostas: {
+        Row: {
+          created_at: string | null
+          id: string
+          proposta_id: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          proposta_id: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          proposta_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_propostas_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_responsaveis: {
         Row: {
           created_at: string | null
@@ -12897,16 +12981,23 @@ export type Database = {
           created_by: string | null
           data_conclusao: string | null
           data_prevista: string | null
+          departamento_id: string | null
           descricao: string | null
+          escopo: string | null
+          horario_inicio: string | null
           horario_limite: string | null
           id: string
+          link_reuniao: string | null
+          local_evento: string | null
           motivo_nao_realizada: string | null
           origem: Database["public"]["Enums"]["task_origem"]
           origem_id: string | null
           prioridade: Database["public"]["Enums"]["task_prioridade"]
           rotina_id: string | null
           status: Database["public"]["Enums"]["task_status"]
+          subtipo_reuniao: string | null
           task_type_id: string | null
+          tipo_evento: string | null
           titulo: string
           todos_responsaveis: boolean | null
           updated_at: string | null
@@ -12918,16 +13009,23 @@ export type Database = {
           created_by?: string | null
           data_conclusao?: string | null
           data_prevista?: string | null
+          departamento_id?: string | null
           descricao?: string | null
+          escopo?: string | null
+          horario_inicio?: string | null
           horario_limite?: string | null
           id?: string
+          link_reuniao?: string | null
+          local_evento?: string | null
           motivo_nao_realizada?: string | null
           origem?: Database["public"]["Enums"]["task_origem"]
           origem_id?: string | null
           prioridade?: Database["public"]["Enums"]["task_prioridade"]
           rotina_id?: string | null
           status?: Database["public"]["Enums"]["task_status"]
+          subtipo_reuniao?: string | null
           task_type_id?: string | null
+          tipo_evento?: string | null
           titulo: string
           todos_responsaveis?: boolean | null
           updated_at?: string | null
@@ -12939,16 +13037,23 @@ export type Database = {
           created_by?: string | null
           data_conclusao?: string | null
           data_prevista?: string | null
+          departamento_id?: string | null
           descricao?: string | null
+          escopo?: string | null
+          horario_inicio?: string | null
           horario_limite?: string | null
           id?: string
+          link_reuniao?: string | null
+          local_evento?: string | null
           motivo_nao_realizada?: string | null
           origem?: Database["public"]["Enums"]["task_origem"]
           origem_id?: string | null
           prioridade?: Database["public"]["Enums"]["task_prioridade"]
           rotina_id?: string | null
           status?: Database["public"]["Enums"]["task_status"]
+          subtipo_reuniao?: string | null
           task_type_id?: string | null
+          tipo_evento?: string | null
           titulo?: string
           todos_responsaveis?: boolean | null
           updated_at?: string | null
@@ -12980,6 +13085,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_departamento_id_fkey"
+            columns: ["departamento_id"]
+            isOneToOne: false
+            referencedRelation: "process_departments"
             referencedColumns: ["id"]
           },
           {

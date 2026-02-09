@@ -35,6 +35,10 @@ export type TaskOriginCanonical =
 // INTERFACES DO NOVO SISTEMA
 // ============================================================================
 
+export type TipoEvento = 'tarefa' | 'reuniao' | 'compromisso' | 'aviso';
+export type SubtipoReuniao = 'lead' | 'interna' | 'externa' | 'fornecedor';
+export type EscopoTarefa = 'individual' | 'departamento' | 'global';
+
 export interface Task {
   id: string;
   task_type_id: string | null;
@@ -48,6 +52,7 @@ export interface Task {
   origem: TaskOriginCanonical;
   data_prevista: string | null;
   horario_limite: string | null;
+  horario_inicio: string | null;
   data_conclusao: string | null;
   concluida_por: string | null;
   motivo_nao_realizada: string | null;
@@ -55,6 +60,31 @@ export interface Task {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  // Novos campos Fase 1
+  tipo_evento: TipoEvento;
+  subtipo_reuniao: SubtipoReuniao | null;
+  departamento_id: string | null;
+  local_evento: string | null;
+  link_reuniao: string | null;
+  escopo: EscopoTarefa;
+}
+
+export interface TaskProposta {
+  id: string;
+  task_id: string;
+  proposta_id: string;
+  created_at: string;
+}
+
+export interface TaskParticipante {
+  id: string;
+  task_id: string;
+  user_id: string | null;
+  contato_nome: string | null;
+  contato_telefone: string | null;
+  tipo: 'organizador' | 'participante' | 'convidado';
+  confirmado: boolean;
+  created_at: string;
 }
 
 export interface TaskType {
