@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useParams } from 'react-router-dom';
 import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink, Calendar, Globe, Users, Rocket, Lock, Pencil, Package, RefreshCw, DollarSign } from 'lucide-react';
 import LogoTicker from '@/components/exa/LogoTicker';
@@ -1699,6 +1700,22 @@ const PropostaPublicaPage = () => {
 
   return (
     <>
+      <Helmet>
+        <title>{proposal.client_company_name || proposal.client_name} | Proposta Comercial EXA</title>
+        <meta name="description" content={`Proposta comercial de publicidade inteligente em elevadores para ${proposal.client_company_name || proposal.client_name}. ${proposal.total_panels} telas em ${proposal.selected_buildings?.length || 0} prédios.`} />
+        <link rel="icon" type="image/png" href="/favicon.png" />
+        <meta property="og:title" content={`${proposal.client_company_name || proposal.client_name} | Proposta EXA`} />
+        <meta property="og:description" content={`Proposta comercial de publicidade inteligente em elevadores para ${proposal.client_company_name || proposal.client_name}`} />
+        <meta property="og:image" content="https://examidia.com.br/og-image.jpg?v=2" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="EXA Publicidade Inteligente" />
+        <meta property="og:locale" content="pt_BR" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${proposal.client_company_name || proposal.client_name} | Proposta EXA`} />
+        <meta name="twitter:description" content={`Proposta comercial de publicidade inteligente em elevadores para ${proposal.client_company_name || proposal.client_name}`} />
+        <meta name="twitter:image" content="https://examidia.com.br/og-image.jpg?v=2" />
+      </Helmet>
+
       {/* Contract Flow: Loading Screen */}
       {contractFlow === 'loading' && (
         <ContractLoadingScreen message={contractLoadingMessage} />
