@@ -78,7 +78,7 @@ const AgendaPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('tasks')
-        .select('id, titulo, descricao, prioridade, status, data_prevista, horario_limite, horario_inicio, created_by, created_at, updated_at, tipo_evento, subtipo_reuniao, departamento_id, local_evento, link_reuniao, escopo, concluida_por, data_conclusao')
+        .select('id, titulo, descricao, prioridade, status, data_prevista, horario_limite, horario_inicio, created_by, created_at, updated_at, tipo_evento, subtipo_reuniao, departamento_id, local_evento, link_reuniao, escopo, concluida_por, data_conclusao, todos_responsaveis, task_responsaveis(user_id, users:user_id(nome))')
         .order('data_prevista', { ascending: true, nullsFirst: false });
       
       if (error) throw error;
