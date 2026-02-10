@@ -1,42 +1,30 @@
 
+# Corrigir Ticker: Hover sem Reset + Cor Integrada ao Header
 
-# Reposicionar Logo Ticker na Proposta Publica
+## Problemas identificados
 
-## O que sera feito
+1. **Hover reseta a animacao**: O `useEffect` principal (que cria a animacao) tem `isPaused` como dependencia. Quando o mouse entra/sai, `isPaused` muda, o effect re-executa e recria a animacao do zero -- voltando ao inicio. Ja existe um segundo `useEffect` (linhas 79-84) que controla o `animationPlayState` separadamente, mas ele e anulado pelo primeiro que recria tudo.
 
-1. **Remover** o bloco atual do ticker (linhas 2715-2721) que esta no final da pagina com o container vermelho grande, titulo "Empresas que confiam na EXA" e padding excessivo.
+2. **Cor diferente do header**: O header usa `from-[#4a0f0f] via-[#6B1515] to-[#7D1818]` (gradiente escuro). O ticker usa `bg-[#9C1E1E]` (vermelho mais claro). Precisa usar o mesmo tom final do gradiente do header (`#7D1818`) para integrar visualmente.
 
-2. **Inserir** o `LogoTicker` logo apos o `</header>` (linha 1858), antes do conteudo principal da proposta, e **acima** do card "Valida ate". Ele ficara posicionado:
-   - Abaixo dos badges de status e data
-   - Acima do "Valida ate"
-   - Com fundo vermelho escuro (`bg-[#9C1E1E]`) consistente com o cabecalho
+## Solucao
 
-3. **Estilo**: Sem titulo, sem container arredondado, sem padding grande. Apenas uma barra fina e elegante de logos em branco sobre vermelho escuro, como uma extensao natural do cabecalho.
+### Arquivo: `src/components/exa/LogoTicker.tsx`
 
-## Detalhe tecnico
+1. **Remover `isPaused` da lista de dependencias** do useEffect principal (linha 76). Isso impede que a animacao seja recriada ao pausar/retomar. O controle de pause/resume ja funciona corretamente pelo segundo useEffect (linhas 79-84) que so altera `animationPlayState`.
+
+2. **Remover `track.style.animationPlayState = isPaused ? 'paused' : 'running'`** de dentro do useEffect principal (linha 71), deixando apenas a criacao da animacao. O play state sera controlado exclusivamente pelo segundo useEffect.
 
 ### Arquivo: `src/pages/public/PropostaPublicaPage.tsx`
 
-**Remover** (linhas 2715-2721):
-```tsx
-{/* Empresas que confiam na EXA - Logo Ticker */}
-<div className="w-full py-10 bg-[#9C1E1E] rounded-xl mt-8 overflow-hidden">
-  <h3 ...>Empresas que confiam na EXA</h3>
-  <LogoTicker speed={50} />
-</div>
-```
+1. **Mudar a cor do wrapper do ticker** de `bg-[#9C1E1E]` para `bg-[#7D1818]` (linha 1861), que e o tom final do gradiente do header, criando continuidade visual perfeita.
 
-**Inserir** logo apos o `</header>` (linha 1858), antes do `<div className="max-w-4xl ...">`:
-```tsx
-{/* Logo Ticker - Prova Social */}
-<div className="w-full bg-[#9C1E1E] overflow-hidden">
-  <LogoTicker speed={50} />
-</div>
-```
+### Arquivo: `src/components/exa/LogoTicker.tsx` (cor interna)
 
-Resultado: barra fina de logos em branco sobre vermelho escuro, diretamente abaixo do cabecalho, sem titulo, sem bordas arredondadas, sem caixa grande. Visual limpo e profissional.
+1. **Mudar a cor interna do ticker container** de `bg-[#9C1E1E]` para `bg-[#7D1818]` no div do ticker (linha 222), para que o fundo das logos combine com o wrapper.
 
-## Arquivos modificados
+## Resultado
 
-1. `src/pages/public/PropostaPublicaPage.tsx` -- mover ticker e simplificar layout
-
+- Hover pausa suavemente a rolagem, o usuario ve a logo que estava olhando
+- Ao tirar o mouse, a rolagem continua exatamente de onde parou
+- A cor do ticker integra perfeitamente com o header da proposta, sem corte visual
