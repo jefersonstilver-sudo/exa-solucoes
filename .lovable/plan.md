@@ -1,56 +1,48 @@
 
-# Correcoes no Ticker de Logos + Adicionar na Proposta Publica
 
-## 3 problemas a resolver
+# Corrigir Upload de Logos, Resetar Escalas e Garantir Link Funcional
 
-### 1. Preview do Ticker no Admin - fundo escuro ilegivel
+## Problemas identificados
 
-**Arquivo:** `src/components/admin/LogosAdmin.tsx` (linha 321-326)
-
-O container do preview usa `bg-gradient-to-br from-exa-black via-[#9C1E1E]/10 to-exa-black` que resulta em fundo quase preto. O texto "confiam na EXA" usa gradiente de vermelho-para-preto que fica invisivel.
+### 1. Upload diz "nenhum arquivo selecionado"
+O `<input>` usa `accept=".png"` que em alguns navegadores rejeita arquivos PNG silenciosamente (especialmente se o MIME type do SO nao bate). Alem disso, o `handleFileUpload` recebe `e.target.files || []` -- quando `files` e `null` (nenhum arquivo passou o filtro do accept), passa array vazio e cai no `if (fileArray.length === 0) return` sem feedback. O input tambem nao e resetado antes de reabrir, entao selecionar o mesmo arquivo nao dispara `onChange`.
 
 **Correcao:**
-- Background: trocar para `bg-[#9C1E1E]` (vermelho solido oficial)
-- Texto "confiam na EXA": trocar gradiente invisivel para `text-[#FFD700]` (dourado, contraste alto)
+- Mudar `accept` para `accept="image/png,.png"` (aceita tanto por MIME quanto por extensao)
+- Resetar o valor do input antes de abrir o seletor (`fileInputRef.current.value = ''`)
+- Adicionar toast de erro quando nenhum arquivo valido e selecionado
 
-### 2. Botao de Zoom limitado a 300% - expandir para 400%
+### 2. Zoom travando em ~200% (database constraint)
+Apesar do codigo frontend permitir ate 400%, a constraint do banco **nao foi aplicada corretamente** ou houve erro na migracao anterior. Vou criar uma nova migracao mais robusta com `IF EXISTS` para garantir que o limite seja 4.0.
 
-**Arquivo:** `src/components/admin/LogosAdmin.tsx`
+### 3. Resetar TODAS as logos para scale_factor = 1.0
+O usuario quer recalibrar tudo do zero. Vou criar uma migracao SQL que reseta `scale_factor = 1.0` em todas as logos.
 
-Atualmente:
-- `handleScaleUp` (linha 207): `Math.min(..., 3.0)` -- maximo 300%
-- `handleScaleDown` (linha 229): `Math.max(..., 0.5)` -- minimo 50%
-- Botao "+" desabilitado em `>= 3.0` (linha 525)
+### 4. Link em cada logo -- ja funciona mas precisa ser mais visivel
+O campo `link_url` ja existe no banco e no formulario de edicao. O `TickerLogoItem` ja abre o link em nova aba ao clicar. Porem:
+- No admin, o link so aparece como um icone pequeno -- vou tornar mais visivel mostrando o dominio do link
+- Garantir que o `useLogoFileReplace` tambem aceite 5MB (esta com 1MB ainda)
 
-**Correcao:**
-- Alterar limite maximo de `3.0` para `4.0` em `handleScaleUp`
-- Alterar condicao de desabilitacao do botao "+" de `>= 3.0` para `>= 4.0`
-- Mantém o minimo de 50% (0.5)
+## Alteracoes
 
-### 3. Ticker na Pagina Publica da Proposta
+### Arquivo 1: `src/components/admin/LogosAdmin.tsx`
+- Linha 345: `accept` de `.png` para `image/png,.png`
+- Linha 353: resetar `fileInputRef.current.value = ''` antes de `click()`
+- Linha 43-46: adicionar toast quando `fileArray.length === 0` apos validacao
+- Linhas 499-512: mostrar o dominio do link_url abaixo do nome da logo para ficar mais claro
 
-**Arquivo:** `src/pages/public/PropostaPublicaPage.tsx` (linhas 2712-2717)
+### Arquivo 2: `src/hooks/useLogoFileReplace.ts`
+- Linha 20: aumentar limite de 1MB para 5MB (consistencia com o upload bulk)
 
-Adicionar o componente `LogoTicker` entre o card "Contato Comercial" e o footer, com titulo "Empresas que confiam na EXA".
+### Arquivo 3: Migracao SQL
+- Resetar `scale_factor = 1.0` em TODAS as logos
+- Garantir constraint `scale_factor >= 0.1 AND scale_factor <= 4.0` (minimo 0.1 para mais flexibilidade)
 
-**Implementacao:**
-- Importar `LogoTicker` de `@/components/exa/LogoTicker`
-- Inserir secao full-width com fundo `bg-[#9C1E1E]` e cantos arredondados
-- Titulo: "Empresas que confiam na EXA" em branco com destaque dourado
-- Posicao: entre a linha 2712 (fim do card Contato) e a linha 2714 (footer)
+## Arquivos modificados
 
-## Detalhes tecnicos
+1. **`src/components/admin/LogosAdmin.tsx`** -- fix upload, melhorar visibilidade do link
+2. **`src/hooks/useLogoFileReplace.ts`** -- aumentar limite para 5MB
+3. **Nova migracao SQL** -- reset scale_factor + constraint
 
-### Arquivos modificados
+Nenhuma outra funcionalidade sera alterada.
 
-1. **`src/components/admin/LogosAdmin.tsx`**
-   - Linha 321: trocar background do preview
-   - Linha 323: trocar estilo do texto
-   - Linha 207: limite de zoom para 4.0
-   - Linha 525: condicao desabilitacao para 4.0
-
-2. **`src/pages/public/PropostaPublicaPage.tsx`**
-   - Linha 3 (imports): adicionar LogoTicker
-   - Linhas 2712-2714: inserir secao do ticker
-
-Nenhum outro arquivo sera alterado. Toda funcionalidade existente permanece intacta.
