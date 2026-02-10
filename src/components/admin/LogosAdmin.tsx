@@ -342,7 +342,14 @@ const LogosAdmin: React.FC = () => {
               border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200
               ${isDraggingFile ? 'border-primary bg-primary/10 scale-105' : 'border-muted hover:border-muted-foreground/50 hover:bg-muted/50'}
             `} onDragOver={handleFileDragOver} onDragLeave={handleFileDragLeave} onDrop={handleFileDrop}>
-            <input ref={fileInputRef} type="file" multiple accept=".png" onChange={e => handleFileUpload(e.target.files || [])} className="hidden" disabled={uploading} />
+            <input ref={fileInputRef} type="file" multiple accept="image/png,.png" onChange={e => {
+              const files = e.target.files;
+              if (!files || files.length === 0) {
+                toast.error('Nenhum arquivo selecionado. Certifique-se de escolher arquivos PNG.');
+                return;
+              }
+              handleFileUpload(files);
+            }} className="hidden" disabled={uploading} />
             
             <div className="space-y-4">
               <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
@@ -350,7 +357,12 @@ const LogosAdmin: React.FC = () => {
               </div>
               
               <div>
-                <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} size="lg" className="mb-2">
+              <Button onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                  fileInputRef.current?.click();
+                }} disabled={uploading} size="lg" className="mb-2">
                   <Plus className="h-4 w-4 mr-2" />
                   {uploading ? 'Enviando...' : 'Selecionar PNGs'}
                 </Button>
@@ -499,10 +511,12 @@ const LogosAdmin: React.FC = () => {
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center gap-2">
                           <h4 className="font-medium text-sm truncate">{logo.name}</h4>
-                          {logo.link_url && <a href={logo.link_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 transition-colors" onClick={e => e.stopPropagation()}>
-                              <ExternalLink className="h-3 w-3" />
-                            </a>}
                         </div>
+                        {logo.link_url && <a href={logo.link_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors truncate max-w-[200px]" onClick={e => e.stopPropagation()}>
+                            <LinkIcon className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{(() => { try { return new URL(logo.link_url).hostname; } catch { return logo.link_url; } })()}</span>
+                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                          </a>}
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>Ordem: {logo.sort_order}</span>
                           <Badge variant="outline" className="text-xs">
