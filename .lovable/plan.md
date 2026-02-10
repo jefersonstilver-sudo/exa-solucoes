@@ -1,66 +1,72 @@
 
 
-# Refatorar Preview do Ticker: Conter no Card + Ajuste Interativo de Logos
+# Corrigir Flickering e Travamento ao Ajustar Escala de Logos
 
-## Problema 1: Logos saindo do container vermelho
+## Causa raiz
 
-O componente `LogoTicker` usa `className="w-screen left-1/2 -translate-x-1/2"` (linha 161) que forca largura total da tela. Dentro do Card do admin, isso faz as logos transbordarem para fora do quadrado vermelho.
+Cada movimento do slider dispara uma cadeia destrutiva:
 
-**Solucao:** Adicionar uma prop `contained` ao `LogoTicker` que, quando ativa, remove o `w-screen` e usa `w-full` com `overflow-hidden`. O admin passa `contained={true}`.
+1. `handlePreviewScaleChange` chama `updateLogo` que faz UPDATE no banco
+2. `updateLogo` depois chama `fetchAllLogos()` -- refetch completo, `loading=true`
+3. Real-time subscription do `useLogosAdmin` detecta a mudanca -- chama `fetchAllLogos()` de novo
+4. `LogoTicker` usa `useLogos()` que tem seu PROPRIO real-time -- chama edge function de novo
 
-## Problema 2: Ajuste de tamanho direto no preview
+Resultado: 3+ refetches por tick do slider, cada um setando `loading=true`, fazendo o ticker sumir e reaparecer.
 
-Atualmente os botoes +/- ficam escondidos na lista abaixo e so aparecem no hover. O usuario quer clicar na logo diretamente no preview vermelho e ajustar ali.
+## Solucao: Optimistic Updates + Debounce
 
-**Solucao:** Criar um modo interativo no preview onde:
-- Cada logo no preview e clicavel
-- Ao clicar, a logo selecionada ganha um destaque visual (borda branca, glow)
-- Aparece um painel flutuante abaixo do preview com controles de escala (slider + botoes +/-)
-- A escala vai de 10% a 400% com feedback visual em tempo real
-- Animacoes suaves (scale transition 300ms ease-out) estilo Apple
-- Clicar fora ou em outra logo troca a selecao
+### Arquivo 1: `src/hooks/useLogos.ts` -- updateLogo com optimistic update
 
-## Alteracoes tecnicas
+No `updateLogo` do `useLogosAdmin`:
+- Atualizar o state LOCAL imediatamente (sem refetch)
+- Nao chamar `fetchAllLogos()` apos o update
+- Remover o refetch automatico do real-time para updates de scale (usar flag `skipNextRealtime`)
 
-### Arquivo 1: `src/components/exa/LogoTicker.tsx`
+Mudanca principal:
+```
+const updateLogo = async (id, updates) => {
+  // 1. Optimistic: atualizar state local imediatamente
+  setLogos(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+  
+  // 2. DB update (sem refetch depois)
+  const { error } = await supabase.from('logos').update(updates).eq('id', id);
+  
+  // 3. Se erro, reverter
+  if (error) {
+    fetchAllLogos(); // rollback
+    throw error;
+  }
+}
+```
 
-- Adicionar prop `contained?: boolean` (default: false)
-- Quando `contained=true`:
-  - Remover `w-screen left-1/2 -translate-x-1/2` da section
-  - Usar `w-full` com `overflow-hidden`
-- Adicionar prop `onLogoClick?: (logoId: string) => void`
-- Adicionar prop `selectedLogoId?: string | null`
-- Quando `selectedLogoId` esta definido, a logo correspondente ganha classes de destaque (ring-2 ring-white/80 scale-110 z-10)
+Para o real-time, adicionar um `useRef` que ignora o proximo evento se foi disparado pelo proprio usuario (para evitar o refetch duplicado durante ajuste de escala).
 
-### Arquivo 2: `src/components/admin/LogosAdmin.tsx`
+### Arquivo 2: `src/components/admin/LogosAdmin.tsx` -- Debounce no slider
 
-- Adicionar state `selectedPreviewLogo: string | null`
-- Passar `contained={true}`, `onLogoClick`, `selectedLogoId` para o LogoTicker
-- Abaixo do ticker preview, renderizar painel de controle quando uma logo esta selecionada:
-  - Nome da logo selecionada
-  - Slider de escala (0.1 a 4.0) com valor em porcentagem
-  - Botoes - e + com incremento de 0.1
-  - Botao "Resetar para 100%"
-  - Transicao suave ao mudar escala (framer-motion ou CSS transition)
-- O CardContent do preview recebe `overflow-hidden` para garantir contencao
+O slider `onValueChange` dispara a cada pixel. Precisamos:
+- Usar state LOCAL para o valor do slider (atualiza instantaneamente na UI)
+- Debounce o update real para o banco (so salva apos 300ms sem movimento)
+- Mostrar o valor em tempo real no badge sem esperar o banco
 
-### Arquivo 3: `src/components/exa/TickerLogoItem.tsx`
+Mudancas:
+- Adicionar `localScale` state e `debounceTimer` ref
+- Slider controla `localScale` (instantaneo)
+- `useEffect` com debounce de 300ms envia para o banco
+- Badge mostra `localScale` em vez de `selectedLogo.scale_factor`
 
-- Adicionar props `onClick?: () => void` e `isSelected?: boolean`
-- Quando `isSelected=true`: aplicar `ring-2 ring-white shadow-lg shadow-white/20 scale-105 z-10 opacity-100` com transicao suave
-- Quando `onClick` existe: `cursor-pointer` no container (prioridade sobre o link_url)
+### Arquivo 3: `src/components/exa/LogoTicker.tsx` -- Nao piscar no refetch
 
-## Resultado esperado
+O `LogoTicker` usa `useLogos()` que seta `loading=true` no refetch, fazendo o ticker sumir. Precisamos:
+- So mostrar loading na PRIMEIRA carga (quando `logos` esta vazio)
+- Refetches subsequentes mantem as logos anteriores visiveis
 
-- Preview do ticker 100% contido dentro do card vermelho
-- Ao clicar em qualquer logo no preview, ela fica destacada com glow branco
-- Painel elegante aparece abaixo com slider para ajustar escala de 10% a 400%
-- Mudancas refletem em tempo real no preview com animacao suave
-- Nenhuma outra funcionalidade e alterada
+Mudanca: trocar `if (loading)` por `if (loading && logos.length === 0)` para so mostrar skeleton na primeira vez.
 
 ## Arquivos modificados
 
-1. `src/components/exa/LogoTicker.tsx` -- prop contained + selecao
-2. `src/components/exa/TickerLogoItem.tsx` -- click + destaque visual
-3. `src/components/admin/LogosAdmin.tsx` -- painel de controle interativo
+1. `src/hooks/useLogos.ts` -- optimistic update no `updateLogo`, skip realtime duplicado
+2. `src/components/admin/LogosAdmin.tsx` -- debounce no slider, state local para escala
+3. `src/components/exa/LogoTicker.tsx` -- nao esconder logos durante refetch
+
+Nenhuma outra funcionalidade sera alterada.
 
