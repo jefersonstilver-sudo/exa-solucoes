@@ -64,11 +64,11 @@ const TickerLogoItem: React.FC<TickerLogoItemProps> = ({
     <div 
       className={`flex items-center justify-center p-2 md:p-4 transition-all duration-300 ease-out ${
         isSelected 
-          ? 'ring-2 ring-white shadow-lg shadow-white/20 scale-105 z-10 rounded-lg bg-white/10' 
+          ? 'ring-2 ring-white shadow-lg shadow-white/20 z-10 rounded-lg bg-white/10' 
           : ''
       } ${className}`}
       onClick={handleClick}
-      style={{ cursor: hasInteraction ? 'pointer' : 'default', transform: `scale(${scaleFactor})` }}
+      style={{ cursor: hasInteraction ? 'pointer' : 'default', transform: `scale(${scaleFactor * (isSelected ? 1.05 : 1)})` }}
     >
       <img
         src={imageUrl}

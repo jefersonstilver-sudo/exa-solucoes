@@ -106,7 +106,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       <TickerLogoItem
         key={logo.id}
         logo={logo}
-        className="transition-all duration-300 ease-out hover:scale-110"
+        className="transition-all duration-300 ease-out"
         onImageLoad={handleLogoLoad}
         onImageError={handleLogoError}
         onClick={onLogoClick ? () => onLogoClick(logo.id) : undefined}
@@ -174,7 +174,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
         className={sectionClassName}
       >
         <div 
-          className="ticker w-full h-16 md:h-18 lg:h-20 relative overflow-hidden bg-[#9C1E1E] rounded-none"
+          className="ticker w-full h-16 md:h-18 lg:h-20 relative overflow-x-hidden bg-[#9C1E1E] rounded-none"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
