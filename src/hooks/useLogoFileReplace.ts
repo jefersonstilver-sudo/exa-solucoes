@@ -17,8 +17,8 @@ export const useLogoFileReplace = () => {
         return false;
       }
 
-      if (newFile.size > 1024 * 1024) {
-        toast.error('Arquivo muito grande (máx. 1MB)');
+      if (newFile.size > 5 * 1024 * 1024) {
+        toast.error('Arquivo muito grande (máx. 5MB)');
         return false;
       }
 
