@@ -68,12 +68,11 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
     const animationDirection = direction === 'ltr' ? 'normal' : 'reverse';
 
     track.style.animation = `logoTicker ${duration}s linear infinite ${animationDirection}`;
-    track.style.animationPlayState = isPaused ? 'paused' : 'running';
 
     return () => {
       if (track) track.style.animation = 'none';
     };
-  }, [logos, speed, direction, loading, prefersReducedMotion, recalcKey, isPaused]);
+  }, [logos, speed, direction, loading, prefersReducedMotion, recalcKey]);
 
   // Control animation play state separately for smooth pause/resume
   useEffect(() => {
@@ -178,9 +177,9 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       <section 
         id="home-logo-ticker" 
         aria-label="Marcas parceiras"
-        className="relative w-full overflow-hidden bg-[#9C1E1E]"
+        className="relative w-full overflow-hidden bg-[#7D1818]"
       >
-        <div className="w-full min-h-[4rem] md:min-h-[5rem] relative bg-[#9C1E1E] rounded-none py-3">
+        <div className="w-full min-h-[4rem] md:min-h-[5rem] relative bg-[#7D1818] rounded-none py-3">
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 px-4">
             {logos.map((logo) => (
               <TickerLogoItem
@@ -200,8 +199,8 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
   }
 
   const sectionClassName = contained
-    ? "relative w-full overflow-hidden bg-[#9C1E1E]"
-    : "relative w-screen left-1/2 -translate-x-1/2 mt-0 overflow-hidden bg-[#9C1E1E]";
+    ? "relative w-full overflow-hidden bg-[#7D1818]"
+    : "relative w-screen left-1/2 -translate-x-1/2 mt-0 overflow-hidden bg-[#7D1818]";
 
   return (
     <>
@@ -219,7 +218,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
         className={sectionClassName}
       >
         <div 
-          className="ticker w-full h-20 md:h-24 lg:h-28 relative overflow-hidden bg-[#9C1E1E] rounded-none"
+          className="ticker w-full h-20 md:h-24 lg:h-28 relative overflow-hidden bg-[#7D1818] rounded-none"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
