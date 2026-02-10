@@ -1,57 +1,56 @@
 
+# Correcoes no Ticker de Logos + Adicionar na Proposta Publica
 
-# Mostrar Tipo de Evento + Responsaveis no Calendario e Atualizar em Tempo Real
+## 3 problemas a resolver
 
-## Problema
+### 1. Preview do Ticker no Admin - fundo escuro ilegivel
 
-1. No calendario (compact TaskCard), so aparece o titulo e horario. Nao mostra **qual o tipo** (Tarefa, Reuniao, Compromisso, Aviso) nem **para quem** e atribuido.
-2. O usuario quer que ao criar uma tarefa, ela apareca imediatamente tanto no calendario quanto nas listas de tarefas.
+**Arquivo:** `src/components/admin/LogosAdmin.tsx` (linha 321-326)
 
-## Diagnostico
+O container do preview usa `bg-gradient-to-br from-exa-black via-[#9C1E1E]/10 to-exa-black` que resulta em fundo quase preto. O texto "confiam na EXA" usa gradiente de vermelho-para-preto que fica invisivel.
 
-### Tipo de evento no compact card
-O `TaskCard` em modo `compact` (usado no calendario) ja exibe o icone do tipo de evento, mas **nao exibe o label** ("Reuniao", "Compromisso", etc.) nem os responsaveis. Linhas 129-147 do `TaskCard.tsx`.
+**Correcao:**
+- Background: trocar para `bg-[#9C1E1E]` (vermelho solido oficial)
+- Texto "confiam na EXA": trocar gradiente invisivel para `text-[#FFD700]` (dourado, contraste alto)
 
-### Responsaveis nao carregados
-A query da Agenda (`AgendaPage.tsx` linha 79-82) busca campos diretos da tabela `tasks` mas **nao faz join** com `task_responsaveis` e `users`. O tipo `AgendaTask` tambem nao tem campo de responsaveis.
+### 2. Botao de Zoom limitado a 300% - expandir para 400%
 
-### Tempo real
-O `invalidateQueries` para `agenda-tasks`, `minha-manha-tasks` e `central-tarefas` ja existe no `CreateTaskModal.tsx`. A atualizacao ja deveria funcionar apos criacao. Se nao esta aparecendo, pode ser por causa do `pollingCoordinator` com throttle de 30 segundos.
+**Arquivo:** `src/components/admin/LogosAdmin.tsx`
 
-## O que sera feito
+Atualmente:
+- `handleScaleUp` (linha 207): `Math.min(..., 3.0)` -- maximo 300%
+- `handleScaleDown` (linha 229): `Math.max(..., 0.5)` -- minimo 50%
+- Botao "+" desabilitado em `>= 3.0` (linha 525)
 
-### 1. Expandir o tipo `AgendaTask` (TaskCard.tsx)
-Adicionar campo opcional `responsaveis` ao tipo:
-```typescript
-responsaveis?: { user_id: string; user_nome: string }[];
-todos_responsaveis?: boolean;
-```
+**Correcao:**
+- Alterar limite maximo de `3.0` para `4.0` em `handleScaleUp`
+- Alterar condicao de desabilitacao do botao "+" de `>= 3.0` para `>= 4.0`
+- Mantém o minimo de 50% (0.5)
 
-### 2. Atualizar a query da Agenda (AgendaPage.tsx)
-Incluir o join com `task_responsaveis` e `users`:
-```typescript
-.select('id, titulo, ..., task_responsaveis(user_id, users:user_id(nome))')
-```
+### 3. Ticker na Pagina Publica da Proposta
 
-### 3. Melhorar o compact TaskCard (TaskCard.tsx)
-Alterar o modo `compact` (linhas 129-147) para mostrar:
-- Icone do tipo + **label abreviado** (ex: "Reuniao", "Tarefa")
-- Nome do responsavel (primeiro nome, truncado)
-- Manter horario
+**Arquivo:** `src/pages/public/PropostaPublicaPage.tsx` (linhas 2712-2717)
 
-Layout proposto:
-```
-[icone] Reuniao de fechamento
-Joao | 18:00
-```
+Adicionar o componente `LogoTicker` entre o card "Contato Comercial" e o footer, com titulo "Empresas que confiam na EXA".
 
-### 4. Garantir refresh imediato
-O `invalidateQueries` ja esta implementado corretamente. Verificar se nao ha cache bloqueando. Se necessario, adicionar `refetchType: 'all'` nas invalidacoes.
+**Implementacao:**
+- Importar `LogoTicker` de `@/components/exa/LogoTicker`
+- Inserir secao full-width com fundo `bg-[#9C1E1E]` e cantos arredondados
+- Titulo: "Empresas que confiam na EXA" em branco com destaque dourado
+- Posicao: entre a linha 2712 (fim do card Contato) e a linha 2714 (footer)
 
-## Arquivos modificados
+## Detalhes tecnicos
 
-1. **`src/components/admin/agenda/TaskCard.tsx`** - Expandir tipo AgendaTask, melhorar compact card
-2. **`src/pages/admin/AgendaPage.tsx`** - Expandir query para incluir responsaveis
+### Arquivos modificados
 
-Nenhum outro arquivo sera alterado.
+1. **`src/components/admin/LogosAdmin.tsx`**
+   - Linha 321: trocar background do preview
+   - Linha 323: trocar estilo do texto
+   - Linha 207: limite de zoom para 4.0
+   - Linha 525: condicao desabilitacao para 4.0
 
+2. **`src/pages/public/PropostaPublicaPage.tsx`**
+   - Linha 3 (imports): adicionar LogoTicker
+   - Linhas 2712-2714: inserir secao do ticker
+
+Nenhum outro arquivo sera alterado. Toda funcionalidade existente permanece intacta.
