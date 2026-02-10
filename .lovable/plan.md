@@ -1,47 +1,70 @@
 
 
-# Fix: Logo Scale Factor Not Applying Visually
+# Fix: Logos Nao Escalam -- Causa Raiz Real Encontrada
 
-## Root Cause (Two Conflicts)
+## Diagnostico Definitivo
 
-1. **Overflow clipping**: The ticker container div (line 177 of `LogoTicker.tsx`) has fixed height `h-16 md:h-18 lg:h-20` with `overflow-hidden`. Any logo scaled above 100% gets cut off.
+O problema NAO e CSS. O CSS esta correto (`transform: scale(scaleFactor)` no div, sem conflitos).
 
-2. **CSS transform conflict**: The `className` on TickerLogoItem includes Tailwind classes like `hover:scale-110` and `scale-105` (isSelected). These generate CSS `transform: scale(1.1)` which **overrides** the inline `style={{ transform: scale(scaleFactor) }}`. CSS `transform` from classes and inline styles cannot stack -- one replaces the other entirely.
+O problema e que existem **DOIS hooks completamente separados** com estados independentes:
 
-## Solution
-
-### File 1: `src/components/exa/TickerLogoItem.tsx`
-
-- Remove `scale-105` from the `isSelected` className (line 67)
-- Combine all scale values into a **single inline transform**: multiply `scaleFactor` by the selection boost (1.05 when selected)
-- Remove `hover:scale-110` from the `className` prop handling (it will be handled by the parent)
-
-Change the div style to:
-```tsx
-style={{ 
-  cursor: hasInteraction ? 'pointer' : 'default', 
-  transform: `scale(${scaleFactor * (isSelected ? 1.05 : 1)})` 
-}}
+```text
+LogosAdmin.tsx
+  |-- useLogosAdmin() --> state A (recebe optimistic updates)
+  |-- LogoTicker (preview)
+        |-- useLogos() --> state B (NUNCA recebe os updates!)
 ```
 
-Remove `scale-105` from the isSelected className string.
+Quando o slider muda a escala:
+1. `handlePreviewScaleChange` chama `updateLogo` do `useLogosAdmin`
+2. `useLogosAdmin` faz optimistic update no SEU state (state A)
+3. Mas o `LogoTicker` usa `useLogos()` que tem seu PROPRIO state (state B)
+4. State B so atualiza quando o real-time dispara e chama a Edge Function
+5. Mas o `skipNextRealtime` no `useLogosAdmin` impede o refetch no admin...
+6. ...enquanto o `useLogos` dentro do LogoTicker tem SEU PROPRIO real-time que chama `fetchLogos()` com `setLoading(true)` -- causando flicker
 
-### File 2: `src/components/exa/LogoTicker.tsx`
+**Resultado**: O slider mexe, o banco atualiza, mas o ticker NUNCA recebe o novo valor de escala porque usa um hook diferente.
 
-- Remove `hover:scale-110` from the className passed to TickerLogoItem (line 109), since it conflicts with the inline transform
-- Remove `overflow-hidden` from the ticker container div (line 177) or replace with `overflow-x-hidden overflow-y-visible` to allow vertical expansion of scaled logos
+## Solucao
 
-Line 109 change:
-```tsx
-className="transition-all duration-300 ease-out"
+Passar os logos diretamente como prop para o `LogoTicker` quando usado no contexto admin. Assim o ticker usa os mesmos dados com optimistic updates.
+
+### Arquivo 1: `src/components/exa/LogoTicker.tsx`
+
+Adicionar prop opcional `logos` ao componente. Quando fornecida, usar esses logos ao inves de chamar `useLogos()`:
+
+- Adicionar `logos?: Logo[]` na interface de props
+- Usar logica condicional: se `logos` prop existe, usar ela; senao, usar o hook `useLogos()`
+- Isso garante que no admin, o ticker ve os mesmos dados otimisticamente atualizados
+
+### Arquivo 2: `src/components/admin/LogosAdmin.tsx`
+
+Passar a prop `logos` (filtrada por `is_active`) para o `LogoTicker`:
+
+```
+<LogoTicker
+  speed={60}
+  contained={true}
+  logos={logos.filter(l => l.is_active)}
+  onLogoClick={...}
+  selectedLogoId={selectedPreviewLogo}
+/>
 ```
 
-Line 177 change -- replace `overflow-hidden` with `overflow-x-hidden`:
-```tsx
-className="ticker w-full h-16 md:h-18 lg:h-20 relative overflow-x-hidden bg-[#9C1E1E] rounded-none"
-```
+Isso faz com que quando `updateLogo` faz o optimistic update no state do `useLogosAdmin`, o `LogoTicker` receba imediatamente os novos valores (incluindo `scale_factor`), sem esperar real-time ou Edge Function.
 
-## Files Modified
+### Arquivo 3: `src/hooks/useLogos.ts` (useLogos hook)
 
-1. `src/components/exa/TickerLogoItem.tsx` -- unify all transforms into single inline style
-2. `src/components/exa/LogoTicker.tsx` -- remove conflicting hover:scale-110 class, fix overflow clipping
+Remover o `setLoading(true)` do `fetchLogos` quando ja existem logos carregadas (refetch silencioso), para evitar flicker no ticker publico tambem:
+
+- Mudar para: `if (logos.length === 0) setLoading(true);`
+- Refetches subsequentes mantem as logos visiveis
+
+## Arquivos Modificados
+
+1. `src/components/exa/LogoTicker.tsx` -- aceitar prop `logos` opcional
+2. `src/components/admin/LogosAdmin.tsx` -- passar logos filtradas como prop
+3. `src/hooks/useLogos.ts` -- refetch silencioso (sem loading flicker)
+
+Nenhuma outra funcionalidade sera alterada.
+
