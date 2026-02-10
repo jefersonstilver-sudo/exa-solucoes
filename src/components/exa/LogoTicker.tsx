@@ -219,7 +219,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
         className={sectionClassName}
       >
         <div 
-          className="ticker w-full h-20 md:h-24 lg:h-28 relative overflow-x-hidden overflow-y-visible bg-[#9C1E1E] rounded-none"
+          className="ticker w-full h-20 md:h-24 lg:h-28 relative overflow-hidden bg-[#9C1E1E] rounded-none"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
