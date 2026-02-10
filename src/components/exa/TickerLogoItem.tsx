@@ -60,6 +60,12 @@ const TickerLogoItem: React.FC<TickerLogoItemProps> = ({
 
   const hasInteraction = !!onClick || !!logo.link_url;
 
+  // Dimensões base que escalam com o scale_factor
+  const baseHeight = 48; // 3rem base (equivalente a max-h-12)
+  const baseMaxWidth = 160; // 10rem base (equivalente a max-w-40)
+  const scaledHeight = baseHeight * scaleFactor;
+  const scaledMaxWidth = baseMaxWidth * scaleFactor;
+
   return (
     <div 
       className={`flex items-center justify-center p-2 md:p-4 transition-all duration-300 ease-out ${
@@ -68,15 +74,21 @@ const TickerLogoItem: React.FC<TickerLogoItemProps> = ({
           : ''
       } ${className}`}
       onClick={handleClick}
-      style={{ cursor: hasInteraction ? 'pointer' : 'default', transform: `scale(${scaleFactor * (isSelected ? 1.05 : 1)})` }}
+      style={{ 
+        cursor: hasInteraction ? 'pointer' : 'default',
+        transform: isSelected ? 'scale(1.05)' : undefined
+      }}
     >
       <img
         src={imageUrl}
         alt={logo.name}
-        className={`max-h-12 md:max-h-16 max-w-28 md:max-w-40 object-contain transition-all duration-300 brightness-0 invert ${
+        className={`object-contain transition-all duration-300 brightness-0 invert ${
           isSelected ? 'opacity-100' : 'opacity-70 hover:opacity-100'
         }`}
-        
+        style={{
+          height: `${scaledHeight}px`,
+          maxWidth: `${scaledMaxWidth}px`,
+        }}
         onLoad={handleImageLoad}
         onError={handleImageError}
         loading="lazy"

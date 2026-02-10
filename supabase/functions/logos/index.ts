@@ -37,7 +37,7 @@ serve(async (req) => {
       // ✅ FIX: Select apenas colunas necessárias + LIMIT
       const { data: logos, error } = await supabaseClient
         .from('logos')
-        .select('id, name, file_url, link_url, is_active, sort_order, storage_bucket, storage_key, color_variant')
+        .select('id, name, file_url, link_url, is_active, sort_order, storage_bucket, storage_key, color_variant, scale_factor')
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
         .limit(20);
@@ -86,7 +86,8 @@ serve(async (req) => {
               sort_order: logo.sort_order,
               storage_bucket: logo.storage_bucket,
               storage_key: logo.storage_key,
-              color_variant: logo.color_variant
+              color_variant: logo.color_variant,
+              scale_factor: logo.scale_factor
             };
           }
           try {
@@ -100,7 +101,8 @@ serve(async (req) => {
               sort_order: logo.sort_order,
               storage_bucket: logo.storage_bucket,
               storage_key: logo.storage_key,
-              color_variant: logo.color_variant
+              color_variant: logo.color_variant,
+              scale_factor: logo.scale_factor
             };
             
             let { data: s2 } = await supabaseClient.storage.from(info.bucket).createSignedUrl(info.pathRaw, 60 * 60 * 24 * 7);
@@ -113,7 +115,8 @@ serve(async (req) => {
               sort_order: logo.sort_order,
               storage_bucket: logo.storage_bucket,
               storage_key: logo.storage_key,
-              color_variant: logo.color_variant
+              color_variant: logo.color_variant,
+              scale_factor: logo.scale_factor
             };
             
             const { data: pub1 } = supabaseClient.storage.from(info.bucket).getPublicUrl(info.pathDecoded);
@@ -126,7 +129,8 @@ serve(async (req) => {
               sort_order: logo.sort_order,
               storage_bucket: logo.storage_bucket,
               storage_key: logo.storage_key,
-              color_variant: logo.color_variant
+              color_variant: logo.color_variant,
+              scale_factor: logo.scale_factor
             };
             
             const { data: pub2 } = supabaseClient.storage.from(info.bucket).getPublicUrl(info.pathRaw);
@@ -139,7 +143,8 @@ serve(async (req) => {
               sort_order: logo.sort_order,
               storage_bucket: logo.storage_bucket,
               storage_key: logo.storage_key,
-              color_variant: logo.color_variant
+              color_variant: logo.color_variant,
+              scale_factor: logo.scale_factor
             };
             
             return null;
