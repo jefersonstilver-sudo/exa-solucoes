@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink, Calendar, Globe, Users, Rocket, Lock, Pencil, Package, RefreshCw, DollarSign } from 'lucide-react';
+import LogoTicker from '@/components/exa/LogoTicker';
 import { format, addDays, addMonths, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -2710,6 +2711,14 @@ const PropostaPublicaPage = () => {
             </div>
           </div>
         </Card>
+
+        {/* Empresas que confiam na EXA - Logo Ticker */}
+        <div className="w-full py-10 bg-[#9C1E1E] rounded-xl mt-8 overflow-hidden">
+          <h3 className="font-montserrat font-bold text-xl text-center text-white mb-6">
+            Empresas que <span className="text-[#FFD700]">confiam</span> na EXA
+          </h3>
+          <LogoTicker speed={50} />
+        </div>
 
         {/* Footer */}
         <div className="text-center text-xs text-muted-foreground py-4">
