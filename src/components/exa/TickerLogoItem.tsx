@@ -68,7 +68,7 @@ const TickerLogoItem: React.FC<TickerLogoItemProps> = ({
           : ''
       } ${className}`}
       onClick={handleClick}
-      style={{ cursor: hasInteraction ? 'pointer' : 'default' }}
+      style={{ cursor: hasInteraction ? 'pointer' : 'default', transform: `scale(${scaleFactor})` }}
     >
       <img
         src={imageUrl}
@@ -76,7 +76,7 @@ const TickerLogoItem: React.FC<TickerLogoItemProps> = ({
         className={`max-h-12 md:max-h-16 max-w-28 md:max-w-40 object-contain transition-all duration-300 brightness-0 invert ${
           isSelected ? 'opacity-100' : 'opacity-70 hover:opacity-100'
         }`}
-        style={{ transform: `scale(${scaleFactor})` }}
+        
         onLoad={handleImageLoad}
         onError={handleImageError}
         loading="lazy"
