@@ -106,7 +106,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       <TickerLogoItem
         key={logo.id}
         logo={logo}
-        className="h-10 md:h-12 lg:h-14 transition-all duration-300 ease-out hover:scale-110"
+        className="transition-all duration-300 ease-out hover:scale-110"
         onImageLoad={handleLogoLoad}
         onImageError={handleLogoError}
         onClick={onLogoClick ? () => onLogoClick(logo.id) : undefined}
