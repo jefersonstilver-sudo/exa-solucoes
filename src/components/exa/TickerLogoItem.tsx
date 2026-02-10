@@ -58,7 +58,7 @@ const TickerLogoItem: React.FC<TickerLogoItemProps> = ({
       <img
         src={imageUrl}
         alt={logo.name}
-        className="max-h-12 md:max-h-16 max-w-28 md:max-w-40 object-contain opacity-70 hover:opacity-100 transition-all duration-300"
+        className="max-h-12 md:max-h-16 max-w-28 md:max-w-40 object-contain opacity-70 hover:opacity-100 transition-all duration-300 brightness-0 invert"
         style={{ transform: `scale(${scaleFactor})` }}
         onLoad={handleImageLoad}
         onError={handleImageError}
