@@ -1,36 +1,47 @@
 
 
-# Fix: Logo Not Visually Scaling in Ticker Preview
+# Fix: Logo Scale Factor Not Applying Visually
 
-## Root Cause
+## Root Cause (Two Conflicts)
 
-In `TickerLogoItem.tsx` (line 79), the scale is applied via `transform: scale()` on the `<img>` element. However:
-- The `<img>` has `max-h-12 md:max-h-16 max-w-28 md:max-w-40` constraining its box size
-- CSS `transform: scale()` scales the visual rendering but does NOT change the element's layout box
-- The parent containers in `LogoTicker.tsx` (line 109) add `h-10 md:h-12 lg:h-14` and the ticker div has `overflow-hidden`
-- Result: the image scales up visually but is immediately clipped by its own max constraints and parent overflow
+1. **Overflow clipping**: The ticker container div (line 177 of `LogoTicker.tsx`) has fixed height `h-16 md:h-18 lg:h-20` with `overflow-hidden`. Any logo scaled above 100% gets cut off.
+
+2. **CSS transform conflict**: The `className` on TickerLogoItem includes Tailwind classes like `hover:scale-110` and `scale-105` (isSelected). These generate CSS `transform: scale(1.1)` which **overrides** the inline `style={{ transform: scale(scaleFactor) }}`. CSS `transform` from classes and inline styles cannot stack -- one replaces the other entirely.
 
 ## Solution
 
-Move the `transform: scale()` from the `<img>` to the **wrapper `<div>`** in `TickerLogoItem.tsx`. This way the entire logo container scales, and the visual effect is clean and visible. Also remove the conflicting height constraint from the className passed in `LogoTicker.tsx`.
-
-## Technical Changes
-
 ### File 1: `src/components/exa/TickerLogoItem.tsx`
 
-- Move `style={{ transform: scale(scaleFactor) }}` from the `<img>` (line 79) to the parent `<div>` (line 64)
-- Remove `transform` style from the `<img>` entirely
-- The div already has `transition-all duration-300 ease-out` so the animation will be smooth
+- Remove `scale-105` from the `isSelected` className (line 67)
+- Combine all scale values into a **single inline transform**: multiply `scaleFactor` by the selection boost (1.05 when selected)
+- Remove `hover:scale-110` from the `className` prop handling (it will be handled by the parent)
+
+Change the div style to:
+```tsx
+style={{ 
+  cursor: hasInteraction ? 'pointer' : 'default', 
+  transform: `scale(${scaleFactor * (isSelected ? 1.05 : 1)})` 
+}}
+```
+
+Remove `scale-105` from the isSelected className string.
 
 ### File 2: `src/components/exa/LogoTicker.tsx`
 
-- Remove the fixed height constraint `h-10 md:h-12 lg:h-14` from the className passed to `TickerLogoItem` (line 109) since it clips the scaled logos
-- Keep the `transition-all duration-300 ease-out hover:scale-110` for non-admin hover effect
+- Remove `hover:scale-110` from the className passed to TickerLogoItem (line 109), since it conflicts with the inline transform
+- Remove `overflow-hidden` from the ticker container div (line 177) or replace with `overflow-x-hidden overflow-y-visible` to allow vertical expansion of scaled logos
 
-## Files modified
+Line 109 change:
+```tsx
+className="transition-all duration-300 ease-out"
+```
 
-1. `src/components/exa/TickerLogoItem.tsx` -- move scale transform to container div
-2. `src/components/exa/LogoTicker.tsx` -- remove height constraint on logo items
+Line 177 change -- replace `overflow-hidden` with `overflow-x-hidden`:
+```tsx
+className="ticker w-full h-16 md:h-18 lg:h-20 relative overflow-x-hidden bg-[#9C1E1E] rounded-none"
+```
 
-No other functionality is altered.
+## Files Modified
 
+1. `src/components/exa/TickerLogoItem.tsx` -- unify all transforms into single inline style
+2. `src/components/exa/LogoTicker.tsx` -- remove conflicting hover:scale-110 class, fix overflow clipping
