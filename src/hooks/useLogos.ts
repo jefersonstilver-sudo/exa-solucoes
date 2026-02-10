@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Logo {
@@ -140,23 +140,28 @@ export const useLogosAdmin = () => {
     }
   };
 
+  // Flag to skip next realtime refetch (avoids duplicate after optimistic update)
+  const skipNextRealtime = useRef(false);
+
   const updateLogo = async (id: string, updates: Partial<Logo>) => {
+    // 1. Optimistic: update local state immediately
+    const previousLogos = logos;
+    setLogos(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+    skipNextRealtime.current = true;
+
     try {
-      // Use direct Supabase client instead of edge function for reliability
-      const { data, error } = await supabase
+      // 2. DB update (no refetch after)
+      const { error } = await supabase
         .from('logos')
         .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+        .eq('id', id);
 
       if (error) {
+        // 3. Rollback on error
+        setLogos(previousLogos);
+        skipNextRealtime.current = false;
         throw error;
       }
-
-      // Refresh local state
-      await fetchAllLogos();
-      return data;
     } catch (err) {
       console.error('❌ Error updating logo:', err);
       throw err;
@@ -195,7 +200,7 @@ export const useLogosAdmin = () => {
     fetchAllLogos();
   }, []);
 
-  // Real-time para admin também
+  // Real-time para admin também (skip if triggered by own optimistic update)
   useEffect(() => {
     const channel = supabase
       .channel('logos-admin-changes')
@@ -207,6 +212,10 @@ export const useLogosAdmin = () => {
           table: 'logos'
         },
         () => {
+          if (skipNextRealtime.current) {
+            skipNextRealtime.current = false;
+            return;
+          }
           fetchAllLogos();
         }
       )

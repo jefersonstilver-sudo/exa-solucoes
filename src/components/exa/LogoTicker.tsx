@@ -115,7 +115,8 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
     ));
   };
 
-  if (loading) {
+  // Only show loading skeleton on first load (when no logos cached yet)
+  if (loading && logos.length === 0) {
     return (
       <section id="home-logo-ticker" aria-label="Marcas parceiras" className="relative container mx-auto px-4 lg:px-8">
         <div className="ticker h-24 md:h-20 sm:h-16 relative overflow-hidden rounded-2xl bg-white/5 animate-pulse">

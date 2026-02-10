@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +35,8 @@ const LogosAdmin: React.FC = () => {
   const [deletingLogos, setDeletingLogos] = useState<Set<string>>(new Set());
   const [updatingScale, setUpdatingScale] = useState<Set<string>>(new Set());
   const [selectedPreviewLogo, setSelectedPreviewLogo] = useState<string | null>(null);
+  const [localScale, setLocalScale] = useState<number>(100);
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{
     [key: string]: number;
   }>({});
@@ -298,6 +300,15 @@ const LogosAdmin: React.FC = () => {
       toast.error('Apenas arquivos PNG são aceitos');
     }
   }, []);
+  const selectedLogo = selectedPreviewLogo ? logos.find(l => l.id === selectedPreviewLogo) : null;
+
+  // Sync localScale when selecting a different logo
+  useEffect(() => {
+    if (selectedLogo) {
+      setLocalScale(Math.round(Number(selectedLogo.scale_factor ?? 1) * 100));
+    }
+  }, [selectedPreviewLogo]);
+
   if (loading) {
     return <Card>
         <CardContent className="flex items-center justify-center py-8">
@@ -308,23 +319,25 @@ const LogosAdmin: React.FC = () => {
         </CardContent>
       </Card>;
   }
-  const selectedLogo = selectedPreviewLogo ? logos.find(l => l.id === selectedPreviewLogo) : null;
 
-  const handlePreviewScaleChange = async (value: number) => {
-    if (!selectedPreviewLogo) return;
-    const clamped = Math.max(0.1, Math.min(4.0, Number(value.toFixed(2))));
-    setUpdatingScale(prev => new Set(prev).add(selectedPreviewLogo));
-    try {
-      await updateLogo(selectedPreviewLogo, { scale_factor: clamped });
-    } catch {
-      toast.error('Erro ao alterar escala');
-    } finally {
-      setUpdatingScale(prev => {
-        const next = new Set(prev);
-        next.delete(selectedPreviewLogo!);
-        return next;
-      });
-    }
+  // Debounced DB write for scale changes
+  const handlePreviewScaleChange = (percentValue: number) => {
+    const clamped = Math.max(10, Math.min(400, Math.round(percentValue)));
+    setLocalScale(clamped);
+
+    // Clear previous timer
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
+    // Debounce: only write to DB after 300ms of no movement
+    debounceTimer.current = setTimeout(async () => {
+      if (!selectedPreviewLogo) return;
+      const scaleValue = Number((clamped / 100).toFixed(2));
+      try {
+        await updateLogo(selectedPreviewLogo, { scale_factor: scaleValue });
+      } catch {
+        toast.error('Erro ao alterar escala');
+      }
+    }, 300);
   };
 
   return <div className="space-y-6">
@@ -387,40 +400,34 @@ const LogosAdmin: React.FC = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {
-                    const current = Number(selectedLogo.scale_factor ?? 1);
-                    handlePreviewScaleChange(Math.max(0.1, current - 0.1));
-                  }}
-                  disabled={Number(selectedLogo.scale_factor ?? 1) <= 0.1 || updatingScale.has(selectedLogo.id)}
+                  onClick={() => handlePreviewScaleChange(localScale - 10)}
+                  disabled={localScale <= 10}
                   className="h-8 w-8 p-0 flex-shrink-0"
                 >
                   <Minus className="h-4 w-4" />
                 </Button>
 
                 <Slider
-                  value={[Number(selectedLogo.scale_factor ?? 1) * 100]}
+                  value={[localScale]}
                   min={10}
                   max={400}
                   step={10}
-                  onValueChange={([val]) => handlePreviewScaleChange(val / 100)}
+                  onValueChange={([val]) => handlePreviewScaleChange(val)}
                   className="flex-1"
                 />
 
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {
-                    const current = Number(selectedLogo.scale_factor ?? 1);
-                    handlePreviewScaleChange(Math.min(4.0, current + 0.1));
-                  }}
-                  disabled={Number(selectedLogo.scale_factor ?? 1) >= 4.0 || updatingScale.has(selectedLogo.id)}
+                  onClick={() => handlePreviewScaleChange(localScale + 10)}
+                  disabled={localScale >= 400}
                   className="h-8 w-8 p-0 flex-shrink-0"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
 
                 <Badge variant="secondary" className="min-w-[52px] justify-center text-xs">
-                  {Math.round(Number(selectedLogo.scale_factor ?? 1) * 100)}%
+                  {localScale}%
                 </Badge>
               </div>
 
@@ -428,8 +435,7 @@ const LogosAdmin: React.FC = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handlePreviewScaleChange(1.0)}
-                  disabled={updatingScale.has(selectedLogo.id)}
+                  onClick={() => handlePreviewScaleChange(100)}
                   className="text-xs"
                 >
                   <RotateCcw className="h-3 w-3 mr-1" />
