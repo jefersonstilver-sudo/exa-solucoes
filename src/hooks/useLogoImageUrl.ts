@@ -15,16 +15,16 @@ export const useLogoImageUrl = (logo: { file_url: string; storage_bucket?: strin
       setLoading(true);
       
       try {
-        // Se já é uma URL externa ou não tem informações de storage, usar diretamente
-        if (!logo.storage_bucket || !logo.storage_key || logo.file_url.startsWith('http')) {
-          // Detectar se é URL assinada (não aplicar cache-busting pois quebra o token)
+        // Se tem informações de storage, SEMPRE gerar URL assinada (bucket privado)
+        if (logo.storage_bucket && logo.storage_key) {
+          // Pular direto para gerar signed URL abaixo
+        } else {
+          // Sem info de storage: usar file_url diretamente (URL externa)
           const isSignedUrl = logo.file_url.includes('/storage/v1/object/sign/') || logo.file_url.includes('token=');
           
           if (isSignedUrl) {
-            // URLs assinadas já têm token - usar como está
             setImageUrl(logo.file_url);
           } else {
-            // URLs públicas/externas - aplicar cache-busting com separador correto
             const separator = logo.file_url.includes('?') ? '&' : '?';
             const urlWithCacheBuster = `${logo.file_url}${separator}v=${Date.now()}`;
             setImageUrl(urlWithCacheBuster);
