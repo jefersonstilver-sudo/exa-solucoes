@@ -1,80 +1,57 @@
 
 
-# Adicionar Multiplas Datas Personalizadas no CreateTaskModal
+# Mostrar Tipo de Evento + Responsaveis no Calendario e Atualizar em Tempo Real
+
+## Problema
+
+1. No calendario (compact TaskCard), so aparece o titulo e horario. Nao mostra **qual o tipo** (Tarefa, Reuniao, Compromisso, Aviso) nem **para quem** e atribuido.
+2. O usuario quer que ao criar uma tarefa, ela apareca imediatamente tanto no calendario quanto nas listas de tarefas.
+
+## Diagnostico
+
+### Tipo de evento no compact card
+O `TaskCard` em modo `compact` (usado no calendario) ja exibe o icone do tipo de evento, mas **nao exibe o label** ("Reuniao", "Compromisso", etc.) nem os responsaveis. Linhas 129-147 do `TaskCard.tsx`.
+
+### Responsaveis nao carregados
+A query da Agenda (`AgendaPage.tsx` linha 79-82) busca campos diretos da tabela `tasks` mas **nao faz join** com `task_responsaveis` e `users`. O tipo `AgendaTask` tambem nao tem campo de responsaveis.
+
+### Tempo real
+O `invalidateQueries` para `agenda-tasks`, `minha-manha-tasks` e `central-tarefas` ja existe no `CreateTaskModal.tsx`. A atualizacao ja deveria funcionar apos criacao. Se nao esta aparecendo, pode ser por causa do `pollingCoordinator` com throttle de 30 segundos.
 
 ## O que sera feito
 
-Permitir que o usuario selecione **2, 3 ou mais datas** ao criar uma tarefa. Em vez de um unico date picker, havera um sistema de "adicionar datas" com botao "+".
-
-## Como funciona
-
-Como a tabela `tasks` tem apenas **um campo `data_prevista`** (uma data por registro), a abordagem sera:
-
-- O usuario seleciona varias datas no modal (ex: 10/02, 12/02, 15/02)
-- Ao salvar, o sistema cria **uma task identica para cada data** selecionada
-- Todas as tasks terao o mesmo titulo, descricao, responsaveis, lead, propostas, etc.
-- Isso garante que cada data aparece corretamente no calendario/agenda sem alterar o banco de dados
-
-## Interface do usuario
-
-1. O campo "Data" atual sera substituido por uma lista de datas com botao "+" para adicionar mais
-2. Cada data pode ser removida individualmente (botao X)
-3. Pelo menos 1 data e obrigatoria
-4. Sem limite maximo, mas visualmente otimizado para 2-5 datas
-5. Hora inicio e hora limite aplicam-se a todas as datas igualmente
-
-## Detalhes Tecnicos
-
-### Arquivo modificado
-`src/components/admin/agenda/CreateTaskModal.tsx`
-
-### Mudanca de estado
-
-Trocar:
-```
-const [dataPrevista, setDataPrevista] = useState<Date | undefined>();
-```
-Por:
-```
-const [datasPrevistas, setDatasPrevistas] = useState<Date[]>([]);
+### 1. Expandir o tipo `AgendaTask` (TaskCard.tsx)
+Adicionar campo opcional `responsaveis` ao tipo:
+```typescript
+responsaveis?: { user_id: string; user_nome: string }[];
+todos_responsaveis?: boolean;
 ```
 
-### Nova UI de datas
-
-- Lista vertical de badges mostrando cada data selecionada (dd/MM/yyyy) com botao X
-- Botao "+ Adicionar data" que abre um Popover com Calendar
-- Ao selecionar uma data no calendario, ela e adicionada ao array (sem duplicatas)
-- Se so tiver 1 data, nao mostra o X (obrigatorio ter pelo menos 1)
-
-### Mutacao atualizada
-
-Em vez de um unico insert, fara um insert por data:
-
-```
-for (const data of datasPrevistas) {
-  const { data: taskData } = await supabase.from('tasks').insert({
-    ...campos,
-    data_prevista: format(data, 'yyyy-MM-dd'),
-  }).select('id').single();
-
-  // Vincular propostas e responsaveis para cada task criada
-  if (taskData?.id && selectedPropostas.length > 0) {
-    await supabase.from('task_propostas').insert(
-      selectedPropostas.map(pid => ({ task_id: taskData.id, proposta_id: pid }))
-    );
-  }
-}
+### 2. Atualizar a query da Agenda (AgendaPage.tsx)
+Incluir o join com `task_responsaveis` e `users`:
+```typescript
+.select('id, titulo, ..., task_responsaveis(user_id, users:user_id(nome))')
 ```
 
-### Reset do formulario
+### 3. Melhorar o compact TaskCard (TaskCard.tsx)
+Alterar o modo `compact` (linhas 129-147) para mostrar:
+- Icone do tipo + **label abreviado** (ex: "Reuniao", "Tarefa")
+- Nome do responsavel (primeiro nome, truncado)
+- Manter horario
 
-Trocar `setDataPrevista(undefined)` por `setDatasPrevistas([])`.
+Layout proposto:
+```
+[icone] Reuniao de fechamento
+Joao | 18:00
+```
 
-### Validacao
+### 4. Garantir refresh imediato
+O `invalidateQueries` ja esta implementado corretamente. Verificar se nao ha cache bloqueando. Se necessario, adicionar `refetchType: 'all'` nas invalidacoes.
 
-Exigir pelo menos 1 data selecionada antes de permitir salvar. Mostrar toast de erro se nenhuma data for escolhida.
+## Arquivos modificados
 
-### Nenhum outro arquivo sera modificado
+1. **`src/components/admin/agenda/TaskCard.tsx`** - Expandir tipo AgendaTask, melhorar compact card
+2. **`src/pages/admin/AgendaPage.tsx`** - Expandir query para incluir responsaveis
 
-Apenas `CreateTaskModal.tsx`. A agenda, central de tarefas e minha manha continuam funcionando normalmente pois cada task criada tera sua propria `data_prevista`.
+Nenhum outro arquivo sera alterado.
 
