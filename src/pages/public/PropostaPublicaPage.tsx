@@ -1857,6 +1857,10 @@ const PropostaPublicaPage = () => {
         </div>
       </header>
 
+      {/* Logo Ticker - Prova Social */}
+      <div className="w-full bg-[#9C1E1E] overflow-hidden">
+        <LogoTicker speed={50} />
+      </div>
 
       <div className="max-w-4xl mx-auto px-3 py-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* Banner Cortesia Especial - EXA Red Theme */}
@@ -2712,13 +2716,6 @@ const PropostaPublicaPage = () => {
           </div>
         </Card>
 
-        {/* Empresas que confiam na EXA - Logo Ticker */}
-        <div className="w-full py-10 bg-[#9C1E1E] rounded-xl mt-8 overflow-hidden">
-          <h3 className="font-montserrat font-bold text-xl text-center text-white mb-6">
-            Empresas que <span className="text-[#FFD700]">confiam</span> na EXA
-          </h3>
-          <LogoTicker speed={50} />
-        </div>
 
         {/* Footer */}
         <div className="text-center text-xs text-muted-foreground py-4">
