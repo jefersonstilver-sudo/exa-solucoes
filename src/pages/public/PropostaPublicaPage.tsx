@@ -1858,7 +1858,7 @@ const PropostaPublicaPage = () => {
       </header>
 
       {/* Logo Ticker - Prova Social */}
-      <div className="w-full bg-[#9C1E1E] overflow-hidden">
+      <div className="w-full bg-[#7D1818] overflow-hidden">
         <LogoTicker speed={50} />
       </div>
 
