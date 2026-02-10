@@ -39,6 +39,8 @@ export interface AgendaTask {
   escopo: string | null;
   concluida_por: string | null;
   data_conclusao: string | null;
+  todos_responsaveis?: boolean;
+  task_responsaveis?: { user_id: string; users: { nome: string } }[];
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -126,23 +128,42 @@ const TaskCard = ({ task, compact = false, showCompleteButton = true, onComplete
     }
   });
 
+  // Build responsible name for compact card
+  const firstResponsavel = task.task_responsaveis?.[0]?.users?.nome?.split(' ')[0];
+  const responsaveisCount = task.task_responsaveis?.length || 0;
+  const responsavelLabel = task.todos_responsaveis 
+    ? 'Todos' 
+    : responsaveisCount > 1 
+      ? `${firstResponsavel} +${responsaveisCount - 1}`
+      : firstResponsavel || null;
+
   if (compact) {
     return (
       <div 
         onClick={onClick}
         className={`px-2 py-1.5 rounded text-xs cursor-pointer transition-all hover:scale-105 hover:shadow-sm border ${isOverdue ? 'ring-1 ring-red-400' : ''} ${tipoConfig.color}`}
-        title={`${task.titulo} - ${STATUS_LABELS[task.status] || task.status}`}
+        title={`${tipoConfig.label}: ${task.titulo} - ${STATUS_LABELS[task.status] || task.status}${responsavelLabel ? ` | ${responsavelLabel}` : ''}`}
       >
         <div className="flex items-center gap-1">
           {tipoConfig.icon}
           <span className="font-medium truncate flex-1">{task.titulo}</span>
         </div>
-        {task.horario_inicio && (
-          <div className="flex items-center gap-0.5 mt-0.5 opacity-75">
-            <Clock className="h-2.5 w-2.5" />
-            <span className="text-[9px]">{task.horario_inicio?.substring(0, 5)}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-1 mt-0.5 opacity-75">
+          <span className="text-[9px] font-medium">{tipoConfig.label}</span>
+          {(responsavelLabel || task.horario_inicio) && <span className="text-[9px]">•</span>}
+          {responsavelLabel && (
+            <span className="text-[9px] flex items-center gap-0.5">
+              <Users className="h-2 w-2" />
+              {responsavelLabel}
+            </span>
+          )}
+          {task.horario_inicio && (
+            <span className="text-[9px] flex items-center gap-0.5">
+              <Clock className="h-2.5 w-2.5" />
+              {task.horario_inicio.substring(0, 5)}
+            </span>
+          )}
+        </div>
       </div>
     );
   }
