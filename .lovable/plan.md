@@ -1,48 +1,66 @@
 
 
-# Corrigir Upload de Logos, Resetar Escalas e Garantir Link Funcional
+# Refatorar Preview do Ticker: Conter no Card + Ajuste Interativo de Logos
 
-## Problemas identificados
+## Problema 1: Logos saindo do container vermelho
 
-### 1. Upload diz "nenhum arquivo selecionado"
-O `<input>` usa `accept=".png"` que em alguns navegadores rejeita arquivos PNG silenciosamente (especialmente se o MIME type do SO nao bate). Alem disso, o `handleFileUpload` recebe `e.target.files || []` -- quando `files` e `null` (nenhum arquivo passou o filtro do accept), passa array vazio e cai no `if (fileArray.length === 0) return` sem feedback. O input tambem nao e resetado antes de reabrir, entao selecionar o mesmo arquivo nao dispara `onChange`.
+O componente `LogoTicker` usa `className="w-screen left-1/2 -translate-x-1/2"` (linha 161) que forca largura total da tela. Dentro do Card do admin, isso faz as logos transbordarem para fora do quadrado vermelho.
 
-**Correcao:**
-- Mudar `accept` para `accept="image/png,.png"` (aceita tanto por MIME quanto por extensao)
-- Resetar o valor do input antes de abrir o seletor (`fileInputRef.current.value = ''`)
-- Adicionar toast de erro quando nenhum arquivo valido e selecionado
+**Solucao:** Adicionar uma prop `contained` ao `LogoTicker` que, quando ativa, remove o `w-screen` e usa `w-full` com `overflow-hidden`. O admin passa `contained={true}`.
 
-### 2. Zoom travando em ~200% (database constraint)
-Apesar do codigo frontend permitir ate 400%, a constraint do banco **nao foi aplicada corretamente** ou houve erro na migracao anterior. Vou criar uma nova migracao mais robusta com `IF EXISTS` para garantir que o limite seja 4.0.
+## Problema 2: Ajuste de tamanho direto no preview
 
-### 3. Resetar TODAS as logos para scale_factor = 1.0
-O usuario quer recalibrar tudo do zero. Vou criar uma migracao SQL que reseta `scale_factor = 1.0` em todas as logos.
+Atualmente os botoes +/- ficam escondidos na lista abaixo e so aparecem no hover. O usuario quer clicar na logo diretamente no preview vermelho e ajustar ali.
 
-### 4. Link em cada logo -- ja funciona mas precisa ser mais visivel
-O campo `link_url` ja existe no banco e no formulario de edicao. O `TickerLogoItem` ja abre o link em nova aba ao clicar. Porem:
-- No admin, o link so aparece como um icone pequeno -- vou tornar mais visivel mostrando o dominio do link
-- Garantir que o `useLogoFileReplace` tambem aceite 5MB (esta com 1MB ainda)
+**Solucao:** Criar um modo interativo no preview onde:
+- Cada logo no preview e clicavel
+- Ao clicar, a logo selecionada ganha um destaque visual (borda branca, glow)
+- Aparece um painel flutuante abaixo do preview com controles de escala (slider + botoes +/-)
+- A escala vai de 10% a 400% com feedback visual em tempo real
+- Animacoes suaves (scale transition 300ms ease-out) estilo Apple
+- Clicar fora ou em outra logo troca a selecao
 
-## Alteracoes
+## Alteracoes tecnicas
 
-### Arquivo 1: `src/components/admin/LogosAdmin.tsx`
-- Linha 345: `accept` de `.png` para `image/png,.png`
-- Linha 353: resetar `fileInputRef.current.value = ''` antes de `click()`
-- Linha 43-46: adicionar toast quando `fileArray.length === 0` apos validacao
-- Linhas 499-512: mostrar o dominio do link_url abaixo do nome da logo para ficar mais claro
+### Arquivo 1: `src/components/exa/LogoTicker.tsx`
 
-### Arquivo 2: `src/hooks/useLogoFileReplace.ts`
-- Linha 20: aumentar limite de 1MB para 5MB (consistencia com o upload bulk)
+- Adicionar prop `contained?: boolean` (default: false)
+- Quando `contained=true`:
+  - Remover `w-screen left-1/2 -translate-x-1/2` da section
+  - Usar `w-full` com `overflow-hidden`
+- Adicionar prop `onLogoClick?: (logoId: string) => void`
+- Adicionar prop `selectedLogoId?: string | null`
+- Quando `selectedLogoId` esta definido, a logo correspondente ganha classes de destaque (ring-2 ring-white/80 scale-110 z-10)
 
-### Arquivo 3: Migracao SQL
-- Resetar `scale_factor = 1.0` em TODAS as logos
-- Garantir constraint `scale_factor >= 0.1 AND scale_factor <= 4.0` (minimo 0.1 para mais flexibilidade)
+### Arquivo 2: `src/components/admin/LogosAdmin.tsx`
+
+- Adicionar state `selectedPreviewLogo: string | null`
+- Passar `contained={true}`, `onLogoClick`, `selectedLogoId` para o LogoTicker
+- Abaixo do ticker preview, renderizar painel de controle quando uma logo esta selecionada:
+  - Nome da logo selecionada
+  - Slider de escala (0.1 a 4.0) com valor em porcentagem
+  - Botoes - e + com incremento de 0.1
+  - Botao "Resetar para 100%"
+  - Transicao suave ao mudar escala (framer-motion ou CSS transition)
+- O CardContent do preview recebe `overflow-hidden` para garantir contencao
+
+### Arquivo 3: `src/components/exa/TickerLogoItem.tsx`
+
+- Adicionar props `onClick?: () => void` e `isSelected?: boolean`
+- Quando `isSelected=true`: aplicar `ring-2 ring-white shadow-lg shadow-white/20 scale-105 z-10 opacity-100` com transicao suave
+- Quando `onClick` existe: `cursor-pointer` no container (prioridade sobre o link_url)
+
+## Resultado esperado
+
+- Preview do ticker 100% contido dentro do card vermelho
+- Ao clicar em qualquer logo no preview, ela fica destacada com glow branco
+- Painel elegante aparece abaixo com slider para ajustar escala de 10% a 400%
+- Mudancas refletem em tempo real no preview com animacao suave
+- Nenhuma outra funcionalidade e alterada
 
 ## Arquivos modificados
 
-1. **`src/components/admin/LogosAdmin.tsx`** -- fix upload, melhorar visibilidade do link
-2. **`src/hooks/useLogoFileReplace.ts`** -- aumentar limite para 5MB
-3. **Nova migracao SQL** -- reset scale_factor + constraint
-
-Nenhuma outra funcionalidade sera alterada.
+1. `src/components/exa/LogoTicker.tsx` -- prop contained + selecao
+2. `src/components/exa/TickerLogoItem.tsx` -- click + destaque visual
+3. `src/components/admin/LogosAdmin.tsx` -- painel de controle interativo
 
