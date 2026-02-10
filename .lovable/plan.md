@@ -1,67 +1,42 @@
 
 
-# Fix: Logos no Site e Propostas Nao Refletem Escala Ajustada
+# Reposicionar Logo Ticker na Proposta Publica
 
-## Causa Raiz
+## O que sera feito
 
-A Edge Function `logos/index.ts` (linha 40) NAO inclui `scale_factor` no SELECT da query do banco:
+1. **Remover** o bloco atual do ticker (linhas 2715-2721) que esta no final da pagina com o container vermelho grande, titulo "Empresas que confiam na EXA" e padding excessivo.
 
-```
-.select('id, name, file_url, link_url, is_active, sort_order, storage_bucket, storage_key, color_variant')
-```
+2. **Inserir** o `LogoTicker` logo apos o `</header>` (linha 1858), antes do conteudo principal da proposta, e **acima** do card "Valida ate". Ele ficara posicionado:
+   - Abaixo dos badges de status e data
+   - Acima do "Valida ate"
+   - Com fundo vermelho escuro (`bg-[#9C1E1E]`) consistente com o cabecalho
 
-O campo `scale_factor` simplesmente nao e retornado pela API. Entao no site publico e propostas, `logo.scale_factor` e sempre `undefined`, e o `TickerLogoItem` usa o default `1` -- ignorando completamente o ajuste feito no admin.
+3. **Estilo**: Sem titulo, sem container arredondado, sem padding grande. Apenas uma barra fina e elegante de logos em branco sobre vermelho escuro, como uma extensao natural do cabecalho.
 
-Alem disso, a `<img>` tem limites CSS fixos (`max-h-12 md:max-h-16 max-w-28 md:max-w-40`) que impedem logos maiores de expandir visualmente mesmo com `transform: scale()`.
+## Detalhe tecnico
 
-## Solucao (3 arquivos)
+### Arquivo: `src/pages/public/PropostaPublicaPage.tsx`
 
-### Arquivo 1: `supabase/functions/logos/index.ts`
-
-Adicionar `scale_factor` no SELECT da query (linha 40):
-
-```sql
-.select('id, name, file_url, link_url, is_active, sort_order, storage_bucket, storage_key, color_variant, scale_factor')
-```
-
-E incluir `scale_factor` em TODOS os objetos de retorno das logos processadas (linhas 80-143), para que o valor chegue ao frontend.
-
-### Arquivo 2: `src/components/exa/TickerLogoItem.tsx`
-
-Remover os limites CSS fixos de max-height e max-width da `<img>`, e usar dimensoes base controladas pelo `scaleFactor` via inline style. Isso permite que logos com `scale_factor > 1` realmente aparecam maiores:
-
-De:
+**Remover** (linhas 2715-2721):
 ```tsx
-className="max-h-12 md:max-h-16 max-w-28 md:max-w-40 object-contain..."
+{/* Empresas que confiam na EXA - Logo Ticker */}
+<div className="w-full py-10 bg-[#9C1E1E] rounded-xl mt-8 overflow-hidden">
+  <h3 ...>Empresas que confiam na EXA</h3>
+  <LogoTicker speed={50} />
+</div>
 ```
 
-Para: remover max-h/max-w do className e aplicar dimensoes dinamicas via style no container div, deixando a imagem expandir naturalmente dentro dele.
-
-### Arquivo 3: `src/components/exa/LogoTicker.tsx`
-
-Aumentar a altura do container do ticker para acomodar logos com scale_factor > 1:
-
-De:
-```
-h-16 md:h-18 lg:h-20
+**Inserir** logo apos o `</header>` (linha 1858), antes do `<div className="max-w-4xl ...">`:
+```tsx
+{/* Logo Ticker - Prova Social */}
+<div className="w-full bg-[#9C1E1E] overflow-hidden">
+  <LogoTicker speed={50} />
+</div>
 ```
 
-Para:
-```
-h-20 md:h-24 lg:h-28
-```
+Resultado: barra fina de logos em branco sobre vermelho escuro, diretamente abaixo do cabecalho, sem titulo, sem bordas arredondadas, sem caixa grande. Visual limpo e profissional.
 
-E adicionar `overflow-y-visible` para que logos maiores nao sejam cortadas.
+## Arquivos modificados
 
-## Resultado Esperado
-
-- Logos no site principal e propostas publicas refletirao os tamanhos ajustados no admin
-- O scale_factor salvo no banco sera retornado pela API e aplicado visualmente
-- Sem alteracoes em nenhuma outra funcionalidade
-
-## Arquivos Modificados
-
-1. `supabase/functions/logos/index.ts` -- adicionar `scale_factor` no SELECT e nos objetos de retorno
-2. `src/components/exa/TickerLogoItem.tsx` -- remover limites CSS fixos, usar dimensoes dinamicas
-3. `src/components/exa/LogoTicker.tsx` -- aumentar altura do container do ticker
+1. `src/pages/public/PropostaPublicaPage.tsx` -- mover ticker e simplificar layout
 
