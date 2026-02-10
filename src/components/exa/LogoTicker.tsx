@@ -7,13 +7,19 @@ interface LogoTickerProps {
   direction?: 'ltr' | 'rtl';
   pauseOnHover?: boolean;
   showPortals?: boolean;
+  contained?: boolean;
+  onLogoClick?: (logoId: string) => void;
+  selectedLogoId?: string | null;
 }
 
 const LogoTicker: React.FC<LogoTickerProps> = ({ 
   speed = 60, 
   direction = 'ltr',
   pauseOnHover = true,
-  showPortals = false
+  showPortals = false,
+  contained = false,
+  onLogoClick,
+  selectedLogoId
 }) => {
   const { logos, loading, error } = useLogos();
   const [isPaused, setIsPaused] = useState(false);
@@ -103,6 +109,8 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
         className="h-10 md:h-12 lg:h-14 transition-all duration-300 ease-out hover:scale-110"
         onImageLoad={handleLogoLoad}
         onImageError={handleLogoError}
+        onClick={onLogoClick ? () => onLogoClick(logo.id) : undefined}
+        isSelected={selectedLogoId === logo.id}
       />
     ));
   };
@@ -145,6 +153,10 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
     );
   }
 
+  const sectionClassName = contained
+    ? "relative w-full overflow-hidden bg-[#9C1E1E]"
+    : "relative w-screen left-1/2 -translate-x-1/2 mt-0 overflow-hidden bg-[#9C1E1E]";
+
   return (
     <>
       {/* CSS para animação - injetado apenas uma vez */}
@@ -158,7 +170,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       <section 
         id="home-logo-ticker" 
         aria-label="Marcas parceiras"
-        className="relative w-screen left-1/2 -translate-x-1/2 mt-0 overflow-hidden bg-[#9C1E1E]"
+        className={sectionClassName}
       >
         <div 
           className="ticker w-full h-16 md:h-18 lg:h-20 relative overflow-hidden bg-[#9C1E1E] rounded-none"

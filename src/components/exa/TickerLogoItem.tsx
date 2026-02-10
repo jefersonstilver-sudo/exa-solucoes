@@ -15,13 +15,17 @@ interface TickerLogoItemProps {
   className?: string;
   onImageLoad?: () => void;
   onImageError?: () => void;
+  onClick?: () => void;
+  isSelected?: boolean;
 }
 
 const TickerLogoItem: React.FC<TickerLogoItemProps> = ({ 
     logo, 
     className = '',
     onImageLoad,
-    onImageError
+    onImageError,
+    onClick,
+    isSelected = false
 }) => {
   const scaleFactor = logo.scale_factor || 1;
   const { imageUrl, loading } = useLogoImageUrl(logo);
@@ -38,7 +42,12 @@ const TickerLogoItem: React.FC<TickerLogoItemProps> = ({
     onImageLoad?.();
   };
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    if (onClick) {
+      e.stopPropagation();
+      onClick();
+      return;
+    }
     if (logo.link_url) {
       window.open(logo.link_url, '_blank', 'noopener,noreferrer');
     }
@@ -49,16 +58,24 @@ const TickerLogoItem: React.FC<TickerLogoItemProps> = ({
     return null;
   }
 
+  const hasInteraction = !!onClick || !!logo.link_url;
+
   return (
     <div 
-      className={`flex items-center justify-center p-2 md:p-4 ${className}`}
+      className={`flex items-center justify-center p-2 md:p-4 transition-all duration-300 ease-out ${
+        isSelected 
+          ? 'ring-2 ring-white shadow-lg shadow-white/20 scale-105 z-10 rounded-lg bg-white/10' 
+          : ''
+      } ${className}`}
       onClick={handleClick}
-      style={{ cursor: logo.link_url ? 'pointer' : 'default' }}
+      style={{ cursor: hasInteraction ? 'pointer' : 'default' }}
     >
       <img
         src={imageUrl}
         alt={logo.name}
-        className="max-h-12 md:max-h-16 max-w-28 md:max-w-40 object-contain opacity-70 hover:opacity-100 transition-all duration-300 brightness-0 invert"
+        className={`max-h-12 md:max-h-16 max-w-28 md:max-w-40 object-contain transition-all duration-300 brightness-0 invert ${
+          isSelected ? 'opacity-100' : 'opacity-70 hover:opacity-100'
+        }`}
         style={{ transform: `scale(${scaleFactor})` }}
         onLoad={handleImageLoad}
         onError={handleImageError}
