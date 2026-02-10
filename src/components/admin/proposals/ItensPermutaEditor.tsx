@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Eye, EyeOff, Package } from 'lucide-react';
+import { Plus, Trash2, Eye, EyeOff, Package, Pencil, Check, X, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { toast } from 'sonner';
 import type { ItemPermuta } from '@/types/permuta';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -65,6 +66,9 @@ export const ItensPermutaEditor: React.FC<ItensPermutaEditorProps> = ({
     setNovoItem({ nome: '', quantidade: 1, preco_unitario: 0 });
   };
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState({ nome: '', quantidade: 1, preco_unitario: 0 });
+
   const removeItem = (id: string) => {
     onChange(itens.filter(item => item.id !== id));
   };
@@ -75,6 +79,28 @@ export const ItensPermutaEditor: React.FC<ItensPermutaEditorProps> = ({
         ? { ...item, ocultar_preco: !item.ocultar_preco }
         : item
     ));
+  };
+
+  const startEditing = (item: ItemPermuta) => {
+    setEditingId(item.id);
+    setEditValues({ nome: item.nome, quantidade: item.quantidade, preco_unitario: item.preco_unitario });
+  };
+
+  const saveEdit = (id: string) => {
+    if (!editValues.nome.trim()) return;
+    onChange(itens.map(item =>
+      item.id === id
+        ? { ...item, nome: editValues.nome.trim(), quantidade: editValues.quantidade, preco_unitario: editValues.preco_unitario, preco_total: editValues.quantidade * editValues.preco_unitario }
+        : item
+    ));
+    setEditingId(null);
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  const copyItemText = (item: ItemPermuta) => {
+    const text = `${item.nome} — Qtd: ${item.quantidade} × ${formatCurrency(item.preco_unitario)} = ${formatCurrency(item.preco_total)}`;
+    navigator.clipboard.writeText(text).then(() => toast.success('Texto copiado!')).catch(() => toast.error('Erro ao copiar'));
   };
 
   const valorTotal = itens.reduce((sum, item) => sum + item.preco_total, 0);
@@ -97,39 +123,81 @@ export const ItensPermutaEditor: React.FC<ItensPermutaEditorProps> = ({
         <div className="space-y-2">
           {itens.map((item) => (
             <Card key={item.id} className="p-3 bg-white border-slate-200">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="font-medium text-sm">{item.nome}</div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
-                    <span>Qtd: {item.quantidade}</span>
-                    <span>×</span>
-                    <span>{formatCurrency(item.preco_unitario)}</span>
-                    <span>=</span>
-                    <span className="font-semibold text-foreground">{formatCurrency(item.preco_total)}</span>
+              {editingId === item.id ? (
+                <div className="space-y-2">
+                  <Input
+                    value={editValues.nome}
+                    onChange={(e) => setEditValues({ ...editValues, nome: e.target.value })}
+                    onKeyDown={(e) => e.key === 'Enter' && saveEdit(item.id)}
+                    className="h-8 text-sm"
+                    autoFocus
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Qtd</Label>
+                      <Input
+                        type="number" min={1}
+                        value={editValues.quantidade}
+                        onChange={(e) => setEditValues({ ...editValues, quantidade: parseInt(e.target.value) || 1 })}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Preço Unit.</Label>
+                      <Input
+                        type="number" min={0} step={0.01}
+                        value={editValues.preco_unitario || ''}
+                        onChange={(e) => setEditValues({ ...editValues, preco_unitario: parseFloat(e.target.value) || 0 })}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5 justify-end">
+                    <button type="button" onClick={cancelEdit} className="p-1.5 rounded-md bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                    <button type="button" onClick={() => saveEdit(item.id)} className="p-1.5 rounded-md bg-amber-500 text-white hover:bg-amber-600 transition-colors">
+                      <Check className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => toggleItemVisibility(item.id)}
-                    className={`p-1.5 rounded-md transition-colors ${
-                      item.ocultar_preco 
-                        ? 'bg-slate-200 text-slate-600' 
-                        : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-                    }`}
-                    title={item.ocultar_preco ? 'Preço oculto na proposta pública' : 'Preço visível na proposta pública'}
-                  >
-                    {item.ocultar_preco ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeItem(item.id)}
-                    className="p-1.5 rounded-md bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 select-text" onDoubleClick={() => startEditing(item)}>
+                    <div className="font-medium text-sm">{item.nome}</div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                      <span>Qtd: {item.quantidade}</span>
+                      <span>×</span>
+                      <span>{formatCurrency(item.preco_unitario)}</span>
+                      <span>=</span>
+                      <span className="font-semibold text-foreground">{formatCurrency(item.preco_total)}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button type="button" onClick={() => copyItemText(item)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" title="Copiar texto">
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                    <button type="button" onClick={() => startEditing(item)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" title="Editar item">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleItemVisibility(item.id)}
+                      className={`p-1.5 rounded-md transition-colors ${
+                        item.ocultar_preco 
+                          ? 'bg-slate-200 text-slate-600' 
+                          : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                      }`}
+                      title={item.ocultar_preco ? 'Preço oculto' : 'Preço visível'}
+                    >
+                      {item.ocultar_preco ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </button>
+                    <button type="button" onClick={() => removeItem(item.id)} className="p-1.5 rounded-md text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </Card>
           ))}
         </div>
