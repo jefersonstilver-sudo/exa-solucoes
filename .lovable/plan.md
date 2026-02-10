@@ -1,70 +1,67 @@
 
 
-# Fix: Logos Nao Escalam -- Causa Raiz Real Encontrada
+# Fix: Logos no Site e Propostas Nao Refletem Escala Ajustada
 
-## Diagnostico Definitivo
+## Causa Raiz
 
-O problema NAO e CSS. O CSS esta correto (`transform: scale(scaleFactor)` no div, sem conflitos).
-
-O problema e que existem **DOIS hooks completamente separados** com estados independentes:
-
-```text
-LogosAdmin.tsx
-  |-- useLogosAdmin() --> state A (recebe optimistic updates)
-  |-- LogoTicker (preview)
-        |-- useLogos() --> state B (NUNCA recebe os updates!)
-```
-
-Quando o slider muda a escala:
-1. `handlePreviewScaleChange` chama `updateLogo` do `useLogosAdmin`
-2. `useLogosAdmin` faz optimistic update no SEU state (state A)
-3. Mas o `LogoTicker` usa `useLogos()` que tem seu PROPRIO state (state B)
-4. State B so atualiza quando o real-time dispara e chama a Edge Function
-5. Mas o `skipNextRealtime` no `useLogosAdmin` impede o refetch no admin...
-6. ...enquanto o `useLogos` dentro do LogoTicker tem SEU PROPRIO real-time que chama `fetchLogos()` com `setLoading(true)` -- causando flicker
-
-**Resultado**: O slider mexe, o banco atualiza, mas o ticker NUNCA recebe o novo valor de escala porque usa um hook diferente.
-
-## Solucao
-
-Passar os logos diretamente como prop para o `LogoTicker` quando usado no contexto admin. Assim o ticker usa os mesmos dados com optimistic updates.
-
-### Arquivo 1: `src/components/exa/LogoTicker.tsx`
-
-Adicionar prop opcional `logos` ao componente. Quando fornecida, usar esses logos ao inves de chamar `useLogos()`:
-
-- Adicionar `logos?: Logo[]` na interface de props
-- Usar logica condicional: se `logos` prop existe, usar ela; senao, usar o hook `useLogos()`
-- Isso garante que no admin, o ticker ve os mesmos dados otimisticamente atualizados
-
-### Arquivo 2: `src/components/admin/LogosAdmin.tsx`
-
-Passar a prop `logos` (filtrada por `is_active`) para o `LogoTicker`:
+A Edge Function `logos/index.ts` (linha 40) NAO inclui `scale_factor` no SELECT da query do banco:
 
 ```
-<LogoTicker
-  speed={60}
-  contained={true}
-  logos={logos.filter(l => l.is_active)}
-  onLogoClick={...}
-  selectedLogoId={selectedPreviewLogo}
-/>
+.select('id, name, file_url, link_url, is_active, sort_order, storage_bucket, storage_key, color_variant')
 ```
 
-Isso faz com que quando `updateLogo` faz o optimistic update no state do `useLogosAdmin`, o `LogoTicker` receba imediatamente os novos valores (incluindo `scale_factor`), sem esperar real-time ou Edge Function.
+O campo `scale_factor` simplesmente nao e retornado pela API. Entao no site publico e propostas, `logo.scale_factor` e sempre `undefined`, e o `TickerLogoItem` usa o default `1` -- ignorando completamente o ajuste feito no admin.
 
-### Arquivo 3: `src/hooks/useLogos.ts` (useLogos hook)
+Alem disso, a `<img>` tem limites CSS fixos (`max-h-12 md:max-h-16 max-w-28 md:max-w-40`) que impedem logos maiores de expandir visualmente mesmo com `transform: scale()`.
 
-Remover o `setLoading(true)` do `fetchLogos` quando ja existem logos carregadas (refetch silencioso), para evitar flicker no ticker publico tambem:
+## Solucao (3 arquivos)
 
-- Mudar para: `if (logos.length === 0) setLoading(true);`
-- Refetches subsequentes mantem as logos visiveis
+### Arquivo 1: `supabase/functions/logos/index.ts`
+
+Adicionar `scale_factor` no SELECT da query (linha 40):
+
+```sql
+.select('id, name, file_url, link_url, is_active, sort_order, storage_bucket, storage_key, color_variant, scale_factor')
+```
+
+E incluir `scale_factor` em TODOS os objetos de retorno das logos processadas (linhas 80-143), para que o valor chegue ao frontend.
+
+### Arquivo 2: `src/components/exa/TickerLogoItem.tsx`
+
+Remover os limites CSS fixos de max-height e max-width da `<img>`, e usar dimensoes base controladas pelo `scaleFactor` via inline style. Isso permite que logos com `scale_factor > 1` realmente aparecam maiores:
+
+De:
+```tsx
+className="max-h-12 md:max-h-16 max-w-28 md:max-w-40 object-contain..."
+```
+
+Para: remover max-h/max-w do className e aplicar dimensoes dinamicas via style no container div, deixando a imagem expandir naturalmente dentro dele.
+
+### Arquivo 3: `src/components/exa/LogoTicker.tsx`
+
+Aumentar a altura do container do ticker para acomodar logos com scale_factor > 1:
+
+De:
+```
+h-16 md:h-18 lg:h-20
+```
+
+Para:
+```
+h-20 md:h-24 lg:h-28
+```
+
+E adicionar `overflow-y-visible` para que logos maiores nao sejam cortadas.
+
+## Resultado Esperado
+
+- Logos no site principal e propostas publicas refletirao os tamanhos ajustados no admin
+- O scale_factor salvo no banco sera retornado pela API e aplicado visualmente
+- Sem alteracoes em nenhuma outra funcionalidade
 
 ## Arquivos Modificados
 
-1. `src/components/exa/LogoTicker.tsx` -- aceitar prop `logos` opcional
-2. `src/components/admin/LogosAdmin.tsx` -- passar logos filtradas como prop
-3. `src/hooks/useLogos.ts` -- refetch silencioso (sem loading flicker)
-
-Nenhuma outra funcionalidade sera alterada.
+1. `supabase/functions/logos/index.ts` -- adicionar `scale_factor` no SELECT e nos objetos de retorno
+2. `src/components/exa/TickerLogoItem.tsx` -- remover limites CSS fixos, usar dimensoes dinamicas
+3. `src/components/exa/LogoTicker.tsx` -- aumentar altura do container do ticker
 
