@@ -170,6 +170,35 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
     );
   }
 
+  // MODO ADMIN: layout estático (sem animação) para permitir clicar em todas as logos
+  const isAdminMode = !!onLogoClick;
+
+  if (isAdminMode) {
+    return (
+      <section 
+        id="home-logo-ticker" 
+        aria-label="Marcas parceiras"
+        className="relative w-full overflow-hidden bg-[#9C1E1E]"
+      >
+        <div className="w-full min-h-[4rem] md:min-h-[5rem] relative bg-[#9C1E1E] rounded-none py-3">
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 px-4">
+            {logos.map((logo) => (
+              <TickerLogoItem
+                key={logo.id}
+                logo={logo}
+                className="transition-all duration-300 ease-out flex-shrink-0"
+                onImageLoad={handleLogoLoad}
+                onImageError={handleLogoError}
+                onClick={() => onLogoClick(logo.id)}
+                isSelected={selectedLogoId === logo.id}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   const sectionClassName = contained
     ? "relative w-full overflow-hidden bg-[#9C1E1E]"
     : "relative w-screen left-1/2 -translate-x-1/2 mt-0 overflow-hidden bg-[#9C1E1E]";
