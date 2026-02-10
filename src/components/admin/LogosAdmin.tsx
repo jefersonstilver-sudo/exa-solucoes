@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { Trash2, Upload, Eye, GripVertical, Plus, AlertCircle, Edit2, Check, X, ExternalLink, Image as ImageIcon, FileImage, Loader2, Link as LinkIcon, Palette, RotateCcw, Save, Minus } from 'lucide-react';
 import { useLogosAdmin, Logo } from '@/hooks/useLogos';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +34,7 @@ const LogosAdmin: React.FC = () => {
   const [editingLogo, setEditingLogo] = useState<EditingLogo | null>(null);
   const [deletingLogos, setDeletingLogos] = useState<Set<string>>(new Set());
   const [updatingScale, setUpdatingScale] = useState<Set<string>>(new Set());
+  const [selectedPreviewLogo, setSelectedPreviewLogo] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{
     [key: string]: number;
   }>({});
@@ -306,6 +308,25 @@ const LogosAdmin: React.FC = () => {
         </CardContent>
       </Card>;
   }
+  const selectedLogo = selectedPreviewLogo ? logos.find(l => l.id === selectedPreviewLogo) : null;
+
+  const handlePreviewScaleChange = async (value: number) => {
+    if (!selectedPreviewLogo) return;
+    const clamped = Math.max(0.1, Math.min(4.0, Number(value.toFixed(2))));
+    setUpdatingScale(prev => new Set(prev).add(selectedPreviewLogo));
+    try {
+      await updateLogo(selectedPreviewLogo, { scale_factor: clamped });
+    } catch {
+      toast.error('Erro ao alterar escala');
+    } finally {
+      setUpdatingScale(prev => {
+        const next = new Set(prev);
+        next.delete(selectedPreviewLogo!);
+        return next;
+      });
+    }
+  };
+
   return <div className="space-y-6">
       {/* Preview do Ticker */}
       <Card>
@@ -315,14 +336,108 @@ const LogosAdmin: React.FC = () => {
             Preview do Logo Ticker
           </CardTitle>
           <CardDescription>
-            Visualização em tempo real de como as logos aparecerão na homepage
+            {selectedPreviewLogo 
+              ? 'Clique em outra logo para trocar a seleção, ou ajuste a escala abaixo'
+              : 'Clique em qualquer logo para ajustar seu tamanho'}
           </CardDescription>
         </CardHeader>
-        <CardContent className="bg-[#9C1E1E] rounded-lg p-8">
-          <h3 className="font-montserrat font-bold text-2xl text-center text-white mb-6">
-            Empresas que <span className="text-[#FFD700]">confiam na EXA</span>
-          </h3>
-          <LogoTicker speed={60} />
+        <CardContent className="overflow-hidden rounded-lg">
+          <div className="bg-[#9C1E1E] rounded-lg p-8 overflow-hidden">
+            <h3 className="font-montserrat font-bold text-2xl text-center text-white mb-6">
+              Empresas que <span className="text-[#FFD700]">confiam na EXA</span>
+            </h3>
+            <LogoTicker 
+              speed={60} 
+              contained={true}
+              onLogoClick={(logoId) => setSelectedPreviewLogo(prev => prev === logoId ? null : logoId)}
+              selectedLogoId={selectedPreviewLogo}
+            />
+          </div>
+
+          {/* Painel de controle de escala */}
+          {selectedLogo && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg border animate-fade-in space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 bg-[#9C1E1E] rounded flex items-center justify-center">
+                    <img 
+                      src={selectedLogo.file_url} 
+                      alt={selectedLogo.name}
+                      className="h-5 w-5 object-contain brightness-0 invert"
+                    />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{selectedLogo.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Escala: {Math.round(Number(selectedLogo.scale_factor ?? 1) * 100)}%
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  onClick={() => setSelectedPreviewLogo(null)}
+                  className="h-8 w-8 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const current = Number(selectedLogo.scale_factor ?? 1);
+                    handlePreviewScaleChange(Math.max(0.1, current - 0.1));
+                  }}
+                  disabled={Number(selectedLogo.scale_factor ?? 1) <= 0.1 || updatingScale.has(selectedLogo.id)}
+                  className="h-8 w-8 p-0 flex-shrink-0"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+
+                <Slider
+                  value={[Number(selectedLogo.scale_factor ?? 1) * 100]}
+                  min={10}
+                  max={400}
+                  step={10}
+                  onValueChange={([val]) => handlePreviewScaleChange(val / 100)}
+                  className="flex-1"
+                />
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const current = Number(selectedLogo.scale_factor ?? 1);
+                    handlePreviewScaleChange(Math.min(4.0, current + 0.1));
+                  }}
+                  disabled={Number(selectedLogo.scale_factor ?? 1) >= 4.0 || updatingScale.has(selectedLogo.id)}
+                  className="h-8 w-8 p-0 flex-shrink-0"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+
+                <Badge variant="secondary" className="min-w-[52px] justify-center text-xs">
+                  {Math.round(Number(selectedLogo.scale_factor ?? 1) * 100)}%
+                </Badge>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handlePreviewScaleChange(1.0)}
+                  disabled={updatingScale.has(selectedLogo.id)}
+                  className="text-xs"
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Resetar 100%
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
