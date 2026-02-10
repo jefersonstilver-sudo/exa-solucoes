@@ -10,6 +10,18 @@ interface LogoTickerProps {
   contained?: boolean;
   onLogoClick?: (logoId: string) => void;
   selectedLogoId?: string | null;
+  logos?: Array<{
+    id: string;
+    name: string;
+    file_url: string;
+    color_variant?: string;
+    link_url?: string;
+    sort_order: number;
+    is_active: boolean;
+    storage_bucket?: string;
+    storage_key?: string;
+    scale_factor?: number;
+  }>;
 }
 
 const LogoTicker: React.FC<LogoTickerProps> = ({ 
@@ -19,9 +31,13 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
   showPortals = false,
   contained = false,
   onLogoClick,
-  selectedLogoId
+  selectedLogoId,
+  logos: passedLogos
 }) => {
-  const { logos, loading, error } = useLogos();
+  const hookData = useLogos();
+  const logos = passedLogos || hookData.logos;
+  const loading = passedLogos ? false : hookData.loading;
+  const error = passedLogos ? null : hookData.error;
   const [isPaused, setIsPaused] = useState(false);
   const [recalcKey, setRecalcKey] = useState(0);
   const [validLogosCount, setValidLogosCount] = useState(0);
