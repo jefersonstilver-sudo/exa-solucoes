@@ -56,9 +56,9 @@ const LogosAdmin: React.FC = () => {
           toast.error(`${file.name}: Apenas arquivos PNG são aceitos`);
           continue;
         }
-        if (file.size > 1024 * 1024) {
-          // 1MB
-          toast.error(`${file.name}: Arquivo muito grande (máx. 1MB)`);
+        if (file.size > 5 * 1024 * 1024) {
+          // 5MB
+          toast.error(`${file.name}: Arquivo muito grande (máx. 5MB)`);
           continue;
         }
 
@@ -371,7 +371,7 @@ const LogosAdmin: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   <FileImage className="h-3 w-3" />
-                  Máx. 1MB por arquivo
+                  Máx. 5MB por arquivo
                 </div>
               </div>
             </div>
