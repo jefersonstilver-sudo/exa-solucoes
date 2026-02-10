@@ -204,7 +204,7 @@ const LogosAdmin: React.FC = () => {
     const logo = logos.find(l => l.id === logoId);
     if (!logo) return;
     const currentScale = Number(logo.scale_factor ?? 1);
-    const newScale = Math.min(Number((currentScale + 0.3).toFixed(2)), 3.0);
+    const newScale = Math.min(Number((currentScale + 0.3).toFixed(2)), 4.0);
     setUpdatingScale(prev => new Set(prev).add(logoId));
     try {
       await updateLogo(logoId, {
@@ -318,9 +318,9 @@ const LogosAdmin: React.FC = () => {
             Visualização em tempo real de como as logos aparecerão na homepage
           </CardDescription>
         </CardHeader>
-        <CardContent className="bg-gradient-to-br from-exa-black via-[#9C1E1E]/10 to-exa-black rounded-lg p-8">
+        <CardContent className="bg-[#9C1E1E] rounded-lg p-8">
           <h3 className="font-montserrat font-bold text-2xl text-center text-white mb-6">
-            Empresas que <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#9C1E1E] to-[#180A0A]">confiam na EXA</span>
+            Empresas que <span className="text-[#FFD700]">confiam na EXA</span>
           </h3>
           <LogoTicker speed={60} />
         </CardContent>
@@ -522,7 +522,7 @@ const LogosAdmin: React.FC = () => {
                         <Button size="sm" variant="ghost" onClick={e => {
                   e.stopPropagation();
                   handleScaleUp(logo.id);
-                }} disabled={Number(logo.scale_factor ?? 1) >= 3.0 || updatingScale.has(logo.id)} className="h-8 w-8 p-0" title="Aumentar tamanho">
+                }} disabled={Number(logo.scale_factor ?? 1) >= 4.0 || updatingScale.has(logo.id)} className="h-8 w-8 p-0" title="Aumentar tamanho">
                           <Plus className="h-4 w-4" />
                         </Button>
                         <Button size="sm" variant="ghost" onClick={e => {
