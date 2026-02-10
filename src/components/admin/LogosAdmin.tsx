@@ -362,6 +362,7 @@ const LogosAdmin: React.FC = () => {
             <LogoTicker 
               speed={60} 
               contained={true}
+              logos={logos.filter(l => l.is_active)}
               onLogoClick={(logoId) => setSelectedPreviewLogo(prev => prev === logoId ? null : logoId)}
               selectedLogoId={selectedPreviewLogo}
             />

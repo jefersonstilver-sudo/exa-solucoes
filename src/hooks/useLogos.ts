@@ -23,7 +23,7 @@ export const useLogos = () => {
 
   const fetchLogos = async () => {
     try {
-      setLoading(true);
+      if (logos.length === 0) setLoading(true);
       setError(null);
 
       // Usar a Edge Function para obter logos públicas
