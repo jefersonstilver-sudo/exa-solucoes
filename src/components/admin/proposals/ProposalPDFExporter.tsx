@@ -44,6 +44,12 @@ interface ProposalData {
   ocultar_valores_publico?: boolean | null;
   descricao_contrapartida?: string | null;
   valor_referencia_monetaria?: number | null;
+  // Campos de posições/marcas
+  quantidade_posicoes?: number | null;
+  // Venda futura
+  is_venda_futura?: boolean | null;
+  predios_contratados?: number | null;
+  max_videos_por_pedido?: number | null;
 }
 
 interface ProductSpecs {
@@ -503,8 +509,10 @@ export class ProposalPDFExporter {
     this.yPosition = startY + 32;
   }
 
-  private async drawProductShowcase(specs: ProductSpecs, tipo: 'horizontal' | 'vertical_premium', totalPanels: number = 1): Promise<void> {
-    this.checkPageBreak(55);
+  private async drawProductShowcase(specs: ProductSpecs, tipo: 'horizontal' | 'vertical_premium', totalPanels: number = 1, quantidadePosicoes: number = 1): Promise<void> {
+    const hasMultiplePosicoes = quantidadePosicoes > 1;
+    const boxHeightBase = hasMultiplePosicoes ? 52 : 42;
+    this.checkPageBreak(boxHeightBase + 10);
     
     this.drawSectionTitle('PRODUTO ESCOLHIDO');
     
@@ -512,12 +520,12 @@ export class ProposalPDFExporter {
     
     // Container principal com fundo suave
     this.setColor(this.colors.softBlue, 'fill');
-    this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, 42, 3, 3, 'F');
+    this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, boxHeightBase, 3, 3, 'F');
     
     // Borda sutil
     this.setColor({ r: 200, g: 220, b: 240 }, 'draw');
     this.doc.setLineWidth(0.3);
-    this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, 42, 3, 3);
+    this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, boxHeightBase, 3, 3);
     
     // Area do mockup (lado esquerdo) - reduzido
     const mockupWidth = 38;
@@ -611,7 +619,113 @@ export class ProposalPDFExporter {
       this.doc.text(this.normalizeText(item.value), x, y + 4);
     });
     
-    this.yPosition += 47;
+    // Info de multiplas posicoes/marcas
+    if (hasMultiplePosicoes) {
+      const posY = this.yPosition + 42;
+      this.setColor(this.colors.exaRed, 'fill');
+      this.doc.roundedRect(this.margin + 4, posY, this.contentWidth - 8, 7, 1, 1, 'F');
+      
+      this.setColor(this.colors.white);
+      this.doc.setFontSize(7);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text(
+        this.normalizeText(`${quantidadePosicoes}x Posicoes por Painel  |  ${quantidadePosicoes} Marcas Simultaneas`),
+        this.pageWidth / 2, posY + 5, { align: 'center' }
+      );
+    }
+    
+    this.yPosition += boxHeightBase + 5;
+  }
+
+  // NOVO: Resumo Executivo (replica ProposalSummaryText.tsx)
+  private drawSummaryText(proposal: ProposalData, specs: ProductSpecs): void {
+    const tipoProduto = proposal.tipo_produto || 'horizontal';
+    const quantidadePosicoes = proposal.quantidade_posicoes || 1;
+    const totalPredios = proposal.selected_buildings?.length || 0;
+    const totalTelas = proposal.total_panels || 0;
+    const exibicoesMes = proposal.total_impressions_month || specs.exibicoesMes;
+    const duracaoMeses = proposal.duration_months;
+    const isHorizontal = tipoProduto === 'horizontal';
+    const formatoNome = isHorizontal ? 'Horizontal' : 'Vertical Premium';
+    const hasMultiplePosicoes = quantidadePosicoes > 1;
+    const maxVideosPorPedido = proposal.max_videos_por_pedido || 4;
+    const isVendaFutura = proposal.is_venda_futura || false;
+    const prediosContratados = proposal.predios_contratados || 0;
+    const prediosExibidos = isVendaFutura && prediosContratados ? prediosContratados : totalPredios;
+    const totalVideosSimultaneos = isHorizontal ? maxVideosPorPedido * quantidadePosicoes : quantidadePosicoes;
+
+    this.checkPageBreak(50);
+
+    this.drawSectionTitle('RESUMO DA PROPOSTA');
+
+    const maxW = this.contentWidth - 10;
+    const startY = this.yPosition;
+
+    // Paragrafo principal
+    const p1 = this.normalizeText(
+      `Esta proposta oferece ${quantidadePosicoes} ${quantidadePosicoes === 1 ? 'posicao' : 'posicoes'} no formato ${formatoNome}, com presenca em ${prediosExibidos} predios e ${totalTelas} telas. Seu anuncio de ${specs.duracao}s sera exibido aproximadamente ${exibicoesMes.toLocaleString('pt-BR')}x/mes — uma exposicao diaria que forma opiniao e gera lembranca de marca.`
+    );
+    this.setColor(this.colors.darkGray);
+    this.doc.setFontSize(7);
+    this.doc.setFont('helvetica', 'normal');
+    const lines1 = this.doc.splitTextToSize(p1, maxW);
+    this.doc.text(lines1, this.margin + 5, this.yPosition);
+    this.yPosition += lines1.length * 3.5 + 2;
+
+    // Diferenciais
+    const p2 = this.normalizeText(
+      'A midia em elevador e altamente eficaz: publico recorrente (residentes e visitantes diarios), atencao inevitavel (ambiente fechado) e repeticao que consolida sua marca na mente do consumidor.'
+    );
+    this.setColor(this.colors.mediumGray);
+    this.doc.setFont('helvetica', 'italic');
+    const lines2 = this.doc.splitTextToSize(p2, maxW);
+    this.doc.text(lines2, this.margin + 5, this.yPosition);
+    this.yPosition += lines2.length * 3.5 + 2;
+
+    // Condicionais
+    this.setColor(this.colors.darkGray);
+    this.doc.setFont('helvetica', 'normal');
+
+    if (isHorizontal && !hasMultiplePosicoes) {
+      const t = this.normalizeText(`-> Com o formato Horizontal, voce pode intercalar ate ${maxVideosPorPedido} videos diferentes no mesmo pedido, transmitindo variedade e alto posicionamento.`);
+      const l = this.doc.splitTextToSize(t, maxW);
+      this.doc.text(l, this.margin + 5, this.yPosition);
+      this.yPosition += l.length * 3.5 + 1;
+    }
+
+    if (isHorizontal && hasMultiplePosicoes) {
+      const t = this.normalizeText(`-> Com o formato Horizontal e ${quantidadePosicoes} marcas, sua empresa pode manter ${totalVideosSimultaneos} videos simultaneos na plataforma (${maxVideosPorPedido} videos x ${quantidadePosicoes} posicoes) com programacoes automaticas de exibicao.`);
+      const l = this.doc.splitTextToSize(t, maxW);
+      this.doc.text(l, this.margin + 5, this.yPosition);
+      this.yPosition += l.length * 3.5 + 1;
+    }
+
+    if (!isHorizontal) {
+      const t = this.normalizeText('-> O formato Vertical Premium garante atencao exclusiva: tela cheia, sem divisao com outros anunciantes.');
+      const l = this.doc.splitTextToSize(t, maxW);
+      this.doc.text(l, this.margin + 5, this.yPosition);
+      this.yPosition += l.length * 3.5 + 1;
+    }
+
+    if (hasMultiplePosicoes) {
+      const t = this.normalizeText(`-> Com ${quantidadePosicoes} posicoes, sua marca ocupa ${quantidadePosicoes}x mais espaco no ciclo de exibicao, aumentando frequencia e impacto.`);
+      const l = this.doc.splitTextToSize(t, maxW);
+      this.doc.text(l, this.margin + 5, this.yPosition);
+      this.yPosition += l.length * 3.5 + 1;
+    }
+
+    if (isVendaFutura && prediosContratados) {
+      const t = this.normalizeText(`-> Condicao especial: voce garante o preco atual, e todo o periodo ate a instalacao completa dos ${prediosContratados} predios e 100% gratuito.`);
+      const l = this.doc.splitTextToSize(t, maxW);
+      this.doc.text(l, this.margin + 5, this.yPosition);
+      this.yPosition += l.length * 3.5 + 1;
+    }
+
+    // Box de fundo suave atras de tudo
+    const totalHeight = this.yPosition - startY + 3;
+    // Draw background behind (we re-draw text after)
+    // Actually just add spacing
+    this.yPosition += 4;
   }
 
   private drawBuildingsTable(buildings: any[]): void {
@@ -892,8 +1006,25 @@ export class ProposalPDFExporter {
     }
     
     // === BOX 2: CONTRAPARTIDA ACORDADA ===
-    const itemsCount = proposal.itens_permuta?.length || 0;
-    const boxHeight = 35 + (itemsCount * 11);
+    // Calcular altura dinamica baseada no texto real de cada item
+    const maxItemTextWidth = this.contentWidth - 55; // espaco para preco alinhado a direita
+    let calculatedItemsHeight = 0;
+    const itemLines: string[][] = [];
+    
+    if (proposal.itens_permuta && proposal.itens_permuta.length > 0) {
+      this.doc.setFontSize(7);
+      this.doc.setFont('helvetica', 'bold');
+      proposal.itens_permuta.forEach((item, index) => {
+        const itemText = this.normalizeText(`${index + 1}. ${item.nome} (${item.quantidade}x)`);
+        const lines = this.doc.splitTextToSize(itemText, maxItemTextWidth);
+        itemLines.push(lines);
+        calculatedItemsHeight += lines.length * 4 + 3;
+      });
+    }
+    
+    const boxHeight = 30 + calculatedItemsHeight + 8;
+    
+    this.checkPageBreak(boxHeight + 10);
     
     this.setColor({ r: 255, g: 251, b: 235 }, 'fill');
     this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, boxHeight, 3, 3, 'F');
@@ -911,18 +1042,20 @@ export class ProposalPDFExporter {
     this.doc.setFontSize(7);
     this.doc.setFont('helvetica', 'normal');
     const periodoText = proposal.is_custom_days 
-      ? `Periodo: ${proposal.custom_days} ${proposal.custom_days === 1 ? 'dia' : 'dias'}`
-      : `Periodo: ${proposal.duration_months} ${proposal.duration_months === 1 ? 'mes' : 'meses'}`;
+      ? `Periodo: ${proposal.custom_days} ${proposal.custom_days === 1 ? 'dia' : 'dias'}.`
+      : `Periodo: ${proposal.duration_months} ${proposal.duration_months === 1 ? 'mes' : 'meses'}.`;
     this.doc.text(this.normalizeText(periodoText), this.margin + 5, this.yPosition + 16);
     
-    // Lista de itens
+    // Lista de itens com quebra de linha
     let itemY = this.yPosition + 24;
     if (proposal.itens_permuta && proposal.itens_permuta.length > 0) {
       proposal.itens_permuta.forEach((item, index) => {
+        const lines = itemLines[index];
+        
         this.setColor({ r: 146, g: 64, b: 14 });
         this.doc.setFontSize(7);
         this.doc.setFont('helvetica', 'bold');
-        this.doc.text(`${index + 1}. ${item.nome} (${item.quantidade}x)`, this.margin + 8, itemY);
+        this.doc.text(lines, this.margin + 8, itemY);
         
         if (!proposal.ocultar_valores_publico && !item.ocultar_preco) {
           this.setColor({ r: 180, g: 83, b: 9 });
@@ -930,7 +1063,7 @@ export class ProposalPDFExporter {
           this.doc.text(this.formatCurrency(item.preco_total), this.pageWidth - this.margin - 5, itemY, { align: 'right' });
         }
         
-        itemY += 10;
+        itemY += lines.length * 4 + 3;
       });
     }
     
@@ -946,24 +1079,57 @@ export class ProposalPDFExporter {
     
     // Descricao da contrapartida
     if (proposal.descricao_contrapartida) {
+      const descLines = this.doc.splitTextToSize(`"${this.normalizeText(proposal.descricao_contrapartida)}"`, this.contentWidth - 10);
+      const descHeight = descLines.length * 3.5 + 8;
+      
+      this.checkPageBreak(descHeight + 5);
+      
       this.setColor(this.colors.lightGray, 'fill');
-      this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, 18, 2, 2, 'F');
+      this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, descHeight, 2, 2, 'F');
       
       this.setColor(this.colors.mediumGray);
       this.doc.setFontSize(6);
       this.doc.setFont('helvetica', 'italic');
-      const lines = this.doc.splitTextToSize(`"${proposal.descricao_contrapartida}"`, this.contentWidth - 10);
-      this.doc.text(lines, this.margin + 5, this.yPosition + 7);
+      this.doc.text(descLines, this.margin + 5, this.yPosition + 7);
       
-      this.yPosition += 22;
+      this.yPosition += descHeight + 4;
     }
+  }
+
+  // NOVO: Marcas parceiras (prova social textual)
+  private drawPartnerLogosSection(): void {
+    this.checkPageBreak(18);
+    
+    this.drawSectionTitle('MARCAS QUE CONFIAM NA EXA');
+    
+    const partnerText = this.normalizeText(
+      'AASC | Black Bill | Secovi-PR | Portal da Cidade | Shopping China | Grupo Kammer | Splendore Alimentos | Magazine Luiza | Pax Primavera | Mili | Supermercado Muffato | Sicredi | Unimed | Gazin | Itaipu Binacional'
+    );
+    
+    this.setColor(this.colors.lightGray, 'fill');
+    this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, 10, 2, 2, 'F');
+    
+    this.setColor(this.colors.mediumGray);
+    this.doc.setFontSize(6);
+    this.doc.setFont('helvetica', 'normal');
+    const lines = this.doc.splitTextToSize(partnerText, this.contentWidth - 10);
+    this.doc.text(lines, this.margin + 5, this.yPosition + 5);
+    
+    this.yPosition += 14;
   }
 
   // Secao "Conheca a EXA" com botoes CLICAVEIS
   private drawVideoLinksSection(): void {
-    this.checkPageBreak(48);
+    this.checkPageBreak(55);
     
     this.drawSectionTitle('CONHECA A EXA MIDIA');
+    
+    // Subtitulo contextual
+    this.setColor(this.colors.mediumGray);
+    this.doc.setFontSize(7);
+    this.doc.setFont('helvetica', 'italic');
+    this.doc.text(this.normalizeText('Saiba mais sobre a EXA Midia e nosso portfolio de solucoes:'), this.margin + 2, this.yPosition);
+    this.yPosition += 5;
     
     const links = [
       { 
@@ -1020,12 +1186,12 @@ export class ProposalPDFExporter {
     
     // Condicoes DINAMICAS baseadas no tipo de produto - normalizadas
     const conditions = [
-      `- Video publicitario de ate ${specs.duracao} segundos, formato ${specs.formato} ${specs.proporcao} (${specs.resolucao})`,
-      '- Aprovacao do conteudo em ate 48 horas uteis',
-      '- Relatorio mensal de impressoes disponivel na plataforma',
-      '- Possibilidade de troca de video durante a campanha',
-      '- Exibicao em rotacao com outros anunciantes (~195s por ciclo)',
-      '- Suporte tecnico via WhatsApp em horario comercial'
+      `- Video publicitario de ate ${specs.duracao} segundos, formato ${specs.formato} ${specs.proporcao} (${specs.resolucao}).`,
+      '- Aprovacao do conteudo em ate 48 horas uteis.',
+      '- Relatorio mensal de impressoes disponivel na plataforma.',
+      '- Possibilidade de troca de video durante a campanha.',
+      '- Exibicao em rotacao com outros anunciantes (~195s por ciclo).',
+      '- Suporte tecnico via WhatsApp em horario comercial.'
     ];
     
     this.setColor(this.colors.darkGray);
@@ -1123,12 +1289,16 @@ export class ProposalPDFExporter {
     // Tabela de predios
     const buildings = proposal.selected_buildings || [];
     const totalPanels = buildings.reduce((sum: number, b: any) => sum + (b.quantidade_telas || 1), 0);
+    const quantidadePosicoes = proposal.quantidade_posicoes || 1;
     
-    // MODULO DE PRODUTO
-    await this.drawProductShowcase(specs, tipoProduto, totalPanels);
+    // MODULO DE PRODUTO (com info de posicoes)
+    await this.drawProductShowcase(specs, tipoProduto, totalPanels, quantidadePosicoes);
+    
+    // NOVO: Resumo executivo (texto explicativo completo)
+    this.drawSummaryText(proposal, specs);
+    
+    // Tabela de predios
     this.drawBuildingsTable(buildings);
-    
-    // REMOVIDO: drawVerticalPremiumShowcase() - imagem grande desnecessaria
     
     // Condicoes comerciais - diferenciado por modalidade
     if (proposal.modalidade_proposta === 'permuta') {
@@ -1137,11 +1307,14 @@ export class ProposalPDFExporter {
       this.drawCommercialConditions(proposal, isCortesia, baseTotalValue);
     }
     
+    // NOVO: Marcas parceiras (prova social textual)
+    this.drawPartnerLogosSection();
+    
     // PAGINA 2 (se necessario, adiciona automaticamente)
-    // Links de video com botoes CLICAVEIS
+    // Links de video com botoes CLICAVEIS (com subtitulo)
     this.drawVideoLinksSection();
     
-    // Condicoes gerais - DINAMICAS
+    // Condicoes gerais - DINAMICAS (com pontuacao corrigida)
     this.drawGeneralConditions(specs);
     
     // Footer com QR Code e contatos
