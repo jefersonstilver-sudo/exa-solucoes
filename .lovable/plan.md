@@ -1,64 +1,84 @@
 
-# Corrigir Favicon EXA + Meta Tags Dinamicas nas Propostas
 
-## Problemas
+# Auditoria Completa: PDF da Proposta vs Proposta Online
 
-1. **Favicon mostrando Lovable**: O arquivo `public/favicon.png` esta com o icone do Lovable em vez da EXA. Ja existe o icone correto em `public/icons/exa-icon-original.png`.
-2. **Link sem dados do cliente**: Ao compartilhar no WhatsApp, aparece titulo generico. Precisa mostrar o nome da empresa do cliente.
-3. **OG Image generica**: A imagem de preview do link nao identifica a EXA profissionalmente.
-4. **theme-color incorreto**: O `index.html` usa `#FF4430` em vez do vermelho oficial `#9C1E1E`.
+## Problemas Identificados
 
-## Solucao
+### 1. TEXTOS EXPLICATIVOS AUSENTES NO PDF
 
-### 1. Substituir Favicon (`public/favicon.png`)
+O PDF nao inclui o "Resumo Executivo" (`ProposalSummaryText.tsx`) que aparece na proposta online. Este e o bloco com:
+- "Esta proposta oferece X posicoes no formato Horizontal, com presenca em X predios e X telas..."
+- "A midia em elevador e altamente eficaz: publico recorrente..."
+- "Com o formato Horizontal e 2 marcas, sua empresa pode manter 8 videos simultaneos..."
+- "Com 2 posicoes, sua marca ocupa 2x mais espaco..."
 
-Copiar `public/icons/exa-icon-original.png` para `public/favicon.png`, substituindo o icone corrompido do Lovable. Tambem copiar para `public/apple-touch-icon.png` para consistencia em dispositivos Apple.
+**Solucao**: Criar um novo metodo `drawSummaryText()` no `ProposalPDFExporter.tsx` que reproduza fielmente este bloco de texto, recebendo os mesmos parametros do componente React (tipoProduto, quantidadePosicoes, totalPredios, totalTelas, exibicoesMes, etc).
 
-### 2. Corrigir `index.html`
+### 2. LOGO TICKER (MARCAS PARCEIRAS) AUSENTE NO PDF
 
-- Atualizar `theme-color` de `#FF4430` para `#9C1E1E` (vermelho oficial EXA)
-- Garantir que todos os favicons apontam para o arquivo correto
-- Manter o og:image padrao apontando para `https://examidia.com.br/og-image.jpg`
+A proposta online exibe um ticker de marcas parceiras (AASC, Black Bill, Portal da Cidade, Shopping China, Grupo Kammer, etc). O PDF nao inclui nenhuma secao de prova social.
 
-### 3. Adicionar Helmet dinamico em `PropostaPublicaPage.tsx`
+**Solucao**: Criar um metodo `drawPartnerLogosSection()` que liste os nomes das marcas parceiras em formato textual (ex: "Marcas que confiam na EXA: AASC | Black Bill | Secovi-PR | Portal da Cidade | Shopping China | Grupo Kammer | Splendore Alimentos..."). Nao e necessario incluir imagens -- texto e suficiente para prova social em PDF impresso.
 
-Importar `Helmet` de `react-helmet-async` e inserir no JSX da pagina publica, logo apos o carregamento da proposta:
+### 3. ERROS DE PORTUGUES E PONTUACAO NOS TEXTOS
 
-```tsx
-import { Helmet } from 'react-helmet-async';
+Todos os textos do PDF passam pela funcao `normalizeText()` que remove acentos. Isso e necessario para o jsPDF. Porem, ha problemas de pontuacao e formatacao:
 
-// Dentro do return, antes do header:
-<Helmet>
-  <title>
-    {proposal.client_company_name || proposal.client_name} | Proposta Comercial EXA
-  </title>
-  <meta name="description" content={`Proposta comercial de publicidade inteligente em elevadores para ${proposal.client_company_name || proposal.client_name}. ${proposal.total_panels} telas em ${proposal.selected_buildings?.length || 0} predios.`} />
-  <link rel="icon" type="image/png" href="/favicon.png" />
-  <meta property="og:title" content={`${proposal.client_company_name || proposal.client_name} | Proposta EXA`} />
-  <meta property="og:description" content={`Proposta comercial de publicidade inteligente em elevadores para ${proposal.client_company_name || proposal.client_name}`} />
-  <meta property="og:image" content="https://examidia.com.br/og-image.jpg?v=2" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="EXA Publicidade Inteligente" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content={`${proposal.client_company_name || proposal.client_name} | Proposta EXA`} />
-  <meta name="twitter:image" content="https://examidia.com.br/og-image.jpg?v=2" />
-</Helmet>
-```
+- `CONDICOES GERAIS` -> deveria ser `CONDICOES GERAIS` (ok, sem acento e correto pelo normalizeText)
+- `Aprovacao do conteudo em ate 48 horas uteis` -> falta ponto final
+- `Relatorio mensal de impressoes disponivel na plataforma` -> falta ponto final
+- `Possibilidade de troca de video durante a campanha` -> falta ponto final
+- `Exibicao em rotacao com outros anunciantes (~195s por ciclo)` -> falta ponto final
+- `Suporte tecnico via WhatsApp em horario comercial` -> falta ponto final
+- `Periodo: 1 mes` -> sem acento esta correto, mas deveria ter ponto final tambem
 
-Isso garante que:
-- A aba do navegador mostra "Nome da Empresa | Proposta Comercial EXA"
-- O favicon na aba e o da EXA
-- As meta tags OG sao atualizadas para o titulo da empresa
+**Solucao**: Adicionar pontuacao correta (ponto final, ponto-e-virgula) a todos os itens da lista de condicoes gerais.
 
-**Nota sobre WhatsApp/redes sociais**: Como o app e SPA (client-side rendering), crawlers como o WhatsApp leem o HTML estatico do `index.html` antes do React carregar. O Helmet corrige o titulo da aba e meta tags apos o carregamento. Para preview perfeito no WhatsApp com nome do cliente, seria necessario uma edge function de pre-rendering (escopo futuro). Mas o favicon e titulo da aba ficam corretos imediatamente.
+### 4. ITENS DE PERMUTA COM TEXTO TRUNCADO/CORTADO
 
-### 4. Atualizar `site.webmanifest`
+Na imagem da "CONTRAPARTIDA ACORDADA", os itens 2-5 estao com texto cortado horizontalmente (ex: item 2 com fonte espaçada e texto saindo da area visivel). Isso e causado por:
+- O texto dos itens nao usa `splitTextToSize()` para quebrar linhas longas
+- O `boxHeight` e calculado fixo (`35 + (itemsCount * 11)`) sem considerar que itens longos precisam de mais espaco
 
-Confirmar que todos os icones do manifesto PWA apontam para icones da EXA (ja estao corretos).
+**Solucao**: No metodo `drawPermutaConditions()`:
+- Usar `this.doc.splitTextToSize()` para quebrar textos longos dos itens de permuta
+- Calcular o `boxHeight` dinamicamente baseado na altura real de cada item apos a quebra de linha
+- Normalizar o texto dos itens com `normalizeText()` para evitar caracteres Unicode corrompidos
 
-## Arquivos modificados
+### 5. SECAO "CONHECA A EXA MIDIA" - LINKS SEM CONTEXTO
 
-1. `public/favicon.png` -- copiar de `public/icons/exa-icon-original.png`
-2. `public/apple-touch-icon.png` -- copiar de `public/icons/exa-icon-original.png`
-3. `index.html` -- corrigir theme-color para `#9C1E1E`
-4. `src/pages/public/PropostaPublicaPage.tsx` -- adicionar `<Helmet>` com titulo dinamico do cliente e meta tags OG completas
+A secao de links esta funcional mas falta contexto. Na proposta online ha um video embed e texto explicativo. No PDF, so aparecem os botoes de link sem descricao.
+
+**Solucao**: Adicionar um subtitulo breve antes dos links: "Saiba mais sobre a EXA Midia e nosso portfolio de solucoes:"
+
+### 6. INFORMACAO DE POSICOES/MARCAS NAO APARECE NO PDF
+
+A proposta online mostra "2x Posicoes por Painel" com card explicativo e as metricas (16 Predios, 24 Telas, 2x Marcas, 534k Exibicoes/mes, 1 Meses). O PDF nao inclui esta informacao de multiplas posicoes/marcas.
+
+**Solucao**: Adicionar a informacao de `quantidade_posicoes` no cabecalho da secao de produto ou como box adicional quando > 1.
+
+## Arquivos a Modificar
+
+1. **`src/components/admin/proposals/ProposalPDFExporter.tsx`**:
+   - Criar metodo `drawSummaryText()` reproduzindo o conteudo de `ProposalSummaryText.tsx`
+   - Criar metodo `drawPartnerLogosSection()` com nomes das marcas parceiras
+   - Corrigir pontuacao em `drawGeneralConditions()`
+   - Corrigir truncamento de texto em `drawPermutaConditions()` usando `splitTextToSize()`
+   - Adicionar subtitulo em `drawVideoLinksSection()`
+   - Adicionar info de multiplas posicoes em `drawProductShowcase()` ou como bloco separado
+   - Atualizar `generateProposalPDF()` para chamar os novos metodos na ordem correta
+
+## Ordem de Execucao no PDF (atualizada)
+
+1. Header (logo EXA + logo cliente + titulo)
+2. Identificacao da proposta (numero + status)
+3. Dados do cliente
+4. Produto escolhido (com info de posicoes quando aplicavel)
+5. **NOVO**: Resumo executivo (texto explicativo completo)
+6. Tabela de predios
+7. Condicoes comerciais OU Acordo de permuta (com texto nao truncado)
+8. **NOVO**: Marcas parceiras (prova social textual)
+9. Conheca a EXA Midia (com subtitulo + links)
+10. Condicoes gerais (com pontuacao corrigida)
+11. Footer (QR Code + contatos)
+
