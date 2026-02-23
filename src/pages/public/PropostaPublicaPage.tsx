@@ -1754,7 +1754,7 @@ const PropostaPublicaPage = () => {
         />
       )}
 
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 select-text">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 select-text public-page">
       {/* Header - Always EXA Red - Enhanced Design */}
       <header className="bg-gradient-to-r from-[#4a0f0f] via-[#6B1515] to-[#7D1818] text-white px-4 py-6 sm:px-6 sm:py-8">
         <div className="max-w-4xl mx-auto">
