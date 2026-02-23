@@ -31,6 +31,7 @@ const COLOR_OPTIONS = [
   { label: 'Laranja', value: 'bg-orange-100 text-orange-700', preview: 'bg-orange-500' },
   { label: 'Roxo', value: 'bg-purple-100 text-purple-700', preview: 'bg-purple-500' },
   { label: 'Vermelho', value: 'bg-red-100 text-red-700', preview: 'bg-red-500' },
+  { label: 'Vermelho EXA', value: 'bg-[#fde8e8] text-[#C7141A]', preview: 'bg-[#C7141A]' },
   { label: 'Rosa', value: 'bg-pink-100 text-pink-700', preview: 'bg-pink-500' },
   { label: 'Ciano', value: 'bg-cyan-100 text-cyan-700', preview: 'bg-cyan-500' },
   { label: 'Âmbar', value: 'bg-amber-100 text-amber-700', preview: 'bg-amber-500' },
