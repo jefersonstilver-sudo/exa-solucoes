@@ -1,76 +1,105 @@
 
 
-# Ordenacao por Ultima Atualizacao + Painel de Atividades Recentes
+# Central de Notas e Acompanhamento - Upgrade Completo
 
-## Problema Atual
+## Objetivo
 
-1. A lista de contatos ordena por `created_at` por padrao, mas nao mostra **quando** cada contato foi atualizado. Contatos recentemente modificados ficam enterrados na lista.
-2. A opcao `updated_at` nao existe no seletor de ordenacao (so tem `created_at`, `last_contact_at`, `pontuacao_atual`, `nome`).
-3. Nao existe nenhum painel de atividades/notas recentes visivel para toda a equipe na pagina principal de contatos.
+Transformar o sistema de notas em uma central completa de registros com gravacao de audio + transcricao automatica (Whisper), anexo de arquivos, tipos categorizados, e painel compacto na aba principal (Visao Geral) do contato. Tudo conectado com dados reais.
 
-## Solucao
+## 1. Migracao de Banco de Dados
 
-### 1. Adicionar ordenacao por `updated_at` e tornar padrao
+Adicionar 3 colunas na tabela `contact_notes`:
 
-**Arquivo: `src/pages/admin/contatos/ContatosPage.tsx`**
+| Coluna | Tipo | Default | Descricao |
+|--------|------|---------|-----------|
+| `note_type` | `text` | `'text'` | Tipo: text, audio, meeting, call, file |
+| `audio_url` | `text` | `NULL` | URL do audio gravado no Storage |
+| `attachment_url` | `text` | `NULL` | URL do arquivo anexado |
 
-- Mudar o estado inicial de `orderBy` de `'created_at'` para `'updated_at'`
-- Isso garante que contatos recem-atualizados ou recem-criados sempre aparecem no topo
+Criar o bucket `contact-attachments` no Supabase Storage (publico, com policy de upload autenticado).
 
-**Arquivo: `src/components/contatos/listagem/ContatosTable.tsx`** (apenas na ordenacao local)
+## 2. Atualizar tipo ContactNote
 
-- Remover o sort local que coloca duplicados primeiro (linha 89-93), pois ele sobrescreve a ordenacao do banco e confunde o usuario
+**Arquivo: `src/types/contatos.ts`**
 
-### 2. Adicionar opcao "Ultima Atualizacao" no seletor de ordenacao
+Adicionar os 3 campos novos na interface `ContactNote`:
+- `note_type?: 'text' | 'audio' | 'meeting' | 'call' | 'file'`
+- `audio_url?: string`
+- `attachment_url?: string`
 
-**Arquivo: `src/pages/admin/contatos/ContatosPage.tsx`**
+## 3. Reescrever TabNotas.tsx - Central Completa
 
-- Adicionar `<SelectItem value="updated_at">Ultima Atualizacao</SelectItem>` no seletor existente (ao lado de "Data Criacao", "Ultima Atividade", etc.)
+O componente atual e basico (so texto + importante). Sera reescrito para incluir:
 
-### 3. Mostrar coluna "Atualizado ha" na tabela
+### Formulario de Nova Nota
 
-**Arquivo: `src/components/contatos/listagem/ContatosTable.tsx`**
+```text
++-----------------------------------------------------+
+| Nova Nota                                            |
+|                                                      |
+| Tipo: [Texto] [Audio/Reuniao] [Ligacao] [Arquivo]   |
+|                                                      |
+| [Textarea para o conteudo...]                        |
+|                                                      |
+| [Mic Gravar]  [Clip Anexar]                          |
+|                                                      |
+| Se gravando: [00:15 Gravando...] [Parar] [Cancelar] |
+| Se transcrevendo: [Spinner Transcrevendo...]         |
+| Se audio pronto: [Player] + texto transcrito         |
+| Se arquivo anexo: [nome.pdf - 2MB] [X remover]      |
+|                                                      |
+| [Estrela Importante]           [Adicionar Nota]      |
++-----------------------------------------------------+
+```
 
-- Renomear a coluna "Ultima Atividade" para mostrar `updated_at` como informacao principal (com `formatDistanceToNow` -- ex: "ha 2 horas", "ha 3 dias")
-- No tooltip, mostrar a data/hora completa do `updated_at`
-- Abaixo, em texto menor, mostrar `last_interaction_at` se existir (para manter a info de ultima interacao)
+### Funcionalidades:
 
-### 4. Painel de "Atividades Recentes" na pagina principal
+- **Tipo de nota**: Toggle entre texto, audio/reuniao, ligacao, arquivo
+- **Gravacao de audio**: Reutilizar o hook `useVoiceRecorder` existente para gravar, upload para Storage e transcrever via edge function `transcribe-audio` (Whisper)
+- **Anexo de arquivo**: Upload de PDF/imagem/planilha para o bucket `contact-attachments`
+- **Transcricao automatica**: Audio transcrito pelo Whisper, texto inserido automaticamente no campo de conteudo
+- **Marcar como importante**: Toggle de estrela antes de salvar
 
-**Arquivo: `src/pages/admin/contatos/ContatosPage.tsx`**
+### Timeline de Notas
 
-Adicionar um card compacto entre os Stats Cards e o KanbanHeader, mostrando as ultimas 5 atividades do sistema de contatos, buscando da tabela `user_activity_logs` com `entity_type = 'contact'`. Cada item mostra:
+Cada nota exibe:
+- Badge colorido do tipo (Texto, Audio, Reuniao, Ligacao, Arquivo)
+- Conteudo textual da nota
+- Player de audio inline se `audio_url` existir
+- Link/preview do arquivo se `attachment_url` existir
+- Quem criou (email) + tempo relativo
+- Botoes de estrela e excluir
 
-- Acao realizada (criou, atualizou, excluiu)
-- Nome do contato afetado
-- Quem fez (email do usuario)
-- Quanto tempo atras
+## 4. Painel Compacto de Notas na TabVisaoGeral
 
-O card tera titulo "Atividades Recentes" com icone de relogio, layout compacto em lista, e sera colapsavel para nao ocupar muito espaco.
+**Arquivo: `src/components/contatos/detalhe/TabVisaoGeral.tsx`**
 
-## Detalhes Tecnicos
+Adicionar entre o card "Canal de Entrada" e "Dados Pessoais" um card compacto "Notas e Atualizacoes Recentes" que:
 
-### Arquivo 1: `src/pages/admin/contatos/ContatosPage.tsx`
+- Busca as 3 notas mais recentes do contato via `contact_notes`
+- Mostra cada nota com badge de tipo, preview do conteudo (truncado), autor e tempo
+- Notas importantes aparecem com destaque amarelo
+- Formulario inline simplificado: textarea + botao para adicionar nota rapida
+- Botao "Ver todas as notas" que indica a aba Notas
 
-1. Mudar linha 28: `useState<ContatosOrderBy>('created_at')` para `useState<ContatosOrderBy>('updated_at')`
-2. Adicionar `SelectItem` com value `updated_at` e label "Ultima Atualizacao" no Select de ordenacao
-3. Adicionar componente `RecentActivityPanel` que:
-   - Faz query: `supabase.from('user_activity_logs').select('*').eq('entity_type', 'contact').order('created_at', { ascending: false }).limit(5)`
-   - Renderiza em Card colapsavel com Collapsible do Radix
-   - Cada item: icone da acao + descricao + tempo relativo
+## 5. Integracao com useVoiceRecorder
 
-### Arquivo 2: `src/components/contatos/listagem/ContatosTable.tsx`
+O hook ja existente (`src/hooks/useVoiceRecorder.ts`) faz exatamente o que precisamos:
+- Grava audio do microfone (WebM/Opus)
+- Upload para Supabase Storage (`voice-recordings`)
+- Transcreve via edge function `transcribe-audio` (OpenAI Whisper)
+- Retorna `audioUrl` e `transcription`
 
-1. Remover sort local de duplicados (linhas 89-93) que sobrescreve a ordenacao do banco
-2. Alterar coluna "Ultima Atividade" para mostrar `updated_at` como dado principal com `formatDistanceToNow`
-3. Tooltip mostra data/hora completa
-4. Se `last_interaction_at` existir, mostrar como texto secundario abaixo
+Sera reutilizado diretamente no componente TabNotas, com o prompt ajustado para contexto de CRM/reunioes comerciais.
 
-### Arquivo 3: `src/types/contatos.ts`
+## Resumo de Arquivos
 
-- O tipo `ContatosOrderBy` ja inclui `'updated_at'` (linha 629), entao nao precisa alterar
+| Arquivo | Acao |
+|---------|------|
+| Migracao SQL | Adicionar colunas + criar bucket |
+| `src/types/contatos.ts` | Adicionar campos na interface ContactNote |
+| `src/components/contatos/detalhe/TabNotas.tsx` | Reescrever completo com audio, arquivo, tipos |
+| `src/components/contatos/detalhe/TabVisaoGeral.tsx` | Adicionar painel compacto de notas recentes |
 
-### Nenhuma alteracao no banco de dados
-
-Os campos `updated_at`, `user_activity_logs` e `contact_notes` ja existem. Apenas a UI precisa ser atualizada.
+Nenhuma edge function nova necessaria - a `transcribe-audio` ja existe e funciona.
 
