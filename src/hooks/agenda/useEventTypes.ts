@@ -105,6 +105,30 @@ export const useEventTypes = () => {
     },
   });
 
+  const reorderMutation = useMutation({
+    mutationFn: async ({ id, newOrder }: { id: string; newOrder: number }) => {
+      const { error } = await supabase
+        .from('event_types')
+        .update({ sort_order: newOrder } as any)
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event-types'] });
+    },
+  });
+
+  const swapOrder = async (indexA: number, indexB: number) => {
+    const a = eventTypes[indexA];
+    const b = eventTypes[indexB];
+    if (!a || !b) return;
+    await Promise.all([
+      supabase.from('event_types').update({ sort_order: b.sort_order } as any).eq('id', a.id),
+      supabase.from('event_types').update({ sort_order: a.sort_order } as any).eq('id', b.id),
+    ]);
+    queryClient.invalidateQueries({ queryKey: ['event-types'] });
+  };
+
   const getEventTypeConfig = (name: string) => {
     const found = eventTypes.find(et => et.name === name);
     if (found) return { icon: found.icon, color: found.color, label: found.label };
@@ -119,6 +143,8 @@ export const useEventTypes = () => {
     updateEventType: updateMutation.mutate,
     deleteEventType: deleteMutation.mutate,
     toggleEventType: toggleMutation.mutate,
+    reorderEventType: reorderMutation.mutate,
+    swapOrder,
     getEventTypeConfig,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
