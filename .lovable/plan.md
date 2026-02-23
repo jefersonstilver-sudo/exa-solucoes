@@ -1,84 +1,99 @@
 
 
-# Auditoria Completa: PDF da Proposta vs Proposta Online
+# Auditoria Completa: Video do Hero -- Bugs de Travamento e Solucoes
 
 ## Problemas Identificados
 
-### 1. TEXTOS EXPLICATIVOS AUSENTES NO PDF
+### 1. ZERO TRATAMENTO DE ERROS
+O `<video>` no HeroSection nao tem nenhum handler para `onError`, `onStalled`, `onWaiting`, `onSuspend`. Quando o video trava (rede lenta, buffer vazio, erro de decodificacao), ele simplesmente para e fica congelado para sempre.
 
-O PDF nao inclui o "Resumo Executivo" (`ProposalSummaryText.tsx`) que aparece na proposta online. Este e o bloco com:
-- "Esta proposta oferece X posicoes no formato Horizontal, com presenca em X predios e X telas..."
-- "A midia em elevador e altamente eficaz: publico recorrente..."
-- "Com o formato Horizontal e 2 marcas, sua empresa pode manter 8 videos simultaneos..."
-- "Com 2 posicoes, sua marca ocupa 2x mais espaco..."
+### 2. URL ASSINADA COM EXPIRACAO (Desktop)
+O video desktop usa uma URL assinada do Supabase Storage com token JWT:
+```
+token=eyJ...exp:1795807106
+```
+Essa URL expira em ~27/Nov/2026. Quando expirar, o video simplesmente para de funcionar sem nenhum aviso. Alem disso, se o usuario deixar a aba aberta por muito tempo, o token pode expirar durante a sessao.
 
-**Solucao**: Criar um novo metodo `drawSummaryText()` no `ProposalPDFExporter.tsx` que reproduza fielmente este bloco de texto, recebendo os mesmos parametros do componente React (tipoProduto, quantidadePosicoes, totalPredios, totalTelas, exibicoesMes, etc).
+### 3. HOOK `useHomepageVideo` NAO E USADO
+O hook `useHomepageVideo` busca a URL do video no banco de dados, mas o resultado (`videoUrl`) nunca e aplicado ao elemento `<video>`. Ambos os layouts (mobile e desktop) usam URLs hardcoded, tornando o hook inutil.
 
-### 2. LOGO TICKER (MARCAS PARCEIRAS) AUSENTE NO PDF
+### 4. SEM RECUPERACAO AUTOMATICA
+Quando o video trava por qualquer motivo (rede, buffer, erro), nao existe nenhum mecanismo de auto-recovery. O usuario precisa recarregar a pagina inteira.
 
-A proposta online exibe um ticker de marcas parceiras (AASC, Black Bill, Portal da Cidade, Shopping China, Grupo Kammer, etc). O PDF nao inclui nenhuma secao de prova social.
+### 5. SEM CONTROLE DE VISIBILIDADE
+O video continua rodando mesmo quando o usuario rola para baixo e o video sai da tela, desperdicando recursos e potencialmente causando travamentos em dispositivos mais fracos.
 
-**Solucao**: Criar um metodo `drawPartnerLogosSection()` que liste os nomes das marcas parceiras em formato textual (ex: "Marcas que confiam na EXA: AASC | Black Bill | Secovi-PR | Portal da Cidade | Shopping China | Grupo Kammer | Splendore Alimentos..."). Nao e necessario incluir imagens -- texto e suficiente para prova social em PDF impresso.
+## Solucao
 
-### 3. ERROS DE PORTUGUES E PONTUACAO NOS TEXTOS
+### Arquivo: `src/components/exa/home/HeroSection.tsx`
 
-Todos os textos do PDF passam pela funcao `normalizeText()` que remove acentos. Isso e necessario para o jsPDF. Porem, ha problemas de pontuacao e formatacao:
+**A) Criar hook `useResilientVideo` inline ou extrair para arquivo separado:**
 
-- `CONDICOES GERAIS` -> deveria ser `CONDICOES GERAIS` (ok, sem acento e correto pelo normalizeText)
-- `Aprovacao do conteudo em ate 48 horas uteis` -> falta ponto final
-- `Relatorio mensal de impressoes disponivel na plataforma` -> falta ponto final
-- `Possibilidade de troca de video durante a campanha` -> falta ponto final
-- `Exibicao em rotacao com outros anunciantes (~195s por ciclo)` -> falta ponto final
-- `Suporte tecnico via WhatsApp em horario comercial` -> falta ponto final
-- `Periodo: 1 mes` -> sem acento esta correto, mas deveria ter ponto final tambem
+Esse hook encapsula toda a logica de resiliencia:
 
-**Solucao**: Adicionar pontuacao correta (ponto final, ponto-e-virgula) a todos os itens da lista de condicoes gerais.
+- **`onStalled` / `onWaiting`**: Detectar quando o video trava e tentar `video.play()` apos 3 segundos automaticamente.
+- **`onError`**: Capturar erro, esperar 2 segundos, fazer `video.load()` + `video.play()` para recuperar. Tentar ate 3 vezes antes de desistir.
+- **`onTimeUpdate`**: Monitorar se o `currentTime` parou de avancar por mais de 5 segundos (freeze silencioso). Se sim, forcar reload.
+- **Intersection Observer**: Pausar o video quando ele sai da viewport e retomar quando volta. Isso evita desperdicio de recursos.
+- **Fallback de URL**: Se a URL assinada falhar, tentar a URL publica como fallback.
 
-### 4. ITENS DE PERMUTA COM TEXTO TRUNCADO/CORTADO
+**B) Substituir URLs hardcoded:**
 
-Na imagem da "CONTRAPARTIDA ACORDADA", os itens 2-5 estao com texto cortado horizontalmente (ex: item 2 com fonte espaçada e texto saindo da area visivel). Isso e causado por:
-- O texto dos itens nao usa `splitTextToSize()` para quebrar linhas longas
-- O `boxHeight` e calculado fixo (`35 + (itemsCount * 11)`) sem considerar que itens longos precisam de mais espaco
+- Desktop: Usar URL publica do Supabase Storage (sem token de expiracao) em vez da URL assinada. A URL publica ja existe para o video mobile: `https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos%20exa/Videos%20Site/...`
+- Manter o hook `useHomepageVideo` como override opcional (se o admin configurar uma URL customizada no banco, ela tem prioridade).
 
-**Solucao**: No metodo `drawPermutaConditions()`:
-- Usar `this.doc.splitTextToSize()` para quebrar textos longos dos itens de permuta
-- Calcular o `boxHeight` dinamicamente baseado na altura real de cada item apos a quebra de linha
-- Normalizar o texto dos itens com `normalizeText()` para evitar caracteres Unicode corrompidos
+**C) Adicionar handlers ao elemento `<video>` (tanto mobile quanto desktop):**
 
-### 5. SECAO "CONHECA A EXA MIDIA" - LINKS SEM CONTEXTO
+```tsx
+<video
+  ref={videoRef}
+  autoPlay loop muted playsInline
+  onStalled={handleStalled}
+  onWaiting={handleWaiting}
+  onError={handleError}
+  onTimeUpdate={handleTimeUpdate}
+  onPlaying={handlePlaying}
+  className="w-full h-full object-cover"
+>
+  <source src={primaryUrl} type="video/mp4" />
+</video>
+```
 
-A secao de links esta funcional mas falta contexto. Na proposta online ha um video embed e texto explicativo. No PDF, so aparecem os botoes de link sem descricao.
+**D) Logica de recuperacao (pseudo-codigo):**
 
-**Solucao**: Adicionar um subtitulo breve antes dos links: "Saiba mais sobre a EXA Midia e nosso portfolio de solucoes:"
+```
+onStalled/onWaiting:
+  - Marcar timestamp do inicio do stall
+  - Apos 3s sem progresso -> video.load() + video.play()
+  - Apos 3 tentativas -> mostrar botao "Recarregar video"
 
-### 6. INFORMACAO DE POSICOES/MARCAS NAO APARECE NO PDF
+onError:
+  - Tentativa 1: video.load() + video.play()
+  - Tentativa 2: trocar src para URL fallback
+  - Tentativa 3: mostrar estado de erro com botao manual
 
-A proposta online mostra "2x Posicoes por Painel" com card explicativo e as metricas (16 Predios, 24 Telas, 2x Marcas, 534k Exibicoes/mes, 1 Meses). O PDF nao inclui esta informacao de multiplas posicoes/marcas.
+onTimeUpdate:
+  - Salvar lastKnownTime
+  - Se currentTime == lastKnownTime por 5s -> forcar recovery
 
-**Solucao**: Adicionar a informacao de `quantidade_posicoes` no cabecalho da secao de produto ou como box adicional quando > 1.
+IntersectionObserver:
+  - video sai da tela -> video.pause()
+  - video volta para tela -> video.play()
+```
 
-## Arquivos a Modificar
+**E) Aplicar o mesmo pattern ao `HeroMobileLayout`:**
 
-1. **`src/components/admin/proposals/ProposalPDFExporter.tsx`**:
-   - Criar metodo `drawSummaryText()` reproduzindo o conteudo de `ProposalSummaryText.tsx`
-   - Criar metodo `drawPartnerLogosSection()` com nomes das marcas parceiras
-   - Corrigir pontuacao em `drawGeneralConditions()`
-   - Corrigir truncamento de texto em `drawPermutaConditions()` usando `splitTextToSize()`
-   - Adicionar subtitulo em `drawVideoLinksSection()`
-   - Adicionar info de multiplas posicoes em `drawProductShowcase()` ou como bloco separado
-   - Atualizar `generateProposalPDF()` para chamar os novos metodos na ordem correta
+O componente mobile tem os mesmos problemas. A mesma logica de resiliencia sera aplicada, compartilhando o hook.
 
-## Ordem de Execucao no PDF (atualizada)
+## Resultado Esperado
 
-1. Header (logo EXA + logo cliente + titulo)
-2. Identificacao da proposta (numero + status)
-3. Dados do cliente
-4. Produto escolhido (com info de posicoes quando aplicavel)
-5. **NOVO**: Resumo executivo (texto explicativo completo)
-6. Tabela de predios
-7. Condicoes comerciais OU Acordo de permuta (com texto nao truncado)
-8. **NOVO**: Marcas parceiras (prova social textual)
-9. Conheca a EXA Midia (com subtitulo + links)
-10. Condicoes gerais (com pontuacao corrigida)
-11. Footer (QR Code + contatos)
+- Video nunca mais fica travado -- recupera sozinho em ate 3 segundos
+- Se a rede cair, tenta 3x antes de mostrar botao de retry
+- Quando o usuario rola para baixo, o video pausa (economiza CPU/bateria)
+- URLs publicas sem expiracao -- sem surpresas futuras
+- Se admin configurar URL customizada no banco, ela tem prioridade
+
+## Arquivos Modificados
+
+1. **`src/components/exa/home/HeroSection.tsx`** -- Adicionar handlers de resiliencia, Intersection Observer, trocar URLs hardcoded para publicas, usar hook existente como override
 
