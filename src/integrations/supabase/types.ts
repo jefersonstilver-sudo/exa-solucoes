@@ -11095,6 +11095,8 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           custom_days: number | null
+          custom_days_end_date: string | null
+          custom_days_start_date: string | null
           custom_installments: Json | null
           data_inicio_cobranca: string | null
           descricao_contrapartida: string | null
@@ -11189,6 +11191,8 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           custom_days?: number | null
+          custom_days_end_date?: string | null
+          custom_days_start_date?: string | null
           custom_installments?: Json | null
           data_inicio_cobranca?: string | null
           descricao_contrapartida?: string | null
@@ -11283,6 +11287,8 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           custom_days?: number | null
+          custom_days_end_date?: string | null
+          custom_days_start_date?: string | null
           custom_installments?: Json | null
           data_inicio_cobranca?: string | null
           descricao_contrapartida?: string | null

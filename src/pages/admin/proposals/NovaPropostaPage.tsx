@@ -339,6 +339,8 @@ const NovaPropostaPage = () => {
   // Estados para período em dias
   const [isCustomDays, setIsCustomDays] = useState(false);
   const [customDays, setCustomDays] = useState(15);
+  const [customDaysStartDate, setCustomDaysStartDate] = useState<Date | null>(null);
+  const [customDaysEndDate, setCustomDaysEndDate] = useState<Date | null>(null);
   const [customInstallments, setCustomInstallments] = useState<{
     id: number;
     dueDate: Date;
@@ -616,6 +618,12 @@ const NovaPropostaPage = () => {
       if (existingProposal.is_custom_days) {
         setIsCustomDays(true);
         setCustomDays(existingProposal.custom_days || 15);
+        if ((existingProposal as any).custom_days_start_date) {
+          setCustomDaysStartDate(new Date((existingProposal as any).custom_days_start_date));
+        }
+        if ((existingProposal as any).custom_days_end_date) {
+          setCustomDaysEndDate(new Date((existingProposal as any).custom_days_end_date));
+        }
       } else {
         setIsCustomDays(false);
       }
@@ -952,6 +960,8 @@ const NovaPropostaPage = () => {
           payment_type: isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
           is_custom_days: isCustomDays,
           custom_days: isCustomDays ? customDays : null,
+          custom_days_start_date: isCustomDays && customDaysStartDate ? format(customDaysStartDate, 'yyyy-MM-dd') : null,
+          custom_days_end_date: isCustomDays && customDaysEndDate ? format(customDaysEndDate, 'yyyy-MM-dd') : null,
           custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
             installment: idx + 1,
             due_date: formatDateForInput(p.dueDate),
@@ -1565,6 +1575,8 @@ Parcelas:
         exigir_contrato: exigirContrato,
         custom_days: isCustomDays ? customDays : null,
         is_custom_days: isCustomDays,
+        custom_days_start_date: isCustomDays && customDaysStartDate ? format(customDaysStartDate, 'yyyy-MM-dd') : null,
+        custom_days_end_date: isCustomDays && customDaysEndDate ? format(customDaysEndDate, 'yyyy-MM-dd') : null,
         cc_emails: ccEmails.length > 0 ? ccEmails : null,
         venda_futura: vendaFutura,
         predios_contratados: vendaFutura ? prediosContratados : selectedBuildingsData.length,
@@ -2980,10 +2992,85 @@ Parcelas:
                 <h3 className="font-semibold text-orange-800">Período em Dias</h3>
               </div>
 
+              {/* Date pickers para início e fim */}
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <Label className="text-xs">Data de Início</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={`w-full mt-1 justify-start text-left font-normal bg-white ${!customDaysStartDate ? 'text-muted-foreground' : ''}`}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {customDaysStartDate ? format(customDaysStartDate, 'dd/MM/yyyy') : 'Selecionar'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={customDaysStartDate || undefined}
+                        onSelect={(date) => {
+                          setCustomDaysStartDate(date || null);
+                          if (date && customDaysEndDate && date < customDaysEndDate) {
+                            const days = differenceInDays(customDaysEndDate, date);
+                            if (days > 0) setCustomDays(days);
+                          }
+                        }}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div>
+                  <Label className="text-xs">Data de Fim</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={`w-full mt-1 justify-start text-left font-normal bg-white ${!customDaysEndDate ? 'text-muted-foreground' : ''}`}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {customDaysEndDate ? format(customDaysEndDate, 'dd/MM/yyyy') : 'Selecionar'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={customDaysEndDate || undefined}
+                        onSelect={(date) => {
+                          setCustomDaysEndDate(date || null);
+                          if (date && customDaysStartDate && date > customDaysStartDate) {
+                            const days = differenceInDays(date, customDaysStartDate);
+                            if (days > 0) setCustomDays(days);
+                          }
+                        }}
+                        disabled={(date) => customDaysStartDate ? date <= customDaysStartDate : false}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
               <div className="flex items-center gap-4">
                 <div className="flex-1">
-                  <Label className="text-xs">Quantidade de Dias</Label>
-                  <Input type="number" min={1} max={29} value={customDays} onChange={e => setCustomDays(Math.min(29, Math.max(1, parseInt(e.target.value) || 1)))} className="mt-1 h-12 text-lg font-bold bg-white" />
+                  <Label className="text-xs">Quantidade de Dias {customDaysStartDate && customDaysEndDate ? '(calculado)' : ''}</Label>
+                  <Input 
+                    type="number" 
+                    min={1} 
+                    max={29} 
+                    value={customDays} 
+                    readOnly={!!(customDaysStartDate && customDaysEndDate)}
+                    onChange={e => {
+                      setCustomDays(Math.min(29, Math.max(1, parseInt(e.target.value) || 1)));
+                      setCustomDaysStartDate(null);
+                      setCustomDaysEndDate(null);
+                    }} 
+                    className={`mt-1 h-12 text-lg font-bold bg-white ${customDaysStartDate && customDaysEndDate ? 'opacity-70' : ''}`} 
+                  />
                 </div>
                 <div className="text-sm text-muted-foreground pt-5">dias</div>
               </div>
