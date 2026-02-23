@@ -6437,6 +6437,42 @@ export type Database = {
         }
         Relationships: []
       }
+      event_types: {
+        Row: {
+          active: boolean
+          color: string
+          created_at: string
+          icon: string
+          id: string
+          is_default: boolean
+          label: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          is_default?: boolean
+          label: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          is_default?: boolean
+          label?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       events_log: {
         Row: {
           computer_id: string

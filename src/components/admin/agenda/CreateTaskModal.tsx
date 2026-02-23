@@ -28,7 +28,9 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar as CalendarIcon, Loader2, Plus, Clock, Bell, BellRing, Users, ChevronDown, Building2, Video, MapPin, Megaphone, Search, X, FileText, Repeat } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Plus, Clock, Bell, BellRing, Users, ChevronDown, Building2, Video, MapPin, Megaphone, Search, X, FileText, Repeat, Settings } from 'lucide-react';
+import { useEventTypes } from '@/hooks/agenda/useEventTypes';
+import EventTypeManagerModal from './EventTypeManagerModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -151,6 +153,10 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   // Recorrência state
   const [isRecorrente, setIsRecorrente] = useState(false);
   const [frequenciaRecorrencia, setFrequenciaRecorrencia] = useState('semanal');
+  const [eventTypeManagerOpen, setEventTypeManagerOpen] = useState(false);
+
+  // Hook de tipos de evento dinâmicos
+  const { activeEventTypes } = useEventTypes();
 
   // Debounce lead search
   useEffect(() => {
@@ -518,19 +524,34 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
 
       {/* Tipo de Evento */}
       <div className="space-y-2">
-        <Label>Tipo de Evento</Label>
+        <div className="flex items-center justify-between">
+          <Label>Tipo de Evento</Label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+            onClick={() => setEventTypeManagerOpen(true)}
+            title="Gerenciar tipos de evento"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        </div>
         <Select value={tipoEvento} onValueChange={setTipoEvento}>
           <SelectTrigger className="h-11">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="tarefa">✅ Tarefa</SelectItem>
-            <SelectItem value="reuniao">📹 Reunião</SelectItem>
-            <SelectItem value="compromisso">📍 Compromisso</SelectItem>
-            <SelectItem value="aviso">📢 Aviso</SelectItem>
+            {activeEventTypes.map((et) => (
+              <SelectItem key={et.name} value={et.name}>
+                {et.icon} {et.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
+
+      <EventTypeManagerModal open={eventTypeManagerOpen} onOpenChange={setEventTypeManagerOpen} />
 
       {/* Subtipo Reunião */}
       {tipoEvento === 'reuniao' && (

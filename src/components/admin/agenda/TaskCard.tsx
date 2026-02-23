@@ -18,6 +18,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { TaskStatusCanonical, TipoEvento } from '@/types/tarefas';
+import { useEventTypes } from '@/hooks/agenda/useEventTypes';
 
 export interface AgendaTask {
   id: string;
@@ -70,11 +71,12 @@ const PRIORIDADE_COLORS: Record<string, { bg: string; text: string; border: stri
   'baixa': { bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200' },
 };
 
-const TIPO_EVENTO_CONFIG: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-  'tarefa': { icon: <Check className="h-3 w-3" />, color: 'bg-emerald-100 text-emerald-700', label: 'Tarefa' },
-  'reuniao': { icon: <Video className="h-3 w-3" />, color: 'bg-blue-100 text-blue-700', label: 'Reunião' },
-  'compromisso': { icon: <MapPin className="h-3 w-3" />, color: 'bg-orange-100 text-orange-700', label: 'Compromisso' },
-  'aviso': { icon: <Megaphone className="h-3 w-3" />, color: 'bg-purple-100 text-purple-700', label: 'Aviso' },
+// Fallback estático caso o hook ainda não carregou
+const TIPO_EVENTO_FALLBACK: Record<string, { icon: string; color: string; label: string }> = {
+  'tarefa': { icon: '✅', color: 'bg-emerald-100 text-emerald-700', label: 'Tarefa' },
+  'reuniao': { icon: '📹', color: 'bg-blue-100 text-blue-700', label: 'Reunião' },
+  'compromisso': { icon: '📍', color: 'bg-orange-100 text-orange-700', label: 'Compromisso' },
+  'aviso': { icon: '📢', color: 'bg-purple-100 text-purple-700', label: 'Aviso' },
 };
 
 const getStatusColor = (status: string | null) => {
@@ -97,9 +99,18 @@ interface TaskCardProps {
 
 const TaskCard = ({ task, compact = false, showCompleteButton = true, onComplete, onClick }: TaskCardProps) => {
   const queryClient = useQueryClient();
+  const { getEventTypeConfig } = useEventTypes();
   const statusColors = getStatusColor(task.status);
   const prioridadeColors = getPrioridadeColor(task.prioridade);
-  const tipoConfig = TIPO_EVENTO_CONFIG[task.tipo_evento || 'tarefa'] || TIPO_EVENTO_CONFIG['tarefa'];
+  
+  // Usa dados do banco via hook, com fallback estático
+  const dynamicConfig = getEventTypeConfig(task.tipo_evento || 'tarefa');
+  const fallback = TIPO_EVENTO_FALLBACK[task.tipo_evento || 'tarefa'] || TIPO_EVENTO_FALLBACK['tarefa'];
+  const tipoConfig = {
+    icon: <span className="text-xs">{dynamicConfig.icon || fallback.icon}</span>,
+    color: dynamicConfig.color || fallback.color,
+    label: dynamicConfig.label || fallback.label,
+  };
   
   const isOverdue = task.data_prevista && !['concluida', 'cancelada', 'nao_realizada'].includes(task.status) && isBefore(parseISO(task.data_prevista), new Date());
   const isCompleted = task.status === 'concluida';
