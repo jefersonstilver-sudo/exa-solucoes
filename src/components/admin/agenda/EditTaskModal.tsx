@@ -221,7 +221,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
       const { data, error } = await supabase
         .from('contacts')
         .select('id, nome, sobrenome, empresa, telefone, email, temperatura')
-        .or(`nome.ilike.${termo},empresa.ilike.${termo},telefone.ilike.${termo}`)
+        .or(`nome.ilike.${termo},sobrenome.ilike.${termo},empresa.ilike.${termo},telefone.ilike.${termo},email.ilike.${termo}`)
         .limit(8);
       if (!error && data) {
         setLeadResults(data as LeadResult[]);
@@ -448,7 +448,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                 <div className="relative" ref={leadDropdownRef}>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input value={searchLead} onChange={(e) => setSearchLead(e.target.value)} placeholder="Buscar por nome, empresa ou telefone..." className="h-10 pl-9" />
+                    <Input value={searchLead} onChange={(e) => setSearchLead(e.target.value)} placeholder="Buscar por nome, empresa, telefone ou email..." className="h-10 pl-9" />
                   </div>
                   {showLeadDropdown && leadResults.length > 0 && (
                     <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-56 overflow-y-auto">

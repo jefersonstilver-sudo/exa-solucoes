@@ -175,7 +175,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
       const { data, error } = await supabase
         .from('contacts')
         .select('id, nome, sobrenome, empresa, telefone, email, temperatura')
-        .or(`nome.ilike.${termo},empresa.ilike.${termo},telefone.ilike.${termo}`)
+        .or(`nome.ilike.${termo},sobrenome.ilike.${termo},empresa.ilike.${termo},telefone.ilike.${termo},email.ilike.${termo}`)
         .limit(8);
 
       if (!error && data) {
@@ -610,7 +610,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
               <Input
                 value={searchLead}
                 onChange={(e) => setSearchLead(e.target.value)}
-                placeholder="Buscar por nome, empresa ou telefone..."
+                placeholder="Buscar por nome, empresa, telefone ou email..."
                 className="h-11 pl-9"
               />
             </div>
