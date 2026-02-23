@@ -1,60 +1,76 @@
 
 
-# Card "Canal de Entrada" - Rastreabilidade Completa do Contato
+# Ordenacao por Ultima Atualizacao + Painel de Atividades Recentes
 
-## O que sera adicionado
+## Problema Atual
 
-Um novo card **"Canal de Entrada"** no `TabVisaoGeral.tsx`, posicionado entre o card "Resumo do Contato" e "Dados Pessoais", mostrando:
+1. A lista de contatos ordena por `created_at` por padrao, mas nao mostra **quando** cada contato foi atualizado. Contatos recentemente modificados ficam enterrados na lista.
+2. A opcao `updated_at` nao existe no seletor de ordenacao (so tem `created_at`, `last_contact_at`, `pontuacao_atual`, `nome`).
+3. Nao existe nenhum painel de atividades/notas recentes visivel para toda a equipe na pagina principal de contatos.
 
-| Campo | Fonte dos dados | Exemplo |
-|-------|----------------|---------|
-| Origem | `contact.origem` (badge existente) | Badge: "Conversa WhatsApp - Sofia" |
-| Criado por | `contact.created_by` -> query `profiles.full_name` | "Artur Giehl" ou "Sistema (automatico)" |
-| Data de criacao | `contact.created_at` | "19/02/2026 as 14:32" |
-| Hora de criacao | `contact.created_at` | Inclusa na data formatada |
-| Fonte do sync | `contact.metadata?.source` | "Sincronizado de conversas WhatsApp" |
-| Agente(s) | `contact.agent_sources` | "Sofia, Eduardo" |
-| Referencia | `contact.metadata?.order_id` ou `conversation_id` | Link ou ID de referencia |
+## Solucao
 
-## Logica de exibicao do "Criado por"
+### 1. Adicionar ordenacao por `updated_at` e tornar padrao
 
-1. Se `metadata?.auto_created === true` -> "Sistema (sincronizacao automatica)"
-2. Se `created_by` existe -> buscar nome via `supabase.from('profiles').select('full_name').eq('id', created_by)`
-3. Se nenhum dos dois -> "Nao registrado"
+**Arquivo: `src/pages/admin/contatos/ContatosPage.tsx`**
 
-## Traducao de `metadata.source`
+- Mudar o estado inicial de `orderBy` de `'created_at'` para `'updated_at'`
+- Isso garante que contatos recem-atualizados ou recem-criados sempre aparecem no topo
 
-- `sync_conversations` -> "Sincronizado de conversas WhatsApp"
-- `sync_escalacoes` -> "Escalacao comercial"
-- `sync_pedidos` -> "Sincronizado de pedidos"
-- `sync_lead_profiles` -> "Importado de perfil de lead"
-- `null/undefined` -> nao exibe linha
+**Arquivo: `src/components/contatos/listagem/ContatosTable.tsx`** (apenas na ordenacao local)
 
-## Detalhes tecnicos
+- Remover o sort local que coloca duplicados primeiro (linha 89-93), pois ele sobrescreve a ordenacao do banco e confunde o usuario
 
-### Arquivo modificado: `src/components/contatos/detalhe/TabVisaoGeral.tsx`
+### 2. Adicionar opcao "Ultima Atualizacao" no seletor de ordenacao
 
-1. Adicionar `useState` e `useEffect` para buscar o nome do criador via profiles
-2. Criar o card "Canal de Entrada" com icone `LogIn` do lucide-react
-3. Layout em grid 2x3 com os campos listados acima
-4. Cada campo com label em `text-xs text-muted-foreground` e valor em `font-medium`
-5. Agentes exibidos como badges individuais quando `agent_sources` existe
+**Arquivo: `src/pages/admin/contatos/ContatosPage.tsx`**
 
-### Estrutura visual do card
+- Adicionar `<SelectItem value="updated_at">Ultima Atualizacao</SelectItem>` no seletor existente (ao lado de "Data Criacao", "Ultima Atividade", etc.)
 
-```
-Canal de Entrada
------------------
-Origem:         [Badge colorido]
-Criado por:     Nome do usuario / Sistema (auto)
-Data:           19/02/2026 as 14:32
-Fonte:          Sincronizado de conversas WhatsApp
-Agente(s):      [Sofia] [Eduardo]
-Ref:            conv_abc123
-```
+### 3. Mostrar coluna "Atualizado ha" na tabela
 
-O card substitui e expande o antigo card "Informacoes do Sistema" (que fica redundante), incorporando seus campos (Origem, Categoria, Criado em, Ultima atualizacao) dentro do novo card mais completo.
+**Arquivo: `src/components/contatos/listagem/ContatosTable.tsx`**
+
+- Renomear a coluna "Ultima Atividade" para mostrar `updated_at` como informacao principal (com `formatDistanceToNow` -- ex: "ha 2 horas", "ha 3 dias")
+- No tooltip, mostrar a data/hora completa do `updated_at`
+- Abaixo, em texto menor, mostrar `last_interaction_at` se existir (para manter a info de ultima interacao)
+
+### 4. Painel de "Atividades Recentes" na pagina principal
+
+**Arquivo: `src/pages/admin/contatos/ContatosPage.tsx`**
+
+Adicionar um card compacto entre os Stats Cards e o KanbanHeader, mostrando as ultimas 5 atividades do sistema de contatos, buscando da tabela `user_activity_logs` com `entity_type = 'contact'`. Cada item mostra:
+
+- Acao realizada (criou, atualizou, excluiu)
+- Nome do contato afetado
+- Quem fez (email do usuario)
+- Quanto tempo atras
+
+O card tera titulo "Atividades Recentes" com icone de relogio, layout compacto em lista, e sera colapsavel para nao ocupar muito espaco.
+
+## Detalhes Tecnicos
+
+### Arquivo 1: `src/pages/admin/contatos/ContatosPage.tsx`
+
+1. Mudar linha 28: `useState<ContatosOrderBy>('created_at')` para `useState<ContatosOrderBy>('updated_at')`
+2. Adicionar `SelectItem` com value `updated_at` e label "Ultima Atualizacao" no Select de ordenacao
+3. Adicionar componente `RecentActivityPanel` que:
+   - Faz query: `supabase.from('user_activity_logs').select('*').eq('entity_type', 'contact').order('created_at', { ascending: false }).limit(5)`
+   - Renderiza em Card colapsavel com Collapsible do Radix
+   - Cada item: icone da acao + descricao + tempo relativo
+
+### Arquivo 2: `src/components/contatos/listagem/ContatosTable.tsx`
+
+1. Remover sort local de duplicados (linhas 89-93) que sobrescreve a ordenacao do banco
+2. Alterar coluna "Ultima Atividade" para mostrar `updated_at` como dado principal com `formatDistanceToNow`
+3. Tooltip mostra data/hora completa
+4. Se `last_interaction_at` existir, mostrar como texto secundario abaixo
+
+### Arquivo 3: `src/types/contatos.ts`
+
+- O tipo `ContatosOrderBy` ja inclui `'updated_at'` (linha 629), entao nao precisa alterar
 
 ### Nenhuma alteracao no banco de dados
 
-Todos os campos necessarios ja existem na tabela `contatos_unificados`: `created_by`, `metadata`, `agent_sources`, `origem`, `conversation_id`. Apenas a UI precisa ser atualizada.
+Os campos `updated_at`, `user_activity_logs` e `contact_notes` ja existem. Apenas a UI precisa ser atualizada.
+
