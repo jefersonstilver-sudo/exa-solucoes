@@ -1,5 +1,6 @@
-import React from 'react';
-import { Clock, Users, Triangle, Monitor, BarChart3, TrendingUp, Smartphone, RectangleHorizontal } from 'lucide-react';
+import React, { useState } from 'react';
+import { Clock, Users, Triangle, Monitor, BarChart3, TrendingUp, Smartphone, RectangleHorizontal, Play } from 'lucide-react';
+import FullscreenVideoPlayer from '@/components/paineis-landing/FullscreenVideoPlayer';
 import { Card } from '@/components/ui/card';
 import { useVideoSpecifications } from '@/hooks/useVideoSpecifications';
 
@@ -29,8 +30,11 @@ const FeatureItem = ({ icon: Icon, text, boldText }: FeatureItemProps) => (
   </div>
 );
 
+const SAMPLE_VIDEO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/VIDEOS%20CURSOS/video%20exemplo.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9WSURFT1MgQ1VSU09TL3ZpZGVvIGV4ZW1wbG8ubXA0IiwiaWF0IjoxNzcxODc1Mzg1LCJleHAiOjE4MDM0MTEzODV9.Kflly1XpjaybsNUubz7pFxP5KIvYsxeLTaUq9ymgjhE';
+
 export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, totalPanels = 1 }) => {
   const { specifications, isLoading } = useVideoSpecifications();
+  const [showSampleVideo, setShowSampleVideo] = useState(false);
   
   const isVertical = tipo === 'vertical_premium';
   
@@ -58,6 +62,7 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
   const ProductIcon = isVertical ? Smartphone : RectangleHorizontal;
 
   return (
+    <>
     <Card className="p-5 md:p-6 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-center lg:items-start">
         
@@ -68,6 +73,13 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
             alt={`Painel ${productTitle}`}
             className="w-full h-auto rounded-lg shadow-lg"
           />
+          <button
+            onClick={() => setShowSampleVideo(true)}
+            className="mt-3 flex items-center gap-2 mx-auto px-4 py-2 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-600 hover:shadow-md hover:border-gray-300 transition-all duration-200"
+          >
+            <Play className="w-3.5 h-3.5 fill-current" />
+            Ver amostra
+          </button>
         </div>
 
         {/* Right: Features List */}
@@ -125,5 +137,12 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
         </div>
       </div>
     </Card>
+
+    <FullscreenVideoPlayer
+      isOpen={showSampleVideo}
+      onClose={() => setShowSampleVideo(false)}
+      videoSrc={SAMPLE_VIDEO_URL}
+    />
+    </>
   );
 };
