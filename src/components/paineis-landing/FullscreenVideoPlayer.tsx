@@ -64,14 +64,14 @@ const FullscreenVideoPlayer = ({ isOpen, onClose, videoSrc }: FullscreenVideoPla
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
       {/* Overlay para fechar clicando fora */}
       <div 
         className="absolute inset-0 cursor-pointer" 
         onClick={onClose}
       />
 
-      {/* Botão de fechar no canto superior direito - MELHORADO */}
+      {/* Botão de fechar no canto superior direito */}
       <button
         onClick={onClose}
         className="absolute top-4 sm:top-6 right-4 sm:right-6 z-20 bg-red-600/80 hover:bg-red-600 text-white p-3 sm:p-4 rounded-full transition-all duration-300 hover:scale-110 shadow-2xl"
@@ -80,8 +80,8 @@ const FullscreenVideoPlayer = ({ isOpen, onClose, videoSrc }: FullscreenVideoPla
         <X className="w-5 h-5 sm:w-6 sm:h-6" />
       </button>
 
-      {/* Container do vídeo */}
-      <div className="relative w-full h-full max-w-6xl max-h-[90vh] mx-4 z-10">
+      {/* Container do vídeo - tela cheia */}
+      <div className="relative w-full h-full z-10">
         {/* Loading indicator */}
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg z-30">
