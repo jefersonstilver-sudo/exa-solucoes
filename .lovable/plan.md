@@ -1,44 +1,43 @@
 
-# Corrigir Fluxo "Original" - Estado Stale no handleApply
 
-## Problema
+# Corrigir Exibicao de Dias no Card e Detalhes + Aumentar Logo
 
-Quando o usuario clica "Aplicar Logo" com "Original" selecionado:
+## Problemas Identificados
 
-1. `handleApply` chama `await uploadOriginal()` que faz setState de `originalUrl`
-2. Depois, `setTimeout(handleConfirm, 500)` chama `handleConfirm`
-3. Mas `handleConfirm` captura o valor antigo de `originalUrl` (null) porque o setState ainda nao refletiu na closure
-4. Resultado: `finalUrl` fica null e mostra "Nenhuma logo disponivel"
+1. **Card na listagem (PropostasPage.tsx, linha 1208)**: Mostra `0M` quando a proposta usa "Periodo em Dias" (`is_custom_days = true`). O codigo atual sempre exibe `{proposal.duration_months}M` sem verificar se e periodo personalizado em dias.
 
-Mesmo que o upload tenha sucesso, o state nunca e visivel para o `handleConfirm` naquele ciclo.
+2. **Detalhes (PropostaDetalhesPage.tsx, linha 673)**: Mostra "Total em 0 meses" quando `is_custom_days = true`, pois `duration_months` pode ser 0 nesse caso.
+
+3. **Logo no card**: Atualmente `w-8 h-8` (32x32px) -- usuario pede para aumentar.
 
 ## Solucao
 
-Refatorar para que `uploadOriginal` retorne a URL diretamente, e `handleConfirm` aceite um parametro opcional que tem prioridade sobre o state.
+### 1. Card da listagem - Badge de duracao (PropostasPage.tsx, linha 1208)
 
-### Arquivo: `src/components/admin/proposals/ClientLogoUploadModal.tsx`
+**Antes:** `{proposal.duration_months}M`
 
-**1. `uploadOriginal` retorna a URL:**
-- Alem de chamar `setOriginalUrl(url)`, retorna `url` da funcao
-- Tipo de retorno muda de `Promise<void>` para `Promise<string | null>`
+**Depois:** Verificar `is_custom_days`:
+- Se `is_custom_days === true` e `custom_days > 0`: mostrar `{custom_days}d` (ex: "15d")
+- Caso contrario: manter `{duration_months}M` (ex: "12M")
 
-**2. `handleConfirm` aceita `overrideUrl`:**
-- Assinatura: `handleConfirm(overrideUrl?: string)`
-- Se `overrideUrl` for passado e selectedVariant for `original` ou `css-optimized`, usa `overrideUrl` em vez de `originalUrl` do state
+### 2. Detalhes - Texto "Total em X meses" (PropostaDetalhesPage.tsx, linha 673)
 
-**3. `handleApply` reescrito:**
-- Remove o `setTimeout` fragil
-- Faz `const url = await uploadOriginal()` e chama `handleConfirm(url)` diretamente
-- Se ja fez upload (`uploadedOriginal === true`), chama `handleConfirm()` normalmente
+**Antes:** `Total em {proposal.duration_months} meses`
 
-### Detalhes Tecnicos
+**Depois:** Verificar `is_custom_days`:
+- Se `is_custom_days === true`: mostrar `Total em {custom_days} dias`
+- Caso contrario: manter `Total em {duration_months} meses`
 
-```text
-ANTES:
-handleApply() -> uploadOriginal() [setState] -> setTimeout(handleConfirm, 500) -> originalUrl = null -> ERRO
+### 3. Logo maior no card (PropostasPage.tsx, linha 128)
 
-DEPOIS:
-handleApply() -> url = await uploadOriginal() -> handleConfirm(url) -> usa url diretamente -> OK
-```
+**Antes:** `w-8 h-8` (32x32px)
 
-Mudancas apenas no `ClientLogoUploadModal.tsx`, funcoes `uploadOriginal`, `handleConfirm` e `handleApply`. Nenhum outro arquivo alterado. Interface visual permanece identica.
+**Depois:** `w-10 h-10` (40x40px) -- aumento de 25%, mantendo proporcoes e estilos
+
+## Arquivos Alterados
+
+- `src/pages/admin/proposals/PropostasPage.tsx` -- linhas 128 e 1208
+- `src/pages/admin/proposals/PropostaDetalhesPage.tsx` -- linha 673
+
+Nenhuma outra funcionalidade sera alterada.
+
