@@ -222,7 +222,7 @@ export const ClientLogoUploadModal = ({
     if (selectedVariant === 'ai-processed' && processedUrl) {
       finalUrl = processedUrl.split('?')[0];
     } else if (selectedVariant === 'original' && originalUrl) {
-      finalUrl = originalUrl.split('?')[0];
+      finalUrl = originalUrl.split('?')[0] + '#original';
     } else if (selectedVariant === 'css-optimized' && (originalUrl || previewUrl)) {
       // CSS uses originalUrl if uploaded, otherwise we need to upload first
       finalUrl = originalUrl ? originalUrl.split('?')[0] : null;
@@ -332,16 +332,12 @@ export const ClientLogoUploadModal = ({
                   <label htmlFor="variant-original" className="cursor-pointer block">
                     <div className={`
                       relative h-36 rounded-lg overflow-hidden flex items-center justify-center p-4
+                      bg-gradient-to-r from-[#4a0f0f] via-[#6B1515] to-[#7D1818]
                       border-2 transition-all
                       ${selectedVariant === 'original' 
                         ? 'border-[#9C1E1E] ring-2 ring-[#9C1E1E]/20' 
-                        : 'border-slate-200 hover:border-slate-300'}
-                    `}
-                    style={{
-                      backgroundImage: 'repeating-conic-gradient(#e5e7eb 0% 25%, #fff 0% 50%)',
-                      backgroundSize: '16px 16px'
-                    }}
-                    >
+                        : 'border-white/20 hover:border-white/30'}
+                    `}>
                       {previewUrl && !originalImageError ? (
                         <img 
                           src={previewUrl} 
