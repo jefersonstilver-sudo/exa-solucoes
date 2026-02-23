@@ -128,11 +128,6 @@ const FullscreenVideoPlayer = ({ isOpen, onClose, videoSrc }: FullscreenVideoPla
           </button>
         </div>
 
-        {/* Indicação de tecla ESC - RESPONSIVA */}
-        <div className="absolute top-4 sm:top-6 left-4 sm:left-6 bg-black/50 backdrop-blur-sm px-3 sm:px-4 py-1 sm:py-2 rounded-full text-white/70 text-xs sm:text-sm">
-          <span className="hidden sm:inline">Pressione ESC para fechar</span>
-          <span className="sm:hidden">ESC para fechar</span>
-        </div>
       </div>
     </div>
   );
