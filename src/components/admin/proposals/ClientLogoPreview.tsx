@@ -96,7 +96,7 @@ export const ClientLogoPreview: React.FC<ClientLogoPreviewProps> = ({
           <img 
             src={displayUrl}
             alt="Logo do cliente" 
-            className="w-full h-full object-contain p-1 filter brightness-0 invert"
+            className={`w-full h-full object-contain p-1 ${logoUrl?.includes('#original') ? '' : 'filter brightness-0 invert'}`}
             onError={handleImageError}
             onLoad={() => console.log('✅ [LOGO] Imagem carregada com sucesso')}
           />
