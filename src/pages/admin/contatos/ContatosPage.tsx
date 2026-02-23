@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { Plus, Search, Filter, Download, Settings, AlertTriangle, Users, Target, CheckCircle, RefreshCcw, ArrowUpDown } from 'lucide-react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { Plus, Search, Filter, Download, Settings, AlertTriangle, Users, Target, CheckCircle, RefreshCcw, ArrowUpDown, Clock, UserPlus, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,9 +11,14 @@ import { KanbanBoard, KanbanHeader } from '@/components/contatos/kanban';
 import { useNavigate } from 'react-router-dom';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { Card, CardContent } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { useContactLogs } from '@/hooks/contatos/useContactLogs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const ContatosPage = () => {
@@ -25,7 +30,7 @@ const ContatosPage = () => {
   const [search, setSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<ContatosFilters>({});
-  const [orderBy, setOrderBy] = useState<ContatosOrderBy>('created_at');
+  const [orderBy, setOrderBy] = useState<ContatosOrderBy>('updated_at');
   const [orderDirection, setOrderDirection] = useState<ContatosOrderDirection>('desc');
   const [syncing, setSyncing] = useState(false);
 
@@ -246,6 +251,9 @@ const ContatosPage = () => {
           </Card>
         </div>
 
+        {/* Painel de Atividades Recentes */}
+        <RecentActivityPanel />
+
         {/* Kanban Header with View Toggle */}
         <KanbanHeader
           viewMode={viewMode}
@@ -299,6 +307,7 @@ const ContatosPage = () => {
                     <SelectValue placeholder="Ordenar por" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="updated_at">Última Atualização</SelectItem>
                     <SelectItem value="created_at">Data Criação</SelectItem>
                     <SelectItem value="last_contact_at">Última Atividade</SelectItem>
                     <SelectItem value="pontuacao_atual">Score</SelectItem>
@@ -364,6 +373,70 @@ const ContatosPage = () => {
         />
       </div>
     </TooltipProvider>
+  );
+};
+
+// --- Painel de Atividades Recentes ---
+const ACTION_ICONS: Record<string, React.ReactNode> = {
+  create: <UserPlus className="w-3.5 h-3.5 text-green-600" />,
+  update: <Pencil className="w-3.5 h-3.5 text-blue-600" />,
+  delete: <Trash2 className="w-3.5 h-3.5 text-red-600" />,
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  create: 'criou',
+  update: 'atualizou',
+  delete: 'excluiu',
+};
+
+const RecentActivityPanel: React.FC = () => {
+  const [open, setOpen] = useState(true);
+  const { logs, loading } = useContactLogs({ limit: 5 });
+
+  if (loading && logs.length === 0) return null;
+  if (!loading && logs.length === 0) return null;
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-sm">
+        <CollapsibleTrigger asChild>
+          <button className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors rounded-t-lg">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center">
+                <Clock className="w-3.5 h-3.5 text-indigo-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Atividades Recentes</span>
+              <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{logs.length}</Badge>
+            </div>
+            {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="px-3 pb-3 space-y-1">
+            {logs.map((log) => {
+              const actionKey = log.action_type?.toLowerCase() || 'update';
+              const icon = ACTION_ICONS[actionKey] || ACTION_ICONS.update;
+              const label = ACTION_LABELS[actionKey] || log.action_type;
+              const contactName = log.contact_name || (log.metadata?.contact_name as string) || 'contato';
+              const userName = log.user_name || 'Alguém';
+              const timeAgo = formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: ptBR });
+
+              return (
+                <div key={log.id} className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-muted/40 transition-colors text-xs">
+                  <span className="flex-shrink-0">{icon}</span>
+                  <span className="flex-1 truncate">
+                    <span className="font-medium text-foreground">{userName}</span>
+                    {' '}{label}{' '}
+                    <span className="font-medium text-foreground">{contactName}</span>
+                  </span>
+                  <span className="text-muted-foreground flex-shrink-0">{timeAgo}</span>
+                </div>
+              );
+            })}
+          </div>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 };
 

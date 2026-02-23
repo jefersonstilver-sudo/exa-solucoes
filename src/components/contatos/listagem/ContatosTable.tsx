@@ -85,12 +85,8 @@ export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading 
     );
   }
 
-  // Ordenar: duplicados primeiro
-  const sortedContacts = [...contacts].sort((a, b) => {
-    if (a.is_potential_duplicate && !b.is_potential_duplicate) return -1;
-    if (!a.is_potential_duplicate && b.is_potential_duplicate) return 1;
-    return 0;
-  });
+  // Manter a ordenação do banco de dados (não reordenar localmente)
+  const sortedContacts = contacts;
 
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
@@ -101,7 +97,7 @@ export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading 
             <TableHead>Status</TableHead>
             <TableHead>Nome / Empresa</TableHead>
             <TableHead className="hidden md:table-cell">Origem</TableHead>
-            <TableHead className="hidden lg:table-cell">Última Atividade</TableHead>
+            <TableHead className="hidden lg:table-cell">Atualizado</TableHead>
             <TableHead className="text-center">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -190,22 +186,27 @@ export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading 
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span>
-                              {contact.last_interaction_at 
-                                ? formatDistanceToNow(new Date(contact.last_interaction_at), { addSuffix: true, locale: ptBR })
-                                : contact.last_contact_at 
-                                  ? formatDistanceToNow(new Date(contact.last_contact_at), { addSuffix: true, locale: ptBR })
+                            <div>
+                              <span className="text-foreground font-medium text-xs">
+                                {contact.updated_at 
+                                  ? formatDistanceToNow(new Date(contact.updated_at), { addSuffix: true, locale: ptBR })
                                   : '-'
-                              }
-                            </span>
+                                }
+                              </span>
+                              {contact.last_interaction_at && (
+                                <div className="text-[10px] text-muted-foreground mt-0.5">
+                                  Interação: {formatDistanceToNow(new Date(contact.last_interaction_at), { addSuffix: true, locale: ptBR })}
+                                </div>
+                              )}
+                            </div>
                           </TooltipTrigger>
                           <TooltipContent>
-                            {contact.last_interaction_at 
-                              ? format(new Date(contact.last_interaction_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
-                              : contact.last_contact_at 
-                                ? format(new Date(contact.last_contact_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
-                                : 'Sem interação registrada'
-                            }
+                            <div className="space-y-1">
+                              <div>Atualizado: {contact.updated_at ? format(new Date(contact.updated_at), "dd/MM/yyyy HH:mm", { locale: ptBR }) : '-'}</div>
+                              {contact.last_interaction_at && (
+                                <div>Última interação: {format(new Date(contact.last_interaction_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</div>
+                              )}
+                            </div>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
