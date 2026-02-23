@@ -1,37 +1,70 @@
 
-# Adicionar Logo da Empresa nos Cards de Propostas
+# Adicionar Data de Inicio e Fim no Periodo em Dias
 
 ## Problema
-Os cards de propostas na listagem nao exibem a logo da empresa, mesmo quando a proposta ja tem `client_logo_url` configurada. O card vai direto do checkbox para o conteudo textual, sem nenhum indicador visual da empresa.
+Atualmente, o modulo "Periodo em Dias" so permite inserir a quantidade de dias manualmente. O usuario precisa tambem poder definir uma **data de inicio** e uma **data de fim** da campanha, e o numero de dias ser calculado automaticamente a partir dessas datas.
 
 ## Solucao
 
-Adicionar um avatar compacto (32x32px) entre o checkbox e o conteudo do card, seguindo o padrao visual EXA (gradiente vermelho escuro + logo branca).
+### 1. Migracao SQL - Novas colunas na tabela `proposals`
 
-### Arquivo: `src/pages/admin/proposals/PropostasPage.tsx`
+Adicionar dois campos:
+- `custom_days_start_date` (date, nullable) - Data de inicio da campanha
+- `custom_days_end_date` (date, nullable) - Data de fim da campanha
 
-Entre o bloco do checkbox (linha 1109) e o bloco `{/* Content */}` (linha 1111), inserir um avatar:
+### 2. Atualizar tipos Supabase
 
-- **Quando `client_logo_url` existe**: Exibir a logo com fundo gradiente (`from-[#9C1E1E] via-[#180A0A] to-[#0B0B0B]`) e filtro `brightness-0 invert` (logo branca), com signed URL gerada via `supabase.storage.createSignedUrl` para compatibilidade com bucket privado
-- **Quando NAO existe**: Exibir as iniciais do `client_company_name` ou `client_name` sobre o mesmo fundo gradiente vermelho
+Adicionar os novos campos no tipo `proposals` em `src/integrations/supabase/types.ts` (Row, Insert, Update).
 
-### Detalhes tecnicos
+### 3. UI - Secao "Periodo em Dias" (NovaPropostaPage.tsx)
 
-1. Criar um sub-componente inline `ProposalLogoAvatar` que:
-   - Recebe `logoUrl` e `name` como props
-   - Gera signed URL se a logo for do Supabase Storage (reutilizando o padrao de `ClientLogoDisplay.tsx`)
-   - Renderiza um `div` 32x32 com gradiente vermelho + imagem ou iniciais
+Modificar o bloco existente (linhas 2977-3004) para incluir:
 
-2. Inserir o avatar na linha 1110 (entre checkbox e content):
 ```text
-+------------------------------------------+
-| [x] [LOGO] EXA-2026-7381 VERTICAL...    |
-|            Daniel Ramos / Suzana...       |
-|            12M • 17 predios • R$5.980    |
-+------------------------------------------+
++--------------------------------------------------+
+| 📅 Periodo em Dias                               |
+|                                                  |
+| Data de Inicio          Data de Fim              |
+| [  23/02/2026  ]        [  10/03/2026  ]         |
+|                                                  |
+| Quantidade de Dias                               |
+| [ 15 ]  dias   (calculado automaticamente)       |
+|                                                  |
+| ⚠️ Periodos < 30 dias tem acrescimo de 10%       |
+|                                                  |
+| Valor Total (15 dias):          R$ 1.307,90      |
++--------------------------------------------------+
 ```
 
-3. O campo `client_logo_url` ja esta disponivel pois a query usa `select('*')`
+**Comportamento**:
+- Dois date pickers (usando o componente Calendar/Popover existente) para inicio e fim
+- Ao selecionar ambas as datas, `customDays` e calculado automaticamente (`differenceInDays(end, start)`)
+- O input de "Quantidade de Dias" continua visivel mas como **readonly** (calculado pelas datas)
+- Se o usuario quiser, pode digitar dias manualmente e as datas ficam vazias (compatibilidade retroativa)
 
-### Nenhuma alteracao de banco necessaria
-O campo `client_logo_url` ja existe na tabela `proposals`.
+### 4. Estados novos (NovaPropostaPage.tsx)
+
+Adicionar:
+- `customDaysStartDate: Date | null` - estado para data inicio
+- `customDaysEndDate: Date | null` - estado para data fim
+
+Logica:
+- Ao mudar qualquer data, recalcular `customDays` via `differenceInDays`
+- Ao mudar `customDays` manualmente, limpar as datas (modo manual)
+
+### 5. Salvar e Restaurar (NovaPropostaPage.tsx)
+
+**handleSaveDraft** (linha ~940): Adicionar campos `custom_days_start_date` e `custom_days_end_date` ao objeto de save.
+
+**Restauracao em modo edicao** (linha ~616): Restaurar `customDaysStartDate` e `customDaysEndDate` do `existingProposal`.
+
+### 6. Proposta publica (PropostaDetalhesPage.tsx)
+
+Atualizar o calculo de periodo (linha ~186) para usar as datas reais quando disponiveis em vez de `addDays(created_at, custom_days)`.
+
+## Arquivos modificados
+
+1. **Nova migracao SQL** - Adicionar colunas `custom_days_start_date` e `custom_days_end_date`
+2. **`src/integrations/supabase/types.ts`** - Tipos atualizados
+3. **`src/pages/admin/proposals/NovaPropostaPage.tsx`** - Estados, UI com date pickers, save e restore
+4. **`src/pages/admin/proposals/PropostaDetalhesPage.tsx`** - Usar datas reais no calculo de periodo
