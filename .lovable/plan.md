@@ -1,70 +1,95 @@
 
-# Adicionar Data de Inicio e Fim no Periodo em Dias
+# Corrigir Scroll e Seleção de Texto na Proposta Pública
 
-## Problema
-Atualmente, o modulo "Periodo em Dias" so permite inserir a quantidade de dias manualmente. O usuario precisa tambem poder definir uma **data de inicio** e uma **data de fim** da campanha, e o numero de dias ser calculado automaticamente a partir dessas datas.
+## Problema Identificado
 
-## Solucao
+Duas causas raiz encontradas nos CSS globais:
 
-### 1. Migracao SQL - Novas colunas na tabela `proposals`
+1. **`src/styles/pwa-native.css` (linhas 11-12)**: Aplica `user-select: none` no `body` inteiro, bloqueando toda seleção de texto em TODAS as páginas, incluindo a proposta pública
+2. **`src/styles/pwa-native.css` (linhas 41-43)**: Aplica `touch-action: manipulation` em TODOS os elementos (`*`), o que pode interferir com scroll nativo em alguns navegadores/dispositivos
 
-Adicionar dois campos:
-- `custom_days_start_date` (date, nullable) - Data de inicio da campanha
-- `custom_days_end_date` (date, nullable) - Data de fim da campanha
+Esses estilos fazem sentido para o painel admin (PWA), mas quebram a experiência do cliente na página pública da proposta.
 
-### 2. Atualizar tipos Supabase
+## Solução
 
-Adicionar os novos campos no tipo `proposals` em `src/integrations/supabase/types.ts` (Row, Insert, Update).
+### Arquivo 1: `src/styles/pwa-native.css`
 
-### 3. UI - Secao "Periodo em Dias" (NovaPropostaPage.tsx)
+- **Remover** `user-select: none` do `body` global (linhas 11-12)
+- **Mover** essa regra para dentro de `@media all and (display-mode: standalone)` para que só se aplique quando o app está instalado como PWA (onde faz sentido bloquear seleção)
+- **Restringir** `touch-action: manipulation` para não afetar o scroll nativo removendo-o do seletor `*` global e aplicando apenas a botões e links
 
-Modificar o bloco existente (linhas 2977-3004) para incluir:
+### Arquivo 2: `src/pages/public/PropostaPublicaPage.tsx`
 
+- Adicionar classe `select-text` no container principal da proposta pública (linha 1757) para garantir que texto seja selecionável mesmo em contextos PWA
+- A classe usará `user-select: text !important` como override de segurança
+
+### Arquivo 3: `src/styles/base.css` (ou utilitário)
+
+- Adicionar classe utilitária `.select-text` com `user-select: text !important` para uso em páginas públicas
+
+## Detalhes Técnicos
+
+### pwa-native.css - Mudanças
+
+**Antes (problemático)**:
 ```text
-+--------------------------------------------------+
-| 📅 Periodo em Dias                               |
-|                                                  |
-| Data de Inicio          Data de Fim              |
-| [  23/02/2026  ]        [  10/03/2026  ]         |
-|                                                  |
-| Quantidade de Dias                               |
-| [ 15 ]  dias   (calculado automaticamente)       |
-|                                                  |
-| ⚠️ Periodos < 30 dias tem acrescimo de 10%       |
-|                                                  |
-| Valor Total (15 dias):          R$ 1.307,90      |
-+--------------------------------------------------+
+body {
+  overscroll-behavior-y: contain;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+* {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
 ```
 
-**Comportamento**:
-- Dois date pickers (usando o componente Calendar/Popover existente) para inicio e fim
-- Ao selecionar ambas as datas, `customDays` e calculado automaticamente (`differenceInDays(end, start)`)
-- O input de "Quantidade de Dias" continua visivel mas como **readonly** (calculado pelas datas)
-- Se o usuario quiser, pode digitar dias manualmente e as datas ficam vazias (compatibilidade retroativa)
+**Depois (corrigido)**:
+```text
+body {
+  overscroll-behavior-y: contain;
+}
 
-### 4. Estados novos (NovaPropostaPage.tsx)
+/* user-select: none apenas em PWA standalone */
+@media all and (display-mode: standalone) {
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
 
-Adicionar:
-- `customDaysStartDate: Date | null` - estado para data inicio
-- `customDaysEndDate: Date | null` - estado para data fim
+/* touch-action apenas em elementos interativos, não em tudo */
+button, a, [role="button"], [type="button"], [type="submit"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+```
 
-Logica:
-- Ao mudar qualquer data, recalcular `customDays` via `differenceInDays`
-- Ao mudar `customDays` manualmente, limpar as datas (modo manual)
+### PropostaPublicaPage.tsx
 
-### 5. Salvar e Restaurar (NovaPropostaPage.tsx)
+Adicionar `select-text` ao container principal para garantir seleção de texto:
+```text
+<div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 select-text">
+```
 
-**handleSaveDraft** (linha ~940): Adicionar campos `custom_days_start_date` e `custom_days_end_date` ao objeto de save.
+### Classe utilitária
 
-**Restauracao em modo edicao** (linha ~616): Restaurar `customDaysStartDate` e `customDaysEndDate` do `existingProposal`.
+```text
+.select-text {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
 
-### 6. Proposta publica (PropostaDetalhesPage.tsx)
+.select-text * {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+```
 
-Atualizar o calculo de periodo (linha ~186) para usar as datas reais quando disponiveis em vez de `addDays(created_at, custom_days)`.
+## Resultado Esperado
 
-## Arquivos modificados
-
-1. **Nova migracao SQL** - Adicionar colunas `custom_days_start_date` e `custom_days_end_date`
-2. **`src/integrations/supabase/types.ts`** - Tipos atualizados
-3. **`src/pages/admin/proposals/NovaPropostaPage.tsx`** - Estados, UI com date pickers, save e restore
-4. **`src/pages/admin/proposals/PropostaDetalhesPage.tsx`** - Usar datas reais no calculo de periodo
+- Scroll com rodinha do mouse funciona normalmente na proposta pública
+- Texto pode ser selecionado e copiado pelo cliente
+- Painel admin PWA mantém comportamento nativo (sem seleção de texto quando instalado)
+- Nenhuma alteração visual ou funcional em outras partes do sistema
