@@ -184,6 +184,16 @@ const PropostaDetalhesPage = () => {
   // Calculate campaign dates
   const getCampaignDates = () => {
     if (!proposal) return { start: null, end: null, totalDays: 0 };
+    
+    // Use real dates if available
+    const proposalAny = proposal as any;
+    if (proposalAny.custom_days_start_date && proposalAny.custom_days_end_date) {
+      const start = new Date(proposalAny.custom_days_start_date);
+      const end = new Date(proposalAny.custom_days_end_date);
+      const totalDays = differenceInDays(end, start);
+      return { start, end, totalDays };
+    }
+    
     const start = new Date(proposal.created_at);
     const end = proposal.is_custom_days && proposal.custom_days 
       ? addDays(start, proposal.custom_days)
