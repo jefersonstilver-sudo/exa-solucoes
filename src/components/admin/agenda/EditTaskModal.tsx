@@ -34,8 +34,11 @@ import {
   Trash2,
   AlertTriangle,
   Video,
-  MapPin
+  MapPin,
+  Settings
 } from 'lucide-react';
+import { useEventTypes } from '@/hooks/agenda/useEventTypes';
+import EventTypeManagerModal from './EventTypeManagerModal';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -87,6 +90,8 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   const [linkReuniao, setLinkReuniao] = useState('');
   const [escopo, setEscopo] = useState<string>('individual');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [eventTypeManagerOpen, setEventTypeManagerOpen] = useState(false);
+  const { activeEventTypes } = useEventTypes();
 
   useEffect(() => {
     if (task) {
@@ -186,19 +191,34 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             {/* Tipo de Evento */}
             <div className="space-y-2">
-              <Label>Tipo de Evento</Label>
+              <div className="flex items-center justify-between">
+                <Label>Tipo de Evento</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                  onClick={() => setEventTypeManagerOpen(true)}
+                  title="Gerenciar tipos de evento"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </div>
               <Select value={tipoEvento} onValueChange={setTipoEvento}>
                 <SelectTrigger className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="tarefa">✅ Tarefa</SelectItem>
-                  <SelectItem value="reuniao">📹 Reunião</SelectItem>
-                  <SelectItem value="compromisso">📍 Compromisso</SelectItem>
-                  <SelectItem value="aviso">📢 Aviso</SelectItem>
+                  {activeEventTypes.map((et) => (
+                    <SelectItem key={et.name} value={et.name}>
+                      {et.icon} {et.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
+
+            <EventTypeManagerModal open={eventTypeManagerOpen} onOpenChange={setEventTypeManagerOpen} />
 
             {/* Subtipo Reunião */}
             {tipoEvento === 'reuniao' && (
