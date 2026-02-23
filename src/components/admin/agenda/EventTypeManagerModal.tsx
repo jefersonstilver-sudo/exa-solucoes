@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, X, Check, Loader2, AlertTriangle, GripVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Check, Loader2, AlertTriangle, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import { useEventTypes, type EventType } from '@/hooks/agenda/useEventTypes';
 import { cn } from '@/lib/utils';
 
@@ -58,6 +58,7 @@ const EventTypeManagerModal = ({ open, onOpenChange }: EventTypeManagerModalProp
     updateEventType,
     deleteEventType,
     toggleEventType,
+    swapOrder,
     isCreating,
     isUpdating,
     isDeleting,
@@ -321,14 +322,38 @@ const EventTypeManagerModal = ({ open, onOpenChange }: EventTypeManagerModalProp
                     );
                   }
 
+                  const idx = eventTypes.findIndex(e => e.id === et.id);
+
                   return (
                     <div
                       key={et.id}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                        "flex items-center gap-2 p-3 rounded-lg border transition-colors",
                         et.active ? "bg-background" : "bg-muted/50 opacity-60"
                       )}
                     >
+                      {/* Reorder buttons */}
+                      <div className="flex flex-col gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 w-5 p-0 text-muted-foreground hover:text-foreground"
+                          onClick={() => swapOrder(idx, idx - 1)}
+                          disabled={idx === 0 || !!editingId || isAdding}
+                        >
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 w-5 p-0 text-muted-foreground hover:text-foreground"
+                          onClick={() => swapOrder(idx, idx + 1)}
+                          disabled={idx === eventTypes.length - 1 || !!editingId || isAdding}
+                        >
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+
                       {/* Icon + label */}
                       <span className={cn("inline-flex items-center gap-1.5 text-sm px-2.5 py-1 rounded-full font-medium", et.color)}>
                         {et.icon} {et.label}
