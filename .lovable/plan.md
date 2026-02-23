@@ -1,99 +1,60 @@
 
 
-# Auditoria Completa: Video do Hero -- Bugs de Travamento e Solucoes
+# Card "Canal de Entrada" - Rastreabilidade Completa do Contato
 
-## Problemas Identificados
+## O que sera adicionado
 
-### 1. ZERO TRATAMENTO DE ERROS
-O `<video>` no HeroSection nao tem nenhum handler para `onError`, `onStalled`, `onWaiting`, `onSuspend`. Quando o video trava (rede lenta, buffer vazio, erro de decodificacao), ele simplesmente para e fica congelado para sempre.
+Um novo card **"Canal de Entrada"** no `TabVisaoGeral.tsx`, posicionado entre o card "Resumo do Contato" e "Dados Pessoais", mostrando:
 
-### 2. URL ASSINADA COM EXPIRACAO (Desktop)
-O video desktop usa uma URL assinada do Supabase Storage com token JWT:
-```
-token=eyJ...exp:1795807106
-```
-Essa URL expira em ~27/Nov/2026. Quando expirar, o video simplesmente para de funcionar sem nenhum aviso. Alem disso, se o usuario deixar a aba aberta por muito tempo, o token pode expirar durante a sessao.
+| Campo | Fonte dos dados | Exemplo |
+|-------|----------------|---------|
+| Origem | `contact.origem` (badge existente) | Badge: "Conversa WhatsApp - Sofia" |
+| Criado por | `contact.created_by` -> query `profiles.full_name` | "Artur Giehl" ou "Sistema (automatico)" |
+| Data de criacao | `contact.created_at` | "19/02/2026 as 14:32" |
+| Hora de criacao | `contact.created_at` | Inclusa na data formatada |
+| Fonte do sync | `contact.metadata?.source` | "Sincronizado de conversas WhatsApp" |
+| Agente(s) | `contact.agent_sources` | "Sofia, Eduardo" |
+| Referencia | `contact.metadata?.order_id` ou `conversation_id` | Link ou ID de referencia |
 
-### 3. HOOK `useHomepageVideo` NAO E USADO
-O hook `useHomepageVideo` busca a URL do video no banco de dados, mas o resultado (`videoUrl`) nunca e aplicado ao elemento `<video>`. Ambos os layouts (mobile e desktop) usam URLs hardcoded, tornando o hook inutil.
+## Logica de exibicao do "Criado por"
 
-### 4. SEM RECUPERACAO AUTOMATICA
-Quando o video trava por qualquer motivo (rede, buffer, erro), nao existe nenhum mecanismo de auto-recovery. O usuario precisa recarregar a pagina inteira.
+1. Se `metadata?.auto_created === true` -> "Sistema (sincronizacao automatica)"
+2. Se `created_by` existe -> buscar nome via `supabase.from('profiles').select('full_name').eq('id', created_by)`
+3. Se nenhum dos dois -> "Nao registrado"
 
-### 5. SEM CONTROLE DE VISIBILIDADE
-O video continua rodando mesmo quando o usuario rola para baixo e o video sai da tela, desperdicando recursos e potencialmente causando travamentos em dispositivos mais fracos.
+## Traducao de `metadata.source`
 
-## Solucao
+- `sync_conversations` -> "Sincronizado de conversas WhatsApp"
+- `sync_escalacoes` -> "Escalacao comercial"
+- `sync_pedidos` -> "Sincronizado de pedidos"
+- `sync_lead_profiles` -> "Importado de perfil de lead"
+- `null/undefined` -> nao exibe linha
 
-### Arquivo: `src/components/exa/home/HeroSection.tsx`
+## Detalhes tecnicos
 
-**A) Criar hook `useResilientVideo` inline ou extrair para arquivo separado:**
+### Arquivo modificado: `src/components/contatos/detalhe/TabVisaoGeral.tsx`
 
-Esse hook encapsula toda a logica de resiliencia:
+1. Adicionar `useState` e `useEffect` para buscar o nome do criador via profiles
+2. Criar o card "Canal de Entrada" com icone `LogIn` do lucide-react
+3. Layout em grid 2x3 com os campos listados acima
+4. Cada campo com label em `text-xs text-muted-foreground` e valor em `font-medium`
+5. Agentes exibidos como badges individuais quando `agent_sources` existe
 
-- **`onStalled` / `onWaiting`**: Detectar quando o video trava e tentar `video.play()` apos 3 segundos automaticamente.
-- **`onError`**: Capturar erro, esperar 2 segundos, fazer `video.load()` + `video.play()` para recuperar. Tentar ate 3 vezes antes de desistir.
-- **`onTimeUpdate`**: Monitorar se o `currentTime` parou de avancar por mais de 5 segundos (freeze silencioso). Se sim, forcar reload.
-- **Intersection Observer**: Pausar o video quando ele sai da viewport e retomar quando volta. Isso evita desperdicio de recursos.
-- **Fallback de URL**: Se a URL assinada falhar, tentar a URL publica como fallback.
-
-**B) Substituir URLs hardcoded:**
-
-- Desktop: Usar URL publica do Supabase Storage (sem token de expiracao) em vez da URL assinada. A URL publica ja existe para o video mobile: `https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos%20exa/Videos%20Site/...`
-- Manter o hook `useHomepageVideo` como override opcional (se o admin configurar uma URL customizada no banco, ela tem prioridade).
-
-**C) Adicionar handlers ao elemento `<video>` (tanto mobile quanto desktop):**
-
-```tsx
-<video
-  ref={videoRef}
-  autoPlay loop muted playsInline
-  onStalled={handleStalled}
-  onWaiting={handleWaiting}
-  onError={handleError}
-  onTimeUpdate={handleTimeUpdate}
-  onPlaying={handlePlaying}
-  className="w-full h-full object-cover"
->
-  <source src={primaryUrl} type="video/mp4" />
-</video>
-```
-
-**D) Logica de recuperacao (pseudo-codigo):**
+### Estrutura visual do card
 
 ```
-onStalled/onWaiting:
-  - Marcar timestamp do inicio do stall
-  - Apos 3s sem progresso -> video.load() + video.play()
-  - Apos 3 tentativas -> mostrar botao "Recarregar video"
-
-onError:
-  - Tentativa 1: video.load() + video.play()
-  - Tentativa 2: trocar src para URL fallback
-  - Tentativa 3: mostrar estado de erro com botao manual
-
-onTimeUpdate:
-  - Salvar lastKnownTime
-  - Se currentTime == lastKnownTime por 5s -> forcar recovery
-
-IntersectionObserver:
-  - video sai da tela -> video.pause()
-  - video volta para tela -> video.play()
+Canal de Entrada
+-----------------
+Origem:         [Badge colorido]
+Criado por:     Nome do usuario / Sistema (auto)
+Data:           19/02/2026 as 14:32
+Fonte:          Sincronizado de conversas WhatsApp
+Agente(s):      [Sofia] [Eduardo]
+Ref:            conv_abc123
 ```
 
-**E) Aplicar o mesmo pattern ao `HeroMobileLayout`:**
+O card substitui e expande o antigo card "Informacoes do Sistema" (que fica redundante), incorporando seus campos (Origem, Categoria, Criado em, Ultima atualizacao) dentro do novo card mais completo.
 
-O componente mobile tem os mesmos problemas. A mesma logica de resiliencia sera aplicada, compartilhando o hook.
+### Nenhuma alteracao no banco de dados
 
-## Resultado Esperado
-
-- Video nunca mais fica travado -- recupera sozinho em ate 3 segundos
-- Se a rede cair, tenta 3x antes de mostrar botao de retry
-- Quando o usuario rola para baixo, o video pausa (economiza CPU/bateria)
-- URLs publicas sem expiracao -- sem surpresas futuras
-- Se admin configurar URL customizada no banco, ela tem prioridade
-
-## Arquivos Modificados
-
-1. **`src/components/exa/home/HeroSection.tsx`** -- Adicionar handlers de resiliencia, Intersection Observer, trocar URLs hardcoded para publicas, usar hook existente como override
-
+Todos os campos necessarios ja existem na tabela `contatos_unificados`: `created_by`, `metadata`, `agent_sources`, `origem`, `conversation_id`. Apenas a UI precisa ser atualizada.
