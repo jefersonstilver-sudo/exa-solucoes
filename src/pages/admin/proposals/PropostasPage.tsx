@@ -73,6 +73,8 @@ interface Proposal {
   valor_total_permuta?: number | null;
   // Título customizado
   titulo?: string | null;
+  // Logo do cliente
+  client_logo_url?: string | null;
 }
 
 interface LiveViewNotification {
@@ -91,6 +93,51 @@ const formatCurrencyCompact = (value: number) => {
     return `R$ ${(value / 1000).toFixed(1)}k`;
   }
   return formatCurrency(value);
+};
+
+/** Avatar compacto com logo da empresa ou iniciais */
+const ProposalLogoAvatar: React.FC<{ logoUrl?: string | null; name?: string | null }> = ({ logoUrl, name }) => {
+  const [signedUrl, setSignedUrl] = React.useState<string | null>(null);
+  const [imgError, setImgError] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!logoUrl) return;
+    const resolve = async () => {
+      const pattern = /\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/;
+      const match = logoUrl.match(pattern);
+      if (match) {
+        const { data } = await supabase.storage
+          .from(match[1])
+          .createSignedUrl(match[2].split('?')[0], 60 * 60 * 2);
+        if (data?.signedUrl) { setSignedUrl(data.signedUrl); return; }
+      }
+      setSignedUrl(logoUrl);
+    };
+    resolve();
+  }, [logoUrl]);
+
+  const initials = (name || '?')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0])
+    .join('')
+    .toUpperCase();
+
+  return (
+    <div className="w-8 h-8 flex-shrink-0 rounded-lg bg-gradient-to-br from-[#9C1E1E] via-[#180A0A] to-[#0B0B0B] flex items-center justify-center overflow-hidden">
+      {logoUrl && signedUrl && !imgError ? (
+        <img
+          src={signedUrl}
+          alt=""
+          className="w-full h-full object-contain p-1 filter brightness-0 invert opacity-80"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <span className="text-[10px] font-bold text-white/80">{initials}</span>
+      )}
+    </div>
+  );
 };
 
 const PropostasPage = () => {
@@ -1107,6 +1154,12 @@ const PropostasPage = () => {
                           />
                         </div>
                       )}
+
+                      {/* Logo Avatar */}
+                      <ProposalLogoAvatar 
+                        logoUrl={proposal.client_logo_url} 
+                        name={proposal.client_company_name || proposal.client_name} 
+                      />
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
