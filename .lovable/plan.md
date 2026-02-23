@@ -1,83 +1,65 @@
 
-# Gerenciador de Tipos de Evento - Engrenagem no Select
+# Contato, Propostas e Predios para Todos os Tipos de Evento
 
 ## Resumo
 
-Criar um sistema completo de CRUD para tipos de evento na agenda, acessivel por um botao de engrenagem ao lado do campo "Tipo de Evento" nos modais de criacao e edicao de tarefas. Atualmente os tipos (Tarefa, Reuniao, Compromisso, Aviso) sao hardcoded em 4 arquivos diferentes.
+Tornar os campos **Lead/Contato**, **Propostas Vinculadas** e um novo seletor de **Predio** disponíveis para **todos** os tipos de evento (nao apenas "Reuniao"). Alem disso, adicionar um campo de selecao de predio que lista todos os predios da base interna (online e offline).
 
-## Arquitetura
+## O que muda
 
-### 1. Nova Tabela no Supabase: `event_types`
+### 1. Nova coluna no banco: `building_id` na tabela `tasks`
 
-| Coluna | Tipo | Descricao |
-|--------|------|-----------|
-| id | uuid PK | Identificador |
-| name | text UNIQUE | Chave interna (ex: "tarefa", "reuniao") |
-| label | text | Label visivel (ex: "Tarefa", "Reuniao") |
-| icon | text | Emoji ou nome do icone (ex: "check", "video") |
-| color | text | Classe CSS de cor (ex: "bg-emerald-100 text-emerald-700") |
-| is_default | boolean | Tipos padrao nao podem ser deletados |
-| sort_order | integer | Ordem de exibicao |
-| active | boolean | Se esta ativo para selecao |
-| created_at | timestamptz | Data de criacao |
+A tabela `tasks` atualmente nao tem campo para vincular a um predio. Sera adicionada uma coluna `building_id` (uuid, nullable) com foreign key para a tabela `buildings`.
 
-Os 4 tipos atuais serao inseridos como defaults (`is_default = true`).
-
-### 2. Novo Componente: `EventTypeManagerModal.tsx`
-
-Modal completo com:
-- Lista de todos os tipos de evento (ordenados por `sort_order`)
-- Cada item mostra: icone, label, cor, badge "padrao" se aplicavel
-- Botao "Adicionar Novo Tipo" no topo
-- Acoes por tipo:
-  - **Editar**: abre inline ou sub-modal para alterar label, icone e cor
-  - **Ativar/Desativar**: toggle para tipos customizados
-  - **Excluir**: apenas tipos nao-default, com confirmacao
-- Tipos default (Tarefa, Reuniao, Compromisso, Aviso): podem ter label/icone editados, mas nao podem ser excluidos
-- Seletor de cor com paleta pre-definida (emerald, blue, orange, purple, red, pink, cyan, amber)
-- Seletor de emoji para o icone
-
-### 3. Novo Hook: `useEventTypes.ts`
-
-Seguindo o padrao existente do `useContactTypes.ts`:
-- `fetchEventTypes()` - buscar todos os tipos
-- `createEventType(name, label, icon, color)` - criar novo
-- `updateEventType(id, label, icon, color)` - editar
-- `deleteEventType(id)` - remover (apenas nao-default)
-- `toggleEventType(id, active)` - ativar/desativar
-- Cache via React Query para performance
-
-### 4. Alteracoes nos Componentes Existentes
-
-**CreateTaskModal.tsx (linha 519-533)**:
-- Adicionar botao de engrenagem (Settings icon) ao lado do label "Tipo de Evento"
-- Substituir `SelectItem` hardcoded por mapeamento dinamico do hook `useEventTypes`
-- Botao abre o `EventTypeManagerModal`
-
-**EditTaskModal.tsx (linha 188-200)**:
-- Mesma alteracao: engrenagem + select dinamico
-
-**TaskCard.tsx (linha 73-78)**:
-- `TIPO_EVENTO_CONFIG` passa a ser construido dinamicamente a partir dos dados do banco
-- Fallback para config padrao caso tipo nao seja encontrado
-
-### 5. Detalhes Tecnicos
-
-**Migracao SQL:**
 ```text
-- CREATE TABLE event_types (id, name, label, icon, color, is_default, sort_order, active, created_at)
-- INSERT dos 4 tipos padrao
-- RLS: leitura para authenticated, escrita para admin/super_admin
+ALTER TABLE tasks ADD COLUMN building_id uuid REFERENCES buildings(id);
 ```
 
-**Arquivos novos:**
-- `supabase/migrations/XXX_create_event_types.sql`
-- `src/hooks/agenda/useEventTypes.ts`
-- `src/components/admin/agenda/EventTypeManagerModal.tsx`
+### 2. CreateTaskModal.tsx - 3 alteracoes
+
+**2.1 Remover restricao `tipoEvento === 'reuniao'` do debounce de busca de lead (linha 163)**
+- Remover a condicao `|| tipoEvento !== 'reuniao'` para que a busca de contatos funcione em qualquer tipo de evento.
+
+**2.2 Remover wrappers condicionais das secoes Lead e Propostas (linhas 575 e 639)**
+- A secao "Lead / Contato" (linha 575) deixa de ser condicional a `tipoEvento === 'reuniao'` e passa a aparecer sempre.
+- A secao "Propostas Vinculadas" (linha 639) tambem deixa de ser condicional.
+
+**2.3 Adicionar novo seletor de Predio**
+- Novo estado: `selectedBuildingId` e `buildingSearchTerm`
+- Query para buscar todos os predios da tabela `buildings` (sem filtro de status, incluindo online e offline)
+- Campo com busca/autocomplete mostrando nome e bairro do predio
+- Salvar `building_id` no insert da task (linha 316)
+- Resetar no `resetForm()`
+
+### 3. EditTaskModal.tsx - Adicionar campos de Lead, Propostas e Predio
+
+O EditTaskModal atualmente nao possui os campos Lead, Propostas e Predio. Serao adicionados:
+- Estado `selectedBuildingId` inicializado a partir de `task.building_id`
+- Seletor de predio com busca (mesmo componente/logica do Create)
+- Exibicao do contato vinculado (read-only com opcao de alterar)
+- O `building_id` sera incluido no update da mutation (linha 118)
+
+### 4. Nenhuma outra funcionalidade e alterada
+
+- O subtipo de reuniao continua aparecendo apenas para tipo "reuniao"
+- Toda a logica existente de filtros, cards, calendario permanece intacta
+- Os campos sao opcionais -- nao quebram nenhuma tarefa existente
+
+## Detalhes Tecnicos
+
+**Migracao SQL:**
+- `ALTER TABLE tasks ADD COLUMN building_id uuid REFERENCES buildings(id);`
+- Policy RLS nao necessaria (tasks ja tem suas policies)
 
 **Arquivos alterados:**
-- `src/components/admin/agenda/CreateTaskModal.tsx` - engrenagem + select dinamico
-- `src/components/admin/agenda/EditTaskModal.tsx` - engrenagem + select dinamico
-- `src/components/admin/agenda/TaskCard.tsx` - config dinamica de tipos
+- `src/components/admin/agenda/CreateTaskModal.tsx` -- remover 3 condicionais + adicionar seletor de predio
+- `src/components/admin/agenda/EditTaskModal.tsx` -- adicionar seletor de predio + building_id na mutation
 
-Nenhuma outra funcionalidade ou interface sera alterada.
+**Arquivos novos:** Nenhum
+
+**Query de predios (todos, sem filtro):**
+```text
+supabase.from('buildings').select('id, nome, bairro, status').order('nome')
+```
+
+Isso traz tanto predios online quanto offline da base interna.
