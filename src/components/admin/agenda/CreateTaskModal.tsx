@@ -31,6 +31,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar as CalendarIcon, Loader2, Plus, Clock, Bell, BellRing, Users, ChevronDown, Building2, Video, MapPin, Megaphone, Search, X, FileText, Repeat, Settings } from 'lucide-react';
 import { useEventTypes } from '@/hooks/agenda/useEventTypes';
 import EventTypeManagerModal from './EventTypeManagerModal';
+import BuildingSelector from './BuildingSelector';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -155,12 +156,15 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   const [frequenciaRecorrencia, setFrequenciaRecorrencia] = useState('semanal');
   const [eventTypeManagerOpen, setEventTypeManagerOpen] = useState(false);
 
+  // Building state
+  const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
+
   // Hook de tipos de evento dinâmicos
   const { activeEventTypes } = useEventTypes();
 
   // Debounce lead search
   useEffect(() => {
-    if (searchLead.length < 2 || tipoEvento !== 'reuniao') {
+    if (searchLead.length < 2) {
       setLeadResults([]);
       setShowLeadDropdown(false);
       return;
@@ -308,6 +312,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
         link_reuniao: linkReuniao || null,
         escopo,
         cliente_id: selectedLead?.id || null,
+        building_id: selectedBuildingId || null,
       };
 
       for (const data of datasPrevistas) {
@@ -375,6 +380,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
     setSelectedPropostas([]);
     setIsRecorrente(false);
     setFrequenciaRecorrencia('semanal');
+    setSelectedBuildingId(null);
   };
 
   const addDataPrevista = (date: Date | undefined) => {
@@ -571,125 +577,127 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
         </div>
       )}
 
-      {/* === NOVO: Busca de Lead (condicional: reunião) === */}
-      {tipoEvento === 'reuniao' && (
-        <div className="space-y-2">
-          <Label className="flex items-center gap-1.5">
-            <Search className="h-3.5 w-3.5 text-primary" />
-            Lead / Contato
-          </Label>
+      {/* === Busca de Lead (todos os tipos) === */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-1.5">
+          <Search className="h-3.5 w-3.5 text-primary" />
+          Lead / Contato
+        </Label>
 
-          {selectedLead ? (
-            <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {selectedLead.nome} {selectedLead.sobrenome || ''}
-                </p>
-                {selectedLead.empresa && (
-                  <p className="text-xs text-muted-foreground truncate">{selectedLead.empresa}</p>
-                )}
-              </div>
-              {temperaturaBadge(selectedLead.temperatura)}
-              <button
-                type="button"
-                onClick={handleRemoveLead}
-                className="p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ) : (
-            <div className="relative" ref={leadDropdownRef}>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={searchLead}
-                  onChange={(e) => setSearchLead(e.target.value)}
-                  placeholder="Buscar por nome, empresa ou telefone..."
-                  className="h-11 pl-9"
-                />
-              </div>
-              {showLeadDropdown && leadResults.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-56 overflow-y-auto">
-                  {leadResults.map((lead) => (
-                    <div
-                      key={lead.id}
-                      className="flex items-center gap-2 px-3 py-2.5 hover:bg-accent cursor-pointer transition-colors"
-                      onClick={() => handleSelectLead(lead)}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {lead.nome} {lead.sobrenome || ''}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {[lead.empresa, lead.telefone].filter(Boolean).join(' • ')}
-                        </p>
-                      </div>
-                      {temperaturaBadge(lead.temperatura)}
-                    </div>
-                  ))}
-                </div>
+        {selectedLead ? (
+          <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">
+                {selectedLead.nome} {selectedLead.sobrenome || ''}
+              </p>
+              {selectedLead.empresa && (
+                <p className="text-xs text-muted-foreground truncate">{selectedLead.empresa}</p>
               )}
             </div>
-          )}
-        </div>
-      )}
-
-      {/* === NOVO: Multi-select Propostas (condicional: reunião) === */}
-      {tipoEvento === 'reuniao' && (
-        <div className="space-y-2">
-          <Label className="flex items-center gap-1.5">
-            <FileText className="h-3.5 w-3.5 text-primary" />
-            Propostas Vinculadas
-          </Label>
-
-          {!selectedLead ? (
-            <p className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-lg">
-              Selecione um lead para ver propostas vinculadas
-            </p>
-          ) : loadingPropostas ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground p-3">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Buscando propostas...
+            {temperaturaBadge(selectedLead.temperatura)}
+            <button
+              type="button"
+              onClick={handleRemoveLead}
+              className="p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="relative" ref={leadDropdownRef}>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={searchLead}
+                onChange={(e) => setSearchLead(e.target.value)}
+                placeholder="Buscar por nome, empresa ou telefone..."
+                className="h-11 pl-9"
+              />
             </div>
-          ) : leadPropostas.length === 0 ? (
-            <p className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-lg">
-              Nenhuma proposta encontrada para este lead
-            </p>
-          ) : (
-            <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">
-              {leadPropostas.map((prop) => (
-                <div
-                  key={prop.id}
-                  className="flex items-center gap-3 px-3 py-2.5 hover:bg-accent/50 cursor-pointer transition-colors"
-                  onClick={() => toggleProposta(prop.id)}
-                >
-                  <Checkbox
-                    checked={selectedPropostas.includes(prop.id)}
-                    onCheckedChange={() => toggleProposta(prop.id)}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {prop.number || 'Sem número'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatCurrency(prop.fidel_monthly_value)}/mês
-                      {prop.duration_months ? ` • ${prop.duration_months} meses` : ''}
-                    </p>
+            {showLeadDropdown && leadResults.length > 0 && (
+              <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                {leadResults.map((lead) => (
+                  <div
+                    key={lead.id}
+                    className="flex items-center gap-2 px-3 py-2.5 hover:bg-accent cursor-pointer transition-colors"
+                    onClick={() => handleSelectLead(lead)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {lead.nome} {lead.sobrenome || ''}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {[lead.empresa, lead.telefone].filter(Boolean).join(' • ')}
+                      </p>
+                    </div>
+                    {temperaturaBadge(lead.temperatura)}
                   </div>
-                  {statusBadge(prop.status)}
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-          {selectedPropostas.length > 0 && (
-            <p className="text-xs text-primary font-medium">
-              {selectedPropostas.length} proposta{selectedPropostas.length > 1 ? 's' : ''} selecionada{selectedPropostas.length > 1 ? 's' : ''}
-            </p>
-          )}
-        </div>
-      )}
+      {/* === Multi-select Propostas (todos os tipos) === */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-1.5">
+          <FileText className="h-3.5 w-3.5 text-primary" />
+          Propostas Vinculadas
+        </Label>
+
+        {!selectedLead ? (
+          <p className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-lg">
+            Selecione um lead para ver propostas vinculadas
+          </p>
+        ) : loadingPropostas ? (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground p-3">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Buscando propostas...
+          </div>
+        ) : leadPropostas.length === 0 ? (
+          <p className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-lg">
+            Nenhuma proposta encontrada para este lead
+          </p>
+        ) : (
+          <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">
+            {leadPropostas.map((prop) => (
+              <div
+                key={prop.id}
+                className="flex items-center gap-3 px-3 py-2.5 hover:bg-accent/50 cursor-pointer transition-colors"
+                onClick={() => toggleProposta(prop.id)}
+              >
+                <Checkbox
+                  checked={selectedPropostas.includes(prop.id)}
+                  onCheckedChange={() => toggleProposta(prop.id)}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {prop.number || 'Sem número'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatCurrency(prop.fidel_monthly_value)}/mês
+                    {prop.duration_months ? ` • ${prop.duration_months} meses` : ''}
+                  </p>
+                </div>
+                {statusBadge(prop.status)}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {selectedPropostas.length > 0 && (
+          <p className="text-xs text-primary font-medium">
+            {selectedPropostas.length} proposta{selectedPropostas.length > 1 ? 's' : ''} selecionada{selectedPropostas.length > 1 ? 's' : ''}
+          </p>
+        )}
+      </div>
+
+      {/* === Seletor de Prédio (todos os tipos) === */}
+      <BuildingSelector
+        selectedBuildingId={selectedBuildingId}
+        onSelectBuilding={setSelectedBuildingId}
+      />
 
       {/* Título da Tarefa */}
       <div className="space-y-2">

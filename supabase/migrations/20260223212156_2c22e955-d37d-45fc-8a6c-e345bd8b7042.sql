@@ -1,0 +1,1 @@
+ALTER TABLE tasks ADD COLUMN building_id uuid REFERENCES buildings(id);

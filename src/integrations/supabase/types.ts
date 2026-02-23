@@ -13026,6 +13026,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          building_id: string | null
           cliente_id: string | null
           concluida_por: string | null
           created_at: string | null
@@ -13054,6 +13055,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          building_id?: string | null
           cliente_id?: string | null
           concluida_por?: string | null
           created_at?: string | null
@@ -13082,6 +13084,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          building_id?: string | null
           cliente_id?: string | null
           concluida_por?: string | null
           created_at?: string | null
@@ -13110,6 +13113,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_concluida_por_fkey"
             columns: ["concluida_por"]
