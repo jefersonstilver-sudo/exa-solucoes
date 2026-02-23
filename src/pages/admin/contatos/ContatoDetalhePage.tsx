@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Phone, MessageCircle, Mail, Lock, Edit, Save, X, 
-  Building2, ExternalLink, Star
+  Building2, ExternalLink, Star, Upload, Trash2, Copy, Plus, Loader2, ImageIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,6 +10,8 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Contact, CATEGORIAS_CONFIG } from '@/types/contatos';
+import { formatDistanceToNow, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { CategoriaBadge, TemperaturaBadge, ScoreIndicator, OrigemBadge } from '@/components/contatos/common';
 import { useScoringRules } from '@/hooks/contatos';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
@@ -43,12 +45,43 @@ const ContatoDetalhePage = () => {
   const [formData, setFormData] = useState<Partial<Contact>>({});
   const originalContactRef = useRef<Contact | null>(null);
   const [activeTab, setActiveTab] = useState('visao-geral');
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoSignedUrl, setLogoSignedUrl] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (id) {
       fetchContact();
     }
   }, [id]);
+
+  // Generate signed URL for logo when contact changes
+  useEffect(() => {
+    if (!contact?.logo_url) {
+      setLogoSignedUrl(null);
+      return;
+    }
+    const resolveLogoUrl = async () => {
+      const url = contact.logo_url!;
+      // Check if it's a Supabase storage URL that needs signing
+      if (url.includes('supabase.co/storage/')) {
+        try {
+          // Extract bucket and path from URL
+          const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?.*)?$/);
+          if (match) {
+            const [, bucket, path] = match;
+            const { data } = await supabase.storage.from(bucket).createSignedUrl(decodeURIComponent(path), 60 * 60 * 24);
+            if (data?.signedUrl) {
+              setLogoSignedUrl(data.signedUrl);
+              return;
+            }
+          }
+        } catch {}
+      }
+      setLogoSignedUrl(url);
+    };
+    resolveLogoUrl();
+  }, [contact?.logo_url]);
 
   const fetchContact = async () => {
     try {
@@ -92,7 +125,9 @@ const ContatoDetalhePage = () => {
       'categoria', 'tomador_decisao', 'tipo_negocio', 'ticket_estimado', 'instagram',
       'publico_alvo', 'dores_identificadas', 'observacoes_estrategicas',
       // Telefones adicionais
-      'telefones_adicionais'
+      'telefones_adicionais',
+      // Logo
+      'logo_url'
     ] as const;
 
     for (const field of fieldsToCheck) {
@@ -156,6 +191,90 @@ const ContatoDetalhePage = () => {
     }
   };
 
+  const handleLogoUpload = async (file: File) => {
+    if (!id || !contact) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Selecione uma imagem válida (PNG/JPG)');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Imagem muito grande. Máximo 5MB.');
+      return;
+    }
+    try {
+      setUploadingLogo(true);
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error('Não autenticado');
+      const ext = file.name.split('.').pop();
+      const fileName = `contacts/${id}/logo-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('arquivos').upload(fileName, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      // Get signed URL for private bucket
+      const { data: signedData } = await supabase.storage.from('arquivos').createSignedUrl(fileName, 60 * 60 * 24 * 365);
+      const storageUrl = signedData?.signedUrl || '';
+      // Save the storage path reference (not signed URL) for persistence
+      const { data: publicData } = supabase.storage.from('arquivos').getPublicUrl(fileName);
+      const persistUrl = publicData.publicUrl;
+      const { error: updateError } = await supabase.from('contacts').update({ logo_url: persistUrl, updated_at: new Date().toISOString() }).eq('id', id);
+      if (updateError) throw updateError;
+      toast.success('Logo atualizada!');
+      fetchContact();
+    } catch (err: any) {
+      console.error('Erro upload logo:', err);
+      toast.error('Erro ao enviar logo: ' + err.message);
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleLogoRemove = async () => {
+    if (!id) return;
+    try {
+      setUploadingLogo(true);
+      const { error } = await supabase.from('contacts').update({ logo_url: null, updated_at: new Date().toISOString() }).eq('id', id);
+      if (error) throw error;
+      toast.success('Logo removida');
+      fetchContact();
+    } catch (err: any) {
+      toast.error('Erro ao remover logo');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleCopyFollowUp = async () => {
+    if (!contact) return;
+    try {
+      // Fetch recent notes for follow-up
+      const { data: notes } = await supabase
+        .from('contact_notes')
+        .select('content, created_at')
+        .eq('contact_id', contact.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      const notesText = notes && notes.length > 0
+        ? notes.map(n => `- ${n.content.substring(0, 100)} (${formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: ptBR })})`).join('\n')
+        : '- Nenhuma nota registrada';
+
+      const text = `FOLLOW-UP: ${contact.empresa || contact.nome}
+Status: ${CATEGORIAS_CONFIG[contact.categoria]?.label || contact.categoria}${contact.temperatura ? ` | Temperatura: ${contact.temperatura}` : ''}
+Contato: ${contact.nome}${contact.sobrenome ? ' ' + contact.sobrenome : ''} - ${contact.telefone}${contact.email ? ' - ' + contact.email : ''}
+Pontuação: ${contact.pontuacao_atual || 0}
+Dias sem contato: ${contact.dias_sem_contato || 0}
+
+ÚLTIMAS NOTAS:
+${notesText}
+
+Atualizado: ${contact.updated_at ? format(new Date(contact.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : '-'}`;
+
+      await navigator.clipboard.writeText(text);
+      toast.success('Follow-up copiado!');
+    } catch {
+      toast.error('Erro ao copiar follow-up');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 p-3 md:p-4 space-y-4">
@@ -192,19 +311,64 @@ const ContatoDetalhePage = () => {
       {/* Header Card */}
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-md p-4 md:p-6 border border-border/50">
         <div className="flex flex-col md:flex-row gap-4">
-          {/* Logo / Avatar */}
-          <div className="flex-shrink-0">
-            {contact.logo_url ? (
-              <img 
-                src={contact.logo_url} 
-                alt={contact.empresa || contact.nome}
-                className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover"
-              />
-            ) : (
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
-                <Building2 className="w-8 h-8 text-primary/60" />
-              </div>
-            )}
+          {/* Logo / Avatar com gradiente vermelho */}
+          <div className="flex-shrink-0 relative group">
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleLogoUpload(file);
+                e.target.value = '';
+              }}
+            />
+            <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl bg-gradient-to-br from-[#9C1E1E] via-[#180A0A] to-[#0B0B0B] flex items-center justify-center overflow-hidden border border-white/10">
+              {uploadingLogo ? (
+                <Loader2 className="w-6 h-6 text-white animate-spin" />
+              ) : logoSignedUrl || contact.logo_url ? (
+                <img 
+                  src={logoSignedUrl || contact.logo_url!} 
+                  alt={contact.empresa || contact.nome}
+                  className="h-full w-full object-contain filter brightness-0 invert opacity-80"
+                  onError={() => setLogoSignedUrl(null)}
+                />
+              ) : (
+                <span className="text-white font-bold text-lg">
+                  {(contact.empresa || contact.nome || '?').substring(0, 2).toUpperCase()}
+                </span>
+              )}
+            </div>
+            {/* Overlay de hover com ações */}
+            <div className="absolute inset-0 rounded-xl bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+              {contact.logo_url ? (
+                <>
+                  <button
+                    onClick={() => logoInputRef.current?.click()}
+                    className="p-1.5 rounded-full bg-white/20 hover:bg-white/40 text-white transition-colors"
+                    title="Trocar logo"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={handleLogoRemove}
+                    className="p-1.5 rounded-full bg-white/20 hover:bg-red-500/60 text-white transition-colors"
+                    title="Remover logo"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => logoInputRef.current?.click()}
+                  className="p-1.5 rounded-full bg-white/20 hover:bg-white/40 text-white transition-colors"
+                  title="Adicionar logo"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Info Principal */}
@@ -340,6 +504,11 @@ const ContatoDetalhePage = () => {
               )}
 
               <div className="flex-1" />
+
+              <Button variant="outline" size="sm" onClick={handleCopyFollowUp} className="h-8" title="Copiar resumo para follow-up">
+                <Copy className="w-3.5 h-3.5 mr-1" />
+                Follow-Up
+              </Button>
 
               {!editing ? (
                 <Button variant="outline" size="sm" onClick={() => {
