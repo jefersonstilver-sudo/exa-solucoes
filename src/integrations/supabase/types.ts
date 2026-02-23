@@ -3302,6 +3302,8 @@ export type Database = {
       }
       contact_notes: {
         Row: {
+          attachment_url: string | null
+          audio_url: string | null
           contact_id: string
           content: string
           created_at: string | null
@@ -3309,9 +3311,12 @@ export type Database = {
           created_by_email: string | null
           id: string
           is_important: boolean | null
+          note_type: string
           updated_at: string | null
         }
         Insert: {
+          attachment_url?: string | null
+          audio_url?: string | null
           contact_id: string
           content: string
           created_at?: string | null
@@ -3319,9 +3324,12 @@ export type Database = {
           created_by_email?: string | null
           id?: string
           is_important?: boolean | null
+          note_type?: string
           updated_at?: string | null
         }
         Update: {
+          attachment_url?: string | null
+          audio_url?: string | null
           contact_id?: string
           content?: string
           created_at?: string | null
@@ -3329,6 +3337,7 @@ export type Database = {
           created_by_email?: string | null
           id?: string
           is_important?: boolean | null
+          note_type?: string
           updated_at?: string | null
         }
         Relationships: [
