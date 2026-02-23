@@ -46,6 +46,13 @@
   [data-radix-popper-content-wrapper] {
     z-index: 50 !important;
   }
+
+  /* Utility: enable text selection on public pages */
+  .select-text,
+  .select-text * {
+    -webkit-user-select: text !important;
+    user-select: text !important;
+  }
 }
 
 /* Optimized custom properties - Removed unused variables */
