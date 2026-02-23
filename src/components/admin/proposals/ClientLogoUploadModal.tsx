@@ -126,8 +126,9 @@ export const ClientLogoUploadModal = ({
   };
 
   // Upload apenas o original (para card 1 e 2)
-  const uploadOriginal = async () => {
-    if (!selectedFile || !previewUrl || uploadedOriginal) return;
+  const uploadOriginal = async (): Promise<string | null> => {
+    if (!selectedFile || !previewUrl) return null;
+    if (uploadedOriginal && originalUrl) return originalUrl;
     
     setProcessingState('uploading');
     setErrorMessage(null);
@@ -153,15 +154,18 @@ export const ClientLogoUploadModal = ({
       if (!data?.success) throw new Error(data?.error || 'Falha ao enviar logo');
 
       const cacheBuster = `?v=${Date.now()}`;
-      setOriginalUrl(data.originalUrl ? data.originalUrl + cacheBuster : null);
+      const url = data.originalUrl ? data.originalUrl + cacheBuster : null;
+      setOriginalUrl(url);
       setUploadedOriginal(true);
       setProcessingState('done');
       toast.success('Logo enviada com sucesso!');
+      return url;
     } catch (error: any) {
       console.error('Error:', error);
       setProcessingState('error');
       setErrorMessage(error.message || 'Erro ao enviar logo');
       toast.error('Erro ao enviar logo. Tente novamente.');
+      return null;
     }
   };
 
@@ -216,16 +220,17 @@ export const ClientLogoUploadModal = ({
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = (overrideUrl?: string) => {
     let finalUrl: string | null = null;
     
     if (selectedVariant === 'ai-processed' && processedUrl) {
       finalUrl = processedUrl.split('?')[0];
-    } else if (selectedVariant === 'original' && originalUrl) {
-      finalUrl = originalUrl.split('?')[0] + '#original';
-    } else if (selectedVariant === 'css-optimized' && (originalUrl || previewUrl)) {
-      // CSS uses originalUrl if uploaded, otherwise we need to upload first
-      finalUrl = originalUrl ? originalUrl.split('?')[0] : null;
+    } else if (selectedVariant === 'original') {
+      const url = overrideUrl || originalUrl;
+      if (url) finalUrl = url.split('?')[0] + '#original';
+    } else if (selectedVariant === 'css-optimized') {
+      const url = overrideUrl || originalUrl;
+      if (url) finalUrl = url.split('?')[0];
     }
 
     if (finalUrl) {
@@ -239,11 +244,10 @@ export const ClientLogoUploadModal = ({
   // Para cards Original e CSS, upload on demand quando confirmar
   const handleApply = async () => {
     if (!uploadedOriginal && selectedVariant !== 'ai-processed') {
-      await uploadOriginal();
-      // After upload, confirm
-      setTimeout(() => {
-        handleConfirm();
-      }, 500);
+      const url = await uploadOriginal();
+      if (url) {
+        handleConfirm(url);
+      }
     } else {
       handleConfirm();
     }
