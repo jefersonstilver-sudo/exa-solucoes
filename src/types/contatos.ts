@@ -203,6 +203,9 @@ export interface ContactNote {
   created_by_email?: string;
   created_at: string;
   updated_at: string;
+  note_type?: 'text' | 'audio' | 'meeting' | 'call' | 'file';
+  audio_url?: string;
+  attachment_url?: string;
 }
 
 // Interface expandida para configuração de categorias com protocolo oficial
