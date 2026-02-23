@@ -1,43 +1,83 @@
 
+# Gerenciador de Tipos de Evento - Engrenagem no Select
 
-# Corrigir Exibicao de Dias no Card e Detalhes + Aumentar Logo
+## Resumo
 
-## Problemas Identificados
+Criar um sistema completo de CRUD para tipos de evento na agenda, acessivel por um botao de engrenagem ao lado do campo "Tipo de Evento" nos modais de criacao e edicao de tarefas. Atualmente os tipos (Tarefa, Reuniao, Compromisso, Aviso) sao hardcoded em 4 arquivos diferentes.
 
-1. **Card na listagem (PropostasPage.tsx, linha 1208)**: Mostra `0M` quando a proposta usa "Periodo em Dias" (`is_custom_days = true`). O codigo atual sempre exibe `{proposal.duration_months}M` sem verificar se e periodo personalizado em dias.
+## Arquitetura
 
-2. **Detalhes (PropostaDetalhesPage.tsx, linha 673)**: Mostra "Total em 0 meses" quando `is_custom_days = true`, pois `duration_months` pode ser 0 nesse caso.
+### 1. Nova Tabela no Supabase: `event_types`
 
-3. **Logo no card**: Atualmente `w-8 h-8` (32x32px) -- usuario pede para aumentar.
+| Coluna | Tipo | Descricao |
+|--------|------|-----------|
+| id | uuid PK | Identificador |
+| name | text UNIQUE | Chave interna (ex: "tarefa", "reuniao") |
+| label | text | Label visivel (ex: "Tarefa", "Reuniao") |
+| icon | text | Emoji ou nome do icone (ex: "check", "video") |
+| color | text | Classe CSS de cor (ex: "bg-emerald-100 text-emerald-700") |
+| is_default | boolean | Tipos padrao nao podem ser deletados |
+| sort_order | integer | Ordem de exibicao |
+| active | boolean | Se esta ativo para selecao |
+| created_at | timestamptz | Data de criacao |
 
-## Solucao
+Os 4 tipos atuais serao inseridos como defaults (`is_default = true`).
 
-### 1. Card da listagem - Badge de duracao (PropostasPage.tsx, linha 1208)
+### 2. Novo Componente: `EventTypeManagerModal.tsx`
 
-**Antes:** `{proposal.duration_months}M`
+Modal completo com:
+- Lista de todos os tipos de evento (ordenados por `sort_order`)
+- Cada item mostra: icone, label, cor, badge "padrao" se aplicavel
+- Botao "Adicionar Novo Tipo" no topo
+- Acoes por tipo:
+  - **Editar**: abre inline ou sub-modal para alterar label, icone e cor
+  - **Ativar/Desativar**: toggle para tipos customizados
+  - **Excluir**: apenas tipos nao-default, com confirmacao
+- Tipos default (Tarefa, Reuniao, Compromisso, Aviso): podem ter label/icone editados, mas nao podem ser excluidos
+- Seletor de cor com paleta pre-definida (emerald, blue, orange, purple, red, pink, cyan, amber)
+- Seletor de emoji para o icone
 
-**Depois:** Verificar `is_custom_days`:
-- Se `is_custom_days === true` e `custom_days > 0`: mostrar `{custom_days}d` (ex: "15d")
-- Caso contrario: manter `{duration_months}M` (ex: "12M")
+### 3. Novo Hook: `useEventTypes.ts`
 
-### 2. Detalhes - Texto "Total em X meses" (PropostaDetalhesPage.tsx, linha 673)
+Seguindo o padrao existente do `useContactTypes.ts`:
+- `fetchEventTypes()` - buscar todos os tipos
+- `createEventType(name, label, icon, color)` - criar novo
+- `updateEventType(id, label, icon, color)` - editar
+- `deleteEventType(id)` - remover (apenas nao-default)
+- `toggleEventType(id, active)` - ativar/desativar
+- Cache via React Query para performance
 
-**Antes:** `Total em {proposal.duration_months} meses`
+### 4. Alteracoes nos Componentes Existentes
 
-**Depois:** Verificar `is_custom_days`:
-- Se `is_custom_days === true`: mostrar `Total em {custom_days} dias`
-- Caso contrario: manter `Total em {duration_months} meses`
+**CreateTaskModal.tsx (linha 519-533)**:
+- Adicionar botao de engrenagem (Settings icon) ao lado do label "Tipo de Evento"
+- Substituir `SelectItem` hardcoded por mapeamento dinamico do hook `useEventTypes`
+- Botao abre o `EventTypeManagerModal`
 
-### 3. Logo maior no card (PropostasPage.tsx, linha 128)
+**EditTaskModal.tsx (linha 188-200)**:
+- Mesma alteracao: engrenagem + select dinamico
 
-**Antes:** `w-8 h-8` (32x32px)
+**TaskCard.tsx (linha 73-78)**:
+- `TIPO_EVENTO_CONFIG` passa a ser construido dinamicamente a partir dos dados do banco
+- Fallback para config padrao caso tipo nao seja encontrado
 
-**Depois:** `w-10 h-10` (40x40px) -- aumento de 25%, mantendo proporcoes e estilos
+### 5. Detalhes Tecnicos
 
-## Arquivos Alterados
+**Migracao SQL:**
+```text
+- CREATE TABLE event_types (id, name, label, icon, color, is_default, sort_order, active, created_at)
+- INSERT dos 4 tipos padrao
+- RLS: leitura para authenticated, escrita para admin/super_admin
+```
 
-- `src/pages/admin/proposals/PropostasPage.tsx` -- linhas 128 e 1208
-- `src/pages/admin/proposals/PropostaDetalhesPage.tsx` -- linha 673
+**Arquivos novos:**
+- `supabase/migrations/XXX_create_event_types.sql`
+- `src/hooks/agenda/useEventTypes.ts`
+- `src/components/admin/agenda/EventTypeManagerModal.tsx`
 
-Nenhuma outra funcionalidade sera alterada.
+**Arquivos alterados:**
+- `src/components/admin/agenda/CreateTaskModal.tsx` - engrenagem + select dinamico
+- `src/components/admin/agenda/EditTaskModal.tsx` - engrenagem + select dinamico
+- `src/components/admin/agenda/TaskCard.tsx` - config dinamica de tipos
 
+Nenhuma outra funcionalidade ou interface sera alterada.
