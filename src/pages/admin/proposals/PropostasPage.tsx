@@ -125,7 +125,7 @@ const ProposalLogoAvatar: React.FC<{ logoUrl?: string | null; name?: string | nu
     .toUpperCase();
 
   return (
-    <div className="w-8 h-8 flex-shrink-0 rounded-lg bg-gradient-to-br from-[#9C1E1E] via-[#180A0A] to-[#0B0B0B] flex items-center justify-center overflow-hidden">
+    <div className="w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br from-[#9C1E1E] via-[#180A0A] to-[#0B0B0B] flex items-center justify-center overflow-hidden">
       {logoUrl && signedUrl && !imgError ? (
         <img
           src={signedUrl}
@@ -1205,7 +1205,7 @@ const PropostasPage = () => {
                           )}
                         </div>
                         <div className="flex items-center gap-2 mt-1 flex-wrap text-xs text-muted-foreground">
-                          <span>{proposal.duration_months}M</span>
+                          <span>{proposal.is_custom_days && proposal.custom_days ? `${proposal.custom_days}d` : `${proposal.duration_months}M`}</span>
                           <span>•</span>
                           <span>{proposal.selected_buildings?.length || 0} prédio{(proposal.selected_buildings?.length || 0) !== 1 ? 's' : ''}</span>
                           <span>•</span>
