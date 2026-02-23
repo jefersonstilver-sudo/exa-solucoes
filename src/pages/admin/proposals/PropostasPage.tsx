@@ -125,7 +125,7 @@ const ProposalLogoAvatar: React.FC<{ logoUrl?: string | null; name?: string | nu
     .toUpperCase();
 
   return (
-    <div className="w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br from-[#9C1E1E] via-[#180A0A] to-[#0B0B0B] flex items-center justify-center overflow-hidden">
+    <div className="w-14 h-14 flex-shrink-0 rounded-lg bg-gradient-to-br from-[#9C1E1E] via-[#180A0A] to-[#0B0B0B] flex items-center justify-center overflow-hidden">
       {logoUrl && signedUrl && !imgError ? (
         <img
           src={signedUrl}
