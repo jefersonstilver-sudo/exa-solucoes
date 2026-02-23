@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { 
   Building2, Phone, Mail, MapPin, Calendar, Clock, 
   MessageCircle, FileText, Package, DollarSign, User, LogIn, Bot, UserPlus, Link2,
-  StickyNote, Star, Plus, Mic, Video, Loader2, ArrowRight
+  StickyNote, Star, Plus, Mic, Video, Loader2, ArrowRight, Paperclip, Square, X
 } from 'lucide-react';
 import { Contact, ContactNote, CATEGORIAS_CONFIG } from '@/types/contatos';
 import { OrigemBadge } from '@/components/contatos/common/OrigemBadge';
@@ -17,6 +17,7 @@ import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 
 const SOURCE_LABELS: Record<string, string> = {
   sync_conversations: 'Sincronizado de conversas WhatsApp',
@@ -44,6 +45,15 @@ export const TabVisaoGeral: React.FC<TabVisaoGeralProps> = ({
   const [loadingNotes, setLoadingNotes] = useState(true);
   const [quickNote, setQuickNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+  const [quickAttachment, setQuickAttachment] = useState<File | null>(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
+
+  const voiceRecorder = useVoiceRecorder({
+    onTranscriptionComplete: (text) => {
+      setQuickNote(prev => prev ? `${prev}\n\n[Transcrição]: ${text}` : text);
+    },
+  });
 
   useEffect(() => {
     const metadata = contact.metadata as Record<string, any> | undefined;
@@ -88,25 +98,54 @@ export const TabVisaoGeral: React.FC<TabVisaoGeralProps> = ({
   };
 
   const handleQuickNote = async () => {
-    if (!quickNote.trim()) return;
+    if (!quickNote.trim() && !quickAttachment && !voiceRecorder.audioUrl) return;
     try {
       setSavingNote(true);
       const { data: userData } = await supabase.auth.getUser();
+      
+      let attachmentUrl: string | undefined;
+      let noteType: string = 'text';
+      let audioUrl: string | undefined;
+
+      // Upload attachment if present
+      if (quickAttachment) {
+        setUploadingAttachment(true);
+        const ext = quickAttachment.name.split('.').pop();
+        const fileName = `${contact.id}/note-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from('contact-attachments').upload(fileName, quickAttachment);
+        if (upErr) throw upErr;
+        const { data: pubData } = supabase.storage.from('contact-attachments').getPublicUrl(fileName);
+        attachmentUrl = pubData.publicUrl;
+        noteType = 'file';
+        setUploadingAttachment(false);
+      }
+
+      // Audio URL from recorder
+      if (voiceRecorder.audioUrl) {
+        audioUrl = voiceRecorder.audioUrl;
+        noteType = 'audio';
+      }
+
       const { error } = await supabase.from('contact_notes').insert({
         contact_id: contact.id,
-        content: quickNote.trim(),
+        content: quickNote.trim() || (noteType === 'audio' ? '[Nota de áudio]' : '[Arquivo anexado]'),
         created_by: userData.user?.id,
         created_by_email: userData.user?.email,
-        note_type: 'text',
+        note_type: noteType,
+        audio_url: audioUrl,
+        attachment_url: attachmentUrl,
       });
       if (error) throw error;
       toast.success('Nota adicionada!');
       setQuickNote('');
+      setQuickAttachment(null);
+      voiceRecorder.reset();
       fetchRecentNotes();
     } catch (error: any) {
       toast.error(error.message || 'Erro ao salvar nota');
     } finally {
       setSavingNote(false);
+      setUploadingAttachment(false);
     }
   };
 
@@ -269,23 +308,104 @@ export const TabVisaoGeral: React.FC<TabVisaoGeralProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Quick note form */}
-          <div className="flex gap-2">
+          {/* Quick note form with audio + attachment */}
+          <div className="space-y-2">
+            <input
+              ref={attachmentInputRef}
+              type="file"
+              className="hidden"
+              accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) setQuickAttachment(file);
+                e.target.value = '';
+              }}
+            />
             <Textarea
               value={quickNote}
               onChange={(e) => setQuickNote(e.target.value)}
               placeholder="Adicionar nota rápida..."
-              className="min-h-[60px] text-sm flex-1"
+              className="min-h-[60px] text-sm"
             />
-            <Button
-              size="sm"
-              onClick={handleQuickNote}
-              disabled={!quickNote.trim() || savingNote}
-              className="self-end"
-            >
-              <Plus className="w-3.5 h-3.5 mr-1" />
-              {savingNote ? '...' : 'Nota'}
-            </Button>
+
+            {/* Recording state */}
+            {voiceRecorder.isRecording && (
+              <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-lg text-sm">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-red-700 font-medium">{voiceRecorder.formattedDuration}</span>
+                <span className="text-red-600">Gravando...</span>
+                <div className="flex-1" />
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={voiceRecorder.stopRecording}>
+                  <Square className="w-3 h-3 mr-1" />
+                  Parar
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={voiceRecorder.cancelRecording}>
+                  Cancelar
+                </Button>
+              </div>
+            )}
+
+            {/* Transcribing state */}
+            {voiceRecorder.isTranscribing && (
+              <div className="flex items-center gap-2 p-2 bg-purple-50 border border-purple-200 rounded-lg text-sm">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600" />
+                <span className="text-purple-700">Transcrevendo áudio...</span>
+              </div>
+            )}
+
+            {/* Audio ready indicator */}
+            {voiceRecorder.audioUrl && !voiceRecorder.isTranscribing && (
+              <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-lg text-sm">
+                <Mic className="w-3.5 h-3.5 text-green-600" />
+                <span className="text-green-700">Áudio gravado e transcrito</span>
+                <audio src={voiceRecorder.audioUrl} controls className="h-7 flex-1" />
+              </div>
+            )}
+
+            {/* Attachment preview */}
+            {quickAttachment && (
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm">
+                <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="truncate flex-1">{quickAttachment.name}</span>
+                <span className="text-xs text-muted-foreground">{(quickAttachment.size / 1024).toFixed(0)}KB</span>
+                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setQuickAttachment(null)}>
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-1.5">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={voiceRecorder.isRecording ? voiceRecorder.stopRecording : voiceRecorder.startRecording}
+                disabled={voiceRecorder.isTranscribing || savingNote}
+                title={voiceRecorder.isRecording ? 'Parar gravação' : 'Gravar áudio'}
+              >
+                <Mic className={cn("w-3.5 h-3.5", voiceRecorder.isRecording && "text-red-500")} />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={() => attachmentInputRef.current?.click()}
+                disabled={savingNote}
+                title="Anexar arquivo"
+              >
+                <Paperclip className="w-3.5 h-3.5" />
+              </Button>
+              <div className="flex-1" />
+              <Button
+                size="sm"
+                onClick={handleQuickNote}
+                disabled={(!quickNote.trim() && !quickAttachment && !voiceRecorder.audioUrl) || savingNote || uploadingAttachment}
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                {savingNote || uploadingAttachment ? '...' : 'Nota'}
+              </Button>
+            </div>
           </div>
 
           {/* Recent notes */}
