@@ -8,8 +8,6 @@ html {
 
 body {
   overscroll-behavior-y: contain;
-  -webkit-user-select: none;
-  user-select: none;
 }
 
 /* Fullscreen em standalone (sem barra Safari) */
@@ -19,6 +17,8 @@ body {
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
+    -webkit-user-select: none;
+    user-select: none;
   }
   
   /* Header fixo com safe area */
@@ -37,8 +37,8 @@ a[role="button"],
   min-width: 48px;
 }
 
-/* Touch response sem 300ms delay */
-* {
+/* Touch response sem 300ms delay - apenas elementos interativos */
+button, a, [role="button"], [type="button"], [type="submit"] {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
