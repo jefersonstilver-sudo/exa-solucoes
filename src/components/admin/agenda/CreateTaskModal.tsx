@@ -162,7 +162,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   // Hook de tipos de evento dinâmicos
   const { activeEventTypes } = useEventTypes();
 
-  // Debounce lead search
+  // Debounce lead search — busca em contacts + proposals.client_name
   useEffect(() => {
     if (searchLead.length < 2) {
       setLeadResults([]);
@@ -172,16 +172,55 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
 
     const timer = setTimeout(async () => {
       const termo = `%${searchLead}%`;
-      const { data, error } = await supabase
-        .from('contacts')
-        .select('id, nome, sobrenome, empresa, telefone, email, temperatura')
-        .or(`nome.ilike.${termo},sobrenome.ilike.${termo},empresa.ilike.${termo},telefone.ilike.${termo},email.ilike.${termo}`)
-        .limit(8);
 
-      if (!error && data) {
-        setLeadResults(data as LeadResult[]);
-        setShowLeadDropdown(data.length > 0);
+      // Busca paralela em contacts e proposals
+      const [contactsRes, proposalsRes] = await Promise.all([
+        supabase
+          .from('contacts')
+          .select('id, nome, sobrenome, empresa, telefone, email, temperatura')
+          .or(`nome.ilike.${termo},sobrenome.ilike.${termo},empresa.ilike.${termo},telefone.ilike.${termo},email.ilike.${termo}`)
+          .limit(8),
+        supabase
+          .from('proposals')
+          .select('id, client_name, client_phone')
+          .ilike('client_name', termo)
+          .limit(8),
+      ]);
+
+      const results: LeadResult[] = [];
+      const seenIds = new Set<string>();
+
+      // Adiciona contatos reais
+      if (!contactsRes.error && contactsRes.data) {
+        for (const c of contactsRes.data) {
+          seenIds.add(c.id);
+          results.push(c as LeadResult);
+        }
       }
+
+      // Adiciona clientes de propostas que NÃO estão em contacts (evita duplicatas por nome)
+      if (!proposalsRes.error && proposalsRes.data) {
+        const seenNames = new Set(results.map(r => `${r.nome} ${r.sobrenome || ''}`.trim().toLowerCase()));
+        for (const p of proposalsRes.data) {
+          const name = (p.client_name || '').trim();
+          if (!name || seenNames.has(name.toLowerCase())) continue;
+          seenNames.add(name.toLowerCase());
+          // Cria um LeadResult sintético a partir da proposta
+          const parts = name.split(' ');
+          results.push({
+            id: `proposal-${p.id}`,
+            nome: parts[0] || name,
+            sobrenome: parts.slice(1).join(' ') || null,
+            empresa: null,
+            telefone: p.client_phone || null,
+            email: null,
+            temperatura: null,
+          });
+        }
+      }
+
+      setLeadResults(results);
+      setShowLeadDropdown(results.length > 0);
     }, 300);
 
     return () => clearTimeout(timer);
