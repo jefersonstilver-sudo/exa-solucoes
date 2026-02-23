@@ -1,92 +1,52 @@
 
+# Corrigir Exibicao de Logo Original + Background do Card
 
-# 3 Visualizadores de Logo + IA Mais Poderosa
+## Problemas Identificados
 
-## Problema Atual
+1. **Card "Original" no modal** mostra fundo xadrez (checkered) em vez do gradiente vermelho, tornando a visualizacao inconsistente com os outros cards
+2. **Proposta publica sempre aplica `brightness-0 invert`** na logo, mesmo quando o usuario escolheu "Original" -- isso transforma a logo colorida em silhueta branca
 
-O modal tem 2 cards, mas o "Original" ja aplica filtro CSS `brightness-0 invert` -- nao mostra a imagem real. Alem disso, o prompt da IA na Edge Function e basico e pode nao remover fundos complexos corretamente.
+## Causa Raiz
 
-## Nova Estrutura: 3 Cards
+- No `PropostaPublicaPage.tsx` (linha 1840), o filtro `brightness-0 invert` e aplicado incondicionalmente: `className="w-full h-full object-contain filter brightness-0 invert"`
+- Nao existe nenhum campo ou mecanismo para saber qual variante o usuario escolheu no modal
+- O card Original usa checkered pattern em vez do gradiente vermelho
 
-```text
-+------------------+------------------+------------------+
-|   1. ORIGINAL    |  2. BRANCO (CSS) |  3. OTIMIZADA IA |
-|                  |                  |                  |
-|  Imagem real,    |  Mesma imagem    |  IA remove fundo |
-|  cores originais |  com filtro CSS  |  converte branco |
-|  SEM filtro      |  brightness-0    |  limpa bordas    |
-|                  |  invert          |                  |
-|  [o] Usar esta   |  [o] Usar esta   |  [o] Usar esta   |
-+------------------+------------------+------------------+
-```
+## Solucao
 
-- **Card 1 - Original**: Imagem exatamente como enviada, sem nenhum filtro. Fundo xadrez (transparencia) para contraste
-- **Card 2 - Branco (CSS)**: Mesma imagem com filtro CSS `brightness-0 invert`. Disponivel imediatamente, sem processamento
-- **Card 3 - Otimizada (IA)**: Processada pela Edge Function. Placeholder ate clicar "Otimizar com IA"
+### 1. Card Original com fundo vermelho (ClientLogoUploadModal.tsx)
+
+Trocar o fundo checkered do card "Original" pelo mesmo gradiente vermelho dos outros cards (`from-[#4a0f0f] via-[#6B1515] to-[#7D1818]`). Assim os 3 cards ficam visualmente consistentes e o usuario ve como a logo ficara no contexto real.
+
+### 2. Convencao de URL para variante (ClientLogoUploadModal.tsx)
+
+Quando o usuario seleciona "Original", o `handleConfirm` salvara a URL com um fragmento `#original` no final. Quando seleciona "CSS" ou "IA", a URL e salva normalmente (sem fragmento). Isso nao afeta o download da imagem (fragments nao sao enviados ao servidor).
+
+### 3. Exibicao condicional do filtro (PropostaPublicaPage.tsx)
+
+Na proposta publica, verificar se `client_logo_url` termina com `#original`. Se sim, exibir SEM filtro `brightness-0 invert`. Se nao, aplicar o filtro normalmente.
+
+### 4. Mesma logica no ClientLogoPreview.tsx
+
+No preview do admin, aplicar a mesma logica condicional para consistencia.
+
+## Arquivos Alterados
+
+- `src/components/admin/proposals/ClientLogoUploadModal.tsx` -- fundo vermelho no card Original + append `#original` na URL
+- `src/pages/public/PropostaPublicaPage.tsx` -- condicional no filtro CSS
+- `src/components/admin/proposals/ClientLogoPreview.tsx` -- condicional no filtro CSS
 
 ## Detalhes Tecnicos
 
-### Arquivo 1: `src/components/admin/proposals/ClientLogoUploadModal.tsx`
+**ClientLogoUploadModal.tsx:**
+- Card 1: trocar `style={{ backgroundImage: 'repeating-conic-gradient(...)' }}` por `className="bg-gradient-to-r from-[#4a0f0f] via-[#6B1515] to-[#7D1818]"`
+- No `handleConfirm`, quando `selectedVariant === 'original'`: `finalUrl = originalUrl.split('?')[0] + '#original'`
 
-**Mudancas de estado:**
-- `selectedVariant` muda de `'original' | 'processed'` para `'original' | 'css-optimized' | 'ai-processed'`
-- Default: `'css-optimized'` (o mais usado)
-- Novo estado `cssImageError` para o card CSS
+**PropostaPublicaPage.tsx (linha ~1840):**
+```
+const isOriginalLogo = proposal.client_logo_url?.includes('#original');
+// className condicional: sem filtro se original, com filtro caso contrario
+```
 
-**Layout:**
-- Modal ampliado para `sm:max-w-4xl`
-- Grid muda de `grid-cols-2` para `grid-cols-3`
-- RadioGroup unificada com 3 opcoes (em vez de 2 RadioGroups separados)
-
-**Card 1 - Original:**
-- Fundo com padrao xadrez (CSS checkered pattern) para mostrar transparencia
-- Exibe `previewUrl` SEM `brightness-0 invert`
-- Visivel imediatamente apos upload
-
-**Card 2 - Branco (CSS):**
-- Fundo gradiente vermelho oficial (`from-[#4a0f0f] via-[#6B1515] to-[#7D1818]`)
-- Exibe `previewUrl` COM `brightness-0 invert`
-- Visivel imediatamente apos upload, sem processamento
-
-**Card 3 - Otimizada (IA):**
-- Fundo gradiente vermelho oficial
-- Placeholder "Clique em Otimizar com IA" quando vazio
-- Loading durante processamento
-- Exibe `processedUrl` sem filtro CSS (a IA ja converte para branco)
-
-**Botoes de acao ajustados:**
-- "Cancelar" sempre visivel
-- "Otimizar com IA" visivel quando idle ou erro (dispara processamento)
-- "Aplicar Logo" visivel quando ha selecao valida
-- Remover botao "Usar Original" separado (agora e so selecionar o card 1 ou 2 e clicar Aplicar)
-
-**handleConfirm ajustado:**
-- `original`: salva `originalUrl` (upload sem IA, marca como sem filtro)
-- `css-optimized`: salva `originalUrl` (o filtro CSS sera aplicado na exibicao)
-- `ai-processed`: salva `processedUrl` (ja processada pela IA)
-
-### Arquivo 2: `supabase/functions/process-client-logo/index.ts`
-
-**Prompt da IA reconstruido e mais poderoso:**
-
-O prompt atual e basico. Sera reescrito com instrucoes mais detalhadas:
-
-1. Deteccao inteligente de fundo (solido, gradiente, texturizado, fotografico)
-2. Remocao precisa de fundo preservando detalhes finos (bordas, texto pequeno, sombras sutis)
-3. Conversao para esquema branco/cinza claro:
-   - Partes principais da logo em branco puro (#FFFFFF)
-   - Detalhes secundarios em cinza claro (#E0E0E0 a #F0F0F0)
-   - Preservar hierarquia visual e profundidade
-4. Limpeza de artefatos e bordas irregulares
-5. Centralizacao e padding adequado
-6. Instrucao explicita para manter proporcoes e nao distorcer
-
-**Modelo atualizado:**
-- Usar `google/gemini-2.5-flash-image` (atual) mas com prompt muito mais detalhado
-- Adicionar retry automatico: se a primeira tentativa falhar ou retornar imagem invalida, tentar novamente com prompt simplificado
-
-**Retry logic:**
-- Primeira tentativa: prompt completo e detalhado
-- Se falhar: segunda tentativa com prompt simplificado focando apenas em "remove background, make white"
-- Se ambas falharem: retornar original com mensagem informativa
-
+**ClientLogoPreview.tsx (linha ~99):**
+- Mesma verificacao: se URL contem `#original`, nao aplicar `brightness-0 invert`
