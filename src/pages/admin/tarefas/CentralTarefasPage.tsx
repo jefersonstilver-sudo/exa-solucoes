@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { RefreshCw, Loader2, Plus, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { RefreshCw, Loader2, Plus, ChevronDown, ChevronUp, X, SlidersHorizontal } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { TASK_STATUS } from '@/constants/taskStatus';
@@ -221,47 +221,52 @@ const CentralTarefasPage: React.FC = () => {
         <span className="text-muted-foreground">Concluídas: <b className="text-foreground text-base">{stats.concluidas}</b></span>
       </div>
 
-      {/* Filtros Colapsáveis */}
-      <Collapsible defaultOpen={false}>
-        <div className="flex items-center gap-2">
-          <CollapsibleTrigger className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors py-1 group">
-            <span className="font-medium">Filtros</span>
-            <ChevronDown className="h-3.5 w-3.5 group-data-[state=open]:hidden" />
-            <ChevronUp className="h-3.5 w-3.5 hidden group-data-[state=open]:block" />
-          </CollapsibleTrigger>
-          {/* Resumo inline dos filtros ativos */}
-          <span className="text-xs text-muted-foreground">
-            {statusFilter && statusFilter.length !== ACTIVE_STATUSES.length
-              ? `Status: ${statusFilter.map(s => TASK_STATUS[s]?.shortLabel || s).join(', ')}`
-              : 'Status: Ativos'}
-            {prioridadeFilter && ` · Prioridade: ${prioridadeFilter.map(p => TASK_PRIORITY[p]?.shortLabel || p).join(', ')}`}
-            {departamentoFilter && ` · Dept: ${departamentoFilter}`}
-            {responsavelFilter && ` · Responsável filtrado`}
-          </span>
-          {(statusFilter?.length !== ACTIVE_STATUSES.length || prioridadeFilter || departamentoFilter || responsavelFilter) && (
-            <button onClick={handleClearFilters} className="text-xs text-muted-foreground hover:text-foreground ml-auto flex items-center gap-0.5">
-              <X className="h-3 w-3" /> Limpar
-            </button>
-          )}
-        </div>
-        <CollapsibleContent className="pt-2">
-          <TaskFiltersBar
-            statusFilter={statusFilter}
-            prioridadeFilter={prioridadeFilter}
-            departamentoFilter={departamentoFilter}
-            responsavelFilter={responsavelFilter}
-            onStatusChange={setStatusFilter}
-            onPrioridadeChange={setPrioridadeFilter}
-            onDepartamentoChange={setDepartamentoFilter}
-            onResponsavelChange={setResponsavelFilter}
-            onClearAll={handleClearFilters}
-            departamentos={departamentos}
-            responsaveis={responsaveis}
-          />
-        </CollapsibleContent>
-      </Collapsible>
+      {/* Agenda Integrada (prioridade visual) */}
+      <div>
+        <EmbeddedAgenda 
+          tasks={agendaTasks}
+          filterTrigger={
+            <Collapsible defaultOpen={false}>
+              <div className="flex items-center gap-2">
+                <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-muted group">
+                  <SlidersHorizontal className="h-3 w-3" />
+                  <span>Filtros</span>
+                  <ChevronDown className="h-3 w-3 group-data-[state=open]:hidden" />
+                  <ChevronUp className="h-3 w-3 hidden group-data-[state=open]:block" />
+                </CollapsibleTrigger>
+                <span className="text-[10px] text-muted-foreground hidden sm:inline">
+                  {statusFilter && statusFilter.length !== ACTIVE_STATUSES.length
+                    ? `${statusFilter.map(s => TASK_STATUS[s]?.shortLabel || s).join(', ')}`
+                    : ''}
+                  {prioridadeFilter ? ` · ${prioridadeFilter.map(p => TASK_PRIORITY[p]?.shortLabel || p).join(', ')}` : ''}
+                </span>
+                {(statusFilter?.length !== ACTIVE_STATUSES.length || prioridadeFilter || departamentoFilter || responsavelFilter) && (
+                  <button onClick={handleClearFilters} className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-0.5">
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                )}
+              </div>
+              <CollapsibleContent className="pt-2">
+                <TaskFiltersBar
+                  statusFilter={statusFilter}
+                  prioridadeFilter={prioridadeFilter}
+                  departamentoFilter={departamentoFilter}
+                  responsavelFilter={responsavelFilter}
+                  onStatusChange={setStatusFilter}
+                  onPrioridadeChange={setPrioridadeFilter}
+                  onDepartamentoChange={setDepartamentoFilter}
+                  onResponsavelChange={setResponsavelFilter}
+                  onClearAll={handleClearFilters}
+                  departamentos={departamentos}
+                  responsaveis={responsaveis}
+                />
+              </CollapsibleContent>
+            </Collapsible>
+          }
+        />
+      </div>
 
-      {/* Grid de Tarefas */}
+      {/* Lista de Tarefas */}
       <div className="space-y-4">
         {isLoading && tasks.length === 0 ? (
           <div className="flex items-center justify-center py-12">
@@ -288,7 +293,6 @@ const CentralTarefasPage: React.FC = () => {
               ))}
             </div>
 
-            {/* Carregar Mais */}
             {hasMore && (
               <div className="flex justify-center pt-4">
                 <Button
@@ -309,17 +313,11 @@ const CentralTarefasPage: React.FC = () => {
               </div>
             )}
 
-            {/* Contador de resultados */}
             <p className="text-center text-xs text-muted-foreground pt-2">
               Exibindo {tasks.length} de {stats.total} tarefas
             </p>
           </>
         )}
-      </div>
-
-      {/* Agenda Integrada */}
-      <div data-agenda-section>
-        <EmbeddedAgenda tasks={agendaTasks} />
       </div>
 
       {/* FAB para mobile */}
