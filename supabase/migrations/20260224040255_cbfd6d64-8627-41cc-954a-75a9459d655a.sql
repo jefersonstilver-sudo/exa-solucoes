@@ -1,0 +1,1 @@
+UPDATE exa_alerts_directors SET nome = 'Jeferson Stilver' WHERE id = 'f8a719fd-afc1-4296-a773-d66313252e81';
