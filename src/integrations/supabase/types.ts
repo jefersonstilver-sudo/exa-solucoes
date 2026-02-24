@@ -12614,6 +12614,65 @@ export type Database = {
           },
         ]
       }
+      task_notification_queue: {
+        Row: {
+          action: string | null
+          awaiting_confirmation: boolean
+          created_at: string
+          criado_por: string | null
+          escalated_at: string | null
+          id: string
+          justificativa: string | null
+          nova_data: string | null
+          pending_action: string | null
+          resolved_at: string | null
+          resposta_de: string | null
+          sent_at: string | null
+          status: string
+          task_id: string
+        }
+        Insert: {
+          action?: string | null
+          awaiting_confirmation?: boolean
+          created_at?: string
+          criado_por?: string | null
+          escalated_at?: string | null
+          id?: string
+          justificativa?: string | null
+          nova_data?: string | null
+          pending_action?: string | null
+          resolved_at?: string | null
+          resposta_de?: string | null
+          sent_at?: string | null
+          status?: string
+          task_id: string
+        }
+        Update: {
+          action?: string | null
+          awaiting_confirmation?: boolean
+          created_at?: string
+          criado_por?: string | null
+          escalated_at?: string | null
+          id?: string
+          justificativa?: string | null
+          nova_data?: string | null
+          pending_action?: string | null
+          resolved_at?: string | null
+          resposta_de?: string | null
+          sent_at?: string | null
+          status?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_notification_queue_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_participantes: {
         Row: {
           confirmado: boolean | null
@@ -13026,6 +13085,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          auto_followup: boolean | null
           building_id: string | null
           cliente_id: string | null
           concluida_por: string | null
@@ -13042,6 +13102,7 @@ export type Database = {
           link_reuniao: string | null
           local_evento: string | null
           motivo_nao_realizada: string | null
+          notify_on_save: boolean | null
           origem: Database["public"]["Enums"]["task_origem"]
           origem_id: string | null
           prioridade: Database["public"]["Enums"]["task_prioridade"]
@@ -13055,6 +13116,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          auto_followup?: boolean | null
           building_id?: string | null
           cliente_id?: string | null
           concluida_por?: string | null
@@ -13071,6 +13133,7 @@ export type Database = {
           link_reuniao?: string | null
           local_evento?: string | null
           motivo_nao_realizada?: string | null
+          notify_on_save?: boolean | null
           origem?: Database["public"]["Enums"]["task_origem"]
           origem_id?: string | null
           prioridade?: Database["public"]["Enums"]["task_prioridade"]
@@ -13084,6 +13147,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          auto_followup?: boolean | null
           building_id?: string | null
           cliente_id?: string | null
           concluida_por?: string | null
@@ -13100,6 +13164,7 @@ export type Database = {
           link_reuniao?: string | null
           local_evento?: string | null
           motivo_nao_realizada?: string | null
+          notify_on_save?: boolean | null
           origem?: Database["public"]["Enums"]["task_origem"]
           origem_id?: string | null
           prioridade?: Database["public"]["Enums"]["task_prioridade"]

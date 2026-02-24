@@ -43,10 +43,12 @@ import {
 import { useEventTypes } from '@/hooks/agenda/useEventTypes';
 import EventTypeManagerModal from './EventTypeManagerModal';
 import BuildingSelector from './BuildingSelector';
+import ManageAlertContactsModal from './ManageAlertContactsModal';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Collapsible,
   CollapsibleContent,
@@ -149,7 +151,11 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   const [escopo, setEscopo] = useState<string>('individual');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [eventTypeManagerOpen, setEventTypeManagerOpen] = useState(false);
+  const [alertContactsOpen, setAlertContactsOpen] = useState(false);
+  const [notifyOnSave, setNotifyOnSave] = useState(false);
+  const [autoFollowup, setAutoFollowup] = useState(true);
   const { activeEventTypes } = useEventTypes();
+  const { userProfile } = useAuth();
 
   // Building state
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
@@ -181,6 +187,8 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
       setLinkReuniao(task.link_reuniao || '');
       setEscopo(task.escopo || 'individual');
       setSelectedBuildingId((task as any).building_id || null);
+      setNotifyOnSave(false); // Default false for edits
+      setAutoFollowup((task as any).auto_followup !== false);
 
       // Load lead if task has cliente_id
       if ((task as any).cliente_id) {
@@ -339,6 +347,8 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
           escopo,
           cliente_id: selectedLead?.id || null,
           building_id: selectedBuildingId || null,
+          notify_on_save: notifyOnSave,
+          auto_followup: autoFollowup,
         })
         .eq('id', task.id);
       
@@ -357,6 +367,20 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
       queryClient.invalidateQueries({ queryKey: ['agenda-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['minha-manha-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['central-tarefas'] });
+
+      // Send WhatsApp notification if enabled
+      if (notifyOnSave && task) {
+        supabase.functions.invoke('task-notify-created', {
+          body: {
+            task_id: task.id,
+            titulo,
+            data: dataPrevista ? format(dataPrevista, 'dd/MM/yyyy', { locale: ptBR }) : null,
+            horario: horarioInicio || horarioLimite || null,
+            criador_nome: userProfile?.nome || userProfile?.email || 'Sistema'
+          }
+        }).catch(err => console.error('Erro ao notificar:', err));
+      }
+
       onOpenChange(false);
     },
     onError: (error: any) => {
@@ -633,6 +657,45 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
               <Textarea id="descricao" value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Descrição opcional..." rows={3} />
             </div>
 
+            {/* Notificações WhatsApp */}
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button type="button" variant="outline" size="sm" className="w-full justify-between h-9 text-xs gap-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <Bell className="h-3.5 w-3.5" />
+                    Notificações WhatsApp
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2 space-y-3 p-3 bg-muted/30 rounded-lg border">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="notify-save" className="text-xs flex items-center gap-1.5 cursor-pointer">
+                    <BellRing className="h-3.5 w-3.5" />
+                    Notificar contatos ao salvar
+                  </Label>
+                  <Switch id="notify-save" checked={notifyOnSave} onCheckedChange={setNotifyOnSave} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="auto-followup" className="text-xs flex items-center gap-1.5 cursor-pointer">
+                    <Clock className="h-3.5 w-3.5" />
+                    Follow-up automático (1h após)
+                  </Label>
+                  <Switch id="auto-followup" checked={autoFollowup} onCheckedChange={setAutoFollowup} />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full h-8 text-xs gap-1.5"
+                  onClick={() => setAlertContactsOpen(true)}
+                >
+                  <Users className="h-3.5 w-3.5" />
+                  Gerenciar Contatos de Alerta
+                </Button>
+              </CollapsibleContent>
+            </Collapsible>
+
             {/* Botões */}
             <div className="flex justify-between gap-3 pt-4">
               <Button type="button" variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)} className="gap-1">
@@ -670,6 +733,11 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ManageAlertContactsModal
+        open={alertContactsOpen}
+        onOpenChange={setAlertContactsOpen}
+      />
     </>
   );
 };

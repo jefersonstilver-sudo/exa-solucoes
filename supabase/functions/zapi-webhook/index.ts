@@ -712,6 +712,30 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    // ========== TASK FOLLOW-UP RESPONSE ROUTING ==========
+    // Check if this phone has an active task notification queue entry
+    const messageText = payload.text?.message || payload.body || '';
+    if (messageText.trim() && phone) {
+      try {
+        const { data: taskFollowUpResult } = await supabase.functions.invoke('task-follow-up-response', {
+          body: { phone, message: messageText.trim() }
+        });
+
+        if (taskFollowUpResult?.handled) {
+          console.log('[ZAPI-WEBHOOK] ✅ Task follow-up handled:', taskFollowUpResult);
+          return new Response(JSON.stringify({ 
+            success: true, 
+            processed: 'task_followup_response',
+            result: taskFollowUpResult
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      } catch (taskErr) {
+        console.log('[ZAPI-WEBHOOK] ℹ️ Task follow-up check skipped:', taskErr.message);
+      }
+    }
     
     // PALAVRAS ACEITAS para "já respondi" (REMOVIDO 'assumido', 'assumi' que causam loop)
     const acceptedOk = ['ok', 'atendi', 'já respondi', 'respondi o lead', 'fechado', 'feito', 'pronto'];
