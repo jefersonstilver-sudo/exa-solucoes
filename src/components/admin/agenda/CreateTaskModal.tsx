@@ -303,6 +303,19 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
     }
   });
 
+  // Buscar prédios para obter o nome na notificação
+  const { data: allBuildings = [] } = useQuery({
+    queryKey: ['all-buildings-for-tasks'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('buildings')
+        .select('id, nome')
+        .order('nome');
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   // Buscar usuários administrativos
   const { data: adminUsers = [] } = useQuery({
     queryKey: ['admin-users-for-tasks'],
@@ -422,6 +435,11 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
           .filter(u => selectedNotifyContacts.includes(u.id) && u.telefone)
           .map(u => ({ nome: u.nome || u.email, telefone: u.telefone }));
 
+        // Build responsaveis names list
+        const responsaveisNomes = adminUsers
+          .filter(u => responsaveisIds.includes(u.id))
+          .map(u => u.nome || u.email);
+
         supabase.functions.invoke('task-notify-created', {
           body: {
             task_id: 'batch',
@@ -430,6 +448,14 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
             horario: horarioInicio || horarioLimite || null,
             criador_nome: userProfile?.nome || user?.email,
             specific_contacts: selectedPhones,
+            tipo_evento: tipoEvento || 'tarefa',
+            descricao: descricao || null,
+            local_evento: localEvento || null,
+            building_name: selectedBuildingId 
+              ? allBuildings.find(b => b.id === selectedBuildingId)?.nome || null 
+              : null,
+            responsaveis_nomes: responsaveisNomes.length > 0 ? responsaveisNomes : null,
+            subtipo_reuniao: subtipoReuniao || null,
           }
         }).catch(err => console.error('Erro ao notificar WhatsApp:', err));
       }
