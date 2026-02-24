@@ -9,6 +9,7 @@ import { TaskDetailHeader } from './TaskDetailHeader';
 import { TaskChecklist } from './TaskChecklist';
 import { TaskStatusActions } from './TaskStatusActions';
 import { TaskStatusHistory } from './TaskStatusHistory';
+import { TaskNotificationStatus } from './TaskNotificationStatus';
 import type { TaskWithDetails, TaskStatusCanonical } from '@/types/tarefas';
 
 interface TaskDetailDrawerProps {
@@ -65,6 +66,9 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
             isUpdating={isUpdating}
             onClose={handleClose}
           />
+
+          {/* Monitor de Notificações */}
+          <TaskNotificationStatus taskId={task.id} />
 
           {/* Histórico de Status (collapsed por padrão) */}
           <TaskStatusHistory taskId={task.id} />

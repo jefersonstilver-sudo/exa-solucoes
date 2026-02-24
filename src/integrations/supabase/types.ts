@@ -12757,6 +12757,50 @@ export type Database = {
           },
         ]
       }
+      task_read_receipts: {
+        Row: {
+          contact_name: string | null
+          contact_phone: string
+          created_at: string
+          delivered_at: string | null
+          id: string
+          read_at: string | null
+          sent_at: string
+          status: string
+          task_id: string | null
+        }
+        Insert: {
+          contact_name?: string | null
+          contact_phone: string
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          read_at?: string | null
+          sent_at?: string
+          status?: string
+          task_id?: string | null
+        }
+        Update: {
+          contact_name?: string | null
+          contact_phone?: string
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          read_at?: string | null
+          sent_at?: string
+          status?: string
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_read_receipts_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_responsaveis: {
         Row: {
           created_at: string | null

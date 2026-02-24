@@ -482,6 +482,86 @@ serve(async (req) => {
         });
       }
       
+      // ========== PROCESSAR BOTÕES DE CONFIRMAÇÃO DE TAREFA ==========
+      if (buttonId?.startsWith('task_ack:')) {
+        const parts = buttonId.split(':');
+        const taskId = parts[1];
+        const contactPhone = parts[2] || phone;
+        
+        console.log('[ZAPI-WEBHOOK] 📋 Task acknowledgment button:', {
+          taskId,
+          contactPhone,
+          phone
+        });
+        
+        if (taskId) {
+          // Update receipt status to 'read'
+          const { error: updateError } = await supabase
+            .from('task_read_receipts')
+            .update({ 
+              read_at: new Date().toISOString(), 
+              status: 'read' 
+            })
+            .eq('task_id', taskId)
+            .eq('contact_phone', contactPhone);
+          
+          if (updateError) {
+            console.error('[ZAPI-WEBHOOK] ❌ Error updating task receipt:', updateError);
+          } else {
+            console.log('[ZAPI-WEBHOOK] ✅ Task receipt updated to read');
+          }
+          
+          // Send confirmation reply
+          const { data: agent } = await supabase
+            .from('agents')
+            .select('zapi_config')
+            .eq('key', 'exa_alert')
+            .single();
+          
+          const zapiConfig = agent?.zapi_config as { instance_id?: string; token?: string } | null;
+          const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+          
+          if (zapiConfig?.instance_id && zapiConfig?.token && zapiClientToken) {
+            const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+            
+            try {
+              await fetch(zapiUrl, {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Client-Token': zapiClientToken
+                },
+                body: JSON.stringify({
+                  phone: phone,
+                  message: '✅ *Recebimento confirmado!*\n\nObrigado pela confirmação. 👍'
+                })
+              });
+              console.log('[ZAPI-WEBHOOK] ✅ Task ack confirmation sent');
+            } catch (confirmError) {
+              console.error('[ZAPI-WEBHOOK] ⚠️ Error sending task ack confirmation:', confirmError);
+            }
+          }
+          
+          // Log
+          await supabase.from('agent_logs').insert({
+            agent_key: 'exa_alert',
+            event_type: 'task_ack_received',
+            metadata: {
+              task_id: taskId,
+              contact_phone: contactPhone,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
+        
+        return new Response(JSON.stringify({ 
+          success: true,
+          processed: 'task_ack_button_response'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
       // ========== PROCESSAR BOTÕES DE ALERTA DE PAINEL OFFLINE ==========
       // Se não é escalação, pode ser botão de confirmação de alerta de painel
       if (!buttonId?.startsWith('escalacao_') && !buttonId?.startsWith('proposal_mute_')) {
