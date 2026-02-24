@@ -511,6 +511,49 @@ serve(async (req) => {
             console.log('[ZAPI-WEBHOOK] ✅ Task receipt updated to read');
           }
           
+           // Fetch task details for the receipt
+          const { data: taskData } = await supabase
+            .from('tasks')
+            .select('titulo, data_prevista, horario_inicio, horario_limite, tipo_evento, local_evento, building_id, created_by')
+            .eq('id', taskId)
+            .single();
+          
+          let buildingName = '';
+          if (taskData?.building_id) {
+            const { data: bld } = await supabase
+              .from('buildings')
+              .select('nome')
+              .eq('id', taskData.building_id)
+              .single();
+            buildingName = bld?.nome || '';
+          }
+
+          let creatorName = 'Sistema';
+          if (taskData?.created_by) {
+            const { data: usr } = await supabase
+              .from('users')
+              .select('nome, email')
+              .eq('id', taskData.created_by)
+              .single();
+            creatorName = usr?.nome || usr?.email || 'Sistema';
+          }
+
+          const now = new Date();
+          const confirmTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} de ${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+
+          // Build receipt message
+          let receiptMsg = `✅ *Recebimento Confirmado*\n\n`;
+          if (taskData?.titulo) receiptMsg += `📋 *${taskData.titulo}*\n`;
+          if (taskData?.data_prevista) {
+            const [y, m, d] = taskData.data_prevista.split('-');
+            const timeStr = taskData.horario_inicio ? ` às ${taskData.horario_inicio}` : '';
+            receiptMsg += `📅 ${d}/${m}/${y}${timeStr}\n`;
+          }
+          if (buildingName) receiptMsg += `🏢 ${buildingName}\n`;
+          if (taskData?.local_evento) receiptMsg += `📍 ${taskData.local_evento}\n`;
+          receiptMsg += `👤 Criado por: ${creatorName}\n`;
+          receiptMsg += `\nVocê confirmou o recebimento deste compromisso.\nHorário da confirmação: ${confirmTime}\n\n_Este é seu comprovante de ciência._`;
+
           // Send confirmation reply
           const { data: agent } = await supabase
             .from('agents')
@@ -533,10 +576,10 @@ serve(async (req) => {
                 },
                 body: JSON.stringify({
                   phone: phone,
-                  message: '✅ *Recebimento confirmado!*\n\nObrigado pela confirmação. 👍'
+                  message: receiptMsg
                 })
               });
-              console.log('[ZAPI-WEBHOOK] ✅ Task ack confirmation sent');
+              console.log('[ZAPI-WEBHOOK] ✅ Task ack receipt sent with details');
             } catch (confirmError) {
               console.error('[ZAPI-WEBHOOK] ⚠️ Error sending task ack confirmation:', confirmError);
             }
