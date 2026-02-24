@@ -17,7 +17,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { task_id, titulo, data, horario, criador_nome } = await req.json();
+    const { task_id, titulo, data, horario, criador_nome, specific_contacts } = await req.json();
 
     if (!task_id || !titulo) {
       return new Response(JSON.stringify({ error: 'task_id and titulo required' }), {
@@ -28,14 +28,29 @@ serve(async (req) => {
 
     console.log('[TASK-NOTIFY] 📤 Notifying contacts about new task:', titulo);
 
-    // Fetch active alert contacts
-    const { data: contacts, error: contactsError } = await supabase
-      .from('exa_alerts_directors')
-      .select('id, nome, telefone')
-      .eq('ativo', true);
+    let contacts: { nome: string; telefone: string }[] = [];
 
-    if (contactsError || !contacts || contacts.length === 0) {
-      console.log('[TASK-NOTIFY] ⚠️ No active contacts found');
+    if (specific_contacts && Array.isArray(specific_contacts) && specific_contacts.length > 0) {
+      // Use specific contacts passed from frontend
+      contacts = specific_contacts.filter((c: any) => c.telefone);
+      console.log(`[TASK-NOTIFY] 📋 Using ${contacts.length} specific contacts`);
+    } else {
+      // Fallback: fetch all active alert contacts
+      const { data: dbContacts, error: contactsError } = await supabase
+        .from('exa_alerts_directors')
+        .select('id, nome, telefone')
+        .eq('ativo', true);
+
+      if (contactsError || !dbContacts || dbContacts.length === 0) {
+        console.log('[TASK-NOTIFY] ⚠️ No active contacts found');
+        return new Response(JSON.stringify({ success: true, sent: 0, reason: 'no_contacts' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      contacts = dbContacts;
+    }
+
+    if (contacts.length === 0) {
       return new Response(JSON.stringify({ success: true, sent: 0, reason: 'no_contacts' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
