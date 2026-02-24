@@ -168,16 +168,8 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   const [selectedNotifyContacts, setSelectedNotifyContacts] = useState<string[]>([]);
   const [notifyContactsInitialized, setNotifyContactsInitialized] = useState(false);
 
-  // Initialize selected notify contacts with creator
-  useEffect(() => {
-    if (!notifyContactsInitialized && user?.id && adminUsers.length > 0) {
-      const creatorHasPhone = adminUsers.some(u => u.id === user.id && u.telefone);
-      if (creatorHasPhone) {
-        setSelectedNotifyContacts([user.id]);
-      }
-      setNotifyContactsInitialized(true);
-    }
-  }, [user?.id, adminUsers, notifyContactsInitialized]);
+
+
 
   // Hook de tipos de evento dinâmicos
   const { activeEventTypes } = useEventTypes();
@@ -325,6 +317,17 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
       return (data || []) as AdminUser[];
     }
   });
+
+  // Initialize selected notify contacts with creator
+  useEffect(() => {
+    if (!notifyContactsInitialized && user?.id && adminUsers.length > 0) {
+      const creatorHasPhone = adminUsers.some(u => u.id === user.id && u.telefone);
+      if (creatorHasPhone) {
+        setSelectedNotifyContacts([user.id]);
+      }
+      setNotifyContactsInitialized(true);
+    }
+  }, [user?.id, adminUsers, notifyContactsInitialized]);
 
   // Agrupar usuários por departamento
   const usersByDepartment = useMemo(() => {
