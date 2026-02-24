@@ -205,10 +205,108 @@ serve(async (req) => {
     }
 
     // ========== PROCESSAR RESPOSTA DE BOTÕES (ESCALAÇÕES) ==========
-    const buttonReply = payload.buttonReply || payload.buttonsResponseMessage;
+    const buttonReply = payload.buttonReply || payload.buttonsResponseMessage || payload.listResponseMessage || payload.templateButtonReplyMessage;
     
-    if (buttonReply) {
-      const buttonId = buttonReply.buttonId || buttonReply.selectedButtonId || buttonReply.id;
+    // Also check for text-based task_ack (some Z-API versions send button clicks as text)
+    const textMessage = payload.text?.message || payload.body || '';
+    const isTaskAckText = textMessage === '✅ Confirmar recebimento';
+    
+    if (buttonReply || isTaskAckText) {
+      const buttonId = buttonReply?.buttonId || buttonReply?.selectedButtonId || buttonReply?.id || buttonReply?.title || '';
+      
+      // If it's a text-based ack, try to find the task from recent receipts
+      if (isTaskAckText && !buttonId?.startsWith('task_ack:')) {
+        console.log('[ZAPI-WEBHOOK] 📋 Text-based task ack detected from:', phone);
+        
+        // Find the most recent unread receipt for this phone
+        const normalizedPhone = phone.startsWith('55') ? phone : `55${phone}`;
+        const { data: recentReceipt } = await supabase
+          .from('task_read_receipts')
+          .select('task_id, contact_phone')
+          .or(`contact_phone.eq.${normalizedPhone},contact_phone.eq.${phone}`)
+          .eq('status', 'sent')
+          .order('sent_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (recentReceipt) {
+          console.log('[ZAPI-WEBHOOK] ✅ Found pending receipt for task:', recentReceipt.task_id);
+          // Simulate button click
+          const fakeButtonId = `task_ack:${recentReceipt.task_id}:${recentReceipt.contact_phone}`;
+          // Process as task_ack below
+          const taskId = recentReceipt.task_id;
+          const contactPhone = recentReceipt.contact_phone;
+          
+          // Update receipt status
+          const { error: updateError } = await supabase
+            .from('task_read_receipts')
+            .update({ read_at: new Date().toISOString(), status: 'read' })
+            .eq('task_id', taskId)
+            .eq('contact_phone', contactPhone);
+          
+          if (updateError) {
+            console.error('[ZAPI-WEBHOOK] ❌ Error updating task receipt:', updateError);
+          } else {
+            console.log('[ZAPI-WEBHOOK] ✅ Task receipt updated to read (text-based)');
+          }
+          
+          // Send confirmation receipt (same logic as button handler below)
+          const { data: taskData } = await supabase
+            .from('tasks')
+            .select('titulo, data_prevista, horario_inicio, horario_limite, tipo_evento, local_evento, building_id, created_by')
+            .eq('id', taskId!)
+            .single();
+          
+          let buildingName = '';
+          if (taskData?.building_id) {
+            const { data: bld } = await supabase.from('buildings').select('nome').eq('id', taskData.building_id).single();
+            buildingName = bld?.nome || '';
+          }
+          let creatorName = 'Sistema';
+          if (taskData?.created_by) {
+            const { data: usr } = await supabase.from('users').select('nome, email').eq('id', taskData.created_by).single();
+            creatorName = usr?.nome || usr?.email || 'Sistema';
+          }
+          
+          const now = new Date();
+          const confirmTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} de ${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+          
+          let receiptMsg = `✅ *Recebimento Confirmado*\n\n`;
+          if (taskData?.titulo) receiptMsg += `📋 *${taskData.titulo}*\n`;
+          if (taskData?.data_prevista) {
+            const [y, m, d] = taskData.data_prevista.split('-');
+            const timeStr = taskData.horario_inicio ? ` às ${taskData.horario_inicio}` : '';
+            receiptMsg += `📅 ${d}/${m}/${y}${timeStr}\n`;
+          }
+          if (buildingName) receiptMsg += `🏢 ${buildingName}\n`;
+          if (taskData?.local_evento) receiptMsg += `📍 ${taskData.local_evento}\n`;
+          receiptMsg += `👤 Criado por: ${creatorName}\n`;
+          receiptMsg += `\nVocê confirmou o recebimento deste compromisso.\nHorário da confirmação: ${confirmTime}\n\n_Este é seu comprovante de ciência._`;
+          
+          const { data: agentData } = await supabase.from('agents').select('zapi_config').eq('key', 'exa_alert').single();
+          const zapiCfg = agentData?.zapi_config as { instance_id?: string; token?: string } | null;
+          const clientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+          
+          if (zapiCfg?.instance_id && zapiCfg?.token && clientToken) {
+            try {
+              await fetch(`https://api.z-api.io/instances/${zapiCfg.instance_id}/token/${zapiCfg.token}/send-text`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Client-Token': clientToken },
+                body: JSON.stringify({ phone, message: receiptMsg })
+              });
+            } catch (e) { console.error('[ZAPI-WEBHOOK] ⚠️ Error sending text-ack receipt:', e); }
+          }
+          
+          await supabase.from('agent_logs').insert({
+            agent_key: 'exa_alert', event_type: 'task_ack_received',
+            metadata: { task_id: taskId, contact_phone: contactPhone, method: 'text_match', timestamp: new Date().toISOString() }
+          });
+          
+          return new Response(JSON.stringify({ success: true, processed: 'task_ack_text_match' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
       console.log('[ZAPI-WEBHOOK] 🔘 Button reply detected:', {
         buttonId,
         phone,
