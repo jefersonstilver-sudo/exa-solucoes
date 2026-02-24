@@ -77,26 +77,7 @@ export const TaskFiltersBar: React.FC<TaskFiltersBarProps> = ({
     responsavelFilter;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-gray-700">
-          <Filter className="h-4 w-4" />
-          <span className="font-medium text-sm">Filtros</span>
-        </div>
-        
-        {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClearAll}
-            className="text-xs text-gray-500 hover:text-gray-700 h-7 px-2"
-          >
-            <X className="h-3 w-3 mr-1" />
-            Limpar filtros
-          </Button>
-        )}
-      </div>
-
+    <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Filtro de Status (multi-select) */}
         <TaskFilterSelect
