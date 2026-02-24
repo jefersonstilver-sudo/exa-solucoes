@@ -60,7 +60,11 @@ export const TaskPageHeader: React.FC<TaskPageHeaderProps> = ({
   const isMobile = useIsMobile();
 
   const handleCalendarClick = () => {
-    navigate('/super_admin/agenda');
+    // Agenda está integrada na Central de Tarefas - scroll para seção
+    const agendaSection = document.querySelector('[data-agenda-section]');
+    if (agendaSection) {
+      agendaSection.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   return (

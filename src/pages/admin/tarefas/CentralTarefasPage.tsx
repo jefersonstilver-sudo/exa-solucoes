@@ -5,8 +5,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { RefreshCw, ListTodo, Clock, PlayCircle, CheckCircle2, Loader2, Plus, Calendar as CalendarIcon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { RefreshCw, ListTodo, Clock, PlayCircle, CheckCircle2, Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCentralTarefas } from '@/hooks/tarefas/useCentralTarefas';
 import { useTaskDetail } from '@/hooks/tarefas/useTaskDetail';
@@ -15,13 +14,16 @@ import { TaskCard } from './components/TaskCard';
 import { TaskDetailDrawer } from './components/TaskDetailDrawer';
 import { TaskEmptyState } from './components/TaskEmptyState';
 import { TaskFAB } from './components/TaskFAB';
+import EmbeddedAgenda from './components/EmbeddedAgenda';
 import CreateTaskModal from '@/components/admin/agenda/CreateTaskModal';
 import { ACTIVE_STATUSES } from '@/constants/taskStatus';
 import type { TaskWithDetails, TaskStatusCanonical, TaskPriorityCanonical } from '@/types/tarefas';
+import type { AgendaTask } from '@/components/admin/agenda/TaskCard';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const CentralTarefasPage: React.FC = () => {
-  const navigate = useNavigate();
   const isMobile = useIsMobile();
 
   // Estado dos filtros
@@ -55,6 +57,19 @@ const CentralTarefasPage: React.FC = () => {
     departamento: departamentoFilter,
     responsavel_id: responsavelFilter,
     offset
+  });
+
+  // Query para tarefas da agenda (todas, sem filtro de paginação)
+  const { data: agendaTasks = [] } = useQuery({
+    queryKey: ['agenda-tasks'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('id, titulo, descricao, prioridade, status, data_prevista, horario_limite, horario_inicio, created_by, created_at, updated_at, tipo_evento, subtipo_reuniao, departamento_id, local_evento, link_reuniao, escopo, concluida_por, data_conclusao, todos_responsaveis, task_responsaveis(user_id, users:user_id(nome))')
+        .order('data_prevista', { ascending: true, nullsFirst: false });
+      if (error) throw error;
+      return (data || []) as AgendaTask[];
+    }
   });
 
   // Hook para detalhes da tarefa selecionada
@@ -111,9 +126,6 @@ const CentralTarefasPage: React.FC = () => {
     setCreateModalOpen(true);
   }, []);
 
-  const handleCalendarClick = useCallback(() => {
-    navigate('/super_admin/agenda');
-  }, [navigate]);
 
   // Determinar categoria visual para cada tarefa
   const getTaskCategory = (task: TaskWithDetails): 'urgente' | 'importante' | 'rotina' => {
@@ -137,16 +149,6 @@ const CentralTarefasPage: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          {/* Botão Agenda */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCalendarClick}
-            className="gap-2"
-          >
-            <CalendarIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Agenda</span>
-          </Button>
 
           {/* Botão Atualizar */}
           <Button
@@ -294,6 +296,11 @@ const CentralTarefasPage: React.FC = () => {
             </p>
           </>
         )}
+      </div>
+
+      {/* Agenda Integrada */}
+      <div data-agenda-section>
+        <EmbeddedAgenda tasks={agendaTasks} />
       </div>
 
       {/* FAB para mobile */}
