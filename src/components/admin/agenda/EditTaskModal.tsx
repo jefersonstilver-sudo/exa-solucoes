@@ -231,7 +231,11 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
     },
   });
 
-  // Fetch read receipts for this task
+  // Track previously known read IDs for animation
+  const previousReadIdsRef = useRef<Set<string>>(new Set());
+  const [newlyConfirmedIds, setNewlyConfirmedIds] = useState<Set<string>>(new Set());
+
+  // Fetch read receipts for this task (auto-refresh every 5s)
   const { data: receipts = [], refetch: refetchReceipts } = useQuery({
     queryKey: ['task-read-receipts', task?.id],
     queryFn: async () => {
@@ -245,7 +249,26 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
       return (data || []) as ReadReceipt[];
     },
     enabled: !!task?.id && open,
+    refetchInterval: open ? 5000 : false,
   });
+
+  // Detect newly confirmed receipts for animation
+  useEffect(() => {
+    const currentReadIds = new Set(receipts.filter(r => r.status === 'read').map(r => r.id));
+    const newIds = new Set<string>();
+    currentReadIds.forEach(id => {
+      if (!previousReadIdsRef.current.has(id)) {
+        newIds.add(id);
+      }
+    });
+    if (newIds.size > 0) {
+      setNewlyConfirmedIds(newIds);
+      const timer = setTimeout(() => setNewlyConfirmedIds(new Set()), 2500);
+      previousReadIdsRef.current = currentReadIds;
+      return () => clearTimeout(timer);
+    }
+    previousReadIdsRef.current = currentReadIds;
+  }, [receipts]);
 
   useEffect(() => {
     if (task) {
@@ -799,10 +822,11 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                     <div className="space-y-1.5 max-h-48 overflow-y-auto">
                       {receipts.map((receipt) => (
                         <div key={receipt.id} className={cn(
-                          "flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-colors",
+                          "flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-all duration-500",
                           receipt.status === 'read' ? 'bg-emerald-50/50 border-emerald-200/50' :
                           receipt.status === 'delivered' ? 'bg-blue-50/50 border-blue-200/50' :
-                          'bg-background border-border'
+                          'bg-background border-border',
+                          newlyConfirmedIds.has(receipt.id) && 'animate-pulse ring-2 ring-emerald-400/50 bg-emerald-100/70'
                         )}>
                           <div className="flex items-center gap-2 min-w-0">
                             {getReceiptStatusIcon(receipt.status)}
@@ -835,15 +859,9 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                     {sendingReminder ? 'Enviando...' : 'Enviar Lembrete'}
                   </Button>
 
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="w-full h-7 text-[10px] text-muted-foreground gap-1.5"
-                    onClick={() => refetchReceipts()}
-                  >
-                    <RefreshCw className="h-3 w-3" /> Atualizar status
-                  </Button>
+                   <p className="text-[10px] text-center text-muted-foreground/60">
+                    Atualiza automaticamente a cada 5s
+                  </p>
                 </div>
 
                 {/* Separador */}
