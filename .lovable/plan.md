@@ -1,108 +1,81 @@
 
-# Mensagens WhatsApp Ricas + Confirmacao de Leitura
+
+# Redesign do EditTaskModal - Layout Moderno e Completo
 
 ## Problema Atual
+- Modal pequeno (max-w-[550px]) e visualmente pobre
+- Sem monitor de confirmacao de recebimento (quem viu/nao viu)
+- Sem botao de enviar lembrete
+- Header generico sem identidade visual do tipo de evento
+- Layout apertado, campos empilhados sem organizacao clara
 
-1. A notificacao chega como "Nova tarefa agendada" para TUDO (reunioes, instalacoes, manutencoes, etc.)
-2. Faltam detalhes: descricao, observacoes, predio, responsaveis, tipo de evento
-3. Nao ha botao de confirmacao (Z-API suporta `send-button-actions`)
-4. Nao ha monitoramento de quem viu/confirmou a tarefa
+## Nova Arquitetura Visual
 
-## Solucao
-
-### 1. Mensagem rica e contextual (Edge Function `task-notify-created`)
-
-O frontend passa dados adicionais: `tipo_evento`, `descricao`, `local_evento`, `building_name`, `responsaveis_nomes`, `subtipo_reuniao`. A edge function monta a mensagem baseada no tipo:
+O modal sera reconstruido com layout em duas colunas (desktop) e header visual forte:
 
 ```text
--- Para Reuniao:
-🤝 *Nova Reunião agendada*
-
-*Reunião com cliente X*
-📅 Data: 24/02/2026 às 10:00
-📍 Local: Sala de reuniões
-👤 Criado por: Jeferson Encina
-👥 Responsáveis: Maria, João
-📝 Descrição: Discutir proposta comercial
-
--- Para Instalação/Manutenção:
-🔧 *Nova Manutenção agendada*
-
-*Troca do motor elevador*
-📅 Data: 25/02/2026 às 14:00
-🏢 Prédio: Edifício Aurora
-👤 Criado por: Jeferson
-📝 Descrição: Motor principal apresentando ruído
-
--- Para Tarefa genérica:
-📋 *Nova Tarefa agendada*
-(formato atual, mais completo)
-
--- Para Aviso:
-⚠️ *Novo Aviso*
++-------------------------------------------------------+
+|  [emoji grande]  NOVA REUNIAO AGENDADA                |
+|  Badge status | Badge prioridade | Badge departamento  |
+|  Titulo da tarefa em destaque                          |
++-------------------------------------------------------+
+|                          |                             |
+|  DETALHES DO EVENTO      |  NOTIFICACOES & STATUS      |
+|  - Tipo de evento        |  - Monitor de confirmacao   |
+|  - Subtipo reuniao       |    (quem viu / nao viu)     |
+|  - Lead / Contato        |  - Botao ENVIAR LEMBRETE    |
+|  - Propostas vinculadas  |  - Follow-up automatico     |
+|  - Predio / Local        |  - Gerenciar contatos       |
+|  - Data / Hora           |                             |
+|  - Link reuniao          |                             |
+|  - Prioridade / Status   |                             |
+|  - Escopo                |                             |
+|  - Descricao             |                             |
+|                          |                             |
++-------------------------------------------------------+
+|  [Excluir]                    [Cancelar] [Salvar]      |
++-------------------------------------------------------+
 ```
 
-Cada tipo de evento (`reuniao`, `tarefa`, `instalacao`, `manutencao`, `aviso`, etc.) tera um emoji e label diferente, resolvidos a partir do campo `tipo_evento` ou da tabela `event_types`.
+## Mudancas Detalhadas
 
-### 2. Botao de confirmacao via Z-API (`send-button-actions`)
+### 1. Header Visual Contextual
+- Emoji grande do tipo de evento (resolvido via `useEventTypes`)
+- Titulo dinamico: "Editar Reuniao", "Editar Instalacao", "Editar Tarefa", etc.
+- Badges de status, prioridade e departamento no header
+- Fundo com gradiente sutil baseado na cor do tipo de evento
 
-Junto com a mensagem, a edge function envia um botao interativo usando o endpoint `send-button-actions` do Z-API (ja usado no projeto em `monitor-panels` e `notify-escalation`):
+### 2. Layout Maior e Organizado
+- `sm:max-w-[900px]` (antes era 550px)
+- Duas colunas no desktop: formulario a esquerda, notificacoes a direita
+- Mobile: coluna unica com notificacoes abaixo
 
-```text
-[mensagem rica acima]
-
----
-footer: "Confirme o recebimento"
-botoes:
-  ✅ Confirmar recebimento  (id: "task_ack:{task_id}:{contact_phone}")
-```
-
-Quando o contato clica, o webhook recebe o `buttonId` e registra a confirmacao.
-
-### 3. Nova tabela: `task_read_receipts`
-
-Rastreia quem recebeu e quem confirmou:
-
-- `id` (uuid PK)
-- `task_id` (uuid FK tasks)
-- `contact_phone` (text)
-- `contact_name` (text)
-- `sent_at` (timestamptz) -- quando a mensagem foi enviada
-- `delivered_at` (timestamptz, nullable) -- se o Z-API confirma delivery
-- `read_at` (timestamptz, nullable) -- quando o contato clicou "Confirmar"
-- `status` (text): `sent`, `delivered`, `read`
-
-### 4. Handler no webhook para confirmacao
-
-No `zapi-webhook`, ao receber um clique de botao com ID prefixado por `task_ack:`, atualizar o registro em `task_read_receipts` com `read_at = now()` e `status = 'read'`. Enviar resposta automatica: "Recebimento confirmado. Obrigado!"
-
-### 5. Modal de monitoramento no frontend
-
-Dentro do drawer de detalhes da tarefa (`TaskDetailDrawer`), adicionar uma nova secao **"Notificacoes"** que exibe:
-
-- Lista de contatos notificados com status visual:
-  - Icone cinza: Enviado (aguardando)
-  - Icone azul: Entregue
-  - Icone verde com check: Confirmado + horario
+### 3. Monitor de Notificacoes Integrado (coluna direita)
+- Reutiliza a query de `task_read_receipts` diretamente no modal
+- Lista de contatos com status visual:
+  - Icone cinza + "Enviado" (aguardando)
+  - Icone azul + "Entregue"
+  - Icone verde + "Confirmou as HH:MM de DD/MM"
 - Contagem: "2 de 3 confirmaram"
+- Sempre visivel (nao colapsado)
 
-Componente: `TaskNotificationStatus.tsx`
+### 4. Botao "Enviar Lembrete"
+- Botao na secao de notificacoes
+- Invoca `task-notify-created` com os dados atuais da tarefa para reenviar a notificacao
+- Loading state enquanto envia
+- Toast de sucesso/erro
 
-## Arquivos
+### 5. Notificacao ao Salvar com Selecao de Contatos
+- Mesma logica de checkboxes do CreateTaskModal
+- Lista de admins com telefone para selecionar quem notificar
 
-**Editados (3)**:
-- `supabase/functions/task-notify-created/index.ts` -- mensagem rica + envio com botao + registro em `task_read_receipts`
-- `supabase/functions/zapi-webhook/index.ts` -- handler para `task_ack:` button clicks
-- `src/components/admin/agenda/CreateTaskModal.tsx` -- passar dados extras (tipo_evento, descricao, building, responsaveis) ao invocar a function
+## Arquivos Modificados
 
-**Novos (1)**:
-- `src/pages/admin/tarefas/components/TaskNotificationStatus.tsx` -- componente de monitoramento de leitura
+**1 arquivo editado:**
+- `src/components/admin/agenda/EditTaskModal.tsx` -- redesign completo do layout, integracao do monitor de notificacoes e botao de lembrete
 
-**Editados para integrar o monitor (1)**:
-- `src/pages/admin/tarefas/components/TaskDetailDrawer.tsx` -- adicionar secao de notificacoes
+**Nenhum arquivo novo** -- reutiliza a tabela `task_read_receipts` e a edge function `task-notify-created` ja existentes
 
-**Migracao (1)**:
-- Nova tabela `task_read_receipts`
+**Nao alterados:**
+- Nenhum outro componente, pagina ou funcionalidade existente
 
-**NAO alterados**:
-- Nenhum outro componente de UI, filtro ou funcionalidade existente
