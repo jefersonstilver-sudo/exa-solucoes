@@ -5,7 +5,11 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { RefreshCw, ListTodo, Clock, PlayCircle, CheckCircle2, Loader2, Plus } from 'lucide-react';
+import { RefreshCw, Loader2, Plus, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { TASK_STATUS } from '@/constants/taskStatus';
+import { TASK_PRIORITY } from '@/constants/taskPriority';
 import { Button } from '@/components/ui/button';
 import { useCentralTarefas } from '@/hooks/tarefas/useCentralTarefas';
 import { useTaskDetail } from '@/hooks/tarefas/useTaskDetail';
@@ -176,71 +180,56 @@ const CentralTarefasPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-card rounded-xl border border-border p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-muted rounded-lg">
-              <ListTodo className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{stats.total}</p>
-              <p className="text-xs text-muted-foreground">Total</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-500/10 rounded-lg">
-              <Clock className="h-5 w-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{stats.pendentes}</p>
-              <p className="text-xs text-muted-foreground">Pendentes</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <PlayCircle className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{stats.em_andamento}</p>
-              <p className="text-xs text-muted-foreground">Em Andamento</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-500/10 rounded-lg">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{stats.concluidas}</p>
-              <p className="text-xs text-muted-foreground">Concluídas</p>
-            </div>
-          </div>
-        </div>
+      {/* Stats Inline Bar */}
+      <div className="flex flex-wrap items-center gap-3 text-sm py-2 px-1">
+        <span className="text-muted-foreground">Total: <b className="text-foreground text-base">{stats.total}</b></span>
+        <Separator orientation="vertical" className="h-4" />
+        <span className="text-muted-foreground">Pendentes: <b className="text-foreground text-base">{stats.pendentes}</b></span>
+        <Separator orientation="vertical" className="h-4" />
+        <span className="text-muted-foreground">Em Andamento: <b className="text-foreground text-base">{stats.em_andamento}</b></span>
+        <Separator orientation="vertical" className="h-4" />
+        <span className="text-muted-foreground">Concluídas: <b className="text-foreground text-base">{stats.concluidas}</b></span>
       </div>
 
-      {/* Filtros */}
-      <TaskFiltersBar
-        statusFilter={statusFilter}
-        prioridadeFilter={prioridadeFilter}
-        departamentoFilter={departamentoFilter}
-        responsavelFilter={responsavelFilter}
-        onStatusChange={setStatusFilter}
-        onPrioridadeChange={setPrioridadeFilter}
-        onDepartamentoChange={setDepartamentoFilter}
-        onResponsavelChange={setResponsavelFilter}
-        onClearAll={handleClearFilters}
-        departamentos={departamentos}
-        responsaveis={responsaveis}
-      />
+      {/* Filtros Colapsáveis */}
+      <Collapsible defaultOpen={false}>
+        <div className="flex items-center gap-2">
+          <CollapsibleTrigger className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors py-1 group">
+            <span className="font-medium">Filtros</span>
+            <ChevronDown className="h-3.5 w-3.5 group-data-[state=open]:hidden" />
+            <ChevronUp className="h-3.5 w-3.5 hidden group-data-[state=open]:block" />
+          </CollapsibleTrigger>
+          {/* Resumo inline dos filtros ativos */}
+          <span className="text-xs text-muted-foreground">
+            {statusFilter && statusFilter.length !== ACTIVE_STATUSES.length
+              ? `Status: ${statusFilter.map(s => TASK_STATUS[s]?.shortLabel || s).join(', ')}`
+              : 'Status: Ativos'}
+            {prioridadeFilter && ` · Prioridade: ${prioridadeFilter.map(p => TASK_PRIORITY[p]?.shortLabel || p).join(', ')}`}
+            {departamentoFilter && ` · Dept: ${departamentoFilter}`}
+            {responsavelFilter && ` · Responsável filtrado`}
+          </span>
+          {(statusFilter?.length !== ACTIVE_STATUSES.length || prioridadeFilter || departamentoFilter || responsavelFilter) && (
+            <button onClick={handleClearFilters} className="text-xs text-muted-foreground hover:text-foreground ml-auto flex items-center gap-0.5">
+              <X className="h-3 w-3" /> Limpar
+            </button>
+          )}
+        </div>
+        <CollapsibleContent className="pt-2">
+          <TaskFiltersBar
+            statusFilter={statusFilter}
+            prioridadeFilter={prioridadeFilter}
+            departamentoFilter={departamentoFilter}
+            responsavelFilter={responsavelFilter}
+            onStatusChange={setStatusFilter}
+            onPrioridadeChange={setPrioridadeFilter}
+            onDepartamentoChange={setDepartamentoFilter}
+            onResponsavelChange={setResponsavelFilter}
+            onClearAll={handleClearFilters}
+            departamentos={departamentos}
+            responsaveis={responsaveis}
+          />
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Grid de Tarefas */}
       <div className="space-y-4">
