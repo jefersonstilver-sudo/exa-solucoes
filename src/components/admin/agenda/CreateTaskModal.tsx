@@ -165,6 +165,19 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   const [autoFollowup, setAutoFollowup] = useState(true);
   const [alertContactsOpen, setAlertContactsOpen] = useState(false);
   const [whatsappNotifOpen, setWhatsappNotifOpen] = useState(false);
+  const [selectedNotifyContacts, setSelectedNotifyContacts] = useState<string[]>([]);
+  const [notifyContactsInitialized, setNotifyContactsInitialized] = useState(false);
+
+  // Initialize selected notify contacts with creator
+  useEffect(() => {
+    if (!notifyContactsInitialized && user?.id && adminUsers.length > 0) {
+      const creatorHasPhone = adminUsers.some(u => u.id === user.id && u.telefone);
+      if (creatorHasPhone) {
+        setSelectedNotifyContacts([user.id]);
+      }
+      setNotifyContactsInitialized(true);
+    }
+  }, [user?.id, adminUsers, notifyContactsInitialized]);
 
   // Hook de tipos de evento dinâmicos
   const { activeEventTypes } = useEventTypes();
@@ -400,7 +413,12 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
       queryClient.invalidateQueries({ queryKey: ['agenda-tasks'] });
 
       // Send WhatsApp notification if enabled
-      if (notifyOnSave) {
+      if (notifyOnSave && selectedNotifyContacts.length > 0) {
+        // Get phone numbers of selected contacts
+        const selectedPhones = adminUsers
+          .filter(u => selectedNotifyContacts.includes(u.id) && u.telefone)
+          .map(u => ({ nome: u.nome || u.email, telefone: u.telefone }));
+
         supabase.functions.invoke('task-notify-created', {
           body: {
             task_id: 'batch',
@@ -408,6 +426,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
             data: datasPrevistas.length > 0 ? format(datasPrevistas[0], 'dd/MM/yyyy') : null,
             horario: horarioInicio || horarioLimite || null,
             criador_nome: userProfile?.nome || user?.email,
+            specific_contacts: selectedPhones,
           }
         }).catch(err => console.error('Erro ao notificar WhatsApp:', err));
       }
@@ -1182,13 +1201,41 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
                 </p>
               ) : (
                 <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {adminUsers.filter(u => u.telefone).map(u => (
-                    <div key={u.id} className="flex items-center gap-2 text-xs p-1.5 rounded bg-green-50 border border-green-100">
-                      <span className="text-green-600">📱</span>
-                      <span className="font-medium flex-1 truncate">{u.nome || u.email}</span>
-                      <span className="text-muted-foreground">{u.telefone}</span>
-                    </div>
-                  ))}
+                  {adminUsers.filter(u => u.telefone).map(u => {
+                    const isCreator = u.id === user?.id;
+                    const isSelected = selectedNotifyContacts.includes(u.id);
+                    return (
+                      <label
+                        key={u.id}
+                        className={cn(
+                          "flex items-center gap-2 text-xs p-1.5 rounded cursor-pointer border transition-colors",
+                          isSelected
+                            ? "bg-green-50 border-green-200"
+                            : "bg-muted/30 border-transparent hover:bg-muted/50"
+                        )}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={(checked) => {
+                            setSelectedNotifyContacts(prev =>
+                              checked
+                                ? [...prev, u.id]
+                                : prev.filter(id => id !== u.id)
+                            );
+                          }}
+                          className="h-4 w-4"
+                        />
+                        <span className="text-green-600">📱</span>
+                        <span className="font-medium flex-1 truncate">
+                          {u.nome || u.email}
+                          {isCreator && (
+                            <span className="ml-1 text-[10px] text-blue-600 font-semibold">(Criador)</span>
+                          )}
+                        </span>
+                        <span className="text-muted-foreground">{u.telefone}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               )}
             </div>
