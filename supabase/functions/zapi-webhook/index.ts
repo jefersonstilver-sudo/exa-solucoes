@@ -936,11 +936,11 @@ serve(async (req) => {
 
     // ========== TASK FOLLOW-UP RESPONSE ROUTING ==========
     // Check if this phone has an active task notification queue entry
-    const messageText = payload.text?.message || payload.body || '';
-    if (messageText.trim() && phone) {
+    const incomingText = payload.text?.message || payload.body || '';
+    if (incomingText.trim() && phone) {
       try {
         const { data: taskFollowUpResult } = await supabase.functions.invoke('task-follow-up-response', {
-          body: { phone, message: messageText.trim() }
+          body: { phone, message: incomingText.trim() }
         });
 
         if (taskFollowUpResult?.handled) {
