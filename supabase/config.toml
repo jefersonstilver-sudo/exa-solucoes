@@ -599,3 +599,17 @@ schedule = "0 5 * * *"
 
 [functions.process-client-logo]
 verify_jwt = false
+
+[functions.task-notify-created]
+verify_jwt = false
+
+[functions.task-follow-up-cron]
+verify_jwt = false
+
+[functions.task-follow-up-response]
+verify_jwt = false
+
+# Task follow-up CRON - a cada 5 minutos
+[[cron]]
+function_name = "task-follow-up-cron"
+schedule = "*/5 * * * *"
