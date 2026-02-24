@@ -16,11 +16,12 @@ import EditTaskModal from '@/components/admin/agenda/EditTaskModal';
 
 interface EmbeddedAgendaProps {
   tasks: AgendaTask[];
+  filterTrigger?: React.ReactNode;
 }
 
 type AgendaView = 'dia' | 'semana' | 'mes';
 
-const EmbeddedAgenda: React.FC<EmbeddedAgendaProps> = ({ tasks }) => {
+const EmbeddedAgenda: React.FC<EmbeddedAgendaProps> = ({ tasks, filterTrigger }) => {
   const [view, setView] = useState<AgendaView>('dia');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -48,13 +49,9 @@ const EmbeddedAgenda: React.FC<EmbeddedAgendaProps> = ({ tasks }) => {
   return (
     <div className="bg-card rounded-xl border border-border p-4 space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-5 w-5 text-primary" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
           <h2 className="text-base font-semibold text-foreground">Agenda</h2>
-        </div>
-
-        <div className="flex items-center gap-2">
           {/* Navigation */}
           <div className="flex items-center gap-1">
             <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={handlePrev}>
@@ -67,6 +64,11 @@ const EmbeddedAgenda: React.FC<EmbeddedAgendaProps> = ({ tasks }) => {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Filter trigger slot */}
+          {filterTrigger}
 
           {/* View tabs */}
           <Tabs value={view} onValueChange={(v) => setView(v as AgendaView)}>
