@@ -24,8 +24,10 @@ import { ACTIVE_STATUSES } from '@/constants/taskStatus';
 import type { TaskWithDetails, TaskStatusCanonical, TaskPriorityCanonical } from '@/types/tarefas';
 import type { AgendaTask } from '@/components/admin/agenda/TaskCard';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 const CentralTarefasPage: React.FC = () => {
   const isMobile = useIsMobile();
@@ -88,14 +90,42 @@ const CentralTarefasPage: React.FC = () => {
     setDrawerOpen(true);
   }, []);
 
-  const handleConcluir = useCallback(async (taskId: string) => {
-    // Abre o drawer para conclusão via governança
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-      setSelectedTask(task);
-      setDrawerOpen(true);
+  // Direct completion mutation
+  const queryClient = useQueryClient();
+  const { userProfile } = useAuth();
+  const [concluindoId, setConcluindoId] = useState<string | null>(null);
+
+  const concluirMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      if (!userProfile?.id) throw new Error('Usuário não identificado');
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          status: 'concluida',
+          data_conclusao: new Date().toISOString(),
+          concluida_por: userProfile.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', taskId);
+      if (error) throw error;
+    },
+    onMutate: (taskId) => setConcluindoId(taskId),
+    onSuccess: () => {
+      toast.success('Tarefa concluída!');
+      queryClient.invalidateQueries({ queryKey: ['central-tarefas'] });
+      queryClient.invalidateQueries({ queryKey: ['agenda-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      setConcluindoId(null);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao concluir tarefa');
+      setConcluindoId(null);
     }
-  }, [tasks]);
+  });
+
+  const handleConcluir = useCallback((taskId: string) => {
+    concluirMutation.mutate(taskId);
+  }, [concluirMutation]);
 
   const handleStatusChange = useCallback(async (
     taskId: string,
@@ -253,7 +283,7 @@ const CentralTarefasPage: React.FC = () => {
                   tipo={getTaskCategory(task)}
                   onConcluir={handleConcluir}
                   onClick={handleTaskClick}
-                  isConcluindo={false}
+                  isConcluindo={concluindoId === task.id}
                 />
               ))}
             </div>
