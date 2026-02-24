@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/collapsible';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import ManageAlertContactsModal from './ManageAlertContactsModal';
 
 interface CreateTaskModalProps {
   open: boolean;
@@ -158,6 +159,12 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
 
   // Building state
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
+
+  // WhatsApp notification state
+  const [notifyOnSave, setNotifyOnSave] = useState(true);
+  const [autoFollowup, setAutoFollowup] = useState(true);
+  const [alertContactsOpen, setAlertContactsOpen] = useState(false);
+  const [whatsappNotifOpen, setWhatsappNotifOpen] = useState(false);
 
   // Hook de tipos de evento dinâmicos
   const { activeEventTypes } = useEventTypes();
@@ -350,7 +357,11 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
         local_evento: localEvento || null,
         link_reuniao: linkReuniao || null,
         escopo,
-        cliente_id: selectedLead?.id || null,
+        cliente_id: selectedLead?.id && !selectedLead.id.startsWith('proposal-') 
+          ? selectedLead.id 
+          : null,
+        notify_on_save: notifyOnSave,
+        auto_followup: autoFollowup,
         building_id: selectedBuildingId || null,
       };
 
@@ -387,6 +398,20 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
       queryClient.invalidateQueries({ queryKey: ['minha-manha-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['central-tarefas'] });
       queryClient.invalidateQueries({ queryKey: ['agenda-tasks'] });
+
+      // Send WhatsApp notification if enabled
+      if (notifyOnSave) {
+        supabase.functions.invoke('task-notify-created', {
+          body: {
+            task_id: 'batch',
+            titulo,
+            data: datasPrevistas.length > 0 ? format(datasPrevistas[0], 'dd/MM/yyyy') : null,
+            horario: horarioInicio || horarioLimite || null,
+            criador_nome: userProfile?.nome || user?.email,
+          }
+        }).catch(err => console.error('Erro ao notificar WhatsApp:', err));
+      }
+
       resetForm();
       onOpenChange(false);
     },
@@ -1108,6 +1133,81 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
           rows={3}
         />
       </div>
+
+      {/* Notificações WhatsApp */}
+      <Collapsible open={whatsappNotifOpen} onOpenChange={setWhatsappNotifOpen}>
+        <CollapsibleTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-between h-10"
+          >
+            <div className="flex items-center gap-2">
+              <Megaphone className="h-4 w-4 text-green-600" />
+              <span>Notificações WhatsApp</span>
+              {notifyOnSave && (
+                <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">
+                  Ativo
+                </span>
+              )}
+            </div>
+            <ChevronDown className={cn(
+              "h-4 w-4 transition-transform",
+              whatsappNotifOpen && "rotate-180"
+            )} />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-2">
+          <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="create-notify-save" className="text-sm flex items-center gap-1.5 cursor-pointer">
+                <BellRing className="h-3.5 w-3.5 text-green-600" />
+                Notificar contatos ao salvar
+              </Label>
+              <Switch id="create-notify-save" checked={notifyOnSave} onCheckedChange={setNotifyOnSave} />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="create-auto-followup" className="text-sm flex items-center gap-1.5 cursor-pointer">
+                <Clock className="h-3.5 w-3.5 text-blue-600" />
+                Follow-up automático (1h após)
+              </Label>
+              <Switch id="create-auto-followup" checked={autoFollowup} onCheckedChange={setAutoFollowup} />
+            </div>
+
+            <div className="border-t pt-3">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Contatos com WhatsApp registrado:</p>
+              {adminUsers.filter(u => u.telefone).length === 0 ? (
+                <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                  Nenhum admin com telefone cadastrado
+                </p>
+              ) : (
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {adminUsers.filter(u => u.telefone).map(u => (
+                    <div key={u.id} className="flex items-center gap-2 text-xs p-1.5 rounded bg-green-50 border border-green-100">
+                      <span className="text-green-600">📱</span>
+                      <span className="font-medium flex-1 truncate">{u.nome || u.email}</span>
+                      <span className="text-muted-foreground">{u.telefone}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full h-8 text-xs gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50"
+              onClick={() => setAlertContactsOpen(true)}
+            >
+              <Users className="h-3.5 w-3.5" />
+              Gerenciar Contatos de Alerta
+            </Button>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      <ManageAlertContactsModal open={alertContactsOpen} onOpenChange={setAlertContactsOpen} />
 
       {/* Botões */}
       <div className="flex justify-end gap-3 pt-4 border-t">
