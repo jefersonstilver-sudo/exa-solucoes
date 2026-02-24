@@ -1,68 +1,116 @@
 
 
-# Corrigir Busca de Lead por Nome e Empresa
+# Unificacao: Central de Tarefas + Agenda em Uma Pagina
 
 ## Problema
-A busca de lead/contato nos modais de criacao e edicao de tarefas nao retorna resultados ao buscar pelo nome da empresa ou pelo nome completo do lead. O campo de busca diz "Buscar por nome, empresa ou telefone..." mas a query no banco nao cobre todos os campos necessarios de forma robusta.
-
-## Causa Raiz
-A query atual usa:
-```text
-.or(`nome.ilike.${termo},empresa.ilike.${termo},telefone.ilike.${termo}`)
-```
-
-Problemas identificados:
-1. **Falta `sobrenome`** -- se o usuario buscar pelo sobrenome, nao encontra nada
-2. **Falta `email`** -- outro campo util para busca que nao esta incluido
-3. A sintaxe esta correta para o Supabase JS client, mas a cobertura de campos e insuficiente
+- "Central de Tarefas" no sidebar abre a pagina "Minha Manha" (rota `/minha-manha`) -- confuso e improdutivo
+- Existem 3 paginas separadas (Minha Manha, Central de Tarefas, Agenda) buscando a mesma tabela `tasks` sem sincronizacao
+- O usuario precisa navegar entre paginas para ter visao completa
 
 ## Solucao
 
-Expandir a query `.or()` para incluir **5 campos**: `nome`, `sobrenome`, `empresa`, `telefone` e `email`. Isso garante que o usuario possa encontrar o contato buscando por qualquer informacao conhecida.
+Unificar tudo em uma unica pagina robusta em `/tarefas` com:
+- Listagem de tarefas com filtros (herda da Central atual)
+- Agenda embutida com 3 visoes (Dia, Semana, Mes)
+- Sidebar atualizada para apontar corretamente
 
-## Alteracoes
+## Estrutura Visual
 
-### 1. `src/components/admin/agenda/CreateTaskModal.tsx` (linha 178)
-
-**De:**
 ```text
-.or(`nome.ilike.${termo},empresa.ilike.${termo},telefone.ilike.${termo}`)
++--------------------------------------------------+
+|  Central de Tarefas              [Agenda] [+Nova] |
++--------------------------------------------------+
+|  [Hoje] [Semana] [Atrasadas] [Todas]              |
++--------------------------------------------------+
+|  Stats: Urgentes | Importantes | Rotina | Total   |
++--------------------------------------------------+
+|  Tarefas agrupadas por prioridade (cards)         |
++--------------------------------------------------+
+|  AGENDA INTEGRADA                                 |
+|  [Dia] [Semana] [Mes]                             |
+|  Timeline / Grid / Calendario mensal              |
++--------------------------------------------------+
 ```
 
-**Para:**
-```text
-.or(`nome.ilike.${termo},sobrenome.ilike.${termo},empresa.ilike.${termo},telefone.ilike.${termo},email.ilike.${termo}`)
-```
+## Alteracoes Detalhadas
 
-### 2. `src/components/admin/agenda/EditTaskModal.tsx` (linha 224)
+### 1. Refatorar `CentralTarefasPage.tsx` -- Pagina Unificada Principal
 
-Mesma alteracao -- expandir a query de busca para incluir `sobrenome` e `email`.
+Combinar o melhor das 2 paginas existentes:
+- **Header**: manter titulo "Central de Tarefas" com botoes Atualizar e Nova Tarefa
+- **Quick Filters**: Hoje, Semana, Atrasadas, Todas (do MinhaManha)
+- **Stats Cards**: Urgentes, Importantes, Rotina, Total Pendentes (do MinhaManha)
+- **Tarefas agrupadas**: por prioridade em secoes colapsaveis (Urgente/Importante/Rotina do MinhaManha)
+- **Agenda embutida**: abaixo das tarefas, com sub-abas Dia/Semana/Mes
+- **Usar `useMinhaManha` como base** (ja filtra por usuario e categoriza), com filtros adicionais da Central
 
-**De:**
-```text
-.or(`nome.ilike.${termo},empresa.ilike.${termo},telefone.ilike.${termo}`)
-```
+### 2. Criar `EmbeddedAgenda.tsx`
 
-**Para:**
-```text
-.or(`nome.ilike.${termo},sobrenome.ilike.${termo},empresa.ilike.${termo},telefone.ilike.${termo},email.ilike.${termo}`)
-```
+Wrapper com 3 sub-abas:
+- Recebe tarefas como prop (mesma fonte de dados)
+- Controla navegacao de datas internamente
+- Abas: Dia | Semana | Mes
 
-### 3. Atualizar placeholder do campo de busca (ambos arquivos)
+### 3. Criar `AgendaDayView.tsx`
 
-Atualizar o texto placeholder para refletir as novas opcoes:
-```text
-"Buscar por nome, empresa, telefone ou email..."
-```
+- Timeline vertical com slots de hora (08:00 ate 22:00)
+- Tarefas posicionadas por `horario_inicio` ou `horario_limite`
+- Tarefas sem horario em secao "Dia inteiro" no topo
+- Cores por prioridade
 
-## O que NAO muda
-- Nenhuma interface, funcionalidade ou workflow existente e alterado
-- A logica de selecao, propostas, predios permanece intacta
-- Apenas 2 arquivos alterados, somente na linha da query e placeholder
+### 4. Criar `AgendaWeekView.tsx`
 
-## Resumo
-- **2 arquivos** alterados
-- **2 linhas de query** expandidas (adicionar `sobrenome` e `email`)
-- **2 placeholders** atualizados
-- Zero risco de impacto em outras funcionalidades
+- Grid 7 colunas (Seg-Dom) com linhas de hora
+- Navegacao semana anterior/proxima
+- Tarefas como blocos coloridos nos slots
+
+### 5. Criar `AgendaMonthView.tsx`
+
+- Extrair logica de calendario mensal do `AgendaPage.tsx`
+- Manter DnD (drag-and-drop) com DroppableCalendarDay
+- Reutilizar DraggableTaskCard existente
+
+### 6. Atualizar Sidebar (`ModernAdminSidebar.tsx`)
+
+Linha 134: mudar href de `buildPath('minha-manha')` para `buildPath('tarefas')`
+- "Central de Tarefas" aponta para `/tarefas`
+- Remover link separado "Agenda" (linha 160-164) -- a agenda agora esta embutida na Central
+
+### 7. Atualizar Rotas (`SuperAdminRoutes.tsx`)
+
+- Rota `/tarefas` renderiza a pagina unificada (CentralTarefasPage refatorada)
+- Rota `/minha-manha` redireciona para `/tarefas` (Navigate)
+- Rota `/agenda` redireciona para `/tarefas` (Navigate)
+- Nao quebra links existentes
+
+### 8. Sincronizacao de Dados
+
+- A pagina unificada usa `useMinhaManha` (que ja busca da tabela `tasks` e categoriza)
+- Todas as mutacoes (criar, editar, concluir, arrastar) invalidam as mesmas query keys
+- A agenda embutida recebe as tasks filtradas como prop -- zero duplicacao de queries
+
+## Detalhes Tecnicos
+
+**Arquivos novos (4):**
+- `src/pages/admin/tarefas/components/EmbeddedAgenda.tsx`
+- `src/pages/admin/tarefas/components/AgendaDayView.tsx`
+- `src/pages/admin/tarefas/components/AgendaWeekView.tsx`
+- `src/pages/admin/tarefas/components/AgendaMonthView.tsx`
+
+**Arquivos editados (3):**
+- `src/pages/admin/tarefas/CentralTarefasPage.tsx` -- refatorar como pagina unificada
+- `src/components/admin/layout/ModernAdminSidebar.tsx` -- corrigir link + remover Agenda separada
+- `src/routes/SuperAdminRoutes.tsx` -- adicionar redirects
+
+**Arquivos NAO alterados:**
+- CreateTaskModal, EditTaskModal, BuildingSelector, TaskCard, TaskDetailDrawer -- intactos
+- AgendaPage.tsx -- mantido como fallback (redirect aponta para /tarefas)
+- Nenhum outro componente de UI existente
+
+**Abordagem de timeline (Dia/Semana):**
+- Slots de 1 hora (08:00-22:00)
+- Tarefas com `horario_inicio` posicionadas no slot exato
+- Tarefas com apenas `horario_limite` aparecem no slot do limite
+- Tarefas sem horario ficam em area "Dia inteiro"
+- Cores: vermelho (emergencia/alta), amarelo (media), verde (baixa)
 
