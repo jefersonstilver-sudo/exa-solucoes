@@ -153,15 +153,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           </div>
         </div>
 
-        {/* Ação Concluir - discreto, apenas no hover */}
-        <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        {/* Ação Concluir - sempre visível */}
+        <div className="flex-shrink-0">
           <Button
             size="sm"
             variant="ghost"
             className={cn(
-              "h-7 w-7 p-0 rounded-full",
-              "bg-transparent hover:bg-emerald-50 hover:text-emerald-600",
-              "text-gray-300 group-hover:text-gray-400",
+              "h-8 w-8 p-0 rounded-full",
+              "bg-emerald-50 hover:bg-emerald-100 text-emerald-600 hover:text-emerald-700",
+              "border border-emerald-200/60",
               "transition-colors duration-200"
             )}
             onClick={(e) => {
@@ -169,12 +169,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               onConcluir(task.id);
             }}
             disabled={isConcluindo}
-            title="Concluir tarefa"
+            title="Marcar como concluída"
           >
             {isConcluindo ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Check className="h-3.5 w-3.5" />
+              <Check className="h-4 w-4" />
             )}
           </Button>
         </div>
