@@ -131,7 +131,7 @@ export function ModernAdminSidebar() {
       items: [
         {
           title: 'Central de Tarefas',
-          href: buildPath('minha-manha'),
+          href: buildPath('tarefas'),
           icon: Sunrise,
           moduleKey: MODULE_KEYS.dashboard
         },
@@ -156,12 +156,6 @@ export function ModernAdminSidebar() {
           badgeColor: 'bg-[#9C1E1E]',
           badgeTooltip: 'Escalações pendentes de resolução'
         },
-        {
-          title: 'Agenda',
-          href: buildPath('agenda'),
-          icon: CalendarDays,
-          moduleKey: MODULE_KEYS.dashboard
-        }
       ]
     },
     // 2. RELACIONAMENTO - Tudo sobre pessoas (CRM UNIFICADO)
@@ -281,12 +275,6 @@ export function ModernAdminSidebar() {
           href: buildPath('sync-notion'),
           icon: Calendar,
           moduleKey: MODULE_KEYS.sync_notion
-        },
-        {
-          title: 'Agenda',
-          href: buildPath('agenda'),
-          icon: CalendarDays,
-          moduleKey: MODULE_KEYS.agenda
         },
         {
           title: 'Vídeos Anunciantes',

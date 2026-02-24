@@ -94,11 +94,11 @@ const SuperAdminRoutes = () => {
     <Routes>
       {/* ============ GESTÃO PRINCIPAL ============ */}
       <Route index element={<Dashboard />} />
-      <Route path="minha-manha" element={<Suspense fallback={<GlobalLoadingPage />}><MinhaManha /></Suspense>} />
+      <Route path="minha-manha" element={<Navigate to="/super_admin/tarefas" replace />} />
       <Route path="tarefas" element={<Suspense fallback={<GlobalLoadingPage />}><CentralTarefasPage /></Suspense>} />
       <Route path="posicoes" element={<PosicoesDisponiveisPage />} />
       <Route path="sync-notion" element={<SyncNotionPage />} />
-      <Route path="agenda" element={<AgendaPage />} />
+      <Route path="agenda" element={<Navigate to="/super_admin/tarefas" replace />} />
       <Route path="pedidos" element={<OrdersPage />} />
       <Route path="pedidos/:id" element={<OrderDetails />} />
       <Route path="produtos" element={<ProdutosPage />} />
