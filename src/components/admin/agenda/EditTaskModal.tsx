@@ -435,6 +435,11 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
           .filter(u => selectedNotifyContacts.includes(u.id) && u.telefone)
           .map(u => ({ nome: u.nome || u.email, telefone: u.telefone }));
 
+        // Build responsaveis names list
+        const responsaveisNomes = adminUsers
+          .filter(u => (task as any).responsaveis_ids?.includes(u.id))
+          .map(u => u.nome || u.email);
+
         supabase.functions.invoke('task-notify-created', {
           body: {
             task_id: task.id,
@@ -449,6 +454,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
             building_name: selectedBuildingId
               ? allBuildings.find(b => b.id === selectedBuildingId)?.nome || null
               : null,
+            responsaveis_nomes: responsaveisNomes.length > 0 ? responsaveisNomes : null,
             subtipo_reuniao: subtipoReuniao || null,
           }
         }).catch(err => console.error('Erro ao notificar:', err));
