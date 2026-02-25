@@ -331,16 +331,65 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
     }
   });
 
-  // Initialize selected notify contacts with creator
+  // Buscar contatos de alerta (externos)
+  const { data: alertContacts = [] } = useQuery({
+    queryKey: ['agenda-alert-contacts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('exa_alerts_directors')
+        .select('id, nome, telefone, ativo')
+        .eq('ativo', true)
+        .order('nome');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Lista unificada de contatos selecionáveis (admin + externos, deduplicando por telefone)
+  const allSelectableContacts = useMemo(() => {
+    const adminPhones = new Set<string>();
+    const result: { compositeId: string; source: 'admin' | 'alert'; nome: string; telefone: string; email?: string; isCreator: boolean }[] = [];
+
+    // Admins com telefone
+    adminUsers.filter(u => u.telefone).forEach(u => {
+      const phone = u.telefone!;
+      adminPhones.add(phone);
+      result.push({
+        compositeId: `admin:${u.id}`,
+        source: 'admin',
+        nome: u.nome || u.email,
+        telefone: phone,
+        email: u.email,
+        isCreator: u.id === user?.id,
+      });
+    });
+
+    // Contatos externos (deduplicar por telefone)
+    alertContacts.forEach((c: any) => {
+      if (c.telefone && !adminPhones.has(c.telefone)) {
+        result.push({
+          compositeId: `alert:${c.id}`,
+          source: 'alert',
+          nome: c.nome || c.telefone,
+          telefone: c.telefone,
+          isCreator: false,
+        });
+      }
+    });
+
+    return result;
+  }, [adminUsers, alertContacts, user?.id]);
+
+  // Initialize selected notify contacts with creator (using composite ID)
   useEffect(() => {
-    if (!notifyContactsInitialized && user?.id && adminUsers.length > 0) {
-      const creatorHasPhone = adminUsers.some(u => u.id === user.id && u.telefone);
-      if (creatorHasPhone) {
-        setSelectedNotifyContacts([user.id]);
+    if (!notifyContactsInitialized && user?.id && allSelectableContacts.length > 0) {
+      const creatorContact = allSelectableContacts.find(c => c.isCreator);
+      if (creatorContact) {
+        setSelectedNotifyContacts([creatorContact.compositeId]);
       }
       setNotifyContactsInitialized(true);
     }
-  }, [user?.id, adminUsers, notifyContactsInitialized]);
+  }, [user?.id, allSelectableContacts, notifyContactsInitialized]);
 
   // Agrupar usuários por departamento
   const usersByDepartment = useMemo(() => {
@@ -437,10 +486,10 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
 
       // Send WhatsApp notification if enabled
       if (notifyOnSave && selectedNotifyContacts.length > 0) {
-        // Get phone numbers of selected contacts
-        const selectedPhones = adminUsers
-          .filter(u => selectedNotifyContacts.includes(u.id) && u.telefone)
-          .map(u => ({ nome: u.nome || u.email, telefone: u.telefone }));
+        // Get phone numbers of selected contacts (unified list)
+        const selectedPhones = allSelectableContacts
+          .filter(c => selectedNotifyContacts.includes(c.compositeId))
+          .map(c => ({ nome: c.nome, telefone: c.telefone }));
 
         // Build responsaveis names list
         const responsaveisNomes = adminUsers
@@ -1234,47 +1283,94 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
 
             <div className="border-t pt-3">
               <p className="text-xs font-medium text-muted-foreground mb-2">Contatos com WhatsApp registrado:</p>
-              {adminUsers.filter(u => u.telefone).length === 0 ? (
+              {allSelectableContacts.length === 0 ? (
                 <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                  Nenhum admin com telefone cadastrado
+                  Nenhum contato com telefone cadastrado
                 </p>
               ) : (
-                <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {adminUsers.filter(u => u.telefone).map(u => {
-                    const isCreator = u.id === user?.id;
-                    const isSelected = selectedNotifyContacts.includes(u.id);
-                    return (
-                      <label
-                        key={u.id}
-                        className={cn(
-                          "flex items-center gap-2 text-xs p-1.5 rounded cursor-pointer border transition-colors",
-                          isSelected
-                            ? "bg-green-50 border-green-200"
-                            : "bg-muted/30 border-transparent hover:bg-muted/50"
-                        )}
-                      >
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={(checked) => {
-                            setSelectedNotifyContacts(prev =>
-                              checked
-                                ? [...prev, u.id]
-                                : prev.filter(id => id !== u.id)
-                            );
-                          }}
-                          className="h-4 w-4"
-                        />
-                        <span className="text-green-600">📱</span>
-                        <span className="font-medium flex-1 truncate">
-                          {u.nome || u.email}
-                          {isCreator && (
-                            <span className="ml-1 text-[10px] text-blue-600 font-semibold">(Criador)</span>
-                          )}
-                        </span>
-                        <span className="text-muted-foreground">{u.telefone}</span>
-                      </label>
-                    );
-                  })}
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {/* Equipe (admins) */}
+                  {allSelectableContacts.filter(c => c.source === 'admin').length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Equipe</p>
+                      <div className="space-y-1">
+                        {allSelectableContacts.filter(c => c.source === 'admin').map(c => {
+                          const isSelected = selectedNotifyContacts.includes(c.compositeId);
+                          return (
+                            <label
+                              key={c.compositeId}
+                              className={cn(
+                                "flex items-center gap-2 text-xs p-1.5 rounded cursor-pointer border transition-colors",
+                                isSelected
+                                  ? "bg-green-50 border-green-200"
+                                  : "bg-muted/30 border-transparent hover:bg-muted/50"
+                              )}
+                            >
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={(checked) => {
+                                  setSelectedNotifyContacts(prev =>
+                                    checked
+                                      ? [...prev, c.compositeId]
+                                      : prev.filter(id => id !== c.compositeId)
+                                  );
+                                }}
+                                className="h-4 w-4"
+                              />
+                              <span className="text-green-600">📱</span>
+                              <span className="font-medium flex-1 truncate">
+                                {c.nome}
+                                {c.isCreator && (
+                                  <span className="ml-1 text-[10px] text-blue-600 font-semibold">(Criador)</span>
+                                )}
+                              </span>
+                              <span className="bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded-full font-medium">Admin</span>
+                              <span className="text-muted-foreground">{c.telefone}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Contatos Externos */}
+                  {allSelectableContacts.filter(c => c.source === 'alert').length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Contatos Externos</p>
+                      <div className="space-y-1">
+                        {allSelectableContacts.filter(c => c.source === 'alert').map(c => {
+                          const isSelected = selectedNotifyContacts.includes(c.compositeId);
+                          return (
+                            <label
+                              key={c.compositeId}
+                              className={cn(
+                                "flex items-center gap-2 text-xs p-1.5 rounded cursor-pointer border transition-colors",
+                                isSelected
+                                  ? "bg-green-50 border-green-200"
+                                  : "bg-muted/30 border-transparent hover:bg-muted/50"
+                              )}
+                            >
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={(checked) => {
+                                  setSelectedNotifyContacts(prev =>
+                                    checked
+                                      ? [...prev, c.compositeId]
+                                      : prev.filter(id => id !== c.compositeId)
+                                  );
+                                }}
+                                className="h-4 w-4"
+                              />
+                              <span className="text-green-600">📱</span>
+                              <span className="font-medium flex-1 truncate">{c.nome}</span>
+                              <span className="bg-emerald-100 text-emerald-700 text-[10px] px-1.5 py-0.5 rounded-full font-medium">Externo</span>
+                              <span className="text-muted-foreground">{c.telefone}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1344,7 +1440,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   // Desktop: usar Dialog
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-background">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-primary/10">
