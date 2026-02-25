@@ -31,12 +31,19 @@ function buildRichMessage(params: {
   tipo_evento?: string;
   data?: string;
   horario?: string;
+  horario_inicio?: string;
   criador_nome?: string;
   descricao?: string;
   local_evento?: string;
   building_name?: string;
   responsaveis_nomes?: string[];
   subtipo_reuniao?: string;
+  link_reuniao?: string;
+  prioridade?: string;
+  lead_nome?: string;
+  lead_empresa?: string;
+  lead_telefone?: string;
+  propostas_info?: string[];
   emoji: string;
   label: string;
 }): string {
@@ -47,10 +54,25 @@ function buildRichMessage(params: {
   let message = `${params.emoji} *Nov${isMasc ? 'o' : 'a'} ${label} agendad${isMasc ? 'o' : 'a'}*\n\n`;
   message += `*${params.titulo}*\n`;
   
+  // Prioridade (quando alta, emergencia ou urgente)
+  if (params.prioridade && ['alta', 'emergencia', 'urgente'].includes(params.prioridade.toLowerCase())) {
+    const prioLabels: Record<string, string> = {
+      emergencia: '🔴 Prioridade: EMERGÊNCIA',
+      urgente: '🔴 Prioridade: URGENTE',
+      alta: '🟠 Prioridade: ALTA',
+    };
+    message += `${prioLabels[params.prioridade.toLowerCase()] || `⚠️ Prioridade: ${params.prioridade.toUpperCase()}`}\n`;
+  }
+  
   // Data e horário
   if (params.data && params.data !== 'Sem data') {
     message += `📅 Data: ${params.data}`;
-    if (params.horario && params.horario !== 'Sem horário') {
+    // Show horario_inicio separate from horario (limite)
+    if (params.horario_inicio && params.horario) {
+      message += `\n🕐 Início: ${params.horario_inicio} | Limite: ${params.horario}`;
+    } else if (params.horario_inicio) {
+      message += ` às ${params.horario_inicio}`;
+    } else if (params.horario && params.horario !== 'Sem horário') {
       message += ` às ${params.horario}`;
     }
     message += '\n';
@@ -64,6 +86,11 @@ function buildRichMessage(params: {
   // Prédio (para instalação/manutenção/vistoria)
   if (params.building_name) {
     message += `🏢 Prédio: ${params.building_name}\n`;
+  }
+  
+  // Link da reunião
+  if (params.link_reuniao) {
+    message += `🔗 Link: ${params.link_reuniao}\n`;
   }
   
   // Criado por
@@ -85,6 +112,21 @@ function buildRichMessage(params: {
       fornecedor: 'Com Fornecedor',
     };
     message += `📎 Tipo: ${subtipoLabels[params.subtipo_reuniao] || params.subtipo_reuniao}\n`;
+  }
+  
+  // Lead/Contato vinculado
+  if (params.lead_nome) {
+    let contactLine = `🤝 Contato: ${params.lead_nome}`;
+    if (params.lead_empresa) contactLine += ` - ${params.lead_empresa}`;
+    message += `${contactLine}\n`;
+    if (params.lead_telefone) {
+      message += `📱 Tel: ${params.lead_telefone}\n`;
+    }
+  }
+  
+  // Propostas vinculadas
+  if (params.propostas_info && params.propostas_info.length > 0) {
+    message += `📄 Propostas: ${params.propostas_info.join(', ')}\n`;
   }
   
   // Descrição
@@ -109,7 +151,9 @@ serve(async (req) => {
     const { 
       task_id, titulo, data, horario, criador_nome, specific_contacts,
       tipo_evento, descricao, local_evento, building_name, 
-      responsaveis_nomes, subtipo_reuniao 
+      responsaveis_nomes, subtipo_reuniao,
+      link_reuniao, prioridade, horario_inicio,
+      lead_nome, lead_empresa, lead_telefone, propostas_info
     } = await req.json();
 
     if (!task_id || !titulo) {
@@ -157,12 +201,19 @@ serve(async (req) => {
       tipo_evento,
       data: data || 'Sem data',
       horario: horario || undefined,
+      horario_inicio: horario_inicio || undefined,
       criador_nome: criador_nome || 'Sistema',
       descricao,
       local_evento,
       building_name,
       responsaveis_nomes,
       subtipo_reuniao,
+      link_reuniao,
+      prioridade,
+      lead_nome,
+      lead_empresa,
+      lead_telefone,
+      propostas_info,
       emoji,
       label,
     });
