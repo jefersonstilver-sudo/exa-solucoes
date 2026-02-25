@@ -1,63 +1,81 @@
 
-# Corrigir Popover "Enviar Lembrete" para mostrar contatos do evento
+
+# Incluir TODOS os campos preenchidos nas notificacoes WhatsApp
 
 ## Problema
-O popover "Enviar Lembrete" (linhas 1012-1040 do EditTaskModal.tsx) usa `adminUsersWithPhone` -- que sao apenas os 2 admins com telefone na tabela `users` (Jeferson e Jeniffer). Deveria mostrar os 6 contatos que JA foram notificados neste evento, que estao nos `receipts` (task_read_receipts).
+A mensagem WhatsApp enviada pelo `task-notify-created` nao inclui todos os campos preenchidos da tarefa. Campos como **link da reuniao**, **prioridade**, **lead/contato vinculado**, **propostas vinculadas** e **horario de inicio** sao ignorados, resultando em notificacoes incompletas.
 
-Alem disso, ha um mismatch de IDs: o `handleSendReminder` usa `compositeId` (ex: `admin:xxx`), mas o popover usa `u.id` (raw ID). Entao mesmo selecionando, o envio falha silenciosamente porque nenhum ID bate.
+Alem disso, o envio de **lembrete** (handleSendReminder no EditTaskModal) nao envia `responsaveis_nomes`, mesmo que a notificacao inicial envie.
+
+## Campos que faltam hoje
+
+| Campo | Existe no form? | Enviado ao Edge Function? | Exibido na mensagem? |
+|-------|-----------------|--------------------------|---------------------|
+| link_reuniao | Sim | Nao | Nao |
+| prioridade | Sim | Nao | Nao |
+| horario_inicio | Sim | Parcial (como fallback) | Parcial |
+| Lead/Contato (nome, empresa, telefone) | Sim | Nao | Nao |
+| Propostas vinculadas | Sim | Nao | Nao |
+| responsaveis_nomes (no lembrete) | Sim | Nao | Nao |
 
 ## Solucao
 
-### Arquivo unico: `src/components/admin/agenda/EditTaskModal.tsx`
+### 1. Edge Function `task-notify-created/index.ts`
 
-### 1. Derivar lista de contatos do evento a partir dos receipts
-Criar um `useMemo` que extrai contatos unicos dos `receipts` (ja carregados no componente):
+**Aceitar novos campos no payload:**
+- `link_reuniao` - Link do Google Meet/Zoom/Teams
+- `prioridade` - Prioridade da tarefa (alta, media, baixa, urgente)
+- `horario_inicio` - Horario de inicio separado
+- `lead_nome` - Nome do lead/contato vinculado
+- `lead_empresa` - Empresa do lead
+- `lead_telefone` - Telefone do lead
+- `propostas_info` - Array com numeros/status das propostas vinculadas
 
+**Atualizar `buildRichMessage` para incluir:**
 ```text
-const eventRegisteredContacts = useMemo(() => {
-  if (!receipts || receipts.length === 0) return [];
-  const seen = new Set<string>();
-  return receipts
-    .filter(r => {
-      const phone = r.contact_phone.replace(/\D/g, '');
-      if (seen.has(phone)) return false;
-      seen.add(phone);
-      return true;
-    })
-    .map(r => ({
-      id: r.id,
-      phone: r.contact_phone,
-      name: r.contact_name || r.contact_phone,
-    }));
-}, [receipts]);
+// Horario de inicio e fim separados
+"🕐 Inicio: 09:00 | Limite: 10:00"
+
+// Link da reuniao
+"🔗 Link: https://meet.google.com/abc-xyz"
+
+// Prioridade (quando alta ou urgente)
+"🔴 Prioridade: URGENTE"
+
+// Lead/Contato vinculado
+"🤝 Contato: Joao Silva - Empresa XYZ"
+"📱 Tel: (45) 99999-9999"
+
+// Propostas
+"📄 Propostas: #1234 (Aprovada), #5678 (Em analise)"
 ```
 
-### 2. Atualizar o popover (linhas 986-1051)
-- Contador: `selectedReminderContacts.length de eventRegisteredContacts.length`
-- "Selecionar Todos": usa `eventRegisteredContacts.map(c => c.id)`
-- Lista: itera sobre `eventRegisteredContacts` em vez de `adminUsersWithPhone`
-- Cada checkbox usa `c.id` (receipt ID) como chave de selecao
+### 2. Frontend - `EditTaskModal.tsx`
 
-### 3. Atualizar handleOpenReminderPopover (linha 638)
-Pre-selecionar todos os contatos do evento:
-```text
-setSelectedReminderContacts(eventRegisteredContacts.map(c => c.id));
-```
+**Na notificacao ao salvar (onSuccess, linhas 463-480):**
+Adicionar os campos que faltam no body:
+- `link_reuniao: linkReuniao || null`
+- `prioridade: prioridade || null`
+- `horario_inicio: horarioInicio || null`
+- `lead_nome`, `lead_empresa`, `lead_telefone` extraidos do `selectedLead`
+- `propostas_info` extraido do `selectedPropostas` + `leadPropostas`
 
-### 4. Atualizar handleSendReminder (linhas 522-525)
-Em vez de mapear via `allSelectableContacts` com compositeId, mapear diretamente dos `eventRegisteredContacts`:
-```text
-const selectedPhones = eventRegisteredContacts
-  .filter(c => idsToSend.includes(c.id))
-  .map(c => ({ nome: c.name, telefone: c.phone }));
-```
+**No handleSendReminder (linhas 560-576):**
+Adicionar os mesmos campos que faltam, incluindo `responsaveis_nomes` que ja e enviado na notificacao inicial mas esta ausente no lembrete.
 
-### 5. Fallback quando nao ha receipts
-Se `eventRegisteredContacts` estiver vazio (evento nunca notificado), usar `allSelectableContacts` como fallback para permitir o primeiro envio.
+### 3. Frontend - `CreateTaskModal.tsx`
+
+**Na notificacao ao criar (linhas 501-518):**
+Adicionar os mesmos campos extras no body:
+- `link_reuniao: linkReuniao || null`
+- `prioridade: prioridade || null`
+- `horario_inicio: horarioInicio || null`
+- `lead_nome`, `lead_empresa`, `lead_telefone` do `selectedLead`
+- `propostas_info` do `selectedPropostas` + `leadPropostas`
 
 ## O que NAO muda
 - Nenhum outro componente, modal ou pagina
-- A secao "Ao Salvar" com contatos WhatsApp permanece igual
-- O edge function `task-notify-created` permanece igual
-- O CreateTaskModal permanece igual
-- A secao de NOTIFICACOES (monitor de receipts) permanece igual
+- A estrutura do banco de dados permanece igual
+- Os outros edge functions permanecem iguais
+- A UI dos modais permanece identica
+- A logica de selecao de contatos permanece igual
