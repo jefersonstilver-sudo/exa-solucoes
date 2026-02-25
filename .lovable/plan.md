@@ -1,48 +1,91 @@
 
-# Confirmacao em Tempo Real + Comprovante de Compromisso
 
-## Problema
-1. Quando alguem confirma recebimento no WhatsApp, o status no modal nao atualiza automaticamente -- precisa clicar "Atualizar status" manualmente
-2. Nao ha efeito visual quando o status muda (deveria ter uma animacao sutil)
-3. A mensagem de confirmacao enviada de volta e generica ("Obrigado pela confirmacao") -- deveria funcionar como um comprovante formal com os detalhes do compromisso
+# Agenda Fullscreen -- Modo Imersivo com Efeitos Modernos
 
-## Solucao
+## Visao Geral
+Botao "Tela Cheia" ao lado de "Nova Tarefa" que abre uma pagina dedicada fullscreen. Layout limpo, sem header do admin, sem sidebar, sem padding. Calendario ocupa 100% da tela com efeitos visuais modernos e transicoes suaves.
 
-### 1. Auto-refresh em tempo real (Polling automatico)
-Adicionar `refetchInterval: 5000` (5 segundos) na query de `task_read_receipts` no `EditTaskModal.tsx`. Isso faz com que o status atualize automaticamente enquanto o modal esta aberto, sem precisar clicar no botao.
-
-### 2. Efeito visual de transicao
-Adicionar animacao CSS `animate-pulse` temporaria quando um receipt muda de status para `read`. Usar uma ref para rastrear os IDs ja conhecidos como `read` e aplicar o efeito apenas nos novos.
-
-### 3. Comprovante de compromisso no WhatsApp (zapi-webhook)
-Quando o usuario clica "Confirmar recebimento", a resposta automatica sera um comprovante completo com os detalhes da tarefa, consultados do banco:
+## Layout Visual
 
 ```text
-✅ *Recebimento Confirmado*
-
-📋 *Reuniao com cliente X*
-📅 24/02/2026 as 10:00
-🏢 Edificio Aurora
-👤 Criado por: Jeferson Encina
-
-Voce confirmou o recebimento deste compromisso.
-Horario da confirmacao: 03:52 de 24/02/2026
-
-_Este e seu comprovante de ciencia._
++------------------------------------------------------------------+
+| [< Voltar]    Marco 2026    [<] [Hoje] [>]    [Dia][Sem][Mes]  [X] |
++------------------------------------------------------------------+
+|                                                                    |
+|    Calendario ocupando toda a viewport restante                    |
+|    - Celulas maiores, mais tarefas visiveis                        |
+|    - Cards com hover elegante e transicoes                         |
+|    - Hora atual destacada com linha vermelha (dia/semana)          |
+|                                                                    |
++------------------------------------------------------------------+
 ```
 
-Isso busca os dados da tabela `tasks` pelo `taskId` e monta a mensagem contextual.
+## Efeitos e Detalhes Visuais
 
-## Arquivos Modificados
+- **Entrada da pagina**: fade-in suave ao montar o componente
+- **Troca de view (Dia/Sem/Mes)**: transicao com opacity ao alternar
+- **Hover nos cards**: scale sutil (1.02) com shadow elevada
+- **Dia atual**: indicador pulsante discreto no numero do dia
+- **Linha "agora"**: linha vermelha horizontal na posicao do horario atual (views Dia e Semana)
+- **Celulas do calendario**: backdrop-blur leve para glassmorphism sutil
+- **Botao voltar**: com seta e label, navegacao via `useNavigate(-1)`
+- **Tecla ESC**: fecha o fullscreen e volta para Central de Tarefas
 
-**1. `src/components/admin/agenda/EditTaskModal.tsx`**
-- Adicionar `refetchInterval: 5000` na query de receipts
-- Adicionar logica de efeito visual (pulse) para novos confirmados
-- Remover botao "Atualizar status" (nao sera mais necessario, o polling faz automatico)
+## Arquivos a Criar
 
-**2. `supabase/functions/zapi-webhook/index.ts`**
-- No handler `task_ack:`, buscar dados da tarefa (`tasks` table) antes de enviar a confirmacao
-- Montar mensagem de comprovante com titulo, data, predio, criador
-- Incluir horario exato da confirmacao
+### 1. `src/pages/admin/tarefas/FullscreenAgendaPage.tsx` (NOVO)
+- Pagina completa com `h-screen` e `overflow-hidden`
+- Header fino fixo (h-12) com:
+  - Botao voltar (ArrowLeft + "Voltar")
+  - Titulo do periodo atual (capitalizado)
+  - Navegacao de datas (prev/hoje/next)
+  - Tabs Dia/Semana/Mes
+  - Botao fechar (X) no canto direito
+- Reutiliza os mesmos AgendaDayView, AgendaWeekView, AgendaMonthView com prop `fullscreen={true}`
+- Reutiliza EditTaskModal ao clicar em tarefa
+- Usa a mesma query `agenda-tasks` da CentralTarefasPage
+- useEffect com listener de tecla ESC para fechar
+- Wrapper com classe `animate-fade-in` na entrada
 
-**Nenhum outro arquivo alterado.**
+## Arquivos a Modificar
+
+### 2. `src/pages/admin/tarefas/CentralTarefasPage.tsx`
+- Adicionar botao `Maximize2` ao lado de "Nova Tarefa" (linha ~200)
+- `onClick={() => navigate('/super_admin/tarefas/fullscreen')}`
+- Apenas adicao de 1 botao, nada mais alterado
+
+### 3. `src/routes/SuperAdminRoutes.tsx`
+- Adicionar rota: `<Route path="tarefas/fullscreen" element={<Suspense><FullscreenAgendaPage /></Suspense>} />`
+- Apenas 1 linha adicionada
+
+### 4. `src/components/admin/layout/ModernSuperAdminLayout.tsx`
+- Adicionar `'/tarefas/fullscreen'` ao array `FULLSCREEN_ROUTES` (linha 12)
+- Oculta header e remove padding automaticamente
+
+### 5. `src/pages/admin/tarefas/components/AgendaDayView.tsx`
+- Prop opcional `fullscreen?: boolean`
+- Quando fullscreen: `min-h-[80px]` nos slots (vs 60px), header com fonte maior
+- Linha vermelha "now indicator" na hora atual
+
+### 6. `src/pages/admin/tarefas/components/AgendaWeekView.tsx`
+- Prop opcional `fullscreen?: boolean`
+- Quando fullscreen: `min-h-[52px]` nas celulas (vs 40px), header sticky mais visivel
+- Linha vermelha "now indicator" na coluna do dia atual
+
+### 7. `src/pages/admin/tarefas/components/AgendaMonthView.tsx`
+- Prop opcional `fullscreen?: boolean`
+- Quando fullscreen: `min-h-[140px]` nas celulas, mostra ate 5 tarefas (vs 3)
+
+### 8. `src/components/admin/agenda/DroppableCalendarDay.tsx`
+- Prop opcional `fullscreen?: boolean` passada do MonthView
+- Quando fullscreen: celula mais alta, mostra ate 5 tarefas, fonte levemente maior
+
+## Funcionalidades Garantidas
+- DnD (drag and drop) no mes continua funcionando normalmente
+- Click em tarefa abre EditTaskModal com todos os dados
+- Polling de 5s nos receipts continua ativo no modal
+- Todas as 3 views (Dia/Semana/Mes) funcionais com navegacao de datas
+- Botao "Hoje" reseta para data atual
+- Responsivo: no mobile o fullscreen usa toda a tela sem bottom nav
+- Nenhuma funcionalidade existente alterada
+
