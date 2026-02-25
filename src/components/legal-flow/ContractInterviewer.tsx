@@ -22,6 +22,7 @@ import { LegalFlowData } from '@/hooks/useLegalFlow';
 import { VoiceRecordButton } from './VoiceRecordButton';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import DOMPurify from 'dompurify';
 
 export interface ChatMessage {
   id: string;
@@ -291,7 +292,7 @@ export function ContractInterviewer({
                 </div>
                 <div className="flex-1">
                   <div className="inline-block p-3 rounded-2xl text-sm shadow-sm bg-white border border-gray-100 text-gray-800 rounded-tl-sm">
-                    <div dangerouslySetInnerHTML={{ __html: formatMessageContent(INITIAL_MESSAGE.content) }} />
+                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatMessageContent(INITIAL_MESSAGE.content)) }} />
                   </div>
                   <p className="text-[10px] text-gray-400 mt-1">
                     {INITIAL_MESSAGE.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
@@ -371,7 +372,7 @@ export function ContractInterviewer({
                       </div>
                     ) : (
                       <div 
-                        dangerouslySetInnerHTML={{ __html: formatMessageContent(message.content) }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatMessageContent(message.content)) }}
                         className="whitespace-pre-wrap select-text cursor-text"
                       />
                     )}

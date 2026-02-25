@@ -14,15 +14,15 @@ export const useUserSession = () => {
 
   // FIXED: Memoizar para evitar re-computações desnecessárias
   const sessionData = useMemo(() => {
-    console.log('🔍 [useUserSession] Memoizando dados:', {
-      hasUser: !!user,
-      hasUserProfile: !!userProfile,
-      hasSession: !!session,
-      isLoggedIn,
-      isLoading,
-      userEmail: user?.email,
-      profileRole: userProfile?.role
-    });
+    if (import.meta.env.DEV) {
+      console.log('🔍 [useUserSession] Memoizando dados:', {
+        hasUser: !!user,
+        hasUserProfile: !!userProfile,
+        hasSession: !!session,
+        isLoggedIn,
+        isLoading
+      });
+    }
     
     return {
       user: userProfile, // Use userProfile as user for backward compatibility

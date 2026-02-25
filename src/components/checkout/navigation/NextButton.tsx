@@ -85,11 +85,11 @@ const NextButton: React.FC<NextButtonProps> = ({
         }
       );
       
-      // Store in localStorage for diagnostics
+      // Store in sessionStorage for diagnostics (not localStorage - security)
       try {
-        localStorage.setItem('last_payment_click', new Date().toISOString());
-        localStorage.setItem('last_payment_method', paymentMethod || 'unknown');
-        localStorage.setItem('last_payment_amount', String(totalPrice));
+        sessionStorage.setItem('last_payment_click', new Date().toISOString());
+        sessionStorage.setItem('last_payment_method', paymentMethod || 'unknown');
+        sessionStorage.setItem('last_payment_amount', String(totalPrice));
       } catch (e) {
         console.error("Error storing payment click info:", e);
       }

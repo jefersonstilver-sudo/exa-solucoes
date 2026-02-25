@@ -3,6 +3,7 @@ import { X, FileText, Download, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import DOMPurify from 'dompurify';
 
 // Header EXA oficial - IMAGEM LOCAL (evita problemas de bucket privado)
 import exaContractHeader from '@/assets/exa-contract-header.png';
@@ -496,7 +497,7 @@ export const ContractFullPreview: React.FC<ContractFullPreviewProps> = ({
               }}
             >
               <div 
-                dangerouslySetInnerHTML={{ __html: processedHtml }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(processedHtml) }}
                 className="contract-content prose prose-sm max-w-none"
                 style={{
                   fontSize: '11pt',

@@ -59,7 +59,7 @@ export const usePaymentDeduplication = () => {
 
   const preventDuplicateSubmission = useCallback(() => {
     const submissionKey = `payment_submission_${Date.now()}`;
-    const lastSubmission = localStorage.getItem('last_payment_submission');
+    const lastSubmission = sessionStorage.getItem('last_payment_submission');
     const now = Date.now();
     
     if (lastSubmission) {
@@ -71,7 +71,7 @@ export const usePaymentDeduplication = () => {
       }
     }
     
-    localStorage.setItem('last_payment_submission', now.toString());
+    sessionStorage.setItem('last_payment_submission', now.toString());
     return true;
   }, []);
 

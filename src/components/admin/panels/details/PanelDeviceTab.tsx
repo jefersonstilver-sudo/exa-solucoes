@@ -17,7 +17,7 @@ const PanelDeviceTab: React.FC<PanelDeviceTabProps> = ({ panel }) => {
   const { data: deviceStatus, refetch, isLoading } = useQuery({
     queryKey: ['panel-device-status', panel.id],
     queryFn: async () => {
-      console.log('🔄 Buscando status do dispositivo:', panel.id);
+      // Status fetch - logging removed for performance
       
       const { data, error } = await supabase
         .from('paineis_status')
@@ -32,7 +32,7 @@ const PanelDeviceTab: React.FC<PanelDeviceTabProps> = ({ panel }) => {
 
       return data;
     },
-    refetchInterval: 10000, // Atualizar a cada 10 segundos
+    refetchInterval: 30000, // Atualizar a cada 30 segundos (was 10s)
   });
 
   // Determinar status de conexão
@@ -258,7 +258,7 @@ const PanelDeviceTab: React.FC<PanelDeviceTabProps> = ({ panel }) => {
 
         {/* Última Atualização */}
         <div className="pt-4 border-t text-xs text-muted-foreground text-center">
-          Atualização automática a cada 10 segundos • Última atualização:{' '}
+          Atualização automática a cada 30 segundos • Última atualização:{' '}
           {new Date().toLocaleTimeString('pt-BR')}
         </div>
       </CardContent>

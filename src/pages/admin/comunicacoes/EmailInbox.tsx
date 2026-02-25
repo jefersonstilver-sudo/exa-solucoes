@@ -38,6 +38,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import DOMPurify from 'dompurify';
 
 const EmailInbox: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'inbox' | 'sent' | 'starred' | 'archived'>('inbox');
@@ -149,7 +150,7 @@ const EmailInbox: React.FC = () => {
 
             <div 
               className="prose prose-sm max-w-none dark:prose-invert"
-              dangerouslySetInnerHTML={{ __html: selectedEmail.body_html || selectedEmail.body_text || '' }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedEmail.body_html || selectedEmail.body_text || '') }}
             />
 
             {selectedEmail.has_attachments && selectedEmail.attachments?.length > 0 && (

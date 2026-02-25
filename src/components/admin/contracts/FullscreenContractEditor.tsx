@@ -20,6 +20,7 @@ import {
   Maximize2,
   Minimize2
 } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -294,10 +295,12 @@ const FullscreenContractEditor: React.FC<FullscreenContractEditorProps> = ({
           <div 
             className="w-full h-full overflow-auto bg-white p-6 rounded-lg shadow-inner prose prose-sm max-w-none"
             dangerouslySetInnerHTML={{ 
-              __html: content
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/\n/g, '<br>')
+              __html: DOMPurify.sanitize(
+                content
+                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                  .replace(/\n/g, '<br>')
+              )
             }}
           />
         )}
