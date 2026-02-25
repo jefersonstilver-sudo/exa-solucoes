@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -220,6 +220,24 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
     }
   });
 
+  // Fetch external alert contacts
+  const { data: alertContacts = [] } = useQuery({
+    queryKey: ['agenda-alert-contacts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('exa_alerts_directors')
+        .select('id, nome, telefone, ativo')
+        .eq('ativo', true)
+        .order('nome');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Inline editing state for contacts
+  const [editingContactId, setEditingContactId] = useState<string | null>(null);
+  const [editContactPhone, setEditContactPhone] = useState('');
+
   // Fetch buildings for notification
   const { data: allBuildings = [] } = useQuery({
     queryKey: ['all-buildings-for-tasks'],
@@ -433,9 +451,9 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
       queryClient.invalidateQueries({ queryKey: ['central-tarefas'] });
 
       if (notifyOnSave && task) {
-        const selectedPhones = adminUsers
-          .filter(u => selectedNotifyContacts.includes(u.id) && u.telefone)
-          .map(u => ({ nome: u.nome || u.email, telefone: u.telefone }));
+        const selectedPhones = allSelectableContacts
+          .filter(c => selectedNotifyContacts.includes(c.compositeId))
+          .map(c => ({ nome: c.nome, telefone: c.telefone }));
 
         // Build responsaveis names list
         const responsaveisNomes = adminUsers
@@ -502,9 +520,9 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
     setSendingReminder(true);
     try {
       const idsToSend = contactIds || selectedReminderContacts;
-      const selectedPhones = adminUsers
-        .filter(u => idsToSend.includes(u.id) && u.telefone)
-        .map(u => ({ nome: u.nome || u.email, telefone: u.telefone }));
+      const selectedPhones = allSelectableContacts
+        .filter(c => idsToSend.includes(c.compositeId))
+        .map(c => ({ nome: c.nome, telefone: c.telefone }));
 
       if (selectedPhones.length === 0) {
         toast.error('Selecione ao menos um contato');
@@ -548,11 +566,79 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   const responsaveisContacts = adminUsersWithPhone.filter(u => taskResponsaveisIds.includes(u.id));
   const otherContacts = adminUsersWithPhone.filter(u => !taskResponsaveisIds.includes(u.id));
 
+  // Build unified selectable contacts list
+  interface SelectableContact {
+    compositeId: string;
+    source: 'admin' | 'alert';
+    nome: string;
+    telefone: string;
+    isResponsavel: boolean;
+  }
+
+  const allSelectableContacts = useMemo<SelectableContact[]>(() => {
+    const seen = new Set<string>();
+    const list: SelectableContact[] = [];
+
+    // Admin users with phone first
+    for (const u of adminUsers) {
+      if (!u.telefone) continue;
+      const phone = u.telefone.replace(/\\D/g, '');
+      if (seen.has(phone)) continue;
+      seen.add(phone);
+      list.push({
+        compositeId: `admin:${u.id}`,
+        source: 'admin',
+        nome: u.nome || u.email,
+        telefone: u.telefone,
+        isResponsavel: taskResponsaveisIds.includes(u.id),
+      });
+    }
+
+    // Alert contacts (external)
+    for (const c of alertContacts) {
+      const phone = (c.telefone || '').replace(/\\D/g, '');
+      if (!phone || seen.has(phone)) continue;
+      seen.add(phone);
+      list.push({
+        compositeId: `alert:${c.id}`,
+        source: 'alert',
+        nome: c.nome,
+        telefone: c.telefone,
+        isResponsavel: false,
+      });
+    }
+
+    return list;
+  }, [adminUsers, alertContacts, taskResponsaveisIds]);
+
+  const responsaveisSelectableContacts = allSelectableContacts.filter(c => c.isResponsavel);
+  const otherSelectableContacts = allSelectableContacts.filter(c => !c.isResponsavel);
+
+  // Inline save phone for alert contacts
+  const handleSaveInlinePhone = async (alertId: string) => {
+    const cleaned = editContactPhone.replace(/\\D/g, '');
+    if (cleaned.length < 10) {
+      toast.error('Telefone inválido');
+      return;
+    }
+    const { error } = await supabase
+      .from('exa_alerts_directors')
+      .update({ telefone: cleaned })
+      .eq('id', alertId);
+    if (error) {
+      toast.error('Erro ao salvar telefone');
+      return;
+    }
+    toast.success('Telefone atualizado!');
+    setEditingContactId(null);
+    queryClient.invalidateQueries({ queryKey: ['agenda-alert-contacts'] });
+  };
+
   // Initialize reminder contacts with responsaveis when popover opens
   const handleOpenReminderPopover = () => {
-    const initialSelection = responsaveisContacts.length > 0 
-      ? responsaveisContacts.map(u => u.id) 
-      : adminUsersWithPhone.map(u => u.id);
+    const initialSelection = responsaveisSelectableContacts.length > 0
+      ? responsaveisSelectableContacts.map(c => c.compositeId)
+      : allSelectableContacts.map(c => c.compositeId);
     setSelectedReminderContacts(initialSelection);
     setReminderPopoverOpen(true);
   };
@@ -999,21 +1085,21 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                 {/* Seleção de contatos para notificar */}
                 <div className="space-y-2">
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Contatos WhatsApp</p>
-                  {adminUsersWithPhone.length === 0 ? (
-                    <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">Nenhum admin com telefone</p>
+                  {allSelectableContacts.length === 0 ? (
+                    <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">Nenhum contato com telefone</p>
                   ) : (
-                    <div className="space-y-1 max-h-44 overflow-y-auto">
+                    <div className="space-y-1 max-h-52 overflow-y-auto">
                       {/* Responsáveis deste compromisso */}
-                      {responsaveisContacts.length > 0 && (
+                      {responsaveisSelectableContacts.length > 0 && (
                         <>
                           <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-1">
                             Responsáveis deste compromisso
                           </p>
-                          {responsaveisContacts.map(u => {
-                            const isSelected = selectedNotifyContacts.includes(u.id);
+                          {responsaveisSelectableContacts.map(contact => {
+                            const isSelected = selectedNotifyContacts.includes(contact.compositeId);
                             return (
                               <label
-                                key={u.id}
+                                key={contact.compositeId}
                                 className={cn(
                                   "flex items-center gap-2 text-xs p-2 rounded-lg cursor-pointer border transition-colors",
                                   isSelected ? "bg-primary/5 border-primary/20" : "bg-background border-transparent hover:bg-muted/50"
@@ -1023,12 +1109,12 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                                   checked={isSelected}
                                   onCheckedChange={(checked) => {
                                     setSelectedNotifyContacts(prev =>
-                                      checked ? [...prev, u.id] : prev.filter(id => id !== u.id)
+                                      checked ? [...prev, contact.compositeId] : prev.filter(id => id !== contact.compositeId)
                                     );
                                   }}
                                   className="h-4 w-4"
                                 />
-                                <span className="font-medium flex-1 truncate">{u.nome || u.email}</span>
+                                <span className="font-medium flex-1 truncate">{contact.nome}</span>
                                 <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
                                   Responsável
                                 </span>
@@ -1038,17 +1124,17 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                         </>
                       )}
 
-                      {/* Outros contatos */}
-                      {otherContacts.length > 0 && (
+                      {/* Equipe (admins) */}
+                      {otherSelectableContacts.filter(c => c.source === 'admin').length > 0 && (
                         <>
                           <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-2">
-                            Outros contatos
+                            Equipe
                           </p>
-                          {otherContacts.map(u => {
-                            const isSelected = selectedNotifyContacts.includes(u.id);
+                          {otherSelectableContacts.filter(c => c.source === 'admin').map(contact => {
+                            const isSelected = selectedNotifyContacts.includes(contact.compositeId);
                             return (
                               <label
-                                key={u.id}
+                                key={contact.compositeId}
                                 className={cn(
                                   "flex items-center gap-2 text-xs p-2 rounded-lg cursor-pointer border transition-colors",
                                   isSelected ? "bg-primary/5 border-primary/20" : "bg-background border-transparent hover:bg-muted/50"
@@ -1058,14 +1144,92 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                                   checked={isSelected}
                                   onCheckedChange={(checked) => {
                                     setSelectedNotifyContacts(prev =>
-                                      checked ? [...prev, u.id] : prev.filter(id => id !== u.id)
+                                      checked ? [...prev, contact.compositeId] : prev.filter(id => id !== contact.compositeId)
                                     );
                                   }}
                                   className="h-4 w-4"
                                 />
-                                <span className="font-medium flex-1 truncate">{u.nome || u.email}</span>
-                                <span className="text-[10px] text-muted-foreground">📱</span>
+                                <span className="font-medium flex-1 truncate">{contact.nome}</span>
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">
+                                  Admin
+                                </span>
                               </label>
+                            );
+                          })}
+                        </>
+                      )}
+
+                      {/* Contatos Externos */}
+                      {otherSelectableContacts.filter(c => c.source === 'alert').length > 0 && (
+                        <>
+                          <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-2">
+                            Contatos Externos
+                          </p>
+                          {otherSelectableContacts.filter(c => c.source === 'alert').map(contact => {
+                            const alertId = contact.compositeId.replace('alert:', '');
+                            const isSelected = selectedNotifyContacts.includes(contact.compositeId);
+                            const isEditing = editingContactId === alertId;
+                            return (
+                              <div
+                                key={contact.compositeId}
+                                className={cn(
+                                  "flex items-center gap-2 text-xs p-2 rounded-lg border transition-colors",
+                                  isSelected ? "bg-primary/5 border-primary/20" : "bg-background border-transparent hover:bg-muted/50"
+                                )}
+                              >
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={(checked) => {
+                                    setSelectedNotifyContacts(prev =>
+                                      checked ? [...prev, contact.compositeId] : prev.filter(id => id !== contact.compositeId)
+                                    );
+                                  }}
+                                  className="h-4 w-4"
+                                />
+                                <span className="font-medium truncate">{contact.nome}</span>
+                                {isEditing ? (
+                                  <div className="flex items-center gap-1 ml-auto">
+                                    <Input
+                                      value={editContactPhone}
+                                      onChange={(e) => setEditContactPhone(e.target.value)}
+                                      className="h-6 text-[10px] w-28 px-1.5"
+                                      placeholder="(45) 99999-9999"
+                                      autoFocus
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') { e.preventDefault(); handleSaveInlinePhone(alertId); }
+                                        if (e.key === 'Escape') setEditingContactId(null);
+                                      }}
+                                    />
+                                    <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleSaveInlinePhone(alertId)}>
+                                      <Check className="h-3 w-3 text-emerald-600" />
+                                    </Button>
+                                    <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setEditingContactId(null)}>
+                                      <X className="h-3 w-3 text-muted-foreground" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1 ml-auto">
+                                    <span className="text-[10px] text-muted-foreground">{contact.telefone}</span>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-5 w-5 p-0"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        setEditingContactId(alertId);
+                                        setEditContactPhone(contact.telefone);
+                                      }}
+                                      title="Editar telefone"
+                                    >
+                                      <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
+                                    </Button>
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
+                                      Externo
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             );
                           })}
                         </>
