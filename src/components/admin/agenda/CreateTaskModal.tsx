@@ -503,7 +503,8 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
               task_id: realTaskId,
               titulo,
               data: datasPrevistas.length > 0 ? format(datasPrevistas[0], 'dd/MM/yyyy') : null,
-              horario: horarioInicio || horarioLimite || null,
+              horario: horarioLimite || horarioInicio || null,
+              horario_inicio: horarioInicio || null,
               criador_nome: userProfile?.nome || user?.email,
               specific_contacts: selectedPhones,
               tipo_evento: tipoEvento || 'tarefa',
@@ -514,6 +515,12 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
                 : null,
               responsaveis_nomes: responsaveisNomes.length > 0 ? responsaveisNomes : null,
               subtipo_reuniao: subtipoReuniao || null,
+              link_reuniao: linkReuniao || null,
+              prioridade: prioridade || null,
+              lead_nome: selectedLead ? `${selectedLead.nome}${selectedLead.sobrenome ? ' ' + selectedLead.sobrenome : ''}` : null,
+              lead_empresa: selectedLead?.empresa || null,
+              lead_telefone: selectedLead?.telefone || null,
+              propostas_info: leadPropostas.filter(p => selectedPropostas.includes(p.id)).map(p => `#${p.number || '?'} (${p.status || 'N/A'})`),
             }
           }).catch(err => console.error('Erro ao notificar WhatsApp:', err));
         }

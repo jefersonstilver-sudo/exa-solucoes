@@ -465,7 +465,8 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
             task_id: task.id,
             titulo,
             data: dataPrevista ? format(dataPrevista, 'dd/MM/yyyy', { locale: ptBR }) : null,
-            horario: horarioInicio || horarioLimite || null,
+            horario: horarioLimite || horarioInicio || null,
+            horario_inicio: horarioInicio || null,
             criador_nome: userProfile?.nome || userProfile?.email || 'Sistema',
             specific_contacts: selectedPhones.length > 0 ? selectedPhones : undefined,
             tipo_evento: tipoEvento || 'tarefa',
@@ -476,6 +477,12 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
               : null,
             responsaveis_nomes: responsaveisNomes.length > 0 ? responsaveisNomes : null,
             subtipo_reuniao: subtipoReuniao || null,
+            link_reuniao: linkReuniao || null,
+            prioridade: prioridade || null,
+            lead_nome: selectedLead ? `${selectedLead.nome}${selectedLead.sobrenome ? ' ' + selectedLead.sobrenome : ''}` : null,
+            lead_empresa: selectedLead?.empresa || null,
+            lead_telefone: selectedLead?.telefone || null,
+            propostas_info: leadPropostas.filter(p => selectedPropostas.includes(p.id)).map(p => `#${p.number || '?'} (${p.status || 'N/A'})`),
           }
         }).catch(err => console.error('Erro ao notificar:', err));
       }
@@ -557,12 +564,18 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
         return;
       }
 
+      // Build responsaveis names list for reminder
+      const responsaveisNomes = adminUsers
+        .filter(u => ((task as any)?.task_responsaveis?.map((r: any) => r.user_id) || []).includes(u.id))
+        .map(u => u.nome || u.email);
+
       await supabase.functions.invoke('task-notify-created', {
         body: {
           task_id: task.id,
           titulo,
           data: dataPrevista ? format(dataPrevista, 'dd/MM/yyyy', { locale: ptBR }) : null,
-          horario: horarioInicio || horarioLimite || null,
+          horario: horarioLimite || horarioInicio || null,
+          horario_inicio: horarioInicio || null,
           criador_nome: userProfile?.nome || userProfile?.email || 'Sistema',
           specific_contacts: selectedPhones,
           tipo_evento: tipoEvento || 'tarefa',
@@ -571,7 +584,14 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
           building_name: selectedBuildingId
             ? allBuildings.find(b => b.id === selectedBuildingId)?.nome || null
             : null,
+          responsaveis_nomes: responsaveisNomes.length > 0 ? responsaveisNomes : null,
           subtipo_reuniao: subtipoReuniao || null,
+          link_reuniao: linkReuniao || null,
+          prioridade: prioridade || null,
+          lead_nome: selectedLead ? `${selectedLead.nome}${selectedLead.sobrenome ? ' ' + selectedLead.sobrenome : ''}` : null,
+          lead_empresa: selectedLead?.empresa || null,
+          lead_telefone: selectedLead?.telefone || null,
+          propostas_info: leadPropostas.filter(p => selectedPropostas.includes(p.id)).map(p => `#${p.number || '?'} (${p.status || 'N/A'})`),
         }
       });
       toast.success(`Lembrete enviado para ${selectedPhones.length} contato(s)!`);
