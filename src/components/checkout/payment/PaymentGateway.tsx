@@ -35,7 +35,7 @@ const PaymentGateway = ({
 }: PaymentGatewayProps) => {
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState<string>(
-    localStorage.getItem('preferred_payment_method') || 'pix'
+    sessionStorage.getItem('preferred_payment_method') || 'pix'
   );
   const [isProcessing, setIsProcessing] = React.useState(false);
   
@@ -52,8 +52,8 @@ const PaymentGateway = ({
       }
     );
     
-    // Salva preferência de método de pagamento
-    localStorage.setItem('preferred_payment_method', paymentMethod);
+    // Salva preferência de método de pagamento (sessionStorage)
+    sessionStorage.setItem('preferred_payment_method', paymentMethod);
     
     return () => {
       logCheckoutEvent(
@@ -73,7 +73,7 @@ const PaymentGateway = ({
   // Atualizar método de pagamento
   const handlePaymentMethodChange = (method: string) => {
     setPaymentMethod(method);
-    localStorage.setItem('preferred_payment_method', method);
+    sessionStorage.setItem('preferred_payment_method', method);
     
     // Log para eventos
     logCheckoutEvent(

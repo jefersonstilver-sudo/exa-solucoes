@@ -53,18 +53,17 @@ export const usePaymentProcessor = () => {
     );
     
     try {
-      localStorage.setItem('preferred_payment_method', paymentMethod);
+      sessionStorage.setItem('preferred_payment_method', paymentMethod);
     } catch (e) {
       console.error("Error storing payment method preference:", e);
     }
   }, [paymentMethod]);
   
-  // Restore payment method from localStorage
+  // Restore payment method from sessionStorage
   useEffect(() => {
     try {
-      const savedMethod = localStorage.getItem('preferred_payment_method');
+      const savedMethod = sessionStorage.getItem('preferred_payment_method');
       if (savedMethod && (savedMethod === 'credit_card' || savedMethod === 'pix')) {
-        console.log(`[Payment Processor] Restoring saved payment method: ${savedMethod}`);
         setPaymentMethod(savedMethod);
       }
     } catch (e) {
@@ -113,9 +112,9 @@ export const usePaymentProcessor = () => {
     );
     
     try {
-      localStorage.setItem('last_payment_attempt', new Date().toISOString());
-      localStorage.setItem('last_payment_method', effectivePaymentMethod);
-      localStorage.setItem('last_payment_amount', String(options.totalPrice));
+      sessionStorage.setItem('last_payment_attempt', new Date().toISOString());
+      sessionStorage.setItem('last_payment_method', effectivePaymentMethod);
+      sessionStorage.setItem('last_payment_amount', String(options.totalPrice));
     } catch (e) {
       console.error("Error storing payment attempt info:", e);
     }

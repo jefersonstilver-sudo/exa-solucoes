@@ -27,7 +27,7 @@ const EmergencyProtocolPage = () => {
       if (!response.ok) throw new Error('Failed to fetch emergency status');
       return response.json();
     },
-    refetchInterval: 10000, // Refresh every 10 seconds
+    refetchInterval: 30000, // Refresh every 30 seconds (was 10s)
   });
 
   // Mutation for toggling emergency mode

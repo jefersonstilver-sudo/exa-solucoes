@@ -156,7 +156,7 @@ export const useObservabilityData = () => {
         openCircuitBreakers: openCircuitBreakers || 0,
       };
     },
-    refetchInterval: 30000, // Atualiza a cada 30 segundos
+    refetchInterval: 60000, // Atualiza a cada 60 segundos (was 30s)
   });
 
   // Mensagens com filtros
@@ -214,7 +214,7 @@ export const useObservabilityData = () => {
       if (error) throw error;
       return (data || []) as SystemAlert[];
     },
-    refetchInterval: 15000,
+    refetchInterval: 60000, // was 15s
   });
 
   // Mutation para acknowledge de alerta
@@ -268,7 +268,7 @@ export const useObservabilityData = () => {
       if (error) throw error;
       return (data || []) as CircuitBreakerStatus[];
     },
-    refetchInterval: 30000,
+    refetchInterval: 60000, // was 30s
   });
 
   // Mensagens por hora (últimas 24h)

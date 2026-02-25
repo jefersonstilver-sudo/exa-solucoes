@@ -6,8 +6,8 @@ export const useSecurityMetrics = () => {
   const { data: metrics, isLoading: isLoadingMetrics, refetch: refetchMetrics } = useQuery<SecurityMetrics>({
     queryKey: ['security-metrics'],
     queryFn: () => SecurityAnalytics.calculateMetrics(),
-    refetchInterval: 5000, // Auto-refresh every 5 seconds
-    staleTime: 0,
+    refetchInterval: 60000, // Auto-refresh every 60 seconds (was 5s - caused performance issues)
+    staleTime: 30000,
     refetchOnWindowFocus: true,
     refetchOnMount: true
   });
@@ -15,8 +15,8 @@ export const useSecurityMetrics = () => {
   const { data: eventsByType, isLoading: isLoadingEventsByType } = useQuery<EventsByType[]>({
     queryKey: ['security-events-by-type'],
     queryFn: () => SecurityAnalytics.getEventsByType(24),
-    refetchInterval: 5000,
-    staleTime: 0,
+    refetchInterval: 60000,
+    staleTime: 30000,
     refetchOnWindowFocus: true,
     refetchOnMount: true
   });
@@ -24,8 +24,8 @@ export const useSecurityMetrics = () => {
   const { data: eventsByHour, isLoading: isLoadingEventsByHour } = useQuery<EventsByHour[]>({
     queryKey: ['security-events-by-hour'],
     queryFn: () => SecurityAnalytics.getEventsByHour(24),
-    refetchInterval: 5000,
-    staleTime: 0,
+    refetchInterval: 60000,
+    staleTime: 30000,
     refetchOnWindowFocus: true,
     refetchOnMount: true
   });
@@ -33,8 +33,8 @@ export const useSecurityMetrics = () => {
   const { data: topIPs, isLoading: isLoadingTopIPs } = useQuery<TopIP[]>({
     queryKey: ['security-top-ips'],
     queryFn: () => SecurityAnalytics.getTopIPs(10),
-    refetchInterval: 5000,
-    staleTime: 0,
+    refetchInterval: 60000,
+    staleTime: 30000,
     refetchOnWindowFocus: true,
     refetchOnMount: true
   });

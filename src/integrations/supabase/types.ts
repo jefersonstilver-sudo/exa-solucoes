@@ -15828,6 +15828,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      user_autocomplete_upsert: {
+        Args: {
+          p_display_label?: string
+          p_field_type: string
+          p_user_id: string
+          p_value: string
+        }
+        Returns: undefined
+      }
       validate_benefit_token: { Args: { p_token: string }; Returns: Json }
       validate_coupon_secure:
         | { Args: { p_codigo: string; p_valor_pedido?: number }; Returns: Json }
