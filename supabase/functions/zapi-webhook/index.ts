@@ -685,16 +685,40 @@ serve(async (req) => {
       // ========== PROCESSAR BOTÕES DE CONFIRMAÇÃO DE TAREFA ==========
       if (buttonId?.startsWith('task_ack:')) {
         const parts = buttonId.split(':');
-        const taskId = parts[1];
-        const contactPhone = parts[2] || phone;
+        let taskId = parts[1];
+        let contactPhone = parts[2] || phone;
         
         console.log('[ZAPI-WEBHOOK] 📋 Task acknowledgment button:', {
           taskId,
           contactPhone,
           phone
         });
+
+        // Fallback: if taskId is 'batch' or invalid, find most recent receipt by phone
+        if (!taskId || taskId === 'batch') {
+          console.log('[ZAPI-WEBHOOK] ⚠️ taskId is batch/null, searching by phone...');
+          const normalizedPhoneFallback = phone.startsWith('55') ? phone : `55${phone}`;
+          const phoneVariantsFallback = [normalizedPhoneFallback, phone, phone.replace(/^55/, '')];
+          
+          const { data: fallbackReceipt } = await supabase
+            .from('task_read_receipts')
+            .select('id, task_id, contact_phone')
+            .or(phoneVariantsFallback.map((p: string) => `contact_phone.eq.${p}`).join(','))
+            .eq('status', 'sent')
+            .order('sent_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (fallbackReceipt) {
+            taskId = fallbackReceipt.task_id;
+            contactPhone = fallbackReceipt.contact_phone;
+            console.log('[ZAPI-WEBHOOK] ✅ Fallback found real task_id:', taskId);
+          } else {
+            console.log('[ZAPI-WEBHOOK] ❌ No pending receipt found for phone:', phone);
+          }
+        }
         
-        if (taskId) {
+        if (taskId && taskId !== 'batch') {
           // Update receipt status to 'read'
           const { error: updateError } = await supabase
             .from('task_read_receipts')

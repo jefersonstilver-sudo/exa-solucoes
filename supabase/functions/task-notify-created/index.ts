@@ -6,17 +6,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Mapeamento de tipo_evento para emoji e label
-const EVENT_TYPE_MAP: Record<string, { emoji: string; label: string }> = {
-  reuniao: { emoji: '🤝', label: 'Reunião' },
-  tarefa: { emoji: '📋', label: 'Tarefa' },
-  instalacao: { emoji: '🔧', label: 'Instalação' },
-  manutencao: { emoji: '🔧', label: 'Manutenção' },
-  aviso: { emoji: '⚠️', label: 'Aviso' },
-  compromisso: { emoji: '📌', label: 'Compromisso' },
-  vistoria: { emoji: '🔍', label: 'Vistoria' },
-  visita: { emoji: '🏠', label: 'Visita' },
-};
+// Palavras masculinas para concordância de gênero
+const MASCULINOS = ['compromisso', 'aviso', 'lembrete', 'evento'];
+
+async function resolveEventType(supabase: any, tipoEvento: string): Promise<{ emoji: string; label: string }> {
+  // Buscar no banco de dados
+  const { data: eventType } = await supabase
+    .from('event_types')
+    .select('label, icon')
+    .eq('name', tipoEvento)
+    .eq('active', true)
+    .maybeSingle();
+
+  if (eventType) {
+    return { emoji: eventType.icon || '📋', label: eventType.label || 'Tarefa' };
+  }
+
+  // Fallback básico
+  return { emoji: '📋', label: tipoEvento || 'Tarefa' };
+}
 
 function buildRichMessage(params: {
   titulo: string;
@@ -29,11 +37,14 @@ function buildRichMessage(params: {
   building_name?: string;
   responsaveis_nomes?: string[];
   subtipo_reuniao?: string;
+  emoji: string;
+  label: string;
 }): string {
-  const tipo = params.tipo_evento || 'tarefa';
-  const config = EVENT_TYPE_MAP[tipo] || EVENT_TYPE_MAP['tarefa'];
+  const label = params.label;
+  const labelLower = label.toLowerCase();
+  const isMasc = MASCULINOS.some(m => labelLower.includes(m));
   
-  let message = `${config.emoji} *Nov${tipo === 'aviso' ? 'o' : 'a'} ${config.label} agendad${tipo === 'aviso' ? 'o' : 'a'}*\n\n`;
+  let message = `${params.emoji} *Nov${isMasc ? 'o' : 'a'} ${label} agendad${isMasc ? 'o' : 'a'}*\n\n`;
   message += `*${params.titulo}*\n`;
   
   // Data e horário
@@ -108,7 +119,11 @@ serve(async (req) => {
       });
     }
 
-    console.log('[TASK-NOTIFY] 📤 Notifying contacts about new task:', titulo, '| tipo:', tipo_evento);
+    console.log('[TASK-NOTIFY] 📤 Notifying contacts about new task:', titulo, '| tipo:', tipo_evento, '| task_id:', task_id);
+
+    // Resolve event type dynamically from DB
+    const { emoji, label } = await resolveEventType(supabase, tipo_evento || 'tarefa');
+    console.log('[TASK-NOTIFY] 🏷️ Resolved type:', { emoji, label, tipo_evento });
 
     let contacts: { nome: string; telefone: string }[] = [];
 
@@ -136,7 +151,7 @@ serve(async (req) => {
       });
     }
 
-    // Build rich message
+    // Build rich message with resolved emoji/label
     const message = buildRichMessage({
       titulo,
       tipo_evento,
@@ -148,6 +163,8 @@ serve(async (req) => {
       building_name,
       responsaveis_nomes,
       subtipo_reuniao,
+      emoji,
+      label,
     });
 
     // Get Z-API config for exa_alert agent
@@ -211,9 +228,9 @@ serve(async (req) => {
             console.error(`[TASK-NOTIFY] ❌ Failed to send text to ${contact.nome}`);
           }
 
-          // Register receipt
+          // Register receipt - always use real task_id
           await supabase.from('task_read_receipts').insert({
-            task_id: task_id === 'batch' ? null : task_id,
+            task_id: task_id,
             contact_phone: formattedPhone,
             contact_name: contact.nome,
             status: 'sent',
@@ -237,9 +254,9 @@ serve(async (req) => {
             sent++;
             console.log(`[TASK-NOTIFY] ✅ Sent to ${contact.nome}`);
 
-            // Register receipt
+            // Register receipt - always use real task_id
             await supabase.from('task_read_receipts').insert({
-              task_id: task_id === 'batch' ? null : task_id,
+              task_id: task_id,
               contact_phone: contact.telefone.startsWith('55') ? contact.telefone : `55${contact.telefone}`,
               contact_name: contact.nome,
               status: 'sent',

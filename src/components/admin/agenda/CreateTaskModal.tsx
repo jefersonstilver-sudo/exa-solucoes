@@ -367,7 +367,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   }, [adminUsers, departments]);
 
   const createMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<string[]> => {
       if (!user) throw new Error('Usuário não autenticado');
       if (datasPrevistas.length === 0) throw new Error('Selecione pelo menos 1 data');
 
@@ -394,6 +394,8 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
         building_id: selectedBuildingId || null,
       };
 
+      const createdIds: string[] = [];
+
       for (const data of datasPrevistas) {
         const { data: taskData, error } = await supabase
           .from('tasks')
@@ -407,21 +409,26 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
         if (error) throw error;
 
         const taskId = taskData?.id;
+        if (taskId) {
+          createdIds.push(taskId);
 
-        // Vincular propostas para cada task criada
-        if (taskId && selectedPropostas.length > 0) {
-          const { error: propError } = await supabase
-            .from('task_propostas')
-            .insert(
-              selectedPropostas.map(pid => ({ task_id: taskId, proposta_id: pid }))
-            );
-          if (propError) {
-            console.error('Erro ao vincular propostas:', propError);
+          // Vincular propostas para cada task criada
+          if (selectedPropostas.length > 0) {
+            const { error: propError } = await supabase
+              .from('task_propostas')
+              .insert(
+                selectedPropostas.map(pid => ({ task_id: taskId, proposta_id: pid }))
+              );
+            if (propError) {
+              console.error('Erro ao vincular propostas:', propError);
+            }
           }
         }
       }
+
+      return createdIds;
     },
-    onSuccess: () => {
+    onSuccess: (createdIds: string[]) => {
       const count = datasPrevistas.length;
       toast.success(count > 1 ? `${count} tarefas criadas com sucesso!` : 'Tarefa criada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['minha-manha-tasks'] });
@@ -440,24 +447,27 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
           .filter(u => responsaveisIds.includes(u.id))
           .map(u => u.nome || u.email);
 
-        supabase.functions.invoke('task-notify-created', {
-          body: {
-            task_id: 'batch',
-            titulo,
-            data: datasPrevistas.length > 0 ? format(datasPrevistas[0], 'dd/MM/yyyy') : null,
-            horario: horarioInicio || horarioLimite || null,
-            criador_nome: userProfile?.nome || user?.email,
-            specific_contacts: selectedPhones,
-            tipo_evento: tipoEvento || 'tarefa',
-            descricao: descricao || null,
-            local_evento: localEvento || null,
-            building_name: selectedBuildingId 
-              ? allBuildings.find(b => b.id === selectedBuildingId)?.nome || null 
-              : null,
-            responsaveis_nomes: responsaveisNomes.length > 0 ? responsaveisNomes : null,
-            subtipo_reuniao: subtipoReuniao || null,
-          }
-        }).catch(err => console.error('Erro ao notificar WhatsApp:', err));
+        // Send one notification per created task with real IDs
+        for (const realTaskId of createdIds) {
+          supabase.functions.invoke('task-notify-created', {
+            body: {
+              task_id: realTaskId,
+              titulo,
+              data: datasPrevistas.length > 0 ? format(datasPrevistas[0], 'dd/MM/yyyy') : null,
+              horario: horarioInicio || horarioLimite || null,
+              criador_nome: userProfile?.nome || user?.email,
+              specific_contacts: selectedPhones,
+              tipo_evento: tipoEvento || 'tarefa',
+              descricao: descricao || null,
+              local_evento: localEvento || null,
+              building_name: selectedBuildingId 
+                ? allBuildings.find(b => b.id === selectedBuildingId)?.nome || null 
+                : null,
+              responsaveis_nomes: responsaveisNomes.length > 0 ? responsaveisNomes : null,
+              subtipo_reuniao: subtipoReuniao || null,
+            }
+          }).catch(err => console.error('Erro ao notificar WhatsApp:', err));
+        }
       }
 
       resetForm();
