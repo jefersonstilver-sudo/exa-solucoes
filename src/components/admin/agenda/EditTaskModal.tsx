@@ -515,14 +515,41 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
     updateMutation.mutate();
   };
 
+  // Derive event-registered contacts from receipts (unique by phone)
+  const eventRegisteredContacts = useMemo(() => {
+    if (!receipts || receipts.length === 0) return [];
+    const seen = new Set<string>();
+    return receipts
+      .filter(r => {
+        const phone = r.contact_phone.replace(/\D/g, '');
+        if (seen.has(phone)) return false;
+        seen.add(phone);
+        return true;
+      })
+      .map(r => ({
+        id: r.id,
+        phone: r.contact_phone,
+        name: r.contact_name || r.contact_phone,
+      }));
+  }, [receipts]);
+
   const handleSendReminder = async (contactIds?: string[]) => {
     if (!task) return;
     setSendingReminder(true);
     try {
       const idsToSend = contactIds || selectedReminderContacts;
-      const selectedPhones = allSelectableContacts
-        .filter(c => idsToSend.includes(c.compositeId))
-        .map(c => ({ nome: c.nome, telefone: c.telefone }));
+      
+      // If we have event contacts from receipts, use them; otherwise fallback to allSelectableContacts
+      let selectedPhones: { nome: string; telefone: string }[];
+      if (eventRegisteredContacts.length > 0) {
+        selectedPhones = eventRegisteredContacts
+          .filter(c => idsToSend.includes(c.id))
+          .map(c => ({ nome: c.name, telefone: c.phone }));
+      } else {
+        selectedPhones = allSelectableContacts
+          .filter(c => idsToSend.includes(c.compositeId))
+          .map(c => ({ nome: c.nome, telefone: c.telefone }));
+      }
 
       if (selectedPhones.length === 0) {
         toast.error('Selecione ao menos um contato');
@@ -634,12 +661,18 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
     queryClient.invalidateQueries({ queryKey: ['agenda-alert-contacts'] });
   };
 
-  // Initialize reminder contacts with responsaveis when popover opens
+  // Initialize reminder contacts when popover opens
   const handleOpenReminderPopover = () => {
-    const initialSelection = responsaveisSelectableContacts.length > 0
-      ? responsaveisSelectableContacts.map(c => c.compositeId)
-      : allSelectableContacts.map(c => c.compositeId);
-    setSelectedReminderContacts(initialSelection);
+    if (eventRegisteredContacts.length > 0) {
+      // Pre-select all event contacts from receipts
+      setSelectedReminderContacts(eventRegisteredContacts.map(c => c.id));
+    } else {
+      // Fallback: use allSelectableContacts for first-time send
+      const initialSelection = responsaveisSelectableContacts.length > 0
+        ? responsaveisSelectableContacts.map(c => c.compositeId)
+        : allSelectableContacts.map(c => c.compositeId);
+      setSelectedReminderContacts(initialSelection);
+    }
     setReminderPopoverOpen(true);
   };
 
@@ -982,63 +1015,120 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                     </PopoverTrigger>
                     <PopoverContent className="w-72 p-3" align="end" side="left">
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-xs font-semibold text-foreground">Enviar para:</h4>
-                          <span className="text-[10px] text-muted-foreground">
-                            {selectedReminderContacts.length} de {adminUsersWithPhone.length}
-                          </span>
-                        </div>
-                        <div className="flex gap-1.5">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 text-[10px] px-2"
-                            onClick={() => setSelectedReminderContacts(adminUsersWithPhone.map(u => u.id))}
-                          >
-                            Selecionar Todos
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 text-[10px] px-2"
-                            onClick={() => setSelectedReminderContacts([])}
-                          >
-                            Desmarcar Todos
-                          </Button>
-                        </div>
-                        <div className="space-y-1 max-h-40 overflow-y-auto">
-                          {adminUsersWithPhone.map(u => {
-                            const isResp = taskResponsaveisIds.includes(u.id);
-                            const isChecked = selectedReminderContacts.includes(u.id);
-                            return (
-                              <label
-                                key={u.id}
-                                className={cn(
-                                  "flex items-center gap-2 text-xs p-1.5 rounded-md cursor-pointer transition-colors",
-                                  isChecked ? "bg-primary/5" : "hover:bg-muted/50"
-                                )}
-                              >
-                                <Checkbox
-                                  checked={isChecked}
-                                  onCheckedChange={(checked) => {
-                                    setSelectedReminderContacts(prev =>
-                                      checked ? [...prev, u.id] : prev.filter(id => id !== u.id)
-                                    );
-                                  }}
-                                  className="h-3.5 w-3.5"
-                                />
-                                <span className="font-medium flex-1 truncate">{u.nome || u.email}</span>
-                                {isResp && (
-                                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
-                                    Resp.
-                                  </span>
-                                )}
-                              </label>
-                            );
-                          })}
-                        </div>
+                      {eventRegisteredContacts.length > 0 ? (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-semibold text-foreground">Enviar para:</h4>
+                            <span className="text-[10px] text-muted-foreground">
+                              {selectedReminderContacts.length} de {eventRegisteredContacts.length}
+                            </span>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-[10px] px-2"
+                              onClick={() => setSelectedReminderContacts(eventRegisteredContacts.map(c => c.id))}
+                            >
+                              Selecionar Todos
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-[10px] px-2"
+                              onClick={() => setSelectedReminderContacts([])}
+                            >
+                              Desmarcar Todos
+                            </Button>
+                          </div>
+                          <div className="space-y-1 max-h-40 overflow-y-auto">
+                            {eventRegisteredContacts.map(c => {
+                              const isChecked = selectedReminderContacts.includes(c.id);
+                              return (
+                                <label
+                                  key={c.id}
+                                  className={cn(
+                                    "flex items-center gap-2 text-xs p-1.5 rounded-md cursor-pointer transition-colors",
+                                    isChecked ? "bg-primary/5" : "hover:bg-muted/50"
+                                  )}
+                                >
+                                  <Checkbox
+                                    checked={isChecked}
+                                    onCheckedChange={(checked) => {
+                                      setSelectedReminderContacts(prev =>
+                                        checked ? [...prev, c.id] : prev.filter(id => id !== c.id)
+                                      );
+                                    }}
+                                    className="h-3.5 w-3.5"
+                                  />
+                                  <span className="font-medium flex-1 truncate">{c.name}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-semibold text-foreground">Enviar para:</h4>
+                            <span className="text-[10px] text-muted-foreground">
+                              {selectedReminderContacts.length} de {allSelectableContacts.length}
+                            </span>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-[10px] px-2"
+                              onClick={() => setSelectedReminderContacts(allSelectableContacts.map(c => c.compositeId))}
+                            >
+                              Selecionar Todos
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-[10px] px-2"
+                              onClick={() => setSelectedReminderContacts([])}
+                            >
+                              Desmarcar Todos
+                            </Button>
+                          </div>
+                          <div className="space-y-1 max-h-40 overflow-y-auto">
+                            {allSelectableContacts.map(c => {
+                              const isChecked = selectedReminderContacts.includes(c.compositeId);
+                              return (
+                                <label
+                                  key={c.compositeId}
+                                  className={cn(
+                                    "flex items-center gap-2 text-xs p-1.5 rounded-md cursor-pointer transition-colors",
+                                    isChecked ? "bg-primary/5" : "hover:bg-muted/50"
+                                  )}
+                                >
+                                  <Checkbox
+                                    checked={isChecked}
+                                    onCheckedChange={(checked) => {
+                                      setSelectedReminderContacts(prev =>
+                                        checked ? [...prev, c.compositeId] : prev.filter(id => id !== c.compositeId)
+                                      );
+                                    }}
+                                    className="h-3.5 w-3.5"
+                                  />
+                                  <span className="font-medium flex-1 truncate">{c.nome}</span>
+                                  {c.isResponsavel && (
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
+                                      Resp.
+                                    </span>
+                                  )}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
                         <Button
                           type="button"
                           size="sm"
