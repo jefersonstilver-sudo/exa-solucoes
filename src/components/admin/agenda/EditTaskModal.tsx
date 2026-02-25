@@ -183,6 +183,8 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   const [notifyOnSave, setNotifyOnSave] = useState(false);
   const [autoFollowup, setAutoFollowup] = useState(true);
   const [sendingReminder, setSendingReminder] = useState(false);
+  const [reminderPopoverOpen, setReminderPopoverOpen] = useState(false);
+  const [selectedReminderContacts, setSelectedReminderContacts] = useState<string[]>([]);
   const { activeEventTypes, getEventTypeConfig } = useEventTypes();
   const { userProfile } = useAuth();
 
@@ -495,13 +497,20 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
     updateMutation.mutate();
   };
 
-  const handleSendReminder = async () => {
+  const handleSendReminder = async (contactIds?: string[]) => {
     if (!task) return;
     setSendingReminder(true);
     try {
+      const idsToSend = contactIds || selectedReminderContacts;
       const selectedPhones = adminUsers
-        .filter(u => selectedNotifyContacts.includes(u.id) && u.telefone)
+        .filter(u => idsToSend.includes(u.id) && u.telefone)
         .map(u => ({ nome: u.nome || u.email, telefone: u.telefone }));
+
+      if (selectedPhones.length === 0) {
+        toast.error('Selecione ao menos um contato');
+        setSendingReminder(false);
+        return;
+      }
 
       await supabase.functions.invoke('task-notify-created', {
         body: {
@@ -510,7 +519,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
           data: dataPrevista ? format(dataPrevista, 'dd/MM/yyyy', { locale: ptBR }) : null,
           horario: horarioInicio || horarioLimite || null,
           criador_nome: userProfile?.nome || userProfile?.email || 'Sistema',
-          specific_contacts: selectedPhones.length > 0 ? selectedPhones : undefined,
+          specific_contacts: selectedPhones,
           tipo_evento: tipoEvento || 'tarefa',
           descricao: descricao || null,
           local_evento: localEvento || null,
@@ -520,7 +529,8 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
           subtipo_reuniao: subtipoReuniao || null,
         }
       });
-      toast.success('Lembrete enviado com sucesso!');
+      toast.success(`Lembrete enviado para ${selectedPhones.length} contato(s)!`);
+      setReminderPopoverOpen(false);
       refetchReceipts();
     } catch (err) {
       console.error('Erro ao enviar lembrete:', err);
@@ -528,6 +538,23 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
     } finally {
       setSendingReminder(false);
     }
+  };
+
+  // Derive task responsaveis IDs
+  const taskResponsaveisIds: string[] = (task as any)?.task_responsaveis?.map((r: any) => r.user_id) || [];
+  
+  // Split contacts into responsaveis and others
+  const adminUsersWithPhone = adminUsers.filter(u => u.telefone);
+  const responsaveisContacts = adminUsersWithPhone.filter(u => taskResponsaveisIds.includes(u.id));
+  const otherContacts = adminUsersWithPhone.filter(u => !taskResponsaveisIds.includes(u.id));
+
+  // Initialize reminder contacts with responsaveis when popover opens
+  const handleOpenReminderPopover = () => {
+    const initialSelection = responsaveisContacts.length > 0 
+      ? responsaveisContacts.map(u => u.id) 
+      : adminUsersWithPhone.map(u => u.id);
+    setSelectedReminderContacts(initialSelection);
+    setReminderPopoverOpen(true);
   };
 
   if (!task) return null;
@@ -848,22 +875,97 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                     </div>
                   )}
 
-                  {/* Botão Enviar Lembrete */}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full h-9 text-xs gap-2 border-primary/30 text-primary hover:bg-primary/5 font-semibold"
-                    onClick={handleSendReminder}
-                    disabled={sendingReminder}
-                  >
-                    {sendingReminder ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Send className="h-3.5 w-3.5" />
-                    )}
-                    {sendingReminder ? 'Enviando...' : 'Enviar Lembrete'}
-                  </Button>
+                  {/* Botão Enviar Lembrete com Popover de seleção */}
+                  <Popover open={reminderPopoverOpen} onOpenChange={setReminderPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full h-9 text-xs gap-2 border-primary/30 text-primary hover:bg-primary/5 font-semibold"
+                        onClick={handleOpenReminderPopover}
+                        disabled={sendingReminder}
+                      >
+                        {sendingReminder ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Send className="h-3.5 w-3.5" />
+                        )}
+                        {sendingReminder ? 'Enviando...' : 'Enviar Lembrete'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72 p-3" align="end" side="left">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-semibold text-foreground">Enviar para:</h4>
+                          <span className="text-[10px] text-muted-foreground">
+                            {selectedReminderContacts.length} de {adminUsersWithPhone.length}
+                          </span>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-[10px] px-2"
+                            onClick={() => setSelectedReminderContacts(adminUsersWithPhone.map(u => u.id))}
+                          >
+                            Selecionar Todos
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-[10px] px-2"
+                            onClick={() => setSelectedReminderContacts([])}
+                          >
+                            Desmarcar Todos
+                          </Button>
+                        </div>
+                        <div className="space-y-1 max-h-40 overflow-y-auto">
+                          {adminUsersWithPhone.map(u => {
+                            const isResp = taskResponsaveisIds.includes(u.id);
+                            const isChecked = selectedReminderContacts.includes(u.id);
+                            return (
+                              <label
+                                key={u.id}
+                                className={cn(
+                                  "flex items-center gap-2 text-xs p-1.5 rounded-md cursor-pointer transition-colors",
+                                  isChecked ? "bg-primary/5" : "hover:bg-muted/50"
+                                )}
+                              >
+                                <Checkbox
+                                  checked={isChecked}
+                                  onCheckedChange={(checked) => {
+                                    setSelectedReminderContacts(prev =>
+                                      checked ? [...prev, u.id] : prev.filter(id => id !== u.id)
+                                    );
+                                  }}
+                                  className="h-3.5 w-3.5"
+                                />
+                                <span className="font-medium flex-1 truncate">{u.nome || u.email}</span>
+                                {isResp && (
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
+                                    Resp.
+                                  </span>
+                                )}
+                              </label>
+                            );
+                          })}
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="w-full h-8 text-xs gap-1.5 font-semibold"
+                          onClick={() => handleSendReminder(selectedReminderContacts)}
+                          disabled={sendingReminder || selectedReminderContacts.length === 0}
+                        >
+                          {sendingReminder ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                          Enviar para {selectedReminderContacts.length} contato(s)
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
 
                    <p className="text-[10px] text-center text-muted-foreground/60">
                     Atualiza automaticamente a cada 5s
@@ -897,34 +999,77 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                 {/* Seleção de contatos para notificar */}
                 <div className="space-y-2">
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Contatos WhatsApp</p>
-                  {adminUsers.filter(u => u.telefone).length === 0 ? (
+                  {adminUsersWithPhone.length === 0 ? (
                     <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">Nenhum admin com telefone</p>
                   ) : (
-                    <div className="space-y-1 max-h-36 overflow-y-auto">
-                      {adminUsers.filter(u => u.telefone).map(u => {
-                        const isSelected = selectedNotifyContacts.includes(u.id);
-                        return (
-                          <label
-                            key={u.id}
-                            className={cn(
-                              "flex items-center gap-2 text-xs p-2 rounded-lg cursor-pointer border transition-colors",
-                              isSelected ? "bg-primary/5 border-primary/20" : "bg-background border-transparent hover:bg-muted/50"
-                            )}
-                          >
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={(checked) => {
-                                setSelectedNotifyContacts(prev =>
-                                  checked ? [...prev, u.id] : prev.filter(id => id !== u.id)
-                                );
-                              }}
-                              className="h-4 w-4"
-                            />
-                            <span className="font-medium flex-1 truncate">{u.nome || u.email}</span>
-                            <span className="text-[10px] text-muted-foreground">📱</span>
-                          </label>
-                        );
-                      })}
+                    <div className="space-y-1 max-h-44 overflow-y-auto">
+                      {/* Responsáveis deste compromisso */}
+                      {responsaveisContacts.length > 0 && (
+                        <>
+                          <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-1">
+                            Responsáveis deste compromisso
+                          </p>
+                          {responsaveisContacts.map(u => {
+                            const isSelected = selectedNotifyContacts.includes(u.id);
+                            return (
+                              <label
+                                key={u.id}
+                                className={cn(
+                                  "flex items-center gap-2 text-xs p-2 rounded-lg cursor-pointer border transition-colors",
+                                  isSelected ? "bg-primary/5 border-primary/20" : "bg-background border-transparent hover:bg-muted/50"
+                                )}
+                              >
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={(checked) => {
+                                    setSelectedNotifyContacts(prev =>
+                                      checked ? [...prev, u.id] : prev.filter(id => id !== u.id)
+                                    );
+                                  }}
+                                  className="h-4 w-4"
+                                />
+                                <span className="font-medium flex-1 truncate">{u.nome || u.email}</span>
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
+                                  Responsável
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </>
+                      )}
+
+                      {/* Outros contatos */}
+                      {otherContacts.length > 0 && (
+                        <>
+                          <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-2">
+                            Outros contatos
+                          </p>
+                          {otherContacts.map(u => {
+                            const isSelected = selectedNotifyContacts.includes(u.id);
+                            return (
+                              <label
+                                key={u.id}
+                                className={cn(
+                                  "flex items-center gap-2 text-xs p-2 rounded-lg cursor-pointer border transition-colors",
+                                  isSelected ? "bg-primary/5 border-primary/20" : "bg-background border-transparent hover:bg-muted/50"
+                                )}
+                              >
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={(checked) => {
+                                    setSelectedNotifyContacts(prev =>
+                                      checked ? [...prev, u.id] : prev.filter(id => id !== u.id)
+                                    );
+                                  }}
+                                  className="h-4 w-4"
+                                />
+                                <span className="font-medium flex-1 truncate">{u.nome || u.email}</span>
+                                <span className="text-[10px] text-muted-foreground">📱</span>
+                              </label>
+                            );
+                          })}
+                        </>
+                      )}
                     </div>
                   )}
                   <Button
