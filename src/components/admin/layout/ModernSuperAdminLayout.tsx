@@ -9,7 +9,7 @@ import { SofiaVoiceButton } from '@/components/admin/sofia';
 import { SofiaProvider } from '@/contexts/SofiaContext';
 
 // Rotas que devem ocultar o header para modo fullscreen
-const FULLSCREEN_ROUTES = ['/admin/contatos-kanban', '/super_admin/contatos-kanban'];
+const FULLSCREEN_ROUTES = ['/admin/contatos-kanban', '/super_admin/contatos-kanban', '/tarefas/fullscreen'];
 
 const SidebarTriggerPositioned = ({ isTablet }: { isTablet: boolean }) => {
   const { state } = useSidebar();

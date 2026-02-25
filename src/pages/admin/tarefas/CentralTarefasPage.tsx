@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { RefreshCw, Loader2, Plus, ChevronDown, ChevronUp, X, SlidersHorizontal } from 'lucide-react';
+import { RefreshCw, Loader2, Plus, ChevronDown, ChevronUp, X, SlidersHorizontal, Maximize2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { TASK_STATUS } from '@/constants/taskStatus';
@@ -31,6 +32,7 @@ import { toast } from 'sonner';
 
 const CentralTarefasPage: React.FC = () => {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   // Estado dos filtros
   const [statusFilter, setStatusFilter] = useState<TaskStatusCanonical[] | undefined>(
@@ -194,6 +196,18 @@ const CentralTarefasPage: React.FC = () => {
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Atualizar</span>
+          </Button>
+
+          {/* Botão Tela Cheia */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/super_admin/tarefas/fullscreen')}
+            className="gap-2"
+            title="Tela Cheia"
+          >
+            <Maximize2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Tela Cheia</span>
           </Button>
 
           {/* Botão Nova Tarefa - Desktop */}

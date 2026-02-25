@@ -13,6 +13,7 @@ interface AgendaDayViewProps {
   tasks: AgendaTask[];
   currentDate: Date;
   onTaskClick?: (task: AgendaTask) => void;
+  fullscreen?: boolean;
 }
 
 const HOURS = Array.from({ length: 15 }, (_, i) => i + 8); // 08:00 to 22:00
@@ -27,8 +28,12 @@ const getPriorityBorderColor = (prioridade: string) => {
   }
 };
 
-const AgendaDayView: React.FC<AgendaDayViewProps> = ({ tasks, currentDate, onTaskClick }) => {
+const AgendaDayView: React.FC<AgendaDayViewProps> = ({ tasks, currentDate, onTaskClick, fullscreen }) => {
   const dateStr = format(currentDate, 'yyyy-MM-dd');
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const isCurrentDay = format(now, 'yyyy-MM-dd') === dateStr;
 
   const { scheduledByHour, allDayTasks } = useMemo(() => {
     const dayTasks = tasks.filter(t => t.data_prevista?.split('T')[0] === dateStr);
@@ -54,11 +59,13 @@ const AgendaDayView: React.FC<AgendaDayViewProps> = ({ tasks, currentDate, onTas
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="text-center">
-        <h3 className="text-lg font-semibold text-foreground capitalize">
-          {format(currentDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
-        </h3>
-      </div>
+      {!fullscreen && (
+        <div className="text-center">
+          <h3 className="text-lg font-semibold text-foreground capitalize">
+            {format(currentDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
+          </h3>
+        </div>
+      )}
 
       {/* All day tasks */}
       {allDayTasks.length > 0 && (
@@ -83,13 +90,24 @@ const AgendaDayView: React.FC<AgendaDayViewProps> = ({ tasks, currentDate, onTas
         {HOURS.map(hour => {
           const hourTasks = scheduledByHour[hour] || [];
           const hourStr = `${hour.toString().padStart(2, '0')}:00`;
-          const isCurrentHour = new Date().getHours() === hour && format(new Date(), 'yyyy-MM-dd') === dateStr;
+          const isCurrentHour = currentHour === hour && isCurrentDay;
+          const slotHeight = fullscreen ? 'min-h-[80px]' : 'min-h-[60px]';
 
           return (
             <div
               key={hour}
-              className={`flex border-b border-border last:border-b-0 min-h-[60px] ${isCurrentHour ? 'bg-primary/5' : ''}`}
+              className={`relative flex border-b border-border last:border-b-0 ${slotHeight} ${isCurrentHour ? 'bg-primary/5' : ''}`}
             >
+              {/* Now indicator line */}
+              {isCurrentHour && isCurrentDay && (
+                <div
+                  className="absolute left-0 right-0 h-0.5 bg-red-500 z-10 pointer-events-none"
+                  style={{ top: `${(currentMinute / 60) * 100}%` }}
+                >
+                  <div className="absolute -left-1 -top-1 w-2.5 h-2.5 rounded-full bg-red-500" />
+                </div>
+              )}
+
               {/* Hour label */}
               <div className={`w-16 md:w-20 flex-shrink-0 py-2 px-3 text-xs font-medium border-r border-border ${isCurrentHour ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
                 {hourStr}
@@ -98,7 +116,7 @@ const AgendaDayView: React.FC<AgendaDayViewProps> = ({ tasks, currentDate, onTas
               {/* Tasks */}
               <div className="flex-1 p-1.5 space-y-1">
                 {hourTasks.map(task => (
-                  <div key={task.id} className={`border-l-3 ${getPriorityBorderColor(task.prioridade)} rounded-r-lg`}>
+                  <div key={task.id} className={`border-l-3 ${getPriorityBorderColor(task.prioridade)} rounded-r-lg hover-scale`}>
                     <TaskCard task={task} compact onClick={() => onTaskClick?.(task)} />
                   </div>
                 ))}
