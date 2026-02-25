@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, PhoneCall, Sparkles, AlertCircle } from 'lucide-react';
 import { useSofia } from '@/contexts/SofiaContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+
+const FULLSCREEN_HIDDEN_ROUTES = ['tarefas/fullscreen'];
 
 // Sofia Jarvis é EXCLUSIVA para super_admin
 
@@ -12,6 +15,7 @@ interface SofiaVoiceButtonProps {
 }
 
 export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className }) => {
+  const location = useLocation();
   const [sofiaAtiva, setSofiaAtiva] = useState<boolean | null>(null);
   const { userProfile } = useAuth();
   const {
@@ -60,8 +64,9 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
     };
   }, [isSuperAdmin]);
 
-  // Se não for super_admin, não renderizar NADA - botão não existe no DOM
-  if (!isSuperAdmin) {
+  // Hide on fullscreen routes (replaced by custom FAB)
+  const isFullscreenRoute = FULLSCREEN_HIDDEN_ROUTES.some(r => location.pathname.includes(r));
+  if (!isSuperAdmin || isFullscreenRoute) {
     return null;
   }
 
