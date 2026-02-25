@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowLeft, ChevronLeft, ChevronRight, X, Calendar, CalendarDays, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, X, Calendar, CalendarDays, LayoutGrid, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from '@tanstack/react-query';
@@ -17,6 +17,7 @@ import AgendaDayView from './components/AgendaDayView';
 import AgendaWeekView from './components/AgendaWeekView';
 import AgendaMonthView from './components/AgendaMonthView';
 import EditTaskModal from '@/components/admin/agenda/EditTaskModal';
+import CreateTaskModal from '@/components/admin/agenda/CreateTaskModal';
 
 type AgendaView = 'dia' | 'semana' | 'mes';
 
@@ -26,6 +27,7 @@ const FullscreenAgendaPage: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editModalTask, setEditModalTask] = useState<AgendaTask | null>(null);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   // ESC to close
   useEffect(() => {
@@ -161,11 +163,26 @@ const FullscreenAgendaPage: React.FC = () => {
         </div>
       </main>
 
+      {/* FAB + Button */}
+      <button
+        onClick={() => setCreateModalOpen(true)}
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105 active:scale-95"
+        title="Novo Compromisso"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
+
       {/* Edit Modal */}
       <EditTaskModal
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
         task={editModalTask}
+      />
+
+      {/* Create Modal */}
+      <CreateTaskModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
       />
     </div>
   );
