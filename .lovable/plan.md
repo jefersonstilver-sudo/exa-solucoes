@@ -1,91 +1,137 @@
 
+# Auditoria Profunda Completa - Revisao Final
 
-# Agenda Fullscreen -- Modo Imersivo com Efeitos Modernos
+## Resumo da Varredura
 
-## Visao Geral
-Botao "Tela Cheia" ao lado de "Nova Tarefa" que abre uma pagina dedicada fullscreen. Layout limpo, sem header do admin, sem sidebar, sem padding. Calendario ocupa 100% da tela com efeitos visuais modernos e transicoes suaves.
+| Categoria | Quantidade |
+|-----------|-----------|
+| Erros Criticos (ERROR) | 4 |
+| Avisos de Seguranca (WARN) | 23 |
+| Problemas de Performance | 8 |
+| Vazamento de Informacoes | 5 |
+| Total de findings do scan | 132 |
 
-## Layout Visual
+---
 
-```text
-+------------------------------------------------------------------+
-| [< Voltar]    Marco 2026    [<] [Hoje] [>]    [Dia][Sem][Mes]  [X] |
-+------------------------------------------------------------------+
-|                                                                    |
-|    Calendario ocupando toda a viewport restante                    |
-|    - Celulas maiores, mais tarefas visiveis                        |
-|    - Cards com hover elegante e transicoes                         |
-|    - Hora atual destacada com linha vermelha (dia/semana)          |
-|                                                                    |
-+------------------------------------------------------------------+
+## NOVOS PROBLEMAS ENCONTRADOS (nao estavam no plano anterior)
+
+### NOVO 1: XSS via dangerouslySetInnerHTML sem sanitizacao
+**Severidade: ALTA**
+**Arquivos afetados:**
+- `src/pages/admin/comunicacoes/EmailInbox.tsx` (linha 152) - Renderiza HTML de emails diretamente sem sanitizar. Um email malicioso pode executar JavaScript no navegador do admin.
+- `src/components/admin/contracts/FullscreenContractEditor.tsx` (linha 296) - Renderiza conteudo de contratos sem sanitizar.
+- `src/components/legal-flow/ContractInterviewer.tsx` (linhas 294, 374)
+- `src/components/public/ContractFullPreview.tsx` (linha 499)
+
+**Correcao:** Instalar `dompurify` e sanitizar todo HTML antes de renderizar:
+```typescript
+import DOMPurify from 'dompurify';
+dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlContent) }}
 ```
 
-## Efeitos e Detalhes Visuais
+### NOVO 2: Pagina com CPF no nome do arquivo exposta publicamente
+**Severidade: ALTA**
+- `src/pages/57303905503127900.tsx` - O nome do arquivo parece ser um CPF/documento. Esta pagina e uma rota publica acessivel e contem um "Emergency Protocol" com seed phrase. Deveria estar protegida por autenticacao e o nome do arquivo nao deveria conter dados pessoais.
 
-- **Entrada da pagina**: fade-in suave ao montar o componente
-- **Troca de view (Dia/Sem/Mes)**: transicao com opacity ao alternar
-- **Hover nos cards**: scale sutil (1.02) com shadow elevada
-- **Dia atual**: indicador pulsante discreto no numero do dia
-- **Linha "agora"**: linha vermelha horizontal na posicao do horario atual (views Dia e Semana)
-- **Celulas do calendario**: backdrop-blur leve para glassmorphism sutil
-- **Botao voltar**: com seta e label, navegacao via `useNavigate(-1)`
-- **Tecla ESC**: fecha o fullscreen e volta para Central de Tarefas
+### NOVO 3: Security Definer Views (2 ERRORS)
+**Severidade: ALTA**
+O scan do Supabase detectou 2 views com `SECURITY DEFINER` que executam com as permissoes do criador da view, nao do usuario que consulta. Isso pode permitir acesso nao autorizado a dados.
 
-## Arquivos a Criar
+**Correcao:** Alterar as views para usar `SECURITY INVOKER` ou adicionar RLS adequado nas tabelas subjacentes.
 
-### 1. `src/pages/admin/tarefas/FullscreenAgendaPage.tsx` (NOVO)
-- Pagina completa com `h-screen` e `overflow-hidden`
-- Header fino fixo (h-12) com:
-  - Botao voltar (ArrowLeft + "Voltar")
-  - Titulo do periodo atual (capitalizado)
-  - Navegacao de datas (prev/hoje/next)
-  - Tabs Dia/Semana/Mes
-  - Botao fechar (X) no canto direito
-- Reutiliza os mesmos AgendaDayView, AgendaWeekView, AgendaMonthView com prop `fullscreen={true}`
-- Reutiliza EditTaskModal ao clicar em tarefa
-- Usa a mesma query `agenda-tasks` da CentralTarefasPage
-- useEffect com listener de tecla ESC para fechar
-- Wrapper com classe `animate-fade-in` na entrada
+### NOVO 4: Chamadas RPC duplicadas no login
+**Severidade: MEDIA (Performance)**
+Os logs mostram que `get_user_highest_role` e chamada **4 vezes** simultaneamente no login (visivel nos network requests). Cada chamada e identica. Isso indica que multiplos componentes chamam o mesmo RPC sem compartilhar cache.
 
-## Arquivos a Modificar
+**Correcao:** Garantir que o `queryKey` seja consistente para que o React Query deduplicar as chamadas automaticamente.
 
-### 2. `src/pages/admin/tarefas/CentralTarefasPage.tsx`
-- Adicionar botao `Maximize2` ao lado de "Nova Tarefa" (linha ~200)
-- `onClick={() => navigate('/super_admin/tarefas/fullscreen')}`
-- Apenas adicao de 1 botao, nada mais alterado
+### NOVO 5: Tabelas com RLS habilitado mas sem policies (RLS Enabled No Policy)
+**Severidade: MEDIA**
+O scan detectou tabelas com RLS ativado mas sem nenhuma policy criada. Isso significa que NINGUEM consegue acessar essas tabelas (nem mesmo admins), o que pode causar erros silenciosos.
 
-### 3. `src/routes/SuperAdminRoutes.tsx`
-- Adicionar rota: `<Route path="tarefas/fullscreen" element={<Suspense><FullscreenAgendaPage /></Suspense>} />`
-- Apenas 1 linha adicionada
+---
 
-### 4. `src/components/admin/layout/ModernSuperAdminLayout.tsx`
-- Adicionar `'/tarefas/fullscreen'` ao array `FULLSCREEN_ROUTES` (linha 12)
-- Oculta header e remove padding automaticamente
+## CONFIRMACAO DOS PROBLEMAS JA IDENTIFICADOS
 
-### 5. `src/pages/admin/tarefas/components/AgendaDayView.tsx`
-- Prop opcional `fullscreen?: boolean`
-- Quando fullscreen: `min-h-[80px]` nos slots (vs 60px), header com fonte maior
-- Linha vermelha "now indicator" na hora atual
+### Performance - Polling Agressivo (CONFIRMADO - NAO CORRIGIDO AINDA)
 
-### 6. `src/pages/admin/tarefas/components/AgendaWeekView.tsx`
-- Prop opcional `fullscreen?: boolean`
-- Quando fullscreen: `min-h-[52px]` nas celulas (vs 40px), header sticky mais visivel
-- Linha vermelha "now indicator" na coluna do dia atual
+| Hook | Intervalo Atual | Correcao |
+|------|----------------|----------|
+| `useSecurityMetrics` (4 queries) | 5s cada = 48 req/min | 60s |
+| `useObservabilityData` (alerts) | 15s | 60s |
+| `PanelDeviceTab` | 10s | 30s |
+| `57303905503127900.tsx` | 10s | 30s |
 
-### 7. `src/pages/admin/tarefas/components/AgendaMonthView.tsx`
-- Prop opcional `fullscreen?: boolean`
-- Quando fullscreen: `min-h-[140px]` nas celulas, mostra ate 5 tarefas (vs 3)
+### Console.logs - 7.316 ocorrencias em 262 arquivos (CONFIRMADO)
+Dados sensiveis logados: emails, user IDs, roles, tokens de sessao.
 
-### 8. `src/components/admin/agenda/DroppableCalendarDay.tsx`
-- Prop opcional `fullscreen?: boolean` passada do MonthView
-- Quando fullscreen: celula mais alta, mostra ate 5 tarefas, fonte levemente maior
+### localStorage com dados sensiveis - 40 arquivos (CONFIRMADO)
+Pagamentos, order IDs, preference IDs armazenados sem criptografia.
 
-## Funcionalidades Garantidas
-- DnD (drag and drop) no mes continua funcionando normalmente
-- Click em tarefa abre EditTaskModal com todos os dados
-- Polling de 5s nos receipts continua ativo no modal
-- Todas as 3 views (Dia/Semana/Mes) funcionais com navegacao de datas
-- Botao "Hoje" reseta para data atual
-- Responsivo: no mobile o fullscreen usa toda a tela sem bottom nav
-- Nenhuma funcionalidade existente alterada
+### RLS Policy Always True - 15+ policies (CONFIRMADO)
+Policies com `WITH CHECK (true)` que permitem INSERT/UPDATE/DELETE sem restricao.
 
+### Function Search Path Mutable - 55+ funcoes (CONFIRMADO)
+Funcoes sem `SET search_path` vulneraveis a schema poisoning.
+
+### Dependencias Vulneraveis (CONFIRMADO)
+- `next` 15.3.2 - DoS via Server Components
+- `react-router-dom` 6.26.2 - XSS via Open Redirects
+
+### Leaked Password Protection Disabled (CONFIRMADO)
+Precisa ser habilitado no dashboard do Supabase.
+
+### Extension in Public (CONFIRMADO)
+Extensoes instaladas no schema public em vez de `extensions`.
+
+### Materialized View in API (CONFIRMADO)
+Views materializadas acessiveis pela API publica.
+
+---
+
+## PLANO DE EXECUCAO ATUALIZADO (Prioridade)
+
+### Fase 1 - Performance (Impacto Imediato no Site Lento)
+1. Reduzir polling em `useSecurityMetrics.tsx` (5s -> 60s)
+2. Reduzir polling em `useObservabilityData.ts` (15s -> 60s)
+3. Reduzir polling em `PanelDeviceTab.tsx` (10s -> 30s)
+4. Reduzir polling em `57303905503127900.tsx` (10s -> 30s)
+5. Criar utilitario `devLog.ts` e substituir logs criticos que vazam PII
+
+### Fase 2 - XSS e Seguranca Critica
+6. Sanitizar `dangerouslySetInnerHTML` em EmailInbox, ContractEditor, ContractInterviewer, ContractFullPreview com DOMPurify
+7. Migrar localStorage de pagamento para sessionStorage em NextButton, PaymentGateway, usePaymentProcessor, usePaymentDeduplication
+
+### Fase 3 - Dependencias
+8. Atualizar `next`, `react-router-dom` no package.json
+
+### Fase 4 - Database (via SQL migrations)
+9. Corrigir Security Definer Views
+10. Consolidar RLS policies em log_eventos_sistema
+11. Revisar tabelas com RLS sem policies
+12. Corrigir policies com `WITH CHECK (true)` mais criticas
+
+### Arquivos a Modificar (Fase 1 e 2)
+- `src/hooks/useSecurityMetrics.tsx` - refetchInterval
+- `src/hooks/useObservabilityData.ts` - refetchInterval
+- `src/components/admin/panels/details/PanelDeviceTab.tsx` - refetchInterval
+- `src/pages/57303905503127900.tsx` - refetchInterval
+- `src/utils/devLog.ts` (NOVO) - helper de log condicional
+- `src/hooks/useSuperAdminProtection.tsx` - remover logs de email/role
+- `src/hooks/useUserSession.tsx` - remover logs de email/role
+- `src/components/checkout/navigation/NextButton.tsx` - sessionStorage
+- `src/components/checkout/payment/PaymentGateway.tsx` - sessionStorage
+- `src/hooks/payment/usePaymentProcessor.consolidated.tsx` - sessionStorage
+- `src/hooks/payment/usePaymentDeduplication.tsx` - sessionStorage
+- `src/pages/admin/comunicacoes/EmailInbox.tsx` - sanitizar HTML
+- `src/components/admin/contracts/FullscreenContractEditor.tsx` - sanitizar HTML
+- `src/components/legal-flow/ContractInterviewer.tsx` - sanitizar HTML
+- `src/components/public/ContractFullPreview.tsx` - sanitizar HTML
+- `package.json` - atualizar dependencias
+
+### O que NAO sera alterado
+Nenhuma interface, workflow, rota ou funcionalidade existente. Apenas:
+- Intervalos de polling (valores numericos)
+- Destino de storage (localStorage -> sessionStorage)
+- Adicao de sanitizacao HTML (wrapper sobre conteudo existente)
+- Remocao/condicionamento de console.logs
