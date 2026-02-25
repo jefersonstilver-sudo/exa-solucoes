@@ -90,6 +90,108 @@ serve(async (req) => {
     const hasButtonReply = !!(payload.buttonReply || payload.buttonsResponseMessage);
     
     if (fromMe && !hasButtonReply) {
+      // ========== INTERCEPTAR TASK ACK ANTES DE PROCESSAR COMO OUTBOUND ==========
+      const outboundText = payload.text?.message || payload.body || '';
+      const isTaskAckFromMe = outboundText === '✅ Confirmar recebimento' || 
+                               outboundText.includes('Confirmar recebimento');
+      
+      if (isTaskAckFromMe && phone) {
+        console.log('[ZAPI-WEBHOOK] 📋 Task ack detected in fromMe message, routing to task ack handler:', phone);
+        
+        // Find the most recent unread receipt for this phone
+        const normalizedPhoneAck = phone.startsWith('55') ? phone : `55${phone}`;
+        const phoneVariantsAck = [normalizedPhoneAck, phone, phone.replace(/^55/, '')];
+        
+        const { data: pendingReceipt } = await supabase
+          .from('task_read_receipts')
+          .select('id, task_id, contact_phone, contact_name')
+          .or(phoneVariantsAck.map(p => `contact_phone.eq.${p}`).join(','))
+          .eq('status', 'sent')
+          .order('sent_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (pendingReceipt) {
+          console.log('[ZAPI-WEBHOOK] ✅ Found pending receipt:', pendingReceipt.id, 'for task:', pendingReceipt.task_id);
+          
+          const now = new Date().toISOString();
+          const { error: updateErr } = await supabase
+            .from('task_read_receipts')
+            .update({ read_at: now, status: 'read' })
+            .eq('id', pendingReceipt.id);
+          
+          if (updateErr) {
+            console.error('[ZAPI-WEBHOOK] ❌ Error updating task receipt:', updateErr);
+          } else {
+            console.log('[ZAPI-WEBHOOK] ✅ Task receipt updated to READ');
+          }
+          
+          // Fetch task details for the comprovante
+          const { data: taskData } = await supabase
+            .from('tasks')
+            .select('titulo, data_vencimento, predio_nome, criado_por_nome')
+            .eq('id', pendingReceipt.task_id)
+            .maybeSingle();
+          
+          // Send comprovante de ciência
+          const comprovanteMsg = 
+            `✅ *Comprovante de Ciência*\n\n` +
+            `📋 *Tarefa:* ${taskData?.titulo || 'N/A'}\n` +
+            `📅 *Data:* ${taskData?.data_vencimento || 'N/A'}\n` +
+            `🏢 *Prédio:* ${taskData?.predio_nome || 'N/A'}\n` +
+            `👤 *Criado por:* ${taskData?.criado_por_nome || 'N/A'}\n` +
+            `✅ *Confirmado por:* ${pendingReceipt.contact_name || phone}\n` +
+            `⏰ *Confirmado em:* ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`;
+          
+          // Get Z-API config
+          const { data: alertAgent } = await supabase
+            .from('agents')
+            .select('zapi_config')
+            .eq('key', 'exa_alert')
+            .maybeSingle();
+          
+          const zapiCfg = alertAgent?.zapi_config as any;
+          if (zapiCfg?.instance_id && zapiCfg?.token) {
+            const { data: secretData } = await supabase
+              .from('agent_context')
+              .select('value')
+              .eq('key', 'zapi_client_token')
+              .maybeSingle();
+            const clientToken = (secretData?.value as any)?.token || '';
+            
+            try {
+              await fetch(
+                `https://api.z-api.io/instances/${zapiCfg.instance_id}/token/${zapiCfg.token}/send-text`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'Client-Token': clientToken },
+                  body: JSON.stringify({ phone: normalizedPhoneAck, message: comprovanteMsg })
+                }
+              );
+              console.log('[ZAPI-WEBHOOK] ✅ Comprovante sent to:', normalizedPhoneAck);
+            } catch (ackSendErr) {
+              console.error('[ZAPI-WEBHOOK] ⚠️ Error sending comprovante:', ackSendErr);
+            }
+          }
+          
+          await supabase.from('agent_logs').insert({
+            agent_key: 'exa_alert',
+            event_type: 'task_ack_received',
+            metadata: { task_id: pendingReceipt.task_id, contact_phone: phone, method: 'fromMe_intercept', timestamp: now }
+          });
+          
+          return new Response(JSON.stringify({ 
+            success: true, 
+            processed: 'task_ack_fromMe_intercept',
+            task_id: pendingReceipt.task_id
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } else {
+          console.log('[ZAPI-WEBHOOK] ⚠️ No pending receipt found for phone:', phone);
+        }
+      }
+      
       console.log('[ZAPI-WEBHOOK] 📤 Processing outbound message (fromMe=true)');
       
       // ✅ Extrair messageId no início do bloco
