@@ -1,59 +1,63 @@
 
+# Corrigir Popover "Enviar Lembrete" para mostrar contatos do evento
 
-# Unificar Contatos + Corrigir Layout do CreateTaskModal
+## Problema
+O popover "Enviar Lembrete" (linhas 1012-1040 do EditTaskModal.tsx) usa `adminUsersWithPhone` -- que sao apenas os 2 admins com telefone na tabela `users` (Jeferson e Jeniffer). Deveria mostrar os 6 contatos que JA foram notificados neste evento, que estao nos `receipts` (task_read_receipts).
 
-## Problemas Identificados
-
-1. **Contatos externos (ex: Joao) nao aparecem** -- A secao "Contatos com WhatsApp registrado" (linha 1237-1278) so busca da tabela `users`. Contatos manuais de `exa_alerts_directors` nao sao listados.
-2. **Modal muito estreito** -- `sm:max-w-[550px]` (linha 1347) limita o modal a 550px, ficando apertado com tantos campos.
-3. **Fundo transparente/bugado** -- O DialogContent herda estilos de glassmorphism que causam transparencia indesejada.
+Alem disso, ha um mismatch de IDs: o `handleSendReminder` usa `compositeId` (ex: `admin:xxx`), mas o popover usa `u.id` (raw ID). Entao mesmo selecionando, o envio falha silenciosamente porque nenhum ID bate.
 
 ## Solucao
 
-### Arquivo unico: `src/components/admin/agenda/CreateTaskModal.tsx`
+### Arquivo unico: `src/components/admin/agenda/EditTaskModal.tsx`
 
-### 1. Nova query para contatos de alerta
-Adicionar um `useQuery` para buscar contatos ativos de `exa_alerts_directors`:
+### 1. Derivar lista de contatos do evento a partir dos receipts
+Criar um `useMemo` que extrai contatos unicos dos `receipts` (ja carregados no componente):
+
 ```text
-const { data: alertContacts = [] } = useQuery({
-  queryKey: ['agenda-alert-contacts'],
-  queryFn: async () => {
-    const { data } = await supabase
-      .from('exa_alerts_directors')
-      .select('id, nome, telefone, ativo')
-      .eq('ativo', true)
-      .order('nome');
-    return data || [];
-  }
-});
+const eventRegisteredContacts = useMemo(() => {
+  if (!receipts || receipts.length === 0) return [];
+  const seen = new Set<string>();
+  return receipts
+    .filter(r => {
+      const phone = r.contact_phone.replace(/\D/g, '');
+      if (seen.has(phone)) return false;
+      seen.add(phone);
+      return true;
+    })
+    .map(r => ({
+      id: r.id,
+      phone: r.contact_phone,
+      name: r.contact_name || r.contact_phone,
+    }));
+}, [receipts]);
 ```
 
-### 2. Lista unificada de contatos selecionaveis
-Criar um array combinado que junta admins com telefone + contatos de alerta, deduplicando por telefone. Cada item tera um `compositeId` (ex: `admin:userId` ou `alert:alertId`) para distinguir a origem.
+### 2. Atualizar o popover (linhas 986-1051)
+- Contador: `selectedReminderContacts.length de eventRegisteredContacts.length`
+- "Selecionar Todos": usa `eventRegisteredContacts.map(c => c.id)`
+- Lista: itera sobre `eventRegisteredContacts` em vez de `adminUsersWithPhone`
+- Cada checkbox usa `c.id` (receipt ID) como chave de selecao
 
-O state `selectedNotifyContacts` passa a armazenar esses IDs compostos. A inicializacao do criador tambem usa o formato composto.
-
-### 3. UI categorizada na secao "Contatos com WhatsApp"
-Dividir em dois grupos visuais:
-- **Equipe** (admins com telefone) -- com badge azul "Admin"
-- **Contatos Externos** (da tabela `exa_alerts_directors`) -- com badge verde "Externo"
-
-### 4. Ajuste no payload de notificacao
-No `onSuccess`, mapear os IDs compostos de volta para `{nome, telefone}` usando o array unificado, garantindo que tanto admins quanto contatos externos sejam notificados.
-
-### 5. Modal mais largo
-Alterar `sm:max-w-[550px]` para `sm:max-w-[700px]` no DialogContent.
-
-### 6. Fundo solido
-Adicionar `bg-background` explicito ao DialogContent para evitar transparencia:
+### 3. Atualizar handleOpenReminderPopover (linha 638)
+Pre-selecionar todos os contatos do evento:
 ```text
-<DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-background">
+setSelectedReminderContacts(eventRegisteredContacts.map(c => c.id));
 ```
+
+### 4. Atualizar handleSendReminder (linhas 522-525)
+Em vez de mapear via `allSelectableContacts` com compositeId, mapear diretamente dos `eventRegisteredContacts`:
+```text
+const selectedPhones = eventRegisteredContacts
+  .filter(c => idsToSend.includes(c.id))
+  .map(c => ({ nome: c.name, telefone: c.phone }));
+```
+
+### 5. Fallback quando nao ha receipts
+Se `eventRegisteredContacts` estiver vazio (evento nunca notificado), usar `allSelectableContacts` como fallback para permitir o primeiro envio.
 
 ## O que NAO muda
-- Nenhum outro componente, modal ou pagina e alterado
-- O edge function `task-notify-created` permanece igual (ja recebe `specific_contacts` como `{nome, telefone}`)
-- O `ManageAlertContactsModal` permanece igual
-- O `EditTaskModal` nao e alterado nesta tarefa
-- Toda a logica de formulario, responsaveis, departamentos, etc. permanece intacta
-
+- Nenhum outro componente, modal ou pagina
+- A secao "Ao Salvar" com contatos WhatsApp permanece igual
+- O edge function `task-notify-created` permanece igual
+- O CreateTaskModal permanece igual
+- A secao de NOTIFICACOES (monitor de receipts) permanece igual
