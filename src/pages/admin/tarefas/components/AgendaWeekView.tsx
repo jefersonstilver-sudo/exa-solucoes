@@ -12,6 +12,7 @@ interface AgendaWeekViewProps {
   tasks: AgendaTask[];
   currentDate: Date;
   onTaskClick?: (task: AgendaTask) => void;
+  fullscreen?: boolean;
 }
 
 const HOURS = Array.from({ length: 15 }, (_, i) => i + 8);
@@ -26,8 +27,12 @@ const getPriorityColor = (prioridade: string) => {
   }
 };
 
-const AgendaWeekView: React.FC<AgendaWeekViewProps> = ({ tasks, currentDate, onTaskClick }) => {
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Monday
+const AgendaWeekView: React.FC<AgendaWeekViewProps> = ({ tasks, currentDate, onTaskClick, fullscreen }) => {
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const todayStr = format(now, 'yyyy-MM-dd');
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   const tasksByDayAndHour = useMemo(() => {
@@ -62,11 +67,13 @@ const AgendaWeekView: React.FC<AgendaWeekViewProps> = ({ tasks, currentDate, onT
 
   return (
     <div className="space-y-2">
-      <div className="text-center mb-2">
-        <h3 className="text-sm font-medium text-muted-foreground">
-          {format(weekDays[0], "d MMM", { locale: ptBR })} — {format(weekDays[6], "d MMM yyyy", { locale: ptBR })}
-        </h3>
-      </div>
+      {!fullscreen && (
+        <div className="text-center mb-2">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            {format(weekDays[0], "d MMM", { locale: ptBR })} — {format(weekDays[6], "d MMM yyyy", { locale: ptBR })}
+          </h3>
+        </div>
+      )}
 
       <div className="bg-card rounded-xl border border-border overflow-auto">
         <div className="min-w-[700px]">
@@ -122,21 +129,34 @@ const AgendaWeekView: React.FC<AgendaWeekViewProps> = ({ tasks, currentDate, onT
           )}
 
           {/* Hour rows */}
-          {HOURS.map(hour => (
-            <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border last:border-b-0">
+          {HOURS.map(hour => {
+            const isCurrentHourRow = currentHour === hour;
+            return (
+            <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border last:border-b-0 relative">
               <div className="p-1 text-[10px] text-muted-foreground border-r border-border text-right pr-2 pt-1">
                 {`${hour.toString().padStart(2, '0')}:00`}
               </div>
               {weekDays.map(day => {
                 const key = format(day, 'yyyy-MM-dd');
                 const hourTasks = tasksByDayAndHour.map[key]?.[hour] || [];
+                const cellHeight = fullscreen ? 'min-h-[52px]' : 'min-h-[40px]';
+                const isTodayCol = key === todayStr;
                 return (
-                  <div key={`${key}-${hour}`} className="p-0.5 border-r border-border last:border-r-0 min-h-[40px] space-y-0.5">
+                  <div key={`${key}-${hour}`} className={`relative p-0.5 border-r border-border last:border-r-0 ${cellHeight} space-y-0.5 ${isTodayCol ? 'bg-primary/[0.03]' : ''}`}>
+                    {/* Now indicator */}
+                    {isCurrentHourRow && isTodayCol && (
+                      <div
+                        className="absolute left-0 right-0 h-0.5 bg-red-500 z-10 pointer-events-none"
+                        style={{ top: `${(currentMinute / 60) * 100}%` }}
+                      >
+                        <div className="absolute -left-1 -top-1 w-2.5 h-2.5 rounded-full bg-red-500" />
+                      </div>
+                    )}
                     {hourTasks.map(task => (
                       <div
                         key={task.id}
                         onClick={() => onTaskClick?.(task)}
-                        className={`text-[9px] px-1.5 py-1 rounded cursor-pointer border truncate ${getPriorityColor(task.prioridade)}`}
+                        className={`text-[9px] px-1.5 py-1 rounded cursor-pointer border truncate hover-scale ${getPriorityColor(task.prioridade)}`}
                         title={task.titulo}
                       >
                         <span className="font-medium">{task.horario_inicio?.substring(0,5) || ''}</span>{' '}
@@ -147,7 +167,8 @@ const AgendaWeekView: React.FC<AgendaWeekViewProps> = ({ tasks, currentDate, onT
                 );
               })}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

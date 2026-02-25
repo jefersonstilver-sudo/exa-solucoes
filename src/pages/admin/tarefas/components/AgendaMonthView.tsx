@@ -20,11 +20,12 @@ interface AgendaMonthViewProps {
   tasks: AgendaTask[];
   currentDate: Date;
   onTaskClick?: (task: AgendaTask) => void;
+  fullscreen?: boolean;
 }
 
 const weekDays = ['dom.', 'seg.', 'ter.', 'qua.', 'qui.', 'sex.', 'sáb.'];
 
-const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, onTaskClick }) => {
+const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, onTaskClick, fullscreen }) => {
   const queryClient = useQueryClient();
   const [activeTask, setActiveTask] = useState<AgendaTask | null>(null);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
@@ -94,12 +95,14 @@ const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, o
   return (
     <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="space-y-4">
-        {/* Month name */}
-        <div className="text-center">
-          <h3 className="text-lg font-semibold text-foreground capitalize">
-            {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
-          </h3>
-        </div>
+        {/* Month name - hidden in fullscreen since header shows it */}
+        {!fullscreen && (
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-foreground capitalize">
+              {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
+            </h3>
+          </div>
+        )}
 
         {/* Week day headers */}
         <div className="grid grid-cols-7 gap-1 mb-1">
@@ -123,6 +126,7 @@ const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, o
                 tasks={dayTasks}
                 isCurrentMonth={isCurrentMonth}
                 onTaskClick={onTaskClick}
+                fullscreen={fullscreen}
               />
             );
           })}
