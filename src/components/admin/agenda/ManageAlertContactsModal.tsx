@@ -75,7 +75,7 @@ const ManageAlertContactsModal = ({ open, onOpenChange }: ManageAlertContactsMod
           telefone: formattedPhone,
           ativo: true,
           pode_agendar: true,
-          nivel_acesso: 'usuario'
+          nivel_acesso: 'basico'
         })
         .select()
         .single();
