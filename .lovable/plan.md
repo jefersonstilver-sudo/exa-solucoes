@@ -1,137 +1,116 @@
 
-# Auditoria Profunda Completa - Revisao Final
+# Correcao do Sistema de Notificacoes WhatsApp para Tarefas
 
-## Resumo da Varredura
+## Diagnostico dos Problemas
 
-| Categoria | Quantidade |
-|-----------|-----------|
-| Erros Criticos (ERROR) | 4 |
-| Avisos de Seguranca (WARN) | 23 |
-| Problemas de Performance | 8 |
-| Vazamento de Informacoes | 5 |
-| Total de findings do scan | 132 |
+Analisei os logs do webhook, o codigo fonte e as screenshots. Encontrei **4 problemas raiz** que quebram todo o fluxo:
+
+### Problema 1: task_id = 'batch' quebra a confirmacao
+Quando uma tarefa e criada no `CreateTaskModal`, o notify e chamado com `task_id: 'batch'` (linha 445). Porem:
+- O receipt e salvo com `task_id: null` (porque o codigo faz `task_id === 'batch' ? null : task_id`)
+- O botao de confirmacao gera buttonId = `task_ack:batch:phone`
+- Quando o usuario clica, o webhook tenta buscar `tasks` com id = 'batch' -- nao encontra nada
+- O update no `task_read_receipts` com `.eq('task_id', 'batch')` tambem falha -- pois foi salvo como `null`
+- Resultado: **confirmacao nunca funciona**, comprovante mostra tudo como N/A
+
+**Evidencia nos logs:** `buttonId: "task_ack:batch:5545998090000"` -- exatamente o bug.
+
+### Problema 2: EVENT_TYPE_MAP hardcoded nao reconhece tipos personalizados
+O mapa de tipos (linha 10-19 do edge function) so tem 8 tipos fixos. Tipos criados pelo usuario como "Apresentacao EXA" nao sao reconhecidos e caem no fallback `tarefa`, gerando mensagem com emoji e label errados.
+
+### Problema 3: Template com erro gramatical
+A mensagem diz "Nova Compromisso agendada" -- o correto seria "Novo Compromisso agendado". A logica de genero (linha 36) so trata `aviso` como masculino, mas `compromisso` tambem e masculino.
+
+### Problema 4: Notificacao disparada antes de ter os task_ids reais
+O notify e chamado no `onSuccess` do mutation, mas os IDs das tarefas criadas nao sao passados -- ficam perdidos dentro do `mutationFn`.
 
 ---
 
-## NOVOS PROBLEMAS ENCONTRADOS (nao estavam no plano anterior)
+## Plano de Correcao
 
-### NOVO 1: XSS via dangerouslySetInnerHTML sem sanitizacao
-**Severidade: ALTA**
-**Arquivos afetados:**
-- `src/pages/admin/comunicacoes/EmailInbox.tsx` (linha 152) - Renderiza HTML de emails diretamente sem sanitizar. Um email malicioso pode executar JavaScript no navegador do admin.
-- `src/components/admin/contracts/FullscreenContractEditor.tsx` (linha 296) - Renderiza conteudo de contratos sem sanitizar.
-- `src/components/legal-flow/ContractInterviewer.tsx` (linhas 294, 374)
-- `src/components/public/ContractFullPreview.tsx` (linha 499)
+### Arquivo 1: `src/components/admin/agenda/CreateTaskModal.tsx`
+- Coletar os IDs reais das tarefas criadas dentro do `mutationFn` e retorna-los
+- No `onSuccess`, usar `data` (retorno do mutation) para enviar notificacoes com o ID real de cada tarefa
+- Para multiplas datas: enviar uma notificacao por tarefa com seu ID real, ou usar o ID da primeira tarefa
 
-**Correcao:** Instalar `dompurify` e sanitizar todo HTML antes de renderizar:
-```typescript
-import DOMPurify from 'dompurify';
-dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlContent) }}
+### Arquivo 2: `supabase/functions/task-notify-created/index.ts`
+- Remover o `EVENT_TYPE_MAP` hardcoded
+- Buscar o tipo de evento no banco (`event_types` table) usando o campo `tipo_evento` recebido
+- Fallback para emoji/label padrao se nao encontrar
+- Corrigir logica de genero: palavras masculinas (compromisso, aviso) usam "Novo/agendado", femininas usam "Nova/agendada"
+- Corrigir o insert de receipt: nunca salvar `task_id` como null quando um ID real foi fornecido
+
+### Arquivo 3: `supabase/functions/zapi-webhook/index.ts` (trecho task_ack)
+- Adicionar fallback: se `taskId === 'batch'` ou task nao encontrada, buscar receipt mais recente pelo phone (mesma logica que ja existe no bloco text-based ack)
+- Garantir que o comprovante sempre tenha os dados reais da tarefa
+- Unificar a logica de confirmacao (atualmente duplicada em 3 lugares: fromMe intercept, text-based ack, e button-based ack)
+
+### Arquivo 4: `src/components/admin/agenda/EditTaskModal.tsx`
+- Garantir que o `tipo_evento` enviado ao notify use o valor do banco (nao o slug hardcoded)
+- Pequeno ajuste para incluir `responsaveis_nomes` no payload (ja esta no CreateTaskModal mas falta no EditTaskModal)
+
+---
+
+## Detalhes Tecnicos
+
+### CreateTaskModal - Retornar IDs reais
+```text
+mutationFn: async () => {
+  const createdIds: string[] = [];
+  for (const data of datasPrevistas) {
+    const { data: taskData } = await supabase.from('tasks').insert({...}).select('id').single();
+    createdIds.push(taskData.id);
+  }
+  return createdIds;  // <-- retornar
+},
+onSuccess: (createdIds) => {
+  // Notificar com o ID real (primeiro ou todos)
+  supabase.functions.invoke('task-notify-created', {
+    body: { task_id: createdIds[0], ... }  // ID real, nao 'batch'
+  });
+}
 ```
 
-### NOVO 2: Pagina com CPF no nome do arquivo exposta publicamente
-**Severidade: ALTA**
-- `src/pages/57303905503127900.tsx` - O nome do arquivo parece ser um CPF/documento. Esta pagina e uma rota publica acessivel e contem um "Emergency Protocol" com seed phrase. Deveria estar protegida por autenticacao e o nome do arquivo nao deveria conter dados pessoais.
+### task-notify-created - Resolver tipo dinamicamente
+```text
+// Buscar event_type do banco
+const { data: eventType } = await supabase
+  .from('event_types')
+  .select('label, icon, color')
+  .eq('value', tipo_evento)
+  .maybeSingle();
 
-### NOVO 3: Security Definer Views (2 ERRORS)
-**Severidade: ALTA**
-O scan do Supabase detectou 2 views com `SECURITY DEFINER` que executam com as permissoes do criador da view, nao do usuario que consulta. Isso pode permitir acesso nao autorizado a dados.
+// Usar dados do banco ou fallback
+const emoji = eventType?.icon || '📋';
+const label = eventType?.label || 'Tarefa';
+```
 
-**Correcao:** Alterar as views para usar `SECURITY INVOKER` ou adicionar RLS adequado nas tabelas subjacentes.
+### Genero correto no template
+```text
+// Palavras masculinas
+const masculinos = ['compromisso', 'aviso', 'lembrete'];
+const isMasc = masculinos.includes(tipo);
+message = `${emoji} *Nov${isMasc ? 'o' : 'a'} ${label} agendad${isMasc ? 'o' : 'a'}*`;
+```
 
-### NOVO 4: Chamadas RPC duplicadas no login
-**Severidade: MEDIA (Performance)**
-Os logs mostram que `get_user_highest_role` e chamada **4 vezes** simultaneamente no login (visivel nos network requests). Cada chamada e identica. Isso indica que multiplos componentes chamam o mesmo RPC sem compartilhar cache.
+### Webhook - Fallback para batch
+```text
+if (taskId === 'batch' || !taskId) {
+  // Buscar receipt mais recente pelo telefone
+  const { data: receipt } = await supabase
+    .from('task_read_receipts')
+    .select('id, task_id')
+    .eq('contact_phone', contactPhone)
+    .eq('status', 'sent')
+    .order('sent_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  // Usar o task_id real do receipt
+}
+```
 
-**Correcao:** Garantir que o `queryKey` seja consistente para que o React Query deduplicar as chamadas automaticamente.
-
-### NOVO 5: Tabelas com RLS habilitado mas sem policies (RLS Enabled No Policy)
-**Severidade: MEDIA**
-O scan detectou tabelas com RLS ativado mas sem nenhuma policy criada. Isso significa que NINGUEM consegue acessar essas tabelas (nem mesmo admins), o que pode causar erros silenciosos.
-
----
-
-## CONFIRMACAO DOS PROBLEMAS JA IDENTIFICADOS
-
-### Performance - Polling Agressivo (CONFIRMADO - NAO CORRIGIDO AINDA)
-
-| Hook | Intervalo Atual | Correcao |
-|------|----------------|----------|
-| `useSecurityMetrics` (4 queries) | 5s cada = 48 req/min | 60s |
-| `useObservabilityData` (alerts) | 15s | 60s |
-| `PanelDeviceTab` | 10s | 30s |
-| `57303905503127900.tsx` | 10s | 30s |
-
-### Console.logs - 7.316 ocorrencias em 262 arquivos (CONFIRMADO)
-Dados sensiveis logados: emails, user IDs, roles, tokens de sessao.
-
-### localStorage com dados sensiveis - 40 arquivos (CONFIRMADO)
-Pagamentos, order IDs, preference IDs armazenados sem criptografia.
-
-### RLS Policy Always True - 15+ policies (CONFIRMADO)
-Policies com `WITH CHECK (true)` que permitem INSERT/UPDATE/DELETE sem restricao.
-
-### Function Search Path Mutable - 55+ funcoes (CONFIRMADO)
-Funcoes sem `SET search_path` vulneraveis a schema poisoning.
-
-### Dependencias Vulneraveis (CONFIRMADO)
-- `next` 15.3.2 - DoS via Server Components
-- `react-router-dom` 6.26.2 - XSS via Open Redirects
-
-### Leaked Password Protection Disabled (CONFIRMADO)
-Precisa ser habilitado no dashboard do Supabase.
-
-### Extension in Public (CONFIRMADO)
-Extensoes instaladas no schema public em vez de `extensions`.
-
-### Materialized View in API (CONFIRMADO)
-Views materializadas acessiveis pela API publica.
-
----
-
-## PLANO DE EXECUCAO ATUALIZADO (Prioridade)
-
-### Fase 1 - Performance (Impacto Imediato no Site Lento)
-1. Reduzir polling em `useSecurityMetrics.tsx` (5s -> 60s)
-2. Reduzir polling em `useObservabilityData.ts` (15s -> 60s)
-3. Reduzir polling em `PanelDeviceTab.tsx` (10s -> 30s)
-4. Reduzir polling em `57303905503127900.tsx` (10s -> 30s)
-5. Criar utilitario `devLog.ts` e substituir logs criticos que vazam PII
-
-### Fase 2 - XSS e Seguranca Critica
-6. Sanitizar `dangerouslySetInnerHTML` em EmailInbox, ContractEditor, ContractInterviewer, ContractFullPreview com DOMPurify
-7. Migrar localStorage de pagamento para sessionStorage em NextButton, PaymentGateway, usePaymentProcessor, usePaymentDeduplication
-
-### Fase 3 - Dependencias
-8. Atualizar `next`, `react-router-dom` no package.json
-
-### Fase 4 - Database (via SQL migrations)
-9. Corrigir Security Definer Views
-10. Consolidar RLS policies em log_eventos_sistema
-11. Revisar tabelas com RLS sem policies
-12. Corrigir policies com `WITH CHECK (true)` mais criticas
-
-### Arquivos a Modificar (Fase 1 e 2)
-- `src/hooks/useSecurityMetrics.tsx` - refetchInterval
-- `src/hooks/useObservabilityData.ts` - refetchInterval
-- `src/components/admin/panels/details/PanelDeviceTab.tsx` - refetchInterval
-- `src/pages/57303905503127900.tsx` - refetchInterval
-- `src/utils/devLog.ts` (NOVO) - helper de log condicional
-- `src/hooks/useSuperAdminProtection.tsx` - remover logs de email/role
-- `src/hooks/useUserSession.tsx` - remover logs de email/role
-- `src/components/checkout/navigation/NextButton.tsx` - sessionStorage
-- `src/components/checkout/payment/PaymentGateway.tsx` - sessionStorage
-- `src/hooks/payment/usePaymentProcessor.consolidated.tsx` - sessionStorage
-- `src/hooks/payment/usePaymentDeduplication.tsx` - sessionStorage
-- `src/pages/admin/comunicacoes/EmailInbox.tsx` - sanitizar HTML
-- `src/components/admin/contracts/FullscreenContractEditor.tsx` - sanitizar HTML
-- `src/components/legal-flow/ContractInterviewer.tsx` - sanitizar HTML
-- `src/components/public/ContractFullPreview.tsx` - sanitizar HTML
-- `package.json` - atualizar dependencias
-
-### O que NAO sera alterado
-Nenhuma interface, workflow, rota ou funcionalidade existente. Apenas:
-- Intervalos de polling (valores numericos)
-- Destino de storage (localStorage -> sessionStorage)
-- Adicao de sanitizacao HTML (wrapper sobre conteudo existente)
-- Remocao/condicionamento de console.logs
+## Impacto
+- Nenhuma interface alterada (apenas dados enviados nos payloads)
+- Nenhum workflow existente quebrado
+- Edge functions precisam ser redeployadas apos as alteracoes
+- Corrige: confirmacao de recebimento, comprovante de ciencia, template de notificacao, genero gramatical
