@@ -522,15 +522,16 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
     updateMutation.mutate();
   };
 
-  // Derive event-registered contacts from receipts (unique by phone)
+  // Derive event-registered contacts from receipts (unique by name+phone combo)
   const eventRegisteredContacts = useMemo(() => {
     if (!receipts || receipts.length === 0) return [];
     const seen = new Set<string>();
     return receipts
       .filter(r => {
-        const phone = r.contact_phone.replace(/\D/g, '');
-        if (seen.has(phone)) return false;
-        seen.add(phone);
+        // Use name+phone as unique key to avoid filtering out contacts with same phone
+        const key = `${(r.contact_name || '').toLowerCase().trim()}|${(r.contact_phone || '').replace(/\D/g, '')}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
         return true;
       })
       .map(r => ({
@@ -1006,9 +1007,31 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                               {receipt.contact_name || receipt.contact_phone}
                             </span>
                           </div>
-                          <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
-                            {getReceiptStatusLabel(receipt)}
-                          </span>
+                          <div className="flex items-center gap-1.5 ml-2">
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                              {getReceiptStatusLabel(receipt)}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 hover:bg-primary/10 flex-shrink-0"
+                              title="Reenviar para este contato"
+                              disabled={sendingReminder}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Find matching eventRegisteredContact id for this receipt
+                                const contact = eventRegisteredContacts.find(c => c.phone === receipt.contact_phone && c.name === (receipt.contact_name || receipt.contact_phone));
+                                if (contact) {
+                                  handleSendReminder([contact.id]);
+                                } else {
+                                  handleSendReminder([receipt.id]);
+                                }
+                              }}
+                            >
+                              <RefreshCw className={cn("h-3 w-3 text-muted-foreground hover:text-primary", sendingReminder && "animate-spin")} />
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
