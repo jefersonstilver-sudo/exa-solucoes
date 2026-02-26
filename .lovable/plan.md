@@ -1,90 +1,167 @@
 
+# Confirmacao de Reagendamento com Notificacao + Mobile iPhone-First
 
-# Corrigir Pagina de Gestao de Tempo - Completa e Funcional
+## Visao Geral
 
-## Problema Principal
-A tabela `time_sessions` **nao existe** no banco de dados Supabase. Todas as queries dos componentes falham silenciosamente, resultando em cards vazios e pagina toda branca. Alem disso, os componentes precisam de mais riqueza visual para o padrao corporativo Apple-like.
+Tres grandes mudancas:
 
-## Mudancas Necessarias
+1. **Modal de confirmacao ao arrastar tarefa** no calendario mensal - substituir o `ScheduleTimeModal` atual por um modal minimalista moderno que informa que os contatos serao notificados da alteracao de data
+2. **Edge Function `task-notify-change`** para enviar notificacoes WhatsApp sobre alteracoes de data/horario
+3. **Responsividade iPhone-first** em todo o modulo de Central de Tarefas e Agenda
 
-### 1. Criar tabela `time_sessions` no Supabase
+---
+
+## 1. Novo Modal de Confirmacao de Reagendamento
+
+Substituir o `ScheduleTimeModal` (que pede tipo de horario e hora) por um modal em 2 etapas:
+
+**Etapa 1 - Confirmacao**: Modal minimalista Apple-like mostrando:
+- Nome da tarefa
+- Data anterior vs Data nova (visual lado a lado com seta)
+- Checkbox "Manter horario atual" (pre-marcado se a tarefa ja tem horario)
+- Campo de hora (so aparece se desmarcou o checkbox)
+- Aviso discreto: "Os contatos notificados serao informados da alteracao"
+- Botoes: "Cancelar" e "Confirmar Reagendamento"
+
+**Etapa 2 - Execucao**: Ao confirmar, salva no banco e chama `task-notify-change`
+
+### Arquivo: `src/components/admin/agenda/ScheduleTimeModal.tsx`
+- Refatorar completamente o modal
+- Adicionar props: `taskName` (ja existe), `targetDate` (ja existe), `originalDate` (novo), `taskId` (novo)
+- Apos confirmar, alem do callback `onConfirm`, disparar automaticamente a edge function de notificacao
+
+### Arquivo: `src/pages/admin/tarefas/components/AgendaMonthView.tsx`
+- Passar `originalDate` (data anterior da tarefa) ao `ScheduleTimeModal`
+- Passar `taskId` para a notificacao
+- Apos sucesso do mutation, chamar `task-notify-change`
+
+---
+
+## 2. Edge Function: `task-notify-change`
+
+### Arquivo: `supabase/functions/task-notify-change/index.ts`
+
+Reutiliza a mesma infraestrutura do `task-notify-created`:
+- Recebe: `task_id`, `titulo`, `tipo_evento`, `changes` (com `data_anterior`, `data_nova`, `horario_inicio_anterior`, `horario_inicio_novo`, `horario_limite_anterior`, `horario_limite_novo`), `criador_nome`
+- Busca contatos ja notificados em `task_read_receipts` pelo `task_id`
+- Se nenhum contato foi notificado anteriormente, busca os `exa_alerts_directors` ativos (fallback)
+- Resolve emoji/label do tipo de evento via `event_types`
+- Monta mensagem rica:
 
 ```text
-time_sessions
-  - id (uuid, PK)
-  - user_id (uuid, FK -> auth.users)
-  - type (text: stopwatch | timer | pomodoro)
-  - label (text, nullable)
-  - duration_seconds (integer, default 0)
-  - laps (jsonb, default '[]')
-  - started_at (timestamptz)
-  - ended_at (timestamptz)
-  - created_at (timestamptz, default now())
+🔄 *Reuniao reagendada*
+
+*Titulo da Tarefa*
+
+📅 Data: 25/02/2026 → 28/02/2026
+🕐 Horario: 14:00 → 16:30
+
+👤 Alterado por: Nome do Usuario
+
+⚠️ Por favor, atualize sua agenda.
 ```
 
-Incluindo:
-- RLS habilitado com politica para usuarios verem apenas suas proprias sessoes
-- Indices em `user_id` e `created_at`
+- Envia via Z-API (mesmo padrao do `task-notify-created`)
+- Registra log em `agent_logs` com `event_type: 'task_change_notified'`
 
-### 2. Remover `as any` dos componentes
+---
 
-Todos os componentes (`StopwatchTab`, `TimerTab`, `PomodoroTab`, `SessionHistory`, `DayStats`) usam `supabase.from('time_sessions' as any)`. Apos criar a tabela, o tipo sera gerado automaticamente pelo Supabase e o `as any` pode ser mantido por seguranca (a tabela nao estara nos tipos gerados ate o proximo sync).
+## 3. Notificacao automatica no EditTaskModal
 
-### 3. Melhorar visual do StopwatchTab
+### Arquivo: `src/components/admin/agenda/EditTaskModal.tsx`
 
-- Adicionar gradiente sutil no card principal (`bg-gradient-to-br from-card to-muted/10`)
-- Bordas mais definidas nos botoes de controle
-- Laps panel com header mais visivel e badges coloridos para melhor/pior lap
-- Estado "stopped" com mensagem de boas-vindas e icone decorativo
+- Adicionar `useRef` para armazenar valores originais (`data_prevista`, `horario_inicio`, `horario_limite`) quando a tarefa carrega
+- No `onSuccess` do `updateMutation`, comparar valores originais vs novos
+- Se houve mudanca em data ou horario, chamar `task-notify-change` automaticamente
+- Mostrar toast informando: "Contatos notificados sobre a alteracao"
 
-### 4. Melhorar visual do TimerTab
+---
 
-- Card com fundo gradiente sutil
-- Presets com visual de pills mais atraente (icones + cores)
-- CircularProgress com cor dinamica baseada no tempo restante (verde -> amarelo -> vermelho)
-- Estado "finished" com animacao de celebracao
+## 4. Responsividade iPhone-First (Google Calendar Style)
 
-### 5. Melhorar visual do PomodoroTab
+### Principios:
+- Todas as views (Dia, Semana, Mes) funcionais em tela de 375px
+- Touch targets minimos de 44px
+- Gestos de swipe para navegar entre dias/semanas/meses
+- FAB para criacao rapida
+- Modais como Drawer/bottom-sheet no mobile
 
-- Cores de fase mais ricas (foco = vermelho EXA, pausa curta = verde, pausa longa = azul)
-- Indicadores de ciclo maiores e mais visiveis
-- Card de stats com icones e separadores visuais
-- Estado idle com instrucoes visuais
+### Arquivos a modificar:
 
-### 6. Melhorar visual do DayStats
+**`src/pages/admin/tarefas/components/AgendaDayView.tsx`**
+- Hour label: `w-12` no mobile (vs `w-20` desktop)
+- Slot height reduzido no mobile
+- TaskCard com fonte menor e padding compacto
+- Scroll suave com `-webkit-overflow-scrolling: touch`
 
-- Cards com icones coloridos (cada stat com cor diferente)
-- Fundo gradiente sutil em cada card
-- Numeros com tamanho maior e peso visual
+**`src/pages/admin/tarefas/components/AgendaWeekView.tsx`**
+- No mobile: mostrar apenas 3 dias (ontem/hoje/amanha) com scroll horizontal para os demais
+- Ou: manter 7 colunas mas com scroll horizontal e `snap-x`
+- Header dias: abreviacoes curtas (S T Q Q S S D)
+- Celulas com height reduzido
+- Tarefas: apenas emoji + titulo truncado (sem horario inline)
 
-### 7. Melhorar visual do SessionHistory
+**`src/pages/admin/tarefas/components/AgendaMonthView.tsx`**
+- Grid compacto: celulas menores com `min-h-[80px]`
+- Mostrar max 2 tarefas por celula no mobile (vs 3 desktop)
+- Drag-and-drop: funcional em touch via `@dnd-kit` (ja suporta touch nativamente)
+- Nome do dia: apenas letra inicial (D S T Q Q S S)
 
-- Lista com icones coloridos por tipo
-- Badges de duracao com cores
-- Estado vazio com ilustracao/icone
+**`src/components/admin/agenda/DroppableCalendarDay.tsx`**
+- Celula menor no mobile
+- Fonte do dia: `text-[10px]`
+- TaskCard compact com padding minimo
 
-### 8. GestaoTempoPage - Layout geral
+**`src/pages/admin/tarefas/components/EmbeddedAgenda.tsx`**
+- Header: stack vertical no mobile (titulo em cima, tabs + nav embaixo)
+- Tabs: ocupar largura total no mobile
+- Nav buttons: tamanho touch-friendly
 
-- Manter PageLayout existente (nao mudar)
-- Adicionar um banner/hero sutil no topo com hora atual em tempo real
-- Stats e historico com layout responsivo lado a lado em desktop
+**`src/pages/admin/tarefas/CentralTarefasPage.tsx`**
+- Stats bar: scroll horizontal no mobile
+- Task cards: 1 coluna no mobile (ja esta `grid-cols-1 md:grid-cols-2`)
+- Agenda: padding reduzido
+
+**`src/pages/admin/tarefas/FullscreenAgendaPage.tsx`**
+- Header: compacto no mobile (icones sem texto)
+- Tab triggers: apenas icones no mobile (ja implementado com `hidden md:inline`)
+- FAB: posicao respeitando safe-area-bottom
+
+**`src/components/admin/agenda/ScheduleTimeModal.tsx`**
+- No mobile: usar `Drawer` (bottom-sheet) em vez de `Dialog`
+- Inputs touch-friendly (h-12)
+
+**`src/components/admin/agenda/EditTaskModal.tsx`**
+- Ja usa Drawer no mobile (verificar se esta implementado)
+- Garantir que campos sao touch-friendly
+- Scroll interno suave
+
+---
+
+## Arquivos a Criar
+
+| Arquivo | Descricao |
+|---------|-----------|
+| `supabase/functions/task-notify-change/index.ts` | Edge function para notificacao de alteracao |
 
 ## Arquivos a Modificar
 
-| Arquivo | Acao |
-|---------|------|
-| Supabase (migration) | Criar tabela `time_sessions` com RLS |
-| `src/pages/admin/gestao-tempo/GestaoTempoPage.tsx` | Adicionar relogio em tempo real, melhorar layout |
-| `src/pages/admin/gestao-tempo/components/StopwatchTab.tsx` | Visual mais rico, estado vazio |
-| `src/pages/admin/gestao-tempo/components/TimerTab.tsx` | Visual mais rico, presets com icones |
-| `src/pages/admin/gestao-tempo/components/PomodoroTab.tsx` | Cores de fase, visual mais rico |
-| `src/pages/admin/gestao-tempo/components/DayStats.tsx` | Cards coloridos com gradientes |
-| `src/pages/admin/gestao-tempo/components/SessionHistory.tsx` | Lista visual com badges |
-| `src/pages/admin/gestao-tempo/components/CircularProgress.tsx` | Suporte a cor dinamica |
-| `src/pages/admin/gestao-tempo/components/TimeDisplay.tsx` | Sem mudancas (ja esta bom) |
+| Arquivo | Descricao |
+|---------|-----------|
+| `src/components/admin/agenda/ScheduleTimeModal.tsx` | Refatorar para modal de confirmacao com notificacao |
+| `src/pages/admin/tarefas/components/AgendaMonthView.tsx` | Passar dados originais ao modal + responsividade |
+| `src/pages/admin/tarefas/components/AgendaDayView.tsx` | Responsividade iPhone |
+| `src/pages/admin/tarefas/components/AgendaWeekView.tsx` | Responsividade iPhone (scroll horizontal) |
+| `src/pages/admin/tarefas/components/EmbeddedAgenda.tsx` | Layout mobile-first |
+| `src/components/admin/agenda/DroppableCalendarDay.tsx` | Celulas compactas no mobile |
+| `src/pages/admin/tarefas/CentralTarefasPage.tsx` | Ajustes mobile menores |
+| `src/pages/admin/tarefas/FullscreenAgendaPage.tsx` | Safe areas e touch |
+| `src/components/admin/agenda/EditTaskModal.tsx` | Deteccao automatica de mudanca + notificacao |
 
 ## O que NAO muda
-- Nenhum outro componente, pagina ou modal do sistema
-- Sidebar e rotas permanecem iguais
-- Logica de permissoes permanece igual
+
+- Nenhuma outra pagina, componente ou modal fora do modulo de tarefas
+- Sidebar, rotas e permissoes permanecem iguais
 - Design system global permanece igual
+- Flow de criacao de tarefas permanece igual
+- Tabelas do banco de dados permanecem iguais (nao precisa de migration)
