@@ -682,6 +682,46 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
     queryClient.invalidateQueries({ queryKey: ['agenda-alert-contacts'] });
   };
 
+  // Inline save phone for receipt contacts (updates alerts_directors, users, and receipt)
+  const handleSaveReceiptPhone = async (oldPhone: string) => {
+    const cleaned = editContactPhone.replace(/\D/g, '');
+    if (cleaned.length < 10) {
+      toast.error('Telefone inválido');
+      return;
+    }
+    const oldCleaned = oldPhone.replace(/\D/g, '');
+    try {
+      // Update exa_alerts_directors where telefone matches
+      await supabase
+        .from('exa_alerts_directors')
+        .update({ telefone: cleaned })
+        .eq('telefone', oldCleaned);
+
+      // Update users where telefone matches
+      await supabase
+        .from('users')
+        .update({ telefone: cleaned })
+        .eq('telefone', oldCleaned);
+
+      // Update task_read_receipts for this task where contact_phone matches
+      if (task) {
+        await supabase
+          .from('task_read_receipts')
+          .update({ contact_phone: cleaned })
+          .eq('task_id', task.id)
+          .eq('contact_phone', oldCleaned);
+      }
+
+      toast.success('Telefone atualizado!');
+      setEditingContactId(null);
+      queryClient.invalidateQueries({ queryKey: ['task-read-receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['agenda-alert-contacts'] });
+    } catch (err) {
+      console.error('Erro ao salvar telefone do receipt:', err);
+      toast.error('Erro ao salvar telefone');
+    }
+  };
+
   // Initialize reminder contacts when popover opens
   const handleOpenReminderPopover = () => {
     if (eventRegisteredContacts.length > 0) {
@@ -1001,37 +1041,79 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                           'bg-background border-border',
                           newlyConfirmedIds.has(receipt.id) && 'animate-pulse ring-2 ring-emerald-400/50 bg-emerald-100/70'
                         )}>
-                          <div className="flex items-center gap-2 min-w-0">
-                            {getReceiptStatusIcon(receipt.status)}
-                            <span className="text-sm font-medium truncate">
-                              {receipt.contact_name || receipt.contact_phone}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 ml-2">
-                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                              {getReceiptStatusLabel(receipt)}
-                            </span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 hover:bg-primary/10 flex-shrink-0"
-                              title="Reenviar para este contato"
-                              disabled={sendingReminder}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Find matching eventRegisteredContact id for this receipt
-                                const contact = eventRegisteredContacts.find(c => c.phone === receipt.contact_phone && c.name === (receipt.contact_name || receipt.contact_phone));
-                                if (contact) {
-                                  handleSendReminder([contact.id]);
-                                } else {
-                                  handleSendReminder([receipt.id]);
-                                }
-                              }}
-                            >
-                              <RefreshCw className={cn("h-3 w-3 text-muted-foreground hover:text-primary", sendingReminder && "animate-spin")} />
-                            </Button>
-                          </div>
+                          {editingContactId === `receipt:${receipt.contact_phone}` ? (
+                            // Inline phone editing mode
+                            <div className="flex items-center gap-1.5 w-full">
+                              <span className="text-xs font-medium truncate max-w-[80px]">
+                                {receipt.contact_name?.split(' ')[0] || 'Contato'}
+                              </span>
+                              <Input
+                                value={editContactPhone}
+                                onChange={(e) => setEditContactPhone(e.target.value)}
+                                className="h-6 text-[10px] flex-1 min-w-0 px-1.5"
+                                placeholder="(45) 99999-9999"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') { e.preventDefault(); handleSaveReceiptPhone(receipt.contact_phone); }
+                                  if (e.key === 'Escape') setEditingContactId(null);
+                                }}
+                              />
+                              <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleSaveReceiptPhone(receipt.contact_phone)}>
+                                <Check className="h-3 w-3 text-emerald-600" />
+                              </Button>
+                              <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setEditingContactId(null)}>
+                                <X className="h-3 w-3 text-muted-foreground" />
+                              </Button>
+                            </div>
+                          ) : (
+                            // Normal display mode
+                            <>
+                              <div className="flex items-center gap-2 min-w-0">
+                                {getReceiptStatusIcon(receipt.status)}
+                                <span className="text-sm font-medium truncate">
+                                  {receipt.contact_name || receipt.contact_phone}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 ml-2">
+                                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                                  {getReceiptStatusLabel(receipt)}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 hover:bg-primary/10 flex-shrink-0"
+                                  title="Reenviar para este contato"
+                                  disabled={sendingReminder}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const contact = eventRegisteredContacts.find(c => c.phone === receipt.contact_phone && c.name === (receipt.contact_name || receipt.contact_phone));
+                                    if (contact) {
+                                      handleSendReminder([contact.id]);
+                                    } else {
+                                      handleSendReminder([receipt.id]);
+                                    }
+                                  }}
+                                >
+                                  <RefreshCw className={cn("h-3 w-3 text-muted-foreground hover:text-primary", sendingReminder && "animate-spin")} />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 hover:bg-primary/10 flex-shrink-0"
+                                  title="Editar telefone deste contato"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingContactId(`receipt:${receipt.contact_phone}`);
+                                    setEditContactPhone(receipt.contact_phone || '');
+                                  }}
+                                >
+                                  <Pencil className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                                </Button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       ))}
                     </div>
