@@ -51,6 +51,7 @@ const SofiaExecutive = lazy(() => import('@/pages/admin/SofiaExecutive'));
 const ProcessosPage = lazy(() => import('@/pages/admin/processos/ProcessosPage'));
 const DepartmentProcessesPage = lazy(() => import('@/pages/admin/processos/DepartmentProcessesPage'));
 const ProcessEditorPage = lazy(() => import('@/pages/admin/processos/ProcessEditorPage'));
+const GestaoTempoPage = lazy(() => import('@/pages/admin/gestao-tempo/GestaoTempoPage'));
 
 // Contatos
 const ContatosPage = lazy(() => import('@/pages/admin/contatos/ContatosPage'));
@@ -277,6 +278,15 @@ const AdminRoutes = () => {
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.processos}>
           <Suspense fallback={<GlobalLoadingPage message="Carregando Editor..." />}>
             <ProcessEditorPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+
+      {/* ============ GESTÃO DE TEMPO ============ */}
+      <Route path="gestao-tempo" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.gestao_tempo}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Gestão de Tempo..." />}>
+            <GestaoTempoPage />
           </Suspense>
         </ProtectedModuleRoute>
       } />
