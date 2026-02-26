@@ -1,0 +1,181 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const {
+      task_id,
+      titulo,
+      tipo_evento,
+      changes,
+      criador_nome,
+    } = await req.json();
+
+    if (!task_id || !titulo) {
+      return new Response(JSON.stringify({ error: 'task_id and titulo required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    console.log('[TASK-CHANGE] 🔄 Notifying change for task:', titulo, '| task_id:', task_id);
+
+    // Resolve event type
+    const { data: eventType } = await supabase
+      .from('event_types')
+      .select('label, icon')
+      .eq('name', tipo_evento || 'tarefa')
+      .eq('active', true)
+      .maybeSingle();
+
+    const emoji = eventType?.icon || '📋';
+    const label = eventType?.label || 'Tarefa';
+
+    // Get contacts from task_read_receipts (previously notified)
+    const { data: receipts } = await supabase
+      .from('task_read_receipts')
+      .select('contact_phone, contact_name')
+      .eq('task_id', task_id);
+
+    let contacts: { nome: string; telefone: string }[] = [];
+    
+    if (receipts && receipts.length > 0) {
+      // Deduplicate by phone
+      const seen = new Set<string>();
+      for (const r of receipts) {
+        if (!r.contact_phone || seen.has(r.contact_phone)) continue;
+        seen.add(r.contact_phone);
+        contacts.push({ nome: r.contact_name || r.contact_phone, telefone: r.contact_phone });
+      }
+    }
+
+    // Fallback: use exa_alerts_directors
+    if (contacts.length === 0) {
+      const { data: dbContacts } = await supabase
+        .from('exa_alerts_directors')
+        .select('nome, telefone')
+        .eq('ativo', true);
+      if (dbContacts) contacts = dbContacts.filter((c: any) => c.telefone);
+    }
+
+    if (contacts.length === 0) {
+      console.log('[TASK-CHANGE] ⚠️ No contacts to notify');
+      return new Response(JSON.stringify({ success: true, sent: 0, reason: 'no_contacts' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Build change message
+    let message = `🔄 *${label} reagendad${['compromisso', 'aviso', 'lembrete', 'evento'].some(m => label.toLowerCase().includes(m)) ? 'o' : 'a'}*\n\n`;
+    message += `*${titulo}*\n\n`;
+
+    if (changes?.data_anterior && changes?.data_nova && changes.data_anterior !== changes.data_nova) {
+      message += `📅 Data: ${changes.data_anterior} → ${changes.data_nova}\n`;
+    }
+    if (changes?.horario_inicio_anterior !== undefined && changes?.horario_inicio_novo !== undefined && changes.horario_inicio_anterior !== changes.horario_inicio_novo) {
+      const from = changes.horario_inicio_anterior || 'Sem horário';
+      const to = changes.horario_inicio_novo || 'Sem horário';
+      message += `🕐 Início: ${from} → ${to}\n`;
+    }
+    if (changes?.horario_limite_anterior !== undefined && changes?.horario_limite_novo !== undefined && changes.horario_limite_anterior !== changes.horario_limite_novo) {
+      const from = changes.horario_limite_anterior || 'Sem limite';
+      const to = changes.horario_limite_novo || 'Sem limite';
+      message += `⏰ Limite: ${from} → ${to}\n`;
+    }
+
+    if (criador_nome) {
+      message += `\n👤 Alterado por: ${criador_nome}\n`;
+    }
+
+    message += `\n⚠️ Por favor, atualize sua agenda.`;
+
+    // Get Z-API config
+    const { data: agent } = await supabase
+      .from('agents')
+      .select('zapi_config')
+      .eq('key', 'exa_alert')
+      .single();
+
+    const zapiConfig = agent?.zapi_config as { instance_id?: string; token?: string } | null;
+    const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+
+    let sent = 0;
+    for (const contact of contacts) {
+      if (!contact.telefone) continue;
+      const formattedPhone = contact.telefone.startsWith('55') ? contact.telefone : `55${contact.telefone}`;
+
+      try {
+        if (zapiConfig?.instance_id && zapiConfig?.token) {
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (zapiClientToken) headers['Client-Token'] = zapiClientToken;
+
+          const textUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+          const resp = await fetch(textUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ phone: formattedPhone, message })
+          });
+
+          if (resp.ok) {
+            sent++;
+            console.log(`[TASK-CHANGE] ✅ Sent to ${contact.nome}`);
+          } else {
+            console.error(`[TASK-CHANGE] ❌ Failed for ${contact.nome}`);
+          }
+        } else {
+          const { error: sendError } = await supabase.functions.invoke('zapi-send-message', {
+            body: { agentKey: 'exa_alert', phone: contact.telefone, message, skipSplit: true }
+          });
+          if (!sendError) {
+            sent++;
+            console.log(`[TASK-CHANGE] ✅ Sent to ${contact.nome}`);
+          }
+        }
+      } catch (err) {
+        console.error(`[TASK-CHANGE] ❌ Error for ${contact.nome}:`, err);
+      }
+    }
+
+    // Log
+    await supabase.from('agent_logs').insert({
+      agent_key: 'exa_alert',
+      event_type: 'task_change_notified',
+      metadata: {
+        task_id,
+        titulo,
+        tipo_evento: tipo_evento || 'tarefa',
+        changes,
+        contacts_notified: sent,
+        total_contacts: contacts.length,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+    console.log(`[TASK-CHANGE] ✅ Done: ${sent}/${contacts.length} contacts notified`);
+
+    return new Response(JSON.stringify({ success: true, sent, total: contacts.length }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    console.error('[TASK-CHANGE] 💥 ERROR:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+});
