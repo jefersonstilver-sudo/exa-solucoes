@@ -6,7 +6,6 @@ import React, { useMemo } from 'react';
 import { format, startOfWeek, addDays, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { AgendaTask } from '@/components/admin/agenda/TaskCard';
-import TaskCard from '@/components/admin/agenda/TaskCard';
 
 interface AgendaWeekViewProps {
   tasks: AgendaTask[];
@@ -65,6 +64,8 @@ const AgendaWeekView: React.FC<AgendaWeekViewProps> = ({ tasks, currentDate, onT
 
   const hasAllDay = Object.values(tasksByDayAndHour.allDayMap).some(arr => arr.length > 0);
 
+  const cellHeight = fullscreen ? 52 : 44;
+
   return (
     <div className="space-y-2">
       {!fullscreen && (
@@ -76,100 +77,120 @@ const AgendaWeekView: React.FC<AgendaWeekViewProps> = ({ tasks, currentDate, onT
       )}
 
       <div className="bg-card rounded-xl border border-border overflow-auto">
-        <div className="min-w-[700px]">
+        {/* Use a CSS table layout for perfectly aligned borders */}
+        <table className="w-full border-collapse" style={{ minWidth: 700, tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: 60 }} />
+            {weekDays.map((_, i) => <col key={i} />)}
+          </colgroup>
+
           {/* Header */}
-          <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-solid border-border sticky top-0 bg-card z-10">
-            <div className="p-2 text-xs text-muted-foreground border-r border-solid border-border" />
-            {weekDays.map(day => {
-              const today = isToday(day);
+          <thead className="sticky top-0 bg-card z-10">
+            <tr>
+              <th className="border-b border-r border-border p-2 text-xs text-muted-foreground font-normal" />
+              {weekDays.map(day => {
+                const today = isToday(day);
+                return (
+                  <th
+                    key={day.toISOString()}
+                    className={`border-b border-r border-border last:border-r-0 p-2 text-center font-normal ${today ? 'bg-primary/10' : ''}`}
+                  >
+                    <div className={`text-[10px] uppercase tracking-wider ${today ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
+                      {format(day, 'EEEE', { locale: ptBR })}
+                    </div>
+                    <div className={`text-sm font-semibold ${today ? 'text-primary' : 'text-foreground'}`}>
+                      {format(day, 'd')}
+                    </div>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+
+          <tbody>
+            {/* All day row */}
+            {hasAllDay && (
+              <tr className="bg-muted/30">
+                <td className="border-b border-r border-border p-1 text-[10px] text-muted-foreground text-center align-middle">
+                  Dia
+                </td>
+                {weekDays.map(day => {
+                  const key = format(day, 'yyyy-MM-dd');
+                  const dayAllDay = tasksByDayAndHour.allDayMap[key] || [];
+                  return (
+                    <td key={key} className="border-b border-r border-border last:border-r-0 p-1 align-top" style={{ minHeight: 32 }}>
+                      <div className="space-y-0.5">
+                        {dayAllDay.slice(0, 2).map(task => (
+                          <div
+                            key={task.id}
+                            onClick={() => onTaskClick?.(task)}
+                            className={`text-[9px] px-1 py-0.5 rounded truncate cursor-pointer border ${getPriorityColor(task.prioridade)}`}
+                            title={[task.titulo, task.prioridade ? `Prioridade: ${task.prioridade}` : null, `Status: ${task.status}`, task.task_responsaveis?.length ? `Resp: ${task.task_responsaveis.map(r => r.users?.nome).join(', ')}` : null].filter(Boolean).join('\n')}
+                          >
+                            {task.titulo}
+                          </div>
+                        ))}
+                        {dayAllDay.length > 2 && (
+                          <div className="text-[9px] text-muted-foreground pl-1">+{dayAllDay.length - 2}</div>
+                        )}
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            )}
+
+            {/* Hour rows */}
+            {HOURS.map(hour => {
+              const isCurrentHourRow = currentHour === hour;
               return (
-                <div
-                  key={day.toISOString()}
-                  className={`p-2 text-center border-r border-solid border-border last:border-r-0 ${today ? 'bg-primary/10' : ''}`}
-                >
-                  <div className={`text-[10px] uppercase ${today ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
-                    {format(day, 'EEE', { locale: ptBR })}
-                  </div>
-                  <div className={`text-sm font-semibold ${today ? 'text-primary' : 'text-foreground'}`}>
-                    {format(day, 'd')}
-                  </div>
-                </div>
+                <tr key={hour}>
+                  <td
+                    className="border-b border-r border-border text-[10px] text-muted-foreground text-right pr-2 align-top pt-1 last:border-b-0"
+                    style={{ height: cellHeight }}
+                  >
+                    {`${hour.toString().padStart(2, '0')}:00`}
+                  </td>
+                  {weekDays.map(day => {
+                    const key = format(day, 'yyyy-MM-dd');
+                    const hourTasks = tasksByDayAndHour.map[key]?.[hour] || [];
+                    const isTodayCol = key === todayStr;
+                    return (
+                      <td
+                        key={`${key}-${hour}`}
+                        className={`border-b border-r border-border last:border-r-0 last:border-b-0 p-0.5 align-top relative ${isTodayCol ? 'bg-primary/[0.03]' : ''}`}
+                        style={{ height: cellHeight }}
+                      >
+                        {/* Now indicator */}
+                        {isCurrentHourRow && isTodayCol && (
+                          <div
+                            className="absolute left-0 right-0 h-0.5 bg-red-500 z-10 pointer-events-none"
+                            style={{ top: `${(currentMinute / 60) * 100}%` }}
+                          >
+                            <div className="absolute -left-1 -top-1 w-2.5 h-2.5 rounded-full bg-red-500" />
+                          </div>
+                        )}
+                        <div className="space-y-0.5">
+                          {hourTasks.map(task => (
+                            <div
+                              key={task.id}
+                              onClick={() => onTaskClick?.(task)}
+                              className={`text-[9px] px-1.5 py-1 rounded cursor-pointer border truncate hover:opacity-80 transition-opacity ${getPriorityColor(task.prioridade)}`}
+                              title={[`${task.horario_inicio?.substring(0,5) || ''} ${task.titulo}`, task.prioridade ? `Prioridade: ${task.prioridade}` : null, `Status: ${task.status}`, task.task_responsaveis?.length ? `Resp: ${task.task_responsaveis.map(r => r.users?.nome).join(', ')}` : null, task.local_evento ? `Local: ${task.local_evento}` : null].filter(Boolean).join('\n')}
+                            >
+                              <span className="font-medium">{task.horario_inicio?.substring(0,5) || ''}</span>{' '}
+                              {task.titulo}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
               );
             })}
-          </div>
-
-          {/* All day row */}
-          {hasAllDay && (
-            <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-solid border-border bg-muted/30">
-              <div className="p-1 text-[10px] text-muted-foreground border-r border-solid border-border flex items-center justify-center">
-                Dia
-              </div>
-              {weekDays.map(day => {
-                const key = format(day, 'yyyy-MM-dd');
-                const dayAllDay = tasksByDayAndHour.allDayMap[key] || [];
-                return (
-                  <div key={key} className="p-1 border-r border-solid border-border last:border-r-0 space-y-0.5 min-h-[32px]">
-                    {dayAllDay.slice(0, 2).map(task => (
-                      <div
-                        key={task.id}
-                        onClick={() => onTaskClick?.(task)}
-                        className={`text-[9px] px-1 py-0.5 rounded truncate cursor-pointer border ${getPriorityColor(task.prioridade)}`}
-                        title={[task.titulo, task.prioridade ? `Prioridade: ${task.prioridade}` : null, `Status: ${task.status}`, task.task_responsaveis?.length ? `Resp: ${task.task_responsaveis.map(r => r.users?.nome).join(', ')}` : null].filter(Boolean).join('\n')}
-                      >
-                        {task.titulo}
-                      </div>
-                    ))}
-                    {dayAllDay.length > 2 && (
-                      <div className="text-[9px] text-muted-foreground pl-1">+{dayAllDay.length - 2}</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Hour rows */}
-          {HOURS.map(hour => {
-            const isCurrentHourRow = currentHour === hour;
-            return (
-            <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-solid border-border last:border-b-0 relative">
-              <div className="p-1 text-[10px] text-muted-foreground border-r border-solid border-border text-right pr-2 pt-1">
-                {`${hour.toString().padStart(2, '0')}:00`}
-              </div>
-              {weekDays.map(day => {
-                const key = format(day, 'yyyy-MM-dd');
-                const hourTasks = tasksByDayAndHour.map[key]?.[hour] || [];
-                const cellHeight = fullscreen ? 'min-h-[52px]' : 'min-h-[40px]';
-                const isTodayCol = key === todayStr;
-                return (
-                  <div key={`${key}-${hour}`} className={`relative p-0.5 border-r border-solid border-border last:border-r-0 ${cellHeight} space-y-0.5 ${isTodayCol ? 'bg-primary/[0.03]' : ''}`}>
-                    {/* Now indicator */}
-                    {isCurrentHourRow && isTodayCol && (
-                      <div
-                        className="absolute left-0 right-0 h-0.5 bg-red-500 z-10 pointer-events-none"
-                        style={{ top: `${(currentMinute / 60) * 100}%` }}
-                      >
-                        <div className="absolute -left-1 -top-1 w-2.5 h-2.5 rounded-full bg-red-500" />
-                      </div>
-                    )}
-                    {hourTasks.map(task => (
-                      <div
-                        key={task.id}
-                        onClick={() => onTaskClick?.(task)}
-                        className={`text-[9px] px-1.5 py-1 rounded cursor-pointer border truncate hover-scale ${getPriorityColor(task.prioridade)}`}
-                        title={[`${task.horario_inicio?.substring(0,5) || ''} ${task.titulo}`, task.prioridade ? `Prioridade: ${task.prioridade}` : null, `Status: ${task.status}`, task.task_responsaveis?.length ? `Resp: ${task.task_responsaveis.map(r => r.users?.nome).join(', ')}` : null, task.local_evento ? `Local: ${task.local_evento}` : null].filter(Boolean).join('\n')}
-                      >
-                        <span className="font-medium">{task.horario_inicio?.substring(0,5) || ''}</span>{' '}
-                        {task.titulo}
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-            );
-          })}
-        </div>
+          </tbody>
+        </table>
       </div>
     </div>
   );
