@@ -40,6 +40,7 @@ export const MODULE_KEYS = {
   sindicos: 'sindicos',
   leads: 'leads',
   processos: 'processos',
+  gestao_tempo: 'gestao_tempo',
   
   // === COMUNICAÇÃO ===
   emails: 'emails',

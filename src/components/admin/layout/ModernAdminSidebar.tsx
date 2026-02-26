@@ -41,7 +41,8 @@ import {
   Cog,
   MessageCircle,
   CalendarDays,
-  Lock
+  Lock,
+  Timer
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -306,6 +307,12 @@ export function ModernAdminSidebar() {
           href: buildPath('processos'),
           icon: Network,
           moduleKey: MODULE_KEYS.processos
+        },
+        {
+          title: 'Gestão de Tempo',
+          href: buildPath('gestao-tempo'),
+          icon: Timer,
+          moduleKey: MODULE_KEYS.gestao_tempo
         }
       ]
     },
