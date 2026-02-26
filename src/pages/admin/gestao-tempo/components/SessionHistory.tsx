@@ -5,18 +5,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Clock, Timer, Brain } from 'lucide-react';
+import { Clock, Timer, Brain, History } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-const typeIcons = {
-  stopwatch: Clock,
-  timer: Timer,
-  pomodoro: Brain,
-};
-
-const typeLabels = {
-  stopwatch: 'Cronômetro',
-  timer: 'Temporizador',
-  pomodoro: 'Pomodoro',
+const typeConfig = {
+  stopwatch: { icon: Clock, label: 'Cronômetro', badgeClass: 'bg-blue-500/10 text-blue-600' },
+  timer: { icon: Timer, label: 'Temporizador', badgeClass: 'bg-amber-500/10 text-amber-600' },
+  pomodoro: { icon: Brain, label: 'Pomodoro', badgeClass: 'bg-red-500/10 text-red-600' },
 };
 
 export const SessionHistory: React.FC = () => {
@@ -53,27 +48,37 @@ export const SessionHistory: React.FC = () => {
   };
 
   return (
-    <Card className="rounded-2xl shadow-sm border-border/50">
+    <Card className="rounded-2xl shadow-lg border-border/40 bg-gradient-to-b from-card to-accent/5 h-full">
       <CardContent className="p-6">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-          Histórico (7 dias)
-        </h3>
+        <div className="flex items-center gap-2 mb-4">
+          <History className="h-4 w-4 text-primary/70" />
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Histórico (7 dias)
+          </h3>
+        </div>
         {sessions.length === 0 ? (
-          <p className="text-sm text-muted-foreground/60 text-center py-6">Nenhuma sessão registrada</p>
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <History className="h-10 w-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground/60">Nenhuma sessão registrada</p>
+            <p className="text-xs text-muted-foreground/40 mt-1">Use o cronômetro, temporizador ou pomodoro</p>
+          </div>
         ) : (
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
             {sessions.map((s: any) => {
-              const Icon = typeIcons[s.type as keyof typeof typeIcons] || Clock;
+              const cfg = typeConfig[s.type as keyof typeof typeConfig] || typeConfig.stopwatch;
+              const Icon = cfg.icon;
               return (
-                <div key={s.id} className="flex items-center gap-3 py-2.5 px-3 rounded-lg bg-muted/30 text-sm">
-                  <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div key={s.id} className="flex items-center gap-3 py-2.5 px-3 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors text-sm">
+                  <div className={cn('p-1.5 rounded-lg', cfg.badgeClass)}>
+                    <Icon className="h-3.5 w-3.5" />
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{s.label || typeLabels[s.type as keyof typeof typeLabels]}</div>
+                    <div className="font-medium truncate">{s.label || cfg.label}</div>
                     <div className="text-xs text-muted-foreground">
                       {format(new Date(s.created_at), "dd/MM HH:mm", { locale: ptBR })}
                     </div>
                   </div>
-                  <span className="font-mono text-xs shrink-0">{formatDuration(s.duration_seconds)}</span>
+                  <span className="font-mono text-xs shrink-0 bg-accent/50 px-2 py-1 rounded-md">{formatDuration(s.duration_seconds)}</span>
                 </div>
               );
             })}

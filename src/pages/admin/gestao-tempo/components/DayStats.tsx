@@ -4,6 +4,14 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Clock, Hash, Timer, Brain } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const cardStyles = [
+  { icon: Clock, label: 'Tempo Total Hoje', iconClass: 'text-blue-500 bg-blue-500/10', key: 'totalSeconds' },
+  { icon: Hash, label: 'Sessões Hoje', iconClass: 'text-emerald-500 bg-emerald-500/10', key: 'count' },
+  { icon: Timer, label: 'Média por Sessão', iconClass: 'text-amber-500 bg-amber-500/10', key: 'avgSeconds' },
+  { icon: Brain, label: 'Pomodoros', iconClass: 'text-red-500 bg-red-500/10', key: 'pomodoros' },
+];
 
 export const DayStats: React.FC = () => {
   const { session } = useAuth();
@@ -43,21 +51,23 @@ export const DayStats: React.FC = () => {
     return `${m}min`;
   };
 
-  const cards = [
-    { icon: Clock, label: 'Tempo Total Hoje', value: formatDuration(stats?.totalSeconds || 0) },
-    { icon: Hash, label: 'Sessões Hoje', value: String(stats?.count || 0) },
-    { icon: Timer, label: 'Média por Sessão', value: formatDuration(stats?.avgSeconds || 0) },
-    { icon: Brain, label: 'Pomodoros', value: String(stats?.pomodoros || 0) },
-  ];
+  const values: Record<string, string> = {
+    totalSeconds: formatDuration(stats?.totalSeconds || 0),
+    count: String(stats?.count || 0),
+    avgSeconds: formatDuration(stats?.avgSeconds || 0),
+    pomodoros: String(stats?.pomodoros || 0),
+  };
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {cards.map((c) => (
-        <Card key={c.label} className="rounded-2xl shadow-sm border-border/50">
-          <CardContent className="p-5 flex flex-col items-center text-center gap-2">
-            <c.icon className="h-5 w-5 text-muted-foreground" />
-            <div className="text-2xl font-semibold text-foreground">{c.value}</div>
-            <div className="text-xs text-muted-foreground">{c.label}</div>
+      {cardStyles.map((c) => (
+        <Card key={c.label} className="rounded-2xl shadow-lg border-border/40 bg-gradient-to-br from-card to-accent/5 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
+          <CardContent className="p-5 flex flex-col items-center text-center gap-3">
+            <div className={cn('p-2.5 rounded-xl', c.iconClass)}>
+              <c.icon className="h-5 w-5" />
+            </div>
+            <div className="text-3xl font-bold text-foreground">{values[c.key]}</div>
+            <div className="text-xs text-muted-foreground font-medium">{c.label}</div>
           </CardContent>
         </Card>
       ))}
