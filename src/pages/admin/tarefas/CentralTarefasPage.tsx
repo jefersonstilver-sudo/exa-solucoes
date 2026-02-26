@@ -225,14 +225,14 @@ const CentralTarefasPage: React.FC = () => {
       </div>
 
       {/* Stats Inline Bar */}
-      <div className="flex flex-wrap items-center gap-3 text-sm py-2 px-1">
-        <span className="text-muted-foreground">Total: <b className="text-foreground text-base">{stats.total}</b></span>
+      <div className="flex items-center gap-2 md:gap-3 text-xs md:text-sm py-2 px-1 overflow-x-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <span className="text-muted-foreground whitespace-nowrap">Total: <b className="text-foreground text-sm md:text-base">{stats.total}</b></span>
         <Separator orientation="vertical" className="h-4" />
-        <span className="text-muted-foreground">Pendentes: <b className="text-foreground text-base">{stats.pendentes}</b></span>
+        <span className="text-muted-foreground whitespace-nowrap">Pendentes: <b className="text-foreground text-sm md:text-base">{stats.pendentes}</b></span>
         <Separator orientation="vertical" className="h-4" />
-        <span className="text-muted-foreground">Em Andamento: <b className="text-foreground text-base">{stats.em_andamento}</b></span>
+        <span className="text-muted-foreground whitespace-nowrap">Em Andamento: <b className="text-foreground text-sm md:text-base">{stats.em_andamento}</b></span>
         <Separator orientation="vertical" className="h-4" />
-        <span className="text-muted-foreground">Concluídas: <b className="text-foreground text-base">{stats.concluidas}</b></span>
+        <span className="text-muted-foreground whitespace-nowrap">Concluídas: <b className="text-foreground text-sm md:text-base">{stats.concluidas}</b></span>
       </div>
 
       {/* Agenda Integrada (prioridade visual) */}

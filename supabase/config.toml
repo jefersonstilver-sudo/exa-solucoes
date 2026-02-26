@@ -613,3 +613,6 @@ verify_jwt = false
 [[cron]]
 function_name = "task-follow-up-cron"
 schedule = "*/5 * * * *"
+
+[functions.task-notify-change]
+verify_jwt = false

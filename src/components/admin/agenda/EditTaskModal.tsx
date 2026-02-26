@@ -290,6 +290,13 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
     previousReadIdsRef.current = currentReadIds;
   }, [receipts]);
 
+  // Store original values for change detection
+  const originalValuesRef = useRef<{
+    data_prevista: string | null;
+    horario_inicio: string | null;
+    horario_limite: string | null;
+  }>({ data_prevista: null, horario_inicio: null, horario_limite: null });
+
   useEffect(() => {
     if (task) {
       setTitulo(task.titulo || '');
@@ -307,6 +314,13 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
       setSelectedBuildingId((task as any).building_id || null);
       setNotifyOnSave(false);
       setAutoFollowup((task as any).auto_followup !== false);
+
+      // Capture original values for change detection
+      originalValuesRef.current = {
+        data_prevista: task.data_prevista?.split('T')[0] || null,
+        horario_inicio: task.horario_inicio || null,
+        horario_limite: task.horario_limite || null,
+      };
 
       if ((task as any).cliente_id) {
         supabase
@@ -449,6 +463,46 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
       queryClient.invalidateQueries({ queryKey: ['agenda-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['minha-manha-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['central-tarefas'] });
+
+      // Auto-detect date/time changes and notify
+      if (task) {
+        const orig = originalValuesRef.current;
+        const newDataPrevista = dataPrevista ? format(dataPrevista, 'yyyy-MM-dd') : null;
+        const newHorarioInicio = horarioInicio || null;
+        const newHorarioLimite = horarioLimite || null;
+        
+        const dateChanged = orig.data_prevista !== newDataPrevista;
+        const startChanged = orig.horario_inicio !== newHorarioInicio;
+        const endChanged = orig.horario_limite !== newHorarioLimite;
+
+        if (dateChanged || startChanged || endChanged) {
+          const changes: Record<string, string | null> = {};
+          if (dateChanged) {
+            changes.data_anterior = orig.data_prevista ? formatDateForNotify(orig.data_prevista) : null;
+            changes.data_nova = newDataPrevista ? formatDateForNotify(newDataPrevista) : null;
+          }
+          if (startChanged) {
+            changes.horario_inicio_anterior = orig.horario_inicio;
+            changes.horario_inicio_novo = newHorarioInicio;
+          }
+          if (endChanged) {
+            changes.horario_limite_anterior = orig.horario_limite;
+            changes.horario_limite_novo = newHorarioLimite;
+          }
+
+          supabase.functions.invoke('task-notify-change', {
+            body: {
+              task_id: task.id,
+              titulo,
+              tipo_evento: tipoEvento || 'tarefa',
+              changes,
+              criador_nome: userProfile?.nome || userProfile?.email || 'Sistema',
+            }
+          }).then(() => {
+            toast.info('Contatos notificados sobre a alteração de data/horário');
+          }).catch(err => console.error('Erro ao notificar alteração:', err));
+        }
+      }
 
       if (notifyOnSave && task) {
         const selectedPhones = allSelectableContacts
@@ -1508,5 +1562,13 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
     </>
   );
 };
+
+function formatDateForNotify(dateStr: string): string {
+  try {
+    return format(new Date(dateStr + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR });
+  } catch {
+    return dateStr;
+  }
+}
 
 export default EditTaskModal;

@@ -8,6 +8,7 @@ import { ptBR } from 'date-fns/locale';
 import { Clock } from 'lucide-react';
 import type { AgendaTask } from '@/components/admin/agenda/TaskCard';
 import TaskCard from '@/components/admin/agenda/TaskCard';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AgendaDayViewProps {
   tasks: AgendaTask[];
@@ -29,6 +30,7 @@ const getPriorityBorderColor = (prioridade: string) => {
 };
 
 const AgendaDayView: React.FC<AgendaDayViewProps> = ({ tasks, currentDate, onTaskClick, fullscreen }) => {
+  const isMobile = useIsMobile();
   const dateStr = format(currentDate, 'yyyy-MM-dd');
   const now = new Date();
   const currentHour = now.getHours();
@@ -56,26 +58,29 @@ const AgendaDayView: React.FC<AgendaDayViewProps> = ({ tasks, currentDate, onTas
     return { scheduledByHour: scheduled, allDayTasks: allDay };
   }, [tasks, dateStr]);
 
+  const hourLabelWidth = isMobile ? 'w-12' : 'w-16 md:w-20';
+  const slotHeight = isMobile ? 'min-h-[50px]' : fullscreen ? 'min-h-[80px]' : 'min-h-[60px]';
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4">
       {/* Header */}
       {!fullscreen && (
         <div className="text-center">
-          <h3 className="text-lg font-semibold text-foreground capitalize">
-            {format(currentDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
+          <h3 className="text-base md:text-lg font-semibold text-foreground capitalize">
+            {format(currentDate, isMobile ? "EEE, d MMM" : "EEEE, d 'de' MMMM", { locale: ptBR })}
           </h3>
         </div>
       )}
 
       {/* All day tasks */}
       {allDayTasks.length > 0 && (
-        <div className="bg-muted/50 rounded-xl border border-border p-3">
+        <div className="bg-muted/50 rounded-xl border border-border p-2 md:p-3">
           <div className="flex items-center gap-2 mb-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground">Dia inteiro / Sem horário</span>
-            <span className="text-xs text-muted-foreground">({allDayTasks.length})</span>
+            <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
+            <span className="text-[10px] md:text-xs font-medium text-muted-foreground">Dia inteiro / Sem horário</span>
+            <span className="text-[10px] md:text-xs text-muted-foreground">({allDayTasks.length})</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 md:gap-2">
             {allDayTasks.map(task => (
               <div key={task.id} className={`border-l-4 ${getPriorityBorderColor(task.prioridade)} rounded-r-lg`}>
                 <TaskCard task={task} compact onClick={() => onTaskClick?.(task)} />
@@ -86,12 +91,11 @@ const AgendaDayView: React.FC<AgendaDayViewProps> = ({ tasks, currentDate, onTas
       )}
 
       {/* Timeline */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ WebkitOverflowScrolling: 'touch' }}>
         {HOURS.map(hour => {
           const hourTasks = scheduledByHour[hour] || [];
           const hourStr = `${hour.toString().padStart(2, '0')}:00`;
           const isCurrentHour = currentHour === hour && isCurrentDay;
-          const slotHeight = fullscreen ? 'min-h-[80px]' : 'min-h-[60px]';
 
           return (
             <div
@@ -109,12 +113,12 @@ const AgendaDayView: React.FC<AgendaDayViewProps> = ({ tasks, currentDate, onTas
               )}
 
               {/* Hour label */}
-              <div className={`w-16 md:w-20 flex-shrink-0 py-2 px-3 text-xs font-medium border-r border-border ${isCurrentHour ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
+              <div className={`${hourLabelWidth} flex-shrink-0 py-2 px-2 md:px-3 text-[10px] md:text-xs font-medium border-r border-border ${isCurrentHour ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
                 {hourStr}
               </div>
 
               {/* Tasks */}
-              <div className="flex-1 p-1.5 space-y-1">
+              <div className="flex-1 p-1 md:p-1.5 space-y-1">
                 {hourTasks.map(task => (
                   <div key={task.id} className={`border-l-3 ${getPriorityBorderColor(task.prioridade)} rounded-r-lg hover-scale`}>
                     <TaskCard task={task} compact onClick={() => onTaskClick?.(task)} />

@@ -6,20 +6,29 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerFooter,
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar, Clock, Timer, AlertCircle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar, Clock, ArrowRight, Bell, Loader2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import type { AgendaTask } from './TaskCard';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ScheduleTimeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  task: AgendaTask | null;
-  targetDate: string | null;
+  taskName: string;
+  targetDate: string;
+  originalDate?: string;
+  taskId?: string;
   onConfirm: (hora: string, tipoHorario: 'fixo' | 'ate') => void;
   isLoading?: boolean;
 }
@@ -27,143 +36,164 @@ interface ScheduleTimeModalProps {
 const ScheduleTimeModal: React.FC<ScheduleTimeModalProps> = ({
   open,
   onOpenChange,
-  task,
+  taskName,
   targetDate,
+  originalDate,
   onConfirm,
   isLoading = false,
 }) => {
-  const [tipoHorario, setTipoHorario] = useState<'fixo' | 'ate'>('fixo');
+  const isMobile = useIsMobile();
+  const [keepTime, setKeepTime] = useState(true);
   const [hora, setHora] = useState('09:00');
 
   const handleConfirm = () => {
-    if (!hora) return;
-    onConfirm(hora, tipoHorario);
+    if (keepTime) {
+      onConfirm('', 'fixo'); // empty = keep existing
+    } else {
+      onConfirm(hora, 'fixo');
+    }
   };
 
   const handleClose = () => {
-    setTipoHorario('fixo');
+    setKeepTime(true);
     setHora('09:00');
     onOpenChange(false);
   };
 
-  const formattedDate = targetDate 
-    ? format(parseISO(targetDate), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-    : '';
+  const formatDate = (dateStr: string) => {
+    try {
+      return format(parseISO(dateStr), "dd/MM/yyyy (EEE)", { locale: ptBR });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const content = (
+    <div className="space-y-5 py-2">
+      {/* Task name */}
+      <div className="p-3 rounded-xl bg-muted/50 border border-border">
+        <p className="text-sm font-medium text-foreground line-clamp-2">{taskName || 'Tarefa'}</p>
+      </div>
+
+      {/* Date change visual */}
+      {originalDate && targetDate && (
+        <div className="flex items-center gap-3 justify-center p-4 rounded-xl bg-muted/30 border border-border">
+          <div className="text-center">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">De</p>
+            <p className="text-sm font-semibold text-foreground">{formatDate(originalDate)}</p>
+          </div>
+          <ArrowRight className="h-5 w-5 text-primary flex-shrink-0" />
+          <div className="text-center">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Para</p>
+            <p className="text-sm font-semibold text-primary">{formatDate(targetDate)}</p>
+          </div>
+        </div>
+      )}
+
+      {!originalDate && targetDate && (
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
+          <Calendar className="h-5 w-5 text-primary" />
+          <div>
+            <p className="text-[10px] text-primary font-medium uppercase tracking-wider">Nova data</p>
+            <p className="text-sm font-semibold text-foreground capitalize">{formatDate(targetDate)}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Keep time checkbox */}
+      <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
+        <Checkbox
+          id="keep-time"
+          checked={keepTime}
+          onCheckedChange={(v) => setKeepTime(!!v)}
+          data-checkbox
+        />
+        <Label htmlFor="keep-time" className="text-sm text-foreground cursor-pointer flex-1">
+          Manter horário atual
+        </Label>
+      </div>
+
+      {/* Time input - only if unchecked */}
+      {!keepTime && (
+        <div className="space-y-2">
+          <Label htmlFor="hora" className="text-sm font-medium text-muted-foreground">Novo horário</Label>
+          <div className="relative">
+            <Input
+              id="hora"
+              type="time"
+              value={hora}
+              onChange={(e) => setHora(e.target.value)}
+              className="pl-10 text-lg h-12"
+            />
+            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          </div>
+        </div>
+      )}
+
+      {/* Notification notice */}
+      <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+        <Bell className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+        <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+          Os contatos notificados serão informados automaticamente sobre esta alteração de data.
+        </p>
+      </div>
+    </div>
+  );
+
+  const footer = (
+    <div className="flex gap-2 w-full">
+      <Button variant="outline" onClick={handleClose} disabled={isLoading} className="flex-1 h-11">
+        Cancelar
+      </Button>
+      <Button
+        onClick={handleConfirm}
+        disabled={(!keepTime && !hora) || isLoading}
+        className="flex-1 h-11 bg-primary hover:bg-primary/90"
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Reagendando...
+          </>
+        ) : (
+          'Confirmar Reagendamento'
+        )}
+      </Button>
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={handleClose}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center gap-2 text-base">
+              <div className="p-1.5 rounded-lg bg-primary/10">
+                <Calendar className="h-4 w-4 text-primary" />
+              </div>
+              Reagendar Compromisso
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4">{content}</div>
+          <DrawerFooter>{footer}</DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[420px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <div className="p-2 rounded-lg bg-blue-50">
-              <Calendar className="h-5 w-5 text-blue-600" />
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Calendar className="h-5 w-5 text-primary" />
             </div>
-            Agendar Tarefa
+            Reagendar Compromisso
           </DialogTitle>
         </DialogHeader>
-
-        <div className="space-y-5 py-4">
-          <div className="p-3 rounded-lg bg-gray-50 border border-gray-200">
-            <p className="text-sm font-medium text-gray-900 line-clamp-2">
-              {task?.titulo || 'Tarefa'}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
-            <Calendar className="h-5 w-5 text-blue-600" />
-            <div>
-              <p className="text-xs text-blue-600 font-medium">Data selecionada</p>
-              <p className="text-sm font-semibold text-blue-800 capitalize">{formattedDate}</p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <Label className="text-sm font-medium text-gray-700">Tipo de horário</Label>
-            <RadioGroup
-              value={tipoHorario}
-              onValueChange={(value) => setTipoHorario(value as 'fixo' | 'ate')}
-              className="grid grid-cols-2 gap-3"
-            >
-              <label
-                htmlFor="tipo-fixo"
-                className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                  tipoHorario === 'fixo' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <RadioGroupItem value="fixo" id="tipo-fixo" />
-                <div className="flex items-center gap-2">
-                  <Clock className={`h-4 w-4 ${tipoHorario === 'fixo' ? 'text-blue-600' : 'text-gray-400'}`} />
-                  <div>
-                    <p className={`text-sm font-medium ${tipoHorario === 'fixo' ? 'text-blue-700' : 'text-gray-700'}`}>Horário fixo</p>
-                    <p className="text-[10px] text-gray-500">Ex: às {hora}</p>
-                  </div>
-                </div>
-              </label>
-
-              <label
-                htmlFor="tipo-ate"
-                className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                  tipoHorario === 'ate' ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <RadioGroupItem value="ate" id="tipo-ate" />
-                <div className="flex items-center gap-2">
-                  <Timer className={`h-4 w-4 ${tipoHorario === 'ate' ? 'text-amber-600' : 'text-gray-400'}`} />
-                  <div>
-                    <p className={`text-sm font-medium ${tipoHorario === 'ate' ? 'text-amber-700' : 'text-gray-700'}`}>Até horário</p>
-                    <p className="text-[10px] text-gray-500">Ex: até {hora}</p>
-                  </div>
-                </div>
-              </label>
-            </RadioGroup>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="hora" className="text-sm font-medium text-gray-700">
-              {tipoHorario === 'fixo' ? 'Horário' : 'Até que horas?'}
-            </Label>
-            <div className="relative">
-              <Input
-                id="hora"
-                type="time"
-                value={hora}
-                onChange={(e) => setHora(e.target.value)}
-                className="pl-10 text-lg h-12"
-              />
-              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-            </div>
-          </div>
-
-          {!hora && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <p className="text-xs text-amber-700">Selecione um horário para continuar</p>
-            </div>
-          )}
-        </div>
-
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={handleClose} disabled={isLoading}>
-            Cancelar
-          </Button>
-          <Button 
-            onClick={handleConfirm} 
-            disabled={!hora || isLoading}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            {isLoading ? (
-              <>
-                <Clock className="h-4 w-4 mr-2 animate-spin" />
-                Agendando...
-              </>
-            ) : (
-              <>
-                <Calendar className="h-4 w-4 mr-2" />
-                Confirmar Agendamento
-              </>
-            )}
-          </Button>
-        </DialogFooter>
+        {content}
+        <DialogFooter>{footer}</DialogFooter>
       </DialogContent>
     </Dialog>
   );

@@ -47,47 +47,47 @@ const EmbeddedAgenda: React.FC<EmbeddedAgendaProps> = ({ tasks, filterTrigger })
   };
 
   return (
-    <div className="bg-card rounded-xl border border-border p-4 space-y-4">
+    <div className="bg-card rounded-xl border border-border p-2 md:p-4 space-y-3 md:space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div className="flex items-center gap-3">
-          <h2 className="text-base font-semibold text-foreground">Agenda</h2>
-          {/* Navigation */}
-          <div className="flex items-center gap-1">
-            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={handlePrev}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button size="sm" variant="outline" className="h-7 px-3 text-xs" onClick={handleToday}>
-              Hoje
-            </Button>
-            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={handleNext}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-3">
+            <h2 className="text-sm md:text-base font-semibold text-foreground">Agenda</h2>
+            {/* Navigation */}
+            <div className="flex items-center gap-0.5 md:gap-1">
+              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={handlePrev}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 px-2 md:px-3 text-[10px] md:text-xs" onClick={handleToday}>
+                Hoje
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={handleNext}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2">
           {/* Filter trigger slot */}
           {filterTrigger}
-
-          {/* View tabs */}
-          <Tabs value={view} onValueChange={(v) => setView(v as AgendaView)}>
-            <TabsList className="h-8">
-              <TabsTrigger value="dia" className="text-xs px-3 h-6 gap-1">
-                <Calendar className="h-3 w-3" />
-                Dia
-              </TabsTrigger>
-              <TabsTrigger value="semana" className="text-xs px-3 h-6 gap-1">
-                <CalendarDays className="h-3 w-3" />
-                Semana
-              </TabsTrigger>
-              <TabsTrigger value="mes" className="text-xs px-3 h-6 gap-1">
-                <LayoutGrid className="h-3 w-3" />
-                Mês
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
         </div>
+
+        {/* View tabs - full width on mobile */}
+        <Tabs value={view} onValueChange={(v) => setView(v as AgendaView)}>
+          <TabsList className="h-8 w-full md:w-auto">
+            <TabsTrigger value="dia" className="text-[10px] md:text-xs px-2 md:px-3 h-6 gap-1 flex-1 md:flex-none">
+              <Calendar className="h-3 w-3" />
+              Dia
+            </TabsTrigger>
+            <TabsTrigger value="semana" className="text-[10px] md:text-xs px-2 md:px-3 h-6 gap-1 flex-1 md:flex-none">
+              <CalendarDays className="h-3 w-3" />
+              Semana
+            </TabsTrigger>
+            <TabsTrigger value="mes" className="text-[10px] md:text-xs px-2 md:px-3 h-6 gap-1 flex-1 md:flex-none">
+              <LayoutGrid className="h-3 w-3" />
+              Mês
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Content */}

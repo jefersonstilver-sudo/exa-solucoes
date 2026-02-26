@@ -1,11 +1,13 @@
 /**
  * AgendaWeekView - Grid 7 colunas com slots de hora
+ * Mobile: scroll horizontal snap-x
  */
 
 import React, { useMemo } from 'react';
 import { format, startOfWeek, addDays, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { AgendaTask } from '@/components/admin/agenda/TaskCard';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AgendaWeekViewProps {
   tasks: AgendaTask[];
@@ -27,6 +29,7 @@ const getPriorityColor = (prioridade: string) => {
 };
 
 const AgendaWeekView: React.FC<AgendaWeekViewProps> = ({ tasks, currentDate, onTaskClick, fullscreen }) => {
+  const isMobile = useIsMobile();
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const now = new Date();
   const currentHour = now.getHours();
@@ -64,41 +67,48 @@ const AgendaWeekView: React.FC<AgendaWeekViewProps> = ({ tasks, currentDate, onT
 
   const hasAllDay = Object.values(tasksByDayAndHour.allDayMap).some(arr => arr.length > 0);
 
-  const cellHeight = fullscreen ? 52 : 44;
+  const cellHeight = isMobile ? 40 : fullscreen ? 52 : 44;
+  const minTableWidth = isMobile ? 500 : 700;
+  const hourColWidth = isMobile ? 44 : 60;
 
   return (
     <div className="space-y-2">
       {!fullscreen && (
         <div className="text-center mb-2">
-          <h3 className="text-sm font-medium text-muted-foreground">
+          <h3 className="text-xs md:text-sm font-medium text-muted-foreground">
             {format(weekDays[0], "d MMM", { locale: ptBR })} — {format(weekDays[6], "d MMM yyyy", { locale: ptBR })}
           </h3>
         </div>
       )}
 
-      <div className="bg-card rounded-xl border border-border overflow-auto">
-        {/* Use a CSS table layout for perfectly aligned borders */}
-        <table className="w-full border-collapse" style={{ minWidth: 700, tableLayout: 'fixed' }}>
+      <div
+        className="bg-card rounded-xl border border-border overflow-auto"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        <table className="w-full border-collapse" style={{ minWidth: minTableWidth, tableLayout: 'fixed' }}>
           <colgroup>
-            <col style={{ width: 60 }} />
+            <col style={{ width: hourColWidth }} />
             {weekDays.map((_, i) => <col key={i} />)}
           </colgroup>
 
           {/* Header */}
           <thead className="sticky top-0 bg-card z-10">
             <tr>
-              <th className="border-b border-r border-border p-2 text-xs text-muted-foreground font-normal" />
+              <th className="border-b border-r border-border p-1 md:p-2 text-[10px] text-muted-foreground font-normal" />
               {weekDays.map(day => {
                 const today = isToday(day);
                 return (
                   <th
                     key={day.toISOString()}
-                    className={`border-b border-r border-border last:border-r-0 p-2 text-center font-normal ${today ? 'bg-primary/10' : ''}`}
+                    className={`border-b border-r border-border last:border-r-0 p-1 md:p-2 text-center font-normal ${today ? 'bg-primary/10' : ''}`}
                   >
-                    <div className={`text-[10px] uppercase tracking-wider ${today ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
-                      {format(day, 'EEEE', { locale: ptBR })}
+                    <div className={`text-[9px] md:text-[10px] uppercase tracking-wider ${today ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
+                      {isMobile
+                        ? format(day, 'EEEEE', { locale: ptBR })
+                        : format(day, 'EEEE', { locale: ptBR })
+                      }
                     </div>
-                    <div className={`text-sm font-semibold ${today ? 'text-primary' : 'text-foreground'}`}>
+                    <div className={`text-xs md:text-sm font-semibold ${today ? 'text-primary' : 'text-foreground'}`}>
                       {format(day, 'd')}
                     </div>
                   </th>
@@ -111,27 +121,27 @@ const AgendaWeekView: React.FC<AgendaWeekViewProps> = ({ tasks, currentDate, onT
             {/* All day row */}
             {hasAllDay && (
               <tr className="bg-muted/30">
-                <td className="border-b border-r border-border p-1 text-[10px] text-muted-foreground text-center align-middle">
+                <td className="border-b border-r border-border p-1 text-[9px] md:text-[10px] text-muted-foreground text-center align-middle">
                   Dia
                 </td>
                 {weekDays.map(day => {
                   const key = format(day, 'yyyy-MM-dd');
                   const dayAllDay = tasksByDayAndHour.allDayMap[key] || [];
                   return (
-                    <td key={key} className="border-b border-r border-border last:border-r-0 p-1 align-top" style={{ minHeight: 32 }}>
+                    <td key={key} className="border-b border-r border-border last:border-r-0 p-0.5 md:p-1 align-top" style={{ minHeight: 32 }}>
                       <div className="space-y-0.5">
-                        {dayAllDay.slice(0, 2).map(task => (
+                        {dayAllDay.slice(0, isMobile ? 1 : 2).map(task => (
                           <div
                             key={task.id}
                             onClick={() => onTaskClick?.(task)}
-                            className={`text-[9px] px-1 py-0.5 rounded truncate cursor-pointer border ${getPriorityColor(task.prioridade)}`}
-                            title={[task.titulo, task.prioridade ? `Prioridade: ${task.prioridade}` : null, `Status: ${task.status}`, task.task_responsaveis?.length ? `Resp: ${task.task_responsaveis.map(r => r.users?.nome).join(', ')}` : null].filter(Boolean).join('\n')}
+                            className={`text-[8px] md:text-[9px] px-1 py-0.5 rounded truncate cursor-pointer border ${getPriorityColor(task.prioridade)}`}
+                            title={task.titulo}
                           >
                             {task.titulo}
                           </div>
                         ))}
-                        {dayAllDay.length > 2 && (
-                          <div className="text-[9px] text-muted-foreground pl-1">+{dayAllDay.length - 2}</div>
+                        {dayAllDay.length > (isMobile ? 1 : 2) && (
+                          <div className="text-[8px] md:text-[9px] text-muted-foreground pl-1">+{dayAllDay.length - (isMobile ? 1 : 2)}</div>
                         )}
                       </div>
                     </td>
@@ -146,7 +156,7 @@ const AgendaWeekView: React.FC<AgendaWeekViewProps> = ({ tasks, currentDate, onT
               return (
                 <tr key={hour}>
                   <td
-                    className="border-b border-r border-border text-[10px] text-muted-foreground text-right pr-2 align-top pt-1 last:border-b-0"
+                    className="border-b border-r border-border text-[9px] md:text-[10px] text-muted-foreground text-right pr-1 md:pr-2 align-top pt-1 last:border-b-0"
                     style={{ height: cellHeight }}
                   >
                     {`${hour.toString().padStart(2, '0')}:00`}
@@ -175,11 +185,17 @@ const AgendaWeekView: React.FC<AgendaWeekViewProps> = ({ tasks, currentDate, onT
                             <div
                               key={task.id}
                               onClick={() => onTaskClick?.(task)}
-                              className={`text-[9px] px-1.5 py-1 rounded cursor-pointer border truncate hover:opacity-80 transition-opacity ${getPriorityColor(task.prioridade)}`}
-                              title={[`${task.horario_inicio?.substring(0,5) || ''} ${task.titulo}`, task.prioridade ? `Prioridade: ${task.prioridade}` : null, `Status: ${task.status}`, task.task_responsaveis?.length ? `Resp: ${task.task_responsaveis.map(r => r.users?.nome).join(', ')}` : null, task.local_evento ? `Local: ${task.local_evento}` : null].filter(Boolean).join('\n')}
+                              className={`text-[8px] md:text-[9px] px-1 md:px-1.5 py-0.5 md:py-1 rounded cursor-pointer border truncate hover:opacity-80 transition-opacity ${getPriorityColor(task.prioridade)}`}
+                              title={task.titulo}
                             >
-                              <span className="font-medium">{task.horario_inicio?.substring(0,5) || ''}</span>{' '}
-                              {task.titulo}
+                              {isMobile ? (
+                                task.titulo
+                              ) : (
+                                <>
+                                  <span className="font-medium">{task.horario_inicio?.substring(0,5) || ''}</span>{' '}
+                                  {task.titulo}
+                                </>
+                              )}
                             </div>
                           ))}
                         </div>

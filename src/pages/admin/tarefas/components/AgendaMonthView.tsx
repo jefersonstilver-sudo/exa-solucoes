@@ -15,6 +15,8 @@ import TaskCard from '@/components/admin/agenda/TaskCard';
 import DraggableTaskCard from '@/components/admin/agenda/DraggableTaskCard';
 import DroppableCalendarDay from '@/components/admin/agenda/DroppableCalendarDay';
 import ScheduleTimeModal from '@/components/admin/agenda/ScheduleTimeModal';
+import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AgendaMonthViewProps {
   tasks: AgendaTask[];
@@ -23,10 +25,13 @@ interface AgendaMonthViewProps {
   fullscreen?: boolean;
 }
 
-const weekDays = ['dom.', 'seg.', 'ter.', 'qua.', 'qui.', 'sex.', 'sáb.'];
+const weekDaysFull = ['dom.', 'seg.', 'ter.', 'qua.', 'qui.', 'sex.', 'sáb.'];
+const weekDaysMobile = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
 const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, onTaskClick, fullscreen }) => {
   const queryClient = useQueryClient();
+  const { userProfile } = useAuth();
+  const isMobile = useIsMobile();
   const [activeTask, setActiveTask] = useState<AgendaTask | null>(null);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [scheduleModalTask, setScheduleModalTask] = useState<AgendaTask | null>(null);
@@ -37,6 +42,8 @@ const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, o
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+
+  const weekDays = isMobile ? weekDaysMobile : weekDaysFull;
 
   const tasksByDate = useMemo(() => {
     const map = new Map<string, AgendaTask[]>();
@@ -53,18 +60,43 @@ const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, o
   const updateTaskMutation = useMutation({
     mutationFn: async ({ taskId, newDate, hora, tipoHorario }: { taskId: string; newDate: string; hora: string; tipoHorario: 'fixo' | 'ate' }) => {
       const updateData: Record<string, string> = { data_prevista: newDate };
-      if (tipoHorario === 'fixo') updateData.horario_inicio = hora;
-      else updateData.horario_limite = hora;
+      // Only update time if a new time was provided (non-empty)
+      if (hora) {
+        if (tipoHorario === 'fixo') updateData.horario_inicio = hora;
+        else updateData.horario_limite = hora;
+      }
 
       const { error } = await supabase.from('tasks').update(updateData).eq('id', taskId);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       toast.success('Tarefa reagendada!');
       queryClient.invalidateQueries({ queryKey: ['agenda-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['minha-manha-tasks-v2'] });
       queryClient.invalidateQueries({ queryKey: ['central-tarefas'] });
       setScheduleModalOpen(false);
+
+      // Send change notification
+      if (scheduleModalTask) {
+        const originalDate = scheduleModalTask.data_prevista?.split('T')[0];
+        const newDate = variables.newDate;
+        if (originalDate && originalDate !== newDate) {
+          supabase.functions.invoke('task-notify-change', {
+            body: {
+              task_id: variables.taskId,
+              titulo: scheduleModalTask.titulo,
+              tipo_evento: scheduleModalTask.tipo_evento || 'tarefa',
+              changes: {
+                data_anterior: formatDateBR(originalDate),
+                data_nova: formatDateBR(newDate),
+              },
+              criador_nome: userProfile?.nome || userProfile?.email || 'Sistema',
+            }
+          }).then(() => {
+            toast.info('Contatos notificados sobre a alteração');
+          }).catch(err => console.error('Erro ao notificar alteração:', err));
+        }
+      }
     },
     onError: (err: any) => toast.error(`Erro: ${err.message}`),
   });
@@ -94,27 +126,27 @@ const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, o
 
   return (
     <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="space-y-4">
+      <div className="space-y-2 md:space-y-4">
         {/* Month name - hidden in fullscreen since header shows it */}
         {!fullscreen && (
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-foreground capitalize">
+            <h3 className="text-base md:text-lg font-semibold text-foreground capitalize">
               {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
             </h3>
           </div>
         )}
 
         {/* Week day headers */}
-        <div className="grid grid-cols-7 gap-1 mb-1">
-          {weekDays.map(day => (
-            <div key={day} className="text-center text-xs text-muted-foreground font-medium py-2 uppercase">
+        <div className="grid grid-cols-7 gap-0.5 md:gap-1 mb-1">
+          {weekDays.map((day, i) => (
+            <div key={i} className="text-center text-[10px] md:text-xs text-muted-foreground font-medium py-1 md:py-2 uppercase">
               {day}
             </div>
           ))}
         </div>
 
         {/* Calendar grid */}
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-0.5 md:gap-1">
           {calendarDays.map(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
             const dayTasks = tasksByDate.get(dateKey) || [];
@@ -144,11 +176,21 @@ const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, o
         onOpenChange={setScheduleModalOpen}
         taskName={scheduleModalTask?.titulo || ''}
         targetDate={scheduleModalDate || ''}
+        originalDate={scheduleModalTask?.data_prevista?.split('T')[0] || undefined}
+        taskId={scheduleModalTask?.id}
         onConfirm={handleScheduleConfirm}
         isLoading={updateTaskMutation.isPending}
       />
     </DndContext>
   );
 };
+
+function formatDateBR(dateStr: string): string {
+  try {
+    return format(new Date(dateStr + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR });
+  } catch {
+    return dateStr;
+  }
+}
 
 export default AgendaMonthView;
