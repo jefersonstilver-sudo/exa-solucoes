@@ -153,7 +153,17 @@ const TaskCard = ({ task, compact = false, showCompleteButton = true, onComplete
       <div 
         onClick={onClick}
         className={`px-2 py-1.5 rounded text-xs cursor-pointer transition-all hover:scale-105 hover:shadow-sm border ${isOverdue ? 'ring-1 ring-red-400' : ''} ${tipoConfig.color}`}
-        title={`${tipoConfig.label}: ${task.titulo} - ${STATUS_LABELS[task.status] || task.status}${responsavelLabel ? ` | ${responsavelLabel}` : ''}`}
+        title={[
+          `${tipoConfig.label}: ${task.titulo}`,
+          task.prioridade ? `Prioridade: ${task.prioridade === 'emergencia' ? 'Emergência' : task.prioridade === 'alta' ? 'Alta' : task.prioridade === 'media' ? 'Média' : 'Baixa'}` : null,
+          `Status: ${STATUS_LABELS[task.status] || task.status}`,
+          task.horario_inicio ? `Início: ${task.horario_inicio.substring(0, 5)}` : null,
+          task.horario_limite ? `Até: ${task.horario_limite.substring(0, 5)}` : null,
+          responsavelLabel ? `Resp: ${responsavelLabel}` : null,
+          task.local_evento ? `Local: ${task.local_evento}` : null,
+          task.link_reuniao ? `Link: ${task.link_reuniao}` : null,
+          task.descricao ? `${task.descricao.substring(0, 80)}` : null,
+        ].filter(Boolean).join('\n')}
       >
         <div className="flex items-center gap-1">
           {tipoConfig.icon}
