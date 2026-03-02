@@ -24,8 +24,11 @@ export const hasVersionChanged = () => {
   const stored = getStoredVersion();
   // If no stored version, it's first visit - no update needed
   if (stored === null) return false;
-  // If stored version differs, update is needed
-  return stored !== APP_VERSION;
+  // Compare only major.minor prefix (e.g. "4.0") to avoid infinite reload loops
+  // since BUILD_TIMESTAMP changes on every load in dev mode
+  const storedPrefix = stored.split('.').slice(0, 2).join('.');
+  const currentPrefix = APP_VERSION.split('.').slice(0, 2).join('.');
+  return storedPrefix !== currentPrefix;
 };
 
 // Force clear ALL caches - aggressive cleanup
