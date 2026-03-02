@@ -78,18 +78,44 @@ const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, o
 
       // Send change notification
       if (scheduleModalTask) {
-        const originalDate = scheduleModalTask.data_prevista?.split('T')[0];
+        const previousDate = scheduleModalTask.data_prevista?.split('T')[0] || null;
+        const previousStart = scheduleModalTask.horario_inicio || null;
+        const previousEnd = scheduleModalTask.horario_limite || null;
+
         const newDate = variables.newDate;
-        if (originalDate && originalDate !== newDate) {
+        const newStart = variables.hora
+          ? (variables.tipoHorario === 'fixo' ? variables.hora : previousStart)
+          : previousStart;
+        const newEnd = variables.hora
+          ? (variables.tipoHorario === 'ate' ? variables.hora : previousEnd)
+          : previousEnd;
+
+        const dateChanged = previousDate !== newDate;
+        const startChanged = previousStart !== newStart;
+        const endChanged = previousEnd !== newEnd;
+
+        if (dateChanged || startChanged || endChanged) {
+          const changes: Record<string, string | null> = {};
+
+          if (dateChanged) {
+            changes.data_anterior = previousDate ? formatDateBR(previousDate) : null;
+            changes.data_nova = formatDateBR(newDate);
+          }
+          if (startChanged) {
+            changes.horario_inicio_anterior = previousStart;
+            changes.horario_inicio_novo = newStart;
+          }
+          if (endChanged) {
+            changes.horario_limite_anterior = previousEnd;
+            changes.horario_limite_novo = newEnd;
+          }
+
           supabase.functions.invoke('task-notify-change', {
             body: {
               task_id: variables.taskId,
               titulo: scheduleModalTask.titulo,
               tipo_evento: scheduleModalTask.tipo_evento || 'tarefa',
-              changes: {
-                data_anterior: formatDateBR(originalDate),
-                data_nova: formatDateBR(newDate),
-              },
+              changes,
               criador_nome: userProfile?.nome || userProfile?.email || 'Sistema',
             }
           }).then(() => {
@@ -178,6 +204,7 @@ const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, o
         targetDate={scheduleModalDate || ''}
         originalDate={scheduleModalTask?.data_prevista?.split('T')[0] || undefined}
         taskId={scheduleModalTask?.id}
+        existingTime={scheduleModalTask?.horario_inicio || scheduleModalTask?.horario_limite || null}
         onConfirm={handleScheduleConfirm}
         isLoading={updateTaskMutation.isPending}
       />

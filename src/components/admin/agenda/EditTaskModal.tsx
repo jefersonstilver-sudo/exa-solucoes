@@ -499,7 +499,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
               criador_nome: userProfile?.nome || userProfile?.email || 'Sistema',
             }
           }).then(() => {
-            toast.info('Contatos notificados sobre a alteração de data/horário');
+            toast.info('Contatos notificados sobre a alteração');
           }).catch(err => console.error('Erro ao notificar alteração:', err));
         }
       }

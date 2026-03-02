@@ -504,6 +504,7 @@ const AgendaPage = () => {
         targetDate={scheduleModalDate || ''}
         originalDate={scheduleModalTask?.data_prevista?.split('T')[0]}
         taskId={scheduleModalTask?.id}
+        existingTime={scheduleModalTask?.horario_inicio || scheduleModalTask?.horario_limite || null}
         onConfirm={handleScheduleConfirm}
         isLoading={updateTaskMutation.isPending}
       />

@@ -28,6 +28,16 @@ const getPriorityColor = (prioridade: string) => {
   }
 };
 
+const getPriorityEmoji = (prioridade: string) => {
+  switch (prioridade) {
+    case 'emergencia': return '🔴';
+    case 'alta': return '🟠';
+    case 'media': return '🟡';
+    case 'baixa': return '🟢';
+    default: return '⚪';
+  }
+};
+
 const AgendaWeekView: React.FC<AgendaWeekViewProps> = ({ tasks, currentDate, onTaskClick, fullscreen }) => {
   const isMobile = useIsMobile();
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -189,7 +199,7 @@ const AgendaWeekView: React.FC<AgendaWeekViewProps> = ({ tasks, currentDate, onT
                               title={task.titulo}
                             >
                               {isMobile ? (
-                                task.titulo
+                                `${getPriorityEmoji(task.prioridade)} ${task.titulo}`
                               ) : (
                                 <>
                                   <span className="font-medium">{task.horario_inicio?.substring(0,5) || ''}</span>{' '}
