@@ -17,7 +17,7 @@ const DroppableCalendarDay = ({ day, tasks, isCurrentMonth, onTaskClick, fullscr
   const dateKey = format(day, 'yyyy-MM-dd');
   const isTodayDate = isToday(day);
   const maxTasks = isMobile ? 2 : fullscreen ? 5 : 3;
-  const cellHeight = isMobile ? 'min-h-[72px]' : fullscreen ? 'min-h-[140px]' : 'min-h-[120px]';
+  const cellHeight = isMobile ? 'min-h-[80px]' : fullscreen ? 'min-h-[140px]' : 'min-h-[120px]';
   
   const { isOver, setNodeRef } = useDroppable({
     id: dateKey,
