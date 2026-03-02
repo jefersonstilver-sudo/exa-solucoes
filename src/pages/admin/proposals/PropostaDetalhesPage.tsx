@@ -671,7 +671,7 @@ const PropostaDetalhesPage = () => {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Total em {proposal.is_custom_days ? `${proposal.custom_days} dias` : `${proposal.duration_months} meses`}</span>
-                <span className="font-semibold">{formatCurrency(proposal.is_custom_days ? (proposal.total_value || 0) : (proposal.fidel_monthly_value * proposal.duration_months))}</span>
+                <span className="font-semibold">{formatCurrency(proposal.is_custom_days ? ((proposal as any).total_value || 0) : (proposal.fidel_monthly_value * proposal.duration_months))}</span>
               </div>
               
               {/* Custom Installments */}

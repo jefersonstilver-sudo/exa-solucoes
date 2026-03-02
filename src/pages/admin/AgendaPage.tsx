@@ -500,8 +500,10 @@ const AgendaPage = () => {
       <ScheduleTimeModal
         open={scheduleModalOpen}
         onOpenChange={setScheduleModalOpen}
-        task={scheduleModalTask}
-        targetDate={scheduleModalDate}
+        taskName={scheduleModalTask?.titulo || ''}
+        targetDate={scheduleModalDate || ''}
+        originalDate={scheduleModalTask?.data_prevista?.split('T')[0]}
+        taskId={scheduleModalTask?.id}
         onConfirm={handleScheduleConfirm}
         isLoading={updateTaskMutation.isPending}
       />

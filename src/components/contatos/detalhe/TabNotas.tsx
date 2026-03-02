@@ -147,7 +147,7 @@ export const TabNotas: React.FC<TabNotasProps> = ({ contact }) => {
 
       const { error } = await supabase
         .from('contact_notes')
-        .insert(noteData);
+        .insert(noteData as any);
 
       if (error) throw error;
 
