@@ -7,7 +7,7 @@ export const BUILD_TIMESTAMP = typeof __BUILD_TIMESTAMP__ !== 'undefined'
   : Date.now();
 
 // Version is now build-based, not static - Major version bump to force cache clear
-export const APP_VERSION = `4.0.${BUILD_TIMESTAMP}`;
+export const APP_VERSION = `5.0.${BUILD_TIMESTAMP}`;
 export const VERSION_KEY = 'app-version';
 export const CACHE_CLEAR_KEY = 'cache-cleared-at';
 

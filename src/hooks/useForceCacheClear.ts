@@ -23,33 +23,11 @@ export const useForceCacheClear = () => {
       console.log(`🔍 Checking version: ${APP_VERSION}`);
       
       if (hasVersionChanged()) {
-        console.log('🔄 New version detected, clearing caches...');
-        
-        // Show toast while clearing
-        toast.loading('Atualizando aplicação...', { id: 'cache-clear' });
-        
-        const success = await clearAllCaches();
-        
-        if (success) {
-          // Store new version BEFORE reload
-          setStoredVersion();
-          
-          toast.success('Aplicação atualizada!', { 
-            id: 'cache-clear',
-            duration: 1500 
-          });
-          
-          // Small delay then reload to apply changes
-          setTimeout(() => {
-            window.location.reload();
-          }, 1500);
-        } else {
-          toast.error('Erro ao atualizar. Recarregue manualmente.', {
-            id: 'cache-clear'
-          });
-        }
+        console.log('🔄 New version detected, clearing caches silently...');
+        await clearAllCaches();
+        setStoredVersion();
+        console.log('✅ Caches cleared, version stored');
       } else {
-        // First visit or same version - just ensure version is stored
         setStoredVersion();
         console.log('✅ Version up to date');
       }
