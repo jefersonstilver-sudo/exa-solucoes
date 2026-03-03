@@ -10,8 +10,21 @@ import { APP_VERSION } from './config/version'
 
 console.log(`🚀 Starting application v${APP_VERSION}...`);
 
-// Cache clearing now handled by useForceCacheClear hook inside App
-// This ensures React is mounted before any reload happens
+// Safety guard: if React hasn't rendered in 15s, show emergency fallback
+const renderTimeout = setTimeout(() => {
+  const root = document.getElementById('root');
+  if (root && !root.hasChildNodes()) {
+    console.error('⏰ React failed to render within 15s');
+    root.innerHTML = `
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:white;font-family:system-ui">
+        <div style="text-align:center;max-width:400px;padding:20px">
+          <h1 style="color:#dc2626;margin-bottom:16px">Carregamento Lento</h1>
+          <p style="color:#374151;margin-bottom:20px">A aplicação está demorando para carregar. Tente recarregar.</p>
+          <button onclick="window.location.reload()" style="background:#3730a3;color:white;border:none;padding:12px 24px;border-radius:6px;cursor:pointer">Recarregar</button>
+        </div>
+      </div>`;
+  }
+}, 15000);
 
 try {
   const rootElement = document.getElementById('root');
@@ -29,6 +42,7 @@ try {
     </React.StrictMode>,
   );
   
+  clearTimeout(renderTimeout);
   console.log(`✅ React app v${APP_VERSION} rendered successfully`);
 } catch (error) {
   console.error('❌ Critical error initializing app:', error);
