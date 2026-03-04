@@ -75,16 +75,16 @@ export function useVideoSpecifications() {
           proporcao: (horizontal as any)?.proporcao ?? '4:3',
           formato: horizontal?.formato ?? 'horizontal',
           maxClientesPainel: horizontal?.max_clientes_por_painel ?? 15,
-          maxVideosPorPedido: (horizontal as any)?.max_videos_por_pedido ?? 4,
+          maxVideosPorPedido: (horizontal as any)?.max_videos_por_pedido ?? 10,
           ultimaAlteracao: (horizontal as any)?.ultima_alteracao_em ?? null
         },
         vertical: {
-          duracaoSegundos: vertical?.duracao_video_segundos ?? 15,
+          duracaoSegundos: vertical?.duracao_video_segundos ?? 10,
           resolucao: vertical?.resolucao ?? '1080×1920',
           proporcao: (vertical as any)?.proporcao ?? '9:16',
           formato: vertical?.formato ?? 'vertical',
           maxClientesPainel: vertical?.max_clientes_por_painel ?? 3,
-          maxVideosPorPedido: (vertical as any)?.max_videos_por_pedido ?? 1,
+          maxVideosPorPedido: (vertical as any)?.max_videos_por_pedido ?? 10,
           ultimaAlteracao: (vertical as any)?.ultima_alteracao_em ?? null
         },
         exibicoes: {
@@ -103,7 +103,7 @@ export function useVideoSpecifications() {
    * Retorna a duração máxima permitida para um tipo de vídeo
    */
   const getMaxDuration = (tipo: 'horizontal' | 'vertical' = 'horizontal'): number => {
-    if (!data) return tipo === 'horizontal' ? 10 : 15; // Defaults seguros
+    if (!data) return 10; // Default seguro: 10s para ambos
     return tipo === 'horizontal' 
       ? data.horizontal.duracaoSegundos 
       : data.vertical.duracaoSegundos;
@@ -115,7 +115,7 @@ export function useVideoSpecifications() {
   const getSpecsDisplay = (tipo: 'horizontal' | 'vertical' = 'horizontal') => {
     if (!data) {
       return {
-        duracao: tipo === 'horizontal' ? 10 : 15,
+        duracao: 10,
         resolucao: tipo === 'horizontal' ? '1440×1080' : '1080×1920',
         proporcao: tipo === 'horizontal' ? '4:3' : '9:16',
         ultimaAlteracao: null
@@ -155,13 +155,13 @@ export async function fetchMaxVideoDuration(tipo: 'horizontal' | 'vertical' = 'h
       .single();
     
     if (error || !data) {
-      console.warn('⚠️ Falha ao buscar duração do banco, usando default:', tipo === 'horizontal' ? 10 : 15);
-      return tipo === 'horizontal' ? 10 : 15;
+      console.warn('⚠️ Falha ao buscar duração do banco, usando default: 10');
+      return 10;
     }
     
     return data.duracao_video_segundos;
   } catch (err) {
     console.error('❌ Erro ao buscar especificações:', err);
-    return tipo === 'horizontal' ? 10 : 15;
+    return 10;
   }
 }

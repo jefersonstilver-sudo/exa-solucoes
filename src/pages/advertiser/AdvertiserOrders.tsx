@@ -425,8 +425,34 @@ const AdvertiserOrders = () => {
       </div>;
   }
   return <div className="space-y-6">
-      {/* Header */}
-      
+      {/* Premium Welcome Header */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
+        <div className="flex items-center gap-4 sm:gap-5">
+          {/* Logo */}
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] flex items-center justify-center flex-shrink-0 shadow-md overflow-hidden">
+            {(userProfile as any)?.logo_url || userProfile?.avatar_url ? (
+              <img
+                src={(userProfile as any)?.logo_url || userProfile?.avatar_url}
+                alt="Logo"
+                className="w-full h-full object-contain p-2 brightness-0 invert"
+              />
+            ) : (
+              <span className="text-white text-xl sm:text-2xl font-bold">
+                {((userProfile as any)?.empresa_nome || userProfile?.nome || 'E')?.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+          {/* Info */}
+          <div className="min-w-0">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate leading-tight">
+              {(userProfile as any)?.empresa_nome || 'Minha Empresa'}
+            </h2>
+            <p className="text-sm sm:text-base text-gray-500 truncate">
+              {userProfile?.nome || 'Anunciante'}
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Stats Cards - Compacto */}
       <div className="grid grid-cols-3 gap-3">

@@ -86,7 +86,7 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
     console.log('📋 [VIDEO_SLOTS] Resultados válidos:', validVideoResults);
 
     // Criar slots 1-4, preenchendo com dados existentes
-    const slots: VideoSlot[] = [1, 2, 3, 4].map(position => {
+    const slots: VideoSlot[] = Array.from({ length: 10 }, (_, i) => i + 1).map(position => {
       const matchingResult = validVideoResults.find(result => 
         result && result.pedidoVideo.slot_position === position
       );
@@ -169,7 +169,7 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
     
     // FALLBACK: Retornar slots vazios ao invés de falhar completamente
     console.log('🔄 [VIDEO_SLOTS] Usando fallback - slots vazios');
-    return [1, 2, 3, 4].map(position => ({
+    return Array.from({ length: 10 }, (_, i) => i + 1).map(position => ({
       slot_position: position,
       is_active: false,
       selected_for_display: false,
