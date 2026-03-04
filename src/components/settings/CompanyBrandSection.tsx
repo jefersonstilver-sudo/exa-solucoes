@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, FileText, Save, Loader2, Info, MapPin, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Building2, FileText, Info, MapPin, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { CompanyTermsCheckbox } from './CompanyTermsCheckbox';
@@ -13,7 +13,7 @@ import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { BusinessSegmentSelector } from '@/components/ui/business-segment-selector';
 import { cn } from '@/lib/utils';
 import { useLogoImageUrl } from '@/hooks/useLogoImageUrl';
-
+import { ClientLogoUploadModal } from '@/components/admin/proposals/ClientLogoUploadModal';
 export const CompanyBrandSection: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [companyName, setCompanyName] = useState('');
@@ -26,13 +26,11 @@ export const CompanyBrandSection: React.FC = () => {
   const [termsAcceptedDate, setTermsAcceptedDate] = useState<string | null>(null);
   const [segmentPopoverOpen, setSegmentPopoverOpen] = useState(false);
 
-  // Logo upload state
+  // Logo state
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoStorageBucket, setLogoStorageBucket] = useState<string | null>(null);
   const [logoStorageKey, setLogoStorageKey] = useState<string | null>(null);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [showWhiteVersion, setShowWhiteVersion] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showLogoModal, setShowLogoModal] = useState(false);
 
   const { imageUrl: signedLogoUrl, loading: logoLoading } = useLogoImageUrl(
     logoUrl ? { file_url: logoUrl, storage_bucket: logoStorageBucket || undefined, storage_key: logoStorageKey || undefined } : null
@@ -84,57 +82,27 @@ export const CompanyBrandSection: React.FC = () => {
     }
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file
-    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      toast.error('Formato inválido. Use PNG, JPG, SVG ou WebP.');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Arquivo muito grande. Máximo 5MB.');
-      return;
-    }
-
-    setUploadingLogo(true);
+  const handleLogoProcessed = async (url: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
-      const ext = file.name.split('.').pop() || 'png';
-      const storagePath = `logos/${user.id}/logo_${Date.now()}.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('arquivos')
-        .upload(storagePath, file, { upsert: true });
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from('arquivos')
-        .getPublicUrl(storagePath);
-
-      const publicUrl = urlData.publicUrl;
-
-      // Save to user profile
       const { error: updateError } = await supabase
         .from('users')
-        .update({ logo_url: publicUrl } as any)
+        .update({ logo_url: url } as any)
         .eq('id', user.id);
       if (updateError) throw updateError;
 
-      setLogoUrl(publicUrl);
-      setLogoStorageBucket('arquivos');
-      setLogoStorageKey(storagePath);
-      toast.success('Logo enviada com sucesso!');
+      setLogoUrl(url);
+      if (url.includes('/storage/') && url.includes('arquivos')) {
+        setLogoStorageBucket('arquivos');
+        const keyMatch = url.match(/arquivos\/(.+?)(\?|#|$)/);
+        if (keyMatch) setLogoStorageKey(keyMatch[1]);
+      }
+      toast.success('Logo aplicada com sucesso!');
     } catch (error: any) {
-      console.error('Erro no upload da logo:', error);
-      toast.error('Erro ao enviar logo: ' + (error.message || 'Tente novamente'));
-    } finally {
-      setUploadingLogo(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      console.error('Erro ao salvar logo:', error);
+      toast.error('Erro ao salvar logo: ' + (error.message || 'Tente novamente'));
     }
   };
 
@@ -253,16 +221,15 @@ export const CompanyBrandSection: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-4 items-start">
             {/* Preview */}
             <div className="flex flex-col items-center gap-2">
-              {signedLogoUrl || logoUrl ? (
+             {signedLogoUrl || logoUrl ? (
                 <div className="relative">
-                  {/* Preview sobre fundo vermelho */}
                   <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] flex items-center justify-center p-3 shadow-lg">
                     <img
                       src={signedLogoUrl || logoUrl || ''}
                       alt="Logo da empresa"
                       className={cn(
                         "max-w-full max-h-full object-contain rounded",
-                        showWhiteVersion && "brightness-0 invert"
+                        !logoUrl?.includes('#original') && "brightness-0 invert"
                       )}
                     />
                   </div>
@@ -275,58 +242,36 @@ export const CompanyBrandSection: React.FC = () => {
                 </div>
               ) : (
                 <div 
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => setShowLogoModal(true)}
                   className="w-24 h-24 rounded-2xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-exa-red/50 hover:bg-gray-50 transition-all"
                 >
                   <Upload className="h-6 w-6 text-gray-400 mb-1" />
                   <span className="text-xs text-gray-500">Upload</span>
                 </div>
               )}
-
-              {/* Toggle versão branca */}
-              {(signedLogoUrl || logoUrl) && (
-                <button
-                  type="button"
-                  onClick={() => setShowWhiteVersion(!showWhiteVersion)}
-                  className={cn(
-                    "text-xs px-3 py-1.5 rounded-full border transition-all font-medium min-h-[36px]",
-                    showWhiteVersion
-                      ? "bg-gray-900 text-white border-gray-900"
-                      : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
-                  )}
-                >
-                  {showWhiteVersion ? '✓ Versão Branca' : 'Versão Branca'}
-                </button>
-              )}
             </div>
 
-            {/* Upload area */}
+            {/* Upload button + Modal */}
             <div className="flex-1 space-y-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp"
-                onChange={handleLogoUpload}
-                className="hidden"
-              />
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingLogo}
+                onClick={() => setShowLogoModal(true)}
                 className="w-full sm:w-auto min-h-[44px]"
               >
-                {uploadingLogo ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
-                ) : (
-                  <><Upload className="h-4 w-4 mr-2" /> {logoUrl ? 'Trocar Logo' : 'Enviar Logo'}</>
-                )}
+                <Upload className="h-4 w-4 mr-2" /> {logoUrl ? 'Trocar Logo' : 'Enviar Logo'}
               </Button>
-              <p className="text-xs text-gray-500">PNG, JPG, SVG ou WebP • Máximo 5MB</p>
+              <p className="text-xs text-gray-500">PNG, JPG ou WebP • Máximo 5MB • 3 variantes disponíveis</p>
             </div>
           </div>
-        </div>
 
+          {/* ClientLogoUploadModal */}
+          <ClientLogoUploadModal
+            isOpen={showLogoModal}
+            onClose={() => setShowLogoModal(false)}
+            onLogoProcessed={handleLogoProcessed}
+          />
+        </div>
         <div className="space-y-2">
           <Label htmlFor="companyName">
             Nome da Empresa/Marca <span className="text-red-500">*</span>
