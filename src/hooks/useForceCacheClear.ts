@@ -1,39 +1,18 @@
 import { useEffect, useRef } from 'react';
-import { 
-  APP_VERSION, 
-  hasVersionChanged, 
-  clearAllCaches, 
-  setStoredVersion 
-} from '@/config/version';
-import { toast } from 'sonner';
+import { APP_VERSION, setStoredVersion } from '@/config/version';
 
 /**
- * Hook that forces cache clearing when a new version is detected
- * Runs once on app mount and handles the update seamlessly
+ * Hook that logs the current version on mount.
+ * SW/cache cleanup is now handled by inline script in index.html.
  */
 export const useForceCacheClear = () => {
   const hasChecked = useRef(false);
 
   useEffect(() => {
-    // Only run once per app lifecycle
     if (hasChecked.current) return;
     hasChecked.current = true;
-
-    const checkAndClear = async () => {
-      console.log(`🔍 Checking version: ${APP_VERSION}`);
-      
-      if (hasVersionChanged()) {
-        console.log('🔄 New version detected, clearing caches silently...');
-        await clearAllCaches();
-        setStoredVersion();
-        console.log('✅ Caches cleared, version stored');
-      } else {
-        setStoredVersion();
-        console.log('✅ Version up to date');
-      }
-    };
-
-    checkAndClear();
+    setStoredVersion();
+    console.log(`✅ App version: ${APP_VERSION}`);
   }, []);
 
   return { version: APP_VERSION };

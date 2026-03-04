@@ -4618,7 +4618,7 @@ export type Database = {
           audit_last_check: string | null
           audit_outbound_count: number | null
           audit_sync_issue: boolean | null
-          avg_response_time: unknown
+          avg_response_time: string | null
           awaiting_response: boolean | null
           contact_id: string | null
           contact_name: string | null
@@ -4639,7 +4639,7 @@ export type Database = {
           is_muted: boolean | null
           is_sindico: boolean | null
           last_message_at: string | null
-          last_response_time: unknown
+          last_response_time: string | null
           lead_score: number | null
           metadata: Json | null
           mood_score: number | null
@@ -4658,7 +4658,7 @@ export type Database = {
           audit_last_check?: string | null
           audit_outbound_count?: number | null
           audit_sync_issue?: boolean | null
-          avg_response_time?: unknown
+          avg_response_time?: string | null
           awaiting_response?: boolean | null
           contact_id?: string | null
           contact_name?: string | null
@@ -4679,7 +4679,7 @@ export type Database = {
           is_muted?: boolean | null
           is_sindico?: boolean | null
           last_message_at?: string | null
-          last_response_time?: unknown
+          last_response_time?: string | null
           lead_score?: number | null
           metadata?: Json | null
           mood_score?: number | null
@@ -4698,7 +4698,7 @@ export type Database = {
           audit_last_check?: string | null
           audit_outbound_count?: number | null
           audit_sync_issue?: boolean | null
-          avg_response_time?: unknown
+          avg_response_time?: string | null
           awaiting_response?: boolean | null
           contact_id?: string | null
           contact_name?: string | null
@@ -4719,7 +4719,7 @@ export type Database = {
           is_muted?: boolean | null
           is_sindico?: boolean | null
           last_message_at?: string | null
-          last_response_time?: unknown
+          last_response_time?: string | null
           lead_score?: number | null
           metadata?: Json | null
           mood_score?: number | null
@@ -8629,7 +8629,7 @@ export type Database = {
           parent_message_id: string | null
           provider: string | null
           raw_payload: Json | null
-          response_time: unknown
+          response_time: string | null
           sentiment: string | null
         }
         Insert: {
@@ -8656,7 +8656,7 @@ export type Database = {
           parent_message_id?: string | null
           provider?: string | null
           raw_payload?: Json | null
-          response_time?: unknown
+          response_time?: string | null
           sentiment?: string | null
         }
         Update: {
@@ -8683,7 +8683,7 @@ export type Database = {
           parent_message_id?: string | null
           provider?: string | null
           raw_payload?: Json | null
-          response_time?: unknown
+          response_time?: string | null
           sentiment?: string | null
         }
         Relationships: [

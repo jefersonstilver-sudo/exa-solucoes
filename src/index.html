@@ -70,8 +70,27 @@
     <link rel="preconnect" href="https://aakenoljsycyrcrchgxj.supabase.co" crossorigin>
     <link rel="dns-prefetch" href="https://aakenoljsycyrcrchgxj.supabase.co">
     
+    <!-- Cache Control -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    
     <!-- Manifest -->
     <link rel="manifest" href="/site.webmanifest" />
+    
+    <!-- 🧹 SW CLEANUP - Remove any cached Service Workers -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          regs.forEach(function(r) { r.unregister(); });
+        });
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            names.forEach(function(n) { caches.delete(n); });
+          });
+        }
+      }
+    </script>
     
     <!-- Prefetch important pages -->
     <link rel="prefetch" href="/loja">

@@ -8,12 +8,25 @@
       (function() {
         var h = window.location.hostname;
         var p = window.location.pathname;
-        // Detecta sistema.examidia.com.br ou sistema.localhost
         if ((h === 'sistema.examidia.com.br' || h.indexOf('sistema.') === 0) && p.indexOf('/sistema') !== 0) {
           console.log('[SUBDOMAIN] Redirecionando para /sistema/login');
           window.location.replace('/sistema/login');
         }
       })();
+    </script>
+    
+    <!-- 🧹 SW CLEANUP - Remove any cached Service Workers from previous PWA builds -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          regs.forEach(function(r) { r.unregister(); });
+        });
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            names.forEach(function(n) { caches.delete(n); });
+          });
+        }
+      }
     </script>
     
     <title>EXA | Publicidade Inteligente em Elevadores - Foz do Iguaçu</title>
