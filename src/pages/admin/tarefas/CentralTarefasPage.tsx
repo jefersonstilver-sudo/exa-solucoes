@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { RefreshCw, Loader2, Plus, ChevronDown, ChevronUp, X, SlidersHorizontal, Maximize2 } from 'lucide-react';
+import { RefreshCw, Loader2, Plus, ChevronDown, ChevronUp, X, SlidersHorizontal, Maximize2, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -22,6 +22,7 @@ import { TaskFAB } from './components/TaskFAB';
 import EmbeddedAgenda from './components/EmbeddedAgenda';
 import CreateTaskModal from '@/components/admin/agenda/CreateTaskModal';
 import { ACTIVE_STATUSES } from '@/constants/taskStatus';
+import AgendaNotificationSettingsModal from './components/AgendaNotificationSettingsModal';
 import type { TaskWithDetails, TaskStatusCanonical, TaskPriorityCanonical } from '@/types/tarefas';
 import type { AgendaTask } from '@/components/admin/agenda/TaskCard';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -47,6 +48,7 @@ const CentralTarefasPage: React.FC = () => {
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
   // Hook principal
   const {
@@ -185,6 +187,19 @@ const CentralTarefasPage: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-2">
+
+          {/* Botão Engrenagem - super_admin only */}
+          {userProfile?.role === 'super_admin' && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSettingsModalOpen(true)}
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              title="Configurações de Notificações"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          )}
 
           {/* Botão Atualizar */}
           <Button
@@ -343,6 +358,12 @@ const CentralTarefasPage: React.FC = () => {
       <CreateTaskModal 
         open={createModalOpen} 
         onOpenChange={setCreateModalOpen} 
+      />
+
+      {/* Modal de configurações de notificações */}
+      <AgendaNotificationSettingsModal
+        open={settingsModalOpen}
+        onOpenChange={setSettingsModalOpen}
       />
 
       {/* Drawer de Detalhes */}

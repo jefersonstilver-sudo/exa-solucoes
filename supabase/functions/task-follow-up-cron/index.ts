@@ -19,8 +19,28 @@ serve(async (req) => {
 
     console.log('[TASK-FOLLOWUP] 🔄 Starting follow-up check...');
 
+    // Read dynamic config for follow-up minutes
+    const { data: configRow } = await supabase
+      .from('exa_alerts_config')
+      .select('config_value')
+      .eq('config_key', 'agenda_followup_pos_evento')
+      .maybeSingle();
+
+    const followupConfig = configRow?.config_value
+      ? (typeof configRow.config_value === 'string' ? JSON.parse(configRow.config_value) : configRow.config_value)
+      : { ativo: true, minutos_apos: 60 };
+
+    if (!followupConfig.ativo) {
+      console.log('[TASK-FOLLOWUP] Disabled by config');
+      return new Response(JSON.stringify({ success: true, skipped: true, reason: 'disabled' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const followupMinutes = followupConfig.minutos_apos || 60;
+
     const now = new Date();
-    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const followupDelay = followupMinutes * 60 * 1000;
     const thirtyMinAgo = new Date(now.getTime() - 30 * 60 * 1000);
 
     // ========== PHASE 1: Send to creator (1h after task time) ==========
@@ -49,7 +69,7 @@ serve(async (req) => {
         const taskDateTime = new Date(`${taskDate}T${taskTime}:00-03:00`); // BRT
 
         // Skip if task time + 1h hasn't passed yet
-        if (taskDateTime.getTime() + 60 * 60 * 1000 > now.getTime()) continue;
+        if (taskDateTime.getTime() + followupDelay > now.getTime()) continue;
 
         // Check if already has active notification
         const { data: existingNotif } = await supabase
