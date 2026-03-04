@@ -95,7 +95,7 @@ const AdvertiserSettings = () => {
             push: authUser.user.user_metadata?.notifications?.push ?? true
           }
         });
-        
+
         // Carregar estado de 2FA e verificação de telefone
         setTwoFactorEnabled(userData?.two_factor_enabled || false);
         setPhoneVerified(userData?.telefone_verificado || false);
@@ -177,13 +177,13 @@ const AdvertiserSettings = () => {
     if (field === 'cpf') {
       value = formatDocument(value, 'cpf');
     }
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       [field]: value
     }));
   };
   const handleNotificationChange = (type: keyof UserSettings['notifications'], value: boolean) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       notifications: {
         ...prev.notifications,
@@ -192,7 +192,7 @@ const AdvertiserSettings = () => {
     }));
   };
   const handleDocumentTypeChange = (type: 'cpf' | 'documento_estrangeiro') => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       tipo_documento: type,
       // Limpar campos do tipo anterior
@@ -224,12 +224,12 @@ const AdvertiserSettings = () => {
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
           {/* Foto de Perfil */}
-          <div className="flex justify-center">
-            <AvatarUpload value={settings.avatar_url} onChange={url => setSettings(prev => ({
-            ...prev,
-            avatar_url: url || ''
-          }))} userName={settings.name} />
-          </div>
+          
+
+
+
+
+        
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -240,7 +240,7 @@ const AdvertiserSettings = () => {
             
             <div className="space-y-2">
               <Label htmlFor="name">Nome Completo</Label>
-              <Input id="name" value={settings.name} onChange={e => handleInputChange('name', e.target.value)} placeholder="Seu nome completo" />
+              <Input id="name" value={settings.name} onChange={(e) => handleInputChange('name', e.target.value)} placeholder="Seu nome completo" />
             </div>
           </div>
 
@@ -248,25 +248,25 @@ const AdvertiserSettings = () => {
             <Label htmlFor="phone">WhatsApp</Label>
             <div className="flex gap-2 items-end">
               <div className="flex-1 space-y-1">
-                <Input 
-                  id="phone" 
-                  value={settings.phone ? settings.phone.replace(/(\d{2})(\d{5})(\d{4})/, '(**) *****-$3') : ''} 
-                  disabled 
-                  className="bg-gray-100 text-gray-500 cursor-not-allowed" 
-                />
-                {phoneVerified && (
-                  <p className="text-xs text-green-600 flex items-center gap-1">
+                <Input
+                id="phone"
+                value={settings.phone ? settings.phone.replace(/(\d{2})(\d{5})(\d{4})/, '(**) *****-$3') : ''}
+                disabled
+                className="bg-gray-100 text-gray-500 cursor-not-allowed" />
+              
+                {phoneVerified &&
+              <p className="text-xs text-green-600 flex items-center gap-1">
                     <CheckCircle className="h-3 w-3" />
                     Número verificado
                   </p>
-                )}
+              }
               </div>
-              <Button 
-                type="button"
-                variant="outline" 
-                onClick={() => setShowWhatsAppModal(true)}
-                className="h-11"
-              >
+              <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowWhatsAppModal(true)}
+              className="h-11">
+              
                 <Pencil className="h-4 w-4 mr-2" />
                 Editar
               </Button>
@@ -302,7 +302,7 @@ const AdvertiserSettings = () => {
           {/* Campo CPF */}
           {settings.tipo_documento === 'cpf' && <div className="space-y-2">
               <Label htmlFor="cpf">CPF *</Label>
-              <Input id="cpf" value={settings.cpf} onChange={e => handleInputChange('cpf', e.target.value)} placeholder="000.000.000-00" maxLength={14} />
+              <Input id="cpf" value={settings.cpf} onChange={(e) => handleInputChange('cpf', e.target.value)} placeholder="000.000.000-00" maxLength={14} />
               {settings.cpf && !validateDocument(settings.cpf, 'cpf') && <p className="text-xs text-red-500">CPF inválido</p>}
             </div>}
 
@@ -310,16 +310,16 @@ const AdvertiserSettings = () => {
           {settings.tipo_documento === 'documento_estrangeiro' && <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="documento_estrangeiro">Número do Documento *</Label>
-                <Input id="documento_estrangeiro" value={settings.documento_estrangeiro} onChange={e => handleInputChange('documento_estrangeiro', e.target.value)} placeholder="Número do documento de identificação" />
+                <Input id="documento_estrangeiro" value={settings.documento_estrangeiro} onChange={(e) => handleInputChange('documento_estrangeiro', e.target.value)} placeholder="Número do documento de identificação" />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DocumentUpload label="Frente do Documento *" value={settings.documento_frente_url} onChange={url => setSettings(prev => ({
+                <DocumentUpload label="Frente do Documento *" value={settings.documento_frente_url} onChange={(url) => setSettings((prev) => ({
               ...prev,
               documento_frente_url: url || ''
             }))} />
                 
-                <DocumentUpload label="Verso do Documento *" value={settings.documento_verso_url} onChange={url => setSettings(prev => ({
+                <DocumentUpload label="Verso do Documento *" value={settings.documento_verso_url} onChange={(url) => setSettings((prev) => ({
               ...prev,
               documento_verso_url: url || ''
             }))} />
@@ -353,41 +353,41 @@ const AdvertiserSettings = () => {
               <p className="text-sm text-gray-500 mt-1">
                 Receba um código no WhatsApp toda vez que fizer login
               </p>
-              {!phoneVerified && (
-                <p className="text-xs text-amber-600 mt-2">
+              {!phoneVerified &&
+            <p className="text-xs text-amber-600 mt-2">
                   ⚠️ Você precisa verificar seu WhatsApp antes de ativar o 2FA
                 </p>
-              )}
+            }
             </div>
-            <Switch 
-              checked={twoFactorEnabled}
-              disabled={!phoneVerified}
-              onCheckedChange={async (checked) => {
-                if (!phoneVerified) {
-                  toast.error('Verifique seu WhatsApp antes de ativar o 2FA');
-                  return;
-                }
-                
-                try {
-                  const { data: { user } } = await supabase.auth.getUser();
-                  if (!user) throw new Error('Usuário não autenticado');
+            <Switch
+            checked={twoFactorEnabled}
+            disabled={!phoneVerified}
+            onCheckedChange={async (checked) => {
+              if (!phoneVerified) {
+                toast.error('Verifique seu WhatsApp antes de ativar o 2FA');
+                return;
+              }
 
-                  const { error } = await supabase
-                    .from('users')
-                    .update({ two_factor_enabled: checked })
-                    .eq('id', user.id);
+              try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error('Usuário não autenticado');
 
-                  if (error) throw error;
+                const { error } = await supabase.
+                from('users').
+                update({ two_factor_enabled: checked }).
+                eq('id', user.id);
 
-                  setTwoFactorEnabled(checked);
-                  toast.success(checked ? '2FA ativado com sucesso!' : '2FA desativado');
-                } catch (error) {
-                  console.error('Erro ao atualizar 2FA:', error);
-                  toast.error('Erro ao atualizar configuração de 2FA');
-                }
-              }}
-              className="data-[state=checked]:bg-[#9C1E1E]"
-            />
+                if (error) throw error;
+
+                setTwoFactorEnabled(checked);
+                toast.success(checked ? '2FA ativado com sucesso!' : '2FA desativado');
+              } catch (error) {
+                console.error('Erro ao atualizar 2FA:', error);
+                toast.error('Erro ao atualizar configuração de 2FA');
+              }
+            }}
+            className="data-[state=checked]:bg-[#9C1E1E]" />
+          
           </div>
 
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -424,16 +424,16 @@ const AdvertiserSettings = () => {
 
       {/* Modal de Verificação WhatsApp */}
       <WhatsAppVerificationModal
-        open={showWhatsAppModal}
-        onClose={() => setShowWhatsAppModal(false)}
-        currentPhone={settings.phone}
-        userId={userProfile?.id || ''}
-        onSuccess={(newPhone) => {
-          setSettings(prev => ({ ...prev, phone: newPhone }));
-          setPhoneVerified(true);
-          toast.success('WhatsApp atualizado com sucesso!');
-        }}
-      />
+      open={showWhatsAppModal}
+      onClose={() => setShowWhatsAppModal(false)}
+      currentPhone={settings.phone}
+      userId={userProfile?.id || ''}
+      onSuccess={(newPhone) => {
+        setSettings((prev) => ({ ...prev, phone: newPhone }));
+        setPhoneVerified(true);
+        toast.success('WhatsApp atualizado com sucesso!');
+      }} />
+    
     </div>;
 };
 export default AdvertiserSettings;
