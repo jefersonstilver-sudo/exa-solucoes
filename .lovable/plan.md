@@ -1,103 +1,73 @@
 
 
-# Plano: Painel de Configurações de Notificações da Agenda (Engrenagem Super Admin)
+# Plano: Reconstruir Modal de Configurações de Notificações — iPhone-First, Premium, Minimalista
 
-## Contexto
+## Problema Atual
 
-O sistema de notificações da agenda hoje tem lógica hardcoded nas Edge Functions (horários fixos, intervalos fixos). O usuário quer que TUDO seja configurável via UI, com um botão de engrenagem minimalista e luxuoso na Central de Tarefas, acessível apenas ao super_admin.
+O `AgendaNotificationSettingsModal` usa um `Dialog` padrão com `Accordion` que:
+- Não é otimizado para iPhone (toque difícil, inputs pequenos, scroll ruim)
+- Visual genérico, não segue o padrão EXA Premium
+- Parece "feito por IA" — layout mecânico sem refinamento humano
 
-As configurações serão salvas na tabela `exa_alerts_config` (já existente, key-value com JSON).
+## Solução
 
----
-
-## O que será criado
-
-### 1. Botão Engrenagem na Central de Tarefas
-
-**Arquivo**: `src/pages/admin/tarefas/CentralTarefasPage.tsx`
-
-Adicionar um ícone `Settings` (engrenagem) minimalista ao lado dos botões "Atualizar" e "Tela Cheia" no header, visível apenas para `super_admin`. Ao clicar, abre o modal de configurações.
-
-### 2. Modal de Configurações de Notificações da Agenda
-
-**Novo arquivo**: `src/pages/admin/tarefas/components/AgendaNotificationSettingsModal.tsx`
-
-Dialog premium (padrão Apple/glass do projeto) com as seguintes seções em accordion:
-
-**Seção 1: Relatório Diário Noturno (19h)**
-- Switch: Ativar/desativar
-- Input: Horário de envio (default: 19:00)
-- Descrição: "Resume os eventos registrados no dia e pendentes não concluídos"
-
-**Seção 2: Relatório Matinal (08h)**
-- Switch: Ativar/desativar
-- Input: Horário de envio (default: 08:00)
-- Descrição: "Envia pendentes do dia anterior + agenda do dia atual"
-
-**Seção 3: Lembrete Antes do Evento**
-- Switch: Ativar/desativar
-- Input: Minutos antes (default: 60)
-- Descrição: "Envia lembrete WhatsApp X minutos antes de cada evento"
-
-**Seção 4: Follow-up Pós-Evento**
-- Switch: Ativar/desativar
-- Input: Minutos após (default: 60)
-- Descrição: "Cobra conclusão/reagendamento X minutos após horário do evento"
-
-**Seção 5: Destinatários Padrão**
-- Lista dos contatos ativos em `exa_alerts_directors`
-- Link para gerenciar contatos (abre ManageAlertContactsModal)
-- Descrição: "Pessoas que recebem os relatórios diários automaticamente"
-
-Cada seção terá:
-- Título com ícone
-- Descrição explicativa clara
-- Controles inline (switch + input)
-- Visual glassmorphism/backdrop-blur alinhado ao design system EXA Premium
-
-### 3. Hook de Configurações da Agenda
-
-**Novo arquivo**: `src/hooks/tarefas/useAgendaNotificationSettings.ts`
-
-- Lê/escreve na tabela `exa_alerts_config` usando keys:
-  - `agenda_relatorio_noturno` → `{ ativo: bool, horario: "19:00" }`
-  - `agenda_relatorio_matinal` → `{ ativo: bool, horario: "08:00" }`
-  - `agenda_lembrete_pre_evento` → `{ ativo: bool, minutos_antes: 60 }`
-  - `agenda_followup_pos_evento` → `{ ativo: bool, minutos_apos: 60 }`
-- React Query para cache e invalidação
-- Função `saveConfig(key, value)` com toast de sucesso/erro
-
-### 4. Atualizar Edge Functions para ler configs
-
-**Arquivos**: 
-- `supabase/functions/task-reminder-scheduler/index.ts` — Ler `agenda_lembrete_pre_evento` da `exa_alerts_config` para saber quantos minutos antes enviar. **Corrigir** para usar tabela `tasks` em vez de `notion_tasks`.
-- `supabase/functions/task-follow-up-cron/index.ts` — Ler `agenda_followup_pos_evento` para ajustar o tempo de espera.
-- **Novo**: `supabase/functions/task-daily-report/index.ts` — Ler `agenda_relatorio_noturno` e `agenda_relatorio_matinal` para horário e status ativo. Gerar relatório formatado e enviar via Z-API para todos os `exa_alerts_directors` ativos.
-
-### 5. CRON jobs para relatórios diários
-
-Via SQL insert (não migration):
-- CRON a cada minuto que chama `task-daily-report` com `{ check_schedule: true }`
-- A Edge Function compara horário atual (BRT) com os horários configurados na `exa_alerts_config` e só executa quando bater
+Reconstruir completamente o modal com abordagem **iPhone-first**, usando **Drawer (bottom-sheet)** no mobile e **Dialog** no desktop. Design inspirado nos Settings do iOS — cards limpos, toggles grandes, tipografia clara, sem accordion.
 
 ---
 
-## Arquivos a Criar/Modificar
+## Mudanças
+
+### 1. Reconstruir `AgendaNotificationSettingsModal.tsx`
+
+**Mobile (Drawer bottom-sheet):**
+- Usa `Drawer` do vaul (já instalado) em vez de Dialog
+- Cards individuais para cada seção (não accordion)
+- Switch com label à esquerda, toggle à direita (padrão iOS)
+- Inputs de horário/minutos como campos inline com feedback visual
+- Touch targets mínimo 44px em todos os elementos interativos
+- Scroll suave com `-webkit-overflow-scrolling: touch`
+- Seções separadas por divisores sutis
+
+**Desktop (Dialog):**
+- Mantém Dialog com `max-w-lg`
+- Mesmo layout de cards, adaptado para largura maior
+
+**Design visual (ambos):**
+- Fundo sólido `bg-background` (sem glassmorphism excessivo que confunde)
+- Cards com `bg-card rounded-xl border border-border/50 shadow-sm`
+- Ícones em círculos coloridos sutis (estilo iOS Settings)
+- Badge de status discreto (ponto verde/cinza, não texto "Ativo/Inativo")
+- Tipografia: título 15px semibold, descrição 13px text-muted
+- Espaçamento generoso entre seções
+- Seção de destinatários com avatares circulares (iniciais) em row horizontal
+
+**Interações:**
+- Toggle salva imediatamente (sem botão "Salvar")
+- Input de horário/minutos salva on blur (já implementado, manter)
+- Toast discreto de confirmação
+- Loading skeleton enquanto carrega configs
+
+### 2. Ajustar botão engrenagem no `CentralTarefasPage.tsx`
+
+- Manter exatamente como está (já minimalista, ghost, h-8 w-8)
+- Nenhuma alteração necessária
+
+### 3. Hook `useAgendaNotificationSettings.ts`
+
+- Nenhuma alteração — lógica está correta e funcional
+
+---
+
+## Arquivos
 
 | Arquivo | Ação |
 |---------|------|
-| `src/pages/admin/tarefas/CentralTarefasPage.tsx` | Adicionar botão engrenagem (super_admin only) |
-| `src/pages/admin/tarefas/components/AgendaNotificationSettingsModal.tsx` | **Criar** modal de configurações |
-| `src/hooks/tarefas/useAgendaNotificationSettings.ts` | **Criar** hook para ler/salvar configs |
-| `supabase/functions/task-reminder-scheduler/index.ts` | Corrigir tabela + ler config dinâmica |
-| `supabase/functions/task-daily-report/index.ts` | **Criar** Edge Function de relatórios diários |
-| `supabase/functions/task-follow-up-cron/index.ts` | Ler config dinâmica de minutos |
+| `src/pages/admin/tarefas/components/AgendaNotificationSettingsModal.tsx` | Reescrever completo (iPhone-first) |
 
-## O que NAO muda
+## O que NÃO muda
 
-- Nenhuma outra página, componente ou funcionalidade
-- `task-notify-created` e `task-notify-change` permanecem intactos
-- `task-follow-up-response` permanece intacto
-- Nenhuma tabela precisa ser criada (usa `exa_alerts_config` existente)
-- Design de todos os outros módulos permanece inalterado
+- `CentralTarefasPage.tsx` — intacto
+- `useAgendaNotificationSettings.ts` — intacto
+- Edge Functions — intactas
+- Nenhuma outra página ou componente
 
