@@ -49,7 +49,13 @@ Deno.serve(async (req) => {
     // Service role client to bypass RLS for writing analytics
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
     );
     if (authError || !user) {
       console.error('❌ Auth error:', authError);
