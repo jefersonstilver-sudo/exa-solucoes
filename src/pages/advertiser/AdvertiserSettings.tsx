@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, User, Bell, Shield, Save, FileText, Pencil, CheckCircle } from 'lucide-react';
+import { Loader2, User, Bell, Shield, Save, FileText, Pencil, CheckCircle, ShieldCheck, AlertTriangle, Smartphone, Lock } from 'lucide-react';
+import { AppleSwitch } from '@/components/ui/apple-switch';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
 import AvatarUpload from '@/components/ui/avatar-upload';
@@ -244,33 +246,61 @@ const AdvertiserSettings = () => {
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label htmlFor="phone">WhatsApp</Label>
             <div className="flex gap-2 items-end">
-              <div className="flex-1 space-y-1">
+              <div className="flex-1">
                 <Input
-                id="phone"
-                value={settings.phone ? settings.phone.replace(/(\d{2})(\d{5})(\d{4})/, '(**) *****-$3') : ''}
-                disabled
-                className="bg-gray-100 text-gray-500 cursor-not-allowed" />
-              
-                {phoneVerified &&
-              <p className="text-xs text-green-600 flex items-center gap-1">
-                    <CheckCircle className="h-3 w-3" />
-                    Número verificado
-                  </p>
-              }
+                  id="phone"
+                  value={settings.phone ? settings.phone.replace(/(\d{2})(\d{5})(\d{4})/, '(**) *****-$3') : ''}
+                  disabled
+                  className="bg-gray-100 text-gray-500 cursor-not-allowed" />
               </div>
               <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowWhatsAppModal(true)}
-              className="h-11">
-              
+                type="button"
+                variant="outline"
+                onClick={() => setShowWhatsAppModal(true)}
+                className="h-11">
                 <Pencil className="h-4 w-4 mr-2" />
                 Editar
               </Button>
             </div>
+
+            {/* Alerta de verificação proeminente */}
+            {phoneVerified ? (
+              <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-4">
+                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                  <ShieldCheck className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-semibold text-green-800">WhatsApp Verificado</p>
+                  <p className="text-sm text-green-600">
+                    Número {settings.phone ? settings.phone.replace(/(\d{2})(\d{5})(\d{4})/, '(**) *****-$3') : ''} verificado com sucesso
+                  </p>
+                </div>
+                <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100">
+                  Verificado
+                </Badge>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center">
+                  <AlertTriangle className="h-5 w-5 text-amber-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-semibold text-amber-800">WhatsApp não verificado</p>
+                  <p className="text-sm text-amber-600">
+                    Verifique seu número para ativar recursos de segurança
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => setShowWhatsAppModal(true)}
+                  className="bg-amber-600 hover:bg-amber-700 text-white flex-shrink-0">
+                  Verificar
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -338,78 +368,104 @@ const AdvertiserSettings = () => {
       <CompanyBrandSection />
 
       {/* Segurança */}
-      <Card className="shadow-lg">
+      <Card className="shadow-lg overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-exa-red/5 to-transparent">
           <CardTitle className="flex items-center text-xl">
             <Shield className="h-5 w-5 mr-2 text-exa-red" />
             Segurança
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6 pt-6">
-          {/* 2FA Toggle */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-            <div className="flex-1">
-              <Label className="text-base font-medium">Autenticação de dois fatores</Label>
-              <p className="text-sm text-gray-500 mt-1">
-                Receba um código no WhatsApp toda vez que fizer login
-              </p>
-              {!phoneVerified &&
-            <p className="text-xs text-amber-600 mt-2">
-                  ⚠️ Você precisa verificar seu WhatsApp antes de ativar o 2FA
+        <CardContent className="space-y-4 pt-6">
+          {/* 2FA Premium Card */}
+          <div className="rounded-2xl border border-gray-100 bg-gradient-to-br from-white to-gray-50/80 p-5 shadow-sm">
+            <div className="flex items-start gap-4">
+              {/* Icon */}
+              <div className="flex-shrink-0 h-12 w-12 rounded-2xl bg-gradient-to-br from-exa-red/10 to-exa-red/5 flex items-center justify-center">
+                <Lock className="h-6 w-6 text-exa-red" />
+              </div>
+              
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-[17px] font-semibold text-foreground">Autenticação de Dois Fatores</h3>
+                  {twoFactorEnabled && (
+                    <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100 text-[11px]">
+                      Ativo
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-[14px] text-muted-foreground leading-relaxed">
+                  Receba um código de verificação no WhatsApp toda vez que fizer login na sua conta
                 </p>
-            }
+                
+                {!phoneVerified && (
+                  <div className="mt-3 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+                    <Smartphone className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                    <p className="text-[13px] text-amber-700">
+                      Verifique seu WhatsApp primeiro para ativar o 2FA
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowWhatsAppModal(true)}
+                      className="ml-auto text-amber-700 hover:text-amber-800 hover:bg-amber-100 h-8 text-[13px] flex-shrink-0">
+                      Verificar agora
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+              {/* Switch */}
+              <div className="flex-shrink-0 pt-1">
+                <AppleSwitch
+                  checked={twoFactorEnabled}
+                  disabled={!phoneVerified}
+                  size="lg"
+                  onCheckedChange={async (checked) => {
+                    if (!phoneVerified) {
+                      toast.error('Verifique seu WhatsApp antes de ativar o 2FA');
+                      return;
+                    }
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) throw new Error('Usuário não autenticado');
+                      const { error } = await supabase
+                        .from('users')
+                        .update({ two_factor_enabled: checked })
+                        .eq('id', user.id);
+                      if (error) throw error;
+                      setTwoFactorEnabled(checked);
+                      toast.success(checked ? '2FA ativado com sucesso!' : '2FA desativado');
+                    } catch (error) {
+                      console.error('Erro ao atualizar 2FA:', error);
+                      toast.error('Erro ao atualizar configuração de 2FA');
+                    }
+                  }}
+                />
+              </div>
             </div>
-            <Switch
-            checked={twoFactorEnabled}
-            disabled={!phoneVerified}
-            onCheckedChange={async (checked) => {
-              if (!phoneVerified) {
-                toast.error('Verifique seu WhatsApp antes de ativar o 2FA');
-                return;
-              }
-
-              try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) throw new Error('Usuário não autenticado');
-
-                const { error } = await supabase.
-                from('users').
-                update({ two_factor_enabled: checked }).
-                eq('id', user.id);
-
-                if (error) throw error;
-
-                setTwoFactorEnabled(checked);
-                toast.success(checked ? '2FA ativado com sucesso!' : '2FA desativado');
-              } catch (error) {
-                console.error('Erro ao atualizar 2FA:', error);
-                toast.error('Erro ao atualizar configuração de 2FA');
-              }
-            }}
-            className="data-[state=checked]:bg-[#9C1E1E]" />
-          
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          {/* Alterar Senha */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
             <div className="space-y-0.5">
-              <Label className="text-base font-medium">Alterar Senha</Label>
-              <p className="text-sm text-gray-500">Altere sua senha de acesso</p>
+              <Label className="text-[15px] font-medium">Alterar Senha</Label>
+              <p className="text-sm text-muted-foreground">Altere sua senha de acesso</p>
             </div>
             <Button variant="outline" onClick={() => toast.info('Funcionalidade em desenvolvimento')}>
               Alterar Senha
             </Button>
           </div>
 
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          {/* Cancelamento */}
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
             <div className="space-y-0.5">
-              <Label className="text-base font-medium text-amber-900">Cancelamento de Conta</Label>
+              <Label className="text-[15px] font-medium text-amber-900">Cancelamento de Conta</Label>
               <p className="text-sm text-amber-700">Para cancelar sua conta, entre em contato por email: suporte@examidia.com.br</p>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Botão Salvar */}
       <div className="flex justify-center pt-4">
         <Button onClick={handleSave} disabled={saving} size="lg" className="bg-exa-red hover:bg-exa-red/90 text-white px-12 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all">
           {saving ? <>
@@ -428,10 +484,27 @@ const AdvertiserSettings = () => {
       onClose={() => setShowWhatsAppModal(false)}
       currentPhone={settings.phone}
       userId={userProfile?.id || ''}
-      onSuccess={(newPhone) => {
+      onSuccess={async (newPhone) => {
         setSettings((prev) => ({ ...prev, phone: newPhone }));
         setPhoneVerified(true);
-        toast.success('WhatsApp atualizado com sucesso!');
+        
+        // Persistir telefone_verificado no banco
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase
+              .from('users')
+              .update({ 
+                telefone_verificado: true, 
+                telefone_verificado_at: new Date().toISOString() 
+              })
+              .eq('id', user.id);
+          }
+        } catch (err) {
+          console.error('Erro ao persistir verificação:', err);
+        }
+        
+        toast.success('WhatsApp verificado com sucesso!');
       }} />
     
     </div>;
