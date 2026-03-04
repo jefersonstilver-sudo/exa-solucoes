@@ -1,25 +1,33 @@
 
 
-# Status: Plano do Portal do Anunciante — IMPLEMENTADO ✅
+# Plano: Substituir upload de logo por ClientLogoUploadModal
 
-| # | Item | Status |
-|---|------|--------|
-| 1 | Fix scroll (overflow-y-auto na main) | ✅ Feito |
-| 2 | Upload de logo em CompanyBrandSection | ✅ Feito |
-| 3 | Header premium em Meus Pedidos (logo + nome) | ✅ Feito |
-| 4 | Slots de vídeo 4 → 10 | ✅ Feito |
-| 5 | Duração 15s → 10s | ✅ Feito |
-| 6 | Remover Sofia (botão roxo IA) | ✅ Feito |
+## Problema
+O `CompanyBrandSection.tsx` usa um upload simples (input file direto), enquanto o módulo de propostas tem o `ClientLogoUploadModal` completo com 3 variantes: Original, Branco (CSS), e Otimizada (IA). O usuário quer o mesmo módulo.
 
+## Solução
 
-## Arquivos a Modificar
+Reutilizar o `ClientLogoUploadModal` já existente em `src/components/admin/proposals/ClientLogoUploadModal.tsx` dentro do `CompanyBrandSection.tsx`.
 
-| Arquivo | Mudanças |
-|---------|----------|
-| `src/components/advertiser/layout/CompleteResponsiveLayout.tsx` | overflow-y-auto + remover Sofia |
-| `src/components/settings/CompanyBrandSection.tsx` | Upload de logo com preview branco |
-| `src/pages/advertiser/AdvertiserOrders.tsx` | Header premium com logo + nomes |
-| `src/services/videoSlotService.ts` | Slots 1-10 |
-| `src/services/videoStorageService.ts` | maxDuration 10 |
-| `src/hooks/useVideoSpecifications.ts` | Defaults 10s, max 10 vídeos |
+### Mudanças em `CompanyBrandSection.tsx`
+
+1. **Importar** `ClientLogoUploadModal` e adicionar estado `showLogoModal`
+2. **Substituir** toda a lógica de upload manual (linhas 87-138: `handleLogoUpload`, `fileInputRef`, input file) pelo modal
+3. **Manter** o preview com fundo vermelho e botão de remover (linhas 256-275) — já está correto
+4. **Substituir** o botão "Enviar Logo" e a área de upload (linhas 303-326) por um botão que abre o `ClientLogoUploadModal`
+5. **No callback `onLogoProcessed`**: salvar a URL retornada pelo modal na tabela `users.logo_url` (mesma lógica atual do `handleSave`, mas imediata)
+6. **Remover** `fileInputRef`, `uploadingLogo`, `handleLogoUpload` (não mais necessários)
+7. **Manter** `handleRemoveLogo` (ainda necessário para o botão X)
+
+### O que NÃO muda
+- `ClientLogoUploadModal.tsx` — intacto, reutilizado como está
+- Nenhuma outra página ou componente
+- Edge Function `process-client-logo` — intacta
+- Preview com gradiente vermelho e toggle versão branca — mantido
+
+### Arquivo
+
+| Arquivo | Ação |
+|---------|------|
+| `src/components/settings/CompanyBrandSection.tsx` | Refatorar upload para usar `ClientLogoUploadModal` |
 
