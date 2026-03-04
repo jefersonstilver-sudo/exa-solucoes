@@ -1,73 +1,73 @@
 
 
-# Plano: Reconstruir Modal de Configurações de Notificações — iPhone-First, Premium, Minimalista
+# Status: NADA foi implementado do plano do Portal do Anunciante
 
-## Problema Atual
+O único trabalho feito foi a reconstrução do `AgendaNotificationSettingsModal` (plano separado). Os 6 itens do plano principal do Portal do Anunciante estão **todos pendentes**:
 
-O `AgendaNotificationSettingsModal` usa um `Dialog` padrão com `Accordion` que:
-- Não é otimizado para iPhone (toque difícil, inputs pequenos, scroll ruim)
-- Visual genérico, não segue o padrão EXA Premium
-- Parece "feito por IA" — layout mecânico sem refinamento humano
-
-## Solução
-
-Reconstruir completamente o modal com abordagem **iPhone-first**, usando **Drawer (bottom-sheet)** no mobile e **Dialog** no desktop. Design inspirado nos Settings do iOS — cards limpos, toggles grandes, tipografia clara, sem accordion.
-
----
-
-## Mudanças
-
-### 1. Reconstruir `AgendaNotificationSettingsModal.tsx`
-
-**Mobile (Drawer bottom-sheet):**
-- Usa `Drawer` do vaul (já instalado) em vez de Dialog
-- Cards individuais para cada seção (não accordion)
-- Switch com label à esquerda, toggle à direita (padrão iOS)
-- Inputs de horário/minutos como campos inline com feedback visual
-- Touch targets mínimo 44px em todos os elementos interativos
-- Scroll suave com `-webkit-overflow-scrolling: touch`
-- Seções separadas por divisores sutis
-
-**Desktop (Dialog):**
-- Mantém Dialog com `max-w-lg`
-- Mesmo layout de cards, adaptado para largura maior
-
-**Design visual (ambos):**
-- Fundo sólido `bg-background` (sem glassmorphism excessivo que confunde)
-- Cards com `bg-card rounded-xl border border-border/50 shadow-sm`
-- Ícones em círculos coloridos sutis (estilo iOS Settings)
-- Badge de status discreto (ponto verde/cinza, não texto "Ativo/Inativo")
-- Tipografia: título 15px semibold, descrição 13px text-muted
-- Espaçamento generoso entre seções
-- Seção de destinatários com avatares circulares (iniciais) em row horizontal
-
-**Interações:**
-- Toggle salva imediatamente (sem botão "Salvar")
-- Input de horário/minutos salva on blur (já implementado, manter)
-- Toast discreto de confirmação
-- Loading skeleton enquanto carrega configs
-
-### 2. Ajustar botão engrenagem no `CentralTarefasPage.tsx`
-
-- Manter exatamente como está (já minimalista, ghost, h-8 w-8)
-- Nenhuma alteração necessária
-
-### 3. Hook `useAgendaNotificationSettings.ts`
-
-- Nenhuma alteração — lógica está correta e funcional
+| # | Item | Status |
+|---|------|--------|
+| 1 | Fix scroll (overflow-y-auto na main) | ❌ Pendente |
+| 2 | Upload de logo em CompanyBrandSection | ❌ Pendente |
+| 3 | Header premium em Meus Pedidos (logo + nome) | ❌ Pendente |
+| 4 | Slots de vídeo 4 → 10 | ❌ Pendente — `videoSlotService.ts` linha 89: `[1, 2, 3, 4]` |
+| 5 | Duração 15s → 10s | ❌ Pendente — `videoStorageService.ts` linha 80: `maxDuration = 15` |
+| 6 | Remover Sofia (botão roxo IA) | ❌ Pendente — `CompleteResponsiveLayout.tsx` linhas 10-11, 45, 99-102 |
 
 ---
 
-## Arquivos
+## Plano de Implementação Completo
 
-| Arquivo | Ação |
-|---------|------|
-| `src/pages/admin/tarefas/components/AgendaNotificationSettingsModal.tsx` | Reescrever completo (iPhone-first) |
+### 1. Fix Scroll + Remover Sofia — `CompleteResponsiveLayout.tsx`
 
-## O que NÃO muda
+- Adicionar `overflow-y-auto` na `<main>` (linha 57-60)
+- Remover imports do Sofia (linhas 10-11)
+- Remover `SofiaClientProvider` wrapper (linha 45)
+- Remover `SofiaClientVoiceButton`, `SofiaNavigationPopup`, `SofiaQRCodePopup` (linhas 99-102)
 
-- `CentralTarefasPage.tsx` — intacto
-- `useAgendaNotificationSettings.ts` — intacto
-- Edge Functions — intactas
-- Nenhuma outra página ou componente
+### 2. Upload de Logo — `CompanyBrandSection.tsx`
+
+Adicionar seção de upload de logo da empresa antes do campo "Nome da Empresa":
+- Input file para imagem (PNG/JPG/SVG, max 5MB)
+- Upload para bucket `arquivos` no path `logos/{userId}/logo_{timestamp}.ext`
+- Preview circular da logo com opção "Versão Branca" (CSS `brightness-0 invert`)
+- Preview sobre fundo vermelho escuro (`from-[#4a0f0f] via-[#6B1515] to-[#7D1818]`)
+- Salvar URL no campo `logo_url` da tabela `users`
+- Usar `useLogoImageUrl` para signed URLs (bucket privado)
+
+### 3. Header Premium — `AdvertiserOrders.tsx`
+
+Adicionar card de boas-vindas no topo (antes dos stats), mostrando:
+- Logo da empresa (de `logo_url` ou `avatar_url`, com signed URL)
+- Nome da empresa (`empresa_nome`)
+- Nome da pessoa (do `userProfile`)
+- Design: card com `rounded-2xl`, padding generoso, fundo branco com borda sutil
+- iPhone-friendly: touch targets 44px, tipografia 15-17px
+
+### 4. Slots 4 → 10 — `videoSlotService.ts`
+
+- Linha 89: `[1, 2, 3, 4]` → `Array.from({ length: 10 }, (_, i) => i + 1)`
+- Linha 172 (fallback): mesma mudança
+
+### 5. Duração 15 → 10 — `videoStorageService.ts` + `useVideoSpecifications.ts`
+
+- `videoStorageService.ts` linha 80: `maxDuration = 15` → `maxDuration = 10`
+- `useVideoSpecifications.ts`: todos os defaults de `15` para `10` (vertical)
+- `useVideoSpecifications.ts`: `maxVideosPorPedido` default `4` → `10`
+
+### 6. Nenhuma outra mudança
+
+- Nenhuma tabela nova (usa `users.logo_url` existente)
+- Nenhuma outra página alterada
+- Lógica de pagamento, checkout, agendamentos intacta
+
+## Arquivos a Modificar
+
+| Arquivo | Mudanças |
+|---------|----------|
+| `src/components/advertiser/layout/CompleteResponsiveLayout.tsx` | overflow-y-auto + remover Sofia |
+| `src/components/settings/CompanyBrandSection.tsx` | Upload de logo com preview branco |
+| `src/pages/advertiser/AdvertiserOrders.tsx` | Header premium com logo + nomes |
+| `src/services/videoSlotService.ts` | Slots 1-10 |
+| `src/services/videoStorageService.ts` | maxDuration 10 |
+| `src/hooks/useVideoSpecifications.ts` | Defaults 10s, max 10 vídeos |
 
