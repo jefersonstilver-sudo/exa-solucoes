@@ -1,33 +1,35 @@
 
 
-# Plano: Substituir upload de logo por ClientLogoUploadModal
+# Plano: Alerta WhatsApp Verificado + Seção 2FA Premium
 
-## Problema
-O `CompanyBrandSection.tsx` usa um upload simples (input file direto), enquanto o módulo de propostas tem o `ClientLogoUploadModal` completo com 3 variantes: Original, Branco (CSS), e Otimizada (IA). O usuário quer o mesmo módulo.
+## Problema Identificado
 
-## Solução
+1. **WhatsApp verificado**: O status aparece apenas como texto pequeno verde (`text-xs`) abaixo do input. O usuário quer um **alerta verde proeminente** quando verificado.
+2. **Seção 2FA**: A seção de segurança está básica. O usuário quer uma seção premium, moderna, iPhone-friendly.
+3. **DB mostra `telefone_verificado: false`**: O `WhatsAppVerificationModal` chama `onSuccess` mas pode não estar atualizando `telefone_verificado` no banco. Preciso verificar a edge function, mas também garantir que o `onSuccess` no `AdvertiserSettings` faça o update direto.
 
-Reutilizar o `ClientLogoUploadModal` já existente em `src/components/admin/proposals/ClientLogoUploadModal.tsx` dentro do `CompanyBrandSection.tsx`.
+## Mudanças em `src/pages/advertiser/AdvertiserSettings.tsx`
 
-### Mudanças em `CompanyBrandSection.tsx`
+### 1. Alerta verde proeminente para WhatsApp verificado
+Substituir o pequeno texto verde (linhas 257-262) por um card/alert verde completo com icone `ShieldCheck`, texto "WhatsApp Verificado" e o numero mascarado. Estilo: `bg-green-50 border border-green-200 rounded-xl p-4`.
 
-1. **Importar** `ClientLogoUploadModal` e adicionar estado `showLogoModal`
-2. **Substituir** toda a lógica de upload manual (linhas 87-138: `handleLogoUpload`, `fileInputRef`, input file) pelo modal
-3. **Manter** o preview com fundo vermelho e botão de remover (linhas 256-275) — já está correto
-4. **Substituir** o botão "Enviar Logo" e a área de upload (linhas 303-326) por um botão que abre o `ClientLogoUploadModal`
-5. **No callback `onLogoProcessed`**: salvar a URL retornada pelo modal na tabela `users.logo_url` (mesma lógica atual do `handleSave`, mas imediata)
-6. **Remover** `fileInputRef`, `uploadingLogo`, `handleLogoUpload` (não mais necessários)
-7. **Manter** `handleRemoveLogo` (ainda necessário para o botão X)
+Quando **nao** verificado, mostrar alert amarelo com botao para verificar.
 
-### O que NÃO muda
-- `ClientLogoUploadModal.tsx` — intacto, reutilizado como está
-- Nenhuma outra página ou componente
-- Edge Function `process-client-logo` — intacta
-- Preview com gradiente vermelho e toggle versão branca — mantido
+### 2. Seção Segurança redesenhada (linhas 340-410)
+- Card de 2FA com design premium: icone de escudo, descrição clara, switch grande
+- Visual iPhone-first: touch targets 44px, tipografia 15-17px
+- Quando 2FA ativo: badge verde "Ativo"
+- Quando inativo + phone verificado: switch habilitado com CTA
+- Quando phone nao verificado: mensagem + botao para verificar primeiro
 
-### Arquivo
+### 3. Garantir persistencia do `telefone_verificado`
+No callback `onSuccess` do modal (linha 431-434), alem de `setPhoneVerified(true)`, fazer update direto: `supabase.from('users').update({ telefone_verificado: true, telefone_verificado_at: new Date().toISOString() }).eq('id', userId)`
 
-| Arquivo | Ação |
-|---------|------|
-| `src/components/settings/CompanyBrandSection.tsx` | Refatorar upload para usar `ClientLogoUploadModal` |
+## Arquivo a Modificar
+
+| Arquivo | Mudanca |
+|---------|---------|
+| `src/pages/advertiser/AdvertiserSettings.tsx` | Alert verde WhatsApp + 2FA premium + persistencia telefone_verificado |
+
+Nenhuma outra pagina ou componente sera alterado.
 
