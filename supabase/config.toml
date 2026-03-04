@@ -616,3 +616,11 @@ schedule = "*/5 * * * *"
 
 [functions.task-notify-change]
 verify_jwt = false
+
+[functions.task-daily-report]
+verify_jwt = false
+
+# Task Daily Report - a cada minuto para verificar horário configurado
+[[cron]]
+function_name = "task-daily-report"
+schedule = "* * * * *"
