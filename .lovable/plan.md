@@ -1,96 +1,103 @@
 
 
-# Plano Anti-Cache Definitivo: Sempre Atualizado, Zero Cache Antigo
+# Plano: Painel de Configurações de Notificações da Agenda (Engrenagem Super Admin)
 
-## Problema Diagnosticado
+## Contexto
 
-O projeto usa `vite-plugin-pwa` com Workbox, que gera um Service Worker que:
-1. **Pre-cache todo o app shell** (HTML, JS, CSS) e serve do cache mesmo quando o servidor tem versao nova
-2. O `navigateFallback: '/index.html'` serve o HTML antigo do cache do SW enquanto o SW nao atualiza
-3. O `runtimeCaching` para `.html|.js|.css` com `NetworkFirst` ainda cacheia por 60s
-4. O preview Lovable nao precisa de PWA/offline -- o SW so atrapalha
+O sistema de notificações da agenda hoje tem lógica hardcoded nas Edge Functions (horários fixos, intervalos fixos). O usuário quer que TUDO seja configurável via UI, com um botão de engrenagem minimalista e luxuoso na Central de Tarefas, acessível apenas ao super_admin.
 
-O site publico (`exa-solucoes.lovable.app`) funciona porque foi publicado com um build limpo. O preview mostra versao antiga porque o SW pre-cached esta servindo arquivos antigos.
-
-## Solucao: Remover PWA Service Worker do build
-
-Como voce escolheu "Sempre atualizado" e "Preview sem cache", a solucao e desativar completamente o Service Worker gerado pelo Workbox e limpar SWs existentes nos clientes.
+As configurações serão salvas na tabela `exa_alerts_config` (já existente, key-value com JSON).
 
 ---
 
-### 1. Desativar `vite-plugin-pwa` no `vite.config.ts`
+## O que será criado
 
-Remover completamente o plugin `VitePWA()` da lista de plugins. Isso elimina:
-- Geracao do `sw.js` no build
-- Pre-caching automatico
-- Runtime caching do Workbox
-- O `navigateFallback` que serve HTML antigo
+### 1. Botão Engrenagem na Central de Tarefas
 
-O `site.webmanifest` continua funcionando para o "Add to Home Screen" (icone na home do celular), mas sem Service Worker intermediando requests.
+**Arquivo**: `src/pages/admin/tarefas/CentralTarefasPage.tsx`
 
-### 2. Remover dependencias de PWA do `package.json`
+Adicionar um ícone `Settings` (engrenagem) minimalista ao lado dos botões "Atualizar" e "Tela Cheia" no header, visível apenas para `super_admin`. Ao clicar, abre o modal de configurações.
 
-Remover `vite-plugin-pwa` e `workbox-window` das dependencias.
+### 2. Modal de Configurações de Notificações da Agenda
 
-### 3. Adicionar script de limpeza de SW no `index.html`
+**Novo arquivo**: `src/pages/admin/tarefas/components/AgendaNotificationSettingsModal.tsx`
 
-Adicionar um script inline no `<head>` do `index.html` que desregistra qualquer Service Worker existente nos navegadores dos usuarios. Isso garante que clientes que ja instalaram o SW antigo nao continuem recebendo cache velho:
+Dialog premium (padrão Apple/glass do projeto) com as seguintes seções em accordion:
 
-```javascript
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(regs) {
-    regs.forEach(function(r) { r.unregister(); });
-  });
-  if ('caches' in window) {
-    caches.keys().then(function(names) {
-      names.forEach(function(n) { caches.delete(n); });
-    });
-  }
-}
-```
+**Seção 1: Relatório Diário Noturno (19h)**
+- Switch: Ativar/desativar
+- Input: Horário de envio (default: 19:00)
+- Descrição: "Resume os eventos registrados no dia e pendentes não concluídos"
 
-### 4. Simplificar `src/config/version.ts`
+**Seção 2: Relatório Matinal (08h)**
+- Switch: Ativar/desativar
+- Input: Horário de envio (default: 08:00)
+- Descrição: "Envia pendentes do dia anterior + agenda do dia atual"
 
-Remover `clearAllCaches` (limpeza de SW) ja que nao havera mais SW. Manter apenas a logica de versao para uso futuro (VersionIndicator).
+**Seção 3: Lembrete Antes do Evento**
+- Switch: Ativar/desativar
+- Input: Minutos antes (default: 60)
+- Descrição: "Envia lembrete WhatsApp X minutos antes de cada evento"
 
-### 5. Simplificar `src/hooks/useForceCacheClear.ts`
+**Seção 4: Follow-up Pós-Evento**
+- Switch: Ativar/desativar
+- Input: Minutos após (default: 60)
+- Descrição: "Cobra conclusão/reagendamento X minutos após horário do evento"
 
-Reduzir a apenas log da versao, sem tentar limpar SW/caches.
+**Seção 5: Destinatários Padrão**
+- Lista dos contatos ativos em `exa_alerts_directors`
+- Link para gerenciar contatos (abre ManageAlertContactsModal)
+- Descrição: "Pessoas que recebem os relatórios diários automaticamente"
 
-### 6. Simplificar `src/hooks/useVersionCheck.tsx`
+Cada seção terá:
+- Título com ícone
+- Descrição explicativa clara
+- Controles inline (switch + input)
+- Visual glassmorphism/backdrop-blur alinhado ao design system EXA Premium
 
-Remover logica de `registration.update()` do SW.
+### 3. Hook de Configurações da Agenda
 
-### 7. Manter headers anti-cache no `index.html`
+**Novo arquivo**: `src/hooks/tarefas/useAgendaNotificationSettings.ts`
 
-Os `<meta http-equiv="Cache-Control" content="no-cache">` ja estao no `index.html` raiz -- manter.
+- Lê/escreve na tabela `exa_alerts_config` usando keys:
+  - `agenda_relatorio_noturno` → `{ ativo: bool, horario: "19:00" }`
+  - `agenda_relatorio_matinal` → `{ ativo: bool, horario: "08:00" }`
+  - `agenda_lembrete_pre_evento` → `{ ativo: bool, minutos_antes: 60 }`
+  - `agenda_followup_pos_evento` → `{ ativo: bool, minutos_apos: 60 }`
+- React Query para cache e invalidação
+- Função `saveConfig(key, value)` com toast de sucesso/erro
+
+### 4. Atualizar Edge Functions para ler configs
+
+**Arquivos**: 
+- `supabase/functions/task-reminder-scheduler/index.ts` — Ler `agenda_lembrete_pre_evento` da `exa_alerts_config` para saber quantos minutos antes enviar. **Corrigir** para usar tabela `tasks` em vez de `notion_tasks`.
+- `supabase/functions/task-follow-up-cron/index.ts` — Ler `agenda_followup_pos_evento` para ajustar o tempo de espera.
+- **Novo**: `supabase/functions/task-daily-report/index.ts` — Ler `agenda_relatorio_noturno` e `agenda_relatorio_matinal` para horário e status ativo. Gerar relatório formatado e enviar via Z-API para todos os `exa_alerts_directors` ativos.
+
+### 5. CRON jobs para relatórios diários
+
+Via SQL insert (não migration):
+- CRON a cada minuto que chama `task-daily-report` com `{ check_schedule: true }`
+- A Edge Function compara horário atual (BRT) com os horários configurados na `exa_alerts_config` e só executa quando bater
 
 ---
 
-## Arquivos a Modificar
+## Arquivos a Criar/Modificar
 
-| Arquivo | Mudanca |
-|---------|---------|
-| `vite.config.ts` | Remover import e uso do `VitePWA` |
-| `index.html` | Adicionar script de limpeza de SW existentes |
-| `src/index.html` | Adicionar script de limpeza de SW + headers anti-cache |
-| `src/config/version.ts` | Simplificar - remover limpeza de SW |
-| `src/hooks/useForceCacheClear.ts` | Simplificar - apenas log de versao |
-| `src/hooks/useVersionCheck.tsx` | Remover logica de SW update |
-| `package.json` | Remover `vite-plugin-pwa` e `workbox-window` |
+| Arquivo | Ação |
+|---------|------|
+| `src/pages/admin/tarefas/CentralTarefasPage.tsx` | Adicionar botão engrenagem (super_admin only) |
+| `src/pages/admin/tarefas/components/AgendaNotificationSettingsModal.tsx` | **Criar** modal de configurações |
+| `src/hooks/tarefas/useAgendaNotificationSettings.ts` | **Criar** hook para ler/salvar configs |
+| `supabase/functions/task-reminder-scheduler/index.ts` | Corrigir tabela + ler config dinâmica |
+| `supabase/functions/task-daily-report/index.ts` | **Criar** Edge Function de relatórios diários |
+| `supabase/functions/task-follow-up-cron/index.ts` | Ler config dinâmica de minutos |
 
 ## O que NAO muda
 
-- Nenhuma pagina, componente, rota ou funcionalidade
-- O manifest PWA continua (icone na home do celular funciona)
-- O build continua com hash nos filenames (cache-busting natural do Vite)
-- Nenhum modulo de tarefas, contatos, agenda ou admin e tocado
-
-## Resultado Esperado
-
-- Preview sempre mostra a versao mais recente
-- Site publicado sempre mostra a versao mais recente
-- Nenhum Service Worker intercepta requests
-- Cache do navegador e controlado pelos headers HTTP normais
-- Hash nos filenames garante que JS/CSS novos sao sempre buscados
+- Nenhuma outra página, componente ou funcionalidade
+- `task-notify-created` e `task-notify-change` permanecem intactos
+- `task-follow-up-response` permanece intacto
+- Nenhuma tabela precisa ser criada (usa `exa_alerts_config` existente)
+- Design de todos os outros módulos permanece inalterado
 
