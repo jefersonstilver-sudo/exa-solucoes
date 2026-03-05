@@ -40,16 +40,16 @@ const AdvertiserOrders = () => {
   useEffect(() => {
     const fetchCompanyData = async () => {
       if (!userProfile?.id) return;
-      const { data } = await supabase
-        .from('users')
-        .select('empresa_nome, empresa_documento, avatar_url')
-        .eq('id', userProfile.id)
-        .single();
+      const { data } = await supabase.
+      from('users').
+      select('empresa_nome, empresa_documento, avatar_url').
+      eq('id', userProfile.id).
+      single();
       if (data) {
         setCompanyData({
           empresa_nome: data.empresa_nome,
           empresa_documento: data.empresa_documento,
-          logo_url: data.avatar_url,
+          logo_url: data.avatar_url
         });
       }
     };
@@ -58,7 +58,7 @@ const AdvertiserOrders = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [visibleCount, setVisibleCount] = useState(10);
   const [statusFilter, setStatusFilter] = useState('todos');
-  const [videoDisplayPopup, setVideoDisplayPopup] = useState<{ isOpen: boolean; orderId: string | null }>({
+  const [videoDisplayPopup, setVideoDisplayPopup] = useState<{isOpen: boolean;orderId: string | null;}>({
     isOpen: false,
     orderId: null
   });
@@ -73,7 +73,7 @@ const AdvertiserOrders = () => {
       return {
         file_url: rawLogoUrl,
         storage_bucket: match[1],
-        storage_key: match[2],
+        storage_key: match[2]
       };
     }
     return { file_url: rawLogoUrl };
@@ -91,11 +91,11 @@ const AdvertiserOrders = () => {
     return resolvedLogoUrl;
   }, [resolvedLogoUrl, rawLogoUrl]);
 
-  
+
   // PIX dialog state
   const [pixDialog, setPixDialog] = useState<{
     isOpen: boolean;
-    pixData: { qrCodeBase64?: string; qrCodeText?: string; pedidoId?: string } | null;
+    pixData: {qrCodeBase64?: string;qrCodeText?: string;pedidoId?: string;} | null;
   }>({ isOpen: false, pixData: null });
   const [isGeneratingPix, setIsGeneratingPix] = useState(false);
 
@@ -142,8 +142,8 @@ const AdvertiserOrders = () => {
   }, []);
 
   // Stats calculation
-  const orders = userOrdersAndAttempts.filter(item => item.type === 'order');
-  const attempts = userOrdersAndAttempts.filter(item => item.type === 'attempt');
+  const orders = userOrdersAndAttempts.filter((item) => item.type === 'order');
+  const attempts = userOrdersAndAttempts.filter((item) => item.type === 'attempt');
 
   const { showModal, orderData, closeModal } = useCortesiaSuccessDetection(orders, loading);
 
@@ -177,23 +177,23 @@ const AdvertiserOrders = () => {
   // Card payment via Mercado Pago
   const handleStripePayment = async (orderId: string) => {
     try {
-      const { data: pedido, error: pedidoError } = await supabase
-        .from('pedidos')
-        .select('*, cupons:cupom_id(codigo)')
-        .eq('id', orderId)
-        .single();
+      const { data: pedido, error: pedidoError } = await supabase.
+      from('pedidos').
+      select('*, cupons:cupom_id(codigo)').
+      eq('id', orderId).
+      single();
       if (pedidoError || !pedido) throw new Error('Pedido não encontrado');
 
-      const { data: buildings, error: buildingsError } = await supabase
-        .from('buildings')
-        .select('*')
-        .in('id', pedido.lista_paineis || []);
+      const { data: buildings, error: buildingsError } = await supabase.
+      from('buildings').
+      select('*').
+      in('id', pedido.lista_paineis || []);
       if (buildingsError) throw new Error('Erro ao buscar dados dos prédios');
 
       const couponCode = (pedido as any).cupons?.codigo || null;
       const result = await createCheckoutProSession({
         sessionUser: userProfile,
-        cartItems: (buildings || []).map(b => ({ panel: b as any, duration: pedido.plano_meses })),
+        cartItems: (buildings || []).map((b) => ({ panel: b as any, duration: pedido.plano_meses })),
         selectedPlan: pedido.plano_meses,
         totalPrice: pedido.valor_total,
         couponId: pedido.cupom_id || null,
@@ -215,28 +215,28 @@ const AdvertiserOrders = () => {
   };
 
   const stats = {
-    pedidosAtivos: orders.filter(order =>
-      (order.status === 'video_aprovado' || order.status === 'ativo') && isWithinActivePeriod(order)
+    pedidosAtivos: orders.filter((order) =>
+    (order.status === 'video_aprovado' || order.status === 'ativo') && isWithinActivePeriod(order)
     ).length,
-    aguardandoVideo: orders.filter(order =>
-      ['pago', 'pago_pendente_video'].includes(order.status)
+    aguardandoVideo: orders.filter((order) =>
+    ['pago', 'pago_pendente_video'].includes(order.status)
     ).length + attempts.length,
-    pedidosFinalizados: orders.filter(order =>
-      order.status === 'expirado' ||
-      (['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status) && !isWithinActivePeriod(order))
+    pedidosFinalizados: orders.filter((order) =>
+    order.status === 'expirado' ||
+    ['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status) && !isWithinActivePeriod(order)
     ).length
   };
 
   // Filters
-  const filteredItems = userOrdersAndAttempts.filter(item => {
+  const filteredItems = userOrdersAndAttempts.filter((item) => {
     const matchesSearch =
-      (item.type === 'order' && item.nome_pedido && item.nome_pedido.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.valor_total.toString().includes(searchTerm);
+    item.type === 'order' && item.nome_pedido && item.nome_pedido.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.valor_total.toString().includes(searchTerm);
     const matchesStatus =
-      statusFilter === 'todos' ||
-      (item.type === 'order' && item.status === statusFilter) ||
-      (item.type === 'attempt' && statusFilter === 'tentativa');
+    statusFilter === 'todos' ||
+    item.type === 'order' && item.status === statusFilter ||
+    item.type === 'attempt' && statusFilter === 'tentativa';
     return matchesSearch && matchesStatus;
   });
 
@@ -245,8 +245,8 @@ const AdvertiserOrders = () => {
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
         <p className="ml-3 text-base text-muted-foreground">Carregando pedidos...</p>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -256,15 +256,15 @@ const AdvertiserOrders = () => {
         logoUrl={finalLogoUrl}
         companyName={companyData?.empresa_nome}
         cnpj={companyData?.empresa_documento}
-        ownerName={userProfile?.nome}
-      />
+        ownerName={userProfile?.nome} />
+      
 
       {/* Section 2: Metrics */}
-      <AdvertiserOrderStats
-        active={stats.pedidosAtivos}
-        pending={stats.aguardandoVideo}
-        completed={stats.pedidosFinalizados}
-      />
+      
+
+
+
+      
 
       {/* Section 5: Search + Filter */}
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
@@ -273,12 +273,12 @@ const AdvertiserOrders = () => {
           <Input
             placeholder="Buscar por ID ou valor..."
             value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="pl-10 min-h-[44px] sm:min-h-[36px]"
-          />
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 min-h-[44px] sm:min-h-[36px]" />
+          
         </div>
-        {!isMobile && (
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+        {!isMobile &&
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="Filtrar por status" />
             </SelectTrigger>
@@ -290,75 +290,75 @@ const AdvertiserOrders = () => {
               <SelectItem value="cancelado">Cancelado</SelectItem>
             </SelectContent>
           </Select>
-        )}
+        }
       </div>
 
       {/* Section 3: Campaign List */}
-      {filteredItems.length === 0 ? (
-        <div className="bg-card border border-border/40 rounded-xl p-8 sm:p-12 text-center shadow-sm">
+      {filteredItems.length === 0 ?
+      <div className="bg-card border border-border/40 rounded-xl p-8 sm:p-12 text-center shadow-sm">
           <div className="mx-auto bg-muted rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
             <ShoppingBag className="h-8 w-8 text-muted-foreground" />
           </div>
           <h3 className="text-lg font-medium mb-2 text-foreground">
-            {searchTerm || statusFilter !== 'todos'
-              ? 'Nenhum pedido encontrado'
-              : 'Você ainda não fez nenhum pedido'}
+            {searchTerm || statusFilter !== 'todos' ?
+          'Nenhum pedido encontrado' :
+          'Você ainda não fez nenhum pedido'}
           </h3>
           <p className="text-sm text-muted-foreground mb-6">
-            {searchTerm || statusFilter !== 'todos'
-              ? 'Tente ajustar os filtros para encontrar seus pedidos.'
-              : 'Comece criando sua primeira campanha publicitária.'}
+            {searchTerm || statusFilter !== 'todos' ?
+          'Tente ajustar os filtros para encontrar seus pedidos.' :
+          'Comece criando sua primeira campanha publicitária.'}
           </p>
           <Button
-            onClick={() => navigate('/paineis-digitais/loja')}
-            className="min-h-[44px] sm:min-h-[36px]"
-          >
+          onClick={() => navigate('/paineis-digitais/loja')}
+          className="min-h-[44px] sm:min-h-[36px]">
+          
             Explorar Painéis
           </Button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filteredItems.slice(0, visibleCount).map(item => (
-            <AdvertiserOrderCard
-              key={`${item.type}-${item.id}`}
-              item={item}
-              isMobile={isMobile}
-              onNavigate={(path) => navigate(path)}
-              onDelete={(id, type) => setDeleteConfirm({ isOpen: true, itemId: id, itemType: type })}
-              onFinalize={(id) => finalizeAttemptToOrder(id)}
-              isProcessingAttempt={isProcessingAttempt}
-              isGeneratingPix={isGeneratingPix}
-              handleGeneratePix={handleGeneratePix}
-              handleStripePayment={handleStripePayment}
-            />
-          ))}
+        </div> :
+
+      <div className="space-y-3">
+          {filteredItems.slice(0, visibleCount).map((item) =>
+        <AdvertiserOrderCard
+          key={`${item.type}-${item.id}`}
+          item={item}
+          isMobile={isMobile}
+          onNavigate={(path) => navigate(path)}
+          onDelete={(id, type) => setDeleteConfirm({ isOpen: true, itemId: id, itemType: type })}
+          onFinalize={(id) => finalizeAttemptToOrder(id)}
+          isProcessingAttempt={isProcessingAttempt}
+          isGeneratingPix={isGeneratingPix}
+          handleGeneratePix={handleGeneratePix}
+          handleStripePayment={handleStripePayment} />
+
+        )}
 
           {/* Load more + counter */}
-          {filteredItems.length > visibleCount && (
-            <div className="flex flex-col items-center gap-2 pt-2">
+          {filteredItems.length > visibleCount &&
+        <div className="flex flex-col items-center gap-2 pt-2">
               <p className="text-xs text-muted-foreground">
                 Mostrando {Math.min(visibleCount, filteredItems.length)} de {filteredItems.length} pedidos
               </p>
               <Button
-                variant="outline"
-                onClick={() => setVisibleCount(prev => prev + 10)}
-                className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto"
-              >
+            variant="outline"
+            onClick={() => setVisibleCount((prev) => prev + 10)}
+            className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto">
+            
                 Carregar mais
               </Button>
             </div>
-          )}
+        }
         </div>
-      )}
+      }
 
       {/* Dialogs & Modals */}
-      {videoDisplayPopup.orderId && (
-        <VideoDisplayPopup
-          orderId={videoDisplayPopup.orderId}
-          isOpen={videoDisplayPopup.isOpen}
-          onClose={() => setVideoDisplayPopup({ isOpen: false, orderId: null })}
-        />
-      )}
+      {videoDisplayPopup.orderId &&
+      <VideoDisplayPopup
+        orderId={videoDisplayPopup.orderId}
+        isOpen={videoDisplayPopup.isOpen}
+        onClose={() => setVideoDisplayPopup({ isOpen: false, orderId: null })} />
+
+      }
 
       <CortesiaOrderSuccessModal
         isOpen={showModal}
@@ -366,8 +366,8 @@ const AdvertiserOrders = () => {
         buildingName={orderData?.selected_buildings?.[0]?.nome || orderData?.nomes_predios?.[0]}
         buildingAddress={`${orderData?.selected_buildings?.[0]?.endereco || ''}, ${orderData?.selected_buildings?.[0]?.bairro || ''}`}
         panelCount={orderData?.lista_paineis?.length || orderData?.selected_buildings?.length || 1}
-        onClose={closeModal}
-      />
+        onClose={closeModal} />
+      
 
       <PixQrCodeDialog
         isOpen={pixDialog.isOpen}
@@ -375,8 +375,8 @@ const AdvertiserOrders = () => {
         qrCodeBase64={pixDialog.pixData?.qrCodeBase64}
         qrCodeText={pixDialog.pixData?.qrCodeText}
         userId={userProfile?.id}
-        pedidoId={pixDialog.pixData?.pedidoId}
-      />
+        pedidoId={pixDialog.pixData?.pedidoId} />
+      
 
       <AlertDialog open={deleteConfirm.isOpen} onOpenChange={(open) => !open && setDeleteConfirm({ isOpen: false, itemId: null, itemType: 'order' })}>
         <AlertDialogContent className={isMobile ? 'max-w-[90vw] rounded-xl' : ''}>
@@ -392,20 +392,20 @@ const AdvertiserOrders = () => {
             <AlertDialogAction
               onClick={handleDeleteItem}
               className={`bg-destructive text-destructive-foreground hover:bg-destructive/90 ${isMobile ? 'flex-1' : ''}`}
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <>
+              disabled={isDeleting}>
+              
+              {isDeleting ?
+              <>
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                   Excluindo...
-                </>
-              ) : 'Excluir'}
+                </> :
+              'Excluir'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
+    </div>);
+
 };
 
 export default AdvertiserOrders;
