@@ -17,6 +17,7 @@ import { useCortesiaSuccessDetection } from '@/hooks/useCortesiaSuccessDetection
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useLogoImageUrl } from '@/hooks/useLogoImageUrl';
 
 import { AdvertiserDashboardHeader } from '@/components/advertiser/orders/AdvertiserDashboardHeader';
 import { AdvertiserOrderStats } from '@/components/advertiser/orders/AdvertiserOrderStats';
@@ -62,6 +63,35 @@ const AdvertiserOrders = () => {
     orderId: null
   });
 
+  // Resolve logo URL via signed URL for private bucket
+  const rawLogoUrl = companyData?.logo_url || userProfile?.avatar_url || null;
+  const logoInput = React.useMemo(() => {
+    if (!rawLogoUrl) return null;
+    const supabasePattern = /\/storage\/v1\/object\/public\/([^/]+)\/(.+?)(\?|#|$)/;
+    const match = rawLogoUrl.match(supabasePattern);
+    if (match) {
+      return {
+        file_url: rawLogoUrl,
+        storage_bucket: match[1],
+        storage_key: match[2],
+      };
+    }
+    return { file_url: rawLogoUrl };
+  }, [rawLogoUrl]);
+
+  const { imageUrl: resolvedLogoUrl } = useLogoImageUrl(logoInput);
+
+  // Preserve #original fragment on resolved URL
+  const finalLogoUrl = React.useMemo(() => {
+    if (!resolvedLogoUrl) return undefined;
+    const hasOriginal = rawLogoUrl?.includes('#original');
+    if (hasOriginal && !resolvedLogoUrl.includes('#original')) {
+      return resolvedLogoUrl + '#original';
+    }
+    return resolvedLogoUrl;
+  }, [resolvedLogoUrl, rawLogoUrl]);
+
+  
   // PIX dialog state
   const [pixDialog, setPixDialog] = useState<{
     isOpen: boolean;
@@ -223,7 +253,7 @@ const AdvertiserOrders = () => {
     <div className="space-y-4 sm:space-y-6">
       {/* Section 1: Company Header */}
       <AdvertiserDashboardHeader
-        logoUrl={companyData?.logo_url || userProfile?.avatar_url}
+        logoUrl={finalLogoUrl}
         companyName={companyData?.empresa_nome}
         cnpj={companyData?.empresa_documento}
         ownerName={userProfile?.nome}

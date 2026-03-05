@@ -75,7 +75,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
           setLogoUrl(userLogoUrl);
           if (userLogoUrl.includes('/storage/') && userLogoUrl.includes('arquivos')) {
             setLogoStorageBucket('arquivos');
-            const keyMatch = userLogoUrl.match(/arquivos\/(.+?)(\?|$)/);
+            const keyMatch = userLogoUrl.match(/arquivos\/(.+?)(\?|#|$)/);
             if (keyMatch) setLogoStorageKey(keyMatch[1]);
           }
         }

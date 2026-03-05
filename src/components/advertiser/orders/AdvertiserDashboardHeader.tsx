@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ImagePlus } from 'lucide-react';
 
@@ -18,6 +18,7 @@ export const AdvertiserDashboardHeader: React.FC<AdvertiserDashboardHeaderProps>
   className
 }) => {
   const initial = (companyName || ownerName || 'E')?.charAt(0).toUpperCase();
+  const [imgError, setImgError] = useState(false);
 
   return (
     <div className={cn(
@@ -27,7 +28,7 @@ export const AdvertiserDashboardHeader: React.FC<AdvertiserDashboardHeaderProps>
       <div className="flex items-center gap-5">
         {/* Logo */}
         <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:shadow-xl hover:ring-2 hover:ring-white/20 group">
-          {logoUrl ? (
+          {logoUrl && !imgError ? (
             <img
               src={logoUrl}
               alt="Logo da empresa"
@@ -35,6 +36,7 @@ export const AdvertiserDashboardHeader: React.FC<AdvertiserDashboardHeaderProps>
                 "w-full h-full object-contain p-3 transition-all duration-300 group-hover:scale-110",
                 !logoUrl.includes('#original') && "brightness-0 invert"
               )}
+              onError={() => setImgError(true)}
             />
           ) : (
             <span className="text-white text-2xl sm:text-3xl font-bold">
@@ -60,7 +62,7 @@ export const AdvertiserDashboardHeader: React.FC<AdvertiserDashboardHeaderProps>
       </div>
 
       {/* No logo placeholder */}
-      {!logoUrl && (
+      {!logoUrl && !imgError && (
         <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border bg-muted/30">
           <ImagePlus className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <p className="text-[11px] sm:text-xs text-muted-foreground">
