@@ -21,20 +21,20 @@ export const AdvertiserDashboardHeader: React.FC<AdvertiserDashboardHeaderProps>
 
   return (
     <div className={cn(
-      'bg-card border border-border/40 rounded-2xl p-4 sm:p-6 shadow-sm',
+      'bg-card border border-border/60 rounded-2xl p-5 sm:p-7 shadow-md',
       className
     )}>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-5">
         {/* Logo */}
-        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] flex items-center justify-center flex-shrink-0 shadow-md overflow-hidden">
+        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:shadow-xl hover:ring-2 hover:ring-white/20">
           {logoUrl ? (
             <img
               src={logoUrl}
               alt="Logo da empresa"
-              className="w-full h-full object-contain p-2 brightness-0 invert"
+              className="w-full h-full object-contain p-3 brightness-0 invert transition-all duration-300 hover:brightness-[0.1] hover:invert"
             />
           ) : (
-            <span className="text-white text-xl sm:text-2xl font-bold">
+            <span className="text-white text-2xl sm:text-3xl font-bold">
               {initial}
             </span>
           )}
