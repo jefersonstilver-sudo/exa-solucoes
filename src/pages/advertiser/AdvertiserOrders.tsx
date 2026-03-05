@@ -45,11 +45,10 @@ const AdvertiserOrders = () => {
         .eq('id', userProfile.id)
         .single();
       if (data) {
-        const anyData = data as any;
         setCompanyData({
-          empresa_nome: anyData.empresa_nome,
-          empresa_documento: anyData.empresa_documento,
-          logo_url: anyData.logo_url || anyData.avatar_url,
+          empresa_nome: data.empresa_nome,
+          empresa_documento: data.empresa_documento,
+          logo_url: data.avatar_url,
         });
       }
     };
