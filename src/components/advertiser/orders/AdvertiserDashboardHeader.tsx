@@ -26,12 +26,15 @@ export const AdvertiserDashboardHeader: React.FC<AdvertiserDashboardHeaderProps>
     )}>
       <div className="flex items-center gap-5">
         {/* Logo */}
-        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:shadow-xl hover:ring-2 hover:ring-white/20">
+        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:shadow-xl hover:ring-2 hover:ring-white/20 group">
           {logoUrl ? (
             <img
               src={logoUrl}
               alt="Logo da empresa"
-              className="w-full h-full object-contain p-3 brightness-0 invert transition-all duration-300 hover:brightness-[0.1] hover:invert"
+              className={cn(
+                "w-full h-full object-contain p-3 transition-all duration-300 group-hover:scale-110",
+                !logoUrl.includes('#original') && "brightness-0 invert"
+              )}
             />
           ) : (
             <span className="text-white text-2xl sm:text-3xl font-bold">
