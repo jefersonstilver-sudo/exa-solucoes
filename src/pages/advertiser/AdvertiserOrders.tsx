@@ -29,6 +29,7 @@ const AdvertiserOrders = () => {
   const { userOrdersAndAttempts, loading } = useUserOrdersAndAttempts(userProfile?.id);
   const { createCheckoutProSession, isProcessing: isProcessingCheckout } = useCheckoutPro();
   const [searchTerm, setSearchTerm] = useState('');
+  const [visibleCount, setVisibleCount] = useState(10);
   const [statusFilter, setStatusFilter] = useState('todos');
   const [videoDisplayPopup, setVideoDisplayPopup] = useState<{ isOpen: boolean; orderId: string | null }>({
     isOpen: false,
@@ -261,7 +262,7 @@ const AdvertiserOrders = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredItems.map(item => (
+          {filteredItems.slice(0, visibleCount).map(item => (
             <AdvertiserOrderCard
               key={`${item.type}-${item.id}`}
               item={item}
@@ -275,6 +276,22 @@ const AdvertiserOrders = () => {
               handleStripePayment={handleStripePayment}
             />
           ))}
+
+          {/* Load more + counter */}
+          {filteredItems.length > visibleCount && (
+            <div className="flex flex-col items-center gap-2 pt-2">
+              <p className="text-xs text-muted-foreground">
+                Mostrando {Math.min(visibleCount, filteredItems.length)} de {filteredItems.length} pedidos
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => setVisibleCount(prev => prev + 10)}
+                className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto"
+              >
+                Carregar mais
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

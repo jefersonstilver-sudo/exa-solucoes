@@ -173,54 +173,25 @@ export const useOrderStatus = (
           description: 'Sua campanha está ativa e sendo exibida nos painéis',
           color: 'text-white',
           bgColor: 'bg-green-600 border-green-700',
-          icon: Monitor,
-          action: {
-            label: 'Ver Detalhes',
-            variant: 'outline',
-            onClick: () => {
-              const event = new CustomEvent('openVideoDisplay', { detail: { orderId: order.id } });
-              window.dispatchEvent(event);
-            }
-          }
+          icon: Monitor
         };
 
       case 'video_aprovado':
-        // NOVA LÓGICA: video_aprovado sempre significa "EM EXIBIÇÃO"
-        // Uma vez aprovado o vídeo, o contrato está ativo e em exibição
         return {
           label: 'EM EXIBIÇÃO',
           description: 'Sua campanha está ativa e sendo exibida nos painéis',
           color: 'text-white',
           bgColor: 'bg-green-600 border-green-700',
-          icon: Monitor,
-          action: {
-            label: 'Ver Detalhes',
-            variant: 'outline',
-            onClick: () => {
-              // Esta ação será interceptada pelo componente pai para abrir o popup
-              const event = new CustomEvent('openVideoDisplay', { detail: { orderId: order.id } });
-              window.dispatchEvent(event);
-            }
-          }
+          icon: Monitor
         };
 
       case 'ativo':
-        // Status 'ativo' também significa "EM EXIBIÇÃO"
-        // Campanha ativa e sendo exibida nos painéis
         return {
           label: 'EM EXIBIÇÃO',
           description: 'Sua campanha está ativa e sendo exibida nos painéis',
           color: 'text-white',
           bgColor: 'bg-green-600 border-green-700',
-          icon: Monitor,
-          action: {
-            label: 'Ver Detalhes',
-            variant: 'outline',
-            onClick: () => {
-              const event = new CustomEvent('openVideoDisplay', { detail: { orderId: order.id } });
-              window.dispatchEvent(event);
-            }
-          }
+          icon: Monitor
         };
 
       case 'video_rejeitado':
