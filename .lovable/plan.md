@@ -1,39 +1,216 @@
 
 
-# Diagnostic Result: Edge Function Not Deployed
+# Complete Implementation Plan: "Meus Pedidos" Dashboard + Order Detail Page
 
-## Root Cause Confirmed
+This plan covers **two pages**: the orders listing dashboard and the individual order detail page, with full layout wireframes for both.
 
-The edge function file `supabase/functions/verify-user-whatsapp-code/index.ts` contains the correct code, but the **deployed version is outdated**. Evidence:
+---
 
-| Check | Result |
-|-------|--------|
-| Database `telefone_verificado` | `false` (not updated) |
-| Database `telefone_verificado_at` | `null` (not updated) |
-| Edge function log after verification | Only shows "Código verificado com sucesso" — no "Telefone marcado como verificado via phone_change" log |
-| Frontend code (`AdvertiserSettings.tsx`) | Correct — reads `telefone_verificado`, passes `mode`, calls `loadUserSettings()` |
-| Modal code (`WhatsAppVerificationModal.tsx`) | Correct — short-circuits in `verify` mode after Step 2 |
+## PAGE 1 — "Meus Pedidos" Dashboard Layout
 
-## What Needs to Happen
+```text
+┌─────────────────────────────────────────────────────┐
+│  COMPANY HEADER                                      │
+│  ┌──────┐  Company Name                             │
+│  │ LOGO │  CNPJ: XX.XXX.XXX/XXXX-XX                │
+│  └──────┘  Account Owner: João Silva                │
+│                                                      │
+│  (if no logo: subtle dashed placeholder with         │
+│   "Adicione a logo da sua empresa")                  │
+├─────────────────────────────────────────────────────┤
+│  METRICS ROW (3 cards, equal width)                  │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐            │
+│  │ Ativas   │ │ Pendentes│ │Concluídas│            │
+│  │    3     │ │    1     │ │    5     │            │
+│  └──────────┘ └──────────┘ └──────────┘            │
+├─────────────────────────────────────────────────────┤
+│  SEARCH + FILTER BAR                                 │
+│  [🔍 Buscar...            ] [Status ▼]              │
+├─────────────────────────────────────────────────────┤
+│  CAMPAIGN CARDS (vertical stack)                     │
+│                                                      │
+│  ┌─────────────────────────────────────────────┐    │
+│  │ Campanha #a1b2c3d4         Status Badge     │    │
+│  │ Criado: 15/01/2026                          │    │
+│  │                                              │    │
+│  │ Valor     Duração    Locais    Exibições     │    │
+│  │ R$1.200   3 meses    5 locais  36.000       │    │
+│  │                                              │    │
+│  │ Video Slots: ████████░░ 8/10                │    │
+│  │                                              │    │
+│  │              [Ver Detalhes]  [Ação Principal]│    │
+│  └─────────────────────────────────────────────┘    │
+│                                                      │
+│  (repeat for each campaign)                          │
+└─────────────────────────────────────────────────────┘
+```
 
-**One action only**: Redeploy the edge function `verify-user-whatsapp-code`.
+### Mobile Layout (iPhone)
 
-The file already contains the correct code (lines 161-176). No code changes are needed. The function just needs to be deployed so the running version matches the source file.
+```text
+┌──────────────────────┐
+│ COMPANY HEADER       │
+│ ┌────┐ Company Name  │
+│ │LOGO│ CNPJ          │
+│ └────┘ Owner Name    │
+├──────────────────────┤
+│ ┌─────┐┌─────┐┌─────┐
+│ │Ativ.││Pend.││Conc.│
+│ │  3  ││  1  ││  5  │
+│ └─────┘└─────┘└─────┘
+├──────────────────────┤
+│ [🔍 Buscar...       ]│
+├──────────────────────┤
+│ ┌────────────────────┐
+│ │ #a1b2c3d4   Badge  │
+│ │ 15/01/2026         │
+│ │                    │
+│ │ R$1.200 · 3 meses │
+│ │ 5 locais · 36k    │
+│ │                    │
+│ │ Slots: ████░░ 8/10│
+│ │                    │
+│ │ [Ver Detalhes]     │
+│ └────────────────────┘
+│ (stacked vertically) │
+└──────────────────────┘
+```
 
-## No Layout or Design Changes
+### Data Source
 
-All changes made were strictly logic-level:
-- Edge function: added `phone_change` persistence block (already in file, needs deploy)
-- Modal: added `mode` prop for verify vs change flow
-- Settings page: passes `mode` and calls `loadUserSettings()` in `onSuccess`
+- Company data: `userProfile.empresa_nome`, `userProfile.empresa_documento`, `userProfile.nome`, `userProfile.logo_url`
+- Stats: calculated from `useUserOrdersAndAttempts` results (already available)
+- Video slot count per order: `item.videos?.length || 0` out of 10 (already fetched by hook lines 78-116)
 
-The page layout, colors, typography, spacing, and component structure remain exactly as they were before. The screenshot you shared matches the current design — nothing was altered visually.
+---
 
-## After Deploy
+## PAGE 2 — Order Detail Page with 10 Video Slots
 
-Once the edge function is redeployed:
-1. User clicks "Verificar" → modal opens in verify mode
-2. Enters code → edge function validates + sets `telefone_verificado = true` in DB
-3. Modal calls `onSuccess` → `loadUserSettings()` reads the updated value
-4. UI shows green verified badge, 2FA toggle becomes enabled
+```text
+┌─────────────────────────────────────────────────────┐
+│  ← Detalhes do Pedido                                │
+│  #a1b2c3d4                                           │
+├─────────────────────────────────────────────────────┤
+│  ▸ Status do Contrato (collapsed)                    │
+├─────────────────────────────────────────────────────┤
+│  ▸ Locais Selecionados (collapsed)                   │
+├─────────────────────────────────────────────────────┤
+│  GESTÃO DE VÍDEOS (always expanded)                  │
+│                                                      │
+│  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐          │
+│  │ S1  │ │ S2  │ │ S3  │ │ S4  │ │ S5  │          │
+│  │ ✅  │ │ 🎬  │ │ ⏳  │ │  +  │ │  +  │          │
+│  └─────┘ └─────┘ └─────┘ └─────┘ └─────┘          │
+│  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐          │
+│  │ S6  │ │ S7  │ │ S8  │ │ S9  │ │ S10 │          │
+│  │  +  │ │  +  │ │  +  │ │  +  │ │  +  │          │
+│  └─────┘ └─────┘ └─────┘ └─────┘ └─────┘          │
+│                                                      │
+│  Slots utilizados: 3 / 10                            │
+├─────────────────────────────────────────────────────┤
+│  ▸ Parcelas (collapsed, if fidelidade)               │
+├─────────────────────────────────────────────────────┤
+│  ▸ Resumo do Pedido (collapsed)                      │
+├─────────────────────────────────────────────────────┤
+│  ▸ Informações de Compra (collapsed)                 │
+├─────────────────────────────────────────────────────┤
+│  ▸ Programação Semanal (collapsed)                   │
+└─────────────────────────────────────────────────────┘
+```
+
+### Mobile Layout (iPhone)
+
+```text
+┌──────────────────────┐
+│ ← Detalhes do Pedido │
+│ #a1b2c3d4            │
+├──────────────────────┤
+│ ▸ Contrato           │
+├──────────────────────┤
+│ ▸ Locais             │
+├──────────────────────┤
+│ GESTÃO DE VÍDEOS     │
+│                      │
+│ ┌────┐┌────┐┌────┐  │
+│ │ S1 ││ S2 ││ S3 │  │
+│ └────┘└────┘└────┘  │
+│ ┌────┐┌────┐┌────┐  │
+│ │ S4 ││ S5 ││ S6 │  │
+│ └────┘└────┘└────┘  │
+│ ┌────┐┌────┐┌────┐  │
+│ │ S7 ││ S8 ││ S9 │  │
+│ └────┘└────┘└────┘  │
+│ ┌────┐              │
+│ │S10 │              │
+│ └────┘              │
+│                      │
+│ Slots: 3 / 10       │
+├──────────────────────┤
+│ ▸ Parcelas           │
+├──────────────────────┤
+│ ▸ Resumo             │
+├──────────────────────┤
+│ ▸ Compra             │
+├──────────────────────┤
+│ ▸ Programação        │
+└──────────────────────┘
+```
+
+---
+
+## IMPLEMENTATION DETAILS
+
+### Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/components/advertiser/orders/AdvertiserDashboardHeader.tsx` | Company identity header (logo/placeholder, name, CNPJ, owner) |
+| `src/components/advertiser/orders/AdvertiserOrderStats.tsx` | 3 metric cards (Ativas, Pendentes, Concluídas) |
+| `src/components/advertiser/orders/AdvertiserOrderCard.tsx` | Campaign card with video slot usage bar |
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/pages/advertiser/AdvertiserOrders.tsx` | Remove inline `OrderCard` (lines 270-419). Import new components. Remove `if (isMobile) return <MobileAdvertiserOrders />`. Use `useIsMobile()` for responsive layout within single component. Add CNPJ to header. Add slot usage to cards. |
+| `src/pages/advertiser/OrderDetails.tsx` | Add "Slots utilizados: X / 10" summary below `VideoManagementCard`. Grid layout for slots: 5 cols desktop, 3 cols mobile. No other changes — page structure stays identical. |
+| `src/components/order/VideoManagementCard.tsx` | Add slot usage counter display ("X / 10 slots utilizados"). Ensure grid renders all 10 slots (5x2 desktop, 3+cols mobile). |
+
+### Files to Delete
+
+| File | Reason |
+|------|--------|
+| `src/pages/advertiser/MobileAdvertiserOrders.tsx` | Logic absorbed into unified `AdvertiserOrders.tsx` |
+
+### No Database Changes
+
+- Video slots already support 10 (`videoSlotService.ts` line 89)
+- No schema migrations needed
+- No new tables or columns
+
+### Design Rules
+
+- All buttons: min-height 44px on mobile
+- Cards: `bg-white/80 backdrop-blur-sm border border-gray-100 rounded-xl shadow-sm`
+- Metrics: no oversized icons, no colored backgrounds — clean number + label only
+- Slot usage bar: thin progress bar using Tailwind (`bg-gray-200` track, `bg-[#9C1E1E]` fill)
+- Company header: existing red gradient logo container style preserved
+- No new frameworks, only Tailwind + shadcn
+
+### Step-by-Step Sequence
+
+1. Create `AdvertiserDashboardHeader.tsx` — company identity with logo/placeholder, name, CNPJ, owner
+2. Create `AdvertiserOrderStats.tsx` — 3 clean metric cards
+3. Create `AdvertiserOrderCard.tsx` — responsive card with slot usage indicator
+4. Refactor `AdvertiserOrders.tsx` — unified responsive page using new components, remove mobile redirect
+5. Update `VideoManagementCard.tsx` — add slot usage counter ("X / 10")
+6. Delete `MobileAdvertiserOrders.tsx`
+
+### Risk Analysis
+
+| Risk | Level | Mitigation |
+|------|-------|-----------|
+| Mobile regression from deleting MobileAdvertiserOrders | Medium | All logic (delete, PIX, cortesia modal) migrated to unified component |
+| Missing company fields (CNPJ, logo) | Low | Graceful fallbacks ("Empresa não informada", letter avatar) |
+| Video slot grid breaking on small screens | Low | 3-col grid on mobile is well-tested pattern |
 
