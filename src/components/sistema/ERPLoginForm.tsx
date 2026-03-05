@@ -123,7 +123,10 @@ const ERPLoginForm = () => {
 
       // Se 2FA estiver ativado
       if (userData?.two_factor_enabled && userData?.telefone) {
-        console.log('🔐 [ERP_LOGIN] 2FA detectado');
+        console.log('🔐 [ERP_LOGIN] 2FA detectado, ativando auth gate');
+        
+        // 🔐 AUTH GATE: Definir flag ANTES de qualquer navegação
+        sessionStorage.setItem('pending_2fa', data.user.id);
         
         try {
           await supabase.functions.invoke('send-user-whatsapp-code', {
@@ -135,8 +138,6 @@ const ERPLoginForm = () => {
           });
 
           toast.info('Código de verificação enviado para seu WhatsApp');
-          // Importante: o dashboard do super_admin é a rota index (/super_admin).
-          // A rota /super_admin/dashboard não existe nas SuperAdminRoutes e gera tela em branco.
           navigate(`/verificacao-2fa?userId=${data.user.id}&redirect=/super_admin`);
           return;
         } catch (error) {

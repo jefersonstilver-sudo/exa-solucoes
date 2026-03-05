@@ -96,6 +96,9 @@ export const TwoFactorVerificationPage: React.FC = () => {
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'Código inválido');
 
+      // 🔐 AUTH GATE: Limpar flag para liberar acesso
+      sessionStorage.removeItem('pending_2fa');
+      
       toast.success('Login autorizado!');
       
       // Buscar role para redirecionar corretamente
@@ -107,12 +110,17 @@ export const TwoFactorVerificationPage: React.FC = () => {
 
       const role = roleData?.role || 'client';
       
-      if (role === 'super_admin') {
-        navigate('/super_admin');
+      // Verificar se há redirect na URL (vindo do ERP login)
+      const redirectParam = searchParams.get('redirect');
+      
+      if (redirectParam) {
+        navigate(redirectParam, { replace: true });
+      } else if (role === 'super_admin') {
+        navigate('/super_admin', { replace: true });
       } else if (['admin', 'admin_marketing', 'admin_financeiro'].includes(role)) {
-        navigate('/admin');
+        navigate('/admin', { replace: true });
       } else {
-        navigate('/');
+        navigate('/', { replace: true });
       }
       
     } catch (error: any) {
@@ -233,7 +241,12 @@ export const TwoFactorVerificationPage: React.FC = () => {
 
             <Button
               variant="ghost"
-              onClick={() => navigate('/login')}
+              onClick={async () => {
+                // Limpar flag e fazer logout limpo ao desistir
+                sessionStorage.removeItem('pending_2fa');
+                await supabase.auth.signOut();
+                navigate('/login');
+              }}
               className="w-full text-gray-600 hover:text-gray-900"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
