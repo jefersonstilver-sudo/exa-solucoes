@@ -35,9 +35,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [pending2fa, setPending2fa] = useState<boolean>(() => !!sessionStorage.getItem('pending_2fa'));
 
-  // Derivar isLoggedIn do session e userProfile (email_verified_at verificado no login)
-  const isLoggedIn = !!session?.access_token && !!userProfile;
+  // 🔐 AUTH GATE: Escutar mudanças no sessionStorage (ex: quando 2FA é validado)
+  useEffect(() => {
+    const handleStorage = () => {
+      setPending2fa(!!sessionStorage.getItem('pending_2fa'));
+    };
+    window.addEventListener('storage', handleStorage);
+    
+    // Também verificar periodicamente para mudanças na mesma aba
+    const interval = setInterval(handleStorage, 500);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Derivar isLoggedIn do session e userProfile
+  // 🔐 AUTH GATE: Bloquear acesso quando 2FA está pendente
+  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
   
   // Log de debug para diagnosticar problemas de autenticação
   useEffect(() => {

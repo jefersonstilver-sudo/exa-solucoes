@@ -22,6 +22,7 @@ import { useActiveSession } from '@/hooks/useActiveSession';
 import { GlobalNotificationProvider } from '@/providers/GlobalNotificationProvider';
 import { ZAPIDisconnectAlert } from '@/components/notifications/ZAPIDisconnectAlert';
 import { useForceCacheClear } from '@/hooks/useForceCacheClear';
+import TwoFactorVerificationPage from '@/pages/auth/TwoFactorVerificationPage';
 
 // Importações diretas para páginas críticas
 import BuildingStore from './pages/BuildingStore';
@@ -499,6 +500,7 @@ const AppContent = () => {
           <Route path="/email-not-confirmed" element={<EmailNotConfirmed />} />
           <Route path="/termos-uso" element={<TermosUso />} />
           <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+          <Route path="/verificacao-2fa" element={<TwoFactorVerificationPage />} />
 
           {/* Rota pública de escolha de benefício prestadores */}
           <Route path="/presente" element={<ProviderBenefitChoice />} />

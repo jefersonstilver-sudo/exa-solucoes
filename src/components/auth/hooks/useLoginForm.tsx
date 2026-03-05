@@ -132,7 +132,10 @@ export const useLoginForm = (redirectPath: string = '/') => {
 
       // Se 2FA estiver ativado, enviar código e redirecionar
       if (userData?.two_factor_enabled && userData?.telefone) {
-        console.log('🔐 [LOGIN] 2FA detectado, enviando código');
+        console.log('🔐 [LOGIN] 2FA detectado, ativando auth gate e enviando código');
+        
+        // 🔐 AUTH GATE: Definir flag ANTES de qualquer navegação
+        sessionStorage.setItem('pending_2fa', data.user.id);
         
         try {
           await supabase.functions.invoke('send-user-whatsapp-code', {
