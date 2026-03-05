@@ -15,6 +15,7 @@ interface WhatsAppVerificationModalProps {
   currentPhone: string;
   userId: string;
   onSuccess: (newPhone: string) => void;
+  mode?: 'verify' | 'change';
 }
 
 type Step = 1 | 2 | 3 | 4;
@@ -24,7 +25,8 @@ export const WhatsAppVerificationModal: React.FC<WhatsAppVerificationModalProps>
   onClose,
   currentPhone,
   userId,
-  onSuccess
+  onSuccess,
+  mode = 'change'
 }) => {
   const [step, setStep] = useState<Step>(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -127,6 +129,11 @@ export const WhatsAppVerificationModal: React.FC<WhatsAppVerificationModalProps>
       if (!data?.success) throw new Error(data?.error || 'Código inválido');
 
       toast.success('Código verificado!');
+      if (mode === 'verify') {
+        onSuccess(currentPhone);
+        onClose();
+        return;
+      }
       setStep(3);
     } catch (error: any) {
       console.error('Erro ao verificar código:', error);
@@ -214,7 +221,7 @@ export const WhatsAppVerificationModal: React.FC<WhatsAppVerificationModalProps>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Shield className="h-5 w-5 text-[#9C1E1E]" />
-            Alterar WhatsApp
+            {mode === 'verify' ? 'Verificar WhatsApp' : 'Alterar WhatsApp'}
           </DialogTitle>
         </DialogHeader>
 
@@ -232,9 +239,11 @@ export const WhatsAppVerificationModal: React.FC<WhatsAppVerificationModalProps>
                 <div className="w-16 h-16 mx-auto bg-[#9C1E1E]/10 rounded-full flex items-center justify-center">
                   <Shield className="h-8 w-8 text-[#9C1E1E]" />
                 </div>
-                <h3 className="font-semibold text-lg">Verificação de Segurança</h3>
+                <h3 className="font-semibold text-lg">{mode === 'verify' ? 'Verificar WhatsApp' : 'Verificação de Segurança'}</h3>
                 <p className="text-sm text-gray-600">
-                  Para sua segurança, enviaremos um código de verificação para o seu WhatsApp atual:
+                  {mode === 'verify'
+                    ? 'Para verificar seu número, enviaremos um código para seu WhatsApp:'
+                    : 'Para sua segurança, enviaremos um código de verificação para o seu WhatsApp atual:'}
                 </p>
                 <p className="text-lg font-semibold text-[#9C1E1E]">
                   {maskPhone(currentPhone)}
