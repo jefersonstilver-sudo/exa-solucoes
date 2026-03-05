@@ -72,7 +72,9 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
               <div className="flex-1 min-w-0">
                 <span className="text-sm sm:text-lg font-semibold">Gestão de Vídeos</span>
                 <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                  {uploadAllowed ? "Até 4 vídeos (máx. 15s, 100MB)" : "Upload disponível apenas para pedidos pagos"}
+                  {uploadAllowed 
+                    ? `${videoSlots.filter(s => s.video_id).length} / ${videoSlots.length} slots utilizados · máx. 10s, 100MB`
+                    : "Upload disponível apenas para pedidos pagos"}
                 </p>
               </div>
             </div>
@@ -108,7 +110,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
               <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2 text-[10px] sm:text-xs text-muted-foreground">
                 <p className="flex items-start gap-1.5">
                   <span className="text-blue-600 mt-0.5 font-semibold">•</span>
-                  <span>Envie até 4 vídeos (máx. 15s, horizontal, 100MB)</span>
+                  <span>Envie até 10 vídeos (máx. 10s, horizontal, 100MB)</span>
                 </p>
                 <p className="flex items-start gap-1.5">
                   <span className="text-blue-600 mt-0.5 font-semibold">•</span>
