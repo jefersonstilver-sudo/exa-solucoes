@@ -1,165 +1,39 @@
 
 
-# Final Implementation Plan: WhatsApp Verification Fix + State Synchronization
+# Diagnostic Result: Edge Function Not Deployed
 
-## SECTION 1 — Edge Function Fix
+## Root Cause Confirmed
 
-**File:** `supabase/functions/verify-user-whatsapp-code/index.ts`
+The edge function file `supabase/functions/verify-user-whatsapp-code/index.ts` contains the correct code, but the **deployed version is outdated**. Evidence:
 
-Insert a new block after line 159 (after the `signup` block closes, before the final `return` on line 161):
+| Check | Result |
+|-------|--------|
+| Database `telefone_verificado` | `false` (not updated) |
+| Database `telefone_verificado_at` | `null` (not updated) |
+| Edge function log after verification | Only shows "Código verificado com sucesso" — no "Telefone marcado como verificado via phone_change" log |
+| Frontend code (`AdvertiserSettings.tsx`) | Correct — reads `telefone_verificado`, passes `mode`, calls `loadUserSettings()` |
+| Modal code (`WhatsAppVerificationModal.tsx`) | Correct — short-circuits in `verify` mode after Step 2 |
 
-```typescript
-// Se for verificação do número atual (phone_change), marcar como verificado
-if (tipo === 'phone_change' && userId) {
-  const { error: markVerifiedError } = await supabase
-    .from('users')
-    .update({ 
-      telefone_verificado: true,
-      telefone_verificado_at: new Date().toISOString()
-    })
-    .eq('id', userId);
+## What Needs to Happen
 
-  if (markVerifiedError) {
-    console.error('⚠️ [VERIFY-USER-CODE] Erro ao marcar telefone como verificado (phone_change):', markVerifiedError);
-  } else {
-    console.log('✅ [VERIFY-USER-CODE] Telefone marcado como verificado via phone_change');
-  }
-}
-```
+**One action only**: Redeploy the edge function `verify-user-whatsapp-code`.
 
-**Safety confirmation:** At line 159, the code has already been validated (lines 80-96 — invalid code returns 400 and exits) and consumed (lines 99-107 — failure throws, caught by catch at line 169). It is structurally impossible to reach line 159 without successful validation.
+The file already contains the correct code (lines 161-176). No code changes are needed. The function just needs to be deployed so the running version matches the source file.
 
----
+## No Layout or Design Changes
 
-## SECTION 2 — Modal Flow Correction
+All changes made were strictly logic-level:
+- Edge function: added `phone_change` persistence block (already in file, needs deploy)
+- Modal: added `mode` prop for verify vs change flow
+- Settings page: passes `mode` and calls `loadUserSettings()` in `onSuccess`
 
-**File:** `src/components/settings/WhatsAppVerificationModal.tsx`
+The page layout, colors, typography, spacing, and component structure remain exactly as they were before. The screenshot you shared matches the current design — nothing was altered visually.
 
-Add a `mode` prop to the interface:
+## After Deploy
 
-```typescript
-interface WhatsAppVerificationModalProps {
-  // ...existing props
-  mode?: 'verify' | 'change'; // default: 'change'
-}
-```
-
-**Two modes:**
-
-| Mode | Flow | Steps |
-|------|------|-------|
-| `verify` | Verify existing number | Step 1 (send code) → Step 2 (enter code) → `onSuccess` + `onClose` |
-| `change` | Change to new number | Step 1 → Step 2 → Step 3 (new number) → Step 4 (verify new) → `onSuccess` + `onClose` |
-
-**Implementation detail:** In `handleVerifyCurrentPhone` (line 129), after `toast.success('Código verificado!')`:
-
-- If `mode === 'verify'`: call `onSuccess(currentPhone)` then `onClose()`. Do NOT call `setStep(3)`.
-- If `mode === 'change'`: call `setStep(3)` as currently (no change).
-
-**Title:** Line 217 changes from hardcoded "Alterar WhatsApp" to conditional: `mode === 'verify' ? 'Verificar WhatsApp' : 'Alterar WhatsApp'`.
-
-**Step 1 text** (line 237): When `mode === 'verify'`, change to "Para verificar seu número, enviaremos um código para seu WhatsApp:" instead of mentioning security/alteration.
-
-No changes to Steps 3, 4, `handleSendCodeNewPhone`, `handleVerifyNewPhone`, or `handleResend`.
-
----
-
-## SECTION 3 — Settings Page State Synchronization
-
-**File:** `src/pages/advertiser/AdvertiserSettings.tsx`
-
-**A. Pass `mode` to modal** (line 524-528):
-
-```tsx
-<WhatsAppVerificationModal
-  open={showWhatsAppModal}
-  onClose={() => setShowWhatsAppModal(false)}
-  currentPhone={settings.phone}
-  userId={userProfile?.id || ''}
-  mode={phoneVerified ? 'change' : 'verify'}
-  onSuccess={...}
-/>
-```
-
-**B. Simplify `onSuccess` callback** (lines 529-544):
-
-Replace with:
-
-```tsx
-onSuccess={async (newPhone) => {
-  // Optimistic UI update
-  setSettings((prev) => ({ ...prev, phone: newPhone }));
-  setPhoneVerified(true);
-  
-  // Full resync from database (edge function already persisted telefone_verificado)
-  await loadUserSettings();
-  
-  toast.success('WhatsApp verificado com sucesso!');
-}}
-```
-
-Remove the manual `supabase.from('users').update(...)` block (lines 532-541) — the edge function now handles persistence. `loadUserSettings()` resyncs all state from DB, guaranteeing no stale data.
-
----
-
-## SECTION 4 — 2FA Dependency
-
-Already correctly implemented. No changes needed:
-
-- Line 466: `disabled={!phoneVerified}` on the AppleSwitch
-- Lines 448-461: Amber warning with "Verificar agora" button when `!phoneVerified`
-- Lines 469-472: Guard that prevents toggle if phone not verified
-
-After `loadUserSettings()` sets `phoneVerified = true` from DB, the toggle becomes immediately enabled in the same render cycle. No page refresh needed.
-
----
-
-## SECTION 5 — Company Section
-
-**File:** `src/components/settings/CompanyBrandSection.tsx` — **No changes needed.**
-
-Already confirmed in prior diagnostic:
-
-- **Logo exists:** Institutional summary card renders with logo on red gradient background, company name, document, and green status badges (lines 46+, 213-229)
-- **No logo:** Dashed-border upload placeholder with "Upload" text (lines 259-268)
-- **Terms:** `CompanyTermsCheckbox` is disabled once accepted, shows confirmation date
-- **`isEditing` prop:** Already received and applied to all fields
-
----
-
-## SECTION 6 — UI Consistency
-
-After the fix, all verified states reflect backend truth through `loadUserSettings()`:
-
-| State | Source | UI Indicator |
-|-------|--------|-------------|
-| WhatsApp verified | `users.telefone_verificado` | Green badge + "Alterar Número" button |
-| WhatsApp unverified | `users.telefone_verificado = false` | Amber badge + "Verificar" button |
-| 2FA status | `users.two_factor_enabled` | AppleSwitch + Active/Inactive badge |
-| Terms accepted | `users.empresa_aceite_termo` | Disabled checkbox + date |
-| Company data | `users` + `profiles` | Identity card or placeholder |
-
-No stale UI possible: `loadUserSettings()` is called after every modal action, and the edge function persists before the frontend even receives the response.
-
----
-
-## SECTION 7 — Risk Assessment
-
-- **No database schema changes** — uses existing `telefone_verificado` and `telefone_verificado_at` columns
-- **No new tables**
-- **No new edge functions** — only modifying existing `verify-user-whatsapp-code`
-- **No breaking architecture changes** — `mode` prop defaults to `'change'`, preserving backward compatibility
-- **Minimal risk deployment** — 3 files, additive changes only, existing flows untouched
-
----
-
-## FINAL FILE CHANGE SUMMARY
-
-| # | File | What Changes | Lines Affected |
-|---|------|-------------|----------------|
-| 1 | `supabase/functions/verify-user-whatsapp-code/index.ts` | Add `phone_change` block to persist `telefone_verificado = true` after validated code | Insert after line 159 |
-| 2 | `src/components/settings/WhatsAppVerificationModal.tsx` | Add `mode` prop; short-circuit to `onSuccess` + `onClose` after Step 2 when `mode='verify'`; conditional title/text | Props interface, `handleVerifyCurrentPhone`, dialog title |
-| 3 | `src/pages/advertiser/AdvertiserSettings.tsx` | Pass `mode` prop based on `phoneVerified`; simplify `onSuccess` to use `loadUserSettings()` instead of manual DB update | Lines 524-544 |
-
-No other files modified.
+Once the edge function is redeployed:
+1. User clicks "Verificar" → modal opens in verify mode
+2. Enters code → edge function validates + sets `telefone_verificado = true` in DB
+3. Modal calls `onSuccess` → `loadUserSettings()` reads the updated value
+4. UI shows green verified badge, 2FA toggle becomes enabled
 
