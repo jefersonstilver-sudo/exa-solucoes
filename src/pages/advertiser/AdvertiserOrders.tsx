@@ -28,6 +28,33 @@ const AdvertiserOrders = () => {
   const isMobile = useIsMobile();
   const { userOrdersAndAttempts, loading } = useUserOrdersAndAttempts(userProfile?.id);
   const { createCheckoutProSession, isProcessing: isProcessingCheckout } = useCheckoutPro();
+
+  // Fetch company data from users table (not included in useAuth profile)
+  const [companyData, setCompanyData] = useState<{
+    empresa_nome?: string;
+    empresa_documento?: string;
+    logo_url?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchCompanyData = async () => {
+      if (!userProfile?.id) return;
+      const { data } = await supabase
+        .from('users')
+        .select('empresa_nome, empresa_documento, avatar_url')
+        .eq('id', userProfile.id)
+        .single();
+      if (data) {
+        const anyData = data as any;
+        setCompanyData({
+          empresa_nome: anyData.empresa_nome,
+          empresa_documento: anyData.empresa_documento,
+          logo_url: anyData.logo_url || anyData.avatar_url,
+        });
+      }
+    };
+    fetchCompanyData();
+  }, [userProfile?.id]);
   const [searchTerm, setSearchTerm] = useState('');
   const [visibleCount, setVisibleCount] = useState(10);
   const [statusFilter, setStatusFilter] = useState('todos');
@@ -197,9 +224,9 @@ const AdvertiserOrders = () => {
     <div className="space-y-4 sm:space-y-6">
       {/* Section 1: Company Header */}
       <AdvertiserDashboardHeader
-        logoUrl={(userProfile as any)?.logo_url || userProfile?.avatar_url}
-        companyName={(userProfile as any)?.empresa_nome}
-        cnpj={(userProfile as any)?.empresa_documento || (userProfile as any)?.empresa_cnpj}
+        logoUrl={companyData?.logo_url || userProfile?.avatar_url}
+        companyName={companyData?.empresa_nome}
+        cnpj={companyData?.empresa_documento}
         ownerName={userProfile?.nome}
       />
 
