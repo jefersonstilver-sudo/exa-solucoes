@@ -1,88 +1,165 @@
 
 
-# Plano: Reestruturação Completa da Página de Configurações do Anunciante
+# Final Implementation Plan: WhatsApp Verification Fix + State Synchronization
 
-## Resumo
+## SECTION 1 — Edge Function Fix
 
-Refatorar completamente `AdvertiserSettings.tsx` e `CompanyBrandSection.tsx` para criar uma experiência corporativa minimalista (Stripe/Linear/Apple Settings), com modo de edição bloqueado, estados visuais claros, botão voltar, e fluxo WhatsApp correto.
+**File:** `supabase/functions/verify-user-whatsapp-code/index.ts`
 
-## Arquivos a Modificar
+Insert a new block after line 159 (after the `signup` block closes, before the final `return` on line 161):
 
-| Arquivo | Mudanças |
-|---------|----------|
-| `src/pages/advertiser/AdvertiserSettings.tsx` | Reestruturação completa: header com voltar, modo edição bloqueado, seções reorganizadas, proteção contra perda de edição, estados loading granulares |
-| `src/components/settings/CompanyBrandSection.tsx` | Card resumo institucional, modo leitura por padrão, botão "EU CONFIRMO" desabilitado após aceite |
+```typescript
+// Se for verificação do número atual (phone_change), marcar como verificado
+if (tipo === 'phone_change' && userId) {
+  const { error: markVerifiedError } = await supabase
+    .from('users')
+    .update({ 
+      telefone_verificado: true,
+      telefone_verificado_at: new Date().toISOString()
+    })
+    .eq('id', userId);
 
-## Mudanças Detalhadas
+  if (markVerifiedError) {
+    console.error('⚠️ [VERIFY-USER-CODE] Erro ao marcar telefone como verificado (phone_change):', markVerifiedError);
+  } else {
+    console.log('✅ [VERIFY-USER-CODE] Telefone marcado como verificado via phone_change');
+  }
+}
+```
 
-### 1. `AdvertiserSettings.tsx` — Reestruturação
+**Safety confirmation:** At line 159, the code has already been validated (lines 80-96 — invalid code returns 400 and exits) and consumed (lines 99-107 — failure throws, caught by catch at line 169). It is structurally impossible to reach line 159 without successful validation.
 
-**A. Botão Voltar + Header**
-- Botão `← Voltar` no topo esquerdo com `onClick={() => window.history.back()}`, min-height 44px
-- Header: "Configurações da Conta" + subtítulo "Gerencie as informações da sua empresa e integrações"
-- Botão "Editar Configurações" no header que controla `isEditing` state
+---
 
-**B. Estado `isEditing` (modo leitura/edição)**
-- `const [isEditing, setIsEditing] = useState(false)`
-- `const [originalSettings, setOriginalSettings] = useState(...)` — snapshot para cancelar
-- Todos os campos (nome, CPF, documento, notificações) iniciam `disabled={!isEditing}` com visual `bg-gray-50 border-transparent`
-- Quando `isEditing`: campos editáveis, rodapé mostra "Salvar Alterações" + "Cancelar"
-- "Cancelar" restaura `originalSettings` e `setIsEditing(false)`
-- Remover o botão "Salvar Alterações" fixo no final (só aparece em modo edição)
+## SECTION 2 — Modal Flow Correction
 
-**C. Proteção contra perda de edição**
-- `useEffect` com `beforeunload` event quando `isEditing && hasChanges`
+**File:** `src/components/settings/WhatsAppVerificationModal.tsx`
 
-**D. Reorganização das seções**
-Ordem final dos cards:
-1. Resumo da Conta (avatar + nome + email — somente leitura)
-2. Dados Pessoais (nome, WhatsApp, documentação — tudo dentro de um card)
-3. Empresa/Marca (`CompanyBrandSection`)
-4. Segurança (2FA + alterar senha + cancelamento)
+Add a `mode` prop to the interface:
 
-Remover o card de Notificações vazio (linhas 361-365 — card sem conteúdo).
+```typescript
+interface WhatsAppVerificationModalProps {
+  // ...existing props
+  mode?: 'verify' | 'change'; // default: 'change'
+}
+```
 
-**E. WhatsApp — fluxo correto**
-- Quando `phoneVerified = true`: mostrar "✔ WhatsApp conectado e verificado" + botão "Alterar Número" (abre modal completo de 4 etapas)
-- Quando `phoneVerified = false`: mostrar "⚠ Número não verificado" + botão "Verificar" (abre o mesmo modal mas o título faz sentido porque é verificação inicial)
-- O estado `phoneVerified` já é carregado do banco (`telefone_verificado`) no `loadUserSettings` — correto
-- O `onSuccess` já persiste `telefone_verificado: true` — correto
+**Two modes:**
 
-**F. 2FA — visual simplificado**
-- Manter toggle `AppleSwitch` existente
-- Badge "Ativo" (verde) ou "Desativado" (cinza) ao lado do título
-- Texto explicativo curto: "Protege sua conta com uma camada adicional de segurança"
-- Se phone não verificado: mensagem amarela inline (já implementado, manter)
+| Mode | Flow | Steps |
+|------|------|-------|
+| `verify` | Verify existing number | Step 1 (send code) → Step 2 (enter code) → `onSuccess` + `onClose` |
+| `change` | Change to new number | Step 1 → Step 2 → Step 3 (new number) → Step 4 (verify new) → `onSuccess` + `onClose` |
 
-**G. Estados visuais padronizados**
-- Verde (`bg-green-50 border-green-200`): Configurado/Validado/Verificado
-- Amarelo (`bg-amber-50 border-amber-200`): Pendente
-- Cinza (`bg-gray-50`): Bloqueado/Somente leitura
+**Implementation detail:** In `handleVerifyCurrentPhone` (line 129), after `toast.success('Código verificado!')`:
 
-### 2. `CompanyBrandSection.tsx` — Card Resumo + Modo Leitura
+- If `mode === 'verify'`: call `onSuccess(currentPhone)` then `onClose()`. Do NOT call `setStep(3)`.
+- If `mode === 'change'`: call `setStep(3)` as currently (no change).
 
-**A. Card resumo institucional (topo)**
-- Se `companyName && companyDocument && logoUrl` todos preenchidos: renderizar card resumo antes dos campos
-- Layout: Logo (96px, fundo vermelho) à esquerda + Nome, Documento formatado, Segmento à direita
-- Badges de status: ✔ Logo carregada, ✔ Documento validado, ✔ Termo confirmado (ou ⚠ Pendente)
+**Title:** Line 217 changes from hardcoded "Alterar WhatsApp" to conditional: `mode === 'verify' ? 'Verificar WhatsApp' : 'Alterar WhatsApp'`.
 
-**B. Modo leitura nos campos**
-- Receber prop `isEditing` de `AdvertiserSettings`
-- Campos (nome empresa, país, documento, segmento, endereço) iniciam `disabled={!isEditing}`
-- Visual bloqueado: `bg-gray-50 border-transparent`
+**Step 1 text** (line 237): When `mode === 'verify'`, change to "Para verificar seu número, enviaremos um código para seu WhatsApp:" instead of mentioning security/alteration.
 
-**C. Botão "EU CONFIRMO" — estado correto**
-- Se `termsAccepted = true && termsAcceptedDate`: botão desabilitado, texto "✔ Confirmado", mostrar data abaixo
-- Se `termsAccepted = false`: botão ativo normalmente
-- O `CompanyTermsCheckbox` já recebe `disabled={termsAccepted}` — correto, manter
+No changes to Steps 3, 4, `handleSendCodeNewPhone`, `handleVerifyNewPhone`, or `handleResend`.
 
-**D. Botão salvar da empresa**
-- Só aparece quando `isEditing` (recebido via prop)
+---
 
-### 3. Nenhuma alteração em outros arquivos
+## SECTION 3 — Settings Page State Synchronization
 
-- `WhatsAppVerificationModal.tsx` — intacto (fluxo de 4 etapas funciona)
-- `CompanyTermsCheckbox.tsx` — intacto
-- `ClientLogoUploadModal.tsx` — intacto
-- Nenhuma tabela nova, nenhuma edge function alterada
+**File:** `src/pages/advertiser/AdvertiserSettings.tsx`
+
+**A. Pass `mode` to modal** (line 524-528):
+
+```tsx
+<WhatsAppVerificationModal
+  open={showWhatsAppModal}
+  onClose={() => setShowWhatsAppModal(false)}
+  currentPhone={settings.phone}
+  userId={userProfile?.id || ''}
+  mode={phoneVerified ? 'change' : 'verify'}
+  onSuccess={...}
+/>
+```
+
+**B. Simplify `onSuccess` callback** (lines 529-544):
+
+Replace with:
+
+```tsx
+onSuccess={async (newPhone) => {
+  // Optimistic UI update
+  setSettings((prev) => ({ ...prev, phone: newPhone }));
+  setPhoneVerified(true);
+  
+  // Full resync from database (edge function already persisted telefone_verificado)
+  await loadUserSettings();
+  
+  toast.success('WhatsApp verificado com sucesso!');
+}}
+```
+
+Remove the manual `supabase.from('users').update(...)` block (lines 532-541) — the edge function now handles persistence. `loadUserSettings()` resyncs all state from DB, guaranteeing no stale data.
+
+---
+
+## SECTION 4 — 2FA Dependency
+
+Already correctly implemented. No changes needed:
+
+- Line 466: `disabled={!phoneVerified}` on the AppleSwitch
+- Lines 448-461: Amber warning with "Verificar agora" button when `!phoneVerified`
+- Lines 469-472: Guard that prevents toggle if phone not verified
+
+After `loadUserSettings()` sets `phoneVerified = true` from DB, the toggle becomes immediately enabled in the same render cycle. No page refresh needed.
+
+---
+
+## SECTION 5 — Company Section
+
+**File:** `src/components/settings/CompanyBrandSection.tsx` — **No changes needed.**
+
+Already confirmed in prior diagnostic:
+
+- **Logo exists:** Institutional summary card renders with logo on red gradient background, company name, document, and green status badges (lines 46+, 213-229)
+- **No logo:** Dashed-border upload placeholder with "Upload" text (lines 259-268)
+- **Terms:** `CompanyTermsCheckbox` is disabled once accepted, shows confirmation date
+- **`isEditing` prop:** Already received and applied to all fields
+
+---
+
+## SECTION 6 — UI Consistency
+
+After the fix, all verified states reflect backend truth through `loadUserSettings()`:
+
+| State | Source | UI Indicator |
+|-------|--------|-------------|
+| WhatsApp verified | `users.telefone_verificado` | Green badge + "Alterar Número" button |
+| WhatsApp unverified | `users.telefone_verificado = false` | Amber badge + "Verificar" button |
+| 2FA status | `users.two_factor_enabled` | AppleSwitch + Active/Inactive badge |
+| Terms accepted | `users.empresa_aceite_termo` | Disabled checkbox + date |
+| Company data | `users` + `profiles` | Identity card or placeholder |
+
+No stale UI possible: `loadUserSettings()` is called after every modal action, and the edge function persists before the frontend even receives the response.
+
+---
+
+## SECTION 7 — Risk Assessment
+
+- **No database schema changes** — uses existing `telefone_verificado` and `telefone_verificado_at` columns
+- **No new tables**
+- **No new edge functions** — only modifying existing `verify-user-whatsapp-code`
+- **No breaking architecture changes** — `mode` prop defaults to `'change'`, preserving backward compatibility
+- **Minimal risk deployment** — 3 files, additive changes only, existing flows untouched
+
+---
+
+## FINAL FILE CHANGE SUMMARY
+
+| # | File | What Changes | Lines Affected |
+|---|------|-------------|----------------|
+| 1 | `supabase/functions/verify-user-whatsapp-code/index.ts` | Add `phone_change` block to persist `telefone_verificado = true` after validated code | Insert after line 159 |
+| 2 | `src/components/settings/WhatsAppVerificationModal.tsx` | Add `mode` prop; short-circuit to `onSuccess` + `onClose` after Step 2 when `mode='verify'`; conditional title/text | Props interface, `handleVerifyCurrentPhone`, dialog title |
+| 3 | `src/pages/advertiser/AdvertiserSettings.tsx` | Pass `mode` prop based on `phoneVerified`; simplify `onSuccess` to use `loadUserSettings()` instead of manual DB update | Lines 524-544 |
+
+No other files modified.
 
