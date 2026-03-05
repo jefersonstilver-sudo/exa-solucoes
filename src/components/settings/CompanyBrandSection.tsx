@@ -70,7 +70,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
         setTermsAccepted(data.empresa_aceite_termo || false);
         setTermsAcceptedDate(data.empresa_aceite_termo_data || null);
         const { data: logoData } = await supabase.from('users').select('*').eq('id', user.id).single();
-        const userLogoUrl = (logoData as any)?.logo_url;
+        const userLogoUrl = logoData?.avatar_url;
         if (userLogoUrl) {
           setLogoUrl(userLogoUrl);
           if (userLogoUrl.includes('/storage/') && userLogoUrl.includes('arquivos')) {
@@ -89,7 +89,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
-      const { error: updateError } = await supabase.from('users').update({ logo_url: url } as any).eq('id', user.id);
+      const { error: updateError } = await supabase.from('users').update({ avatar_url: url }).eq('id', user.id);
       if (updateError) throw updateError;
       setLogoUrl(url);
       if (url.includes('/storage/') && url.includes('arquivos')) {
@@ -108,7 +108,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      await supabase.from('users').update({ logo_url: null } as any).eq('id', user.id);
+      await supabase.from('users').update({ avatar_url: null }).eq('id', user.id);
       setLogoUrl(null);
       setLogoStorageBucket(null);
       setLogoStorageKey(null);
