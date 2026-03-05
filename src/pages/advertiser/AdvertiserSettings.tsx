@@ -526,20 +526,11 @@ const AdvertiserSettings = () => {
         onClose={() => setShowWhatsAppModal(false)}
         currentPhone={settings.phone}
         userId={userProfile?.id || ''}
+        mode={phoneVerified ? 'change' : 'verify'}
         onSuccess={async (newPhone) => {
           setSettings((prev) => ({ ...prev, phone: newPhone }));
           setPhoneVerified(true);
-          try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-              await supabase.from('users').update({
-                telefone_verificado: true,
-                telefone_verificado_at: new Date().toISOString(),
-              }).eq('id', user.id);
-            }
-          } catch (err) {
-            console.error('Erro ao persistir verificação:', err);
-          }
+          await loadUserSettings();
           toast.success('WhatsApp verificado com sucesso!');
         }}
       />

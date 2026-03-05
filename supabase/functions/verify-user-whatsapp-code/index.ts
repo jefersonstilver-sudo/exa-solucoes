@@ -158,6 +158,23 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Se for verificação do número atual (phone_change), marcar como verificado
+    if (tipo === 'phone_change' && userId) {
+      const { error: markVerifiedError } = await supabase
+        .from('users')
+        .update({ 
+          telefone_verificado: true,
+          telefone_verificado_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (markVerifiedError) {
+        console.error('⚠️ [VERIFY-USER-CODE] Erro ao marcar telefone como verificado (phone_change):', markVerifiedError);
+      } else {
+        console.log('✅ [VERIFY-USER-CODE] Telefone marcado como verificado via phone_change');
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
