@@ -333,14 +333,14 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
                 value={[logoScale]}
                 onValueChange={handleLogoScaleChange}
                 min={0.5}
-                max={1.5}
+                max={3}
                 step={0.05}
                 className="w-full"
               />
               <div className="flex justify-between text-[11px] text-muted-foreground">
                 <span>50%</span>
-                <span>100%</span>
                 <span>150%</span>
+                <span>300%</span>
               </div>
               <Button
                 type="button"
