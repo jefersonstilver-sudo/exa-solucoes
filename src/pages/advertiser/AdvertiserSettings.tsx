@@ -88,7 +88,7 @@ const AdvertiserSettings = () => {
         const loaded: UserSettings = {
           email: authUser.user.email || '',
           name: authUser.user.user_metadata?.name || authUser.user.user_metadata?.full_name || '',
-          phone: authUser.user.user_metadata?.phone || '',
+          phone: authUser.user.user_metadata?.phone || userData?.telefone || '',
           cpf: userData?.cpf || '',
           documento_estrangeiro: userData?.documento_estrangeiro || '',
           documento_frente_url: userData?.documento_frente_url || '',

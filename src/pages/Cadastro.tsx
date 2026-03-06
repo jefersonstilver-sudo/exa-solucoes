@@ -238,17 +238,24 @@ const Cadastro: React.FC = () => {
           console.error('⚠️ [CADASTRO] Erro ao associar verificação:', updateError);
         }
 
-        // Marcar telefone como verificado
-        const { error: markError } = await supabase
-          .from('users')
-          .update({ 
-            telefone_verificado: true,
-            telefone_verificado_at: new Date().toISOString()
-          })
-          .eq('id', data.user.id);
+        // Marcar telefone como verificado (com retry para aguardar trigger criar row)
+        const fullPhone = `${phoneCode}${phone.replace(/\D/g, '')}`;
+        const maxRetries = 3;
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          const { error: markError } = await supabase
+            .from('users')
+            .update({ 
+              telefone: fullPhone,
+              telefone_verificado: true,
+              telefone_verificado_at: new Date().toISOString()
+            })
+            .eq('id', data.user.id);
 
-        if (markError) {
-          console.error('⚠️ [CADASTRO] Erro ao marcar telefone como verificado:', markError);
+          if (!markError) break;
+          console.warn(`⚠️ [CADASTRO] Tentativa ${attempt + 1} de marcar telefone verificado falhou:`, markError);
+          if (attempt < maxRetries - 1) {
+            await new Promise(r => setTimeout(r, 1000));
+          }
         }
       }
 
