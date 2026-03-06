@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Building2, FileText, Info, MapPin, Upload, X, Image as ImageIcon, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Building2, FileText, Info, MapPin, Upload, X, Image as ImageIcon, CheckCircle, AlertTriangle, Search, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { CompanyTermsCheckbox } from './CompanyTermsCheckbox';
@@ -16,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { useLogoImageUrl } from '@/hooks/useLogoImageUrl';
 import { ClientLogoUploadModal } from '@/components/admin/proposals/ClientLogoUploadModal';
 import { useAuth } from '@/hooks/useAuth';
+import { useCNPJConsult } from '@/hooks/useCNPJConsult';
 
 interface CompanyBrandSectionProps {
   isEditing?: boolean;
@@ -23,6 +25,7 @@ interface CompanyBrandSectionProps {
 
 export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEditing = false }) => {
   const { refreshUserProfile } = useAuth();
+  const { consultCNPJ, isLoading: isLoadingCNPJ } = useCNPJConsult();
   const [loading, setLoading] = useState(false);
   const [companyName, setCompanyName] = useState('');
   const [companyCountry, setCompanyCountry] = useState<'BR' | 'AR' | 'PY' | ''>('');
@@ -37,6 +40,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
   const [logoStorageBucket, setLogoStorageBucket] = useState<string | null>(null);
   const [logoStorageKey, setLogoStorageKey] = useState<string | null>(null);
   const [showLogoModal, setShowLogoModal] = useState(false);
+  const [logoScale, setLogoScale] = useState(1);
 
   const { imageUrl: signedLogoUrl, loading: logoLoading } = useLogoImageUrl(
     logoUrl ? { file_url: logoUrl, storage_bucket: logoStorageBucket || undefined, storage_key: logoStorageKey || undefined } : null
@@ -82,6 +86,9 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
           }
         }
       }
+      // Load logo scale from user_metadata
+      const scale = user.user_metadata?.logo_scale;
+      if (typeof scale === 'number') setLogoScale(scale);
     } catch (error) {
       console.error('Erro ao carregar dados da empresa:', error);
     }
@@ -127,6 +134,30 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
     setCompanyDocument(formatted);
   };
 
+  const handleConsultCNPJ = async () => {
+    const data = await consultCNPJ(companyDocument);
+    if (data) {
+      if (data.nomeFantasia) setCompanyName(data.nomeFantasia);
+      else if (data.razaoSocial) setCompanyName(data.razaoSocial);
+      if (data.endereco) setCompanyAddress(data.endereco);
+      if (data.segmento) setBusinessSegment(data.segmento);
+    }
+  };
+
+  const handleLogoScaleChange = async (values: number[]) => {
+    const newScale = values[0];
+    setLogoScale(newScale);
+  };
+
+  const handleLogoScaleSave = async () => {
+    try {
+      await supabase.auth.updateUser({ data: { logo_scale: logoScale } });
+      toast.success('Tamanho da logo salvo!');
+    } catch (error) {
+      console.error('Erro ao salvar tamanho da logo:', error);
+    }
+  };
+
   const handleSave = async () => {
     try {
       if (!companyName.trim()) { toast.error('Informe o nome da empresa/marca'); return; }
@@ -160,6 +191,10 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
 
       const { error } = await supabase.from('users').update(updateData).eq('id', user.id);
       if (error) throw error;
+
+      // Save logo scale to user_metadata
+      await supabase.auth.updateUser({ data: { logo_scale: logoScale } });
+
       await loadCompanyData();
       toast.success('Informações da empresa salvas com sucesso!');
     } catch (error) {
@@ -187,9 +222,9 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
           <Building2 className="h-5 w-5 mr-2 text-exa-red" />
           Empresa ou Marca
         </CardTitle>
-        <div className="flex items-start space-x-2 mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-blue-900">
+        <div className="flex items-start space-x-2 mt-3 p-3 bg-stone-50 border border-stone-200 rounded-lg">
+          <Info className="h-4 w-4 text-stone-500 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-stone-700">
             Informações opcionais, mas <strong>obrigatórias</strong> para fazer upload de vídeos
           </p>
         </div>
@@ -199,14 +234,17 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
         {hasInstitutionalData && (
           <div className="rounded-xl border bg-gray-50/50 p-5">
             <div className="flex items-start gap-4">
-              <div className="w-[72px] h-[72px] rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] flex items-center justify-center p-2.5 flex-shrink-0 shadow">
+              <div
+                className="w-[72px] h-[72px] rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] flex items-center justify-center p-2.5 flex-shrink-0 shadow overflow-hidden"
+              >
                 <img
                   src={signedLogoUrl || logoUrl || ''}
                   alt="Logo"
                   className={cn(
-                    "max-w-full max-h-full object-contain rounded",
+                    "max-w-full max-h-full object-contain rounded transition-transform",
                     !logoUrl?.includes('#original') && "brightness-0 invert"
                   )}
+                  style={{ transform: `scale(${logoScale})` }}
                 />
               </div>
               <div className="flex-1 min-w-0 space-y-1.5">
@@ -245,11 +283,12 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
             <div className="flex flex-col items-center gap-2">
               {signedLogoUrl || logoUrl ? (
                 <div className="relative">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] flex items-center justify-center p-2.5 shadow-lg">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] flex items-center justify-center p-2.5 shadow-lg overflow-hidden">
                     <img
                       src={signedLogoUrl || logoUrl || ''}
                       alt="Logo da empresa"
-                      className={cn("max-w-full max-h-full object-contain rounded", !logoUrl?.includes('#original') && "brightness-0 invert")}
+                      className={cn("max-w-full max-h-full object-contain rounded transition-transform", !logoUrl?.includes('#original') && "brightness-0 invert")}
+                      style={{ transform: `scale(${logoScale})` }}
                     />
                   </div>
                   {isEditing && (
@@ -280,6 +319,39 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
               <p className="text-xs text-muted-foreground">PNG, JPG ou WebP • Máximo 5MB</p>
             </div>
           </div>
+
+          {/* Logo Scale Slider */}
+          {(signedLogoUrl || logoUrl) && isEditing && (
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm text-muted-foreground">Tamanho da Logo</Label>
+                <span className="text-xs text-muted-foreground font-mono">{Math.round(logoScale * 100)}%</span>
+              </div>
+              <Slider
+                value={[logoScale]}
+                onValueChange={handleLogoScaleChange}
+                min={0.5}
+                max={1.5}
+                step={0.05}
+                className="w-full"
+              />
+              <div className="flex justify-between text-[11px] text-muted-foreground">
+                <span>50%</span>
+                <span>100%</span>
+                <span>150%</span>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleLogoScaleSave}
+                className="mt-1"
+              >
+                Salvar tamanho
+              </Button>
+            </div>
+          )}
+
           <ClientLogoUploadModal isOpen={showLogoModal} onClose={() => setShowLogoModal(false)} onLogoProcessed={handleLogoProcessed} />
         </div>
 
@@ -309,7 +381,28 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
               <FileText className="h-4 w-4 mr-2" />
               {getDocumentLabel()} <span className="text-red-500 ml-1">*</span>
             </Label>
-            <Input id="companyDocument" value={companyDocument} onChange={handleDocumentChange} placeholder={getDocumentPlaceholder()} disabled={!isEditing} className={cn("min-h-[44px]", !isEditing && disabledFieldClass)} />
+            <div className="flex gap-2">
+              <Input
+                id="companyDocument"
+                value={companyDocument}
+                onChange={handleDocumentChange}
+                placeholder={getDocumentPlaceholder()}
+                disabled={!isEditing}
+                className={cn("min-h-[44px] flex-1", !isEditing && disabledFieldClass)}
+              />
+              {isEditing && companyCountry === 'BR' && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleConsultCNPJ}
+                  disabled={isLoadingCNPJ || companyDocument.replace(/\D/g, '').length !== 14}
+                  className="min-h-[44px] flex-shrink-0"
+                >
+                  {isLoadingCNPJ ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Search className="h-4 w-4 mr-1" />}
+                  Consultar
+                </Button>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">{getDocumentHelp()}</p>
           </div>
         )}
