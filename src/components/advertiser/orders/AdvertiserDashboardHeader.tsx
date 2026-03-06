@@ -7,6 +7,7 @@ interface AdvertiserDashboardHeaderProps {
   companyName?: string;
   cnpj?: string;
   ownerName?: string;
+  logoScale?: number;
   className?: string;
 }
 
@@ -15,6 +16,7 @@ export const AdvertiserDashboardHeader: React.FC<AdvertiserDashboardHeaderProps>
   companyName,
   cnpj,
   ownerName,
+  logoScale = 1,
   className
 }) => {
   const initial = (companyName || ownerName || 'E')?.charAt(0).toUpperCase();
@@ -27,15 +29,16 @@ export const AdvertiserDashboardHeader: React.FC<AdvertiserDashboardHeaderProps>
     )}>
       <div className="flex items-center gap-5">
         {/* Logo */}
-        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:shadow-xl hover:ring-2 hover:ring-white/20 group">
+        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] flex items-center justify-center flex-shrink-0 shadow-lg overflow-visible cursor-pointer transition-all duration-300 ease-out hover:shadow-xl hover:ring-2 hover:ring-white/20 group">
           {logoUrl && !imgError ? (
             <img
               src={logoUrl}
               alt="Logo da empresa"
               className={cn(
-                "w-full h-full object-contain p-3 transition-all duration-300 group-hover:scale-110",
+                "w-full h-full object-contain p-3 transition-all duration-300",
                 !logoUrl.includes('#original') && "brightness-0 invert"
               )}
+              style={{ transform: `scale(${logoScale})` }}
               onError={() => setImgError(true)}
             />
           ) : (

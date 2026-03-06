@@ -256,7 +256,12 @@ const AdvertiserOrders = () => {
         logoUrl={finalLogoUrl}
         companyName={companyData?.empresa_nome}
         cnpj={companyData?.empresa_documento}
-        ownerName={userProfile?.nome} />
+        ownerName={userProfile?.nome}
+        logoScale={(() => {
+          const raw = userProfile?.logo_scale;
+          const parsed = typeof raw === 'number' ? raw : parseFloat(String(raw));
+          return !isNaN(parsed) ? Math.min(3, Math.max(0.5, parsed)) : 1;
+        })()} />
       
 
       {/* Section 2: Metrics */}
