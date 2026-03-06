@@ -284,17 +284,13 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
               {signedLogoUrl || logoUrl ? (
                 <div className="relative">
                   <div 
-                    className="rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] flex items-center justify-center shadow-lg overflow-hidden transition-all duration-200"
-                    style={{ 
-                      width: `${Math.round(80 * logoScale)}px`, 
-                      height: `${Math.round(80 * logoScale)}px`,
-                      padding: `${Math.round(10 * logoScale)}px`
-                    }}
+                    className="rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] w-20 h-20 p-2.5 flex items-center justify-center shadow-lg overflow-visible transition-all duration-200"
                   >
                     <img
                       src={signedLogoUrl || logoUrl || ''}
                       alt="Logo da empresa"
-                      className={cn("max-w-full max-h-full object-contain rounded", !logoUrl?.includes('#original') && "brightness-0 invert")}
+                      className={cn("max-w-full max-h-full object-contain rounded transition-transform duration-200", !logoUrl?.includes('#original') && "brightness-0 invert")}
+                      style={{ transform: `scale(${logoScale})` }}
                     />
                   </div>
                   {isEditing && (
