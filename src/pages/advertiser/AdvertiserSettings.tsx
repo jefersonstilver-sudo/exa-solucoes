@@ -58,6 +58,7 @@ const AdvertiserSettings = () => {
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
+  const [currentLogoScale, setCurrentLogoScale] = useState<number | null>(null);
 
   // Protection against unsaved changes
   const hasChanges = isEditing && originalSettings && JSON.stringify(settings) !== JSON.stringify(originalSettings);
@@ -106,6 +107,11 @@ const AdvertiserSettings = () => {
         setOriginalSettings(loaded);
         setTwoFactorEnabled(userData?.two_factor_enabled || false);
         setPhoneVerified(userData?.telefone_verificado === true || !!userData?.telefone_verificado_at);
+        // Initialize logo scale from user metadata
+        const savedScale = authUser.user?.user_metadata?.logo_scale;
+        if (typeof savedScale === 'number') {
+          setCurrentLogoScale(savedScale);
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
@@ -146,8 +152,12 @@ const AdvertiserSettings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
+      const updateData: Record<string, any> = { name: settings.name, phone: settings.phone, notifications: settings.notifications };
+      if (currentLogoScale !== null) {
+        updateData.logo_scale = currentLogoScale;
+      }
       const { error: authError } = await supabase.auth.updateUser({
-        data: { name: settings.name, phone: settings.phone, notifications: settings.notifications },
+        data: updateData,
       });
       if (authError) throw authError;
 
@@ -403,7 +413,7 @@ const AdvertiserSettings = () => {
       </Card>
 
       {/* 3. Company/Brand */}
-      <CompanyBrandSection isEditing={isEditing} />
+      <CompanyBrandSection isEditing={isEditing} onLogoScaleChange={setCurrentLogoScale} />
 
       {/* 4. Security */}
       <Card>

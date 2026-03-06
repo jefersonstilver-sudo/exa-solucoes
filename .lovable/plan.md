@@ -1,48 +1,80 @@
 
-Diagnóstico da auditoria (causa raiz)
 
-1) Existem 3 fluxos diferentes de “salvar” no mesmo contexto:
-- `CompanyBrandSection` → botão **Salvar tamanho** (`handleLogoScaleSave`): salva só `logo_scale`.
-- `CompanyBrandSection` → botão **Salvar Empresa** (`handleSave`): salva dados da empresa + `logo_scale`.
-- `AdvertiserSettings` (topo) → botão **Salvar Alterações** (`handleSave`): salva nome/telefone/notificações, mas **não salva o valor atual do slider**.
+# Plano de Correção — 2FA Seguro com Auth Gate
 
-2) O valor do slider (`logoScale`) é estado local do `CompanyBrandSection`.
-- Quando você move o slider, ele cresce na hora (preview local).
-- Se você clicar no botão do topo (**Salvar Alterações**) sem persistir a escala por um dos saves do bloco da empresa, o valor atual do slider não é gravado nesse fluxo.
+## Diagnóstico Confirmado
 
-3) Após salvar no topo, acontece recarregamento de perfil:
-- `refreshUserProfile()` no `AdvertiserSettings` dispara atualização.
-- Isso aciona `loadUserSettings()` e provoca ciclo de re-render/loading.
-- O `CompanyBrandSection` volta a carregar do dado persistido em `auth.user_metadata.logo_scale` (valor antigo).
-- Resultado visual: “volta a ficar pequenininha”.
+1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
+2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
 
-Evidência objetiva da sessão
-- No log de rede, o `PUT /auth/v1/user` do botão de topo enviou:
-  `{"data":{"name":"...","phone":"...","notifications":{...}}}`
-  sem `logo_scale`.
-- Portanto, nesse caminho, o tamanho atual do slider não foi persistido.
+## Limitação Técnica do Supabase
 
-Plano de correção (sem alterar fluxos não relacionados)
+O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
 
-1) Unificar persistência da escala no save principal de configurações
-- Em `AdvertiserSettings.handleSave`, incluir `logo_scale` no `supabase.auth.updateUser({ data: ... })`.
-- Isso garante que clicar em **Salvar Alterações** preserve exatamente o tamanho visto no preview.
+## Solução: Auth Gate no AuthProvider
 
-2) Unificar estado da escala para evitar divergência
-- Tornar `logoScale` “fonte única” no nível de `AdvertiserSettings` e passar para `CompanyBrandSection` via props (valor + onChange), ou manter no filho com callback explícito para o pai.
-- Objetivo: qualquer save use o mesmo valor atual.
+Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
 
-3) Robustez de leitura
-- Onde carregar `logo_scale`, aceitar `number` e `string`, com clamp `0.5..3`.
-- Evita fallback silencioso para `1` em cenários de tipagem inconsistente.
+```text
+Email + Senha
+  ↓
+signInWithPassword (sessão Supabase criada — inevitável)
+  ↓
+2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
+  ↓                    → navigate('/verificacao-2fa')
+  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
+  ↓                    → Todas as rotas protegidas bloqueadas
+  ↓                    ↓
+  ↓                  Código validado → sessionStorage.remove('pending_2fa')
+  ↓                    → isLoggedIn = TRUE → acesso liberado
+  ↓
+  NÃO → login normal
+```
 
-4) Preservar UX atual
-- Não mudar layout nem fluxo fora deste problema.
-- Manter botão “Salvar tamanho” se desejado, mas alinhado ao mesmo estado/fonte de verdade do save principal.
+**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
 
-Validação pós-ajuste
+## Arquivos a Modificar (4 arquivos)
 
-- Ajustar logo para 300% e clicar **Salvar Alterações** (topo) → deve permanecer grande imediatamente.
-- Recarregar página `/anunciante/configuracoes` → escala deve continuar igual.
-- Ir para `/anunciante/pedidos` → header deve refletir a mesma escala.
-- Repetir com 50%, 100%, 300%.
+### A. `src/App.tsx` (1 linha)
+- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
+- Importar `TwoFactorVerificationPage`
+
+### B. `src/hooks/useAuth.tsx` — Auth Gate
+- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
+  ```
+  const pending2fa = sessionStorage.getItem('pending_2fa');
+  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
+  ```
+- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
+
+### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
+- Após detectar `two_factor_enabled` (linha 134):
+  - `sessionStorage.setItem('pending_2fa', data.user.id)`
+  - Navegar para `/verificacao-2fa?userId=...`
+  - **Não fazer signOut**, **não armazenar credenciais**
+
+### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
+- Após verificação do código bem-sucedida (linha 99):
+  - `sessionStorage.removeItem('pending_2fa')`
+  - Isso faz `isLoggedIn` mudar para `true` automaticamente
+  - Redirecionar para rota correta baseada no role
+
+- No botão "Voltar ao Login" (linha 239):
+  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
+  - Isso garante logout limpo se o usuário desistir
+
+## Garantias
+
+| Regra | Cumprida |
+|-------|----------|
+| Sem tabelas novas | ✓ |
+| Sem signOut como solução | ✓ |
+| Sem credenciais em sessionStorage | ✓ |
+| Sem fluxos paralelos | ✓ |
+| Sessão bloqueada até 2FA | ✓ |
+| Reutiliza componentes existentes | ✓ |
+
+## Limitação Transparente
+
+A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
+
