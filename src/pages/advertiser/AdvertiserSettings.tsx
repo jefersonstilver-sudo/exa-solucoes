@@ -16,6 +16,7 @@ import DocumentUpload from '@/components/ui/document-upload';
 import { CompanyBrandSection } from '@/components/settings/CompanyBrandSection';
 import { WhatsAppVerificationModal } from '@/components/settings/WhatsAppVerificationModal';
 import { cn } from '@/lib/utils';
+import { useLogoImageUrl } from '@/hooks/useLogoImageUrl';
 
 interface UserSettings {
   email: string;
@@ -104,7 +105,7 @@ const AdvertiserSettings = () => {
         setSettings(loaded);
         setOriginalSettings(loaded);
         setTwoFactorEnabled(userData?.two_factor_enabled || false);
-        setPhoneVerified(userData?.telefone_verificado || false);
+        setPhoneVerified(userData?.telefone_verificado === true || !!userData?.telefone_verificado_at);
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
@@ -244,21 +245,7 @@ const AdvertiserSettings = () => {
       </div>
 
       {/* 1. Account Summary (read-only) */}
-      <Card>
-        <CardContent className="flex items-center gap-4 py-5">
-          <div className="h-14 w-14 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-            {settings.avatar_url ? (
-              <img src={settings.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
-            ) : (
-              <User className="h-6 w-6 text-gray-400" />
-            )}
-          </div>
-          <div className="min-w-0">
-            <p className="text-base font-semibold text-foreground truncate">{settings.name || 'Sem nome'}</p>
-            <p className="text-sm text-muted-foreground truncate">{settings.email}</p>
-          </div>
-        </CardContent>
-      </Card>
+      <AccountSummaryCard settings={settings} />
 
       {/* 2. Personal Data + WhatsApp + Documentation */}
       <Card>
@@ -538,6 +525,39 @@ const AdvertiserSettings = () => {
         }}
       />
     </div>
+  );
+};
+
+/** Account Summary with signed URL for private avatar */
+const AccountSummaryCard: React.FC<{ settings: UserSettings }> = ({ settings }) => {
+  const avatarLogo = settings.avatar_url
+    ? {
+        file_url: settings.avatar_url,
+        storage_bucket: settings.avatar_url.includes('arquivos') ? 'arquivos' : undefined,
+        storage_key: (() => {
+          const m = settings.avatar_url.match(/arquivos\/(.+?)(\?|#|$)/);
+          return m ? m[1] : undefined;
+        })(),
+      }
+    : null;
+  const { imageUrl: resolvedAvatarUrl } = useLogoImageUrl(avatarLogo);
+
+  return (
+    <Card>
+      <CardContent className="flex items-center gap-4 py-5">
+        <div className="h-14 w-14 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+          {resolvedAvatarUrl ? (
+            <img src={resolvedAvatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+          ) : (
+            <User className="h-6 w-6 text-gray-400" />
+          )}
+        </div>
+        <div className="min-w-0">
+          <p className="text-base font-semibold text-foreground truncate">{settings.name || 'Sem nome'}</p>
+          <p className="text-sm text-muted-foreground truncate">{settings.email}</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
