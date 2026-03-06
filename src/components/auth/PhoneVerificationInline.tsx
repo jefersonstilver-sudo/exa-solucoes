@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { WhatsAppCodeInput } from './WhatsAppCodeInput';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Loader2, RefreshCw } from 'lucide-react';
+import { CheckCircle, Loader2, RefreshCw, Clock, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatPhoneBR } from '@/utils/whatsapp';
 
@@ -24,9 +24,19 @@ export const PhoneVerificationInline: React.FC<PhoneVerificationInlineProps> = (
   const [sessionId, setSessionId] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [timer, setTimer] = useState(300); // 5 minutos
+  const [timer, setTimer] = useState(300);
   const [canResend, setCanResend] = useState(false);
   const { toast } = useToast();
+
+  // Reset state when phone number changes
+  useEffect(() => {
+    setVerificationStarted(false);
+    setPhoneVerified(false);
+    setCode('');
+    setSessionId('');
+    setTimer(300);
+    setCanResend(false);
+  }, [phone]);
 
   // Timer countdown
   useEffect(() => {
@@ -59,25 +69,17 @@ export const PhoneVerificationInline: React.FC<PhoneVerificationInlineProps> = (
   };
 
   const maskPhone = (phoneNumber: string) => {
-    const formatted = formatPhoneBR(phoneNumber);
-    return formatted;
+    return formatPhoneBR(phoneNumber);
   };
 
   const handleStartVerification = async () => {
-    console.log('🔵 [INLINE-VERIFY] Botão clicado!', { phone, disabled, isSending });
-    
-    if (disabled) {
-      console.log('⚠️ [INLINE-VERIFY] Botão desabilitado - abortando');
-      return;
-    }
+    if (disabled) return;
     
     setIsSending(true);
     const newSessionId = `signup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     setSessionId(newSessionId);
 
     try {
-      console.log('📱 [INLINE-VERIFY] Enviando código para:', phone);
-      
       const { data, error } = await supabase.functions.invoke('send-user-whatsapp-code', {
         body: {
           telefone: phone,
@@ -87,21 +89,18 @@ export const PhoneVerificationInline: React.FC<PhoneVerificationInlineProps> = (
       });
 
       if (error) throw error;
-
-      if (!data?.success) {
-        throw new Error(data?.error || 'Erro ao enviar código');
-      }
+      if (!data?.success) throw new Error(data?.error || 'Erro ao enviar código');
 
       setVerificationStarted(true);
       setTimer(300);
       setCanResend(false);
       
       toast({
-        title: "Código enviado!",
+        title: "Código enviado",
         description: `Enviamos um código de 6 dígitos para ${maskPhone(phone)}`
       });
     } catch (error: any) {
-      console.error('❌ [INLINE-VERIFY] Erro ao enviar código:', error);
+      console.error('[INLINE-VERIFY] Erro ao enviar código:', error);
       toast({
         variant: "destructive",
         title: "Erro ao enviar código",
@@ -117,8 +116,6 @@ export const PhoneVerificationInline: React.FC<PhoneVerificationInlineProps> = (
 
     setIsVerifying(true);
     try {
-      console.log('🔍 [INLINE-VERIFY] Verificando código...');
-      
       const { data, error } = await supabase.functions.invoke('verify-user-whatsapp-code', {
         body: {
           telefone: phone,
@@ -129,20 +126,17 @@ export const PhoneVerificationInline: React.FC<PhoneVerificationInlineProps> = (
       });
 
       if (error) throw error;
-
-      if (!data?.success) {
-        throw new Error(data?.error || 'Código inválido');
-      }
+      if (!data?.success) throw new Error(data?.error || 'Código inválido');
 
       setPhoneVerified(true);
       onVerified(sessionId);
       
       toast({
-        title: "WhatsApp verificado!",
-        description: "✓ Número confirmado com sucesso"
+        title: "WhatsApp verificado",
+        description: "Número confirmado com sucesso"
       });
     } catch (error: any) {
-      console.error('❌ [INLINE-VERIFY] Erro ao verificar código:', error);
+      console.error('[INLINE-VERIFY] Erro ao verificar código:', error);
       toast({
         variant: "destructive",
         title: "Código inválido",
@@ -160,16 +154,7 @@ export const PhoneVerificationInline: React.FC<PhoneVerificationInlineProps> = (
     await handleStartVerification();
   };
 
-  // Log para debug
-  console.log('🔍 [INLINE-VERIFY] Estado atual:', {
-    phone,
-    disabled,
-    isSending,
-    verificationStarted,
-    phoneVerified
-  });
-
-  // Se ainda não começou a verificação, mostrar botão
+  // Botão inicial
   if (!verificationStarted && !phoneVerified) {
     return (
       <motion.div
@@ -181,11 +166,10 @@ export const PhoneVerificationInline: React.FC<PhoneVerificationInlineProps> = (
           type="button"
           onClick={(e) => {
             e.preventDefault();
-            console.log('🟢 [INLINE-VERIFY] onClick disparado diretamente');
             handleStartVerification();
           }}
           disabled={isSending || disabled}
-          className="w-full sm:w-auto h-10 bg-green-600 hover:bg-green-700 text-white font-medium"
+          className="w-full sm:w-auto h-10 bg-[#9C1E1E] hover:bg-[#B40D1A] text-white font-medium rounded-lg"
         >
           {isSending ? (
             <>
@@ -194,50 +178,50 @@ export const PhoneVerificationInline: React.FC<PhoneVerificationInlineProps> = (
             </>
           ) : (
             <>
-              <CheckCircle className="h-4 w-4 mr-2" />
+              <Shield className="h-4 w-4 mr-2" />
               Verificar WhatsApp
             </>
           )}
         </Button>
-        <p className="text-xs text-gray-500 mt-1">
-          Clique para enviar um código de verificação
+        <p className="text-xs text-stone-400 mt-1.5">
+          Enviaremos um código de verificação para este número
         </p>
       </motion.div>
     );
   }
 
-  // Se verificado, mostrar badge verde
+  // Badge verificado
   if (phoneVerified) {
     return (
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2"
+        className="mt-2 p-3 bg-emerald-50/50 border border-emerald-200/60 rounded-lg flex items-center gap-2.5"
       >
-        <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+        <CheckCircle className="h-4.5 w-4.5 text-emerald-600 flex-shrink-0" />
         <div className="flex-1">
-          <p className="text-sm font-semibold text-green-800">WhatsApp verificado</p>
-          <p className="text-xs text-green-600">{maskPhone(phone)}</p>
+          <p className="text-sm font-medium text-stone-800">WhatsApp verificado</p>
+          <p className="text-xs text-stone-500">{maskPhone(phone)}</p>
         </div>
       </motion.div>
     );
   }
 
-  // Mostrar input de código
+  // Input de código
   return (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0, height: 0 }}
         animate={{ opacity: 1, height: 'auto' }}
         exit={{ opacity: 0, height: 0 }}
-        className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-3"
+        className="mt-3 p-4 bg-stone-50 border border-stone-200 rounded-xl space-y-3"
       >
-        <div className="flex items-start gap-2">
-          <div className="text-2xl">📱</div>
+        <div className="flex items-start gap-2.5">
+          <Shield className="h-4.5 w-4.5 text-stone-500 mt-0.5 flex-shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-blue-900">Código enviado!</p>
-            <p className="text-xs text-blue-700">
-              Digite o código de 6 dígitos enviado para <strong>{maskPhone(phone)}</strong>
+            <p className="text-sm font-medium text-stone-800">Código enviado</p>
+            <p className="text-xs text-stone-500">
+              Digite o código de 6 dígitos enviado para <span className="font-medium text-stone-700">{maskPhone(phone)}</span>
             </p>
           </div>
         </div>
@@ -249,8 +233,9 @@ export const PhoneVerificationInline: React.FC<PhoneVerificationInlineProps> = (
         />
 
         <div className="flex items-center justify-between text-xs">
-          <span className={`font-medium ${timer < 60 ? 'text-red-600' : 'text-blue-600'}`}>
-            ⏱️ Expira em: {formatTime(timer)}
+          <span className={`font-medium flex items-center gap-1 ${timer < 60 ? 'text-[#C7141A]' : 'text-stone-500'}`}>
+            <Clock className="h-3 w-3" />
+            Expira em {formatTime(timer)}
           </span>
           {canResend && (
             <Button
@@ -259,7 +244,7 @@ export const PhoneVerificationInline: React.FC<PhoneVerificationInlineProps> = (
               size="sm"
               onClick={handleResendCode}
               disabled={isSending}
-              className="text-blue-600 h-auto p-0"
+              className="text-[#9C1E1E] hover:text-[#B40D1A] h-auto p-0 text-xs"
             >
               <RefreshCw className="h-3 w-3 mr-1" />
               Reenviar código
@@ -268,8 +253,8 @@ export const PhoneVerificationInline: React.FC<PhoneVerificationInlineProps> = (
         </div>
 
         {isVerifying && (
-          <div className="flex items-center justify-center gap-2 text-sm text-blue-700">
-            <Loader2 className="h-4 w-4 animate-spin" />
+          <div className="flex items-center justify-center gap-2 text-sm text-stone-600">
+            <Loader2 className="h-4 w-4 animate-spin text-[#9C1E1E]" />
             <span>Verificando...</span>
           </div>
         )}
