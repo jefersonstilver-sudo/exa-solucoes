@@ -54,7 +54,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
     loadCompanyData();
   }, []);
 
-  const loadCompanyData = async () => {
+  const loadCompanyData = async (skipScaleReload = false) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -87,8 +87,10 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
         }
       }
       // Load logo scale from user_metadata
-      const scale = user.user_metadata?.logo_scale;
-      if (typeof scale === 'number') setLogoScale(scale);
+      if (!skipScaleReload) {
+        const scale = user.user_metadata?.logo_scale;
+        if (typeof scale === 'number') setLogoScale(scale);
+      }
     } catch (error) {
       console.error('Erro ao carregar dados da empresa:', error);
     }
@@ -195,7 +197,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
       // Save logo scale to user_metadata
       await supabase.auth.updateUser({ data: { logo_scale: logoScale } });
 
-      await loadCompanyData();
+      await loadCompanyData(true);
       toast.success('Informações da empresa salvas com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar informações da empresa:', error);
