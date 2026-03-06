@@ -82,6 +82,9 @@ export const UserConsoleDialog: React.FC<UserConsoleDialogProps> = ({
     saveIdentity,
     saveAccessChanges,
     resendConfirmationEmail,
+    confirmEmailManually,
+    uploadClientLogo,
+    isUploadingLogo,
     toggleBlock,
     // Auditoria
     refetchAudit
@@ -172,7 +175,10 @@ export const UserConsoleDialog: React.FC<UserConsoleDialogProps> = ({
         user={user}
         onSave={saveIdentity}
         onResendEmail={resendConfirmationEmail}
+        onConfirmEmail={confirmEmailManually}
+        onUploadLogo={uploadClientLogo}
         isSaving={isSaving}
+        isUploadingLogo={isUploadingLogo}
       />
     ),
     access: (

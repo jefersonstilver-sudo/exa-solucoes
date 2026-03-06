@@ -3,7 +3,7 @@
  * Exibe informações básicas do usuário com campos editáveis de baixo risco
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -21,17 +21,25 @@ import {
   AlertCircle,
   Save,
   Loader2,
-  Send
+  Send,
+  ShieldCheck,
+  Upload,
+  ImageIcon,
+  X
 } from 'lucide-react';
 import { IdentityTabProps } from '@/types/userConsoleTypes';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
 
 export const IdentityTab: React.FC<IdentityTabProps> = ({
   user,
   onSave,
   onResendEmail,
-  isSaving
+  onConfirmEmail,
+  onUploadLogo,
+  isSaving,
+  isUploadingLogo = false
 }) => {
   const [editData, setEditData] = useState({
     nome: user.nome || '',
@@ -39,6 +47,27 @@ export const IdentityTab: React.FC<IdentityTabProps> = ({
     ccEmails: user.cc_emails || []
   });
   const [hasChanges, setHasChanges] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Carregar preview da logo atual
+  useEffect(() => {
+    const loadLogoPreview = async () => {
+      const avatarUrl = (user.raw_user_meta_data as Record<string, unknown>)?.avatar_url as string | undefined;
+      // Também checar se tem avatar_url direto (pode vir do users table)
+      const storageKey = avatarUrl;
+      
+      if (storageKey && !storageKey.startsWith('http')) {
+        const { data } = await supabase.storage
+          .from('arquivos')
+          .createSignedUrl(storageKey, 3600);
+        if (data?.signedUrl) setLogoPreview(data.signedUrl);
+      } else if (storageKey) {
+        setLogoPreview(storageKey);
+      }
+    };
+    loadLogoPreview();
+  }, [user]);
 
   useEffect(() => {
     setEditData({
@@ -89,6 +118,20 @@ export const IdentityTab: React.FC<IdentityTabProps> = ({
     setHasChanges(false);
   };
 
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const success = await onUploadLogo(file);
+    if (success) {
+      // Criar preview local imediato
+      const url = URL.createObjectURL(file);
+      setLogoPreview(url);
+    }
+    // Limpar input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const isEmailConfirmed = !!user.email_confirmed_at;
   const isBlocked = user.is_blocked;
 
@@ -107,20 +150,35 @@ export const IdentityTab: React.FC<IdentityTabProps> = ({
                 <p className="text-xs text-amber-700 dark:text-amber-300">
                   O usuário precisa confirmar o email para acessar o sistema.
                 </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onResendEmail}
-                  disabled={isSaving}
-                  className="border-amber-300 text-amber-700 hover:bg-amber-100"
-                >
-                  {isSaving ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4 mr-2" />
-                  )}
-                  Reenviar Email de Confirmação
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onResendEmail}
+                    disabled={isSaving}
+                    className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4 mr-2" />
+                    )}
+                    Reenviar Email
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={onConfirmEmail}
+                    disabled={isSaving}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <ShieldCheck className="h-4 w-4 mr-2" />
+                    )}
+                    Ativar Conta
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -197,6 +255,75 @@ export const IdentityTab: React.FC<IdentityTabProps> = ({
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Logo da Empresa do Cliente */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ImageIcon className="h-5 w-5 text-primary" />
+            Logo da Empresa
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {logoPreview ? (
+            <div className="flex items-center gap-4">
+              <div className="h-20 w-20 flex-shrink-0 bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] rounded-lg flex items-center justify-center overflow-hidden border">
+                <img 
+                  src={logoPreview} 
+                  alt="Logo da empresa" 
+                  className="h-full w-full object-contain p-2"
+                />
+              </div>
+              <div className="flex-1 space-y-2">
+                <p className="text-sm text-muted-foreground">Logo atual da empresa</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingLogo}
+                >
+                  {isUploadingLogo ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4 mr-2" />
+                  )}
+                  Trocar Logo
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3 p-6 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+              <ImageIcon className="h-10 w-10 text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground text-center">
+                Nenhuma logo definida para este cliente
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingLogo}
+              >
+                {isUploadingLogo ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4 mr-2" />
+                )}
+                Adicionar Logo da Empresa
+              </Button>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+            className="hidden"
+            onChange={handleLogoUpload}
+          />
+          <p className="text-xs text-muted-foreground">
+            PNG, JPG, SVG ou WebP • Máx. 5MB • Aparecerá no dashboard do anunciante
+          </p>
         </CardContent>
       </Card>
 

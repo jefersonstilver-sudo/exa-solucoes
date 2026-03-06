@@ -1,55 +1,80 @@
 
 
-# Plano: Ativar Conta + Adicionar Logo no Console Admin
+# Plano de Correção — 2FA Seguro com Auth Gate
 
-## Análise da Arquitetura Atual
+## Diagnóstico Confirmado
 
-| Item | Resultado |
-|------|-----------|
-| Status do email | `email_confirmed_at` em `auth.users`, exposto via `ConsoleUser.email_confirmed_at` |
-| Confirmação de email | Edge function `admin-update-user` já suporta `confirm_email: true` → chama `auth.admin.updateUserById({ email_confirm: true })` |
-| Logo da empresa | Armazenada em `users.avatar_url` (coluna existente) |
-| Storage de logos | Bucket `arquivos`, pasta `PAGINA PRINCIPAL LOGOS/` (mesmo bucket já usado) |
-| Componente alvo | `src/components/admin/users/console/IdentityTab.tsx` |
-| Hook do console | `src/hooks/useUserConsole.ts` |
+1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
+2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
 
-## Funcionalidade 1 — Botão "Ativar Conta"
+## Limitação Técnica do Supabase
 
-**Onde:** `IdentityTab.tsx`, dentro do card de alerta de email não confirmado (linhas 98-128), ao lado do botão "Reenviar Email de Confirmação".
+O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
 
-**Lógica:** Adicionar botão "Ativar Conta" que chama a edge function `admin-update-user` com `{ email: user.email, confirm_email: true }`. Essa edge function já existe e já faz exatamente isso (linha 46-47 do `admin-update-user/index.ts`).
+## Solução: Auth Gate no AuthProvider
 
-**Hook:** Adicionar função `confirmEmailManually` no `useUserConsole.ts` que invoca a edge function e atualiza o estado local.
+Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
 
-**Resultado:** Badge muda de "✗ Pendente" para "✓ Confirmado", alerta de email desaparece.
+```text
+Email + Senha
+  ↓
+signInWithPassword (sessão Supabase criada — inevitável)
+  ↓
+2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
+  ↓                    → navigate('/verificacao-2fa')
+  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
+  ↓                    → Todas as rotas protegidas bloqueadas
+  ↓                    ↓
+  ↓                  Código validado → sessionStorage.remove('pending_2fa')
+  ↓                    → isLoggedIn = TRUE → acesso liberado
+  ↓
+  NÃO → login normal
+```
 
-## Funcionalidade 2 — Botão "Adicionar Logo da Empresa"
+**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
 
-**Onde:** `IdentityTab.tsx`, nova seção após "Status da Conta" (após linha 200).
+## Arquivos a Modificar (4 arquivos)
 
-**Lógica:**
-1. Botão "Adicionar Logo da Empresa" abre input de file upload
-2. Upload do arquivo PNG para bucket `arquivos` em `PAGINA PRINCIPAL LOGOS/`
-3. Atualiza `users.avatar_url` do usuário alvo com o storage key
-4. Exibe preview da logo após upload
+### A. `src/App.tsx` (1 linha)
+- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
+- Importar `TwoFactorVerificationPage`
 
-**Reutiliza:** Mesmo bucket e mesma pasta que o `useLogoFileReplace` já usa. Mesma coluna `avatar_url` da tabela `users` (conforme memória do sistema).
+### B. `src/hooks/useAuth.tsx` — Auth Gate
+- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
+  ```
+  const pending2fa = sessionStorage.getItem('pending_2fa');
+  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
+  ```
+- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
 
-## Arquivos a Modificar
+### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
+- Após detectar `two_factor_enabled` (linha 134):
+  - `sessionStorage.setItem('pending_2fa', data.user.id)`
+  - Navegar para `/verificacao-2fa?userId=...`
+  - **Não fazer signOut**, **não armazenar credenciais**
 
-| Arquivo | Mudança |
-|---------|---------|
-| `src/components/admin/users/console/IdentityTab.tsx` | Adicionar botão "Ativar Conta" no alerta + seção de upload de logo |
-| `src/types/userConsoleTypes.ts` | Adicionar `onConfirmEmail` e `onUploadLogo` nas props de `IdentityTabProps` |
-| `src/hooks/useUserConsole.ts` | Adicionar funções `confirmEmailManually` e `uploadClientLogo` |
-| `src/components/admin/users/console/UserConsoleDialog.tsx` | Passar novas props para `IdentityTab` |
+### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
+- Após verificação do código bem-sucedida (linha 99):
+  - `sessionStorage.removeItem('pending_2fa')`
+  - Isso faz `isLoggedIn` mudar para `true` automaticamente
+  - Redirecionar para rota correta baseada no role
+
+- No botão "Voltar ao Login" (linha 239):
+  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
+  - Isso garante logout limpo se o usuário desistir
 
 ## Garantias
 
-- Zero tabelas novas
-- Zero colunas novas
-- Reutiliza edge function `admin-update-user` existente
-- Reutiliza bucket `arquivos` existente
-- Reutiliza coluna `avatar_url` existente
-- Logo aparece automaticamente no dashboard do anunciante (já lê de `avatar_url`)
+| Regra | Cumprida |
+|-------|----------|
+| Sem tabelas novas | ✓ |
+| Sem signOut como solução | ✓ |
+| Sem credenciais em sessionStorage | ✓ |
+| Sem fluxos paralelos | ✓ |
+| Sessão bloqueada até 2FA | ✓ |
+| Reutiliza componentes existentes | ✓ |
+
+## Limitação Transparente
+
+A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
 

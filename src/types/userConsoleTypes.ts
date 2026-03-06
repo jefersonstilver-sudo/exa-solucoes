@@ -153,7 +153,10 @@ export interface IdentityTabProps {
   user: ConsoleUser;
   onSave: (data: { nome: string; telefone: string; ccEmails: string[] }) => Promise<void>;
   onResendEmail: () => Promise<void>;
+  onConfirmEmail: () => Promise<void>;
+  onUploadLogo: (file: File) => Promise<boolean>;
   isSaving: boolean;
+  isUploadingLogo?: boolean;
 }
 
 export interface AccessTabProps {
