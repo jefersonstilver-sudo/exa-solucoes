@@ -21,9 +21,10 @@ import { useCNPJConsult } from '@/hooks/useCNPJConsult';
 
 interface CompanyBrandSectionProps {
   isEditing?: boolean;
+  onLogoScaleChange?: (scale: number) => void;
 }
 
-export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEditing = false }) => {
+export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEditing = false, onLogoScaleChange }) => {
   const { refreshUserProfile } = useAuth();
   const { consultCNPJ, isLoading: isLoadingCNPJ } = useCNPJConsult();
   const [loading, setLoading] = useState(false);
@@ -149,6 +150,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
   const handleLogoScaleChange = async (values: number[]) => {
     const newScale = values[0];
     setLogoScale(newScale);
+    onLogoScaleChange?.(newScale);
   };
 
   const handleLogoScaleSave = async () => {
