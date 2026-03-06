@@ -415,6 +415,107 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     }
   }, [user]);
 
+  /** Confirma email manualmente via edge function admin-update-user */
+  const confirmEmailManually = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setIsSaving(true);
+      
+      const { data, error } = await supabase.functions.invoke('admin-update-user', {
+        body: { email: user.email, confirm_email: true }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success('Conta ativada!', {
+          description: `Email ${user.email} confirmado com sucesso`
+        });
+        
+        await supabase.from('log_eventos_sistema').insert({
+          tipo_evento: 'EMAIL_CONFIRMED_MANUALLY',
+          descricao: `Email de ${user.email} confirmado manualmente por ${userProfile?.email}`,
+          usuario_id: user.id
+        });
+        
+        onUserUpdated();
+        refetchAudit();
+      } else {
+        throw new Error(data?.error || 'Erro ao confirmar email');
+      }
+    } catch (error: unknown) {
+      console.error('Erro ao confirmar email:', error);
+      toast.error('Erro ao ativar conta');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [user, userProfile, onUserUpdated, refetchAudit]);
+
+  /** Upload de logo da empresa do cliente (salva em avatar_url) */
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  
+  const uploadClientLogo = useCallback(async (file: File): Promise<boolean> => {
+    if (!user || !file) return false;
+    
+    try {
+      setIsUploadingLogo(true);
+      
+      if (!file.type.includes('png') && !file.type.includes('jpeg') && !file.type.includes('jpg') && !file.type.includes('webp') && !file.type.includes('svg')) {
+        toast.error('Formato não suportado', { description: 'Use PNG, JPG, SVG ou WebP' });
+        return false;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Arquivo muito grande (máx. 5MB)');
+        return false;
+      }
+      
+      const sanitizedName = file.name.toLowerCase().replace(/[^a-z0-9._-]/g, '_').replace(/_+/g, '_');
+      const fileName = `logo_${Date.now()}_${sanitizedName}`;
+      const storageKey = `PAGINA PRINCIPAL LOGOS/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('arquivos')
+        .upload(storageKey, file, { cacheControl: '3600', upsert: false });
+      
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        toast.error('Erro no upload do arquivo');
+        return false;
+      }
+      
+      // Salvar storage key em avatar_url (hook useLogoImageUrl gera signed URL)
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ avatar_url: storageKey })
+        .eq('id', user.id);
+      
+      if (updateError) {
+        await supabase.storage.from('arquivos').remove([storageKey]);
+        toast.error('Erro ao atualizar perfil');
+        return false;
+      }
+      
+      await supabase.from('log_eventos_sistema').insert({
+        tipo_evento: 'CLIENT_LOGO_UPLOADED',
+        descricao: `Logo da empresa de ${user.email} adicionada por ${userProfile?.email}`,
+        usuario_id: user.id
+      });
+      
+      toast.success('Logo da empresa adicionada!');
+      onUserUpdated();
+      return true;
+      
+    } catch (error) {
+      console.error('Erro ao fazer upload da logo:', error);
+      toast.error('Erro inesperado ao enviar logo');
+      return false;
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  }, [user, userProfile, onUserUpdated]);
+
   /** Bloqueia ou desbloqueia o usuário */
   const toggleBlock = useCallback(async () => {
     if (!user || !permissions.canBlock) return;
@@ -584,6 +685,9 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     // Operações de identidade
     saveIdentity,
     resendConfirmationEmail,
+    confirmEmailManually,
+    uploadClientLogo,
+    isUploadingLogo,
     
     // Operações críticas (danger zone)
     toggleBlock,
