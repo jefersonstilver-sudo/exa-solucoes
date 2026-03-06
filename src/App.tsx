@@ -483,7 +483,7 @@ const AppContent = () => {
             } />
             <Route path="configuracoes" element={
               <Suspense fallback={<GlobalLoadingPage message="Carregando perfil..." />}>
-                <ProfileSettings />
+                <AdvertiserSettings />
               </Suspense>
             } />
             <Route path="faturas" element={

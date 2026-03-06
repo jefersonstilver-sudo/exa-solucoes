@@ -15,12 +15,14 @@ import { BusinessSegmentSelector } from '@/components/ui/business-segment-select
 import { cn } from '@/lib/utils';
 import { useLogoImageUrl } from '@/hooks/useLogoImageUrl';
 import { ClientLogoUploadModal } from '@/components/admin/proposals/ClientLogoUploadModal';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CompanyBrandSectionProps {
   isEditing?: boolean;
 }
 
 export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEditing = false }) => {
+  const { refreshUserProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [companyName, setCompanyName] = useState('');
   const [companyCountry, setCompanyCountry] = useState<'BR' | 'AR' | 'PY' | ''>('');
@@ -98,6 +100,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
         if (keyMatch) setLogoStorageKey(keyMatch[1]);
       }
       toast.success('Logo aplicada com sucesso!');
+      await refreshUserProfile();
     } catch (error: any) {
       console.error('Erro ao salvar logo:', error);
       toast.error('Erro ao salvar logo: ' + (error.message || 'Tente novamente'));

@@ -35,7 +35,7 @@ interface UserSettings {
 }
 
 const AdvertiserSettings = () => {
-  const { userProfile } = useAuth();
+  const { userProfile, refreshUserProfile } = useAuth();
   const { formatDocument, validateDocument } = useDocumentValidation();
 
   const [settings, setSettings] = useState<UserSettings>({
@@ -167,6 +167,9 @@ const AdvertiserSettings = () => {
       setOriginalSettings({ ...settings });
       setIsEditing(false);
       toast.success('Configurações salvas com sucesso!');
+      
+      // Atualizar perfil global para refletir mudanças imediatamente
+      await refreshUserProfile();
     } catch (error) {
       console.error('Erro ao salvar configurações:', error);
       toast.error('Erro ao salvar configurações');

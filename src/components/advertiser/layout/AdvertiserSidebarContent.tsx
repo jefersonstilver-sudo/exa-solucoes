@@ -66,8 +66,8 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
       section: 'content'
     },
     {
-      title: 'Perfil',
-      href: '/anunciante/perfil',
+      title: 'Meu Perfil',
+      href: '/anunciante/configuracoes',
       icon: User,
       section: 'settings'
     }
