@@ -236,7 +236,7 @@ const AdvertiserSettings = () => {
               <X className="h-4 w-4 mr-2" />
               Cancelar
             </Button>
-            <Button onClick={handleSave} disabled={saving} className="bg-exa-red hover:bg-exa-red/90 text-white min-h-[44px]">
+            <Button onClick={handleSave} disabled={saving} className="!bg-[#9C1E1E] hover:!bg-[#7a1818] !text-white min-h-[44px]">
               {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
               {saving ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
