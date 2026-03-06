@@ -1,104 +1,80 @@
 
 
-# Plano: Corrigir Perfil do Anunciante — 4 Problemas
+# Plano de Correção — 2FA Seguro com Auth Gate
 
-## Problemas
+## Diagnóstico Confirmado
 
-1. **Avatar header corrompido** — O card de resumo (linha 249-254) usa `settings.avatar_url` diretamente como `src`, mas essa URL é do bucket privado `arquivos` e precisa de signed URL. Resultado: imagem quebrada.
+1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
+2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
 
-2. **WhatsApp verificado no cadastro aparece como "não verificado"** — A leitura de `telefone_verificado` na linha 107 depende de `userData` existir. Se o campo veio `null` por algum motivo (race condition, campo não salvo), `phoneVerified` fica `false`.
+## Limitação Técnica do Supabase
 
-3. **Falta botão de consulta CNPJ** — O `useCNPJConsult` existe e funciona em propostas/contratos, mas não está integrado no `CompanyBrandSection`.
+O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
 
-4. **Falta controle de tamanho da logo** — Não existe slider para ajustar a escala da logo em tempo real (preview para o cliente).
+## Solução: Auth Gate no AuthProvider
 
-## Solução
+Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
 
-### 1. Avatar header — usar signed URL (AdvertiserSettings.tsx)
-
-No card de resumo (linhas 246-261), usar o hook `useLogoImageUrl` para resolver a URL do avatar privado, igual ao `CompanyBrandSection` já faz. Substituir o `src` direto por `resolvedAvatarUrl`.
-
-```tsx
-import { useLogoImageUrl } from '@/hooks/useLogoImageUrl';
-// ...
-const { imageUrl: resolvedAvatarUrl } = useLogoImageUrl(
-  settings.avatar_url ? { file_url: settings.avatar_url, storage_bucket: 'arquivos' } : null
-);
-// No JSX:
-{resolvedAvatarUrl ? <img src={resolvedAvatarUrl} .../> : <User .../>}
+```text
+Email + Senha
+  ↓
+signInWithPassword (sessão Supabase criada — inevitável)
+  ↓
+2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
+  ↓                    → navigate('/verificacao-2fa')
+  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
+  ↓                    → Todas as rotas protegidas bloqueadas
+  ↓                    ↓
+  ↓                  Código validado → sessionStorage.remove('pending_2fa')
+  ↓                    → isLoggedIn = TRUE → acesso liberado
+  ↓
+  NÃO → login normal
 ```
 
-### 2. WhatsApp — garantir leitura correta (AdvertiserSettings.tsx)
+**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
 
-Na linha 107, o `phoneVerified` já lê `userData?.telefone_verificado`. O problema é que se `userData` for `null` (erro PGRST116 silenciado na linha 85), o estado fica `false`. Adicionar fallback explícito e log:
+## Arquivos a Modificar (4 arquivos)
 
-```tsx
-setPhoneVerified(userData?.telefone_verificado === true);
-```
+### A. `src/App.tsx` (1 linha)
+- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
+- Importar `TwoFactorVerificationPage`
 
-Isso já está correto. O problema real é que o campo `telefone_verificado` não foi persistido no cadastro (corrigido no commit anterior com retry). Para contas existentes que verificaram antes do fix, adicionar uma verificação extra: se `userData?.telefone_verificado_at` existir, considerar verificado.
+### B. `src/hooks/useAuth.tsx` — Auth Gate
+- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
+  ```
+  const pending2fa = sessionStorage.getItem('pending_2fa');
+  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
+  ```
+- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
 
-```tsx
-setPhoneVerified(userData?.telefone_verificado === true || !!userData?.telefone_verificado_at);
-```
+### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
+- Após detectar `two_factor_enabled` (linha 134):
+  - `sessionStorage.setItem('pending_2fa', data.user.id)`
+  - Navegar para `/verificacao-2fa?userId=...`
+  - **Não fazer signOut**, **não armazenar credenciais**
 
-### 3. Botão consulta CNPJ (CompanyBrandSection.tsx)
+### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
+- Após verificação do código bem-sucedida (linha 99):
+  - `sessionStorage.removeItem('pending_2fa')`
+  - Isso faz `isLoggedIn` mudar para `true` automaticamente
+  - Redirecionar para rota correta baseada no role
 
-Ao lado do campo CNPJ (linha 306-315), quando `isEditing && companyCountry === 'BR'`, adicionar botão "Consultar CNPJ" que:
-- Usa `useCNPJConsult` para buscar dados
-- Preenche automaticamente: `companyName` (razaoSocial/nomeFantasia), `companyAddress`, `businessSegment`
-
-```tsx
-import { useCNPJConsult } from '@/hooks/useCNPJConsult';
-// ...
-const { consultCNPJ, isLoading: isLoadingCNPJ } = useCNPJConsult();
-
-const handleConsultCNPJ = async () => {
-  const data = await consultCNPJ(companyDocument);
-  if (data) {
-    if (data.nomeFantasia) setCompanyName(data.nomeFantasia);
-    else if (data.razaoSocial) setCompanyName(data.razaoSocial);
-    if (data.endereco) setCompanyAddress(data.endereco);
-    if (data.segmento) setBusinessSegment(data.segmento);
-  }
-};
-```
-
-Botão renderizado ao lado do input de CNPJ:
-```tsx
-<div className="flex gap-2">
-  <Input ... className="flex-1" />
-  {isEditing && companyCountry === 'BR' && (
-    <Button variant="outline" onClick={handleConsultCNPJ} disabled={isLoadingCNPJ || companyDocument.replace(/\D/g,'').length !== 14}>
-      {isLoadingCNPJ ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-      Consultar
-    </Button>
-  )}
-</div>
-```
-
-### 4. Controle de tamanho da logo (CompanyBrandSection.tsx)
-
-Adicionar um slider (Radix `Slider`) abaixo do preview da logo que controla a escala (`logoScale` state, default 1, range 0.5-1.5). O valor é salvo na tabela `users` em um campo `logo_scale` (novo campo, tipo `numeric`, default 1). O preview aplica `transform: scale(logoScale)` em tempo real.
-
-**Porém**, adicionar uma coluna nova requer migration. Alternativa mais simples: salvar o scale como parte de `user_metadata` via `supabase.auth.updateUser({ data: { logo_scale } })`, sem precisar de migration.
-
-- State: `const [logoScale, setLogoScale] = useState(1);`
-- Carregar de `user_metadata.logo_scale` ou default 1
-- Slider: `<Slider value={[logoScale]} onValueChange={([v]) => setLogoScale(v)} min={0.5} max={1.5} step={0.05} />`
-- Preview: `<img style={{ transform: \`scale(\${logoScale})\` }} .../>`
-- Salvar: no `handleSave` ou on blur do slider, chamar `supabase.auth.updateUser({ data: { logo_scale: logoScale } })`
-
-## Arquivos Alterados (2)
-
-| Arquivo | Mudanças |
-|---------|----------|
-| `src/pages/advertiser/AdvertiserSettings.tsx` | Signed URL para avatar header + fallback `telefone_verificado_at` |
-| `src/components/settings/CompanyBrandSection.tsx` | Botão consulta CNPJ + slider de tamanho da logo |
+- No botão "Voltar ao Login" (linha 239):
+  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
+  - Isso garante logout limpo se o usuário desistir
 
 ## Garantias
-- Nenhum outro componente alterado
-- Paleta azul do info box (linha 190-195) será trocada para stone/neutral (consistência EXA)
-- Lógica existente de upload/save da logo preservada
-- `useCNPJConsult` reutilizado sem modificação
+
+| Regra | Cumprida |
+|-------|----------|
+| Sem tabelas novas | ✓ |
+| Sem signOut como solução | ✓ |
+| Sem credenciais em sessionStorage | ✓ |
+| Sem fluxos paralelos | ✓ |
+| Sessão bloqueada até 2FA | ✓ |
+| Reutiliza componentes existentes | ✓ |
+
+## Limitação Transparente
+
+A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
 
