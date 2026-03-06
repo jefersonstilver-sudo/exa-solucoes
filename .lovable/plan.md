@@ -1,80 +1,68 @@
 
 
-# Plano de Correção — 2FA Seguro com Auth Gate
+# Plano: Unificar Perfil do Anunciante + Corrigir Atualização de Dados
 
-## Diagnóstico Confirmado
+## Diagnóstico
 
-1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
-2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
+Existem **duas rotas concorrentes** para o perfil do anunciante, causando confusão e dados "não atualizados":
 
-## Limitação Técnica do Supabase
+| Rota | Componente | Problema |
+|------|-----------|----------|
+| `/anunciante/perfil` | `AdvertiserSettings.tsx` | Componente completo (logo, WhatsApp, 2FA, empresa). Acessível pela sidebar. |
+| `/anunciante/configuracoes` | `ProfileSettings.tsx` | Componente simplificado. `CompanyBrandSection` renderizado **sem `isEditing`** — impossível editar. Acessível pelo UserMenu e drawer. |
 
-O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
+**O usuário está em `/anunciante/configuracoes`** (ProfileSettings.tsx), que mostra `CompanyBrandSection` com `isEditing=false` (linha 221), então nunca consegue editar a empresa. Além disso, este componente não exibe WhatsApp, 2FA, documentação — dados que o anunciante já preencheu em outro lugar.
 
-## Solução: Auth Gate no AuthProvider
+Console confirma: `avatar_url: null` para o usuário atual, indicando que os dados da empresa nunca foram persistidos por esta rota.
 
-Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
+## Solução
 
-```text
-Email + Senha
-  ↓
-signInWithPassword (sessão Supabase criada — inevitável)
-  ↓
-2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
-  ↓                    → navigate('/verificacao-2fa')
-  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
-  ↓                    → Todas as rotas protegidas bloqueadas
-  ↓                    ↓
-  ↓                  Código validado → sessionStorage.remove('pending_2fa')
-  ↓                    → isLoggedIn = TRUE → acesso liberado
-  ↓
-  NÃO → login normal
-```
+### 1. Unificar rotas no App.tsx
+Ambas `/anunciante/perfil` e `/anunciante/configuracoes` renderizarão `AdvertiserSettings` (o componente completo).
 
-**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
+**Arquivo:** `src/App.tsx` (linhas 479-488)
+- Linha 484-488: Trocar `ProfileSettings` por `AdvertiserSettings` na rota `configuracoes`
+- Manter ambas as rotas para compatibilidade
 
-## Arquivos a Modificar (4 arquivos)
+### 2. Padronizar navegação
+Todos os menus apontarão para `/anunciante/configuracoes` com label "Meu Perfil":
 
-### A. `src/App.tsx` (1 linha)
-- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
-- Importar `TwoFactorVerificationPage`
+| Arquivo | Mudança |
+|---------|---------|
+| `src/components/advertiser/layout/AdvertiserSidebarContent.tsx` (linha 69-72) | Trocar `href: '/anunciante/perfil'` → `/anunciante/configuracoes` |
+| `src/components/mobile/MobileDrawerNavigation.tsx` (linha 73-77) | Já aponta para `/anunciante/configuracoes` — OK |
+| `src/components/user/UserMenu.tsx` (linha 551) | Já aponta para `/anunciante/configuracoes` — OK |
+| `src/components/advertiser/layout/ModernAdvertiserSidebar.tsx` (linha 40-42) | Trocar `href: '/anunciante/configuracoes'` — label já é "Configurações" — OK |
 
-### B. `src/hooks/useAuth.tsx` — Auth Gate
-- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
-  ```
-  const pending2fa = sessionStorage.getItem('pending_2fa');
-  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
-  ```
-- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
+### 3. Garantir atualização imediata após salvar
+No `AdvertiserSettings.tsx`, após `handleSave` (linha 127-176):
+- Chamar `refreshUserProfile()` do `useAuth` para atualizar o `userProfile` global
+- Isso faz com que o header do dashboard e qualquer componente que leia `userProfile.avatar_url` ou `userProfile.nome` atualize imediatamente
 
-### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
-- Após detectar `two_factor_enabled` (linha 134):
-  - `sessionStorage.setItem('pending_2fa', data.user.id)`
-  - Navegar para `/verificacao-2fa?userId=...`
-  - **Não fazer signOut**, **não armazenar credenciais**
+**Arquivo:** `src/pages/advertiser/AdvertiserSettings.tsx`
+- Importar `refreshUserProfile` de `useAuth`
+- Após `handleSave` bem-sucedido, chamar `await refreshUserProfile()`
 
-### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
-- Após verificação do código bem-sucedida (linha 99):
-  - `sessionStorage.removeItem('pending_2fa')`
-  - Isso faz `isLoggedIn` mudar para `true` automaticamente
-  - Redirecionar para rota correta baseada no role
+### 4. Atualizar `CompanyBrandSection` para invalidar cache após salvar logo
+No `handleLogoProcessed` (linha 88-105), após salvar `avatar_url`:
+- Forçar refresh do `useAuth` profile para que `AdvertiserOrders` e o header atualizem
 
-- No botão "Voltar ao Login" (linha 239):
-  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
-  - Isso garante logout limpo se o usuário desistir
+**Arquivo:** `src/components/settings/CompanyBrandSection.tsx`
+- Importar `useAuth` e chamar `refreshUserProfile()` após logo salva
+
+## Arquivos Alterados (4)
+
+| Arquivo | Tipo | Mudança |
+|---------|------|---------|
+| `src/App.tsx` | Rota | `/anunciante/configuracoes` → renderizar `AdvertiserSettings` |
+| `src/components/advertiser/layout/AdvertiserSidebarContent.tsx` | Nav | "Perfil" href → `/anunciante/configuracoes` |
+| `src/pages/advertiser/AdvertiserSettings.tsx` | Refresh | Chamar `refreshUserProfile()` após save |
+| `src/components/settings/CompanyBrandSection.tsx` | Refresh | Chamar `refreshUserProfile()` após logo salva |
 
 ## Garantias
-
-| Regra | Cumprida |
-|-------|----------|
-| Sem tabelas novas | ✓ |
-| Sem signOut como solução | ✓ |
-| Sem credenciais em sessionStorage | ✓ |
-| Sem fluxos paralelos | ✓ |
-| Sessão bloqueada até 2FA | ✓ |
-| Reutiliza componentes existentes | ✓ |
-
-## Limitação Transparente
-
-A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
+- Zero tabelas novas
+- Zero fluxos paralelos
+- Reutiliza `refreshUserProfile` existente
+- Todas as funcionalidades existentes preservadas
+- Navegação consistente em todos os menus
 
