@@ -107,6 +107,11 @@ const AdvertiserSettings = () => {
         setOriginalSettings(loaded);
         setTwoFactorEnabled(userData?.two_factor_enabled || false);
         setPhoneVerified(userData?.telefone_verificado === true || !!userData?.telefone_verificado_at);
+        // Initialize logo scale from user metadata
+        const savedScale = authUser.user?.user_metadata?.logo_scale;
+        if (typeof savedScale === 'number') {
+          setCurrentLogoScale(savedScale);
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
