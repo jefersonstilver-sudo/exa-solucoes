@@ -12,7 +12,7 @@ const UnifiedAdvertiserMobileHeader = ({
   onMenuClick 
 }: UnifiedAdvertiserMobileHeaderProps) => {
   return (
-    <header className="lg:hidden sticky top-0 z-40 bg-gradient-to-r from-[#7A3838] to-[#9C1E1E] border-b border-white/10 shadow-sm">
+    <header className="sticky top-0 z-40 bg-gradient-to-r from-[#7A3838] to-[#9C1E1E] border-b border-white/10 shadow-sm">
       <div className="flex items-center justify-between px-3 py-2">
         {/* Menu Button */}
         <button
