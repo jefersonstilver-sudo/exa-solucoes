@@ -36,6 +36,7 @@ const AdvertiserOrders = () => {
     empresa_documento?: string;
     logo_url?: string;
   } | null>(null);
+  const [logoScale, setLogoScale] = useState(1);
 
   useEffect(() => {
     const fetchCompanyData = async () => {
@@ -52,6 +53,11 @@ const AdvertiserOrders = () => {
           logo_url: data.avatar_url
         });
       }
+      // Read logo_scale from auth user_metadata
+      const { data: authData } = await supabase.auth.getUser();
+      const raw = authData?.user?.user_metadata?.logo_scale;
+      const parsed = typeof raw === 'number' ? raw : parseFloat(String(raw));
+      if (!isNaN(parsed)) setLogoScale(Math.min(3, Math.max(0.5, parsed)));
     };
     fetchCompanyData();
   }, [userProfile?.id]);
@@ -256,7 +262,8 @@ const AdvertiserOrders = () => {
         logoUrl={finalLogoUrl}
         companyName={companyData?.empresa_nome}
         cnpj={companyData?.empresa_documento}
-        ownerName={userProfile?.nome} />
+        ownerName={userProfile?.nome}
+        logoScale={logoScale} />
       
 
       {/* Section 2: Metrics */}
