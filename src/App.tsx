@@ -53,7 +53,7 @@ import PaineisPublicitarios from './pages/PaineisPublicitarios';
 import Exa from './pages/Exa';
 import TestLinks from './pages/TestLinks';
 import AIReportsPage from './pages/admin/monitoramento-ia/AIReportsPage';
-import ProfileSettings from './pages/ProfileSettings';
+// ProfileSettings removido - unificado com AdvertiserSettings
 import AdvertiserInvoices from './pages/advertiser/AdvertiserInvoices';
 
 // Video Editor Pages
@@ -483,7 +483,7 @@ const AppContent = () => {
             } />
             <Route path="configuracoes" element={
               <Suspense fallback={<GlobalLoadingPage message="Carregando perfil..." />}>
-                <ProfileSettings />
+                <AdvertiserSettings />
               </Suspense>
             } />
             <Route path="faturas" element={
