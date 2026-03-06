@@ -258,7 +258,7 @@ const AdvertiserOrders = () => {
         cnpj={companyData?.empresa_documento}
         ownerName={userProfile?.nome}
         logoScale={(() => {
-          const raw = userProfile?.logo_scale;
+          const raw = (userProfile as any)?.logo_scale;
           const parsed = typeof raw === 'number' ? raw : parseFloat(String(raw));
           return !isNaN(parsed) ? Math.min(3, Math.max(0.5, parsed)) : 1;
         })()} />
