@@ -1,80 +1,53 @@
 
+Objetivo
+Corrigir o header de “Meus Pedidos” para que a logo respeite a configuração de escala salva no perfil (até 300%), sem alterar fluxos não relacionados.
 
-# Plano de Correção — 2FA Seguro com Auth Gate
+Diagnóstico
+- O controle de escala já existe em `CompanyBrandSection` e é salvo em `auth.user_metadata.logo_scale`.
+- O componente selecionado (`src/components/advertiser/orders/AdvertiserDashboardHeader.tsx`, linha do `<img>`) recebe apenas `logoUrl`; ele não recebe nem aplica `logo_scale`.
+- Resultado: a configuração funciona no perfil, mas não “acompanha” no header do dashboard.
 
-## Diagnóstico Confirmado
+Plano de implementação
+1) Propagar a escala para o header (fonte de dados correta)
+- Arquivo: `src/pages/advertiser/AdvertiserOrders.tsx`
+- Ler `logo_scale` do usuário autenticado (metadata), normalizar e aplicar fallback seguro:
+  - aceitar `number` (e `string` numérica por segurança),
+  - limitar entre `0.5` e `3`,
+  - default `1`.
+- Passar a escala como prop para `AdvertiserDashboardHeader` (ex.: `logoScale={resolvedLogoScale}`).
 
-1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
-2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
+2) Aplicar escala apenas na imagem da logo
+- Arquivo: `src/components/advertiser/orders/AdvertiserDashboardHeader.tsx`
+- Adicionar prop opcional `logoScale?: number` (default `1`).
+- Aplicar `transform: scale(logoScale)` na camada da imagem (não no bloco vermelho).
+- Manter o container vermelho com tamanho fixo (não escalar fundo).
+- Ajustar overflow para permitir o crescimento visual da logo sem cortar quando necessário (seguindo o comportamento já adotado no preview de configuração).
 
-## Limitação Técnica do Supabase
+3) Preservar comportamentos existentes
+- Manter fallback de inicial quando não há logo.
+- Manter lógica `#original` (não inverter quando marcado).
+- Não alterar layout/fluxos fora do header de pedidos.
 
-O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
+Detalhes técnicos (seção técnica)
+- Fonte de verdade da escala: `auth.user_metadata.logo_scale` (já usada no perfil).
+- Normalização recomendada:
+  - `raw = user?.user_metadata?.logo_scale`
+  - `scale = clamp(parseFloat(raw), 0.5, 3)` quando válido
+  - fallback `1`
+- Aplicação visual:
+  - escala no elemento de imagem (ou wrapper imediato da imagem),
+  - container vermelho permanece `w-20 h-20` / `sm:w-24 sm:h-24` fixo.
+- Compatibilidade:
+  - sem migration de banco,
+  - sem alteração em upload/signed URL.
 
-## Solução: Auth Gate no AuthProvider
+Validação
+1. Em `/anunciante/configuracoes`, ajustar para 300% e salvar.
+2. Abrir `/anunciante/pedidos` e confirmar que a logo do header aumenta em tempo real conforme valor salvo (não o fundo vermelho).
+3. Testar 50%, 100%, 300% para conferir consistência visual.
+4. Recarregar a página e confirmar persistência da escala.
+5. Validar caso com `#original` para garantir que as cores continuam corretas.
 
-Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
-
-```text
-Email + Senha
-  ↓
-signInWithPassword (sessão Supabase criada — inevitável)
-  ↓
-2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
-  ↓                    → navigate('/verificacao-2fa')
-  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
-  ↓                    → Todas as rotas protegidas bloqueadas
-  ↓                    ↓
-  ↓                  Código validado → sessionStorage.remove('pending_2fa')
-  ↓                    → isLoggedIn = TRUE → acesso liberado
-  ↓
-  NÃO → login normal
-```
-
-**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
-
-## Arquivos a Modificar (4 arquivos)
-
-### A. `src/App.tsx` (1 linha)
-- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
-- Importar `TwoFactorVerificationPage`
-
-### B. `src/hooks/useAuth.tsx` — Auth Gate
-- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
-  ```
-  const pending2fa = sessionStorage.getItem('pending_2fa');
-  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
-  ```
-- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
-
-### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
-- Após detectar `two_factor_enabled` (linha 134):
-  - `sessionStorage.setItem('pending_2fa', data.user.id)`
-  - Navegar para `/verificacao-2fa?userId=...`
-  - **Não fazer signOut**, **não armazenar credenciais**
-
-### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
-- Após verificação do código bem-sucedida (linha 99):
-  - `sessionStorage.removeItem('pending_2fa')`
-  - Isso faz `isLoggedIn` mudar para `true` automaticamente
-  - Redirecionar para rota correta baseada no role
-
-- No botão "Voltar ao Login" (linha 239):
-  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
-  - Isso garante logout limpo se o usuário desistir
-
-## Garantias
-
-| Regra | Cumprida |
-|-------|----------|
-| Sem tabelas novas | ✓ |
-| Sem signOut como solução | ✓ |
-| Sem credenciais em sessionStorage | ✓ |
-| Sem fluxos paralelos | ✓ |
-| Sessão bloqueada até 2FA | ✓ |
-| Reutiliza componentes existentes | ✓ |
-
-## Limitação Transparente
-
-A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
-
+Arquivos envolvidos
+- `src/pages/advertiser/AdvertiserOrders.tsx` (passagem da escala)
+- `src/components/advertiser/orders/AdvertiserDashboardHeader.tsx` (aplicação visual da escala na logo)
