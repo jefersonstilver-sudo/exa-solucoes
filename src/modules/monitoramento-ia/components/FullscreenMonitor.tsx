@@ -25,6 +25,7 @@ interface MonitorCardProps {
   compact: boolean;
   periodEventsCount?: number;
   incidentStatus?: IncidentStatus;
+  incidentData?: DeviceIncident | null;
 }
 
 const MonitorCard = ({ device, compact, periodEventsCount, incidentStatus }: MonitorCardProps) => {
