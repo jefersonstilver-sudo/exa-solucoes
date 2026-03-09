@@ -807,8 +807,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
 
   const getReceiptStatusLabel = (receipt: ReadReceipt) => {
     if (receipt.status === 'read' && receipt.read_at) {
-      const name = receipt.contact_name || receipt.contact_phone;
-      return `${name} confirmou às ${format(new Date(receipt.read_at), "HH:mm 'de' dd/MM", { locale: ptBR })}`;
+      return `confirmou às ${format(new Date(receipt.read_at), "HH:mm 'de' dd/MM", { locale: ptBR })}`;
     }
     if (receipt.status === 'delivered') return 'Entregue';
     return 'Enviado';
