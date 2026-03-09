@@ -33,6 +33,7 @@ const OrdersPage = () => {
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [quickFilter, setQuickFilter] = useState<'all' | 'pagos' | 'aguardando' | 'ativos'>('all');
+  const [showCreateOrder, setShowCreateOrder] = useState(false);
   
   // Estado para pedidos com vídeos ativos (campanhas em exibição)
   const [activeOrdersCount, setActiveOrdersCount] = React.useState(0);
