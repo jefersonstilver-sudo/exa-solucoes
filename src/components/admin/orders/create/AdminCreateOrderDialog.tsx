@@ -34,6 +34,7 @@ const AdminCreateOrderDialog: React.FC<AdminCreateOrderDialogProps> = ({
     formData, updateField, resetForm,
     searchClients, searchProposals,
     activateAccount, createAccount,
+    checkAccountStatus,
     submitOrder, isSubmitting,
   } = useAdminCreateOrder();
 
