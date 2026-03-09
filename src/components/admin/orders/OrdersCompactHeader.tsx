@@ -39,6 +39,7 @@ interface OrdersCompactHeaderProps {
   loading: boolean;
   periodFilter: PeriodFilter;
   onPeriodChange: (period: PeriodFilter) => void;
+  onAddOrder?: () => void;
 }
 
 const OrdersCompactHeader: React.FC<OrdersCompactHeaderProps> = ({
