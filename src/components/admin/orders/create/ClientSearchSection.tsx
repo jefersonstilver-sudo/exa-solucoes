@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -84,9 +85,14 @@ const ClientSearchSection: React.FC<ClientSearchSectionProps> = ({
       try {
         let buildings: string[] = [];
         if (typeof proposal.selected_buildings === 'string') {
-          buildings = JSON.parse(proposal.selected_buildings);
+          const parsed = JSON.parse(proposal.selected_buildings);
+          buildings = (Array.isArray(parsed) ? parsed : []).map((b: any) =>
+            typeof b === 'string' ? b : b?.id || String(b)
+          );
         } else if (Array.isArray(proposal.selected_buildings)) {
-          buildings = proposal.selected_buildings;
+          buildings = proposal.selected_buildings.map((b: any) =>
+            typeof b === 'string' ? b : b?.id || String(b)
+          );
         }
         if (buildings.length > 0) {
           updateField('listaPredios', buildings);
@@ -111,6 +117,9 @@ const ClientSearchSection: React.FC<ClientSearchSectionProps> = ({
     setResults([]);
     setProposalResults([]);
     setSearchTerm('');
+    toast.success('Proposta carregada com sucesso', {
+      description: 'Prédios, valores e dados do cliente foram preenchidos automaticamente.',
+    });
   };
 
   const handleActivate = async () => {

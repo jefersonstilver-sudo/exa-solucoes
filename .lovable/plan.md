@@ -1,48 +1,80 @@
 
 
-# Fix: Erro `id.slice is not a function` + UX ao selecionar proposta
+# Plano de Correção — 2FA Seguro com Auth Gate
 
-## Problema
+## Diagnóstico Confirmado
 
-Quando uma proposta é selecionada, `selected_buildings` pode conter objetos em vez de strings. Ao popular `listaPredios` com esses objetos, `OrderConfigSection.tsx` linha 118 chama `id.slice(0, 8)` num objeto, causando o crash.
+1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
+2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
 
-## Correções
+## Limitação Técnica do Supabase
 
-### 1. `OrderConfigSection.tsx` — Proteger contra id não-string
+O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
 
-Linha 118: adicionar `String(id).slice(0, 8)` como fallback seguro, e filtrar `listaPredios` para garantir que só contenha strings.
+## Solução: Auth Gate no AuthProvider
 
-```typescript
-{formData.listaPredios.map(id => {
-  const idStr = typeof id === 'string' ? id : String(id);
-  const b = buildings.find(x => x.id === idStr);
-  return (
-    <span key={idStr} ...>
-      {b?.codigo_predio || b?.nome?.slice(0, 15) || idStr.slice(0, 8)}
-      <button onClick={() => toggleBuilding(idStr)}>...</button>
-    </span>
-  );
-})}
+Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
+
+```text
+Email + Senha
+  ↓
+signInWithPassword (sessão Supabase criada — inevitável)
+  ↓
+2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
+  ↓                    → navigate('/verificacao-2fa')
+  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
+  ↓                    → Todas as rotas protegidas bloqueadas
+  ↓                    ↓
+  ↓                  Código validado → sessionStorage.remove('pending_2fa')
+  ↓                    → isLoggedIn = TRUE → acesso liberado
+  ↓
+  NÃO → login normal
 ```
 
-### 2. `ClientSearchSection.tsx` — Garantir que buildings parseados são strings
+**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
 
-Na função `handleSelectProposal` (linhas 82-97), ao parsear `selected_buildings`, extrair o `id` se for objeto:
+## Arquivos a Modificar (4 arquivos)
 
-```typescript
-if (Array.isArray(proposal.selected_buildings)) {
-  buildings = proposal.selected_buildings.map(b => 
-    typeof b === 'string' ? b : b?.id || String(b)
-  );
-}
-```
+### A. `src/App.tsx` (1 linha)
+- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
+- Importar `TwoFactorVerificationPage`
 
-### 3. `ClientSearchSection.tsx` — Feedback visual ao selecionar proposta
+### B. `src/hooks/useAuth.tsx` — Auth Gate
+- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
+  ```
+  const pending2fa = sessionStorage.getItem('pending_2fa');
+  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
+  ```
+- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
 
-Após selecionar uma proposta, mostrar um breve indicador de sucesso (toast ou highlight) para que o usuário saiba que os campos foram preenchidos. Usar `toast.success('Proposta carregada com sucesso')` do sonner.
+### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
+- Após detectar `two_factor_enabled` (linha 134):
+  - `sessionStorage.setItem('pending_2fa', data.user.id)`
+  - Navegar para `/verificacao-2fa?userId=...`
+  - **Não fazer signOut**, **não armazenar credenciais**
 
-| Arquivo | Mudança |
-|---------|---------|
-| `OrderConfigSection.tsx` | Proteger `id.slice` contra valores não-string |
-| `ClientSearchSection.tsx` | Normalizar buildings para strings + feedback visual |
+### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
+- Após verificação do código bem-sucedida (linha 99):
+  - `sessionStorage.removeItem('pending_2fa')`
+  - Isso faz `isLoggedIn` mudar para `true` automaticamente
+  - Redirecionar para rota correta baseada no role
+
+- No botão "Voltar ao Login" (linha 239):
+  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
+  - Isso garante logout limpo se o usuário desistir
+
+## Garantias
+
+| Regra | Cumprida |
+|-------|----------|
+| Sem tabelas novas | ✓ |
+| Sem signOut como solução | ✓ |
+| Sem credenciais em sessionStorage | ✓ |
+| Sem fluxos paralelos | ✓ |
+| Sessão bloqueada até 2FA | ✓ |
+| Reutiliza componentes existentes | ✓ |
+
+## Limitação Transparente
+
+A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
 
