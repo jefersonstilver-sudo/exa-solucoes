@@ -485,6 +485,13 @@ const OrdersPage = () => {
           <OrdersTabsRefactored onViewOrderDetails={handleViewOrderDetails} />
         </div>
       </div>
+
+      {/* Create Order Dialog */}
+      <AdminCreateOrderDialog
+        open={showCreateOrder}
+        onOpenChange={setShowCreateOrder}
+        onSuccess={refetch}
+      />
     </div>
   );
 };
