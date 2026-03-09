@@ -27,8 +27,8 @@ export const OfflineIncidentCard = ({ incident, onRegisterCause, isDeviceOffline
   // Não renderizar se não há incidente E o device não está offline
   if (!incident && !isDeviceOffline) return null;
 
-  const isPending = incident.status === 'pendente';
-  const hasCause = incident.status === 'causa_registrada';
+  const isPending = !incident || incident.status === 'pendente';
+  const hasCause = incident?.status === 'causa_registrada';
 
   const handleSave = async () => {
     if (!selectedCategoryId || !causa.trim()) {
