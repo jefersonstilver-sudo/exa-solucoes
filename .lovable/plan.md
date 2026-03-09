@@ -1,80 +1,107 @@
 
 
-# Plano de Correção — 2FA Seguro com Auth Gate
+# Sistema de Gestão de Incidentes Offline — Plano Estruturado
 
-## Diagnóstico Confirmado
+## Problema
+Quando um painel fica offline, ninguem registra a causa. Quando volta online, o histórico se perde. Não há rastreabilidade de quem investigou, qual foi o problema, nem categorização dos tipos de falha.
 
-1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
-2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
+## Arquitetura
 
-## Limitação Técnica do Supabase
+### 1. Banco de Dados — 2 novas tabelas
 
-O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
+**`incident_categories`** — CRUD completo de categorias (criar, editar, apagar)
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| id | uuid PK | |
+| name | text UNIQUE | Slug: `energia`, `internet`, etc. |
+| label | text | Display: "Queda de Energia" |
+| icon | text | Emoji: ⚡, 🌐, 🔧 |
+| color | text | Hex: #EF4444 |
+| is_default | boolean | Protege contra exclusão |
+| sort_order | integer | Ordenação |
+| created_at | timestamptz | |
 
-## Solução: Auth Gate no AuthProvider
+Categorias padrão inseridas: Energia, Internet, Hardware, Elevador, Manutenção Programada, Desconhecido.
 
-Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
+**`device_offline_incidents`** — Registro de cada incidente
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| id | uuid PK | |
+| device_id | uuid FK → devices | |
+| started_at | timestamptz | Início do offline |
+| resolved_at | timestamptz | Quando voltou online |
+| category_id | uuid FK → incident_categories | Categoria selecionada |
+| causa | text | Texto livre da causa |
+| resolucao | text | O que foi feito |
+| registrado_por | uuid FK → auth.users | Quem registrou a causa |
+| registrado_por_nome | text | Nome cacheado |
+| registrado_em | timestamptz | Quando registrou |
+| status | text | `pendente` / `causa_registrada` / `resolvido` |
+| auto_resolved | boolean | Se voltou online sem intervenção manual |
 
-```text
-Email + Senha
-  ↓
-signInWithPassword (sessão Supabase criada — inevitável)
-  ↓
-2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
-  ↓                    → navigate('/verificacao-2fa')
-  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
-  ↓                    → Todas as rotas protegidas bloqueadas
-  ↓                    ↓
-  ↓                  Código validado → sessionStorage.remove('pending_2fa')
-  ↓                    → isLoggedIn = TRUE → acesso liberado
-  ↓
-  NÃO → login normal
-```
+**Trigger automático**: Quando `devices.status` muda para `offline` → cria incidente `pendente`. Quando muda para `online` → marca `resolved_at` e `auto_resolved = true`.
 
-**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
+### 2. Novos Componentes
 
-## Arquivos a Modificar (4 arquivos)
+**`IncidentCategoryManager.tsx`** — Modal de CRUD de categorias
+- Acessível via botão ⚙️ no card de incidente ou na aba de incidentes
+- Listar categorias com ícone, cor, label
+- Criar nova categoria (nome, label, emoji, cor)
+- Editar categorias existentes
+- Apagar categorias não-default (com confirmação)
+- Reordenar via botões subir/descer
+- Padrão idêntico ao `useEventTypes` da agenda
 
-### A. `src/App.tsx` (1 linha)
-- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
-- Importar `TwoFactorVerificationPage`
+**`OfflineIncidentCard.tsx`** — Card de incidente ativo
+- Aparece no `ComputerDetailModal` quando device está offline
+- Card vermelho/amarelo com formulário:
+  - Dropdown de categoria (com botão ⚙️ para gerenciar)
+  - Textarea de causa
+  - Textarea de resolução
+  - Botão "Registrar Causa"
+- Quando já registrada: mostra quem, quando, e a categoria com badge colorido
 
-### B. `src/hooks/useAuth.tsx` — Auth Gate
-- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
-  ```
-  const pending2fa = sessionStorage.getItem('pending_2fa');
-  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
-  ```
-- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
+**`IncidentHistoryTab.tsx`** — Nova 4a aba "Incidentes" no modal
+- Lista todos os incidentes do device
+- Cada item: data, duração, categoria (badge colorido), causa, responsável
+- Filtro por período
+- Status visual: pendente (vermelho), causa_registrada (amarelo), resolvido (verde)
 
-### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
-- Após detectar `two_factor_enabled` (linha 134):
-  - `sessionStorage.setItem('pending_2fa', data.user.id)`
-  - Navegar para `/verificacao-2fa?userId=...`
-  - **Não fazer signOut**, **não armazenar credenciais**
+### 3. Hook
 
-### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
-- Após verificação do código bem-sucedida (linha 99):
-  - `sessionStorage.removeItem('pending_2fa')`
-  - Isso faz `isLoggedIn` mudar para `true` automaticamente
-  - Redirecionar para rota correta baseada no role
+**`useDeviceIncidents.ts`**
+- `fetchActiveIncident(deviceId)` — incidente pendente atual
+- `fetchIncidentHistory(deviceId)` — todos os incidentes
+- `registerCause(incidentId, categoryId, causa, resolucao)` — registra causa + user
+- CRUD de categorias: `fetchCategories`, `createCategory`, `updateCategory`, `deleteCategory`
 
-- No botão "Voltar ao Login" (linha 239):
-  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
-  - Isso garante logout limpo se o usuário desistir
+### 4. Integração no `ComputerDetailModal.tsx`
+- Inserir `OfflineIncidentCard` entre os cards superiores e as tabs (quando offline)
+- Adicionar 4a tab "Incidentes" com ícone `AlertTriangle`
+- Grid de tabs passa de `grid-cols-3` para `grid-cols-4`
 
-## Garantias
+### 5. Badge no `ComputerCard.tsx`
+- Quando device offline tem incidente `pendente`: badge piscante "⚠ Sem causa"
+- Quando tem `causa_registrada`: badge amarelo com ícone da categoria
 
-| Regra | Cumprida |
-|-------|----------|
-| Sem tabelas novas | ✓ |
-| Sem signOut como solução | ✓ |
-| Sem credenciais em sessionStorage | ✓ |
-| Sem fluxos paralelos | ✓ |
-| Sessão bloqueada até 2FA | ✓ |
-| Reutiliza componentes existentes | ✓ |
+## Arquivos
 
-## Limitação Transparente
+| Arquivo | Ação |
+|---------|------|
+| Migration SQL | Criar 2 tabelas + trigger + dados padrão + RLS |
+| `hooks/useDeviceIncidents.ts` | Criar — hook CRUD |
+| `components/anydesk/OfflineIncidentCard.tsx` | Criar — card de incidente ativo |
+| `components/anydesk/IncidentHistoryTab.tsx` | Criar — tab de histórico |
+| `components/anydesk/IncidentCategoryManager.tsx` | Criar — modal CRUD de categorias |
+| `components/anydesk/ComputerDetailModal.tsx` | Modificar — integrar card + tab |
+| `components/anydesk/ComputerCard.tsx` | Modificar — badge de causa pendente |
 
-A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
+## Fluxo
+
+1. Device fica offline → trigger cria incidente `pendente`
+2. Admin abre modal → vê card vermelho "Causa Pendente"
+3. Admin seleciona categoria + escreve causa → salva → status `causa_registrada`, grava user
+4. Admin pode gerenciar categorias via ⚙️ (criar, editar, apagar)
+5. Device volta online → trigger auto-resolve, marca `resolved_at`
+6. Histórico completo na aba "Incidentes" com filtros e responsáveis
 
