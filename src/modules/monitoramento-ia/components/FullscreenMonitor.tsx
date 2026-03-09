@@ -17,6 +17,7 @@ interface FullscreenMonitorProps {
   devices: Device[];
   onClose: () => void;
   incidentStatusMap?: Map<string, IncidentStatus>;
+  incidentDataMap?: Record<string, DeviceIncident>;
 }
 
 interface MonitorCardProps {
