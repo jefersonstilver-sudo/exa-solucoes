@@ -3,7 +3,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CustomCheckbox } from '@/components/ui/custom-checkbox';
-import { Eye, Calendar, Film } from 'lucide-react';
+import { Eye, Calendar, Film, Monitor, Smartphone } from 'lucide-react';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 import { useAuth } from '@/hooks/useAuth';
 import { 
