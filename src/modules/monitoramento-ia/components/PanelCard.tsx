@@ -205,6 +205,20 @@ export const PanelCard = ({
               🛗 Sem empresa
             </Badge>
           )}
+
+          {/* Badge de Incidente Offline */}
+          {device.status === 'offline' && incidentStatus === 'pendente' && (
+            <Badge className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-red-100 text-red-700 border-red-400 px-1.5 sm:px-2 py-0.5 animate-pulse">
+              <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+              Sem causa
+            </Badge>
+          )}
+          {device.status === 'offline' && incidentStatus === 'causa_registrada' && (
+            <Badge className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-amber-100 text-amber-700 border-amber-400 px-1.5 sm:px-2 py-0.5">
+              <ClipboardCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+              Causa definida
+            </Badge>
+          )}
         </div>
 
         {/* AnyDesk ID - Secundário e discreto */}
