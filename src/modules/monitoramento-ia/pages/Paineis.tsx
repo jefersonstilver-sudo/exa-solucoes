@@ -108,7 +108,7 @@ export const PaineisPage = () => {
   );
 
   // Hook de status de incidentes para devices offline
-  const { incidentStatusMap } = useDeviceIncidentStatus(devices);
+  const { incidentStatusMap, refetch: refetchIncidentStatus } = useDeviceIncidentStatus(devices);
 
   const handlePeriodChange = (newPeriod: PeriodType, customStart?: Date, customEnd?: Date) => {
     setPeriod(newPeriod);
