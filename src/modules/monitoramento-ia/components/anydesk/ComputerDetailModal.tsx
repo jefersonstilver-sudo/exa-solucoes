@@ -630,7 +630,6 @@ export const ComputerDetailModal = ({
               </Card>
             </TabsContent>
 
-            </TabsContent>
 
             <TabsContent value="incidentes" className="mt-4">
               <IncidentHistoryTab incidents={history} loading={incidentsLoading} />
