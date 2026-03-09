@@ -5732,6 +5732,72 @@ export type Database = {
           },
         ]
       }
+      device_offline_incidents: {
+        Row: {
+          auto_resolved: boolean | null
+          category_id: string | null
+          causa: string | null
+          created_at: string
+          device_id: string
+          id: string
+          registrado_em: string | null
+          registrado_por: string | null
+          registrado_por_nome: string | null
+          resolucao: string | null
+          resolved_at: string | null
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          auto_resolved?: boolean | null
+          category_id?: string | null
+          causa?: string | null
+          created_at?: string
+          device_id: string
+          id?: string
+          registrado_em?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string | null
+          resolucao?: string | null
+          resolved_at?: string | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          auto_resolved?: boolean | null
+          category_id?: string | null
+          causa?: string | null
+          created_at?: string
+          device_id?: string
+          id?: string
+          registrado_em?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string | null
+          resolucao?: string | null
+          resolved_at?: string | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_offline_incidents_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "incident_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_offline_incidents_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           address: string | null
@@ -7734,6 +7800,39 @@ export type Database = {
           updated_at?: string | null
           valor_estimado?: number
           valor_pago?: number | null
+        }
+        Relationships: []
+      }
+      incident_categories: {
+        Row: {
+          color: string
+          created_at: string
+          icon: string
+          id: string
+          is_default: boolean
+          label: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          is_default?: boolean
+          label: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          is_default?: boolean
+          label?: string
+          name?: string
+          sort_order?: number
         }
         Relationships: []
       }

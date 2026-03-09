@@ -16,6 +16,7 @@ interface ComputerCardProps {
     ip_public?: string;
     comment?: string;
     custom_name?: string;
+    has_pending_incident?: boolean;
   };
   onViewDetails: (id: string) => void;
 }
@@ -34,7 +35,7 @@ export const ComputerCard = ({ computer, onViewDetails }: ComputerCardProps) => 
       "hover:bg-white/10"
     )}>
       {/* Status Badge */}
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex flex-col items-end gap-1">
         <Badge
           variant={isOnline ? "default" : "destructive"}
           className={cn(
@@ -47,6 +48,16 @@ export const ComputerCard = ({ computer, onViewDetails }: ComputerCardProps) => 
           {isOnline ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
           {isOnline ? "online" : "offline"}
         </Badge>
+        {!isOnline && computer.has_pending_incident && (
+          <Badge className="flex items-center gap-1 px-2 py-0.5 text-xs bg-red-500/20 text-red-400 border-red-500/30 animate-pulse">
+            ⚠ Sem causa
+          </Badge>
+        )}
+        {!isOnline && computer.has_pending_incident === false && (
+          <Badge className="flex items-center gap-1 px-2 py-0.5 text-xs bg-amber-500/20 text-amber-400 border-amber-500/30">
+            📋 Causa definida
+          </Badge>
+        )}
       </div>
 
       {/* Monitor Icon */}

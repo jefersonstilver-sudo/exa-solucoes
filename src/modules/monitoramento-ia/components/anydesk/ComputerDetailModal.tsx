@@ -5,7 +5,9 @@ import { ConnectionTimeline } from "./ConnectionTimeline";
 import { UptimeChart } from "./UptimeChart";
 import { AssignBuildingDialog } from "./AssignBuildingDialog";
 import { SelectElevatorCompanyDialog } from "./SelectElevatorCompanyDialog";
-import { Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell, Building2, Link2, Unlink, Trash2 } from "lucide-react";
+import { OfflineIncidentCard } from "./OfflineIncidentCard";
+import { IncidentHistoryTab } from "./IncidentHistoryTab";
+import { Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell, Building2, Link2, Unlink, Trash2, FileWarning } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useRealTimeCounter } from "../../hooks/useRealTimeCounter";
+import { useDeviceIncidents } from "../../hooks/useDeviceIncidents";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -57,6 +60,7 @@ export const ComputerDetailModal = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const offlineCounter = useRealTimeCounter(computer?.status === 'offline' ? computer?.last_online_at : null);
   const { isMasterAccount } = useDynamicModulePermissions();
+  const { activeIncident, history, loading: incidentsLoading, registerCause } = useDeviceIncidents(isOpen ? computer?.id : null);
 
   useEffect(() => {
     if (computer?.id && isOpen) {
@@ -487,6 +491,14 @@ export const ComputerDetailModal = ({
             </Card>
 
 
+            {/* CARD 6: INCIDENTE OFFLINE */}
+            {!isOnline && (
+              <OfflineIncidentCard
+                incident={activeIncident}
+                onRegisterCause={registerCause}
+              />
+            )}
+
             {isMasterAccount && !isOnline && (
               <Card className="bg-red-50 border-red-200 shadow-sm md:col-span-3">
                 <CardHeader className="pb-3">
@@ -583,10 +595,14 @@ export const ComputerDetailModal = ({
 
           {/* TABS */}
           <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-module-secondary border-module">
+            <TabsList className="grid w-full grid-cols-4 bg-module-secondary border-module">
               <TabsTrigger value="info" className="data-[state=active]:!bg-module-accent data-[state=active]:!text-white text-module-primary">
                 <Info className="h-4 w-4 mr-2" />
                 Informações
+              </TabsTrigger>
+              <TabsTrigger value="incidentes" className="data-[state=active]:!bg-module-accent data-[state=active]:!text-white text-module-primary">
+                <FileWarning className="h-4 w-4 mr-2" />
+                Incidentes
               </TabsTrigger>
               <TabsTrigger value="timeline" className="data-[state=active]:!bg-module-accent data-[state=active]:!text-white text-module-primary">
                 <Clock className="h-4 w-4 mr-2" />
@@ -612,6 +628,11 @@ export const ComputerDetailModal = ({
                   <p><strong>Quedas:</strong> {computer.offline_count || 0}</p>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+
+            <TabsContent value="incidentes" className="mt-4">
+              <IncidentHistoryTab incidents={history} loading={incidentsLoading} />
             </TabsContent>
 
             <TabsContent value="timeline" className="mt-4">
