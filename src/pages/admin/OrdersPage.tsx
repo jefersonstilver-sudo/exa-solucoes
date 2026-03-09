@@ -441,6 +441,13 @@ const OrdersPage = () => {
           ]}
           activeFiltersCount={activeFiltersCount}
         />
+
+        {/* Create Order Dialog */}
+        <AdminCreateOrderDialog
+          open={showCreateOrder}
+          onOpenChange={setShowCreateOrder}
+          onSuccess={refetch}
+        />
       </div>
     );
   }
