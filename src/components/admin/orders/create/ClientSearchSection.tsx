@@ -48,10 +48,10 @@ const ClientSearchSection: React.FC<ClientSearchSectionProps> = ({
     updateField('clientEmail', client.email || '');
     updateField('clientPhone', client.telefone || '');
     
-    // Check account activation status
+    // Check account activation status via edge function
     if (checkAccountStatus) {
-      const isActive = await checkAccountStatus(client.id);
-      updateField('clientAccountActive', isActive);
+      const status = await checkAccountStatus(client.id);
+      updateField('clientAccountActive', status.active);
     }
     
     setResults([]);
