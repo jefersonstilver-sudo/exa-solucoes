@@ -46,7 +46,8 @@ const OrdersCompactHeader: React.FC<OrdersCompactHeaderProps> = ({
   onRefresh,
   loading,
   periodFilter,
-  onPeriodChange
+  onPeriodChange,
+  onAddOrder
 }) => {
   const { enabled, volume, soundType, toggleSound, setVolume, setSoundType, playPreview } = useNotificationSound();
   const { runReconciliation, isReconciling, result, clearResult } = useOrdersReconciliationComplete();
