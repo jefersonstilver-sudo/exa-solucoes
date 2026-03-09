@@ -114,6 +114,13 @@ const MonitorCard = ({ device, compact, periodEventsCount, incidentStatus }: Mon
               )}>
                 {isOnline ? 'Online' : 'Offline'}
               </span>
+              {/* Incident status indicator */}
+              {!isOnline && incidentStatus === 'pendente' && (
+                <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" />
+              )}
+              {!isOnline && incidentStatus === 'causa_registrada' && (
+                <CheckCircle className="w-4 h-4 text-amber-400" />
+              )}
             </div>
             <span className={cn(
               "text-xs truncate",
