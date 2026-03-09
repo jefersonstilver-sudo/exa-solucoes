@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Wifi, WifiOff, Zap, AlertTriangle } from 'lucide-react';
+import { Wifi, WifiOff, Zap, AlertTriangle, ClipboardCheck, CheckCircle } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Device } from '../utils/devices';
+import { IncidentStatus } from '../hooks/useDeviceIncidentStatus';
 import { cn } from '@/lib/utils';
 import { useRealTimeCounter } from '../hooks/useRealTimeCounter';
 import { usePeriodAlerts } from '../hooks/usePeriodAlerts';
@@ -13,15 +14,17 @@ import { PeriodSelector, PeriodType } from './PeriodSelector';
 interface FullscreenMonitorProps {
   devices: Device[];
   onClose: () => void;
+  incidentStatusMap?: Map<string, IncidentStatus>;
 }
 
 interface MonitorCardProps {
   device: Device;
   compact: boolean;
   periodEventsCount?: number;
+  incidentStatus?: IncidentStatus;
 }
 
-const MonitorCard = ({ device, compact, periodEventsCount }: MonitorCardProps) => {
+const MonitorCard = ({ device, compact, periodEventsCount, incidentStatus }: MonitorCardProps) => {
   const displayName = (device.comments || device.name).split(' - ')[0].trim();
   const provider = device.provider || 'Sem provedor';
   const elapsed = useRealTimeCounter(device.last_online_at);
@@ -111,6 +114,13 @@ const MonitorCard = ({ device, compact, periodEventsCount }: MonitorCardProps) =
               )}>
                 {isOnline ? 'Online' : 'Offline'}
               </span>
+              {/* Incident status indicator */}
+              {!isOnline && incidentStatus === 'pendente' && (
+                <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" />
+              )}
+              {!isOnline && incidentStatus === 'causa_registrada' && (
+                <CheckCircle className="w-4 h-4 text-amber-400" />
+              )}
             </div>
             <span className={cn(
               "text-xs truncate",
@@ -130,7 +140,7 @@ const MonitorCard = ({ device, compact, periodEventsCount }: MonitorCardProps) =
   );
 };
 
-export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) => {
+export const FullscreenMonitor = ({ devices, onClose, incidentStatusMap }: FullscreenMonitorProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isPortrait, setIsPortrait] = useState(false);
   const [showAlertsSidebar, setShowAlertsSidebar] = useState(true);
@@ -392,6 +402,7 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
                     device={device} 
                     compact={gridConfig.compact}
                     periodEventsCount={periodEventsMap.get(device.id) || 0}
+                    incidentStatus={incidentStatusMap?.get(device.id) || null}
                   />
                 ))}
               </div>

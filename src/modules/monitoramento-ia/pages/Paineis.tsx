@@ -17,6 +17,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useDevices } from '../hooks/useDevices';
 import { useModuleTheme } from '../hooks/useModuleTheme';
 import { usePeriodDeviceEvents } from '../hooks/usePeriodDeviceEvents';
+import { useDeviceIncidentStatus } from '../hooks/useDeviceIncidentStatus';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -105,6 +106,9 @@ export const PaineisPage = () => {
     customStartDate,
     customEndDate
   );
+
+  // Hook de status de incidentes para devices offline
+  const { incidentStatusMap } = useDeviceIncidentStatus(devices);
 
   const handlePeriodChange = (newPeriod: PeriodType, customStart?: Date, customEnd?: Date) => {
     setPeriod(newPeriod);
@@ -415,6 +419,7 @@ export const PaineisPage = () => {
                   device={device}
                   periodEventsCount={periodEventsMap.get(device.id) || 0}
                   periodLabel={getPeriodLabel(period)}
+                  incidentStatus={incidentStatusMap.get(device.id) || null}
                   onClick={() => {
                     setSelectedDevice(device);
                     setIsDetailModalOpen(true);
@@ -484,7 +489,7 @@ export const PaineisPage = () => {
       
       {/* Modo Monitor Fullscreen */}
       {isFullscreen && (
-        <FullscreenMonitor devices={devices} onClose={() => setIsFullscreen(false)} />
+        <FullscreenMonitor devices={devices} onClose={() => setIsFullscreen(false)} incidentStatusMap={incidentStatusMap} />
       )}
       
       {/* Alertas flutuantes de painéis offline */}
