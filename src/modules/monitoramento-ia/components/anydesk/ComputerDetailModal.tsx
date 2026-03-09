@@ -630,6 +630,12 @@ export const ComputerDetailModal = ({
               </Card>
             </TabsContent>
 
+            </TabsContent>
+
+            <TabsContent value="incidentes" className="mt-4">
+              <IncidentHistoryTab incidents={history} loading={incidentsLoading} />
+            </TabsContent>
+
             <TabsContent value="timeline" className="mt-4">
               <ConnectionTimeline computerId={computer.id} />
             </TabsContent>
