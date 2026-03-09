@@ -120,6 +120,7 @@ export const useRealOrderDetails = (orderId: string) => {
             cupom_id,
             termos_aceitos,
             transaction_id,
+            tipo_produto,
             tipo_pagamento,
             metodo_pagamento,
             is_fidelidade,
