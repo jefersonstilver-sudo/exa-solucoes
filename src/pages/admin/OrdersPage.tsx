@@ -451,6 +451,7 @@ const OrdersPage = () => {
             loading={loading}
             periodFilter={periodFilter}
             onPeriodChange={setPeriodFilter}
+            onAddOrder={() => setShowCreateOrder(true)}
           />
         </div>
       </div>
