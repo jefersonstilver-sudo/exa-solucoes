@@ -17,6 +17,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useDevices } from '../hooks/useDevices';
 import { useModuleTheme } from '../hooks/useModuleTheme';
 import { usePeriodDeviceEvents } from '../hooks/usePeriodDeviceEvents';
+import { useDeviceIncidentStatus } from '../hooks/useDeviceIncidentStatus';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
