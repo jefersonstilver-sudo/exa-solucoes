@@ -135,7 +135,6 @@ export const OfflineIncidentCard = ({ incident, onRegisterCause }: OfflineIncide
                         backgroundColor: selectedCategoryId === cat.id ? `${cat.color}30` : `${cat.color}15`,
                         color: cat.color,
                         borderColor: selectedCategoryId === cat.id ? cat.color : `${cat.color}40`,
-                        ringColor: cat.color,
                       }}
                     >
                       {cat.icon} {cat.label}

@@ -115,7 +115,7 @@ export const IncidentCategoryManager = ({ isOpen, onClose }: IncidentCategoryMan
                     {cat.icon} {cat.label}
                   </Badge>
                   {cat.is_default && (
-                    <Shield className="h-3 w-3 text-muted-foreground" title="Categoria padrão" />
+                    <Shield className="h-3 w-3 text-muted-foreground" />
                   )}
                   <div className="flex-1" />
                   <div className="flex items-center gap-1">
