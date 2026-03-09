@@ -817,7 +817,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[900px] max-h-[92vh] overflow-hidden p-0 gap-0">
+        <DialogContent className="sm:max-w-[1100px] max-h-[95vh] overflow-hidden p-0 gap-0">
           <DialogHeader className="sr-only">
             <DialogTitle>Editar Evento</DialogTitle>
           </DialogHeader>
@@ -859,7 +859,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
 
           {/* ── Two-column body ── */}
           <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto max-h-[calc(92vh-180px)]">
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] divide-y md:divide-y-0 md:divide-x">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_400px] divide-y md:divide-y-0 md:divide-x">
               
               {/* ── LEFT: Form Fields ── */}
               <div className="p-5 space-y-4 overflow-y-auto">
@@ -1087,7 +1087,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                       <p className="text-[10px] text-muted-foreground/60 mt-1">Use o botão abaixo para notificar</p>
                     </div>
                   ) : (
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    <div className="space-y-1.5 max-h-72 overflow-y-auto">
                       {receipts.map((receipt) => (
                         <div key={receipt.id} className={cn(
                           "flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-all duration-500",
