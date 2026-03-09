@@ -76,7 +76,7 @@ const ClientSearchSection: React.FC<ClientSearchSectionProps> = ({
     }
     
     // Auto-fill value
-    const valor = proposal.cash_total_value || proposal.total_amount || 0;
+    const valor = proposal.cash_total_value || 0;
     updateField('valorTotal', valor);
     
     // Auto-fill buildings from selected_buildings
