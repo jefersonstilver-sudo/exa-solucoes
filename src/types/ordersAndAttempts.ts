@@ -33,6 +33,7 @@ export interface OrderOrAttempt {
   contrato_assinado_em?: string;
   hasVideo?: boolean;
   hasPaidInstallment?: boolean;
+  tipo_produto?: string;
 }
 
 export interface OrdersStats {

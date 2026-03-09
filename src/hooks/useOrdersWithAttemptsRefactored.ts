@@ -39,6 +39,13 @@ export const useOrdersWithAttemptsRefactored = () => {
         throw pedidosError;
       }
       
+      // Buscar tipo_produto de cada pedido (não disponível na RPC)
+      const pedidoIds = (pedidosComClientes || []).map((p: any) => p.id);
+      const { data: pedidosTipoProduto } = pedidoIds.length > 0 
+        ? await supabase.from('pedidos').select('id, tipo_produto').in('id', pedidoIds)
+        : { data: [] };
+      const tipoProdutoMap = new Map((pedidosTipoProduto || []).map((p: any) => [p.id, p.tipo_produto]));
+      
       // Buscar IDs de pedidos que têm vídeos
       const { data: pedidosComVideo } = await supabase
         .from('pedido_videos')
@@ -81,7 +88,8 @@ export const useOrdersWithAttemptsRefactored = () => {
         contrato_status: pedido.contrato_status,
         contrato_assinado_em: pedido.contrato_assinado_em,
         hasVideo: pedidoIdsComVideo.has(pedido.id),
-        hasPaidInstallment: pedidoIdsComPagamento.has(pedido.id)
+        hasPaidInstallment: pedidoIdsComPagamento.has(pedido.id),
+        tipo_produto: tipoProdutoMap.get(pedido.id) || 'horizontal'
       }));
       
       const tentativasFormatadas = formatAttemptsData(tentativasComEmails);

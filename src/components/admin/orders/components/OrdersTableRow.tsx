@@ -3,7 +3,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CustomCheckbox } from '@/components/ui/custom-checkbox';
-import { Eye, Calendar, Film } from 'lucide-react';
+import { Eye, Calendar, Film, Monitor, Smartphone } from 'lucide-react';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 import { useAuth } from '@/hooks/useAuth';
 import { 
@@ -63,7 +63,22 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
         </TableCell>
       )}
       <TableCell>
-        {getTypeBadge(item)}
+        <div className="flex flex-col gap-1">
+          {getTypeBadge(item)}
+          {item.type === 'order' && (
+            (item as any).tipo_produto === 'vertical_premium' ? (
+              <Badge variant="outline" className="w-fit text-[10px] border-purple-400 text-purple-700 bg-purple-50 px-1.5 py-0">
+                <Smartphone className="h-2.5 w-2.5 mr-0.5" />
+                Vertical
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="w-fit text-[10px] border-blue-400 text-blue-700 bg-blue-50 px-1.5 py-0">
+                <Monitor className="h-2.5 w-2.5 mr-0.5" />
+                Horizontal
+              </Badge>
+            )
+          )}
+        </div>
       </TableCell>
       <TableCell className="font-medium text-gray-900">
         {item.id.substring(0, 8)}...

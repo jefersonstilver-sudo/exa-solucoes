@@ -29,6 +29,7 @@ interface OrderWithClient {
   client_email: string;
   client_name: string;
   video_status: string;
+  tipo_produto?: string;
   nome_pedido?: string;
   log_pagamento?: any;
   compliance_data?: any;
@@ -120,6 +121,7 @@ export const useRealOrderDetails = (orderId: string) => {
             cupom_id,
             termos_aceitos,
             transaction_id,
+            tipo_produto,
             tipo_pagamento,
             metodo_pagamento,
             is_fidelidade,
@@ -194,6 +196,7 @@ export const useRealOrderDetails = (orderId: string) => {
           client_email: order.users?.email || 'Email não disponível',
           client_name: clientName,
           video_status: order.status,
+          tipo_produto: order.tipo_produto || 'horizontal',
           nome_pedido: order.nome_pedido,
           log_pagamento: order.log_pagamento,
           compliance_data: order.compliance_data,
