@@ -60,6 +60,7 @@ export const ComputerDetailModal = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const offlineCounter = useRealTimeCounter(computer?.status === 'offline' ? computer?.last_online_at : null);
   const { isMasterAccount } = useDynamicModulePermissions();
+  const { activeIncident, history, loading: incidentsLoading, registerCause } = useDeviceIncidents(isOpen ? computer?.id : null);
 
   useEffect(() => {
     if (computer?.id && isOpen) {
