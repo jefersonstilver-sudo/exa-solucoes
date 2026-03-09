@@ -91,6 +91,15 @@ const OrdersCompactHeader: React.FC<OrdersCompactHeaderProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
+              {onAddOrder && (
+                <>
+                  <DropdownMenuItem onClick={onAddOrder}>
+                    <Plus className="h-4 w-4 mr-2 text-[#9C1E1E]" />
+                    <span className="text-[#9C1E1E] font-medium">Adicionar Pedido</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuItem onClick={onRefresh} disabled={loading}>
                 <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Atualizar Dados
