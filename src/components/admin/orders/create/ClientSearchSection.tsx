@@ -84,16 +84,18 @@ const ClientSearchSection: React.FC<ClientSearchSectionProps> = ({
     if (proposal.selected_buildings) {
       try {
         let buildings: string[] = [];
-        if (typeof proposal.selected_buildings === 'string') {
-          const parsed = JSON.parse(proposal.selected_buildings);
-          buildings = (Array.isArray(parsed) ? parsed : []).map((b: any) =>
-            typeof b === 'string' ? b : b?.building_id || b?.id || String(b)
-          );
-        } else if (Array.isArray(proposal.selected_buildings)) {
-          buildings = proposal.selected_buildings.map((b: any) =>
-            typeof b === 'string' ? b : b?.building_id || b?.id || String(b)
-          );
-        }
+        const rawBuildings = typeof proposal.selected_buildings === 'string'
+          ? JSON.parse(proposal.selected_buildings)
+          : proposal.selected_buildings;
+        
+        buildings = (Array.isArray(rawBuildings) ? rawBuildings : [])
+          .map((b: any) => {
+            if (typeof b === 'string') return b;
+            return b?.building_id || b?.id || null;
+          })
+          .filter((id): id is string => typeof id === 'string' && id.length > 10);
+        
+        console.log('🏢 Buildings extraídos (IDs limpos):', buildings);
         if (buildings.length > 0) {
           updateField('listaPredios', buildings);
         }

@@ -161,7 +161,7 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
               type="button"
               onClick={() => toggleBuilding(b.id)}
               className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-accent transition-colors ${
-                formData.listaPredios.includes(b.id) ? 'bg-[#9C1E1E]/5 font-medium' : ''
+                formData.listaPredios.some(rid => sanitizeBuildingId(rid) === b.id) ? 'bg-primary/5 font-medium' : ''
               }`}
             >
               <Building2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
