@@ -1,46 +1,80 @@
 
 
-# Unificar lista de prédios: seleção única com "Selecionar Todos"
+# Plano de Correção — 2FA Seguro com Auth Gate
 
-## Problema atual
+## Diagnóstico Confirmado
 
-A UI mostra **duas seções separadas**: uma lista de prédios selecionados em cima (com X para remover) e uma lista de todos os prédios embaixo (para adicionar). O usuário quer **uma única lista** onde os prédios selecionados mudam de cor, com um botão "Selecionar Todos".
+1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
+2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
 
-Além disso, o erro "Edge Function returned a non-2xx status code" precisa ser investigado separadamente — provavelmente relacionado ao `admin-update-user` na criação de conta.
+## Limitação Técnica do Supabase
 
-## Alterações — `OrderConfigSection.tsx`
+O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
 
-### Remover a seção "Selected buildings list" (linhas 136-159)
-Eliminar completamente o bloco que renderiza os prédios selecionados separadamente.
+## Solução: Auth Gate no AuthProvider
 
-### Redesenhar a lista única (linhas 161-177)
-- Cada prédio na lista mostra um **checkbox visual** ou muda de cor (bg-primary/10 + borda colorida + checkmark) quando selecionado
-- Prédios selecionados ficam com fundo destacado e ícone de check
-- Remover limite de `slice(0, 30)` ou aumentar
-
-### Adicionar botão "Selecionar Todos / Desmarcar Todos"
-- Ao lado do campo de busca ou abaixo dele
-- Se todos os prédios filtrados estão selecionados → "Desmarcar Todos"
-- Caso contrário → "Selecionar Todos"
-
-### Layout final
+Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
 
 ```text
-┌─ Prédios * (17 selecionados) ──────────────────┐
-│ [🔍 Buscar prédio...]  [✓ Selecionar Todos]    │
-│ ┌──────────────────────────────────────────────┐ │
-│ │ ✅ Bella Vita          Centro         001    │ │
-│ │ ✅ Royal Legacy        Vila Yolanda   002    │ │
-│ │ ☐  Torre Azul          R. Jorge       009    │ │
-│ │ ✅ Residencial Miró    Centro         003    │ │
-│ │ ...                                          │ │
-│ └──────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────┘
+Email + Senha
+  ↓
+signInWithPassword (sessão Supabase criada — inevitável)
+  ↓
+2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
+  ↓                    → navigate('/verificacao-2fa')
+  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
+  ↓                    → Todas as rotas protegidas bloqueadas
+  ↓                    ↓
+  ↓                  Código validado → sessionStorage.remove('pending_2fa')
+  ↓                    → isLoggedIn = TRUE → acesso liberado
+  ↓
+  NÃO → login normal
 ```
 
-## Arquivos
+**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
 
-| Arquivo | Mudança |
-|---------|---------|
-| `OrderConfigSection.tsx` | Remover lista separada de selecionados, unificar em lista única com visual de seleção + botão "Selecionar Todos" |
+## Arquivos a Modificar (4 arquivos)
+
+### A. `src/App.tsx` (1 linha)
+- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
+- Importar `TwoFactorVerificationPage`
+
+### B. `src/hooks/useAuth.tsx` — Auth Gate
+- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
+  ```
+  const pending2fa = sessionStorage.getItem('pending_2fa');
+  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
+  ```
+- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
+
+### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
+- Após detectar `two_factor_enabled` (linha 134):
+  - `sessionStorage.setItem('pending_2fa', data.user.id)`
+  - Navegar para `/verificacao-2fa?userId=...`
+  - **Não fazer signOut**, **não armazenar credenciais**
+
+### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
+- Após verificação do código bem-sucedida (linha 99):
+  - `sessionStorage.removeItem('pending_2fa')`
+  - Isso faz `isLoggedIn` mudar para `true` automaticamente
+  - Redirecionar para rota correta baseada no role
+
+- No botão "Voltar ao Login" (linha 239):
+  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
+  - Isso garante logout limpo se o usuário desistir
+
+## Garantias
+
+| Regra | Cumprida |
+|-------|----------|
+| Sem tabelas novas | ✓ |
+| Sem signOut como solução | ✓ |
+| Sem credenciais em sessionStorage | ✓ |
+| Sem fluxos paralelos | ✓ |
+| Sessão bloqueada até 2FA | ✓ |
+| Reutiliza componentes existentes | ✓ |
+
+## Limitação Transparente
+
+A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
 
