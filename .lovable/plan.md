@@ -1,58 +1,80 @@
 
 
-# Melhorias no Módulo de Criação Manual de Pedidos
+# Plano de Correção — 2FA Seguro com Auth Gate
 
-## Problemas identificados
+## Diagnóstico Confirmado
 
-1. **Busca de propostas** não busca por `client_company_name` (nome da empresa), só por `client_name`
-2. **Resultados de proposta** não mostram detalhes (tipo produto, duração, valor) — impossível distinguir propostas
-3. **Botão "Ativar Conta"** aparece mesmo quando a conta já está ativada (deveria verificar `email_verified_at`)
-4. **Selecionar proposta** não carrega automaticamente os prédios (`selected_buildings`) nem o tipo de produto
-5. **Não há logs de auditoria** nas ações de adicionar/remover prédios do pedido
+1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
+2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
 
-## Mudanças por arquivo
+## Limitação Técnica do Supabase
 
-### 1. `src/hooks/useAdminCreateOrder.ts`
-- **searchClients**: adicionar busca por `empresa_nome` além de `nome` e `email`; incluir `email_verified_at` no SELECT para saber se conta está ativa
-- **searchProposals**: adicionar busca por `client_company_name`; incluir `selected_buildings`, `tipo_produto`, `duration_months`, `fidel_monthly_value`, `cash_total_value`, `number` no SELECT
-- Exportar um campo `clientAccountActive: boolean` no formData para controlar visibilidade do botão "Ativar Conta"
+O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
 
-### 2. `src/components/admin/orders/create/ClientSearchSection.tsx`
-- **selectProposal**: ao selecionar proposta, preencher automaticamente:
-  - `tipoProduto` da proposta
-  - `listaPredios` extraído de `selected_buildings` (JSON com array de building IDs)
-  - `planoMeses` de `duration_months`
-  - `valorTotal` de `cash_total_value`
-- **Resultados de proposta no dropdown**: mostrar badge com tipo produto, número da proposta, duração e valor — para identificar a proposta correta
-- **Busca**: funcionar tanto por nome do cliente quanto por nome da empresa
-- **Botão "Ativar Conta"**: só exibir quando `email_verified_at` é `null` (conta não ativada); esconder quando já ativada; mostrar badge verde "Conta Ativa" quando já confirmada
-- **Botão "Criar Conta"**: só quando não existe `clientId` (sem conta no sistema)
+## Solução: Auth Gate no AuthProvider
 
-### 3. `src/components/admin/orders/create/OrderConfigSection.tsx`
-- Usar `useActivityLogger` para registrar cada adição/remoção de prédio no `user_activity_logs` com `entity_type: 'pedido'`, incluindo detalhes do prédio e da ação
-
-### 4. `src/hooks/useAdminCreateOrder.ts` (submitOrder)
-- Registrar log de criação do pedido via `user_activity_logs` com todos os detalhes
-
-## Lógica de identificação de conta
+Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
 
 ```text
-Busca por nome/email/empresa
-        |
-  Encontrou na tabela users?
-        |
-  SIM ──┬── email_verified_at != null → "Conta Ativa" (badge verde, sem botão)
-        └── email_verified_at == null → Mostrar botão "Ativar Conta"
-  NÃO → Mostrar botão "Criar Conta"
+Email + Senha
+  ↓
+signInWithPassword (sessão Supabase criada — inevitável)
+  ↓
+2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
+  ↓                    → navigate('/verificacao-2fa')
+  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
+  ↓                    → Todas as rotas protegidas bloqueadas
+  ↓                    ↓
+  ↓                  Código validado → sessionStorage.remove('pending_2fa')
+  ↓                    → isLoggedIn = TRUE → acesso liberado
+  ↓
+  NÃO → login normal
 ```
 
-## Detalhes da proposta no dropdown
+**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
 
-Cada resultado de proposta mostrará:
-- Número (ex: EXA-2026-0019)
-- Nome do cliente / empresa
-- Badge: Horizontal ou Vertical Premium
-- Duração (ex: 6 meses)
-- Valor (ex: R$ 1.200,00)
-- Status com cor
+## Arquivos a Modificar (4 arquivos)
+
+### A. `src/App.tsx` (1 linha)
+- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
+- Importar `TwoFactorVerificationPage`
+
+### B. `src/hooks/useAuth.tsx` — Auth Gate
+- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
+  ```
+  const pending2fa = sessionStorage.getItem('pending_2fa');
+  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
+  ```
+- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
+
+### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
+- Após detectar `two_factor_enabled` (linha 134):
+  - `sessionStorage.setItem('pending_2fa', data.user.id)`
+  - Navegar para `/verificacao-2fa?userId=...`
+  - **Não fazer signOut**, **não armazenar credenciais**
+
+### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
+- Após verificação do código bem-sucedida (linha 99):
+  - `sessionStorage.removeItem('pending_2fa')`
+  - Isso faz `isLoggedIn` mudar para `true` automaticamente
+  - Redirecionar para rota correta baseada no role
+
+- No botão "Voltar ao Login" (linha 239):
+  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
+  - Isso garante logout limpo se o usuário desistir
+
+## Garantias
+
+| Regra | Cumprida |
+|-------|----------|
+| Sem tabelas novas | ✓ |
+| Sem signOut como solução | ✓ |
+| Sem credenciais em sessionStorage | ✓ |
+| Sem fluxos paralelos | ✓ |
+| Sessão bloqueada até 2FA | ✓ |
+| Reutiliza componentes existentes | ✓ |
+
+## Limitação Transparente
+
+A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
 

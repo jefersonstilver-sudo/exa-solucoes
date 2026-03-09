@@ -10,6 +10,7 @@ export interface AdminOrderFormData {
   clientEmail: string;
   clientPhone: string;
   clientDocument: string;
+  clientAccountActive: boolean | null; // null = unknown, true = active, false = not active
   proposalId: string | null;
   
   // Product
@@ -33,6 +34,7 @@ const initialFormData: AdminOrderFormData = {
   clientEmail: '',
   clientPhone: '',
   clientDocument: '',
+  clientAccountActive: null,
   proposalId: null,
   tipoProduto: 'horizontal',
   listaPredios: [],
@@ -57,25 +59,45 @@ export function useAdminCreateOrder() {
 
   const resetForm = () => setFormData(initialFormData);
 
-  // Search clients
+  // Search clients - includes empresa_nome and email_verified check
   const searchClients = async (term: string) => {
     if (term.length < 2) return [];
     const { data } = await supabase
       .from('users')
-      .select('id, nome, email, telefone, primeiro_nome, sobrenome, avatar_url')
-      .or(`nome.ilike.%${term}%,email.ilike.%${term}%`)
+      .select('id, nome, email, telefone, primeiro_nome, sobrenome, avatar_url, empresa_nome')
+      .or(`nome.ilike.%${term}%,email.ilike.%${term}%,empresa_nome.ilike.%${term}%`)
       .limit(10);
-    return data || [];
+    
+    if (!data || data.length === 0) return [];
+
+    // Check account activation status via edge function for each user
+    // We'll do a lightweight check using admin-update-user or just return the data
+    // The activation check will happen when a client is selected
+    return data;
   };
 
-  // Search proposals
+  // Check if client account is active (email confirmed)
+  const checkAccountStatus = async (userId: string): Promise<boolean> => {
+    try {
+      const { data } = await supabase.functions.invoke('admin-update-user', {
+        body: { user_id: userId, check_only: true }
+      });
+      return data?.email_confirmed === true;
+    } catch {
+      // Fallback: assume not confirmed
+      return false;
+    }
+  };
+
+  // Search proposals - includes company name, tipo_produto, duration, buildings, value
   const searchProposals = async (term: string) => {
     if (term.length < 2) return [];
     const { data } = await supabase
       .from('proposals')
-      .select('id, client_name, client_email, client_phone, status, total_amount')
-      .or(`client_name.ilike.%${term}%,client_email.ilike.%${term}%`)
+      .select('id, number, client_name, client_company_name, client_email, client_phone, status, total_amount, tipo_produto, duration_months, fidel_monthly_value, cash_total_value, selected_buildings')
+      .or(`client_name.ilike.%${term}%,client_email.ilike.%${term}%,client_company_name.ilike.%${term}%,number.ilike.%${term}%`)
       .in('status', ['accepted', 'sent', 'draft'])
+      .order('created_at', { ascending: false })
       .limit(10);
     return data || [];
   };
@@ -87,6 +109,7 @@ export function useAdminCreateOrder() {
     });
     if (error) throw error;
     if (!data?.success) throw new Error(data?.error || 'Erro ao ativar conta');
+    updateField('clientAccountActive', true);
     toast.success('Conta ativada com sucesso');
     return data;
   };
@@ -110,6 +133,7 @@ export function useAdminCreateOrder() {
     if (error) throw error;
     if (!data?.success) throw new Error(data?.error || 'Erro ao criar conta');
     updateField('clientId', data.userId);
+    updateField('clientAccountActive', true); // newly created accounts are auto-confirmed
     toast.success('Conta criada com sucesso');
     return data;
   };
@@ -127,6 +151,29 @@ export function useAdminCreateOrder() {
     
     await supabase.from('users').update({ avatar_url: path }).eq('id', userId);
     toast.success('Logo enviada');
+  };
+
+  // Log activity
+  const logOrderActivity = async (action: string, entityType: string, entityId?: string, details?: Record<string, any>) => {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData.user?.id;
+      if (!userId) return;
+
+      await supabase.from('user_activity_logs').insert({
+        user_id: userId,
+        action_type: action,
+        entity_type: entityType,
+        entity_id: entityId,
+        action_description: details ? JSON.stringify(details) : null,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          context: 'admin_create_order'
+        }
+      });
+    } catch (err) {
+      console.error('Erro ao registrar log:', err);
+    }
   };
 
   // Submit order
@@ -188,13 +235,17 @@ export function useAdminCreateOrder() {
 
       if (pedidoError) throw pedidoError;
 
-      // Create empty video slots
-      const maxSlots = produto?.max_videos_por_pedido || 1;
-      
-      // We need a placeholder video_id - use a UUID placeholder
-      // The system expects video_id to be non-null, so we create slots only if sem_slots_video is handled
-      // Actually let's skip slot creation since sem_slots_video = true
-      // Slots will be created when admin uploads videos later
+      // Log order creation
+      await logOrderActivity('create', 'pedido', pedido.id, {
+        client_id: clientId,
+        client_name: formData.clientName,
+        tipo_produto: formData.tipoProduto,
+        lista_predios: formData.listaPredios,
+        plano_meses: formData.planoMeses,
+        valor_total: formData.valorTotal,
+        proposal_id: formData.proposalId,
+        created_by_admin: adminId,
+      });
 
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['orders-attempts-refactored'] });
@@ -216,9 +267,11 @@ export function useAdminCreateOrder() {
     resetForm,
     searchClients,
     searchProposals,
+    checkAccountStatus,
     activateAccount,
     createAccount,
     submitOrder,
     isSubmitting,
+    logOrderActivity,
   };
 }

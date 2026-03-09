@@ -34,6 +34,7 @@ const AdminCreateOrderDialog: React.FC<AdminCreateOrderDialogProps> = ({
     formData, updateField, resetForm,
     searchClients, searchProposals,
     activateAccount, createAccount,
+    checkAccountStatus,
     submitOrder, isSubmitting,
   } = useAdminCreateOrder();
 
@@ -87,6 +88,7 @@ const AdminCreateOrderDialog: React.FC<AdminCreateOrderDialogProps> = ({
                     searchProposals={searchProposals}
                     activateAccount={activateAccount}
                     createAccount={createAccount}
+                    checkAccountStatus={checkAccountStatus}
                   />
                 </AccordionContent>
               </AccordionItem>

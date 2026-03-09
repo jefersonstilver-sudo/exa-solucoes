@@ -12,6 +12,7 @@ import {
 import { AdminOrderFormData } from '@/hooks/useAdminCreateOrder';
 import { supabase } from '@/integrations/supabase/client';
 import { Upload, Building2, Search, X } from 'lucide-react';
+import { useActivityLogger } from '@/hooks/useActivityLogger';
 
 interface OrderConfigSectionProps {
   formData: AdminOrderFormData;
@@ -22,6 +23,7 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
   const [buildings, setBuildings] = useState<any[]>([]);
   const [buildingSearch, setBuildingSearch] = useState('');
   const [loadingBuildings, setLoadingBuildings] = useState(false);
+  const { logActivity } = useActivityLogger();
 
   // Fetch buildings
   useEffect(() => {
@@ -44,10 +46,30 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
 
   const toggleBuilding = (buildingId: string) => {
     const current = formData.listaPredios;
-    const updated = current.includes(buildingId)
-      ? current.filter(id => id !== buildingId)
-      : [...current, buildingId];
-    updateField('listaPredios', updated);
+    const building = buildings.find(b => b.id === buildingId);
+    const buildingName = building?.nome || buildingId;
+
+    if (current.includes(buildingId)) {
+      // Removing
+      const updated = current.filter(id => id !== buildingId);
+      updateField('listaPredios', updated);
+      logActivity('remove_building', 'pedido', buildingId, {
+        action: 'Prédio removido do pedido',
+        building_name: buildingName,
+        building_code: building?.codigo_predio,
+        remaining_count: updated.length,
+      });
+    } else {
+      // Adding
+      const updated = [...current, buildingId];
+      updateField('listaPredios', updated);
+      logActivity('add_building', 'pedido', buildingId, {
+        action: 'Prédio adicionado ao pedido',
+        building_name: buildingName,
+        building_code: building?.codigo_predio,
+        total_count: updated.length,
+      });
+    }
   };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,7 +90,14 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
     <div className="space-y-5">
       {/* Buildings multi-select */}
       <div>
-        <Label className="text-sm font-medium mb-1.5 block">Prédios *</Label>
+        <Label className="text-sm font-medium mb-1.5 block">
+          Prédios * 
+          {formData.listaPredios.length > 0 && (
+            <span className="ml-2 text-xs text-muted-foreground font-normal">
+              ({formData.listaPredios.length} selecionado{formData.listaPredios.length !== 1 ? 's' : ''})
+            </span>
+          )}
+        </Label>
         <div className="relative mb-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
