@@ -1087,7 +1087,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                       <p className="text-[10px] text-muted-foreground/60 mt-1">Use o botão abaixo para notificar</p>
                     </div>
                   ) : (
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    <div className="space-y-1.5 max-h-72 overflow-y-auto">
                       {receipts.map((receipt) => (
                         <div key={receipt.id} className={cn(
                           "flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-all duration-500",
