@@ -31,9 +31,8 @@ export const OfflineIncidentCard = ({ incident, onRegisterCause, isDeviceOffline
   const hasCause = incident?.status === 'causa_registrada';
 
   const handleSave = async () => {
-    if (!selectedCategoryId || !causa.trim()) {
-      return;
-    }
+    if (!incident) return; // Ainda carregando o incidente
+    if (!selectedCategoryId || !causa.trim()) return;
     setSaving(true);
     try {
       await onRegisterCause(incident.id, selectedCategoryId, causa.trim(), resolucao.trim() || undefined);
