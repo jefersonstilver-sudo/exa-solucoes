@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { RefreshCw, ShoppingCart, Download, Search, Filter, Loader2 } from 'lucide-react';
+import { RefreshCw, ShoppingCart, Download, Search, Filter, Loader2, Plus } from 'lucide-react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
@@ -17,6 +17,7 @@ import { FilterChips } from '@/components/admin/shared/FilterChips';
 import { OrderPeriodFilter, filterByPeriod, PeriodFilter } from '@/components/admin/orders/OrderPeriodFilter';
 import { calculateStats } from '@/services/ordersAndAttemptsProcessor';
 import { FixPedidoListaPaineisButton } from '@/components/admin/FixPedidoListaPaineisButton';
+import AdminCreateOrderDialog from '@/components/admin/orders/create/AdminCreateOrderDialog';
 
 const OrdersPage = () => {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ const OrdersPage = () => {
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [quickFilter, setQuickFilter] = useState<'all' | 'pagos' | 'aguardando' | 'ativos'>('all');
+  const [showCreateOrder, setShowCreateOrder] = useState(false);
   
   // Estado para pedidos com vídeos ativos (campanhas em exibição)
   const [activeOrdersCount, setActiveOrdersCount] = React.useState(0);
@@ -220,6 +222,11 @@ const OrdersPage = () => {
 
   // Mobile Actions Menu
   const mobileMenuItems = [
+    {
+      icon: <Plus className="h-4 w-4" />,
+      label: 'Novo Pedido',
+      onClick: () => setShowCreateOrder(true),
+    },
     {
       icon: <RefreshCw className="h-4 w-4" />,
       label: 'Atualizar',
@@ -434,6 +441,13 @@ const OrdersPage = () => {
           ]}
           activeFiltersCount={activeFiltersCount}
         />
+
+        {/* Create Order Dialog */}
+        <AdminCreateOrderDialog
+          open={showCreateOrder}
+          onOpenChange={setShowCreateOrder}
+          onSuccess={refetch}
+        />
       </div>
     );
   }
@@ -449,6 +463,7 @@ const OrdersPage = () => {
             loading={loading}
             periodFilter={periodFilter}
             onPeriodChange={setPeriodFilter}
+            onAddOrder={() => setShowCreateOrder(true)}
           />
         </div>
       </div>
@@ -482,6 +497,13 @@ const OrdersPage = () => {
           <OrdersTabsRefactored onViewOrderDetails={handleViewOrderDetails} />
         </div>
       </div>
+
+      {/* Create Order Dialog */}
+      <AdminCreateOrderDialog
+        open={showCreateOrder}
+        onOpenChange={setShowCreateOrder}
+        onSuccess={refetch}
+      />
     </div>
   );
 };

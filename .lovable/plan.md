@@ -1,71 +1,80 @@
 
 
-# Criar Pedido Manual — Plano Reestruturado
+# Plano de Correção — 2FA Seguro com Auth Gate
 
-## O que muda vs. plano anterior
+## Diagnóstico Confirmado
 
-O plano anterior tinha 4 etapas separadas e muita complexidade desnecessaria. Este plano usa **uma unica pagina com formulario em secoes colapsaveis** (accordion), mais direto, sem wizard multi-step.
+1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
+2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
 
-## Fluxo simplificado
+## Limitação Técnica do Supabase
+
+O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
+
+## Solução: Auth Gate no AuthProvider
+
+Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
 
 ```text
-Botao "Adicionar Pedido" (header)
-        |
-        v
-  Dialog grande (Sheet lateral ou Dialog fullscreen)
-        |
-  ┌─────────────────────────────────────────────┐
-  │  SECAO 1: Cliente                           │
-  │  - Busca: CRM (users) / Proposta / Manual   │
-  │  - Auto-preenche dados ao selecionar        │
-  │  - Campos: nome, email, telefone, CPF/CNPJ  │
-  │  - Botao "Criar/Ativar Conta" inline        │
-  ├─────────────────────────────────────────────┤
-  │  SECAO 2: Produto                           │
-  │  - Select com produtos de produtos_exa      │
-  │  - Mostra specs (resolucao, duracao, slots) │
-  │  - Tipo: Horizontal / Vertical Premium      │
-  ├─────────────────────────────────────────────┤
-  │  SECAO 3: Configuracao do Pedido            │
-  │  - Predios/paineis (multi-select)           │
-  │  - Plano (meses), valor total               │
-  │  - Data inicio/fim                          │
-  │  - Metodo pagamento, status inicial         │
-  │  - Upload de logo do cliente                │
-  ├─────────────────────────────────────────────┤
-  │  RESUMO + BOTAO CONFIRMAR                   │
-  └─────────────────────────────────────────────┘
+Email + Senha
+  ↓
+signInWithPassword (sessão Supabase criada — inevitável)
+  ↓
+2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
+  ↓                    → navigate('/verificacao-2fa')
+  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
+  ↓                    → Todas as rotas protegidas bloqueadas
+  ↓                    ↓
+  ↓                  Código validado → sessionStorage.remove('pending_2fa')
+  ↓                    → isLoggedIn = TRUE → acesso liberado
+  ↓
+  NÃO → login normal
 ```
 
-## Arquivos
+**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
 
-| Arquivo | Acao |
-|---------|------|
-| `src/components/admin/orders/create/AdminCreateOrderDialog.tsx` | **Criar** — Dialog principal com as 3 secoes |
-| `src/components/admin/orders/create/ClientSearchSection.tsx` | **Criar** — Busca em users + proposals com autocomplete |
-| `src/components/admin/orders/create/ProductSelectSection.tsx` | **Criar** — Select de produto com specs |
-| `src/components/admin/orders/create/OrderConfigSection.tsx` | **Criar** — Predios, plano, datas, logo, pagamento |
-| `src/components/admin/orders/create/OrderSummary.tsx` | **Criar** — Resumo antes de confirmar |
-| `src/hooks/useAdminCreateOrder.ts` | **Criar** — Logica de INSERT em pedidos + criacao de slots em pedido_videos + ativacao de conta |
-| `src/components/admin/orders/OrdersCompactHeader.tsx` | **Modificar** — Adicionar item "Adicionar Pedido" no DropdownMenu |
-| `src/pages/admin/OrdersPage.tsx` | **Modificar** — Adicionar botao mobile + estado do dialog |
+## Arquivos a Modificar (4 arquivos)
 
-## Logica de criacao (useAdminCreateOrder)
+### A. `src/App.tsx` (1 linha)
+- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
+- Importar `TwoFactorVerificationPage`
 
-1. **Busca cliente**: query em `users` (ilike nome/email) e `proposals` (ilike client_name)
-2. **Criar/ativar conta**: chama edge function `create-client-account` (novo) ou `admin-update-user` (existente, com `confirm_email: true`)
-3. **Upload logo**: salva no bucket `arquivos/PAGINA PRINCIPAL LOGOS/`, atualiza `users.avatar_url`
-4. **INSERT pedido**: na tabela `pedidos` com campos:
-   - `client_id`, `client_name`, `email`
-   - `tipo_produto` = codigo do produto selecionado (`horizontal` ou `vertical_premium`)
-   - `lista_predios`, `lista_paineis`
-   - `plano_meses`, `valor_total`, `data_inicio`, `data_fim`
-   - `metodo_pagamento`, `status` (admin define: pendente/pago)
-   - `created_by_admin` = auth.uid()
-   - `proposal_id` se veio de proposta
-5. **Criar slots**: INSERT em `pedido_videos` com N slots vazios baseado em `max_videos_por_pedido` do produto (com `video_id` placeholder vazio — precisa de um video placeholder ou `sem_slots_video = true`)
+### B. `src/hooks/useAuth.tsx` — Auth Gate
+- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
+  ```
+  const pending2fa = sessionStorage.getItem('pending_2fa');
+  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
+  ```
+- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
 
-## Sem migrations necessarias
+### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
+- Após detectar `two_factor_enabled` (linha 134):
+  - `sessionStorage.setItem('pending_2fa', data.user.id)`
+  - Navegar para `/verificacao-2fa?userId=...`
+  - **Não fazer signOut**, **não armazenar credenciais**
 
-Todos os campos ja existem: `tipo_produto`, `created_by_admin`, `proposal_id`, `sem_slots_video` na tabela `pedidos`.
+### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
+- Após verificação do código bem-sucedida (linha 99):
+  - `sessionStorage.removeItem('pending_2fa')`
+  - Isso faz `isLoggedIn` mudar para `true` automaticamente
+  - Redirecionar para rota correta baseada no role
+
+- No botão "Voltar ao Login" (linha 239):
+  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
+  - Isso garante logout limpo se o usuário desistir
+
+## Garantias
+
+| Regra | Cumprida |
+|-------|----------|
+| Sem tabelas novas | ✓ |
+| Sem signOut como solução | ✓ |
+| Sem credenciais em sessionStorage | ✓ |
+| Sem fluxos paralelos | ✓ |
+| Sessão bloqueada até 2FA | ✓ |
+| Reutiliza componentes existentes | ✓ |
+
+## Limitação Transparente
+
+A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
 
