@@ -30,6 +30,7 @@ interface OrderData {
   compliance_data?: any;
   cupom_id?: string;
   termos_aceitos?: boolean;
+  tipo_produto?: string;
   lista_predios?: string[];
   ip_origem?: string;
   device_info?: any;
