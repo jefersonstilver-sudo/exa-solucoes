@@ -817,7 +817,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[900px] max-h-[92vh] overflow-hidden p-0 gap-0">
+        <DialogContent className="sm:max-w-[1100px] max-h-[95vh] overflow-hidden p-0 gap-0">
           <DialogHeader className="sr-only">
             <DialogTitle>Editar Evento</DialogTitle>
           </DialogHeader>
