@@ -67,11 +67,24 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
         />
       )}
       
-      {/* ID e Status */}
-      <div className="flex items-center gap-2 min-w-[200px]">
+      {/* ID, Tipo Produto e Status */}
+      <div className="flex items-center gap-2 min-w-[280px]">
         <span className="font-mono text-sm text-muted-foreground">
           #{item.id.substring(0, 8)}
         </span>
+        {item.type === 'order' && (
+          (item as any).tipo_produto === 'vertical_premium' ? (
+            <Badge variant="outline" className="text-[10px] border-purple-400 text-purple-700 bg-purple-50 px-1.5 py-0">
+              <Smartphone className="h-2.5 w-2.5 mr-0.5" />
+              Vertical
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-[10px] border-blue-400 text-blue-700 bg-blue-50 px-1.5 py-0">
+              <Monitor className="h-2.5 w-2.5 mr-0.5" />
+              Horizontal
+            </Badge>
+          )
+        )}
         <Badge className={`${statusConfig.className} text-xs font-medium`}>
           {statusConfig.icon} {statusConfig.label}
         </Badge>

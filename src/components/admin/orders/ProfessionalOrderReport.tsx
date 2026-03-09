@@ -285,7 +285,23 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
           </div>
           
           <div className="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-xs">
+              <div>
+                <p className="text-gray-500 mb-1">Tipo de Produto</p>
+                <p className="font-semibold text-gray-900">
+                  {order.tipo_produto === 'vertical_premium' ? (
+                    <span className="inline-flex items-center gap-1.5 bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md text-xs font-semibold">
+                      <Smartphone className="h-3 w-3" />
+                      Vertical Premium
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md text-xs font-semibold">
+                      <Monitor className="h-3 w-3" />
+                      Horizontal
+                    </span>
+                  )}
+                </p>
+              </div>
               <div>
                 <p className="text-gray-500 mb-1">Data de Criação</p>
                 <p className="font-semibold text-gray-900">{formatDate(order.created_at)}</p>

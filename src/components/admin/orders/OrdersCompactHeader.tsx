@@ -79,6 +79,28 @@ const OrdersCompactHeader: React.FC<OrdersCompactHeaderProps> = ({
           {/* Period Filter */}
           <OrderPeriodFilter value={periodFilter} onChange={onPeriodChange} />
           
+          {/* Botão Adicionar Pedido - Visível */}
+          {onAddOrder && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onAddOrder}
+                    className="h-9 border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E] hover:text-white transition-all duration-200 font-medium gap-1.5"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span className="hidden sm:inline">Adicionar Pedido</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Criar pedido manualmente (Horizontal ou Vertical Premium)</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          
           {/* Actions Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

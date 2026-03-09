@@ -196,6 +196,7 @@ export const useRealOrderDetails = (orderId: string) => {
           client_email: order.users?.email || 'Email não disponível',
           client_name: clientName,
           video_status: order.status,
+          tipo_produto: order.tipo_produto || 'horizontal',
           nome_pedido: order.nome_pedido,
           log_pagamento: order.log_pagamento,
           compliance_data: order.compliance_data,
