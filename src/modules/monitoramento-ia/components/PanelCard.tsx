@@ -2,10 +2,12 @@ import { Device } from '../utils/devices';
 import { humanizeDate } from '../utils/formatters';
 import { useRealTimeCounter } from '../hooks/useRealTimeCounter';
 import { Badge } from '@/components/ui/badge';
-import { Wifi, MapPin, Activity, Building2, Check, Unlink, AlertTriangle, ClipboardCheck } from 'lucide-react';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { Wifi, MapPin, Activity, Building2, Check, Unlink, AlertTriangle, ClipboardCheck, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { IncidentStatus } from '../hooks/useDeviceIncidentStatus';
+import { DeviceIncident } from '../hooks/useDeviceIncidents';
 
 interface PanelCardProps {
   device: Device & { building_id?: string | null; empresa_elevador_id?: string | null };
@@ -13,6 +15,7 @@ interface PanelCardProps {
   periodEventsCount?: number;
   periodLabel?: string;
   incidentStatus?: IncidentStatus;
+  incidentData?: DeviceIncident | null;
 }
 
 export const PanelCard = ({
@@ -20,7 +23,8 @@ export const PanelCard = ({
   onClick,
   periodEventsCount,
   periodLabel = 'hoje',
-  incidentStatus
+  incidentStatus,
+  incidentData
 }: PanelCardProps) => {
   const hasCriticalAlert = (device as any).has_critical_alert === true;
   const offlineCounter = useRealTimeCounter(device.status === 'offline' ? device.last_online_at : null);
@@ -133,6 +137,85 @@ export const PanelCard = ({
   const displayEventsCount = periodEventsCount !== undefined ? periodEventsCount : (device.offline_count || 0);
   const eventsLabel = periodEventsCount !== undefined ? `${displayEventsCount} quedas ${periodLabel}` : `${displayEventsCount} quedas`;
 
+  // Render incident badge with hover card
+  const renderIncidentBadge = () => {
+    if (device.status !== 'offline') return null;
+    
+    if (incidentStatus === 'pendente') {
+      return (
+        <Badge className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-red-100 text-red-700 border-red-400 px-1.5 sm:px-2 py-0.5 animate-pulse">
+          <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+          Sem causa
+        </Badge>
+      );
+    }
+    
+    if (incidentStatus === 'causa_registrada' && incidentData) {
+      return (
+        <HoverCard openDelay={200} closeDelay={100}>
+          <HoverCardTrigger asChild>
+            <Badge className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-amber-100 text-amber-700 border-amber-400 px-1.5 sm:px-2 py-0.5 cursor-pointer hover:bg-amber-200 transition-colors">
+              <ClipboardCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+              Causa definida
+            </Badge>
+          </HoverCardTrigger>
+          <HoverCardContent className="w-72 p-0 border-amber-300 shadow-lg" side="top" sideOffset={8}>
+            <div className="bg-amber-50 border-b border-amber-200 px-3 py-2 rounded-t-md">
+              <p className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
+                📋 Detalhes do Incidente
+              </p>
+            </div>
+            <div className="p-3 space-y-2">
+              {incidentData.category && (
+                <div className="flex items-center gap-2">
+                  <Badge
+                    className="text-xs px-2 py-0.5"
+                    style={{
+                      backgroundColor: `${incidentData.category.color}20`,
+                      color: incidentData.category.color,
+                      borderColor: `${incidentData.category.color}40`,
+                    }}
+                  >
+                    {incidentData.category.icon} {incidentData.category.label}
+                  </Badge>
+                </div>
+              )}
+              {incidentData.causa && (
+                <div>
+                  <p className="text-[10px] font-semibold text-amber-700 mb-0.5">Causa:</p>
+                  <p className="text-xs text-gray-700 line-clamp-3">{incidentData.causa}</p>
+                </div>
+              )}
+              {incidentData.resolucao && (
+                <div>
+                  <p className="text-[10px] font-semibold text-amber-700 mb-0.5">Resolução:</p>
+                  <p className="text-xs text-gray-700 line-clamp-2">{incidentData.resolucao}</p>
+                </div>
+              )}
+              {incidentData.registrado_por_nome && (
+                <div className="flex items-center gap-1 text-[10px] text-amber-600 pt-1 border-t border-amber-100">
+                  <User className="h-2.5 w-2.5" />
+                  <span>por <strong>{incidentData.registrado_por_nome}</strong></span>
+                </div>
+              )}
+            </div>
+          </HoverCardContent>
+        </HoverCard>
+      );
+    }
+    
+    if (incidentStatus === 'causa_registrada') {
+      return (
+        <Badge className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-amber-100 text-amber-700 border-amber-400 px-1.5 sm:px-2 py-0.5">
+          <ClipboardCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+          Causa definida
+        </Badge>
+      );
+    }
+    
+    return null;
+  };
+
   return (
     <div 
       onClick={onClick} 
@@ -206,19 +289,8 @@ export const PanelCard = ({
             </Badge>
           )}
 
-          {/* Badge de Incidente Offline */}
-          {device.status === 'offline' && incidentStatus === 'pendente' && (
-            <Badge className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-red-100 text-red-700 border-red-400 px-1.5 sm:px-2 py-0.5 animate-pulse">
-              <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-              Sem causa
-            </Badge>
-          )}
-          {device.status === 'offline' && incidentStatus === 'causa_registrada' && (
-            <Badge className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-amber-100 text-amber-700 border-amber-400 px-1.5 sm:px-2 py-0.5">
-              <ClipboardCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-              Causa definida
-            </Badge>
-          )}
+          {/* Badge de Incidente Offline com HoverCard */}
+          {renderIncidentBadge()}
         </div>
 
         {/* AnyDesk ID - Secundário e discreto */}

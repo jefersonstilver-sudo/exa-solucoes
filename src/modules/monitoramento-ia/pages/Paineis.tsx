@@ -18,6 +18,7 @@ import { useDevices } from '../hooks/useDevices';
 import { useModuleTheme } from '../hooks/useModuleTheme';
 import { usePeriodDeviceEvents } from '../hooks/usePeriodDeviceEvents';
 import { useDeviceIncidentStatus } from '../hooks/useDeviceIncidentStatus';
+import { usePendingIncidents } from '../hooks/useDeviceIncidents';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -108,7 +109,11 @@ export const PaineisPage = () => {
   );
 
   // Hook de status de incidentes para devices offline
-  const { incidentStatusMap } = useDeviceIncidentStatus(devices);
+  const { incidentStatusMap, refetch: refetchIncidentStatus } = useDeviceIncidentStatus(devices);
+
+  // Hook para dados detalhados dos incidentes (para hover nos cards)
+  const offlineDeviceIds = useMemo(() => devices.filter(d => d.status === 'offline').map(d => d.id), [devices]);
+  const pendingIncidentsMap = usePendingIncidents(offlineDeviceIds);
 
   const handlePeriodChange = (newPeriod: PeriodType, customStart?: Date, customEnd?: Date) => {
     setPeriod(newPeriod);
@@ -420,6 +425,7 @@ export const PaineisPage = () => {
                   periodEventsCount={periodEventsMap.get(device.id) || 0}
                   periodLabel={getPeriodLabel(period)}
                   incidentStatus={incidentStatusMap.get(device.id) || null}
+                  incidentData={pendingIncidentsMap[device.id] || null}
                   onClick={() => {
                     setSelectedDevice(device);
                     setIsDetailModalOpen(true);
@@ -475,10 +481,14 @@ export const PaineisPage = () => {
           onClose={() => {
             setIsDetailModalOpen(false);
             setSelectedDevice(null);
+            // Refresh imediato dos badges ao fechar modal
+            refetchIncidentStatus();
           }}
           onDeleted={() => {
-            // Recarregar a lista após exclusão
             refresh();
+          }}
+          onIncidentUpdate={() => {
+            refetchIncidentStatus();
           }}
           theme={theme}
           periodEventsCount={periodEventsMap.get(selectedDevice.id) || 0}
@@ -489,7 +499,7 @@ export const PaineisPage = () => {
       
       {/* Modo Monitor Fullscreen */}
       {isFullscreen && (
-        <FullscreenMonitor devices={devices} onClose={() => setIsFullscreen(false)} incidentStatusMap={incidentStatusMap} />
+        <FullscreenMonitor devices={devices} onClose={() => setIsFullscreen(false)} incidentStatusMap={incidentStatusMap} incidentDataMap={pendingIncidentsMap} />
       )}
       
       {/* Alertas flutuantes de painéis offline */}

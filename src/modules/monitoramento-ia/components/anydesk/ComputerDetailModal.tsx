@@ -25,9 +25,9 @@ interface ComputerDetailModalProps {
   computer: any;
   isOpen: boolean;
   onClose: () => void;
-  onDeleted?: () => void; // Callback para quando o device for excluído
+  onDeleted?: () => void;
+  onIncidentUpdate?: () => void;
   theme: 'dark' | 'light';
-  // Props para eventos proporcionais ao período selecionado
   periodEventsCount?: number;
   periodOfflineCount?: number;
   periodLabel?: string;
@@ -43,6 +43,7 @@ export const ComputerDetailModal = ({
   isOpen, 
   onClose,
   onDeleted,
+  onIncidentUpdate,
   theme,
   periodEventsCount,
   periodOfflineCount,
@@ -495,7 +496,10 @@ export const ComputerDetailModal = ({
             {!isOnline && (
               <OfflineIncidentCard
                 incident={activeIncident}
-                onRegisterCause={registerCause}
+                onRegisterCause={async (incidentId, categoryId, causa, resolucao) => {
+                  await registerCause(incidentId, categoryId, causa, resolucao);
+                  onIncidentUpdate?.();
+                }}
                 isDeviceOffline={!isOnline}
               />
             )}

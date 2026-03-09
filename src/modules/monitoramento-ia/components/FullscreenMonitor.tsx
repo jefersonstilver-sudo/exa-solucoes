@@ -5,6 +5,8 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Device } from '../utils/devices';
 import { IncidentStatus } from '../hooks/useDeviceIncidentStatus';
+import { DeviceIncident } from '../hooks/useDeviceIncidents';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useRealTimeCounter } from '../hooks/useRealTimeCounter';
 import { usePeriodAlerts } from '../hooks/usePeriodAlerts';
@@ -15,6 +17,7 @@ interface FullscreenMonitorProps {
   devices: Device[];
   onClose: () => void;
   incidentStatusMap?: Map<string, IncidentStatus>;
+  incidentDataMap?: Record<string, DeviceIncident>;
 }
 
 interface MonitorCardProps {
@@ -22,9 +25,10 @@ interface MonitorCardProps {
   compact: boolean;
   periodEventsCount?: number;
   incidentStatus?: IncidentStatus;
+  incidentData?: DeviceIncident | null;
 }
 
-const MonitorCard = ({ device, compact, periodEventsCount, incidentStatus }: MonitorCardProps) => {
+const MonitorCard = ({ device, compact, periodEventsCount, incidentStatus, incidentData }: MonitorCardProps) => {
   const displayName = (device.comments || device.name).split(' - ')[0].trim();
   const provider = device.provider || 'Sem provedor';
   const elapsed = useRealTimeCounter(device.last_online_at);
@@ -118,9 +122,32 @@ const MonitorCard = ({ device, compact, periodEventsCount, incidentStatus }: Mon
               {!isOnline && incidentStatus === 'pendente' && (
                 <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" />
               )}
-              {!isOnline && incidentStatus === 'causa_registrada' && (
+              {!isOnline && incidentStatus === 'causa_registrada' && incidentData ? (
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <CheckCircle className="w-4 h-4 text-amber-400 cursor-pointer" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[250px] bg-gray-900 border-amber-500/50 text-white p-3">
+                      <div className="space-y-1">
+                        {incidentData.category && (
+                          <p className="text-xs font-bold text-amber-400">
+                            {incidentData.category.icon} {incidentData.category.label}
+                          </p>
+                        )}
+                        {incidentData.causa && (
+                          <p className="text-xs text-white/80 line-clamp-2">{incidentData.causa}</p>
+                        )}
+                        {incidentData.registrado_por_nome && (
+                          <p className="text-[10px] text-white/50">por {incidentData.registrado_por_nome}</p>
+                        )}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : !isOnline && incidentStatus === 'causa_registrada' ? (
                 <CheckCircle className="w-4 h-4 text-amber-400" />
-              )}
+              ) : null}
             </div>
             <span className={cn(
               "text-xs truncate",
@@ -140,7 +167,7 @@ const MonitorCard = ({ device, compact, periodEventsCount, incidentStatus }: Mon
   );
 };
 
-export const FullscreenMonitor = ({ devices, onClose, incidentStatusMap }: FullscreenMonitorProps) => {
+export const FullscreenMonitor = ({ devices, onClose, incidentStatusMap, incidentDataMap }: FullscreenMonitorProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isPortrait, setIsPortrait] = useState(false);
   const [showAlertsSidebar, setShowAlertsSidebar] = useState(true);
@@ -403,6 +430,7 @@ export const FullscreenMonitor = ({ devices, onClose, incidentStatusMap }: Fulls
                     compact={gridConfig.compact}
                     periodEventsCount={periodEventsMap.get(device.id) || 0}
                     incidentStatus={incidentStatusMap?.get(device.id) || null}
+                    incidentData={incidentDataMap?.[device.id] || null}
                   />
                 ))}
               </div>
