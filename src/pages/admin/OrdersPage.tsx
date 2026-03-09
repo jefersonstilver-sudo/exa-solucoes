@@ -17,6 +17,7 @@ import { FilterChips } from '@/components/admin/shared/FilterChips';
 import { OrderPeriodFilter, filterByPeriod, PeriodFilter } from '@/components/admin/orders/OrderPeriodFilter';
 import { calculateStats } from '@/services/ordersAndAttemptsProcessor';
 import { FixPedidoListaPaineisButton } from '@/components/admin/FixPedidoListaPaineisButton';
+import AdminCreateOrderDialog from '@/components/admin/orders/create/AdminCreateOrderDialog';
 
 const OrdersPage = () => {
   const navigate = useNavigate();
