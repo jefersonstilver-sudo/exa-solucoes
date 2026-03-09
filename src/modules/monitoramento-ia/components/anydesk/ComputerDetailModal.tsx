@@ -595,10 +595,14 @@ export const ComputerDetailModal = ({
 
           {/* TABS */}
           <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-module-secondary border-module">
+            <TabsList className="grid w-full grid-cols-4 bg-module-secondary border-module">
               <TabsTrigger value="info" className="data-[state=active]:!bg-module-accent data-[state=active]:!text-white text-module-primary">
                 <Info className="h-4 w-4 mr-2" />
                 Informações
+              </TabsTrigger>
+              <TabsTrigger value="incidentes" className="data-[state=active]:!bg-module-accent data-[state=active]:!text-white text-module-primary">
+                <FileWarning className="h-4 w-4 mr-2" />
+                Incidentes
               </TabsTrigger>
               <TabsTrigger value="timeline" className="data-[state=active]:!bg-module-accent data-[state=active]:!text-white text-module-primary">
                 <Clock className="h-4 w-4 mr-2" />
