@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Wifi, WifiOff, Zap, AlertTriangle } from 'lucide-react';
+import { Wifi, WifiOff, Zap, AlertTriangle, ClipboardCheck, CheckCircle } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Device } from '../utils/devices';
