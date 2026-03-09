@@ -2,15 +2,17 @@ import { Device } from '../utils/devices';
 import { humanizeDate } from '../utils/formatters';
 import { useRealTimeCounter } from '../hooks/useRealTimeCounter';
 import { Badge } from '@/components/ui/badge';
-import { Wifi, MapPin, Activity, Building2, Check, Unlink } from 'lucide-react';
+import { Wifi, MapPin, Activity, Building2, Check, Unlink, AlertTriangle, ClipboardCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { IncidentStatus } from '../hooks/useDeviceIncidentStatus';
 
 interface PanelCardProps {
   device: Device & { building_id?: string | null; empresa_elevador_id?: string | null };
   onClick: () => void;
   periodEventsCount?: number;
   periodLabel?: string;
+  incidentStatus?: IncidentStatus;
 }
 
 export const PanelCard = ({
