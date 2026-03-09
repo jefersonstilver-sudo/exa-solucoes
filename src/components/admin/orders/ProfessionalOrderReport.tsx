@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload, Key, Loader2, Send } from 'lucide-react';
+import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload, Key, Loader2, Send, Monitor, Smartphone } from 'lucide-react';
 import exaLogo from '@/assets/exa-logo.png';
 import { Button } from '@/components/ui/button';
 import { useFixAuditData } from '@/hooks/admin/useFixAuditData';
