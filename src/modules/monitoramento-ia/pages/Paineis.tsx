@@ -489,7 +489,7 @@ export const PaineisPage = () => {
       
       {/* Modo Monitor Fullscreen */}
       {isFullscreen && (
-        <FullscreenMonitor devices={devices} onClose={() => setIsFullscreen(false)} />
+        <FullscreenMonitor devices={devices} onClose={() => setIsFullscreen(false)} incidentStatusMap={incidentStatusMap} />
       )}
       
       {/* Alertas flutuantes de painéis offline */}
