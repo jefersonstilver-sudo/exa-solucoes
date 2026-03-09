@@ -103,7 +103,38 @@ export function useDeviceIncidents(deviceId: string | null) {
         .limit(1)
         .maybeSingle();
       if (error) throw error;
-      setActiveIncident(data || null);
+
+      if (data) {
+        setActiveIncident(data);
+      } else {
+        // Device offline sem incidente registrado (já estava offline antes da migration)
+        // Criar incidente sob demanda
+        const { data: deviceData } = await supabase
+          .from('devices')
+          .select('status')
+          .eq('id', deviceId)
+          .single();
+
+        if (deviceData?.status === 'offline') {
+          const { data: newIncident, error: insertError } = await (supabase as any)
+            .from('device_offline_incidents')
+            .insert([{
+              device_id: deviceId,
+              started_at: new Date().toISOString(),
+              status: 'pendente',
+            }])
+            .select('*, category:incident_categories(*)')
+            .single();
+
+          if (!insertError && newIncident) {
+            setActiveIncident(newIncident);
+          } else {
+            setActiveIncident(null);
+          }
+        } else {
+          setActiveIncident(null);
+        }
+      }
     } catch (err) {
       console.error('Erro ao buscar incidente ativo:', err);
     }

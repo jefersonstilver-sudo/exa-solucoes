@@ -13,9 +13,10 @@ import { IncidentCategoryManager } from "./IncidentCategoryManager";
 interface OfflineIncidentCardProps {
   incident: DeviceIncident | null;
   onRegisterCause: (incidentId: string, categoryId: string, causa: string, resolucao?: string) => Promise<void>;
+  isDeviceOffline?: boolean;
 }
 
-export const OfflineIncidentCard = ({ incident, onRegisterCause }: OfflineIncidentCardProps) => {
+export const OfflineIncidentCard = ({ incident, onRegisterCause, isDeviceOffline }: OfflineIncidentCardProps) => {
   const { categories } = useIncidentCategories();
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [causa, setCausa] = useState("");
@@ -23,15 +24,15 @@ export const OfflineIncidentCard = ({ incident, onRegisterCause }: OfflineIncide
   const [saving, setSaving] = useState(false);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
 
-  if (!incident) return null;
+  // Não renderizar se não há incidente E o device não está offline
+  if (!incident && !isDeviceOffline) return null;
 
-  const isPending = incident.status === 'pendente';
-  const hasCause = incident.status === 'causa_registrada';
+  const isPending = !incident || incident.status === 'pendente';
+  const hasCause = incident?.status === 'causa_registrada';
 
   const handleSave = async () => {
-    if (!selectedCategoryId || !causa.trim()) {
-      return;
-    }
+    if (!incident) return; // Ainda carregando o incidente
+    if (!selectedCategoryId || !causa.trim()) return;
     setSaving(true);
     try {
       await onRegisterCause(incident.id, selectedCategoryId, causa.trim(), resolucao.trim() || undefined);
@@ -64,7 +65,7 @@ export const OfflineIncidentCard = ({ incident, onRegisterCause }: OfflineIncide
                 : "bg-amber-100 text-amber-700 border-amber-300"
             )}>
               <Clock className="h-3 w-3 mr-1" />
-              Offline há {formatDistanceToNow(new Date(incident.started_at), { locale: ptBR })}
+              {incident ? `Offline há ${formatDistanceToNow(new Date(incident.started_at), { locale: ptBR })}` : 'Carregando...'}
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -169,7 +170,7 @@ export const OfflineIncidentCard = ({ incident, onRegisterCause }: OfflineIncide
 
               <Button
                 onClick={handleSave}
-                disabled={saving || !selectedCategoryId || !causa.trim()}
+                disabled={saving || !incident || !selectedCategoryId || !causa.trim()}
                 className="w-full bg-red-600 hover:bg-red-700 text-white"
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
