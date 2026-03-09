@@ -29,6 +29,7 @@ interface OrderWithClient {
   client_email: string;
   client_name: string;
   video_status: string;
+  tipo_produto?: string;
   nome_pedido?: string;
   log_pagamento?: any;
   compliance_data?: any;
