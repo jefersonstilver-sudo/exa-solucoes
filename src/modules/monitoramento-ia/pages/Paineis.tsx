@@ -111,6 +111,10 @@ export const PaineisPage = () => {
   // Hook de status de incidentes para devices offline
   const { incidentStatusMap, refetch: refetchIncidentStatus } = useDeviceIncidentStatus(devices);
 
+  // Hook para dados detalhados dos incidentes (para hover nos cards)
+  const offlineDeviceIds = useMemo(() => devices.filter(d => d.status === 'offline').map(d => d.id), [devices]);
+  const pendingIncidentsMap = usePendingIncidents(offlineDeviceIds);
+
   const handlePeriodChange = (newPeriod: PeriodType, customStart?: Date, customEnd?: Date) => {
     setPeriod(newPeriod);
     if (customStart) setCustomStartDate(customStart);
