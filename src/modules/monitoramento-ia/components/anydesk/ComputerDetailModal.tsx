@@ -43,6 +43,7 @@ export const ComputerDetailModal = ({
   isOpen, 
   onClose,
   onDeleted,
+  onIncidentUpdate,
   theme,
   periodEventsCount,
   periodOfflineCount,
