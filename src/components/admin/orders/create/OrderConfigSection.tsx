@@ -19,11 +19,32 @@ interface OrderConfigSectionProps {
   updateField: <K extends keyof AdminOrderFormData>(key: K, value: AdminOrderFormData[K]) => void;
 }
 
+const sanitizeBuildingId = (rawId: any): string | null => {
+  if (typeof rawId === 'string' && rawId.length > 10) return rawId;
+  if (typeof rawId === 'object' && rawId !== null) {
+    return rawId.building_id || rawId.id || null;
+  }
+  return null;
+};
+
 const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updateField }) => {
   const [buildings, setBuildings] = useState<any[]>([]);
   const [buildingSearch, setBuildingSearch] = useState('');
   const [loadingBuildings, setLoadingBuildings] = useState(false);
   const { logActivity } = useActivityLogger();
+
+  // Auto-fix: sanitize listaPredios if it contains objects
+  useEffect(() => {
+    const hasObjects = formData.listaPredios.some(id => typeof id !== 'string' || id.length <= 10);
+    if (hasObjects && formData.listaPredios.length > 0) {
+      const clean = formData.listaPredios
+        .map(sanitizeBuildingId)
+        .filter((id): id is string => id !== null);
+      if (clean.length > 0) {
+        updateField('listaPredios', clean);
+      }
+    }
+  }, [formData.listaPredios]);
 
   // Fetch buildings
   useEffect(() => {
