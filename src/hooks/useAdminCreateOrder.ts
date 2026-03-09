@@ -195,10 +195,15 @@ export function useAdminCreateOrder() {
 
       let clientId = formData.clientId;
 
-      // Create account if no clientId
+      // Create account if no clientId - check if exists first to avoid duplicate key error
       if (!clientId && formData.clientEmail) {
-        const result = await createAccount();
-        clientId = result.userId;
+        const status = await checkAccountStatus(formData.clientEmail, true);
+        if (status.exists && status.userId) {
+          clientId = status.userId;
+        } else {
+          const result = await createAccount();
+          clientId = result.userId;
+        }
       }
 
       if (!clientId) throw new Error('ID do cliente não encontrado');
