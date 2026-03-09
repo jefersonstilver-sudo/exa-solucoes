@@ -117,6 +117,9 @@ const ClientSearchSection: React.FC<ClientSearchSectionProps> = ({
     setResults([]);
     setProposalResults([]);
     setSearchTerm('');
+    toast.success('Proposta carregada com sucesso', {
+      description: 'Prédios, valores e dados do cliente foram preenchidos automaticamente.',
+    });
   };
 
   const handleActivate = async () => {

@@ -111,12 +111,13 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
         {/* Selected chips */}
         {formData.listaPredios.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-2">
-            {formData.listaPredios.map(id => {
-              const b = buildings.find(x => x.id === id);
+            {formData.listaPredios.map(rawId => {
+              const idStr = typeof rawId === 'string' ? rawId : String(rawId);
+              const b = buildings.find(x => x.id === idStr);
               return (
-                <span key={id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#9C1E1E]/10 text-[#9C1E1E] rounded-md text-xs font-medium">
-                  {b?.codigo_predio || b?.nome?.slice(0, 15) || id.slice(0, 8)}
-                  <button onClick={() => toggleBuilding(id)}><X className="h-3 w-3" /></button>
+                <span key={idStr} className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#9C1E1E]/10 text-[#9C1E1E] rounded-md text-xs font-medium">
+                  {b?.codigo_predio || b?.nome?.slice(0, 15) || idStr.slice(0, 8)}
+                  <button onClick={() => toggleBuilding(idStr)}><X className="h-3 w-3" /></button>
                 </span>
               );
             })}
