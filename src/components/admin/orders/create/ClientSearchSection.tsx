@@ -13,7 +13,7 @@ interface ClientSearchSectionProps {
   searchProposals: (term: string) => Promise<any[]>;
   activateAccount: (email: string) => Promise<any>;
   createAccount: () => Promise<any>;
-  checkAccountStatus?: (userId: string) => Promise<boolean>;
+  checkAccountStatus?: (emailOrId: string, isEmail?: boolean) => Promise<{ exists: boolean; active: boolean; userId?: string }>;
 }
 
 const ClientSearchSection: React.FC<ClientSearchSectionProps> = ({
