@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle2, Settings, User, Clock } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Settings, User, Clock, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -23,6 +23,7 @@ export const OfflineIncidentCard = ({ incident, onRegisterCause, isDeviceOffline
   const [resolucao, setResolucao] = useState("");
   const [saving, setSaving] = useState(false);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Não renderizar se não há incidente E o device não está offline
   if (!incident && !isDeviceOffline) return null;
@@ -30,8 +31,23 @@ export const OfflineIncidentCard = ({ incident, onRegisterCause, isDeviceOffline
   const isPending = !incident || incident.status === 'pendente';
   const hasCause = incident?.status === 'causa_registrada';
 
+  const handleStartEdit = () => {
+    if (!incident) return;
+    setSelectedCategoryId(incident.category_id || "");
+    setCausa(incident.causa || "");
+    setResolucao(incident.resolucao || "");
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setCausa("");
+    setResolucao("");
+    setSelectedCategoryId("");
+  };
+
   const handleSave = async () => {
-    if (!incident) return; // Ainda carregando o incidente
+    if (!incident) return;
     if (!selectedCategoryId || !causa.trim()) return;
     setSaving(true);
     try {
@@ -39,38 +55,54 @@ export const OfflineIncidentCard = ({ incident, onRegisterCause, isDeviceOffline
       setCausa("");
       setResolucao("");
       setSelectedCategoryId("");
+      setIsEditing(false);
     } finally {
       setSaving(false);
     }
   };
 
+  const showForm = isPending || isEditing;
+
   return (
     <>
       <Card className={cn(
         "md:col-span-3 border-2 shadow-md",
-        isPending ? "bg-red-50 border-red-300" : "bg-amber-50 border-amber-300"
+        isPending || isEditing ? "bg-red-50 border-red-300" : "bg-amber-50 border-amber-300"
       )}>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <AlertTriangle className={cn("h-4 w-4", isPending ? "text-red-600" : "text-amber-600")} />
-              <span className={isPending ? "text-red-700" : "text-amber-700"}>
-                {isPending ? "⚠️ INCIDENTE ATIVO — Causa Pendente" : "📋 INCIDENTE — Causa Registrada"}
+              <AlertTriangle className={cn("h-4 w-4", isPending || isEditing ? "text-red-600" : "text-amber-600")} />
+              <span className={isPending || isEditing ? "text-red-700" : "text-amber-700"}>
+                {isPending ? "⚠️ INCIDENTE ATIVO — Causa Pendente" : isEditing ? "✏️ EDITANDO CAUSA" : "📋 INCIDENTE — Causa Registrada"}
               </span>
             </span>
-            <Badge className={cn(
-              "text-xs",
-              isPending 
-                ? "bg-red-100 text-red-700 border-red-300" 
-                : "bg-amber-100 text-amber-700 border-amber-300"
-            )}>
-              <Clock className="h-3 w-3 mr-1" />
-              {incident ? `Offline há ${formatDistanceToNow(new Date(incident.started_at), { locale: ptBR })}` : 'Carregando...'}
-            </Badge>
+            <div className="flex items-center gap-2">
+              {hasCause && !isEditing && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs border-amber-400 text-amber-700 hover:bg-amber-100"
+                  onClick={handleStartEdit}
+                >
+                  <Pencil className="h-3 w-3 mr-1" />
+                  Editar
+                </Button>
+              )}
+              <Badge className={cn(
+                "text-xs",
+                isPending || isEditing
+                  ? "bg-red-100 text-red-700 border-red-300" 
+                  : "bg-amber-100 text-amber-700 border-amber-300"
+              )}>
+                <Clock className="h-3 w-3 mr-1" />
+                {incident ? `Offline há ${formatDistanceToNow(new Date(incident.started_at), { locale: ptBR })}` : 'Carregando...'}
+              </Badge>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {hasCause ? (
+          {hasCause && !isEditing ? (
             /* Causa já registrada — modo visualização */
             <div className="space-y-3">
               <div className="flex items-start gap-4">
@@ -106,7 +138,7 @@ export const OfflineIncidentCard = ({ incident, onRegisterCause, isDeviceOffline
               </div>
             </div>
           ) : (
-            /* Sem causa — modo formulário */
+            /* Sem causa ou editando — modo formulário */
             <div className="space-y-3">
               <div>
                 <div className="flex items-center justify-between mb-1">
@@ -168,14 +200,25 @@ export const OfflineIncidentCard = ({ incident, onRegisterCause, isDeviceOffline
                 />
               </div>
 
-              <Button
-                onClick={handleSave}
-                disabled={saving || !incident || !selectedCategoryId || !causa.trim()}
-                className="w-full bg-red-600 hover:bg-red-700 text-white"
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                {saving ? 'Registrando...' : 'Registrar Causa'}
-              </Button>
+              <div className="flex gap-2">
+                {isEditing && (
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelEdit}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                )}
+                <Button
+                  onClick={handleSave}
+                  disabled={saving || !incident || !selectedCategoryId || !causa.trim()}
+                  className={cn("text-white", isEditing ? "flex-1 bg-amber-600 hover:bg-amber-700" : "w-full bg-red-600 hover:bg-red-700")}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  {saving ? 'Salvando...' : isEditing ? 'Atualizar Causa' : 'Registrar Causa'}
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

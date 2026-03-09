@@ -496,7 +496,10 @@ export const ComputerDetailModal = ({
             {!isOnline && (
               <OfflineIncidentCard
                 incident={activeIncident}
-                onRegisterCause={registerCause}
+                onRegisterCause={async (incidentId, categoryId, causa, resolucao) => {
+                  await registerCause(incidentId, categoryId, causa, resolucao);
+                  onIncidentUpdate?.();
+                }}
                 isDeviceOffline={!isOnline}
               />
             )}
