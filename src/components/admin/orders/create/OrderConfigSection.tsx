@@ -129,17 +129,26 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
           />
         </div>
         
-        {/* Selected chips */}
+        {/* Selected buildings list */}
         {formData.listaPredios.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
+          <div className="flex flex-col gap-1 mb-2 border rounded-lg p-2 bg-muted/30">
+            <span className="text-xs text-muted-foreground font-medium mb-1">
+              {formData.listaPredios.length} prédio(s) selecionado(s)
+            </span>
             {formData.listaPredios.map(rawId => {
-              const idStr = typeof rawId === 'string' ? rawId : (rawId as any)?.building_id || (rawId as any)?.id || JSON.stringify(rawId);
+              const idStr = sanitizeBuildingId(rawId) || String(rawId);
               const b = buildings.find(x => x.id === idStr);
               return (
-                <span key={idStr} className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#9C1E1E]/10 text-[#9C1E1E] rounded-md text-xs font-medium">
-                  {b?.codigo_predio || b?.nome?.slice(0, 15) || idStr.slice(0, 8)}
-                  <button onClick={() => toggleBuilding(idStr)}><X className="h-3 w-3" /></button>
-                </span>
+                <div key={idStr} className="flex items-center justify-between px-2 py-1.5 bg-background rounded border text-sm">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    <span className="truncate">{b?.nome || idStr.slice(0, 8)}</span>
+                    {b?.bairro && <span className="text-xs text-muted-foreground">- {b.bairro}</span>}
+                  </div>
+                  <button type="button" onClick={() => toggleBuilding(idStr)} className="ml-2 text-muted-foreground hover:text-destructive">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               );
             })}
           </div>
