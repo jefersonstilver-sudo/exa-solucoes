@@ -16,6 +16,7 @@ interface ComputerCardProps {
     ip_public?: string;
     comment?: string;
     custom_name?: string;
+    has_pending_incident?: boolean;
   };
   onViewDetails: (id: string) => void;
 }
