@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 import { RefreshCw, Volume2, VolumeX, Play, Wrench, Settings2 } from 'lucide-react';
 import { OrderPeriodFilter, PeriodFilter } from './OrderPeriodFilter';
 import { Switch } from '@/components/ui/switch';
