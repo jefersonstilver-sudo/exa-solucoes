@@ -18,13 +18,37 @@ serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    const { email, password, primeiro_nome, sobrenome, telefone, confirm_email } = await req.json();
+    const body = await req.json();
+    const { email, user_id, password, primeiro_nome, sobrenome, telefone, confirm_email, check_only } = body;
 
-    console.log(`[ADMIN-UPDATE-USER] Updating user: ${email}`);
+    // Find user by email or user_id
+    let user = null;
+    
+    if (user_id) {
+      const { data } = await supabaseAdmin.auth.admin.getUserById(user_id);
+      user = data?.user || null;
+    } else if (email) {
+      const { data: users } = await supabaseAdmin.auth.admin.listUsers();
+      user = users.users.find(u => u.email?.toLowerCase() === email.toLowerCase()) || null;
+    } else {
+      return new Response(JSON.stringify({ success: false, error: 'Email ou user_id é obrigatório' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
-    // Find the user by email
-    const { data: users } = await supabaseAdmin.auth.admin.listUsers();
-    const user = users.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    // check_only mode — just return status
+    if (check_only) {
+      return new Response(JSON.stringify({
+        success: true,
+        user_exists: !!user,
+        email_confirmed: user?.email_confirmed_at != null,
+        user_id: user?.id || null,
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     if (!user) {
       return new Response(JSON.stringify({ success: false, error: 'Usuário não encontrado' }), {
@@ -34,7 +58,7 @@ serve(async (req) => {
     }
 
     const userId = user.id;
-    console.log(`[ADMIN-UPDATE-USER] Found user ID: ${userId}`);
+    console.log(`[ADMIN-UPDATE-USER] Updating user: ${user.email}, ID: ${userId}`);
 
     // Update auth user
     const updateData: any = {};
@@ -84,12 +108,12 @@ serve(async (req) => {
       }
     }
 
-    console.log(`[ADMIN-UPDATE-USER] ✅ User updated successfully: ${email}`);
+    console.log(`[ADMIN-UPDATE-USER] ✅ User updated successfully: ${user.email}`);
 
     return new Response(JSON.stringify({ 
       success: true, 
       userId,
-      message: `Usuário ${email} atualizado com sucesso. Email confirmado: ${confirm_email ? 'Sim' : 'Não'}, Senha alterada: ${password ? 'Sim' : 'Não'}`
+      message: `Usuário ${user.email} atualizado com sucesso. Email confirmado: ${confirm_email ? 'Sim' : 'Não'}, Senha alterada: ${password ? 'Sim' : 'Não'}`
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
