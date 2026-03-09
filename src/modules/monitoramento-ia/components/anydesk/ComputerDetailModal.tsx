@@ -496,6 +496,7 @@ export const ComputerDetailModal = ({
               <OfflineIncidentCard
                 incident={activeIncident}
                 onRegisterCause={registerCause}
+                isDeviceOffline={!isOnline}
               />
             )}
 

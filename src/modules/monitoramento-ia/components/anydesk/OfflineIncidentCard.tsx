@@ -65,7 +65,7 @@ export const OfflineIncidentCard = ({ incident, onRegisterCause, isDeviceOffline
                 : "bg-amber-100 text-amber-700 border-amber-300"
             )}>
               <Clock className="h-3 w-3 mr-1" />
-              Offline há {formatDistanceToNow(new Date(incident.started_at), { locale: ptBR })}
+              {incident ? `Offline há ${formatDistanceToNow(new Date(incident.started_at), { locale: ptBR })}` : 'Carregando...'}
             </Badge>
           </CardTitle>
         </CardHeader>
