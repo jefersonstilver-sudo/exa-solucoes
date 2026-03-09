@@ -430,6 +430,7 @@ export const FullscreenMonitor = ({ devices, onClose, incidentStatusMap, inciden
                     compact={gridConfig.compact}
                     periodEventsCount={periodEventsMap.get(device.id) || 0}
                     incidentStatus={incidentStatusMap?.get(device.id) || null}
+                    incidentData={incidentDataMap?.[device.id] || null}
                   />
                 ))}
               </div>
