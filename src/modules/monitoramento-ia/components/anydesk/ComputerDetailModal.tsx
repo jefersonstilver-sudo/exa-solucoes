@@ -491,6 +491,14 @@ export const ComputerDetailModal = ({
             </Card>
 
 
+            {/* CARD 6: INCIDENTE OFFLINE */}
+            {!isOnline && (
+              <OfflineIncidentCard
+                incident={activeIncident}
+                onRegisterCause={registerCause}
+              />
+            )}
+
             {isMasterAccount && !isOnline && (
               <Card className="bg-red-50 border-red-200 shadow-sm md:col-span-3">
                 <CardHeader className="pb-3">
