@@ -228,7 +228,7 @@ export function useAdminCreateOrder() {
           client_name: formData.clientName,
           email: formData.clientEmail,
           tipo_produto: formData.tipoProduto,
-          lista_predios: formData.listaPredios.map((id: any) => typeof id === 'string' ? id : id?.building_id || id?.id).filter((id): id is string => typeof id === 'string' && id.length > 10),
+          lista_predios: formData.listaPredios.map((id: any) => typeof id === 'string' ? id : id?.building_id || id?.id).filter((id): id is string => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)),
           lista_paineis: formData.listaPaineis,
           plano_meses: formData.planoMeses,
           valor_total: formData.valorTotal,

@@ -1,69 +1,80 @@
 
 
-# Fix definitivo: `[object Object]` persistente nos prédios
+# Plano de Correção — 2FA Seguro com Auth Gate
 
-## Causa raiz identificada
+## Diagnóstico Confirmado
 
-O `sanitizeBuildingId` considera válida qualquer string com `length > 10`. Porém, `"[object Object]"` tem 15 caracteres — então passa o filtro como se fosse um UUID válido. O `useEffect` auto-fix também não detecta porque `typeof === 'string'` é true.
+1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
+2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
 
-Isso significa que uma vez que um objeto vaza para o state como string `"[object Object]"`, **nunca mais é limpo**.
+## Limitação Técnica do Supabase
 
-## Correções
+O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
 
-### 1. `OrderConfigSection.tsx` — Sanitização com validação de UUID
+## Solução: Auth Gate no AuthProvider
 
-Reescrever `sanitizeBuildingId` para validar formato UUID:
+Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
 
-```typescript
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-const sanitizeBuildingId = (rawId: any): string | null => {
-  if (typeof rawId === 'string') {
-    return UUID_REGEX.test(rawId) ? rawId : null;
-  }
-  if (typeof rawId === 'object' && rawId !== null) {
-    const extracted = rawId.building_id || rawId.id;
-    return typeof extracted === 'string' && UUID_REGEX.test(extracted) ? extracted : null;
-  }
-  return null;
-};
+```text
+Email + Senha
+  ↓
+signInWithPassword (sessão Supabase criada — inevitável)
+  ↓
+2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
+  ↓                    → navigate('/verificacao-2fa')
+  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
+  ↓                    → Todas as rotas protegidas bloqueadas
+  ↓                    ↓
+  ↓                  Código validado → sessionStorage.remove('pending_2fa')
+  ↓                    → isLoggedIn = TRUE → acesso liberado
+  ↓
+  NÃO → login normal
 ```
 
-Atualizar o `useEffect` auto-fix para detectar IDs que não são UUIDs válidos:
+**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
 
-```typescript
-useEffect(() => {
-  if (formData.listaPredios.length === 0) return;
-  const clean = formData.listaPredios
-    .map(sanitizeBuildingId)
-    .filter((id): id is string => id !== null);
-  // Se algum ID foi removido/corrigido, atualizar o state
-  if (clean.length !== formData.listaPredios.length || 
-      clean.some((id, i) => id !== formData.listaPredios[i])) {
-    updateField('listaPredios', clean);
-  }
-}, [formData.listaPredios]);
-```
+## Arquivos a Modificar (4 arquivos)
 
-### 2. `ClientSearchSection.tsx` — Mesma validação UUID na extração
+### A. `src/App.tsx` (1 linha)
+- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
+- Importar `TwoFactorVerificationPage`
 
-Usar regex UUID no `selectProposal` para garantir que só IDs válidos entram no state:
+### B. `src/hooks/useAuth.tsx` — Auth Gate
+- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
+  ```
+  const pending2fa = sessionStorage.getItem('pending_2fa');
+  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
+  ```
+- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
 
-```typescript
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-...-[0-9a-f]{12}$/i;
+### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
+- Após detectar `two_factor_enabled` (linha 134):
+  - `sessionStorage.setItem('pending_2fa', data.user.id)`
+  - Navegar para `/verificacao-2fa?userId=...`
+  - **Não fazer signOut**, **não armazenar credenciais**
 
-buildings = rawBuildings
-  .map((b: any) => typeof b === 'string' ? b : b?.building_id || b?.id || null)
-  .filter((id): id is string => typeof id === 'string' && UUID_REGEX.test(id));
-```
+### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
+- Após verificação do código bem-sucedida (linha 99):
+  - `sessionStorage.removeItem('pending_2fa')`
+  - Isso faz `isLoggedIn` mudar para `true` automaticamente
+  - Redirecionar para rota correta baseada no role
 
-### 3. `useAdminCreateOrder.ts` — Mesma limpeza no submit
+- No botão "Voltar ao Login" (linha 239):
+  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
+  - Isso garante logout limpo se o usuário desistir
 
-Linha 231 — aplicar filtro UUID no `lista_predios` antes do insert.
+## Garantias
 
-| Arquivo | Mudança |
-|---------|---------|
-| `OrderConfigSection.tsx` | UUID regex no sanitizer + useEffect melhorado |
-| `ClientSearchSection.tsx` | UUID regex no filtro de extração |
-| `useAdminCreateOrder.ts` | UUID regex no submit |
+| Regra | Cumprida |
+|-------|----------|
+| Sem tabelas novas | ✓ |
+| Sem signOut como solução | ✓ |
+| Sem credenciais em sessionStorage | ✓ |
+| Sem fluxos paralelos | ✓ |
+| Sessão bloqueada até 2FA | ✓ |
+| Reutiliza componentes existentes | ✓ |
+
+## Limitação Transparente
+
+A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
 

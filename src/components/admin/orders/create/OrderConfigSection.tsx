@@ -19,10 +19,15 @@ interface OrderConfigSectionProps {
   updateField: <K extends keyof AdminOrderFormData>(key: K, value: AdminOrderFormData[K]) => void;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const sanitizeBuildingId = (rawId: any): string | null => {
-  if (typeof rawId === 'string' && rawId.length > 10) return rawId;
+  if (typeof rawId === 'string') {
+    return UUID_REGEX.test(rawId) ? rawId : null;
+  }
   if (typeof rawId === 'object' && rawId !== null) {
-    return rawId.building_id || rawId.id || null;
+    const extracted = rawId.building_id || rawId.id;
+    return typeof extracted === 'string' && UUID_REGEX.test(extracted) ? extracted : null;
   }
   return null;
 };
@@ -33,16 +38,15 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
   const [loadingBuildings, setLoadingBuildings] = useState(false);
   const { logActivity } = useActivityLogger();
 
-  // Auto-fix: sanitize listaPredios if it contains objects
+  // Auto-fix: sanitize listaPredios — remove non-UUID entries
   useEffect(() => {
-    const hasObjects = formData.listaPredios.some(id => typeof id !== 'string' || id.length <= 10);
-    if (hasObjects && formData.listaPredios.length > 0) {
-      const clean = formData.listaPredios
-        .map(sanitizeBuildingId)
-        .filter((id): id is string => id !== null);
-      if (clean.length > 0) {
-        updateField('listaPredios', clean);
-      }
+    if (formData.listaPredios.length === 0) return;
+    const clean = formData.listaPredios
+      .map(sanitizeBuildingId)
+      .filter((id): id is string => id !== null);
+    if (clean.length !== formData.listaPredios.length || clean.some((id, i) => id !== formData.listaPredios[i])) {
+      console.log('🧹 Auto-fix listaPredios:', formData.listaPredios, '→', clean);
+      updateField('listaPredios', clean);
     }
   }, [formData.listaPredios]);
 

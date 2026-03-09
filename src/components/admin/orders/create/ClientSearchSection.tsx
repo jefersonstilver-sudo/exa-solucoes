@@ -88,12 +88,13 @@ const ClientSearchSection: React.FC<ClientSearchSectionProps> = ({
           ? JSON.parse(proposal.selected_buildings)
           : proposal.selected_buildings;
         
+        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         buildings = (Array.isArray(rawBuildings) ? rawBuildings : [])
           .map((b: any) => {
             if (typeof b === 'string') return b;
             return b?.building_id || b?.id || null;
           })
-          .filter((id): id is string => typeof id === 'string' && id.length > 10);
+          .filter((id): id is string => typeof id === 'string' && UUID_REGEX.test(id));
         
         console.log('🏢 Buildings extraídos (IDs limpos):', buildings);
         if (buildings.length > 0) {
