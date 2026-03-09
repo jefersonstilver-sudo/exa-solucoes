@@ -77,15 +77,17 @@ export function useAdminCreateOrder() {
   };
 
   // Check if client account is active (email confirmed)
-  const checkAccountStatus = async (userId: string): Promise<boolean> => {
+  const checkAccountStatus = async (emailOrId: string, isEmail = false): Promise<{ exists: boolean; active: boolean; userId?: string }> => {
     try {
-      const { data } = await supabase.functions.invoke('admin-update-user', {
-        body: { user_id: userId, check_only: true }
-      });
-      return data?.email_confirmed === true;
+      const body = isEmail ? { email: emailOrId, check_only: true } : { user_id: emailOrId, check_only: true };
+      const { data } = await supabase.functions.invoke('admin-update-user', { body });
+      return {
+        exists: data?.user_exists === true,
+        active: data?.email_confirmed === true,
+        userId: data?.user_id || undefined,
+      };
     } catch {
-      // Fallback: assume not confirmed
-      return false;
+      return { exists: false, active: false };
     }
   };
 

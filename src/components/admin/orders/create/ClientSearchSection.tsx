@@ -59,7 +59,7 @@ const ClientSearchSection: React.FC<ClientSearchSectionProps> = ({
     setSearchTerm('');
   };
 
-  const selectProposal = (proposal: any) => {
+  const selectProposal = async (proposal: any) => {
     updateField('proposalId', proposal.id);
     updateField('clientName', proposal.client_name || '');
     updateField('clientEmail', proposal.client_email || '');
@@ -93,6 +93,18 @@ const ClientSearchSection: React.FC<ClientSearchSectionProps> = ({
         }
       } catch (e) {
         console.error('Erro ao parsear selected_buildings:', e);
+      }
+    }
+    
+    // Check if client already has an active account
+    if (proposal.client_email && checkAccountStatus) {
+      const status = await checkAccountStatus(proposal.client_email, true);
+      if (status.exists) {
+        updateField('clientId', status.userId || null);
+        updateField('clientAccountActive', status.active);
+      } else {
+        updateField('clientId', null);
+        updateField('clientAccountActive', null);
       }
     }
     
