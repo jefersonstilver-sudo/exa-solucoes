@@ -96,7 +96,7 @@ export function useAdminCreateOrder() {
     if (term.length < 2) return [];
     const { data } = await supabase
       .from('proposals')
-      .select('id, number, client_name, client_company_name, client_email, client_phone, status, total_amount, tipo_produto, duration_months, fidel_monthly_value, cash_total_value, selected_buildings')
+      .select('id, number, client_name, client_company_name, client_email, client_phone, status, tipo_produto, duration_months, fidel_monthly_value, cash_total_value, selected_buildings')
       .or(`client_name.ilike.%${term}%,client_email.ilike.%${term}%,client_company_name.ilike.%${term}%,number.ilike.%${term}%`)
       .in('status', ['enviada', 'rascunho', 'visualizada', 'visualizando', 'atualizada'])
       .order('created_at', { ascending: false })

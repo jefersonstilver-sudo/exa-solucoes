@@ -183,7 +183,7 @@ const ClientSearchSection: React.FC<ClientSearchSectionProps> = ({
                 <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase border-t">Propostas</div>
                 {proposalResults.map(p => {
                   const statusInfo = getStatusLabel(p.status);
-                  const valor = p.cash_total_value || p.total_amount || 0;
+                  const valor = p.cash_total_value || 0;
                   const buildingsCount = (() => {
                     try {
                       if (Array.isArray(p.selected_buildings)) return p.selected_buildings.length;
