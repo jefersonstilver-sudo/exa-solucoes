@@ -122,9 +122,32 @@ const MonitorCard = ({ device, compact, periodEventsCount, incidentStatus, incid
               {!isOnline && incidentStatus === 'pendente' && (
                 <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" />
               )}
-              {!isOnline && incidentStatus === 'causa_registrada' && (
+              {!isOnline && incidentStatus === 'causa_registrada' && incidentData ? (
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <CheckCircle className="w-4 h-4 text-amber-400 cursor-pointer" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[250px] bg-gray-900 border-amber-500/50 text-white p-3">
+                      <div className="space-y-1">
+                        {incidentData.category && (
+                          <p className="text-xs font-bold text-amber-400">
+                            {incidentData.category.icon} {incidentData.category.label}
+                          </p>
+                        )}
+                        {incidentData.causa && (
+                          <p className="text-xs text-white/80 line-clamp-2">{incidentData.causa}</p>
+                        )}
+                        {incidentData.registrado_por_nome && (
+                          <p className="text-[10px] text-white/50">por {incidentData.registrado_por_nome}</p>
+                        )}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : !isOnline && incidentStatus === 'causa_registrada' ? (
                 <CheckCircle className="w-4 h-4 text-amber-400" />
-              )}
+              ) : null}
             </div>
             <span className={cn(
               "text-xs truncate",
