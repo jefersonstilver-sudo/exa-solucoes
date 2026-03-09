@@ -39,6 +39,13 @@ export const useOrdersWithAttemptsRefactored = () => {
         throw pedidosError;
       }
       
+      // Buscar tipo_produto de cada pedido (não disponível na RPC)
+      const pedidoIds = (pedidosComClientes || []).map((p: any) => p.id);
+      const { data: pedidosTipoProduto } = pedidoIds.length > 0 
+        ? await supabase.from('pedidos').select('id, tipo_produto').in('id', pedidoIds)
+        : { data: [] };
+      const tipoProdutoMap = new Map((pedidosTipoProduto || []).map((p: any) => [p.id, p.tipo_produto]));
+      
       // Buscar IDs de pedidos que têm vídeos
       const { data: pedidosComVideo } = await supabase
         .from('pedido_videos')
