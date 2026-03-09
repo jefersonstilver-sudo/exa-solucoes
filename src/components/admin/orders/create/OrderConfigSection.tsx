@@ -112,7 +112,7 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
         {formData.listaPredios.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-2">
             {formData.listaPredios.map(rawId => {
-              const idStr = typeof rawId === 'string' ? rawId : (rawId as any)?.id || JSON.stringify(rawId);
+              const idStr = typeof rawId === 'string' ? rawId : (rawId as any)?.building_id || (rawId as any)?.id || JSON.stringify(rawId);
               const b = buildings.find(x => x.id === idStr);
               return (
                 <span key={idStr} className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#9C1E1E]/10 text-[#9C1E1E] rounded-md text-xs font-medium">
