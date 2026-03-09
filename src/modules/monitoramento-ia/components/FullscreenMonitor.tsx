@@ -5,6 +5,8 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Device } from '../utils/devices';
 import { IncidentStatus } from '../hooks/useDeviceIncidentStatus';
+import { DeviceIncident } from '../hooks/useDeviceIncidents';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useRealTimeCounter } from '../hooks/useRealTimeCounter';
 import { usePeriodAlerts } from '../hooks/usePeriodAlerts';
