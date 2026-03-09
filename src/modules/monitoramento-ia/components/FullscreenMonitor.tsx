@@ -167,7 +167,7 @@ const MonitorCard = ({ device, compact, periodEventsCount, incidentStatus, incid
   );
 };
 
-export const FullscreenMonitor = ({ devices, onClose, incidentStatusMap }: FullscreenMonitorProps) => {
+export const FullscreenMonitor = ({ devices, onClose, incidentStatusMap, incidentDataMap }: FullscreenMonitorProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isPortrait, setIsPortrait] = useState(false);
   const [showAlertsSidebar, setShowAlertsSidebar] = useState(true);
