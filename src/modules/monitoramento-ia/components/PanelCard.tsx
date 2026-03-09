@@ -19,7 +19,8 @@ export const PanelCard = ({
   device,
   onClick,
   periodEventsCount,
-  periodLabel = 'hoje'
+  periodLabel = 'hoje',
+  incidentStatus
 }: PanelCardProps) => {
   const hasCriticalAlert = (device as any).has_critical_alert === true;
   const offlineCounter = useRealTimeCounter(device.status === 'offline' ? device.last_online_at : null);
