@@ -19,10 +19,15 @@ interface OrderConfigSectionProps {
   updateField: <K extends keyof AdminOrderFormData>(key: K, value: AdminOrderFormData[K]) => void;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const sanitizeBuildingId = (rawId: any): string | null => {
-  if (typeof rawId === 'string' && rawId.length > 10) return rawId;
+  if (typeof rawId === 'string') {
+    return UUID_REGEX.test(rawId) ? rawId : null;
+  }
   if (typeof rawId === 'object' && rawId !== null) {
-    return rawId.building_id || rawId.id || null;
+    const extracted = rawId.building_id || rawId.id;
+    return typeof extracted === 'string' && UUID_REGEX.test(extracted) ? extracted : null;
   }
   return null;
 };
