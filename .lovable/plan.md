@@ -1,80 +1,37 @@
 
 
-# Plano de Correção — 2FA Seguro com Auth Gate
+# Correção: Badges de Incidente nos Cards da Página de Painéis e Tela Cheia
 
-## Diagnóstico Confirmado
+## Problema
+Os badges "⚠ Sem causa" e "📋 Causa definida" foram implementados apenas no `ComputerCard.tsx` (componente dark theme não utilizado na página principal). Os componentes reais — `PanelCard.tsx` (cards normais) e `MonitorCard` dentro de `FullscreenMonitor.tsx` (tela cheia) — não têm nenhum indicador de incidente. Além disso, os dados de incidentes pendentes não são carregados junto com os devices.
 
-1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
-2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
+## Solução
 
-## Limitação Técnica do Supabase
+### 1. Criar hook leve para buscar status de incidentes em lote
+**`src/modules/monitoramento-ia/hooks/useDeviceIncidentStatus.ts`** — Novo hook que busca de `device_offline_incidents` o status de todos os devices offline de uma vez (não por device individual). Retorna um `Map<deviceId, 'pendente' | 'causa_registrada' | null>`.
 
-O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
+### 2. Adicionar badge no `PanelCard.tsx`
+- Receber prop `incidentStatus?: 'pendente' | 'causa_registrada' | null`
+- Quando `pendente`: badge vermelho piscante "⚠ Sem causa" na área de badges (junto com eventos, prédio, elevador)
+- Quando `causa_registrada`: badge amarelo estático "📋 Causa definida"
+- Só aparece para devices offline
 
-## Solução: Auth Gate no AuthProvider
+### 3. Adicionar badge no `FullscreenMonitor.tsx` → `MonitorCard`
+- Receber `incidentStatus` prop
+- Quando `pendente`: ícone `AlertTriangle` piscante no footer, ao lado do status offline
+- Quando `causa_registrada`: ícone `CheckCircle` amarelo discreto
 
-Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
+### 4. Integrar no `Paineis.tsx`
+- Importar `useDeviceIncidentStatus` com os IDs dos devices offline
+- Passar `incidentStatus` para cada `PanelCard`
+- Passar para `FullscreenMonitor` (que repassa para `MonitorCard`)
 
-```text
-Email + Senha
-  ↓
-signInWithPassword (sessão Supabase criada — inevitável)
-  ↓
-2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
-  ↓                    → navigate('/verificacao-2fa')
-  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
-  ↓                    → Todas as rotas protegidas bloqueadas
-  ↓                    ↓
-  ↓                  Código validado → sessionStorage.remove('pending_2fa')
-  ↓                    → isLoggedIn = TRUE → acesso liberado
-  ↓
-  NÃO → login normal
-```
+## Arquivos
 
-**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
-
-## Arquivos a Modificar (4 arquivos)
-
-### A. `src/App.tsx` (1 linha)
-- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
-- Importar `TwoFactorVerificationPage`
-
-### B. `src/hooks/useAuth.tsx` — Auth Gate
-- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
-  ```
-  const pending2fa = sessionStorage.getItem('pending_2fa');
-  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
-  ```
-- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
-
-### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
-- Após detectar `two_factor_enabled` (linha 134):
-  - `sessionStorage.setItem('pending_2fa', data.user.id)`
-  - Navegar para `/verificacao-2fa?userId=...`
-  - **Não fazer signOut**, **não armazenar credenciais**
-
-### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
-- Após verificação do código bem-sucedida (linha 99):
-  - `sessionStorage.removeItem('pending_2fa')`
-  - Isso faz `isLoggedIn` mudar para `true` automaticamente
-  - Redirecionar para rota correta baseada no role
-
-- No botão "Voltar ao Login" (linha 239):
-  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
-  - Isso garante logout limpo se o usuário desistir
-
-## Garantias
-
-| Regra | Cumprida |
-|-------|----------|
-| Sem tabelas novas | ✓ |
-| Sem signOut como solução | ✓ |
-| Sem credenciais em sessionStorage | ✓ |
-| Sem fluxos paralelos | ✓ |
-| Sessão bloqueada até 2FA | ✓ |
-| Reutiliza componentes existentes | ✓ |
-
-## Limitação Transparente
-
-A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
+| Arquivo | Ação |
+|---------|------|
+| `hooks/useDeviceIncidentStatus.ts` | Criar — busca batch de status de incidentes |
+| `components/PanelCard.tsx` | Modificar — adicionar badge de incidente |
+| `components/FullscreenMonitor.tsx` | Modificar — adicionar indicador no MonitorCard |
+| `pages/Paineis.tsx` | Modificar — integrar hook e passar props |
 
