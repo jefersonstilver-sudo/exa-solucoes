@@ -419,6 +419,7 @@ export const PaineisPage = () => {
                   device={device}
                   periodEventsCount={periodEventsMap.get(device.id) || 0}
                   periodLabel={getPeriodLabel(period)}
+                  incidentStatus={incidentStatusMap.get(device.id) || null}
                   onClick={() => {
                     setSelectedDevice(device);
                     setIsDetailModalOpen(true);
