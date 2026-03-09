@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { RefreshCw, ShoppingCart, Download, Search, Filter, Loader2 } from 'lucide-react';
+import { RefreshCw, ShoppingCart, Download, Search, Filter, Loader2, Plus } from 'lucide-react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
