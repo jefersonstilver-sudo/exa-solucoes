@@ -170,7 +170,7 @@ export const OfflineIncidentCard = ({ incident, onRegisterCause, isDeviceOffline
 
               <Button
                 onClick={handleSave}
-                disabled={saving || !selectedCategoryId || !causa.trim()}
+                disabled={saving || !incident || !selectedCategoryId || !causa.trim()}
                 className="w-full bg-red-600 hover:bg-red-700 text-white"
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
