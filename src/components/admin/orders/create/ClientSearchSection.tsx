@@ -85,9 +85,14 @@ const ClientSearchSection: React.FC<ClientSearchSectionProps> = ({
       try {
         let buildings: string[] = [];
         if (typeof proposal.selected_buildings === 'string') {
-          buildings = JSON.parse(proposal.selected_buildings);
+          const parsed = JSON.parse(proposal.selected_buildings);
+          buildings = (Array.isArray(parsed) ? parsed : []).map((b: any) =>
+            typeof b === 'string' ? b : b?.id || String(b)
+          );
         } else if (Array.isArray(proposal.selected_buildings)) {
-          buildings = proposal.selected_buildings;
+          buildings = proposal.selected_buildings.map((b: any) =>
+            typeof b === 'string' ? b : b?.id || String(b)
+          );
         }
         if (buildings.length > 0) {
           updateField('listaPredios', buildings);
