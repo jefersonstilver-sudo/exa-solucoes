@@ -14,6 +14,7 @@ import { PeriodSelector, PeriodType } from './PeriodSelector';
 interface FullscreenMonitorProps {
   devices: Device[];
   onClose: () => void;
+  incidentStatusMap?: Map<string, IncidentStatus>;
 }
 
 interface MonitorCardProps {
