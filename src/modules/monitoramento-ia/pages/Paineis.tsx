@@ -107,6 +107,9 @@ export const PaineisPage = () => {
     customEndDate
   );
 
+  // Hook de status de incidentes para devices offline
+  const { incidentStatusMap } = useDeviceIncidentStatus(devices);
+
   const handlePeriodChange = (newPeriod: PeriodType, customStart?: Date, customEnd?: Date) => {
     setPeriod(newPeriod);
     if (customStart) setCustomStartDate(customStart);
