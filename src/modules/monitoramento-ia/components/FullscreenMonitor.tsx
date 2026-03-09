@@ -21,9 +21,10 @@ interface MonitorCardProps {
   device: Device;
   compact: boolean;
   periodEventsCount?: number;
+  incidentStatus?: IncidentStatus;
 }
 
-const MonitorCard = ({ device, compact, periodEventsCount }: MonitorCardProps) => {
+const MonitorCard = ({ device, compact, periodEventsCount, incidentStatus }: MonitorCardProps) => {
   const displayName = (device.comments || device.name).split(' - ')[0].trim();
   const provider = device.provider || 'Sem provedor';
   const elapsed = useRealTimeCounter(device.last_online_at);
