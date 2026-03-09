@@ -57,7 +57,7 @@ const AdminCreateOrderDialog: React.FC<AdminCreateOrderDialogProps> = ({
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
-      <SheetContent side="right" className="w-full sm:max-w-xl p-0">
+      <SheetContent side="right" className="w-full sm:max-w-2xl p-0">
         <SheetHeader className="px-6 pt-6 pb-4 border-b">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#9C1E1E]/10 flex items-center justify-center">
