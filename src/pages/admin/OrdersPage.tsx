@@ -223,6 +223,11 @@ const OrdersPage = () => {
   // Mobile Actions Menu
   const mobileMenuItems = [
     {
+      icon: <Plus className="h-4 w-4" />,
+      label: 'Novo Pedido',
+      onClick: () => setShowCreateOrder(true),
+    },
+    {
       icon: <RefreshCw className="h-4 w-4" />,
       label: 'Atualizar',
       onClick: refetch,
