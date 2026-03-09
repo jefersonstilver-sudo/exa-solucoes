@@ -475,10 +475,14 @@ export const PaineisPage = () => {
           onClose={() => {
             setIsDetailModalOpen(false);
             setSelectedDevice(null);
+            // Refresh imediato dos badges ao fechar modal
+            refetchIncidentStatus();
           }}
           onDeleted={() => {
-            // Recarregar a lista após exclusão
             refresh();
+          }}
+          onIncidentUpdate={() => {
+            refetchIncidentStatus();
           }}
           theme={theme}
           periodEventsCount={periodEventsMap.get(selectedDevice.id) || 0}

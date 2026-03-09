@@ -25,9 +25,9 @@ interface ComputerDetailModalProps {
   computer: any;
   isOpen: boolean;
   onClose: () => void;
-  onDeleted?: () => void; // Callback para quando o device for excluído
+  onDeleted?: () => void;
+  onIncidentUpdate?: () => void;
   theme: 'dark' | 'light';
-  // Props para eventos proporcionais ao período selecionado
   periodEventsCount?: number;
   periodOfflineCount?: number;
   periodLabel?: string;

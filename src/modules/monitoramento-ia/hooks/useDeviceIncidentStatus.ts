@@ -66,5 +66,5 @@ export function useDeviceIncidentStatus(devices: { id: string; status: string }[
     return () => clearInterval(interval);
   }, [fetchStatuses]);
 
-  return { incidentStatusMap };
+  return { incidentStatusMap, refetch: fetchStatuses };
 }
