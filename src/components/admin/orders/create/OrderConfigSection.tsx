@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { AdminOrderFormData } from '@/hooks/useAdminCreateOrder';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Building2, Search, X } from 'lucide-react';
+import { Upload, Building2, Search, CheckSquare, Square } from 'lucide-react';
 import { useActivityLogger } from '@/hooks/useActivityLogger';
 
 interface OrderConfigSectionProps {
