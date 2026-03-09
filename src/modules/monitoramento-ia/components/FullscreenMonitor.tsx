@@ -4,6 +4,7 @@ import { Wifi, WifiOff, Zap, AlertTriangle, ClipboardCheck, CheckCircle } from '
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Device } from '../utils/devices';
+import { IncidentStatus } from '../hooks/useDeviceIncidentStatus';
 import { cn } from '@/lib/utils';
 import { useRealTimeCounter } from '../hooks/useRealTimeCounter';
 import { usePeriodAlerts } from '../hooks/usePeriodAlerts';
