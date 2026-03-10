@@ -304,7 +304,7 @@ export const useOrderVideoManagement = (orderId: string) => {
     hideSuccess,
     conflictModal,
     
-    // Tipo de produto
-    tipoProduto
+    // Tipo de produto do pedido
+    tipoProduto: tipoProduto as string | undefined
   };
 };
