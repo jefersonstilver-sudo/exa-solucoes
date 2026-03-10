@@ -252,6 +252,7 @@ declare namespace google {
       content?: string | Node;
       position?: LatLng | LatLngLiteral;
       maxWidth?: number;
+      disableAutoPan?: boolean;
     }
 
     interface InfoWindowOpenOptions {
