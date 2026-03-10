@@ -19,7 +19,8 @@ export const uploadVideo = async (
   orderId: string,
   onProgress?: (progress: number) => void,
   videoTitle?: string,
-  scheduleRules?: any[]
+  scheduleRules?: any[],
+  tipoProduto?: string
 ): Promise<boolean> => {
   // Criar sessão de logs estruturados
   const uploadSession = new UploadSession(orderId, userId);
