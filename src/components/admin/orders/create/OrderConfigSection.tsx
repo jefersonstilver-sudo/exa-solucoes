@@ -10,10 +10,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { PasswordInput } from '@/components/ui/password-input';
 import { AdminOrderFormData } from '@/hooks/useAdminCreateOrder';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Building2, Search, CheckSquare, Square } from 'lucide-react';
+import { Upload, Building2, Search, CheckSquare, Square, ShieldAlert } from 'lucide-react';
 import { useActivityLogger } from '@/hooks/useActivityLogger';
+import { toast } from 'sonner';
 
 interface OrderConfigSectionProps {
   formData: AdminOrderFormData;
@@ -37,7 +47,61 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
   const [buildings, setBuildings] = useState<any[]>([]);
   const [buildingSearch, setBuildingSearch] = useState('');
   const [loadingBuildings, setLoadingBuildings] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+  const [verifyingPassword, setVerifyingPassword] = useState(false);
   const { logActivity } = useActivityLogger();
+
+  const handleStatusChange = (newStatus: string) => {
+    if (newStatus === 'pago' || newStatus === 'pago_pendente_video') {
+      setPendingStatus(newStatus);
+      setAdminPassword('');
+      setShowPasswordDialog(true);
+    } else {
+      updateField('statusInicial', newStatus);
+    }
+  };
+
+  const handlePasswordConfirm = async () => {
+    if (!adminPassword.trim()) {
+      toast.error('Digite a senha do admin master');
+      return;
+    }
+    setVerifyingPassword(true);
+    try {
+      const { data, error } = await supabase.rpc('validate_developer_token', {
+        p_token: adminPassword,
+      });
+      if (error || data !== true) {
+        toast.error('Senha inválida. Acesso negado.');
+        return;
+      }
+      // Password valid — apply status
+      if (pendingStatus) {
+        updateField('statusInicial', pendingStatus);
+        toast.success(`Status "${pendingStatus === 'pago_pendente_video' ? 'Pago (Aguard. Vídeo)' : 'Pago'}" autorizado`);
+        logActivity('admin_authorize_paid_status', 'pedido', undefined, {
+          authorized_status: pendingStatus,
+        });
+      }
+      setShowPasswordDialog(false);
+      setAdminPassword('');
+      setPendingStatus(null);
+    } catch (err) {
+      toast.error('Erro ao validar senha');
+    } finally {
+      setVerifyingPassword(false);
+    }
+  };
+
+  const handlePasswordCancel = () => {
+    setShowPasswordDialog(false);
+    setAdminPassword('');
+    setPendingStatus(null);
+    // revert to pendente
+    updateField('statusInicial', 'pendente');
+  };
 
   // Auto-fix: sanitize listaPredios — remove non-UUID entries
   useEffect(() => {
@@ -235,16 +299,54 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
         </div>
         <div>
           <Label className="text-sm">Status Inicial</Label>
-          <Select value={formData.statusInicial} onValueChange={v => updateField('statusInicial', v)}>
+          <Select value={formData.statusInicial} onValueChange={handleStatusChange}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="pendente">Pendente</SelectItem>
-              <SelectItem value="pago">Pago</SelectItem>
-              <SelectItem value="pago_pendente_video">Pago (Aguard. Vídeo)</SelectItem>
+              <SelectItem value="pago_pendente_video">
+                <span className="flex items-center gap-1.5">
+                  <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />
+                  Pago (Aguard. Vídeo)
+                </span>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
+
+      {/* Admin password dialog for paid status */}
+      <Dialog open={showPasswordDialog} onOpenChange={(open) => { if (!open) handlePasswordCancel(); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-amber-500" />
+              Autorização Necessária
+            </DialogTitle>
+            <DialogDescription>
+              Marcar um pedido como <strong>pago manualmente</strong> requer a senha do admin master. 
+              Esta ação será registrada nos logs de auditoria.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label>Senha Admin Master</Label>
+            <PasswordInput
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              placeholder="Digite a senha..."
+              onKeyDown={(e) => { if (e.key === 'Enter') handlePasswordConfirm(); }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handlePasswordCancel} disabled={verifyingPassword}>
+              Cancelar
+            </Button>
+            <Button onClick={handlePasswordConfirm} disabled={verifyingPassword}>
+              {verifyingPassword ? 'Verificando...' : 'Confirmar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Logo upload */}
       <div>
