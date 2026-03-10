@@ -28,6 +28,12 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' &&
     componentTagger(),
+    {
+      name: 'html-build-id',
+      transformIndexHtml(html: string) {
+        return html.replace('__BUILD_ID__', String(Date.now()));
+      },
+    },
   ].filter(Boolean),
   resolve: {
     alias: {
