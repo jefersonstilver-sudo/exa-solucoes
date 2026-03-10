@@ -12,14 +12,17 @@ interface VideoSlotUploadProps {
   isUploading: boolean;
   onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: ScheduleRule[]) => void;
   companyInfoComplete?: boolean;
+  tipoProduto?: string;
 }
 export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   slotPosition,
   uploading,
   isUploading,
   onUpload,
-  companyInfoComplete: companyInfoCompleteProp
+  companyInfoComplete: companyInfoCompleteProp,
+  tipoProduto
 }) => {
+  const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
   const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [videoTitle, setVideoTitle] = useState('');
@@ -221,7 +224,9 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         <div className="flex items-center gap-2 lg:flex-col">
           <Video className="h-4 w-4 sm:h-10 sm:w-10 text-gray-400 shrink-0 lg:mx-auto lg:mb-2" />
           <div className="flex-1 text-left lg:text-center">
-            <p className="text-[10px] sm:text-sm text-gray-600 font-medium leading-tight">Envie aqui seu video!    </p>
+            <p className="text-[10px] sm:text-sm text-gray-600 font-medium leading-tight">
+              Envie aqui seu vídeo {isVertical ? 'vertical' : 'horizontal'}!
+            </p>
             
           </div>
         </div>

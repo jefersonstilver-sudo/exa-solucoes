@@ -23,6 +23,7 @@ export const useOrderVideoManagement = (orderId: string) => {
   const { userProfile } = useAuth();
   const [orderStatus, setOrderStatus] = useState('pendente');
   const [tipoProduto, setTipoProduto] = useState<string | undefined>(undefined);
+  const [maxVideos, setMaxVideos] = useState<number>(10);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   
@@ -42,7 +43,7 @@ export const useOrderVideoManagement = (orderId: string) => {
     }
   });
 
-  // Buscar status do pedido
+  // Buscar status do pedido e max_videos_por_pedido
   useEffect(() => {
     const fetchOrderStatus = async () => {
       if (!orderId) return;
@@ -58,9 +59,24 @@ export const useOrderVideoManagement = (orderId: string) => {
         if (error) throw error;
         
         if (data) {
-          console.log('✅ [useOrderVideoManagement] Status do pedido:', data.status, 'Tipo produto:', (data as any).tipo_produto);
+          const tp = (data as any).tipo_produto || undefined;
+          console.log('✅ [useOrderVideoManagement] Status do pedido:', data.status, 'Tipo produto:', tp);
           setOrderStatus(data.status);
-          setTipoProduto((data as any).tipo_produto || undefined);
+          setTipoProduto(tp);
+
+          // Buscar max_videos_por_pedido do produto
+          if (tp) {
+            const codigo = tp === 'vertical_premium' || tp === 'vertical' ? 'vertical_premium' : 'horizontal';
+            const { data: produto } = await supabase
+              .from('produtos_exa')
+              .select('max_videos_por_pedido')
+              .eq('codigo', codigo)
+              .single();
+            if (produto && (produto as any).max_videos_por_pedido) {
+              setMaxVideos((produto as any).max_videos_por_pedido);
+              console.log('📦 [useOrderVideoManagement] Max vídeos por pedido:', (produto as any).max_videos_por_pedido);
+            }
+          }
         }
       } catch (error) {
         console.error('❌ [useOrderVideoManagement] Erro ao buscar status:', error);
@@ -91,7 +107,7 @@ export const useOrderVideoManagement = (orderId: string) => {
         setLoading(true);
         setLoadError(null);
         
-        const slots = await loadVideoSlots(orderId);
+        const slots = await loadVideoSlots(orderId, maxVideos);
         console.log('✅ [useOrderVideoManagement] Slots carregados:', slots.length);
         
       } catch (error: any) {
@@ -103,7 +119,7 @@ export const useOrderVideoManagement = (orderId: string) => {
     };
 
     loadInitialSlots();
-  }, [orderId]);
+  }, [orderId, maxVideos]);
 
   // Função para refresh manual de slots
   const refreshSlots = async (): Promise<void> => {
@@ -111,7 +127,7 @@ export const useOrderVideoManagement = (orderId: string) => {
     
     try {
       console.log('🔄 [useOrderVideoManagement] Refresh de slots solicitado');
-      const slots = await loadVideoSlots(orderId);
+      const slots = await loadVideoSlots(orderId, maxVideos);
       console.log('✅ [useOrderVideoManagement] Refresh concluído:', slots.length, 'slots');
     } catch (error) {
       console.error('❌ [useOrderVideoManagement] Erro no refresh:', error);

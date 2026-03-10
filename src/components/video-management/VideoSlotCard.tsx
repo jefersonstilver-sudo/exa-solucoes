@@ -58,6 +58,7 @@ interface VideoSlotCardProps {
   totalApprovedVideos: number;
   hasAnyScheduledActiveNow?: boolean;
   companyInfoComplete?: boolean;
+  tipoProduto?: string;
 }
 export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   slot,
@@ -73,8 +74,10 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   currentDisplayVideoId,
   totalApprovedVideos,
   hasAnyScheduledActiveNow = false,
-  companyInfoComplete
+  companyInfoComplete,
+  tipoProduto
 }) => {
+  const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
   const {
     isVideoCurrentlyDisplaying,
     getCurrentDisplayType
@@ -432,7 +435,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
             {/* Desktop: Layout com Player (mantém original) */}
             <div className="hidden lg:block">
-              <div className="aspect-video rounded-lg overflow-hidden relative">
+              <div className={`${isVertical ? 'aspect-[9/16] max-w-[280px] mx-auto' : 'aspect-video'} rounded-lg overflow-hidden relative`}>
                 <VideoPlayer 
                   src={slot.video_data.url} 
                   title={slot.video_data.nome} 
@@ -510,6 +513,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
         isUploading={currentProgress !== undefined} 
         onUpload={onUpload}
         companyInfoComplete={companyInfoComplete}
+        tipoProduto={tipoProduto}
       />
     )}
       </CardContent>

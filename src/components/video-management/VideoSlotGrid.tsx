@@ -63,6 +63,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   orderId,
   tipoProduto
 }) => {
+  const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
   const navigate = useNavigate();
   const { currentVideo, refreshCurrentVideo } = useCurrentVideoDisplay({ orderId, enabled: true });
   const [companyInfoComplete, setCompanyInfoComplete] = useState<boolean | null>(null);
@@ -188,7 +189,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
         </div>
 
         {/* Slots Bloqueados - Visual Apenas */}
-        <div className="grid grid-cols-2 gap-1.5 sm:gap-3 opacity-40 pointer-events-none">
+        <div className={`grid ${isVertical ? 'grid-cols-1 sm:grid-cols-2 max-w-2xl' : 'grid-cols-2'} gap-1.5 sm:gap-3 opacity-40 pointer-events-none`}>
           {videoSlots.map((slot) => (
             <div 
               key={slot.slot_position}
@@ -209,7 +210,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
     <div className="space-y-2 sm:space-y-3">
       <VideoSlotStatus videoSlots={videoSlots} />
 
-      <div className="grid grid-cols-2 gap-1.5 sm:gap-3">
+      <div className={`grid ${isVertical ? 'grid-cols-1 sm:grid-cols-2 max-w-2xl' : 'grid-cols-2'} gap-1.5 sm:gap-3`}>
         {videoSlots.map((slot) => (
           <VideoSlotCard
             key={slot.slot_position}
@@ -227,6 +228,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
             totalApprovedVideos={totalApprovedVideos}
             hasAnyScheduledActiveNow={hasAnyScheduledActiveNow}
             companyInfoComplete={companyInfoComplete}
+            tipoProduto={tipoProduto}
           />
         ))}
       </div>
