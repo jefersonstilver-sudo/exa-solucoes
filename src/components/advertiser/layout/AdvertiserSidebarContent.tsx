@@ -48,7 +48,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
 
   const sidebarItems = [
     {
-      title: 'Meus Pedidos',
+      title: 'Área do Anunciante',
       href: '/anunciante/pedidos',
       icon: ShoppingBag,
       section: 'main'
