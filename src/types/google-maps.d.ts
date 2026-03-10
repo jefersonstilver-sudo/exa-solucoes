@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Global type declarations for Google Maps API
-// This ensures the 'google' namespace is available throughout the project
-// when @types/google.maps is installed but not auto-detected by bundler resolution
+// Ensures the 'google' namespace is available throughout the project
 
 declare namespace google {
   export namespace maps {
