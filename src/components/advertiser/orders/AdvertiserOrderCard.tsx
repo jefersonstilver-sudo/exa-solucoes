@@ -1,9 +1,9 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Repeat, Monitor, Smartphone } from 'lucide-react';
+import { Loader2, Repeat, Monitor, Smartphone, Clock } from 'lucide-react';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
@@ -38,7 +38,6 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
   handleStripePayment,
 }) => {
   const statusInfo = useOrderStatus(item, handleGeneratePix, handleStripePayment);
-  const StatusIcon = statusInfo.icon;
   const painelsList = item.type === 'order' ? item.lista_paineis || [] : item.predios_selecionados || [];
 
   // Video slot usage
@@ -51,9 +50,30 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
 
   // Show video preview for active orders
   const showVideoPreview = item.type === 'order';
-  const { videoData, loading: videoLoading } = useOrderCurrentVideoData(
+  const { videoData } = useOrderCurrentVideoData(
     showVideoPreview ? item.id : ''
   );
+
+  // Display time progress calculation
+  const displayTimeProgress = useMemo(() => {
+    if (item.type !== 'order' || !item.data_inicio || !item.data_fim) return null;
+
+    const now = new Date().getTime();
+    const start = new Date(item.data_inicio).getTime();
+    const end = new Date(item.data_fim).getTime();
+    const totalDuration = end - start;
+
+    if (totalDuration <= 0) return null;
+
+    const elapsed = Math.max(0, now - start);
+    const percent = Math.min(100, (elapsed / totalDuration) * 100);
+    const daysRemaining = Math.max(0, Math.ceil((end - now) / (1000 * 60 * 60 * 24)));
+    const totalDays = Math.ceil(totalDuration / (1000 * 60 * 60 * 24));
+    const daysElapsed = Math.min(totalDays, Math.max(0, Math.ceil(elapsed / (1000 * 60 * 60 * 24))));
+    const isExpired = now > end;
+
+    return { percent, daysRemaining, totalDays, daysElapsed, isExpired };
+  }, [item.type, item.data_inicio, item.data_fim]);
 
   // Lazy loading via IntersectionObserver
   const { isVisible, elementRef } = useIntersectionObserver({ threshold: 0.1, triggerOnce: false });
@@ -95,7 +115,6 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
         item.type === 'attempt' && 'border-l-4 border-l-orange-500'
       )}
     >
-      {/* DESKTOP: flex-row | MOBILE: flex-col */}
       <div className={cn('flex', isMobile ? 'flex-col' : 'flex-row')}>
 
         {/* Video Preview Area */}
@@ -126,16 +145,18 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
         {/* Content Area */}
         <div className="flex-1 p-4 sm:p-5 flex flex-col gap-3">
 
-          {/* Top: ID + Status */}
+          {/* Top: Name/ID + Status */}
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
               <h3 className="font-semibold text-sm sm:text-base text-foreground truncate">
                 {item.type === 'order' && item.nome_pedido
-                  ? `${item.nome_pedido} · #${item.id.substring(0, 8)}`
+                  ? item.nome_pedido
                   : `${item.type === 'attempt' ? 'Tentativa' : 'Campanha'} #${item.id.substring(0, 8)}`}
               </h3>
               <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
-                Criado em {formatDate(item.created_at)}
+                {item.type === 'order' && item.nome_pedido
+                  ? `#${item.id.substring(0, 8)} · Criado em ${formatDate(item.created_at)}`
+                  : `Criado em ${formatDate(item.created_at)}`}
               </p>
             </div>
             <div className="flex flex-wrap gap-1.5 flex-shrink-0">
@@ -199,6 +220,35 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
             </div>
           )}
 
+          {/* Display Time Progress Bar */}
+          {item.type === 'order' && displayTimeProgress && (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Tempo de exibição
+                </p>
+                <p className="text-[11px] font-medium text-foreground">
+                  {displayTimeProgress.isExpired
+                    ? 'Expirado'
+                    : `${displayTimeProgress.daysElapsed} / ${displayTimeProgress.totalDays} dias`}
+                </p>
+              </div>
+              <Progress
+                value={displayTimeProgress.percent}
+                className={cn(
+                  'h-2',
+                  displayTimeProgress.isExpired && '[&>div]:bg-destructive'
+                )}
+              />
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {displayTimeProgress.isExpired
+                  ? 'Contrato encerrado'
+                  : `${displayTimeProgress.daysRemaining} dias restantes`}
+              </p>
+            </div>
+          )}
+
           {/* Video Slots */}
           {item.type === 'order' && (
             <div>
@@ -215,7 +265,6 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
             'flex gap-2 pt-1',
             isMobile ? 'flex-col' : 'flex-row items-center'
           )}>
-            {/* Primary action button (from useOrderStatus) */}
             {statusInfo.action && (
               <Button
                 variant={statusInfo.action.variant}
@@ -235,7 +284,6 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
               </Button>
             )}
 
-            {/* Single "Ver Detalhes" button */}
             {item.type === 'order' && (
               <Button
                 variant="outline"
@@ -247,7 +295,6 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
               </Button>
             )}
 
-            {/* Delete button */}
             {canDelete && (
               <Button
                 variant="ghost"
