@@ -11,7 +11,6 @@ import { VideoSlotUpload } from './VideoSlotUpload';
 import { VideoStatusBadge } from './VideoStatusBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 import { videoLogger } from '@/services/logger/VideoActionLogger';
 import { useForceCleanup } from '@/hooks/useForceCleanup';
 interface VideoSlot {
@@ -79,13 +78,6 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 }) => {
   const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
   const {
-    isVideoCurrentlyDisplaying,
-    getCurrentDisplayType
-  } = useCurrentVideoDisplay({
-    orderId,
-    enabled: !!slot.video_data?.id
-  });
-  const {
     forceCleanupSlot
   } = useForceCleanup();
   const handleForceCleanup = async (slotId: string) => {
@@ -119,19 +111,6 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
   // Verificar se o vídeo tem agendamento ativo
   const hasActiveSchedule = slot.schedule_rules && slot.schedule_rules.length > 0 && slot.schedule_rules.some(rule => rule.is_active && rule.days_of_week && rule.days_of_week.length > 0);
-  console.log(`🔍 [CARD] SLOT_${slot.slot_position} renderizando:`, {
-    hasVideo: !!slot.video_data,
-    videoName: slot.video_data?.nome,
-    slotId: slot.id,
-    isActive: slot.is_active,
-    approvalStatus: slot.approval_status,
-    selectedForDisplay: slot.selected_for_display,
-    isBaseVideo: slot.is_base_video,
-    scheduleRules: slot.schedule_rules,
-    hasActiveSchedule,
-    currentDisplayVideoId,
-    timestamp: new Date().toISOString()
-  });
 
   // Verificar se o agendamento está ativo AGORA (verificação temporal)
   const isScheduledActiveNow = () => {
@@ -151,17 +130,6 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
       return isDayMatched && isTimeMatched;
     });
   };
-  console.log(`🔍 [VIDEO_SLOT] Slot ${slot.slot_position} DEBUG:`, {
-    videoData: !!slot.video_data,
-    videoId: slot.video_data?.id,
-    approvalStatus: slot.approval_status,
-    hasScheduleRules: !!slot.schedule_rules,
-    rulesCount: slot.schedule_rules?.length || 0,
-    hasActiveSchedule: hasActiveSchedule,
-    isScheduledActiveNow: isScheduledActiveNow(),
-    isBaseVideo: slot.is_base_video,
-    rules: slot.schedule_rules
-  });
   const getSelectionIcon = (slot: VideoSlot) => {
     if (slot.approval_status !== 'approved') {
       return <Lock className="h-5 w-5 text-gray-400" />;
@@ -219,7 +187,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     return false;
   };
   const isBlocked = slot.video_data && slot.approval_status !== 'approved';
-  const cardClasses = `transition-all duration-200 rounded-xl ${slot.is_base_video ? 'border-2 border-yellow-500 bg-yellow-50/50 shadow-lg' : hasActiveSchedule && isScheduledActiveNow() ? 'border-2 border-green-500 bg-green-50/50 shadow-md' : hasActiveSchedule ? 'border border-blue-400 bg-blue-50/50 shadow-sm' : isBlocked ? 'border border-gray-300 bg-gray-50 opacity-75' : 'bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm hover:shadow-md'}`;
+  const cardClasses = `transition-all duration-200 rounded-xl animate-fade-in ${slot.is_base_video ? 'border-2 border-yellow-500 bg-yellow-50/50 shadow-lg' : hasActiveSchedule && isScheduledActiveNow() ? 'border-2 border-green-500 bg-green-50/50 shadow-md' : hasActiveSchedule ? 'border border-blue-400 bg-blue-50/50 shadow-sm' : isBlocked ? 'border border-gray-300 bg-gray-50 opacity-75' : 'bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm hover:shadow-md'}`;
   const getScheduleTooltipContent = () => {
     if (!hasActiveSchedule || !slot.schedule_rules) return null;
     return <div className="p-2 space-y-2">

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { uploadVideo } from '@/services/videoUploadService';
@@ -7,7 +7,6 @@ import { validateVideoUploadPermission } from '@/services/videoUploadSecuritySer
 import { VideoSlot } from '@/types/videoManagement';
 import { loadVideoSlots } from '@/services/videoSlotService';
 import { setBaseVideo } from '@/services/videoBaseService';
-// Removed n8n integration
 
 interface UseVideoManagementProps {
   orderId: string;
@@ -20,23 +19,63 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
   const [videoSlots, setVideoSlots] = useState<VideoSlot[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Carregar slots de vídeo
-  useEffect(() => {
-    const fetchVideoSlots = async () => {
-      try {
-        const slots = await loadVideoSlots(orderId);
-        setVideoSlots(slots);
-      } catch (error) {
-        console.error('Erro ao carregar slots:', error);
-        toast.error('Erro ao carregar vídeos');
-      }
-    };
-
-    if (orderId) {
-      fetchVideoSlots();
+  const refreshSlots = useCallback(async () => {
+    if (!orderId) return;
+    try {
+      const slots = await loadVideoSlots(orderId);
+      setVideoSlots(slots);
+    } catch (error) {
+      console.error('Erro ao carregar slots:', error);
     }
   }, [orderId]);
+
+  // Debounced refresh for real-time events
+  const debouncedRefresh = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+    refreshTimeoutRef.current = setTimeout(() => {
+      refreshSlots();
+    }, 500);
+  }, [refreshSlots]);
+
+  // Carregar slots iniciais
+  useEffect(() => {
+    if (orderId) {
+      refreshSlots();
+    }
+  }, [orderId, refreshSlots]);
+
+  // Real-time subscription para pedido_videos
+  useEffect(() => {
+    if (!orderId) return;
+
+    const channel = supabase
+      .channel(`pedido_videos_${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pedido_videos',
+          filter: `pedido_id=eq.${orderId}`
+        },
+        (payload) => {
+          console.log('📡 [REALTIME] Mudança em pedido_videos:', payload.eventType);
+          debouncedRefresh();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+      supabase.removeChannel(channel);
+    };
+  }, [orderId, debouncedRefresh]);
 
   // Upload de vídeo com validação de segurança
   const handleUpload = async (slotPosition: number, file: File, title: string) => {
@@ -105,44 +144,27 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
   // Remover vídeo
   const handleRemove = async (slotId: string) => {
     try {
-      // VALIDAÇÃO 1: Verificar se é vídeo base
       const slot = videoSlots.find(s => s.id === slotId);
-      
-      console.log('🗑️ [VIDEO_MGMT] Tentando remover vídeo:', {
-        slotId,
-        slotPosition: slot?.slot_position,
-        isBase: slot?.is_base_video,
-        isActive: slot?.is_active,
-        approvalStatus: slot?.approval_status
-      });
 
-      if (slot?.is_base_video) {
-        toast.error('❌ Não é possível remover o vídeo principal. Defina outro vídeo como principal primeiro.');
-        return;
+      // Vídeos rejeitados podem ser removidos sem validações
+      if (slot?.approval_status !== 'rejected') {
+        if (slot?.is_base_video) {
+          toast.error('Não é possível remover o vídeo principal. Defina outro como principal primeiro.');
+          return;
+        }
+
+        const activeApprovedVideos = videoSlots.filter(s => 
+          s.is_active && 
+          s.approval_status === 'approved' &&
+          s.id
+        );
+
+        if (activeApprovedVideos.length === 1 && activeApprovedVideos[0].id === slotId) {
+          toast.error('Não é possível remover o último vídeo ativo. Envie outro vídeo primeiro.');
+          return;
+        }
       }
 
-      // VALIDAÇÃO 2: Verificar se é o último ativo aprovado
-      const activeApprovedVideos = videoSlots.filter(s => 
-        s.is_active && 
-        s.approval_status === 'approved' &&
-        s.id // Tem ID (não é slot vazio)
-      );
-
-      console.log('📊 [VIDEO_MGMT] Vídeos ativos aprovados:', {
-        total: activeApprovedVideos.length,
-        videos: activeApprovedVideos.map(s => ({
-          id: s.id,
-          position: s.slot_position,
-          isBase: s.is_base_video
-        }))
-      });
-
-      if (activeApprovedVideos.length === 1 && activeApprovedVideos[0].id === slotId) {
-        toast.error('❌ Não é possível remover o último vídeo ativo. Envie outro vídeo primeiro.');
-        return;
-      }
-
-      // Se passou todas as validações, prosseguir com remoção
       const { error } = await supabase
         .from('pedido_videos')
         .delete()
@@ -150,11 +172,10 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
 
       if (error) throw error;
 
-      console.log('✅ [VIDEO_MGMT] Vídeo removido com sucesso:', slotId);
       toast.success('Vídeo removido com sucesso!');
-      setVideoSlots(prev => prev.filter(slot => slot.id !== slotId));
+      setVideoSlots(prev => prev.filter(s => s.id !== slotId));
     } catch (error: any) {
-      console.error('❌ [VIDEO_MGMT] Erro ao remover vídeo:', error);
+      console.error('Erro ao remover vídeo:', error);
       toast.error(`Erro ao remover vídeo: ${error.message || 'Erro desconhecido'}`);
     }
   };

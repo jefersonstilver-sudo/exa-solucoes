@@ -165,14 +165,14 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
           <Info className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
         </Button>
         
-        {/* Remover - verificar se é vídeo base */}
+        {/* Remover - verificar se é vídeo base (rejeitados sempre podem ser removidos) */}
         <Button
           variant="outline"
           size="sm"
           onClick={() => slot.id && onRemove(slot.id)}
-          disabled={slot.is_base_video}
+          disabled={slot.is_base_video && slot.approval_status !== 'rejected'}
           className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white p-1 sm:p-2 h-6 sm:h-8 disabled:opacity-50 disabled:cursor-not-allowed"
-          title={slot.is_base_video ? "Não é possível remover o vídeo base" : "Remover vídeo"}
+          title={slot.is_base_video && slot.approval_status !== 'rejected' ? "Não é possível remover o vídeo base" : "Remover vídeo"}
         >
           <Trash2 className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
         </Button>

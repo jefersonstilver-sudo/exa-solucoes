@@ -4,6 +4,7 @@ import { useVideoManagement } from '@/hooks/useVideoManagement';
 import { loadVideoSlots } from '@/services/videoSlotService';
 import { VideoSlot } from '@/types/videoManagement';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface ConflictModalState {
   isOpen: boolean;
@@ -247,42 +248,48 @@ export const useOrderVideoManagement = (orderId: string) => {
 
   // Wrapper para remoção com validação crítica
   const removeVideo = async (slotId: string) => {
-    console.log('🗑️ [useOrderVideoManagement] Removendo vídeo:', { slotId });
-    
     try {
+      // Buscar slot atual
+      const slot = baseHook.videoSlots.find(s => s.id === slotId);
+
+      // Se vídeo rejeitado, permitir remoção direta sem validações
+      if (slot?.approval_status === 'rejected') {
+        await baseHook.handleRemove(slotId);
+        return;
+      }
+
       // Validação: não permitir remover último vídeo aprovado de pedido ativo
       const approvedVideos = baseHook.videoSlots.filter(
-        slot => slot.approval_status === 'approved' && slot.id !== slotId
+        s => s.approval_status === 'approved' && s.id !== slotId
       );
       
       if (approvedVideos.length === 0 && orderStatus === 'video_aprovado') {
-        const errorMsg = 'Não é possível remover o último vídeo de um pedido ativo. Adicione outro vídeo primeiro.';
-        console.warn('⚠️ [useOrderVideoManagement]', errorMsg);
-        throw new Error(errorMsg);
+        toast.error('Não é possível remover o último vídeo de um pedido ativo.');
+        return;
       }
 
-      // Validação backend adicional
-      const { data: canRemove, error: checkError } = await supabase.rpc('can_remove_video' as any, {
-        p_pedido_video_id: slotId
-      });
+      // Validação backend adicional (apenas para não-rejeitados)
+      try {
+        const { data: canRemove, error: checkError } = await supabase.rpc('can_remove_video' as any, {
+          p_pedido_video_id: slotId
+        });
 
-      if (checkError) {
-        console.error('❌ [useOrderVideoManagement] Erro ao verificar permissão:', checkError);
-        throw new Error('Erro ao verificar se o vídeo pode ser removido');
-      }
-
-      if (!canRemove) {
-        const errorMsg = 'Este vídeo não pode ser removido no momento';
-        console.warn('⚠️ [useOrderVideoManagement]', errorMsg);
-        throw new Error(errorMsg);
+        if (checkError) {
+          console.error('Erro ao verificar permissão:', checkError);
+          // Se RPC não existe, prosseguir com remoção
+        } else if (!canRemove) {
+          toast.error('Este vídeo não pode ser removido no momento');
+          return;
+        }
+      } catch {
+        // RPC pode não existir, prosseguir
       }
 
       await baseHook.handleRemove(slotId);
-      console.log('✅ [useOrderVideoManagement] Vídeo removido com sucesso');
       
-    } catch (error) {
-      console.error('❌ [useOrderVideoManagement] Erro na remoção:', error);
-      throw error;
+    } catch (error: any) {
+      console.error('Erro na remoção:', error);
+      toast.error(error?.message || 'Erro ao remover vídeo');
     }
   };
 
