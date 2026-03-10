@@ -107,7 +107,7 @@ export const useOrderVideoManagement = (orderId: string) => {
         setLoading(true);
         setLoadError(null);
         
-        const slots = await loadVideoSlots(orderId);
+        const slots = await loadVideoSlots(orderId, maxVideos);
         console.log('✅ [useOrderVideoManagement] Slots carregados:', slots.length);
         
       } catch (error: any) {
