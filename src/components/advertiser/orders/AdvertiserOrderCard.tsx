@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Repeat } from 'lucide-react';
+import { Loader2, Repeat, Monitor, Smartphone } from 'lucide-react';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
