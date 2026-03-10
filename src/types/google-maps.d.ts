@@ -4,6 +4,8 @@
 
 declare namespace google {
   export namespace maps {
+    function importLibrary(name: string): Promise<any>;
+
     class Map {
       constructor(mapDiv: Element, opts?: MapOptions);
       setCenter(latlng: LatLng | LatLngLiteral): void;
@@ -14,7 +16,40 @@ declare namespace google {
       fitBounds(bounds: LatLngBounds, padding?: number | Padding): void;
       addListener(eventName: string, handler: (...args: any[]) => void): MapsEventListener;
       setOptions(options: MapOptions): void;
+      getDiv(): Element;
     }
+
+    class OverlayView {
+      setMap(map: Map | null): void;
+      getMap(): Map | null;
+      getPanes(): MapPanes | null;
+      getProjection(): MapCanvasProjection;
+      onAdd?(): void;
+      draw?(): void;
+      onRemove?(): void;
+    }
+
+    interface MapPanes {
+      floatPane: Element;
+      mapPane: Element;
+      markerLayer: Element;
+      overlayLayer: Element;
+      overlayMouseTarget: Element;
+    }
+
+    interface MapCanvasProjection {
+      fromLatLngToDivPixel(latLng: LatLng | LatLngLiteral): Point | null;
+      fromDivPixelToLatLng(pixel: Point): LatLng | null;
+    }
+
+    interface MapMouseEvent {
+      latLng: LatLng | null;
+      domEvent: MouseEvent | TouchEvent | PointerEvent | KeyboardEvent | Event;
+      stop(): void;
+    }
+
+    type MapsLibrary = any;
+    type PlacesLibrary = any;
 
     class Marker {
       constructor(opts?: MarkerOptions);
