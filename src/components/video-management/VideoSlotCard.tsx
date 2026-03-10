@@ -130,17 +130,6 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
       return isDayMatched && isTimeMatched;
     });
   };
-  console.log(`🔍 [VIDEO_SLOT] Slot ${slot.slot_position} DEBUG:`, {
-    videoData: !!slot.video_data,
-    videoId: slot.video_data?.id,
-    approvalStatus: slot.approval_status,
-    hasScheduleRules: !!slot.schedule_rules,
-    rulesCount: slot.schedule_rules?.length || 0,
-    hasActiveSchedule: hasActiveSchedule,
-    isScheduledActiveNow: isScheduledActiveNow(),
-    isBaseVideo: slot.is_base_video,
-    rules: slot.schedule_rules
-  });
   const getSelectionIcon = (slot: VideoSlot) => {
     if (slot.approval_status !== 'approved') {
       return <Lock className="h-5 w-5 text-gray-400" />;
