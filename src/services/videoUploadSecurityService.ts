@@ -31,7 +31,7 @@ export const validateVideoUploadPermission = async (orderId: string): Promise<Se
     // Upload só liberado após CONTRATO ASSINADO (não pagamento)
     // Status aguardando_contrato = pago mas sem contrato = BLOQUEADO
     // Status aguardando_video = contrato assinado = LIBERADO
-    const allowedStatuses = ['aguardando_video', 'video_enviado', 'video_aprovado', 'ativo'];
+    const allowedStatuses = ['aguardando_video', 'video_enviado', 'video_aprovado', 'ativo', 'pago', 'pago_pendente_video'];
     
     const canUpload = allowedStatuses.includes(order.status);
 
