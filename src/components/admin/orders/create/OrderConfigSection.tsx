@@ -10,10 +10,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { PasswordInput } from '@/components/ui/password-input';
 import { AdminOrderFormData } from '@/hooks/useAdminCreateOrder';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Building2, Search, CheckSquare, Square } from 'lucide-react';
+import { Upload, Building2, Search, CheckSquare, Square, ShieldAlert } from 'lucide-react';
 import { useActivityLogger } from '@/hooks/useActivityLogger';
+import { toast } from 'sonner';
 
 interface OrderConfigSectionProps {
   formData: AdminOrderFormData;
