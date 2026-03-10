@@ -280,6 +280,27 @@ export function useAdminCreateOrder() {
         created_by_admin: adminId,
       });
 
+      // Audit log for manual payment marking
+      if (formData.statusInicial === 'pago' || formData.statusInicial === 'pago_pendente_video') {
+        console.log('💰 [SUBMIT] Registrando pagamento manual no log de eventos...');
+        await supabase.from('log_eventos_sistema').insert({
+          tipo_evento: 'MANUAL_PAYMENT_MARK',
+          descricao: `Pedido ${pedido.id.slice(0, 8)} criado manualmente com status "${formData.statusInicial}" por admin ${adminId?.slice(0, 8)}`,
+          entidade_tipo: 'pedido',
+          entidade_id: pedido.id,
+          usuario_id: adminId,
+          metadata: {
+            status_marcado: formData.statusInicial,
+            valor_total: formData.valorTotal,
+            client_id: clientId,
+            client_name: formData.clientName,
+            metodo_pagamento: formData.metodoPagamento,
+            registrado_manualmente: true,
+            timestamp: new Date().toISOString(),
+          },
+        } as any);
+      }
+
       // Invalidate ALL order-related queries
       console.log('🔄 [SUBMIT] Invalidando queries...');
       queryClient.invalidateQueries({ queryKey: ['orders'] });

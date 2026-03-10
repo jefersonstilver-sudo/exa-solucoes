@@ -299,16 +299,54 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
         </div>
         <div>
           <Label className="text-sm">Status Inicial</Label>
-          <Select value={formData.statusInicial} onValueChange={v => updateField('statusInicial', v)}>
+          <Select value={formData.statusInicial} onValueChange={handleStatusChange}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="pendente">Pendente</SelectItem>
-              <SelectItem value="pago">Pago</SelectItem>
-              <SelectItem value="pago_pendente_video">Pago (Aguard. Vídeo)</SelectItem>
+              <SelectItem value="pago_pendente_video">
+                <span className="flex items-center gap-1.5">
+                  <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />
+                  Pago (Aguard. Vídeo)
+                </span>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
+
+      {/* Admin password dialog for paid status */}
+      <Dialog open={showPasswordDialog} onOpenChange={(open) => { if (!open) handlePasswordCancel(); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-amber-500" />
+              Autorização Necessária
+            </DialogTitle>
+            <DialogDescription>
+              Marcar um pedido como <strong>pago manualmente</strong> requer a senha do admin master. 
+              Esta ação será registrada nos logs de auditoria.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label>Senha Admin Master</Label>
+            <PasswordInput
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              placeholder="Digite a senha..."
+              onKeyDown={(e) => { if (e.key === 'Enter') handlePasswordConfirm(); }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handlePasswordCancel} disabled={verifyingPassword}>
+              Cancelar
+            </Button>
+            <Button onClick={handlePasswordConfirm} disabled={verifyingPassword}>
+              {verifyingPassword ? 'Verificando...' : 'Confirmar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Logo upload */}
       <div>
