@@ -56,7 +56,7 @@ const CompleteResponsiveLayout = () => {
                     <Menu className="h-5 w-5" />
                   </Button>
                   <h1 className="text-xl sm:text-2xl font-bold text-[#3C1361] truncate">
-                    Meus Pedidos
+                    Área do anunciante
                   </h1>
                 </div>
               </div>
