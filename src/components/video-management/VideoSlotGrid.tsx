@@ -63,6 +63,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   orderId,
   tipoProduto
 }) => {
+  const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
   const navigate = useNavigate();
   const { currentVideo, refreshCurrentVideo } = useCurrentVideoDisplay({ orderId, enabled: true });
   const [companyInfoComplete, setCompanyInfoComplete] = useState<boolean | null>(null);
