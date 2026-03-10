@@ -95,6 +95,16 @@ export const getOrderSecurityStatus = (status: string) => {
       message: 'Contrato pendente',
       description: 'Pagamento confirmado - aguardando assinatura do contrato. Verifique seu email.'
     },
+    'pago': {
+      level: 'allowed',
+      message: 'Pagamento confirmado',
+      description: 'Pagamento confirmado - envie seu vídeo para ativar a campanha'
+    },
+    'pago_pendente_video': {
+      level: 'allowed',
+      message: 'Pago - Aguardando vídeo',
+      description: 'Pagamento confirmado - envie seu vídeo para ativar a campanha'
+    },
     'aguardando_video': {
       level: 'allowed',
       message: 'Aguardando vídeo',
