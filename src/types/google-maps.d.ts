@@ -282,13 +282,15 @@ declare namespace google {
       remove(): void;
     }
 
-    interface Size {
+    class Size {
+      constructor(width: number, height: number, widthUnit?: string, heightUnit?: string);
       width: number;
       height: number;
       equals(other: Size): boolean;
     }
 
-    interface Point {
+    class Point {
+      constructor(x: number, y: number);
       x: number;
       y: number;
       equals(other: Point): boolean;
