@@ -188,7 +188,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
         </div>
 
         {/* Slots Bloqueados - Visual Apenas */}
-        <div className="grid grid-cols-2 gap-1.5 sm:gap-3 opacity-40 pointer-events-none">
+        <div className={`grid ${isVertical ? 'grid-cols-1 sm:grid-cols-2 max-w-2xl' : 'grid-cols-2'} gap-1.5 sm:gap-3 opacity-40 pointer-events-none`}>
           {videoSlots.map((slot) => (
             <div 
               key={slot.slot_position}
