@@ -74,8 +74,10 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   currentDisplayVideoId,
   totalApprovedVideos,
   hasAnyScheduledActiveNow = false,
-  companyInfoComplete
+  companyInfoComplete,
+  tipoProduto
 }) => {
+  const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
   const {
     isVideoCurrentlyDisplaying,
     getCurrentDisplayType
