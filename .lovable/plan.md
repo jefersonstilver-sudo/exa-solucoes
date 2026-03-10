@@ -1,80 +1,64 @@
 
 
-# Plano de Correção — 2FA Seguro com Auth Gate
+# Auditoria Completa: `tipo_produto` (Vertical vs Horizontal)
 
-## Diagnóstico Confirmado
+## Problemas Encontrados
 
-1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
-2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
+### 1. `useUserOrdersAndAttempts.ts` -- Campo `tipo_produto` AUSENTE (CONFIRMADO)
+- **Arquivo**: `src/hooks/useUserOrdersAndAttempts.ts`
+- **Problema**: A interface `UserCompleteOrder` (linha 17-42) **não tem** `tipo_produto`. O mapeamento (linhas 178-197) **não inclui** `tipo_produto`. O `select('*')` traz do banco, mas o campo é descartado no mapeamento manual.
+- **Impacto**: O `AdvertiserOrderCard` recebe `item.tipo_produto = undefined` → badge sempre mostra "Horizontal" (fallback).
+- **Correção**: Adicionar `tipo_produto?: string` na interface (linha 31) e `tipo_produto: order.tipo_produto || 'horizontal'` no mapeamento (linha 196).
 
-## Limitação Técnica do Supabase
+### 2. `VideoSlotGrid.tsx` -- `tipoProduto` NÃO é repassado ao `VideoSlotCard`
+- **Arquivo**: `src/components/video-management/VideoSlotGrid.tsx`
+- **Problema**: O `VideoSlotGrid` recebe `tipoProduto` como prop (linha 50), mas **nunca** o repassa para o `VideoSlotCard` (linhas 214-230). O `VideoSlotCard` também **não aceita** essa prop na interface (linhas 44-60).
+- **Impacto**: O `VideoSlotCard` e seus filhos (`VideoSlotUpload`) não sabem se o pedido é vertical ou horizontal. Porém, a validação real ocorre no `useVideoManagement.tsx` → `videoUploadService.ts` que **já recebe** `tipoProduto` corretamente via `handleUpload`. Portanto, a validação de upload funciona. Contudo, a UI do slot card não exibe informações visuais específicas do tipo (ex: ícone vertical/horizontal por slot).
 
-O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
+### 3. `videoSlotService.ts` -- Slots fixos em 10 (OK para ambos)
+- **Arquivo**: `src/services/videoSlotService.ts` (linha 89)
+- **Status**: Gera 10 slots para todos os pedidos. Conforme `useVideoSpecifications.ts`, ambos os tipos têm `maxVideosPorPedido: 10`. **OK, sem problema.**
 
-## Solução: Auth Gate no AuthProvider
+### 4. `videoStorageService.ts` -- Validação de orientação e duração (OK)
+- **Arquivo**: `src/services/videoStorageService.ts`
+- **Status**: Já implementa validação dinâmica por tipo:
+  - Horizontal: máx 10s, orientação horizontal
+  - Vertical: máx 15s, orientação vertical
+- **OK, funcionando corretamente.**
 
-Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
+### 5. `videoUploadService.ts` -- Recebe `tipoProduto` (OK)
+- **Arquivo**: `src/services/videoUploadService.ts` (linha 23, 103)
+- **Status**: Já recebe `tipoProduto` e converte para `'horizontal' | 'vertical'` corretamente na linha 103. **OK.**
 
-```text
-Email + Senha
-  ↓
-signInWithPassword (sessão Supabase criada — inevitável)
-  ↓
-2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
-  ↓                    → navigate('/verificacao-2fa')
-  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
-  ↓                    → Todas as rotas protegidas bloqueadas
-  ↓                    ↓
-  ↓                  Código validado → sessionStorage.remove('pending_2fa')
-  ↓                    → isLoggedIn = TRUE → acesso liberado
-  ↓
-  NÃO → login normal
-```
+### 6. `useVideoManagement.tsx` -- Passa `tipoProduto` para upload (OK)
+- **Arquivo**: `src/hooks/useVideoManagement.tsx` (linha 16, 64)
+- **Status**: Recebe `tipoProduto` via props e passa para `uploadVideo()`. **OK.**
 
-**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
+### 7. `useOrderVideoManagement.tsx` -- Busca `tipo_produto` do banco (OK)
+- **Arquivo**: `src/hooks/useOrderVideoManagement.tsx` (linhas 52-63, 305)
+- **Status**: Busca `tipo_produto` da tabela `pedidos` e expõe como `tipoProduto`. **OK.**
 
-## Arquivos a Modificar (4 arquivos)
+### 8. `VideoManagementCard.tsx` -- Usa `tipoProduto` para specs (OK)
+- **Arquivo**: `src/components/order/VideoManagementCard.tsx` (linhas 49-58)
+- **Status**: Determina `isVertical`, busca specs dinâmicas, exibe labels corretas. **OK.**
 
-### A. `src/App.tsx` (1 linha)
-- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
-- Importar `TwoFactorVerificationPage`
+### 9. `OrderDetails.tsx` (advertiser) -- Passa `tipoProduto` ao card (OK)
+- **Arquivo**: `src/pages/advertiser/OrderDetails.tsx` (linha 566)
+- **Status**: `tipoProduto={tipoProduto}` passado para `VideoManagementCard`. **OK.**
 
-### B. `src/hooks/useAuth.tsx` — Auth Gate
-- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
-  ```
-  const pending2fa = sessionStorage.getItem('pending_2fa');
-  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
-  ```
-- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
+## Resumo dos Problemas Reais
 
-### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
-- Após detectar `two_factor_enabled` (linha 134):
-  - `sessionStorage.setItem('pending_2fa', data.user.id)`
-  - Navegar para `/verificacao-2fa?userId=...`
-  - **Não fazer signOut**, **não armazenar credenciais**
+| # | Arquivo | Problema | Severidade |
+|---|---------|----------|------------|
+| 1 | `useUserOrdersAndAttempts.ts` | `tipo_produto` não incluído na interface nem no mapeamento → badge no card de listagem sempre mostra "Horizontal" | **Alta** |
+| 2 | `VideoSlotGrid.tsx` | `tipoProduto` recebido mas não repassado ao `VideoSlotCard` (cosmético, validação funciona via outro caminho) | **Baixa** |
 
-### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
-- Após verificação do código bem-sucedida (linha 99):
-  - `sessionStorage.removeItem('pending_2fa')`
-  - Isso faz `isLoggedIn` mudar para `true` automaticamente
-  - Redirecionar para rota correta baseada no role
+## Plano de Correção
 
-- No botão "Voltar ao Login" (linha 239):
-  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
-  - Isso garante logout limpo se o usuário desistir
+### Arquivo 1: `src/hooks/useUserOrdersAndAttempts.ts`
+1. Adicionar `tipo_produto?: string;` à interface `UserCompleteOrder` (após linha 31)
+2. Adicionar `tipo_produto: order.tipo_produto || 'horizontal',` no mapeamento (após linha 196)
 
-## Garantias
-
-| Regra | Cumprida |
-|-------|----------|
-| Sem tabelas novas | ✓ |
-| Sem signOut como solução | ✓ |
-| Sem credenciais em sessionStorage | ✓ |
-| Sem fluxos paralelos | ✓ |
-| Sessão bloqueada até 2FA | ✓ |
-| Reutiliza componentes existentes | ✓ |
-
-## Limitação Transparente
-
-A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
+### Arquivo 2: `src/components/video-management/VideoSlotGrid.tsx` (opcional, melhoria de consistência)
+- Repassar `tipoProduto` ao `VideoSlotCard` para que futuramente o card possa exibir indicadores visuais do tipo de produto.
 
