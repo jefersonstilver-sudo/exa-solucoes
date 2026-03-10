@@ -54,13 +54,8 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
   const { logActivity } = useActivityLogger();
 
   const handleStatusChange = (newStatus: string) => {
-    if (newStatus === 'pago' || newStatus === 'pago_pendente_video') {
-      setPendingStatus(newStatus);
-      setAdminPassword('');
-      setShowPasswordDialog(true);
-    } else {
-      updateField('statusInicial', newStatus);
-    }
+    // TODO: Reativar validação de senha admin para status pago
+    updateField('statusInicial', newStatus);
   };
 
   const handlePasswordConfirm = async () => {
