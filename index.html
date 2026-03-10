@@ -87,6 +87,33 @@
 
   <body>
     <div id="root"></div>
+    
+    <!-- 🔄 HARD CACHE BUST - Detect stale HTML and force reload -->
+    <script>
+      (function() {
+        var BUILD_ID = '__BUILD_ID__';
+        var key = 'html-build-id';
+        var stored = localStorage.getItem(key);
+        if (stored && stored !== BUILD_ID) {
+          console.log('[CACHE-BUST] New build detected: ' + BUILD_ID + ' (was ' + stored + '). Reloading...');
+          localStorage.setItem(key, BUILD_ID);
+          if ('caches' in window) {
+            caches.keys().then(function(names) {
+              return Promise.all(names.map(function(n) { return caches.delete(n); }));
+            }).then(function() {
+              window.location.reload(true);
+            });
+          } else {
+            window.location.reload(true);
+          }
+          return;
+        }
+        if (!stored) {
+          localStorage.setItem(key, BUILD_ID);
+        }
+      })();
+    </script>
+    
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>

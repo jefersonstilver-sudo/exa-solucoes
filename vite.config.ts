@@ -13,6 +13,12 @@ export default defineConfig(({ mode }) => ({
   define: {
     __BUILD_TIMESTAMP__: Date.now(),
   },
+  // Replace BUILD_ID placeholder in index.html for cache busting
+  html: {
+    transform(html: string) {
+      return html.replace('__BUILD_ID__', String(Date.now()));
+    },
+  },
   // Force cache busting on builds
   build: {
     rollupOptions: {
