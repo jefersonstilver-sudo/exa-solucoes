@@ -1,80 +1,80 @@
 
 
-# Plano de Correção — 2FA Seguro com Auth Gate
+# Auditoria Profunda: Video Management (Delete, Real-time, Performance, UX)
 
-## Diagnóstico Confirmado
+## Problemas Identificados
 
-1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
-2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
+### 1. Botão de deletar vídeo rejeitado NÃO FUNCIONA (Alta Severidade)
 
-## Limitação Técnica do Supabase
+**Causa raiz**: Em `useOrderVideoManagement.tsx` linha 265, o `removeVideo` chama `supabase.rpc('can_remove_video')` antes de permitir a remoção. Se essa RPC retorna `false` para vídeos rejeitados (ou se ela nem existe no banco), a remoção é bloqueada silenciosamente -- o erro é capturado no `catch` (linha 283) mas o toast não é exibido ao usuário porque o `throw error` propaga para `VideoManagementCard.tsx` que não trata o erro.
 
-O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
+Além disso, em `useVideoManagement.tsx` linha 173, o `disabled={slot.is_base_video}` no botão pode estar incorretamente desabilitando o botão se o campo `is_base_video` estiver `true` mesmo para vídeos rejeitados.
 
-## Solução: Auth Gate no AuthProvider
+**Correção**:
+- No `removeVideo` do `useOrderVideoManagement.tsx`: para vídeos rejeitados (`approval_status === 'rejected'`), pular a validação da RPC e permitir remoção direta
+- No `VideoSlotActions.tsx` linha 173: permitir remover vídeos rejeitados independente de `is_base_video`
+- Adicionar toast.error no catch para feedback ao usuário
 
-Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
+### 2. Chamadas RPC excessivas -- LOOP de Performance (Alta Severidade)
 
-```text
-Email + Senha
-  ↓
-signInWithPassword (sessão Supabase criada — inevitável)
-  ↓
-2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
-  ↓                    → navigate('/verificacao-2fa')
-  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
-  ↓                    → Todas as rotas protegidas bloqueadas
-  ↓                    ↓
-  ↓                  Código validado → sessionStorage.remove('pending_2fa')
-  ↓                    → isLoggedIn = TRUE → acesso liberado
-  ↓
-  NÃO → login normal
-```
+**Evidência**: O network log mostra 20+ chamadas a `get_current_display_video` por segundo, todas para o mesmo `pedido_id`.
 
-**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
+**Causa raiz**: 
+- Cada `VideoSlotCard` instancia `useCurrentVideoDisplay` (linha 82-87), que faz uma chamada RPC + interval de 60s
+- O `VideoSlotGrid` também instancia `useCurrentVideoDisplay` (linha 68)
+- O `useEffect` na linha 108-113 do Grid chama `refreshCurrentVideo()` quando `videoSlots` muda, causando re-renders em cascata
 
-## Arquivos a Modificar (4 arquivos)
+**Correção**:
+- Mover `useCurrentVideoDisplay` para APENAS o `VideoSlotGrid` (1 instância por pedido)
+- Passar `currentDisplayVideoId` como prop ao `VideoSlotCard` (já existe a prop, mas o card ignora e cria seu próprio hook)
+- Remover o `useCurrentVideoDisplay` de dentro do `VideoSlotCard`
 
-### A. `src/App.tsx` (1 linha)
-- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
-- Importar `TwoFactorVerificationPage`
+### 3. Sem real-time updates nem animações (Média Severidade)
 
-### B. `src/hooks/useAuth.tsx` — Auth Gate
-- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
-  ```
-  const pending2fa = sessionStorage.getItem('pending_2fa');
-  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
-  ```
-- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
+**Estado atual**: Não há subscription Supabase na página de gestão de vídeos. Mudanças (aprovação, rejeição, novos uploads) só aparecem com reload manual.
 
-### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
-- Após detectar `two_factor_enabled` (linha 134):
-  - `sessionStorage.setItem('pending_2fa', data.user.id)`
-  - Navegar para `/verificacao-2fa?userId=...`
-  - **Não fazer signOut**, **não armazenar credenciais**
+**Correção**:
+- Em `useVideoManagement.tsx`: adicionar subscription Supabase em `pedido_videos` para o `orderId` com auto-refresh dos slots
+- Adicionar animações CSS minimalistas: `animate-fade-in` quando um slot muda de estado, pulse verde para aprovação, pulse vermelho para rejeição
 
-### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
-- Após verificação do código bem-sucedida (linha 99):
-  - `sessionStorage.removeItem('pending_2fa')`
-  - Isso faz `isLoggedIn` mudar para `true` automaticamente
-  - Redirecionar para rota correta baseada no role
+### 4. Console.log excessivo (Baixa Severidade)
 
-- No botão "Voltar ao Login" (linha 239):
-  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
-  - Isso garante logout limpo se o usuário desistir
+Cada render do `VideoSlotCard` emite 2 console.logs (linhas 122-134 e 154-164). Com 10 slots, são 20 logs por render, contribuindo para lentidão.
 
-## Garantias
+**Correção**: Remover ou converter para `devLog` condicional.
 
-| Regra | Cumprida |
-|-------|----------|
-| Sem tabelas novas | ✓ |
-| Sem signOut como solução | ✓ |
-| Sem credenciais em sessionStorage | ✓ |
-| Sem fluxos paralelos | ✓ |
-| Sessão bloqueada até 2FA | ✓ |
-| Reutiliza componentes existentes | ✓ |
+## Plano de Implementação
 
-## Limitação Transparente
+### Arquivo 1: `src/hooks/useVideoManagement.tsx`
+- Adicionar subscription real-time em `pedido_videos` filtrado por `orderId`
+- No callback, recarregar slots automaticamente com debounce de 500ms
+- Para vídeos rejeitados no `handleRemove`: pular validação de `is_base_video`
 
-A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
+### Arquivo 2: `src/hooks/useOrderVideoManagement.tsx`
+- No `removeVideo`: se `slot.approval_status === 'rejected'`, pular a chamada `can_remove_video` e ir direto para `handleRemove`
+- Adicionar toast.error no catch para feedback ao usuário
+
+### Arquivo 3: `src/components/video-management/VideoSlotActions.tsx`
+- Linha 173: mudar `disabled={slot.is_base_video}` para `disabled={slot.is_base_video && slot.approval_status === 'approved'}`
+
+### Arquivo 4: `src/components/video-management/VideoSlotCard.tsx`
+- Remover import e uso de `useCurrentVideoDisplay` (usar prop `currentDisplayVideoId` que já recebe)
+- Remover console.logs de debug (linhas 122-134, 154-164)
+- Adicionar classes de animação: `animate-fade-in` no card wrapper
+
+### Arquivo 5: `src/components/video-management/VideoSlotGrid.tsx`
+- Manter `useCurrentVideoDisplay` aqui (já existe)
+- Remover `useEffect` que causa re-render loop (linhas 108-113) -- o real-time subscription no hook já cuida disso
+- Remover console.logs de debug
+
+### Arquivo 6: `src/components/order/VideoManagementCard.tsx`
+- Sem mudanças estruturais, apenas garantir que `onRemove` propague erros corretamente com toast
+
+| Arquivo | Mudança | Impacto |
+|---------|---------|---------|
+| `useVideoManagement.tsx` | Real-time subscription + fix delete rejected | Alto |
+| `useOrderVideoManagement.tsx` | Skip RPC for rejected + toast errors | Alto |
+| `VideoSlotActions.tsx` | Allow delete rejected videos | Alto |
+| `VideoSlotCard.tsx` | Remove duplicate hook + logs + add animations | Alto (performance) |
+| `VideoSlotGrid.tsx` | Remove re-render loop + logs | Alto (performance) |
 
