@@ -110,7 +110,8 @@ const OrderDetails = () => {
     isSuccessOpen,
     videoName,
     hideSuccess,
-    conflictModal
+    conflictModal,
+    tipoProduto
   } = useOrderVideoManagement(id || '');
 
   // Hook para monitoramento automático de agendamentos - REABILITADO com otimizações
@@ -562,6 +563,7 @@ const OrderDetails = () => {
             onSetBaseVideo={(slotId) => handleVideoAction(() => handleSetBaseVideo(slotId))}
             onRefreshSlots={refreshSlots}
             orderId={id || ''}
+            tipoProduto={tipoProduto}
           />
         )}
 

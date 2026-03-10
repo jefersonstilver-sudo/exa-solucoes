@@ -7,6 +7,8 @@ import { getOrderSecurityStatus } from '@/services/videoUploadSecurityService';
 import { Button } from '@/components/ui/button';
 import { videoScheduleManagementService } from '@/services/videoScheduleManagementService';
 import { TutorialVideoPopup } from '@/components/video-management/TutorialVideoPopup';
+import { useVideoSpecifications } from '@/hooks/useVideoSpecifications';
+
 interface VideoManagementCardProps {
   orderStatus: string;
   videoSlots: VideoSlot[];
@@ -21,7 +23,9 @@ interface VideoManagementCardProps {
   onSetBaseVideo: (slotId: string) => Promise<void>;
   onRefreshSlots?: () => Promise<void>;
   orderId: string;
+  tipoProduto?: string;
 }
+
 export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
   orderStatus,
   videoSlots,
@@ -33,13 +37,26 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
   onDownload,
   onSetBaseVideo,
   onRefreshSlots,
-  orderId
+  orderId,
+  tipoProduto
 }) => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
   const [instructionsExpanded, setInstructionsExpanded] = useState(false);
   const security = getOrderSecurityStatus(orderStatus);
   const uploadAllowed = security.level === 'allowed' || security.level === 'active';
+
+  // Determinar tipo de vídeo baseado no tipo_produto
+  const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
+  const videoTipo: 'horizontal' | 'vertical' = isVertical ? 'vertical' : 'horizontal';
+
+  // Buscar especificações dinâmicas
+  const { getSpecsDisplay } = useVideoSpecifications();
+  const specs = getSpecsDisplay(videoTipo);
+
+  const orientacaoLabel = isVertical ? 'vertical' : 'horizontal';
+  const maxDuracaoLabel = `${specs.duracao}s`;
+
   const handleScheduleVideo = async (videoId: string, scheduleRules: any[]) => {
     try {
       console.log('📅 [VIDEO_MGMT] Agendando vídeo:', {
@@ -47,14 +64,12 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
         scheduleRules
       });
 
-      // Encontrar a posição do slot do vídeo
       const videoSlot = videoSlots.find(slot => slot.video_id === videoId);
       const slotPosition = videoSlot?.slot_position || 1;
       console.log('📅 [VIDEO_MGMT] Slot position encontrada:', slotPosition);
       const success = await videoScheduleManagementService.updateVideoScheduleRules(videoId, scheduleRules, slotPosition);
       if (success) {
         console.log('✅ [VIDEO_MGMT] Agendamento realizado com sucesso');
-        // Refresh the slots to show the updated schedule
         if (onRefreshSlots) {
           await onRefreshSlots();
         }
@@ -63,6 +78,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
       console.error('❌ [VIDEO_MGMT] Erro ao agendar vídeo:', error);
     }
   };
+
   return <>
       <Card className="bg-white/80 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-lg">
         <CardHeader className="p-3 sm:p-5 pb-2">
@@ -73,7 +89,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
                 <span className="text-sm sm:text-lg font-semibold">Gestão de Vídeos</span>
                 <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
                   {uploadAllowed 
-                    ? `${videoSlots.filter(s => s.video_id).length} / ${videoSlots.length} slots utilizados · máx. 10s, 100MB`
+                    ? `${videoSlots.filter(s => s.video_id).length} / ${videoSlots.length} slots utilizados · máx. ${maxDuracaoLabel}, ${orientacaoLabel}, 100MB`
                     : "Upload disponível apenas para pedidos pagos"}
                 </p>
               </div>
@@ -110,7 +126,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
               <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2 text-[10px] sm:text-xs text-muted-foreground">
                 <p className="flex items-start gap-1.5">
                   <span className="text-blue-600 mt-0.5 font-semibold">•</span>
-                  <span>Envie até 10 vídeos (máx. 10s, horizontal, 100MB)</span>
+                  <span>Envie até 10 vídeos (máx. {maxDuracaoLabel}, {orientacaoLabel}, 100MB)</span>
                 </p>
                 <p className="flex items-start gap-1.5">
                   <span className="text-blue-600 mt-0.5 font-semibold">•</span>
@@ -140,7 +156,8 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
               onDownload={onDownload} 
               onSetBaseVideo={onSetBaseVideo} 
               onScheduleVideo={handleScheduleVideo} 
-              orderId={orderId} 
+              orderId={orderId}
+              tipoProduto={tipoProduto}
             />
           ) : (
             <div className="text-center py-6 sm:py-8 bg-muted/30 rounded-lg border-2 border-dashed">

@@ -12,14 +12,18 @@ import { useVideoSpecifications } from '@/hooks/useVideoSpecifications';
 interface VideoInstructionsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  tipoProduto?: string;
 }
 
 export const VideoInstructionsModal: React.FC<VideoInstructionsModalProps> = ({
   isOpen,
   onClose,
+  tipoProduto,
 }) => {
   const { specifications, isLoading } = useVideoSpecifications();
-  const maxDuration = specifications?.horizontal?.duracaoSegundos || 10;
+  const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
+  const specs = isVertical ? specifications?.vertical : specifications?.horizontal;
+  const maxDuration = specs?.duracaoSegundos || (isVertical ? 15 : 10);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

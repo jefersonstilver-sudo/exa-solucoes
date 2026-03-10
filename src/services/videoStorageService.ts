@@ -15,14 +15,18 @@ export interface VideoValidationResult {
   };
 }
 
-export const validateVideoFile = (file: File): Promise<VideoValidationResult> => {
+export const validateVideoFile = (file: File, tipo: 'horizontal' | 'vertical' = 'horizontal'): Promise<VideoValidationResult> => {
   return new Promise((resolve) => {
-    console.log('🔍 Iniciando validação do arquivo:', file.name, 'Tamanho:', file.size);
+    console.log('🔍 Iniciando validação do arquivo:', file.name, 'Tamanho:', file.size, 'Tipo:', tipo);
     
-    const METADATA_TIMEOUT_MS = 5000; // Timeout para evitar travas na leitura de metadados
+    const METADATA_TIMEOUT_MS = 5000;
     const video = document.createElement('video');
     const url = URL.createObjectURL(file);
     let resolved = false;
+
+    // Defaults por tipo de produto
+    const expectedOrientation = tipo === 'vertical' ? 'vertical' : 'horizontal';
+    const defaultMaxDuration = tipo === 'vertical' ? 15 : 10;
 
     const clearAll = () => {
       try {
@@ -44,7 +48,7 @@ export const validateVideoFile = (file: File): Promise<VideoValidationResult> =>
       console.warn('⏱️ [VALIDATION] Timeout ao carregar metadados. Usando validação rápida.');
       const allowedTypes = ['video/mp4', 'video/quicktime', 'video/avi', 'video/mov'];
       const isTypeOk = allowedTypes.includes(file.type);
-      const isSizeOk = file.size <= 100 * 1024 * 1024; // 100MB
+      const isSizeOk = file.size <= 100 * 1024 * 1024;
 
       const errors: string[] = [];
       if (!isTypeOk) errors.push('Formato deve ser MP4, MOV ou AVI');
@@ -57,7 +61,7 @@ export const validateVideoFile = (file: File): Promise<VideoValidationResult> =>
           duration: 0,
           width: 0,
           height: 0,
-          orientation: 'horizontal',
+          orientation: expectedOrientation,
           size: file.size,
           format: file.type
         }
@@ -72,21 +76,20 @@ export const validateVideoFile = (file: File): Promise<VideoValidationResult> =>
       const orientation = height > width ? 'vertical' : 'horizontal';
       const errors: string[] = [];
       
-      console.log('📊 Metadados do vídeo:', { duration, width, height, orientation });
+      console.log('📊 Metadados do vídeo:', { duration, width, height, orientation, tipoEsperado: tipo });
       
-      // Validações estritas somente quando há metadados
-      // Duração máxima dinâmica - buscar do banco ou usar default seguro
-      // Default: 10s horizontal (mais restritivo para segurança)
-      const maxDuration = 10; // Validado novamente no upload com valor do banco
+      // Duração máxima dinâmica baseada no tipo
+      const maxDuration = defaultMaxDuration;
       if (duration > maxDuration) {
         errors.push(`Vídeo deve ter no máximo ${maxDuration} segundos`);
       }
       
-      if (orientation !== 'horizontal') {
-        errors.push('Vídeo deve estar em orientação horizontal');
+      // Validação de orientação dinâmica baseada no tipo de produto
+      if (orientation !== expectedOrientation) {
+        errors.push(`Vídeo deve estar em orientação ${expectedOrientation === 'vertical' ? 'vertical (9:16)' : 'horizontal (4:3)'}`);
       }
       
-      if (file.size > 100 * 1024 * 1024) { // 100MB
+      if (file.size > 100 * 1024 * 1024) {
         errors.push('Vídeo deve ter no máximo 100MB');
       }
       

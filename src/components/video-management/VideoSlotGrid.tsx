@@ -47,6 +47,7 @@ interface VideoSlotGridProps {
   onSetBaseVideo?: (slotId: string) => void;
   onScheduleVideo?: (videoId: string, scheduleRules: any[]) => Promise<void>;
   orderId: string;
+  tipoProduto?: string;
 }
 
 export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
@@ -59,7 +60,8 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   onDownload,
   onSetBaseVideo,
   onScheduleVideo,
-  orderId
+  orderId,
+  tipoProduto
 }) => {
   const navigate = useNavigate();
   const { currentVideo, refreshCurrentVideo } = useCurrentVideoDisplay({ orderId, enabled: true });

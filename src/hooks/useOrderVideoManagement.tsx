@@ -22,6 +22,7 @@ export const useOrderVideoManagement = (orderId: string) => {
   
   const { userProfile } = useAuth();
   const [orderStatus, setOrderStatus] = useState('pendente');
+  const [tipoProduto, setTipoProduto] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   
@@ -50,15 +51,16 @@ export const useOrderVideoManagement = (orderId: string) => {
         console.log('📊 [useOrderVideoManagement] Buscando status do pedido:', orderId);
         const { data, error } = await supabase
           .from('pedidos')
-          .select('status')
+          .select('status, tipo_produto')
           .eq('id', orderId)
           .single();
         
         if (error) throw error;
         
         if (data) {
-          console.log('✅ [useOrderVideoManagement] Status do pedido:', data.status);
+          console.log('✅ [useOrderVideoManagement] Status do pedido:', data.status, 'Tipo produto:', (data as any).tipo_produto);
           setOrderStatus(data.status);
+          setTipoProduto((data as any).tipo_produto || undefined);
         }
       } catch (error) {
         console.error('❌ [useOrderVideoManagement] Erro ao buscar status:', error);
@@ -72,7 +74,8 @@ export const useOrderVideoManagement = (orderId: string) => {
   const baseHook = useVideoManagement({
     orderId,
     userId: userProfile?.id || '',
-    orderStatus
+    orderStatus,
+    tipoProduto
   });
 
   // Carregar slots inicialmente
@@ -299,6 +302,9 @@ export const useOrderVideoManagement = (orderId: string) => {
     isSuccessOpen,
     videoName,
     hideSuccess,
-    conflictModal
+    conflictModal,
+    
+    // Tipo de produto
+    tipoProduto
   };
 };
