@@ -11,7 +11,6 @@ import { VideoSlotUpload } from './VideoSlotUpload';
 import { VideoStatusBadge } from './VideoStatusBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 import { videoLogger } from '@/services/logger/VideoActionLogger';
 import { useForceCleanup } from '@/hooks/useForceCleanup';
 interface VideoSlot {
