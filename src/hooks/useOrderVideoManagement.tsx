@@ -246,7 +246,7 @@ export const useOrderVideoManagement = (orderId: string) => {
       }
 
       // Validação backend adicional
-      const { data: canRemove, error: checkError } = await supabase.rpc('can_remove_video', {
+      const { data: canRemove, error: checkError } = await supabase.rpc('can_remove_video' as any, {
         p_pedido_video_id: slotId
       });
 
