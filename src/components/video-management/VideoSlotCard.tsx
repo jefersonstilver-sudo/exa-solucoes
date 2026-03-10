@@ -58,6 +58,7 @@ interface VideoSlotCardProps {
   totalApprovedVideos: number;
   hasAnyScheduledActiveNow?: boolean;
   companyInfoComplete?: boolean;
+  tipoProduto?: string;
 }
 export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   slot,
