@@ -131,11 +131,6 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
     });
   });
 
-  console.log('🔍 [GRID] Status de agendamento:', {
-    hasAnyScheduledActiveNow,
-    currentTime: new Date().toTimeString().slice(0, 5),
-    currentDay: new Date().getDay()
-  });
 
   // Se cadastro ainda está sendo verificado, não renderizar nada
   if (companyInfoComplete === null) {

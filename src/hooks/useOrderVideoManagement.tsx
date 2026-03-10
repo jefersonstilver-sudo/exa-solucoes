@@ -4,6 +4,7 @@ import { useVideoManagement } from '@/hooks/useVideoManagement';
 import { loadVideoSlots } from '@/services/videoSlotService';
 import { VideoSlot } from '@/types/videoManagement';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface ConflictModalState {
   isOpen: boolean;
