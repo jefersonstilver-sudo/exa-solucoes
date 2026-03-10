@@ -12,8 +12,8 @@ import { toast } from 'sonner';
 import {
   Collapsible,
   CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+  CollapsibleTrigger } from
+'@/components/ui/collapsible';
 
 interface CampaignReportCardProps {
   campaign: CampaignReport;
@@ -27,7 +27,7 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'short',
-      year: 'numeric',
+      year: 'numeric'
     });
   };
 
@@ -45,7 +45,7 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
     setIsDownloading(true);
     try {
       const pdfExporter = new CampaignPDFExporter();
-      
+
       const pdfData = {
         pedidoId: campaign.pedidoId,
         clientName: campaign.clientName,
@@ -59,11 +59,11 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
         totalPredios: campaign.predios.length,
         videos: campaign.videos,
         predios: campaign.predios,
-        chartElementId: `chart-${campaign.pedidoId}`,
+        chartElementId: `chart-${campaign.pedidoId}`
       };
 
       const blob = await pdfExporter.generateReport(pdfData);
-      
+
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -83,15 +83,15 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
   };
 
   // Contar vídeos ativos vs inativos
-  const videosAtivos = campaign.videos.filter(v => v.isActive && v.selectedForDisplay && v.approvalStatus === 'approved').length;
+  const videosAtivos = campaign.videos.filter((v) => v.isActive && v.selectedForDisplay && v.approvalStatus === 'approved').length;
   const videosInativos = campaign.videos.length - videosAtivos;
 
   return (
     <Collapsible
       open={isOpen}
       onOpenChange={setIsOpen}
-      className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden"
-    >
+      className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden">
+      
       {/* Header - Sempre visível */}
       <div className="bg-gradient-to-br from-background via-background to-accent/5 border-b border-border/40 p-6">
         <div className="flex items-start justify-between mb-4">
@@ -103,11 +103,11 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
               <Badge className="bg-green-100 text-green-800 border-green-200">
                 {campaign.status}
               </Badge>
-              <ChevronDown 
+              <ChevronDown
                 className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${
-                  isOpen ? 'rotate-180' : ''
-                }`}
-              />
+                isOpen ? 'rotate-180' : ''}`
+                } />
+              
             </div>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
@@ -126,8 +126,8 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
             size="sm"
             onClick={handleDownloadPDF}
             disabled={isDownloading}
-            className="bg-white hover:bg-gray-50 border-gray-200 shadow-sm"
-          >
+            className="bg-white hover:bg-gray-50 border-gray-200 shadow-sm">
+            
             <Download className="w-4 h-4 mr-2" />
             {isDownloading ? 'Gerando...' : 'Baixar Relatório'}
           </Button>
@@ -186,43 +186,43 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
               </p>
             </div>
             <div className="divide-y divide-gray-100">
-              {campaign.videos.map((video) => (
-                <VideoListItem
-                  key={video.id}
-                  {...video}
-                />
-              ))}
+              {campaign.videos.map((video) =>
+              <VideoListItem
+                key={video.id}
+                {...video} />
+
+              )}
             </div>
           </div>
 
           {/* Lista de Prédios */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <h4 className="text-base font-semibold mb-4 text-gray-900">
-              Prédios Ativos ({campaign.predios.length})
-            </h4>
-            <div className="space-y-2">
-              {campaign.predios.map((predio) => (
-                <div
-                  key={predio.id}
-                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <MapPin className="w-4 h-4 text-[#9C1E1E] flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-gray-900 truncate">{predio.nome}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {predio.endereco} - {predio.bairro}
-                    </p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-semibold text-[#9C1E1E]">{predio.quantidadeTelas}</p>
-                    <p className="text-xs text-muted-foreground">telas</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          
         </div>
       </CollapsibleContent>
-    </Collapsible>
-  );
+    </Collapsible>);
+
 };
