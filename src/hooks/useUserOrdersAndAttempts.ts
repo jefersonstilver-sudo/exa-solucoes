@@ -31,6 +31,7 @@ export interface UserCompleteOrder {
   total_visualizacoes_mes?: number;
   total_publico_estimado?: number;
   total_telas?: number;
+  tipo_produto?: string;
   type: 'order';
   videos?: {
     id: string;
