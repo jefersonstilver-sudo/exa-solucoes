@@ -3,7 +3,7 @@
 // Ensures the 'google' namespace is available throughout the project
 
 declare namespace google {
-  export namespace maps {
+  namespace maps {
     function importLibrary(name: string): Promise<any>;
 
     class Map {
