@@ -34,6 +34,7 @@ export interface OrderOrAttempt {
   hasVideo?: boolean;
   hasPaidInstallment?: boolean;
   tipo_produto?: string;
+  nome_pedido?: string;
 }
 
 export interface OrdersStats {
