@@ -193,6 +193,7 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
           total_visualizacoes_mes: totals.visualizacoes,
           total_publico_estimado: totals.publico,
           total_telas: totals.telas,
+          tipo_produto: order.tipo_produto || 'horizontal',
           type: 'order' as const,
           videos: videosData[order.id] || []
         };
