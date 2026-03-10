@@ -12,6 +12,7 @@ interface VideoSlotUploadProps {
   isUploading: boolean;
   onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: ScheduleRule[]) => void;
   companyInfoComplete?: boolean;
+  tipoProduto?: string;
 }
 export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   slotPosition,
