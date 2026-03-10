@@ -75,7 +75,11 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
       toast.error('Erro ao fazer upload do vídeo');
     } finally {
       setUploading(false);
-      setUploadProgress(prev => ({ ...prev, [slotPosition]: 0 }));
+      setUploadProgress(prev => {
+        const next = { ...prev };
+        delete next[slotPosition];
+        return next;
+      });
     }
   };
 
