@@ -106,16 +106,13 @@ export const useOrderVideoManagement = (orderId: string) => {
   }, [orderId]);
 
   // Função para refresh manual de slots
-  const refreshSlots = async () => {
+  const refreshSlots = async (): Promise<void> => {
     if (!orderId) return;
     
     try {
       console.log('🔄 [useOrderVideoManagement] Refresh de slots solicitado');
       const slots = await loadVideoSlots(orderId);
       console.log('✅ [useOrderVideoManagement] Refresh concluído:', slots.length, 'slots');
-      
-      // Forçar re-render do hook base
-      return slots;
     } catch (error) {
       console.error('❌ [useOrderVideoManagement] Erro no refresh:', error);
       throw error;
@@ -249,7 +246,7 @@ export const useOrderVideoManagement = (orderId: string) => {
       }
 
       // Validação backend adicional
-      const { data: canRemove, error: checkError } = await supabase.rpc('can_remove_video', {
+      const { data: canRemove, error: checkError } = await supabase.rpc('can_remove_video' as any, {
         p_pedido_video_id: slotId
       });
 
@@ -304,7 +301,7 @@ export const useOrderVideoManagement = (orderId: string) => {
     hideSuccess,
     conflictModal,
     
-    // Tipo de produto
-    tipoProduto
+    // Tipo de produto do pedido
+    tipoProduto: tipoProduto as string | undefined
   };
 };
