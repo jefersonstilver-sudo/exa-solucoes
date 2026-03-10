@@ -19,8 +19,10 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   uploading,
   isUploading,
   onUpload,
-  companyInfoComplete: companyInfoCompleteProp
+  companyInfoComplete: companyInfoCompleteProp,
+  tipoProduto
 }) => {
+  const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
   const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [videoTitle, setVideoTitle] = useState('');
