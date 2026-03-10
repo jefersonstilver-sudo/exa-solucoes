@@ -111,19 +111,6 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
   // Verificar se o vídeo tem agendamento ativo
   const hasActiveSchedule = slot.schedule_rules && slot.schedule_rules.length > 0 && slot.schedule_rules.some(rule => rule.is_active && rule.days_of_week && rule.days_of_week.length > 0);
-  console.log(`🔍 [CARD] SLOT_${slot.slot_position} renderizando:`, {
-    hasVideo: !!slot.video_data,
-    videoName: slot.video_data?.nome,
-    slotId: slot.id,
-    isActive: slot.is_active,
-    approvalStatus: slot.approval_status,
-    selectedForDisplay: slot.selected_for_display,
-    isBaseVideo: slot.is_base_video,
-    scheduleRules: slot.schedule_rules,
-    hasActiveSchedule,
-    currentDisplayVideoId,
-    timestamp: new Date().toISOString()
-  });
 
   // Verificar se o agendamento está ativo AGORA (verificação temporal)
   const isScheduledActiveNow = () => {
