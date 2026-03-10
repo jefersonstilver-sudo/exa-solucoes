@@ -59,7 +59,9 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
         (progress) => {
           setUploadProgress(prev => ({ ...prev, [slotPosition]: progress }));
         },
-        title
+        title,
+        undefined, // scheduleRules
+        tipoProduto
       );
 
       if (success) {

@@ -98,11 +98,12 @@ export const uploadVideo = async (
       console.log('⚡ [VideoUpload] Limpeza pulada (executada recentemente)');
     }
 
-    // Validar vídeo
+    // Validar vídeo com tipo de produto
     onProgress?.(15);
-    const validationStart = uploadSession.logPhaseStart('VALIDATION', { fileSize: file.size, fileType: file.type });
+    const videoTipo: 'horizontal' | 'vertical' = (tipoProduto === 'vertical_premium' || tipoProduto === 'vertical') ? 'vertical' : 'horizontal';
+    const validationStart = uploadSession.logPhaseStart('VALIDATION', { fileSize: file.size, fileType: file.type, videoTipo });
     
-    const validation = await validateVideoFile(file);
+    const validation = await validateVideoFile(file, videoTipo);
     if (!validation.valid) {
       uploadSession.logPhaseFailure('VALIDATION', validationStart, validation.errors.join(', '), { errors: validation.errors });
       console.error('❌ Validação falhou:', validation.errors);

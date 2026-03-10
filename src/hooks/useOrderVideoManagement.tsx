@@ -302,6 +302,9 @@ export const useOrderVideoManagement = (orderId: string) => {
     isSuccessOpen,
     videoName,
     hideSuccess,
-    conflictModal
+    conflictModal,
+    
+    // Tipo de produto
+    tipoProduto
   };
 };

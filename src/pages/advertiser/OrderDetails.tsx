@@ -563,6 +563,7 @@ const OrderDetails = () => {
             onSetBaseVideo={(slotId) => handleVideoAction(() => handleSetBaseVideo(slotId))}
             onRefreshSlots={refreshSlots}
             orderId={id || ''}
+            tipoProduto={tipoProduto}
           />
         )}
 
