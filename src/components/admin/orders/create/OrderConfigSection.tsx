@@ -47,7 +47,61 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
   const [buildings, setBuildings] = useState<any[]>([]);
   const [buildingSearch, setBuildingSearch] = useState('');
   const [loadingBuildings, setLoadingBuildings] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+  const [verifyingPassword, setVerifyingPassword] = useState(false);
   const { logActivity } = useActivityLogger();
+
+  const handleStatusChange = (newStatus: string) => {
+    if (newStatus === 'pago' || newStatus === 'pago_pendente_video') {
+      setPendingStatus(newStatus);
+      setAdminPassword('');
+      setShowPasswordDialog(true);
+    } else {
+      updateField('statusInicial', newStatus);
+    }
+  };
+
+  const handlePasswordConfirm = async () => {
+    if (!adminPassword.trim()) {
+      toast.error('Digite a senha do admin master');
+      return;
+    }
+    setVerifyingPassword(true);
+    try {
+      const { data, error } = await supabase.rpc('validate_developer_token', {
+        p_token: adminPassword,
+      });
+      if (error || data !== true) {
+        toast.error('Senha inválida. Acesso negado.');
+        return;
+      }
+      // Password valid — apply status
+      if (pendingStatus) {
+        updateField('statusInicial', pendingStatus);
+        toast.success(`Status "${pendingStatus === 'pago_pendente_video' ? 'Pago (Aguard. Vídeo)' : 'Pago'}" autorizado`);
+        logActivity('admin_authorize_paid_status', 'pedido', undefined, {
+          authorized_status: pendingStatus,
+        });
+      }
+      setShowPasswordDialog(false);
+      setAdminPassword('');
+      setPendingStatus(null);
+    } catch (err) {
+      toast.error('Erro ao validar senha');
+    } finally {
+      setVerifyingPassword(false);
+    }
+  };
+
+  const handlePasswordCancel = () => {
+    setShowPasswordDialog(false);
+    setAdminPassword('');
+    setPendingStatus(null);
+    // revert to pendente
+    updateField('statusInicial', 'pendente');
+  };
 
   // Auto-fix: sanitize listaPredios — remove non-UUID entries
   useEffect(() => {
