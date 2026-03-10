@@ -106,16 +106,13 @@ export const useOrderVideoManagement = (orderId: string) => {
   }, [orderId]);
 
   // Função para refresh manual de slots
-  const refreshSlots = async () => {
+  const refreshSlots = async (): Promise<void> => {
     if (!orderId) return;
     
     try {
       console.log('🔄 [useOrderVideoManagement] Refresh de slots solicitado');
       const slots = await loadVideoSlots(orderId);
       console.log('✅ [useOrderVideoManagement] Refresh concluído:', slots.length, 'slots');
-      
-      // Forçar re-render do hook base
-      return slots;
     } catch (error) {
       console.error('❌ [useOrderVideoManagement] Erro no refresh:', error);
       throw error;
