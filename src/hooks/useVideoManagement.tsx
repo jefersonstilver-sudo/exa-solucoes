@@ -13,9 +13,10 @@ interface UseVideoManagementProps {
   orderId: string;
   userId: string;
   orderStatus: string;
+  tipoProduto?: string;
 }
 
-export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoManagementProps) => {
+export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }: UseVideoManagementProps) => {
   const [videoSlots, setVideoSlots] = useState<VideoSlot[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
