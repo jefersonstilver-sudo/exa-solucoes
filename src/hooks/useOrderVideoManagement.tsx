@@ -119,7 +119,7 @@ export const useOrderVideoManagement = (orderId: string) => {
     };
 
     loadInitialSlots();
-  }, [orderId]);
+  }, [orderId, maxVideos]);
 
   // Função para refresh manual de slots
   const refreshSlots = async (): Promise<void> => {
