@@ -4,9 +4,9 @@
 
 declare namespace google {
   namespace maps {
-    function importLibrary(name: string): Promise<any>;
+    export function importLibrary(name: string): Promise<any>;
 
-    class Map {
+    export class Map {
       constructor(mapDiv: Element, opts?: MapOptions);
       setCenter(latlng: LatLng | LatLngLiteral): void;
       setZoom(zoom: number): void;
@@ -19,7 +19,7 @@ declare namespace google {
       getDiv(): Element;
     }
 
-    class OverlayView {
+    export class OverlayView {
       setMap(map: Map | null): void;
       getMap(): Map | null;
       getPanes(): MapPanes | null;
@@ -29,7 +29,7 @@ declare namespace google {
       onRemove?(): void;
     }
 
-    interface MapPanes {
+    export interface MapPanes {
       floatPane: Element;
       mapPane: Element;
       markerLayer: Element;
@@ -37,21 +37,21 @@ declare namespace google {
       overlayMouseTarget: Element;
     }
 
-    interface MapCanvasProjection {
+    export interface MapCanvasProjection {
       fromLatLngToDivPixel(latLng: LatLng | LatLngLiteral): Point | null;
       fromDivPixelToLatLng(pixel: Point): LatLng | null;
     }
 
-    interface MapMouseEvent {
+    export interface MapMouseEvent {
       latLng: LatLng | null;
       domEvent: MouseEvent | TouchEvent | PointerEvent | KeyboardEvent | Event;
       stop(): void;
     }
 
-    type MapsLibrary = any;
-    type PlacesLibrary = any;
+    export type MapsLibrary = any;
+    export type PlacesLibrary = any;
 
-    class Marker {
+    export class Marker {
       constructor(opts?: MarkerOptions);
       setMap(map: Map | null): void;
       setPosition(latlng: LatLng | LatLngLiteral): void;
@@ -63,32 +63,32 @@ declare namespace google {
       setDraggable(draggable: boolean): void;
     }
 
-    class LatLng {
+    export class LatLng {
       constructor(lat: number, lng: number);
       lat(): number;
       lng(): number;
       toJSON(): LatLngLiteral;
     }
 
-    class LatLngBounds {
+    export class LatLngBounds {
       constructor(sw?: LatLng | LatLngLiteral, ne?: LatLng | LatLngLiteral);
       extend(point: LatLng | LatLngLiteral): LatLngBounds;
       getCenter(): LatLng;
       contains(latLng: LatLng | LatLngLiteral): boolean;
     }
 
-    class InfoWindow {
+    export class InfoWindow {
       constructor(opts?: InfoWindowOptions);
       open(opts?: InfoWindowOpenOptions | Map, anchor?: Marker): void;
       close(): void;
       setContent(content: string | Node): void;
     }
 
-    class Geocoder {
+    export class Geocoder {
       geocode(request: GeocoderRequest, callback?: (results: GeocoderResult[] | null, status: GeocoderStatus) => void): Promise<GeocoderResponse>;
     }
 
-    class Circle {
+    export class Circle {
       constructor(opts?: CircleOptions);
       setMap(map: Map | null): void;
       setCenter(center: LatLng | LatLngLiteral): void;
@@ -96,17 +96,31 @@ declare namespace google {
       getBounds(): LatLngBounds | null;
     }
 
-    namespace places {
-      class AutocompleteService {
+    export class Size {
+      constructor(width: number, height: number, widthUnit?: string, heightUnit?: string);
+      width: number;
+      height: number;
+      equals(other: Size): boolean;
+    }
+
+    export class Point {
+      constructor(x: number, y: number);
+      x: number;
+      y: number;
+      equals(other: Point): boolean;
+    }
+
+    export namespace places {
+      export class AutocompleteService {
         getPlacePredictions(request: AutocompletionRequest, callback?: (predictions: AutocompletePrediction[] | null, status: PlacesServiceStatus) => void): void;
       }
 
-      class PlacesService {
+      export class PlacesService {
         constructor(attrContainer: HTMLDivElement | Map);
         getDetails(request: PlaceDetailsRequest, callback: (result: PlaceResult | null, status: PlacesServiceStatus) => void): void;
       }
 
-      interface AutocompletionRequest {
+      export interface AutocompletionRequest {
         input: string;
         componentRestrictions?: ComponentRestrictions;
         types?: string[];
@@ -115,11 +129,11 @@ declare namespace google {
         bounds?: LatLngBounds;
       }
 
-      interface ComponentRestrictions {
+      export interface ComponentRestrictions {
         country?: string | string[];
       }
 
-      interface AutocompletePrediction {
+      export interface AutocompletePrediction {
         place_id: string;
         description: string;
         structured_formatting: {
@@ -129,12 +143,12 @@ declare namespace google {
         types: string[];
       }
 
-      interface PlaceDetailsRequest {
+      export interface PlaceDetailsRequest {
         placeId: string;
         fields?: string[];
       }
 
-      interface PlaceResult {
+      export interface PlaceResult {
         formatted_address?: string;
         geometry?: {
           location?: LatLng;
@@ -146,7 +160,7 @@ declare namespace google {
         place_id?: string;
       }
 
-      enum PlacesServiceStatus {
+      export enum PlacesServiceStatus {
         OK = 'OK',
         ZERO_RESULTS = 'ZERO_RESULTS',
         ERROR = 'ERROR',
@@ -158,14 +172,14 @@ declare namespace google {
       }
     }
 
-    namespace event {
+    export namespace event {
       function addListener(instance: object, eventName: string, handler: (...args: any[]) => void): MapsEventListener;
       function addListenerOnce(instance: object, eventName: string, handler: (...args: any[]) => void): MapsEventListener;
       function removeListener(listener: MapsEventListener): void;
       function clearListeners(instance: object, eventName: string): void;
     }
 
-    enum SymbolPath {
+    export enum SymbolPath {
       CIRCLE = 0,
       FORWARD_CLOSED_ARROW = 1,
       FORWARD_OPEN_ARROW = 2,
@@ -173,12 +187,12 @@ declare namespace google {
       BACKWARD_OPEN_ARROW = 4,
     }
 
-    enum Animation {
+    export enum Animation {
       BOUNCE = 1,
       DROP = 2,
     }
 
-    enum GeocoderStatus {
+    export enum GeocoderStatus {
       OK = 'OK',
       ERROR = 'ERROR',
       INVALID_REQUEST = 'INVALID_REQUEST',
@@ -188,7 +202,7 @@ declare namespace google {
       ZERO_RESULTS = 'ZERO_RESULTS',
     }
 
-    interface MapOptions {
+    export interface MapOptions {
       center?: LatLng | LatLngLiteral;
       zoom?: number;
       mapTypeControl?: boolean;
@@ -206,7 +220,7 @@ declare namespace google {
       scrollwheel?: boolean;
     }
 
-    interface MarkerOptions {
+    export interface MarkerOptions {
       position?: LatLng | LatLngLiteral;
       map?: Map;
       title?: string;
@@ -220,7 +234,7 @@ declare namespace google {
       optimized?: boolean;
     }
 
-    interface MarkerLabel {
+    export interface MarkerLabel {
       text: string;
       color?: string;
       fontFamily?: string;
@@ -228,7 +242,7 @@ declare namespace google {
       fontWeight?: string;
     }
 
-    interface Icon {
+    export interface Icon {
       url: string;
       scaledSize?: Size;
       size?: Size;
@@ -236,7 +250,7 @@ declare namespace google {
       anchor?: Point;
     }
 
-    interface Symbol {
+    export interface Symbol {
       path: SymbolPath | string;
       fillColor?: string;
       fillOpacity?: number;
@@ -248,55 +262,41 @@ declare namespace google {
       anchor?: Point;
     }
 
-    interface InfoWindowOptions {
+    export interface InfoWindowOptions {
       content?: string | Node;
       position?: LatLng | LatLngLiteral;
       maxWidth?: number;
       disableAutoPan?: boolean;
     }
 
-    interface InfoWindowOpenOptions {
+    export interface InfoWindowOpenOptions {
       anchor?: Marker;
       map?: Map;
     }
 
-    interface LatLngLiteral {
+    export interface LatLngLiteral {
       lat: number;
       lng: number;
     }
 
-    interface Padding {
+    export interface Padding {
       top: number;
       right: number;
       bottom: number;
       left: number;
     }
 
-    interface MapTypeStyle {
+    export interface MapTypeStyle {
       elementType?: string;
       featureType?: string;
       stylers: object[];
     }
 
-    interface MapsEventListener {
+    export interface MapsEventListener {
       remove(): void;
     }
 
-    class Size {
-      constructor(width: number, height: number, widthUnit?: string, heightUnit?: string);
-      width: number;
-      height: number;
-      equals(other: Size): boolean;
-    }
-
-    class Point {
-      constructor(x: number, y: number);
-      x: number;
-      y: number;
-      equals(other: Point): boolean;
-    }
-
-    interface CircleOptions {
+    export interface CircleOptions {
       center?: LatLng | LatLngLiteral;
       radius?: number;
       map?: Map;
@@ -312,7 +312,7 @@ declare namespace google {
       zIndex?: number;
     }
 
-    interface GeocoderRequest {
+    export interface GeocoderRequest {
       address?: string;
       location?: LatLng | LatLngLiteral;
       placeId?: string;
@@ -321,7 +321,7 @@ declare namespace google {
       region?: string;
     }
 
-    interface GeocoderResult {
+    export interface GeocoderResult {
       address_components: GeocoderAddressComponent[];
       formatted_address: string;
       geometry: {
@@ -333,11 +333,11 @@ declare namespace google {
       types: string[];
     }
 
-    interface GeocoderResponse {
+    export interface GeocoderResponse {
       results: GeocoderResult[];
     }
 
-    interface GeocoderAddressComponent {
+    export interface GeocoderAddressComponent {
       long_name: string;
       short_name: string;
       types: string[];
