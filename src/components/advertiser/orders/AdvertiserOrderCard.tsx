@@ -139,6 +139,19 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
               </p>
             </div>
             <div className="flex flex-wrap gap-1.5 flex-shrink-0">
+              {item.type === 'order' && (
+                item.tipo_produto === 'vertical_premium' ? (
+                  <Badge variant="outline" className="text-[10px] border-purple-400 text-purple-700 bg-purple-50 px-1.5 py-0">
+                    <Smartphone className="h-2.5 w-2.5 mr-0.5" />
+                    Vertical
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] border-blue-400 text-blue-700 bg-blue-50 px-1.5 py-0">
+                    <Monitor className="h-2.5 w-2.5 mr-0.5" />
+                    Horizontal
+                  </Badge>
+                )
+              )}
               {item.type === 'order' && item.is_fidelidade && (
                 <Badge className="bg-purple-600 border-purple-700 text-white text-[10px] px-1.5 py-0">
                   <Repeat className="h-2.5 w-2.5 mr-0.5" />
