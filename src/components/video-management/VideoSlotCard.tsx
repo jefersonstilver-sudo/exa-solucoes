@@ -78,13 +78,6 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 }) => {
   const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
   const {
-    isVideoCurrentlyDisplaying,
-    getCurrentDisplayType
-  } = useCurrentVideoDisplay({
-    orderId,
-    enabled: !!slot.video_data?.id
-  });
-  const {
     forceCleanupSlot
   } = useForceCleanup();
   const handleForceCleanup = async (slotId: string) => {
