@@ -74,7 +74,8 @@ export const useOrderVideoManagement = (orderId: string) => {
   const baseHook = useVideoManagement({
     orderId,
     userId: userProfile?.id || '',
-    orderStatus
+    orderStatus,
+    tipoProduto
   });
 
   // Carregar slots inicialmente
