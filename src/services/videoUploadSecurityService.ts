@@ -31,7 +31,7 @@ export const validateVideoUploadPermission = async (orderId: string): Promise<Se
     // Upload só liberado após CONTRATO ASSINADO (não pagamento)
     // Status aguardando_contrato = pago mas sem contrato = BLOQUEADO
     // Status aguardando_video = contrato assinado = LIBERADO
-    const allowedStatuses = ['aguardando_video', 'video_enviado', 'video_aprovado', 'ativo'];
+    const allowedStatuses = ['aguardando_video', 'video_enviado', 'video_aprovado', 'ativo', 'pago', 'pago_pendente_video'];
     
     const canUpload = allowedStatuses.includes(order.status);
 
@@ -94,6 +94,16 @@ export const getOrderSecurityStatus = (status: string) => {
       level: 'blocked',
       message: 'Contrato pendente',
       description: 'Pagamento confirmado - aguardando assinatura do contrato. Verifique seu email.'
+    },
+    'pago': {
+      level: 'allowed',
+      message: 'Pagamento confirmado',
+      description: 'Pagamento confirmado - envie seu vídeo para ativar a campanha'
+    },
+    'pago_pendente_video': {
+      level: 'allowed',
+      message: 'Pago - Aguardando vídeo',
+      description: 'Pagamento confirmado - envie seu vídeo para ativar a campanha'
     },
     'aguardando_video': {
       level: 'allowed',
