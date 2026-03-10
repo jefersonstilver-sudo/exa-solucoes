@@ -217,6 +217,7 @@ declare namespace google {
       zIndex?: number;
       clickable?: boolean;
       cursor?: string;
+      optimized?: boolean;
     }
 
     interface MarkerLabel {
