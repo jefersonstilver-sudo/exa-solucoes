@@ -126,7 +126,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
               <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2 text-[10px] sm:text-xs text-muted-foreground">
                 <p className="flex items-start gap-1.5">
                   <span className="text-blue-600 mt-0.5 font-semibold">•</span>
-                  <span>Envie até 10 vídeos (máx. {maxDuracaoLabel}, {orientacaoLabel}, 100MB)</span>
+                  <span>Envie até {videoSlots.length} vídeo{videoSlots.length !== 1 ? 's' : ''} (máx. {maxDuracaoLabel}, {orientacaoLabel}, 100MB)</span>
                 </p>
                 <p className="flex items-start gap-1.5">
                   <span className="text-blue-600 mt-0.5 font-semibold">•</span>

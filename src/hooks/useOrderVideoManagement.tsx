@@ -127,7 +127,7 @@ export const useOrderVideoManagement = (orderId: string) => {
     
     try {
       console.log('🔄 [useOrderVideoManagement] Refresh de slots solicitado');
-      const slots = await loadVideoSlots(orderId);
+      const slots = await loadVideoSlots(orderId, maxVideos);
       console.log('✅ [useOrderVideoManagement] Refresh concluído:', slots.length, 'slots');
     } catch (error) {
       console.error('❌ [useOrderVideoManagement] Erro no refresh:', error);

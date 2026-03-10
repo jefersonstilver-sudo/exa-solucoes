@@ -210,7 +210,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
     <div className="space-y-2 sm:space-y-3">
       <VideoSlotStatus videoSlots={videoSlots} />
 
-      <div className="grid grid-cols-2 gap-1.5 sm:gap-3">
+      <div className={`grid ${isVertical ? 'grid-cols-1 sm:grid-cols-2 max-w-2xl' : 'grid-cols-2'} gap-1.5 sm:gap-3`}>
         {videoSlots.map((slot) => (
           <VideoSlotCard
             key={slot.slot_position}
@@ -228,6 +228,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
             totalApprovedVideos={totalApprovedVideos}
             hasAnyScheduledActiveNow={hasAnyScheduledActiveNow}
             companyInfoComplete={companyInfoComplete}
+            tipoProduto={tipoProduto}
           />
         ))}
       </div>

@@ -513,6 +513,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
         isUploading={currentProgress !== undefined} 
         onUpload={onUpload}
         companyInfoComplete={companyInfoComplete}
+        tipoProduto={tipoProduto}
       />
     )}
       </CardContent>

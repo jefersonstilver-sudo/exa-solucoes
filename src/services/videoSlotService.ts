@@ -169,7 +169,7 @@ export const loadVideoSlots = async (orderId: string, maxSlots: number = 10): Pr
     
     // FALLBACK: Retornar slots vazios ao invés de falhar completamente
     console.log('🔄 [VIDEO_SLOTS] Usando fallback - slots vazios');
-    return Array.from({ length: 10 }, (_, i) => i + 1).map(position => ({
+    return Array.from({ length: maxSlots }, (_, i) => i + 1).map(position => ({
       slot_position: position,
       is_active: false,
       selected_for_display: false,
