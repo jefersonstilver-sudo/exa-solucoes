@@ -1,80 +1,49 @@
 
 
-# Plano de Correção — 2FA Seguro com Auth Gate
+# Corrigir slots de vídeo vertical (layout, player e quantidade)
 
-## Diagnóstico Confirmado
+## Problemas encontrados
 
-1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
-2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
+1. **Grid sempre 2 colunas** (`VideoSlotGrid.tsx` linha 212): `grid grid-cols-2` independente do tipo de produto. Para vertical, deveria ser layout diferente (cards mais altos, aspect ratio vertical).
 
-## Limitação Técnica do Supabase
+2. **Player sempre horizontal** (`VideoSlotCard.tsx` linha 435): `aspect-video` (16:9) hardcoded. Para vídeo vertical deveria ser `aspect-[9/16]`.
 
-O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
+3. **Sempre 10 slots** (`videoSlotService.ts` linha 89): Cria 10 slots fixos. Mas o banco diz `max_videos_por_pedido: 1` para vertical_premium e `4` para horizontal. Deveria respeitar o valor do banco.
 
-## Solução: Auth Gate no AuthProvider
+4. **`tipoProduto` não chega ao `VideoSlotCard`**: O `VideoSlotGrid` recebe `tipoProduto` mas não passa ao `VideoSlotCard`, que por sua vez não passa ao `VideoSlotUpload`.
 
-Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
+5. **Instrução hardcoded "até 10 vídeos"** (`VideoManagementCard.tsx` linha 129): Sempre diz "até 10 vídeos" mesmo que o produto permita apenas 1.
 
-```text
-Email + Senha
-  ↓
-signInWithPassword (sessão Supabase criada — inevitável)
-  ↓
-2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
-  ↓                    → navigate('/verificacao-2fa')
-  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
-  ↓                    → Todas as rotas protegidas bloqueadas
-  ↓                    ↓
-  ↓                  Código validado → sessionStorage.remove('pending_2fa')
-  ↓                    → isLoggedIn = TRUE → acesso liberado
-  ↓
-  NÃO → login normal
-```
+## Plano de correção
 
-**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
+### 1. `VideoSlotGrid.tsx`
+- Passar `tipoProduto` ao `VideoSlotCard`
+- Grid condicional: vertical usa `grid-cols-1 sm:grid-cols-2`, horizontal mantém `grid-cols-2`
 
-## Arquivos a Modificar (4 arquivos)
+### 2. `VideoSlotCard.tsx`
+- Aceitar prop `tipoProduto?: string`
+- Desktop player: usar `aspect-[9/16]` quando vertical, `aspect-video` quando horizontal
+- Passar `tipoProduto` ao `VideoSlotUpload`
 
-### A. `src/App.tsx` (1 linha)
-- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
-- Importar `TwoFactorVerificationPage`
+### 3. `VideoSlotUpload.tsx`
+- Aceitar `tipoProduto` para exibir instrução correta ("vídeo vertical" vs "vídeo horizontal")
 
-### B. `src/hooks/useAuth.tsx` — Auth Gate
-- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
-  ```
-  const pending2fa = sessionStorage.getItem('pending_2fa');
-  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
-  ```
-- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
+### 4. `videoSlotService.ts`
+- Receber `maxSlots` como parâmetro (default 10)
+- Usar `maxSlots` em vez de `10` fixo na criação dos slots
 
-### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
-- Após detectar `two_factor_enabled` (linha 134):
-  - `sessionStorage.setItem('pending_2fa', data.user.id)`
-  - Navegar para `/verificacao-2fa?userId=...`
-  - **Não fazer signOut**, **não armazenar credenciais**
+### 5. `useOrderVideoManagement.tsx` / caller do slot service
+- Buscar `max_videos_por_pedido` do `produtos_exa` e passar ao slot service
 
-### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
-- Após verificação do código bem-sucedida (linha 99):
-  - `sessionStorage.removeItem('pending_2fa')`
-  - Isso faz `isLoggedIn` mudar para `true` automaticamente
-  - Redirecionar para rota correta baseada no role
+### 6. `VideoManagementCard.tsx`
+- Usar `max_videos_por_pedido` dinâmico na instrução em vez de "10"
 
-- No botão "Voltar ao Login" (linha 239):
-  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
-  - Isso garante logout limpo se o usuário desistir
-
-## Garantias
-
-| Regra | Cumprida |
-|-------|----------|
-| Sem tabelas novas | ✓ |
-| Sem signOut como solução | ✓ |
-| Sem credenciais em sessionStorage | ✓ |
-| Sem fluxos paralelos | ✓ |
-| Sessão bloqueada até 2FA | ✓ |
-| Reutiliza componentes existentes | ✓ |
-
-## Limitação Transparente
-
-A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
+| Arquivo | Mudança |
+|---------|---------|
+| `VideoSlotGrid.tsx` | Grid condicional + passar `tipoProduto` |
+| `VideoSlotCard.tsx` | Aspect ratio condicional + aceitar `tipoProduto` |
+| `VideoSlotUpload.tsx` | Aceitar e exibir tipo de vídeo esperado |
+| `videoSlotService.ts` | Respeitar `maxSlots` dinâmico |
+| `useOrderVideoManagement.tsx` | Buscar e passar `max_videos_por_pedido` |
+| `VideoManagementCard.tsx` | Instrução dinâmica de quantidade |
 
