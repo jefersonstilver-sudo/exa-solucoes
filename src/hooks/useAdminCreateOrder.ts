@@ -186,6 +186,15 @@ export function useAdminCreateOrder() {
   const submitOrder = async () => {
     setIsSubmitting(true);
     try {
+      console.log('📋 [SUBMIT] Iniciando criação de pedido manual...', {
+        clientId: formData.clientId,
+        clientEmail: formData.clientEmail,
+        clientName: formData.clientName,
+        tipoProduto: formData.tipoProduto,
+        predios: formData.listaPredios.length,
+        valor: formData.valorTotal,
+      });
+
       const { data: authData } = await supabase.auth.getUser();
       const adminId = authData.user?.id;
 
@@ -197,74 +206,93 @@ export function useAdminCreateOrder() {
 
       // Create account if no clientId - check if exists first to avoid duplicate key error
       if (!clientId && formData.clientEmail) {
+        console.log('🔍 [SUBMIT] Verificando conta do cliente...');
         const status = await checkAccountStatus(formData.clientEmail, true);
+        console.log('🔍 [SUBMIT] Status da conta:', status);
         if (status.exists && status.userId) {
           clientId = status.userId;
         } else {
+          console.log('🆕 [SUBMIT] Criando conta do cliente...');
           const result = await createAccount();
           clientId = result.userId;
         }
       }
 
       if (!clientId) throw new Error('ID do cliente não encontrado');
+      console.log('✅ [SUBMIT] Client ID resolvido:', clientId);
 
       // Upload logo if provided
       if (formData.logoFile) {
+        console.log('📤 [SUBMIT] Enviando logo...');
         await uploadLogo(clientId, formData.logoFile);
       }
 
-      // Get product info for slot creation
-      const { data: produto } = await supabase
-        .from('produtos_exa')
-        .select('max_videos_por_pedido, duracao_video_segundos')
-        .eq('codigo', formData.tipoProduto)
-        .single();
+      // Sanitize building IDs
+      const sanitizedPredios = formData.listaPredios
+        .map((id: any) => typeof id === 'string' ? id : id?.building_id || id?.id)
+        .filter((id): id is string => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
+
+      console.log('🏢 [SUBMIT] Prédios sanitizados:', sanitizedPredios.length, 'de', formData.listaPredios.length);
 
       // Insert order
+      const insertPayload = {
+        client_id: clientId,
+        client_name: formData.clientName,
+        email: formData.clientEmail,
+        tipo_produto: formData.tipoProduto,
+        lista_predios: sanitizedPredios,
+        lista_paineis: formData.listaPaineis,
+        plano_meses: formData.planoMeses,
+        valor_total: formData.valorTotal,
+        data_inicio: formData.dataInicio || null,
+        data_fim: formData.dataFim || null,
+        metodo_pagamento: formData.metodoPagamento,
+        status: formData.statusInicial,
+        created_by_admin: adminId,
+        proposal_id: formData.proposalId,
+        sem_slots_video: true,
+        termos_aceitos: true,
+      };
+      console.log('📝 [SUBMIT] Inserindo pedido:', JSON.stringify(insertPayload, null, 2));
+
       const { data: pedido, error: pedidoError } = await supabase
         .from('pedidos')
-        .insert({
-          client_id: clientId,
-          client_name: formData.clientName,
-          email: formData.clientEmail,
-          tipo_produto: formData.tipoProduto,
-          lista_predios: formData.listaPredios.map((id: any) => typeof id === 'string' ? id : id?.building_id || id?.id).filter((id): id is string => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)),
-          lista_paineis: formData.listaPaineis,
-          plano_meses: formData.planoMeses,
-          valor_total: formData.valorTotal,
-          data_inicio: formData.dataInicio || null,
-          data_fim: formData.dataFim || null,
-          metodo_pagamento: formData.metodoPagamento,
-          status: formData.statusInicial,
-          created_by_admin: adminId,
-          proposal_id: formData.proposalId,
-          sem_slots_video: true,
-          termos_aceitos: true,
-        } as any)
+        .insert(insertPayload as any)
         .select('id')
         .single();
 
-      if (pedidoError) throw pedidoError;
+      if (pedidoError) {
+        console.error('❌ [SUBMIT] Erro ao inserir pedido:', pedidoError);
+        throw pedidoError;
+      }
+
+      console.log('✅ [SUBMIT] Pedido criado com sucesso:', pedido.id);
 
       // Log order creation
       await logOrderActivity('create', 'pedido', pedido.id, {
         client_id: clientId,
         client_name: formData.clientName,
         tipo_produto: formData.tipoProduto,
-        lista_predios: formData.listaPredios,
+        lista_predios: sanitizedPredios,
         plano_meses: formData.planoMeses,
         valor_total: formData.valorTotal,
         proposal_id: formData.proposalId,
         created_by_admin: adminId,
       });
 
+      // Invalidate ALL order-related queries
+      console.log('🔄 [SUBMIT] Invalidando queries...');
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['orders-attempts-refactored'] });
+      queryClient.invalidateQueries({ queryKey: ['enhanced-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['real-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       
       toast.success(`Pedido criado com sucesso! ID: ${pedido.id.slice(0, 8)}...`);
       resetForm();
       return pedido;
     } catch (error: any) {
+      console.error('💥 [SUBMIT] Erro fatal ao criar pedido:', error);
       toast.error(`Erro ao criar pedido: ${error.message}`);
       throw error;
     } finally {
