@@ -20,13 +20,8 @@ const Exa = () => {
 
   useEffect(() => {
     document.documentElement.style.scrollBehavior = 'smooth';
-    document.body.style.overflowX = 'hidden';
-    document.documentElement.style.overflowX = 'hidden';
-    
     return () => {
       document.documentElement.style.scrollBehavior = 'auto';
-      document.body.style.overflowX = 'auto';
-      document.documentElement.style.overflowX = 'auto';
     };
   }, []);
 
