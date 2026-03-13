@@ -300,7 +300,7 @@ export const FullscreenMonitor = ({ devices, onClose, incidentStatusMap, inciden
 
   // Usar createPortal para renderizar fora da hierarquia DOM (esconder sidebar)
   return createPortal(
-    <div className="fixed inset-0 w-screen h-screen z-[9999999] overflow-hidden bg-black">
+    <div className="fixed inset-0 w-screen h-screen z-[var(--z-fullscreen)] overflow-hidden bg-black">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-gray-950 via-black to-gray-900" />
       

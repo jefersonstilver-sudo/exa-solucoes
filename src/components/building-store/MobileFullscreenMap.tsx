@@ -89,7 +89,7 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ duration: 0.2 }}
-          className="absolute top-4 right-4 z-[99999]"
+          className="absolute top-4 right-4 z-[var(--z-fullscreen)]"
         >
           <Badge 
             variant="secondary" 
