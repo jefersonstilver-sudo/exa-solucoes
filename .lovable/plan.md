@@ -1,80 +1,99 @@
 
 
-# Plano de Correção — 2FA Seguro com Auth Gate
+# MOBILE FIX — Plano de Execução
 
-## Diagnóstico Confirmado
+## Escopo Real (após análise)
 
-1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
-2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
+Das 13 correções solicitadas, **2 já estão implementadas** (FIX-10 e FIX-11):
+- `OrdersPage.tsx` já tem `isMobile` + `OrderMobileList` com layout mobile completo
+- `ProviderBenefits.tsx` já tem `BenefitMobileList` com cards mobile
 
-## Limitação Técnica do Supabase
+Serão executadas **11 correções** em **4 fases**.
 
-O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
+---
 
-## Solução: Auth Gate no AuthProvider
+## FASE 1 — Correções Globais CSS (4 fixes)
 
-Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
+**[FIX-01]** `src/styles/responsive-optimizations.css`
+- Adicionar `input, textarea, select { font-size: 16px !important; }` dentro do media query mobile existente
 
-```text
-Email + Senha
-  ↓
-signInWithPassword (sessão Supabase criada — inevitável)
-  ↓
-2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
-  ↓                    → navigate('/verificacao-2fa')
-  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
-  ↓                    → Todas as rotas protegidas bloqueadas
-  ↓                    ↓
-  ↓                  Código validado → sessionStorage.remove('pending_2fa')
-  ↓                    → isLoggedIn = TRUE → acesso liberado
-  ↓
-  NÃO → login normal
-```
+**[FIX-02]** `src/styles/base.css`
+- Adicionar `html, body { overflow-x: hidden; max-width: 100vw; }` no `@layer base`
+- **`src/pages/Exa.tsx`**: Remover o `useEffect` que seta `overflowX: hidden` inline no body/html (workaround agora desnecessário)
 
-**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
+**[FIX-03]** `src/modules/monitoramento-ia/styles/exa-glassmorphism.css`
+- `.exa-shape-1`: `width: min(600px, 90vw); height: min(600px, 90vw);`
+- `.exa-shape-2`: `width: min(500px, 90vw); height: min(500px, 90vw);`
+- Adicionar `overflow: hidden; contain: layout;` no seletor compartilhado `.exa-shape-1, .exa-shape-2`
 
-## Arquivos a Modificar (4 arquivos)
+**[FIX-04]** Criar `src/styles/z-index.css` com variáveis CSS de camadas
+- Importar no `src/index.css`
+- Aplicar nos componentes:
+  - `MobileBottomNav.tsx`: `z-50` → `z-[var(--z-bottom-nav)]` (z-40 CSS var)
+  - `MobileBottomNavigation.tsx`: idem
+  - `dialog.tsx`: overlay `z-50` → `z-[var(--z-modal-overlay)]`, content `z-50` → `z-[var(--z-modal)]`
+  - `sheet.tsx`: overlay e content `z-50` → `z-[var(--z-drawer)]` (z-120)
+  - `FullscreenContractEditor.tsx`: `z-[9999999]` → `z-[var(--z-fullscreen)]`
+  - `FullscreenMonitor.tsx`: `z-[9999999]` → `z-[var(--z-fullscreen)]`
+  - `MobileFullscreenMap.tsx`: `z-[99999]` → `z-[var(--z-fullscreen)]`
 
-### A. `src/App.tsx` (1 linha)
-- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
-- Importar `TwoFactorVerificationPage`
+**Arquivos**: 8 arquivos
 
-### B. `src/hooks/useAuth.tsx` — Auth Gate
-- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
-  ```
-  const pending2fa = sessionStorage.getItem('pending_2fa');
-  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
-  ```
-- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
+---
 
-### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
-- Após detectar `two_factor_enabled` (linha 134):
-  - `sessionStorage.setItem('pending_2fa', data.user.id)`
-  - Navegar para `/verificacao-2fa?userId=...`
-  - **Não fazer signOut**, **não armazenar credenciais**
+## FASE 2 — Modais e Drawers Mobile (3 fixes)
 
-### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
-- Após verificação do código bem-sucedida (linha 99):
-  - `sessionStorage.removeItem('pending_2fa')`
-  - Isso faz `isLoggedIn` mudar para `true` automaticamente
-  - Redirecionar para rota correta baseada no role
+**[FIX-05]** `src/components/ui/dialog.tsx`
+- DialogContent: adicionar `max-h-[calc(100dvh-2rem)] overflow-y-auto w-[calc(100%-2rem)] sm:w-full` às classes existentes
 
-- No botão "Voltar ao Login" (linha 239):
-  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
-  - Isso garante logout limpo se o usuário desistir
+**[FIX-06]** `src/components/ui/sheet.tsx`
+- `sheetVariants` bottom: adicionar `max-h-[90dvh] overflow-y-auto`
+- left/right: adicionar `overflow-y-auto`
 
-## Garantias
+**[FIX-07]** `src/components/admin/financeiro/contas-pagar/PagarContaModal.tsx`
+- O DialogContent já tem `h-[95vh]` → mudar para `max-h-[calc(100dvh-2rem)]`
+- Garantir que o conteúdo interno tem scroll adequado (já tem `flex-1 overflow-hidden flex flex-col`)
+- Footer: adicionar `sticky bottom-0 bg-background pt-3 border-t`
 
-| Regra | Cumprida |
-|-------|----------|
-| Sem tabelas novas | ✓ |
-| Sem signOut como solução | ✓ |
-| Sem credenciais em sessionStorage | ✓ |
-| Sem fluxos paralelos | ✓ |
-| Sessão bloqueada até 2FA | ✓ |
-| Reutiliza componentes existentes | ✓ |
+**[FIX-08]** `src/components/admin/contracts/FullscreenContractEditor.tsx`
+- Container: `fixed inset-0 ... flex flex-col` → adicionar `h-[100dvh]`
+- Content area (`.flex-1.overflow-hidden`): → `flex-1 overflow-y-auto`
 
-## Limitação Transparente
+**Arquivos**: 4 arquivos
 
-A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
+---
+
+## FASE 3 — Tabelas Admin (1 fix)
+
+**[FIX-09]** `src/modules/monitoramento-ia/components/PanelsTable.tsx`
+- Envolver tabela existente em `hidden md:block`
+- Adicionar `block md:hidden` com cards mobile mostrando: nome, status badge, condomínio, último online, botões de ação
+
+**[FIX-10/11]** — JÁ IMPLEMENTADOS. OrdersPage e ProviderBenefits já possuem listas mobile dedicadas.
+
+**Arquivos**: 1 arquivo
+
+---
+
+## FASE 4 — Home Page Overflow (2 fixes)
+
+**[FIX-12]** `src/pages/Exa.tsx`
+- O div do LogoTicker com `w-screen left-1/2 -translate-x-1/2` → mudar para `w-full` com `inset-x-0` ou manter overflow-hidden no pai (já tem)
+- Remover useEffect de overflowX (feito no FIX-02)
+
+**[FIX-13]** O LogoTicker já está dentro de um container com `overflow-hidden`. Verificar e garantir que o container pai contém o overflow corretamente. Mudar `w-screen left-1/2 -translate-x-1/2` para abordagem mais segura.
+
+**Arquivos**: 1 arquivo (Exa.tsx, já tocado no FIX-02)
+
+---
+
+## Resumo Total
+
+| Fase | Fixes | Arquivos |
+|------|-------|----------|
+| 1 — CSS Global | FIX-01 a FIX-04 | 8 |
+| 2 — Modais | FIX-05 a FIX-08 | 4 |
+| 3 — Tabelas | FIX-09 | 1 |
+| 4 — Home | FIX-12, FIX-13 | 1 |
+| **Total** | **11 fixes** | **~12 arquivos únicos** |
 
