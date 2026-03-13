@@ -474,7 +474,7 @@ export function ModernAdminSidebar() {
         style={{ 
           WebkitOverflowScrolling: 'touch',
           scrollBehavior: 'smooth',
-          paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)'
+          paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' /* EXA-MOBILE-FIX */
         }}
       >
         {filteredGroups.map((group) => {
@@ -587,7 +587,7 @@ export function ModernAdminSidebar() {
       </SidebarContent>
       
       {/* Footer - Red Glass */}
-      <SidebarFooter className="p-3 border-t border-white/10 bg-black/10 backdrop-blur-sm">
+      <SidebarFooter className="mt-auto p-3 border-t border-white/10 bg-black/10 backdrop-blur-sm">
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
           <Avatar className="h-9 w-9 ring-2 ring-white/30 shadow-lg">
             <AvatarFallback className="bg-white/20 text-white font-semibold text-sm backdrop-blur-sm">

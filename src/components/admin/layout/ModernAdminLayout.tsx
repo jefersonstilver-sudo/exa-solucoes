@@ -6,11 +6,24 @@ import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useRealtimePanelAlerts } from '@/hooks/useRealtimePanelAlerts';
-// Sofia removida deste layout - apenas em SuperAdminLayout
+import { Menu } from 'lucide-react';
 
 interface ModernAdminLayoutProps {
   children?: React.ReactNode;
 }
+
+const MobileMenuTrigger = () => {
+  const { toggleSidebar } = useSidebar();
+  return (
+    <button 
+      onClick={toggleSidebar} 
+      className="md:hidden mr-2 inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+      aria-label="Abrir menu"
+    >
+      <Menu className="h-5 w-5" />
+    </button>
+  );
+};
 
 const SidebarTriggerPositioned = ({ isTablet }: { isTablet: boolean }) => {
   const { state } = useSidebar();
@@ -62,8 +75,8 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
               ? 'h-12 bg-white border-b border-gray-200 shadow-sm' 
               : 'h-16 bg-white border-b border-gray-200 shadow-sm'
           }`}>
-            {/* Trigger mobile dentro do header */}
-            <SidebarTrigger className="md:hidden mr-2" />
+            {/* Trigger mobile: ícone hamburger */}
+            <MobileMenuTrigger />
             <ModernAdminHeader />
           </header>
           <main className={`flex-1 overflow-y-auto bg-white min-h-0 overflow-x-hidden ${
