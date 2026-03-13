@@ -48,7 +48,6 @@ const SidebarTriggerPositioned = ({ isTablet }: { isTablet: boolean }) => {
 const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
   const { isMobile, isTablet } = useAdvancedResponsive();
   
-  // Listen for real-time panel status changes and show toasts
   useRealtimePanelAlerts();
   
   return (
@@ -60,22 +59,18 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
       } as React.CSSProperties}
     >
       <div className="flex h-screen w-full bg-background overflow-hidden relative">
-        {/* Sidebar sempre renderizada, mas em modo drawer/overlay no mobile */}
         <div className="relative z-30">
           <ModernAdminSidebar />
         </div>
         
-        {/* Botão 3D vermelho elegante na interseção sidebar/header */}
         <SidebarTriggerPositioned isTablet={isTablet} />
         
         <SidebarInset className="flex flex-col w-full overflow-x-hidden">
-          {/* Header - Tema Claro Corporativo */}
           <header className={`sticky top-0 z-10 flex items-center px-3 md:px-4 ${
             isMobile 
               ? 'h-12 bg-white border-b border-gray-200 shadow-sm' 
               : 'h-16 bg-white border-b border-gray-200 shadow-sm'
           }`}>
-            {/* Trigger mobile: ícone hamburger */}
             <MobileMenuTrigger />
             <ModernAdminHeader />
           </header>
