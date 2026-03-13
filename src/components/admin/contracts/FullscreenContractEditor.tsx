@@ -112,7 +112,7 @@ const FullscreenContractEditor: React.FC<FullscreenContractEditorProps> = ({
   ];
 
   const editorContent = (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999999] flex flex-col">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[var(--z-fullscreen)] flex flex-col h-[100dvh]">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#8B1A1A] to-[#A52020] text-white p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">

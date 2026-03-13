@@ -1,6 +1,6 @@
 /**
  * Component: PanelsTable
- * Tabela desktop de painéis com sorting e actions
+ * Tabela desktop de painéis com sorting e actions + mobile card view
  */
 
 import { Device } from '../utils/devices';
@@ -32,127 +32,186 @@ export const PanelsTable = ({ devices, onViewDetails, onSchedule }: PanelsTableP
   }
 
   return (
-    <div className="bg-card rounded-xl border border-border overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-muted/50 border-b border-border">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Painel
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Condomínio
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Torre/Elevador
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Último Online
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Temp
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Uptime
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Ações
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {devices.map((device) => {
-              const hasCriticalAlert = (device as any).has_critical_alert === true;
-              
-              return (
-              <tr
-                key={device.id}
-                className={`hover:bg-muted/30 transition-colors cursor-pointer ${
-                  hasCriticalAlert ? 'bg-red-50 border-l-4 border-l-red-600' : ''
-                }`}
-                onClick={() => onViewDetails(device)}
-              >
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-foreground">
-                      {device.name}
+    <>
+      {/* Desktop Table */}
+      <div className="hidden md:block bg-card rounded-xl border border-border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-muted/50 border-b border-border">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Painel
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Condomínio
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Torre/Elevador
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Último Online
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Temp
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Uptime
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {devices.map((device) => {
+                const hasCriticalAlert = (device as any).has_critical_alert === true;
+                
+                return (
+                <tr
+                  key={device.id}
+                  className={`hover:bg-muted/30 transition-colors cursor-pointer ${
+                    hasCriticalAlert ? 'bg-red-50 border-l-4 border-l-red-600' : ''
+                  }`}
+                  onClick={() => onViewDetails(device)}
+                >
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-foreground">
+                        {device.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {device.anydesk_client_id}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-foreground">
+                      {device.condominio_name}
                     </span>
-                    <span className="text-xs text-muted-foreground font-mono">
-                      {device.anydesk_client_id}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-muted-foreground">
+                      {device.metadata?.torre && device.metadata?.elevador
+                        ? `Torre ${device.metadata.torre} - Elev. ${device.metadata.elevador}`
+                        : device.metadata?.torre
+                        ? `Torre ${device.metadata.torre}`
+                        : '-'}
                     </span>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-foreground">
-                    {device.condominio_name}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-muted-foreground">
-                    {device.metadata?.torre && device.metadata?.elevador
-                      ? `Torre ${device.metadata.torre} - Elev. ${device.metadata.elevador}`
-                      : device.metadata?.torre
-                      ? `Torre ${device.metadata.torre}`
-                      : '-'}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${getStatusColor(device.status)}`} />
-                    <span className="text-sm font-medium text-foreground">
-                      {getStatusLabel(device.status)}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${getStatusColor(device.status)}`} />
+                      <span className="text-sm font-medium text-foreground">
+                        {getStatusLabel(device.status)}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-muted-foreground">
+                      {humanizeDate(device.last_online_at)}
                     </span>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-muted-foreground">
-                    {humanizeDate(device.last_online_at)}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-muted-foreground">
-                    {formatTemperature(device.metadata?.temperature)}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-muted-foreground">
-                    {formatUptime(device.metadata?.uptime)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onViewDetails(device);
-                      }}
-                      className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                      title="Ver detalhes"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    {onSchedule && (
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-muted-foreground">
+                      {formatTemperature(device.metadata?.temperature)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-muted-foreground">
+                      {formatUptime(device.metadata?.uptime)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          onSchedule(device);
+                          onViewDetails(device);
                         }}
-                        className="p-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
-                        title="Agendar manutenção"
+                        className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                        title="Ver detalhes"
                       >
-                        <Calendar className="w-4 h-4" />
+                        <Eye className="w-4 h-4" />
                       </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            )})}
-          </tbody>
-        </table>
+                      {onSchedule && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSchedule(device);
+                          }}
+                          className="p-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
+                          title="Agendar manutenção"
+                        >
+                          <Calendar className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )})}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+
+      {/* Mobile Card View */}
+      <div className="block md:hidden space-y-3">
+        {devices.map((device) => {
+          const hasCriticalAlert = (device as any).has_critical_alert === true;
+
+          return (
+            <div
+              key={device.id}
+              className={`bg-card rounded-xl border border-border p-4 cursor-pointer active:scale-[0.98] transition-transform ${
+                hasCriticalAlert ? 'border-l-4 border-l-red-600' : ''
+              }`}
+              onClick={() => onViewDetails(device)}
+            >
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-foreground truncate">{device.name}</p>
+                  <p className="text-xs text-muted-foreground font-mono">{device.anydesk_client_id}</p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <div className={`w-2 h-2 rounded-full ${getStatusColor(device.status)}`} />
+                  <span className="text-xs font-medium text-foreground">{getStatusLabel(device.status)}</span>
+                </div>
+              </div>
+
+              <p className="text-sm text-foreground mb-1">{device.condominio_name}</p>
+              <p className="text-xs text-muted-foreground mb-3">{humanizeDate(device.last_online_at)}</p>
+
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewDetails(device);
+                  }}
+                  className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                  title="Ver detalhes"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+                {onSchedule && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSchedule(device);
+                    }}
+                    className="p-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
+                    title="Agendar manutenção"
+                  >
+                    <Calendar className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 };

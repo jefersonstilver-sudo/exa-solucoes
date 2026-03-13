@@ -246,7 +246,7 @@ export const PagarContaModal: React.FC<PagarContaModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[98vw] max-w-[1400px] h-[95vh] max-h-[95vh] p-0 gap-0 overflow-hidden bg-background flex flex-col">
+      <DialogContent className="w-[98vw] max-w-[1400px] max-h-[calc(100dvh-2rem)] p-0 gap-0 overflow-hidden bg-background flex flex-col">
         {/* Header */}
         <DialogHeader className="px-6 pt-5 pb-4 bg-muted/30 border-b shrink-0">
           <DialogTitle className="flex items-center gap-3 text-xl font-semibold">

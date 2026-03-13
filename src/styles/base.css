@@ -19,6 +19,12 @@
 
   html {
     height: 100%;
+    overflow-x: hidden; /* EXA-MOBILE-FIX */
+    max-width: 100vw; /* EXA-MOBILE-FIX */
+  }
+
+  body {
+    overflow-x: hidden; /* EXA-MOBILE-FIX */
   }
 
   #root {

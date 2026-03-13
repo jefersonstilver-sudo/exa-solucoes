@@ -1,0 +1,14 @@
+/* EXA Z-Index Hierarchy — Single source of truth */
+:root {
+  --z-base: 1;
+  --z-sticky: 10;
+  --z-header: 20;
+  --z-sidebar: 30;
+  --z-bottom-nav: 40;
+  --z-dropdown: 50;
+  --z-modal-overlay: 100;
+  --z-modal: 110;
+  --z-drawer: 120;
+  --z-toast: 200;
+  --z-fullscreen: 9999;
+}
