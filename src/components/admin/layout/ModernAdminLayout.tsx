@@ -6,7 +6,7 @@ import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useRealtimePanelAlerts } from '@/hooks/useRealtimePanelAlerts';
-// Sofia removida deste layout - apenas em SuperAdminLayout
+import { Menu } from 'lucide-react';
 
 interface ModernAdminLayoutProps {
   children?: React.ReactNode;
