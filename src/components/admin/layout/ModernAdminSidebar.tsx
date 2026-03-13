@@ -474,7 +474,7 @@ export function ModernAdminSidebar() {
         style={{ 
           WebkitOverflowScrolling: 'touch',
           scrollBehavior: 'smooth',
-          paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)'
+          paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' /* EXA-MOBILE-FIX */
         }}
       >
         {filteredGroups.map((group) => {
