@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { Outlet } from 'react-router-dom';
 import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import ModernAdminSidebar from './ModernAdminSidebar';
