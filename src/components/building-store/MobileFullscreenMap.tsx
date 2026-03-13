@@ -63,7 +63,7 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-[99999] bg-background"
+        className="fixed inset-0 z-[var(--z-fullscreen)] bg-background"
       >
         {/* Botão de Fechar - Visível no topo */}
         <motion.div
