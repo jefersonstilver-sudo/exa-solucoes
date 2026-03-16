@@ -102,7 +102,7 @@ const EmbeddedAgenda: React.FC<EmbeddedAgendaProps> = ({ tasks, filterTrigger })
         <AgendaWeekView tasks={tasks} currentDate={currentDate} onTaskClick={handleTaskClick} />
       )}
       {view === 'mes' && (
-        <AgendaMonthView tasks={tasks} currentDate={currentDate} onTaskClick={handleTaskClick} />
+        <AgendaMonthView tasks={tasks} currentDate={currentDate} onTaskClick={handleTaskClick} onDaySelect={handleDaySelect} />
       )}
 
       {/* Edit Modal */}

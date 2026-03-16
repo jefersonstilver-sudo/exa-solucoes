@@ -185,6 +185,7 @@ const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, o
                 tasks={dayTasks}
                 isCurrentMonth={isCurrentMonth}
                 onTaskClick={onTaskClick}
+                onDaySelect={onDaySelect}
                 fullscreen={fullscreen}
               />
             );
