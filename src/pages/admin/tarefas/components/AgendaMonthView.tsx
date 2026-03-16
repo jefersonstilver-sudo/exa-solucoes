@@ -29,7 +29,7 @@ interface AgendaMonthViewProps {
 const weekDaysFull = ['dom.', 'seg.', 'ter.', 'qua.', 'qui.', 'sex.', 'sáb.'];
 const weekDaysMobile = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
-const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, onTaskClick, fullscreen }) => {
+const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, onTaskClick, onDaySelect, fullscreen }) => {
   const queryClient = useQueryClient();
   const { userProfile } = useAuth();
   const isMobile = useIsMobile();
