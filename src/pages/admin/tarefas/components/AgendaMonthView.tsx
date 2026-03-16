@@ -22,6 +22,7 @@ interface AgendaMonthViewProps {
   tasks: AgendaTask[];
   currentDate: Date;
   onTaskClick?: (task: AgendaTask) => void;
+  onDaySelect?: (date: Date) => void;
   fullscreen?: boolean;
 }
 
