@@ -29,7 +29,7 @@ const DroppableCalendarDay = ({ day, tasks, isCurrentMonth, onTaskClick, onDaySe
 
   const getTaskColor = (task: AgendaTask): string => {
     if (task.tipo_evento && eventTypes) {
-      const et = eventTypes.find(e => e.value === task.tipo_evento);
+      const et = eventTypes.find(e => e.name === task.tipo_evento);
       if (et?.color) return et.color;
     }
     const idx = tasks.indexOf(task) % DEFAULT_DOT_COLORS.length;
