@@ -46,6 +46,11 @@ const EmbeddedAgenda: React.FC<EmbeddedAgendaProps> = ({ tasks, filterTrigger })
     setEditModalOpen(true);
   };
 
+  const handleDaySelect = (date: Date) => {
+    setCurrentDate(date);
+    setView('dia');
+  };
+
   return (
     <div className="bg-card rounded-xl border border-border p-2 md:p-4 space-y-3 md:space-y-4">
       {/* Header */}
