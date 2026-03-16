@@ -22,13 +22,14 @@ interface AgendaMonthViewProps {
   tasks: AgendaTask[];
   currentDate: Date;
   onTaskClick?: (task: AgendaTask) => void;
+  onDaySelect?: (date: Date) => void;
   fullscreen?: boolean;
 }
 
 const weekDaysFull = ['dom.', 'seg.', 'ter.', 'qua.', 'qui.', 'sex.', 'sáb.'];
 const weekDaysMobile = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
-const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, onTaskClick, fullscreen }) => {
+const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, onTaskClick, onDaySelect, fullscreen }) => {
   const queryClient = useQueryClient();
   const { userProfile } = useAuth();
   const isMobile = useIsMobile();
@@ -163,16 +164,16 @@ const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, o
         )}
 
         {/* Week day headers */}
-        <div className="grid grid-cols-7 gap-0.5 md:gap-1 mb-1">
+        <div className="grid grid-cols-7 gap-px md:gap-1 mb-1">
           {weekDays.map((day, i) => (
-            <div key={i} className="text-center text-[10px] md:text-xs text-muted-foreground font-medium py-1 md:py-2 uppercase">
+            <div key={i} className="text-center text-[10px] md:text-xs text-muted-foreground font-medium py-0.5 md:py-2 uppercase">
               {day}
             </div>
           ))}
         </div>
 
         {/* Calendar grid */}
-        <div className="grid grid-cols-7 gap-0.5 md:gap-1">
+        <div className="grid grid-cols-7 gap-px md:gap-1">
           {calendarDays.map(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
             const dayTasks = tasksByDate.get(dateKey) || [];
@@ -184,6 +185,7 @@ const AgendaMonthView: React.FC<AgendaMonthViewProps> = ({ tasks, currentDate, o
                 tasks={dayTasks}
                 isCurrentMonth={isCurrentMonth}
                 onTaskClick={onTaskClick}
+                onDaySelect={onDaySelect}
                 fullscreen={fullscreen}
               />
             );

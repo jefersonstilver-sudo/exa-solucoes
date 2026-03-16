@@ -27,6 +27,14 @@ export const useForceCacheClear = () => {
       const keysToRemove = ['sw-registered', 'pwa-installed', 'cache-version'];
       keysToRemove.forEach((k) => sessionStorage.removeItem(k));
     } catch (_) {}
+
+    // Clear browser caches (fetch/API cache)
+    if ('caches' in window) {
+      caches.keys().then((names) => {
+        names.forEach((n) => caches.delete(n));
+        if (names.length > 0) console.log(`🧹 Cleared ${names.length} browser caches`);
+      });
+    }
   }, []);
 
   return { version: APP_VERSION };

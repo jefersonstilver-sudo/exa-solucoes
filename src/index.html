@@ -78,18 +78,40 @@
     <!-- Manifest -->
     <link rel="manifest" href="/site.webmanifest" />
     
-    <!-- 🧹 SW CLEANUP - Remove any cached Service Workers -->
+    <!-- 🔄 CACHE-BUST + SW CLEANUP — iPhone/Safari/PWA definitive -->
     <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(regs) {
-          regs.forEach(function(r) { r.unregister(); });
-        });
+      (function() {
+        // SW cleanup
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(regs) {
+            regs.forEach(function(r) { r.unregister(); });
+          });
+        }
+        // Build version check — force reload on new deploy
+        var BUILD = '__BUILD_ID__';
+        var KEY = 'exa_build_id';
+        var stored = localStorage.getItem(KEY);
+        if (stored && stored !== BUILD) {
+          localStorage.setItem(KEY, BUILD);
+          if ('caches' in window) {
+            caches.keys().then(function(names) {
+              return Promise.all(names.map(function(n) { return caches.delete(n); }));
+            }).then(function() {
+              window.location.replace(window.location.href.split('?')[0] + '?v=' + BUILD);
+            });
+          } else {
+            window.location.replace(window.location.href.split('?')[0] + '?v=' + BUILD);
+          }
+          return;
+        }
+        if (!stored) localStorage.setItem(KEY, BUILD);
+        // Also clear any stale caches on every load
         if ('caches' in window) {
           caches.keys().then(function(names) {
             names.forEach(function(n) { caches.delete(n); });
           });
         }
-      }
+      })();
     </script>
     
     <!-- Prefetch important pages -->
