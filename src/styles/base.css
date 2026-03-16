@@ -96,6 +96,16 @@
     --exa-graphite: 0 25% 20%;         /* #3B1E1E - EXA Graphite Secondary */
     --exa-highlight-red: 355 67% 54%;  /* #D72638 - EXA Highlight Red */
     --exa-mint: 160 72% 59%;           /* Mantém mint */
+
+    /* Sidebar Variables */
+    --sidebar-background: 355 68% 37%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 355 68% 37%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 355 50% 25%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 100% / 0.1;
+    --sidebar-ring: 355 68% 37%;
     
     /* Variáveis LINKAÊ - Cores originais rosa/magenta e laranja */
     --linkae-primary: 340 81% 44%;     /* #C2185B - Rosa escuro */
