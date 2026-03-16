@@ -1,80 +1,118 @@
 
 
-# Plano de Correção — 2FA Seguro com Auth Gate
+# Plano: Calendário Google-like no Mobile + Anti-Cache Definitivo para iPhone
 
-## Diagnóstico Confirmado
+## Problema 1: Calendário mensal espremido no iPhone
 
-1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
-2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
+O `DroppableCalendarDay` usa `min-h-[80px]` no mobile, e cada célula tenta exibir até 2 `TaskCard` compactos com texto, badges e ícones. Em 390px / 7 colunas = **55px por célula**. Resultado: tudo espremido, ilegível.
 
-## Limitação Técnica do Supabase
+O Google Calendar no mobile mostra apenas o **número do dia** + **pontos coloridos** indicando eventos, sem texto. Ao tocar no dia, abre a lista de eventos.
 
-O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
+### Solução: Modo Google Calendar para mobile
 
-## Solução: Auth Gate no AuthProvider
+**Arquivo: `src/components/admin/agenda/DroppableCalendarDay.tsx`**
 
-Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
+No mobile, redesenhar completamente a célula:
+- Altura reduzida: `min-h-[48px]` (compacto mas confortável)
+- Mostrar apenas o número do dia
+- Abaixo do número, mostrar até 3 **pontos coloridos** (dots) representando tarefas, usando a cor do tipo de evento
+- Se houver mais de 3 tarefas, mostrar o número total pequeno
+- Tocar na célula = chamar `onTaskClick` para o primeiro task (ou disparar um novo callback para "abrir dia")
+
+**Arquivo: `src/pages/admin/tarefas/components/AgendaMonthView.tsx`**
+
+- No mobile, o grid usa `gap-px` (1px) em vez de `gap-0.5` para maximizar espaço
+- Header dos dias da semana mais compacto
+
+**Arquivo: `src/pages/admin/tarefas/components/EmbeddedAgenda.tsx`**
+
+- Quando o usuário toca numa célula do mês no mobile, mudar automaticamente para a visão "Dia" naquela data (comportamento Google Calendar)
+
+### Layout visual esperado (390px):
 
 ```text
-Email + Senha
-  ↓
-signInWithPassword (sessão Supabase criada — inevitável)
-  ↓
-2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
-  ↓                    → navigate('/verificacao-2fa')
-  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
-  ↓                    → Todas as rotas protegidas bloqueadas
-  ↓                    ↓
-  ↓                  Código validado → sessionStorage.remove('pending_2fa')
-  ↓                    → isLoggedIn = TRUE → acesso liberado
-  ↓
-  NÃO → login normal
+┌────────────────────────────────┐
+│  D   S   T   Q   Q   S   S    │
+├──┬──┬──┬──┬──┬──┬──────────────┤
+│ 1│ 2│ 3│ 4│ 5│ 6│ 7           │
+│  │●●│  │● │  │  │             │
+├──┼──┼──┼──┼──┼──┼──┤          │
+│ 8│ 9│10│11│12│13│14│          │
+│● │  │●●│  │  │  │● │          │
+│  │  │●3│  │  │  │  │          │
+└──┴──┴──┴──┴──┴──┴──┘          │
 ```
 
-**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
+Cada `●` é um dot colorido. Toque → muda para view "dia".
 
-## Arquivos a Modificar (4 arquivos)
+---
 
-### A. `src/App.tsx` (1 linha)
-- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
-- Importar `TwoFactorVerificationPage`
+## Problema 2: Cache no iPhone (Safari + PWA standalone)
 
-### B. `src/hooks/useAuth.tsx` — Auth Gate
-- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
-  ```
-  const pending2fa = sessionStorage.getItem('pending_2fa');
-  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
-  ```
-- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
+O iPhone tem o cache mais agressivo de todos os browsers. O `site.webmanifest` com `"display": "standalone"` faz o iOS cachear toda a shell. Os mecanismos atuais (SW cleanup, meta tags no-cache, BUILD_TIMESTAMP) não funcionam porque:
 
-### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
-- Após detectar `two_factor_enabled` (linha 134):
-  - `sessionStorage.setItem('pending_2fa', data.user.id)`
-  - Navegar para `/verificacao-2fa?userId=...`
-  - **Não fazer signOut**, **não armazenar credenciais**
+1. **Safari ignora meta http-equiv Cache-Control** — só respeita headers HTTP reais
+2. **PWA standalone cacheia o HTML** internamente no iOS e não re-fetcha
+3. **Não há Service Worker ativo** (foi removido), então não há mecanismo para invalidar o cache do standalone
 
-### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
-- Após verificação do código bem-sucedida (linha 99):
-  - `sessionStorage.removeItem('pending_2fa')`
-  - Isso faz `isLoggedIn` mudar para `true` automaticamente
-  - Redirecionar para rota correta baseada no role
+### Solução: Cache-busting ativo no index.html
 
-- No botão "Voltar ao Login" (linha 239):
-  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
-  - Isso garante logout limpo se o usuário desistir
+**Arquivo: `src/index.html`** (dentro de `<head>`)
 
-## Garantias
+Adicionar um script inline que verifica a versão a cada abertura e força reload se necessário:
 
-| Regra | Cumprida |
-|-------|----------|
-| Sem tabelas novas | ✓ |
-| Sem signOut como solução | ✓ |
-| Sem credenciais em sessionStorage | ✓ |
-| Sem fluxos paralelos | ✓ |
-| Sessão bloqueada até 2FA | ✓ |
-| Reutiliza componentes existentes | ✓ |
+```html
+<script>
+(function() {
+  var BUILD = '__BUILD_ID__';
+  var KEY = 'exa_build_id';
+  var stored = localStorage.getItem(KEY);
+  if (stored && stored !== BUILD) {
+    localStorage.setItem(KEY, BUILD);
+    // Limpar caches do browser
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        names.forEach(function(n) { caches.delete(n); });
+      });
+    }
+    // Force hard reload bypassing cache
+    window.location.replace(window.location.href.split('?')[0] + '?v=' + BUILD);
+    return;
+  }
+  if (!stored) localStorage.setItem(KEY, BUILD);
+})();
+</script>
+```
 
-## Limitação Transparente
+Isso garante que:
+- Na primeira visita, grava o BUILD_ID
+- Nas visitas seguintes, se mudou, limpa caches e recarrega com query param único
+- O `__BUILD_ID__` é injetado pelo plugin `html-build-id` do Vite (já existente)
 
-A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
+**Arquivo: `src/hooks/useForceCacheClear.ts`**
+
+Adicionar limpeza de caches do navegador (não apenas SW):
+
+```typescript
+// Limpar caches de API/fetch do browser
+if ('caches' in window) {
+  caches.keys().then((names) => {
+    names.forEach((n) => caches.delete(n));
+  });
+}
+```
+
+---
+
+## Resumo de Arquivos
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/components/admin/agenda/DroppableCalendarDay.tsx` | Redesenhar mobile para dots coloridos (Google Calendar style) |
+| `src/pages/admin/tarefas/components/AgendaMonthView.tsx` | Grid mais compacto no mobile, callback para selecionar dia |
+| `src/pages/admin/tarefas/components/EmbeddedAgenda.tsx` | Ao tocar dia no mês mobile → mudar para view "dia" naquela data |
+| `src/index.html` | Script de cache-bust com BUILD_ID no head |
+| `src/hooks/useForceCacheClear.ts` | Adicionar limpeza de browser caches |
+
+5 arquivos, 0 dependências novas, 0 componentes novos.
 
