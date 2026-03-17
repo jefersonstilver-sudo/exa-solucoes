@@ -793,7 +793,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
               />
             </div>
             {showLeadDropdown && leadResults.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-56 overflow-y-auto">
+              <div className="absolute z-[var(--z-floating)] w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-56 overflow-y-auto">
                 {leadResults.map((lead) => (
                   <div
                     key={lead.id}
