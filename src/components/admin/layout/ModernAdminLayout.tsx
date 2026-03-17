@@ -59,11 +59,9 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
       } as React.CSSProperties}
     >
       <div className="flex h-screen w-full bg-background overflow-hidden relative">
-        <div className="relative z-30">
-          <ModernAdminSidebar />
-        </div>
+        <ModernAdminSidebar />
         
-        <SidebarTriggerPositioned isTablet={isTablet} />
+        {!isMobile && <SidebarTriggerPositioned isTablet={isTablet} />}
         
         <SidebarInset className="flex flex-col w-full overflow-x-hidden">
           <header className={`sticky top-0 z-10 flex items-center px-3 md:px-4 ${

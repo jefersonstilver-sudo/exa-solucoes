@@ -2,11 +2,13 @@
 
 /* Touch targets - ensure minimum size for mobile */
 @media (max-width: 768px) {
-  button, 
-  a, 
-  [role="button"], 
-  input[type="submit"], 
-  input[type="button"] {
+  main button, 
+  main a, 
+  main [role="button"], 
+  main input[type="submit"], 
+  main input[type="button"],
+  .touch-target-safe button,
+  .touch-target-safe a {
     min-height: 44px;
     min-width: 44px;
   }
