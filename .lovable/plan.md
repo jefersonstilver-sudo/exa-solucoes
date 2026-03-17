@@ -1,80 +1,111 @@
 
 
-# Plano de Correção — 2FA Seguro com Auth Gate
+# Fix: Sidebar Travada e Responsividade Geral
 
-## Diagnóstico Confirmado
+## Diagnóstico
 
-1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
-2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
+Analisei o layout, sidebar, Sheet, Dialog, Drawer e CSS global. Identifiquei **3 causas raiz** que explicam o travamento e problemas de interação no mobile:
 
-## Limitação Técnica do Supabase
+### Causa 1: CSS Global Agressivo Quebrando Touch Targets na Sidebar
 
-O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
+Em `src/styles/responsive-optimizations.css`, a regra:
+```css
+@media (max-width: 768px) {
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+```
+Aplica-se a **TODOS** os botões e links, incluindo os itens internos da sidebar (NavLinks, tooltips, badges). Isso faz com que elementos pequenos (badges, ícones, close buttons) expandam para 44x44px, causando sobreposição de touch targets e impossibilitando cliques precisos. O botão de fechar do Sheet (X) e os itens de navegação se sobrepõem.
 
-## Solução: Auth Gate no AuthProvider
+### Causa 2: Drawer Component com Layout Errado
 
-Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
+O `src/components/ui/drawer.tsx` define o `DrawerContent` como `fixed inset-y-0 right-0` (slide from right, fullscreen height) com `z-50`. Quando o `CreateTaskModal` abre como Drawer no mobile, ele compete com a sidebar Sheet (z-120) e pode criar stacking context conflicts. O overlay do Drawer é `z-50` enquanto o Sheet é `z-120` -- inconsistência.
 
-```text
-Email + Senha
-  ↓
-signInWithPassword (sessão Supabase criada — inevitável)
-  ↓
-2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
-  ↓                    → navigate('/verificacao-2fa')
-  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
-  ↓                    → Todas as rotas protegidas bloqueadas
-  ↓                    ↓
-  ↓                  Código validado → sessionStorage.remove('pending_2fa')
-  ↓                    → isLoggedIn = TRUE → acesso liberado
-  ↓
-  NÃO → login normal
+### Causa 3: Sidebar Desktop Wrapper com z-30 Capturando Eventos
+
+Em `ModernAdminLayout.tsx` linha 62:
+```jsx
+<div className="relative z-30">
+  <ModernAdminSidebar />
+</div>
+```
+No mobile, o `<Sidebar>` renderiza como Sheet (portal fora do DOM), mas essa `div` vazia com `z-30` e `relative` ainda ocupa espaço no flex layout e pode interceptar eventos de toque na área esquerda da tela.
+
+---
+
+## Plano de Correção
+
+### 1. Corrigir CSS Global — Escopar Touch Targets
+
+**Arquivo: `src/styles/responsive-optimizations.css`**
+
+Remover a regra genérica `button, a, [role="button"]` e substituir por regras escopadas que NÃO afetam a sidebar:
+
+```css
+@media (max-width: 768px) {
+  main button, main a, main [role="button"],
+  .touch-target-safe button, .touch-target-safe a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
 ```
 
-**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
+Isso garante que touch targets de 44px se aplicam ao conteúdo principal mas NÃO ao sidebar, Sheet overlays, ou dialogs internos.
 
-## Arquivos a Modificar (4 arquivos)
+### 2. Corrigir Layout Wrapper da Sidebar no Mobile
 
-### A. `src/App.tsx` (1 linha)
-- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
-- Importar `TwoFactorVerificationPage`
+**Arquivo: `src/components/admin/layout/ModernAdminLayout.tsx`**
 
-### B. `src/hooks/useAuth.tsx` — Auth Gate
-- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
-  ```
-  const pending2fa = sessionStorage.getItem('pending_2fa');
-  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
-  ```
-- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
+Remover o wrapper `div.relative.z-30` desnecessário e simplificar:
 
-### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
-- Após detectar `two_factor_enabled` (linha 134):
-  - `sessionStorage.setItem('pending_2fa', data.user.id)`
-  - Navegar para `/verificacao-2fa?userId=...`
-  - **Não fazer signOut**, **não armazenar credenciais**
+```jsx
+<div className="flex h-screen w-full bg-background overflow-hidden relative">
+  <ModernAdminSidebar />
+  {!isMobile && <SidebarTriggerPositioned isTablet={isTablet} />}
+  <SidebarInset>...</SidebarInset>
+</div>
+```
 
-### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
-- Após verificação do código bem-sucedida (linha 99):
-  - `sessionStorage.removeItem('pending_2fa')`
-  - Isso faz `isLoggedIn` mudar para `true` automaticamente
-  - Redirecionar para rota correta baseada no role
+No mobile, o `Sidebar` renderiza via Sheet/Portal, então não precisa de wrapper. No desktop, o componente `Sidebar` já gerencia seu próprio z-index.
 
-- No botão "Voltar ao Login" (linha 239):
-  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
-  - Isso garante logout limpo se o usuário desistir
+### 3. Normalizar Z-Index do Drawer
 
-## Garantias
+**Arquivo: `src/components/ui/drawer.tsx`**
 
-| Regra | Cumprida |
-|-------|----------|
-| Sem tabelas novas | ✓ |
-| Sem signOut como solução | ✓ |
-| Sem credenciais em sessionStorage | ✓ |
-| Sem fluxos paralelos | ✓ |
-| Sessão bloqueada até 2FA | ✓ |
-| Reutiliza componentes existentes | ✓ |
+Atualizar overlay e content para usar as variáveis CSS padronizadas:
+- DrawerOverlay: `z-50` → `z-[var(--z-drawer)]` (120)
+- DrawerContent: `z-50` → `z-[var(--z-drawer)]` (120)
 
-## Limitação Transparente
+### 4. Garantir Sidebar Items Responsivos
 
-A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
+**Arquivo: `src/components/admin/layout/ModernAdminSidebar.tsx`**
+
+Adicionar classe de exclusão nos NavLinks da sidebar para evitar conflito com a regra de touch targets:
+- Adicionar `min-h-0 min-w-0` nos itens de navegação para resetar os min-height/min-width forçados pelo CSS global
+
+### 5. CreateTaskModal — Drawer Fullscreen no Mobile
+
+**Arquivo: `src/components/admin/agenda/CreateTaskModal.tsx`**
+
+O DrawerContent já usa `max-h-[95vh]` mas não tem z-index adequado. Atualizar para:
+```jsx
+<DrawerContent className="max-h-[95dvh] z-[var(--z-modal)]">
+```
+
+---
+
+## Resumo de Arquivos
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/styles/responsive-optimizations.css` | Escopar touch targets para não afetar sidebar/overlays |
+| `src/components/admin/layout/ModernAdminLayout.tsx` | Remover wrapper z-30, condicionar SidebarTrigger |
+| `src/components/ui/drawer.tsx` | Normalizar z-index para usar variáveis CSS |
+| `src/components/admin/layout/ModernAdminSidebar.tsx` | Reset min-h/min-w nos NavLinks |
+| `src/components/admin/agenda/CreateTaskModal.tsx` | Z-index e altura responsiva no Drawer |
+
+5 arquivos, 0 dependências novas. Foco em desbloquear interações e normalizar a hierarquia de camadas.
 
