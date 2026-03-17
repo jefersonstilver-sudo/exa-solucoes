@@ -1427,7 +1427,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[95dvh] z-[var(--z-modal)]">
+        <DrawerContent className="max-h-[95dvh] bg-background">
           <DrawerHeader className="border-b pb-4">
             <DrawerTitle className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-primary/10">
@@ -1436,7 +1436,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
               Nova Tarefa
             </DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 py-4 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto px-4 py-4">
             {formContent}
           </div>
         </DrawerContent>
