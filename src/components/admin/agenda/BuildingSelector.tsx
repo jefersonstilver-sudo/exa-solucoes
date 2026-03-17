@@ -96,7 +96,7 @@ const BuildingSelector = ({ selectedBuildingId, onSelectBuilding }: BuildingSele
             />
           </div>
           {showDropdown && (
-            <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-56 overflow-y-auto">
+            <div className="absolute z-[var(--z-floating)] w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-56 overflow-y-auto">
               {filtered.length === 0 ? (
                 <p className="text-xs text-muted-foreground p-3 text-center">Nenhum prédio encontrado</p>
               ) : (

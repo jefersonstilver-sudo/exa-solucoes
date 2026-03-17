@@ -10,5 +10,6 @@
   --z-modal: 110;
   --z-drawer: 120;
   --z-toast: 200;
+  --z-floating: 999;       /* Select/Popover/Calendar portals — must sit above modals & drawers */
   --z-fullscreen: 9999;
 }
