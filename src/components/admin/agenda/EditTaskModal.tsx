@@ -921,7 +921,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                         <Input value={searchLead} onChange={(e) => setSearchLead(e.target.value)} placeholder="Buscar por nome, empresa, telefone..." className="h-9 pl-9 text-sm" />
                       </div>
                       {showLeadDropdown && leadResults.length > 0 && (
-                        <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        <div className="absolute z-[var(--z-floating)] w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
                           {leadResults.map((lead) => (
                             <div key={lead.id} className="flex items-center gap-2 px-3 py-2 hover:bg-accent cursor-pointer transition-colors" onClick={() => handleSelectLead(lead)}>
                               <div className="flex-1 min-w-0">
