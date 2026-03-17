@@ -46,11 +46,12 @@
     padding: 0.5rem;
   }
 
-  /* Ensure dropdowns appear above other elements */
+  /* Ensure Radix floating portals appear above dialogs/drawers */
   [role="listbox"],
   [role="menu"],
   [data-radix-popper-content-wrapper] {
-    z-index: 50 !important;
+    z-index: var(--z-floating) !important;
+    pointer-events: auto !important;
   }
 
   /* Utility: enable text selection and native scroll on public pages */
