@@ -819,6 +819,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
         <DialogContent className="sm:max-w-[1100px] max-h-[95vh] overflow-hidden p-0 gap-0">
           <DialogHeader className="sr-only">
             <DialogTitle>Editar Evento</DialogTitle>
+            <p>Edite os dados do evento, incluindo tipo, data, horário, prioridade e notificações.</p>
           </DialogHeader>
 
           {/* ── Visual Header ── */}

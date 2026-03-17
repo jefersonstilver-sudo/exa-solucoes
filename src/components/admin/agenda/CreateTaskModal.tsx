@@ -1455,6 +1455,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
             </div>
             Nova Tarefa
           </DialogTitle>
+          <p className="text-sm text-muted-foreground">Preencha os campos para criar uma nova tarefa na agenda.</p>
         </DialogHeader>
         <div className="mt-4">
           {formContent}
