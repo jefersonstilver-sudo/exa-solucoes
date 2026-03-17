@@ -1427,7 +1427,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[95vh]">
+        <DrawerContent className="max-h-[95dvh] z-[var(--z-modal)]">
           <DrawerHeader className="border-b pb-4">
             <DrawerTitle className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-primary/10">
