@@ -310,6 +310,75 @@ const VideosSitePage = () => {
         </CardContent>
       </Card>
 
+      {/* Vídeo da Homepage Horizontal */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Video className="h-5 w-5" />
+            Vídeo da Homepage (Horizontal)
+          </CardTitle>
+          <CardDescription>
+            Vídeo horizontal (16:9) exibido na versão mobile da página inicial
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="home-horizontal-video">URL do Vídeo Atual</Label>
+            <Input
+              id="home-horizontal-video"
+              placeholder="https://..."
+              value={homeHorizontalUrl}
+              onChange={(e) => setHomeHorizontalUrl(e.target.value)}
+              disabled={uploadingHomeHorizontal}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="home-horizontal-upload">Fazer Upload de Novo Vídeo</Label>
+            <div className="space-y-3">
+              <Input
+                id="home-horizontal-upload"
+                type="file"
+                accept="video/*"
+                disabled={uploadingHomeHorizontal}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    handleFileUpload(
+                      file,
+                      'videos',
+                      'homepage-horizontal',
+                      setUploadingHomeHorizontal,
+                      setUploadProgressHomeHorizontal,
+                      setHomeHorizontalUrl
+                    );
+                  }
+                }}
+              />
+              {uploadingHomeHorizontal && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Enviando vídeo...</span>
+                    <span className="font-medium">{uploadProgressHomeHorizontal}%</span>
+                  </div>
+                  <Progress value={uploadProgressHomeHorizontal} className="h-2" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {homeHorizontalUrl && (
+            <div className="rounded-lg overflow-hidden bg-black">
+              <video
+                src={homeHorizontalUrl}
+                controls
+                className="w-full max-h-96 object-contain"
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Vídeos Sou Síndico */}
       <Card>
         <CardHeader>
