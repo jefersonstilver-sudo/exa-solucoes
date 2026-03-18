@@ -179,10 +179,11 @@ const VideosSitePage = () => {
           .from('configuracoes_sindico')
           .update({
             video_homepage_url: homeVideoUrl,
+            video_homepage_horizontal_url: homeHorizontalUrl,
             video_principal_url: souSindicoMainUrl,
             video_secundario_url: souSindicoSecondaryUrl,
             updated_at: new Date().toISOString()
-          })
+          } as any)
           .eq('id', existing.id);
 
         if (error) throw error;
