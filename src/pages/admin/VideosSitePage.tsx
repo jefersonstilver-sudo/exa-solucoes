@@ -193,9 +193,10 @@ const VideosSitePage = () => {
           .from('configuracoes_sindico')
           .insert({
             video_homepage_url: homeVideoUrl,
+            video_homepage_horizontal_url: homeHorizontalUrl,
             video_principal_url: souSindicoMainUrl,
             video_secundario_url: souSindicoSecondaryUrl
-          });
+          } as any);
 
         if (error) throw error;
       }
