@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const useHomepageVideo = () => {
   const [videoUrl, setVideoUrl] = useState<string>('');
+  const [horizontalVideoUrl, setHorizontalVideoUrl] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -10,7 +11,7 @@ export const useHomepageVideo = () => {
       try {
         const { data, error } = await supabase
           .from('configuracoes_sindico')
-          .select('video_homepage_url')
+          .select('video_homepage_url, video_homepage_horizontal_url')
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -23,6 +24,9 @@ export const useHomepageVideo = () => {
         if (data?.video_homepage_url) {
           setVideoUrl(data.video_homepage_url);
         }
+        if (data?.video_homepage_horizontal_url) {
+          setHorizontalVideoUrl(data.video_homepage_horizontal_url);
+        }
       } catch (error) {
         console.error('Erro ao carregar vídeo:', error);
       } finally {
@@ -33,5 +37,5 @@ export const useHomepageVideo = () => {
     fetchVideoUrl();
   }, []);
 
-  return { videoUrl, loading };
+  return { videoUrl, horizontalVideoUrl, loading };
 };

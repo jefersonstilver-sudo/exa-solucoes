@@ -1,0 +1,1 @@
+ALTER TABLE configuracoes_sindico ADD COLUMN IF NOT EXISTS video_homepage_horizontal_url text;
