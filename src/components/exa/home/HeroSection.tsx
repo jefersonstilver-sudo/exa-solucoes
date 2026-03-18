@@ -163,10 +163,11 @@ const HeroSection = () => {
   const [showSoundTooltip, setShowSoundTooltip] = useState(true);
 
   const { ref, isVisible } = useScrollReveal();
-  const { videoUrl, loading } = useHomepageVideo();
+  const { videoUrl, horizontalVideoUrl, loading } = useHomepageVideo();
 
   // Determine override from DB (if admin set a custom URL)
   const dbOverride = videoUrl || undefined;
+  const dbHorizontalOverride = horizontalVideoUrl || undefined;
 
   const {
     videoRef,
