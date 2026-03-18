@@ -524,7 +524,7 @@ const VideosSitePage = () => {
       <div className="flex justify-end">
         <Button
           onClick={handleSaveConfig}
-          disabled={loading || uploadingHome || uploadingMain || uploadingSecondary}
+          disabled={loading || uploadingHome || uploadingHomeHorizontal || uploadingMain || uploadingSecondary}
           size="lg"
         >
           {loading ? (

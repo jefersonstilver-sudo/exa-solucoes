@@ -218,7 +218,7 @@ const HeroSection = () => {
 
   // Mobile / tablet layout
   if (isTabletOrMobile) {
-    return <HeroMobileLayout overrideUrl={dbOverride} />;
+    return <HeroMobileLayout overrideUrl={dbHorizontalOverride} />;
   }
 
   // Desktop layout
