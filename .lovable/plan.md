@@ -1,80 +1,38 @@
 
 
-# Plano de Correção — 2FA Seguro com Auth Gate
+# Fix: AlertDialog "Excluir Painel" Trava com Tela Preta
 
-## Diagnóstico Confirmado
+## Diagnóstico
 
-1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
-2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
+O problema é claro e simples:
 
-## Limitação Técnica do Supabase
+O `AlertDialog` (confirmação de exclusão) está **renderizando atrás** do `Dialog` pai (ComputerDetailModal).
 
-O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
+**Hierarquia atual de z-index:**
+- `Dialog` overlay: `z-[var(--z-modal-overlay)]` = **z-100**
+- `Dialog` content: `z-[var(--z-modal)]` = **z-110**
+- `AlertDialog` overlay: `z-50` (padrão shadcn)
+- `AlertDialog` content: `z-50` (padrão shadcn)
 
-## Solução: Auth Gate no AuthProvider
+Quando o usuário clica "Excluir Painel", o AlertDialog abre com overlay preto em `z-50`, mas o conteúdo (botões Cancelar/Confirmar) também fica em `z-50` — ambos **atrás** do Dialog pai que está em z-100/110. Resultado: tela preta sem botões visíveis, site "travado".
 
-Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
+## Correção
 
-```text
-Email + Senha
-  ↓
-signInWithPassword (sessão Supabase criada — inevitável)
-  ↓
-2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
-  ↓                    → navigate('/verificacao-2fa')
-  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
-  ↓                    → Todas as rotas protegidas bloqueadas
-  ↓                    ↓
-  ↓                  Código validado → sessionStorage.remove('pending_2fa')
-  ↓                    → isLoggedIn = TRUE → acesso liberado
-  ↓
-  NÃO → login normal
-```
+### 1. Atualizar `src/components/ui/alert-dialog.tsx`
 
-**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
+Elevar o z-index do AlertDialog para ficar **acima** de qualquer modal/drawer:
 
-## Arquivos a Modificar (4 arquivos)
+- `AlertDialogOverlay`: de `z-50` para `z-[var(--z-floating)]` (999)
+- `AlertDialogContent`: de `z-50` para `z-[var(--z-floating)]` (999)
 
-### A. `src/App.tsx` (1 linha)
-- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
-- Importar `TwoFactorVerificationPage`
+Isso garante que AlertDialogs (que são sempre confirmações críticas) sempre fiquem no topo, independente de estarem dentro de um Dialog, Drawer ou Sheet.
 
-### B. `src/hooks/useAuth.tsx` — Auth Gate
-- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
-  ```
-  const pending2fa = sessionStorage.getItem('pending_2fa');
-  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
-  ```
-- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
+### 2. Verificar outros usos de AlertDialog no projeto
 
-### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
-- Após detectar `two_factor_enabled` (linha 134):
-  - `sessionStorage.setItem('pending_2fa', data.user.id)`
-  - Navegar para `/verificacao-2fa?userId=...`
-  - **Não fazer signOut**, **não armazenar credenciais**
+Essa correção resolve automaticamente todos os AlertDialogs do projeto, incluindo:
+- `DeleteConfirmationDialog` (benefícios)
+- `ComputerDetailModal` (excluir painel — o caso reportado)
+- Qualquer outro AlertDialog aninhado em Dialog
 
-### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
-- Após verificação do código bem-sucedida (linha 99):
-  - `sessionStorage.removeItem('pending_2fa')`
-  - Isso faz `isLoggedIn` mudar para `true` automaticamente
-  - Redirecionar para rota correta baseada no role
-
-- No botão "Voltar ao Login" (linha 239):
-  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
-  - Isso garante logout limpo se o usuário desistir
-
-## Garantias
-
-| Regra | Cumprida |
-|-------|----------|
-| Sem tabelas novas | ✓ |
-| Sem signOut como solução | ✓ |
-| Sem credenciais em sessionStorage | ✓ |
-| Sem fluxos paralelos | ✓ |
-| Sessão bloqueada até 2FA | ✓ |
-| Reutiliza componentes existentes | ✓ |
-
-## Limitação Transparente
-
-A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
+**1 arquivo alterado. Correção cirúrgica, sem efeitos colaterais.**
 
