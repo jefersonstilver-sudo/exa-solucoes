@@ -163,10 +163,11 @@ const HeroSection = () => {
   const [showSoundTooltip, setShowSoundTooltip] = useState(true);
 
   const { ref, isVisible } = useScrollReveal();
-  const { videoUrl, loading } = useHomepageVideo();
+  const { videoUrl, horizontalVideoUrl, loading } = useHomepageVideo();
 
   // Determine override from DB (if admin set a custom URL)
   const dbOverride = videoUrl || undefined;
+  const dbHorizontalOverride = horizontalVideoUrl || undefined;
 
   const {
     videoRef,
@@ -217,7 +218,7 @@ const HeroSection = () => {
 
   // Mobile / tablet layout
   if (isTabletOrMobile) {
-    return <HeroMobileLayout overrideUrl={dbOverride} />;
+    return <HeroMobileLayout overrideUrl={dbHorizontalOverride} />;
   }
 
   // Desktop layout

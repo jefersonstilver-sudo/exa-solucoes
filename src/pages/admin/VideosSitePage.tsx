@@ -13,12 +13,15 @@ const VideosSitePage = () => {
   const [loading, setLoading] = useState(false);
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [homeVideoUrl, setHomeVideoUrl] = useState('');
+  const [homeHorizontalUrl, setHomeHorizontalUrl] = useState('');
   const [souSindicoMainUrl, setSouSindicoMainUrl] = useState('');
   const [souSindicoSecondaryUrl, setSouSindicoSecondaryUrl] = useState('');
   const [uploadingHome, setUploadingHome] = useState(false);
+  const [uploadingHomeHorizontal, setUploadingHomeHorizontal] = useState(false);
   const [uploadingMain, setUploadingMain] = useState(false);
   const [uploadingSecondary, setUploadingSecondary] = useState(false);
   const [uploadProgressHome, setUploadProgressHome] = useState(0);
+  const [uploadProgressHomeHorizontal, setUploadProgressHomeHorizontal] = useState(0);
   const [uploadProgressMain, setUploadProgressMain] = useState(0);
   const [uploadProgressSecondary, setUploadProgressSecondary] = useState(0);
 
@@ -46,6 +49,7 @@ const VideosSitePage = () => {
       if (data) {
         console.log('[VideosSitePage] Config carregada:', data.id);
         setHomeVideoUrl(data.video_homepage_url || '');
+        setHomeHorizontalUrl((data as any).video_homepage_horizontal_url || '');
         setSouSindicoMainUrl(data.video_principal_url || '');
         setSouSindicoSecondaryUrl(data.video_secundario_url || '');
         toast.success('Configurações carregadas');
@@ -175,10 +179,11 @@ const VideosSitePage = () => {
           .from('configuracoes_sindico')
           .update({
             video_homepage_url: homeVideoUrl,
+            video_homepage_horizontal_url: homeHorizontalUrl,
             video_principal_url: souSindicoMainUrl,
             video_secundario_url: souSindicoSecondaryUrl,
             updated_at: new Date().toISOString()
-          })
+          } as any)
           .eq('id', existing.id);
 
         if (error) throw error;
@@ -188,9 +193,10 @@ const VideosSitePage = () => {
           .from('configuracoes_sindico')
           .insert({
             video_homepage_url: homeVideoUrl,
+            video_homepage_horizontal_url: homeHorizontalUrl,
             video_principal_url: souSindicoMainUrl,
             video_secundario_url: souSindicoSecondaryUrl
-          });
+          } as any);
 
         if (error) throw error;
       }
@@ -296,6 +302,75 @@ const VideosSitePage = () => {
             <div className="rounded-lg overflow-hidden bg-black">
               <video
                 src={homeVideoUrl}
+                controls
+                className="w-full max-h-96 object-contain"
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Vídeo da Homepage Horizontal */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Video className="h-5 w-5" />
+            Vídeo da Homepage (Horizontal)
+          </CardTitle>
+          <CardDescription>
+            Vídeo horizontal (16:9) exibido na versão mobile da página inicial
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="home-horizontal-video">URL do Vídeo Atual</Label>
+            <Input
+              id="home-horizontal-video"
+              placeholder="https://..."
+              value={homeHorizontalUrl}
+              onChange={(e) => setHomeHorizontalUrl(e.target.value)}
+              disabled={uploadingHomeHorizontal}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="home-horizontal-upload">Fazer Upload de Novo Vídeo</Label>
+            <div className="space-y-3">
+              <Input
+                id="home-horizontal-upload"
+                type="file"
+                accept="video/*"
+                disabled={uploadingHomeHorizontal}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    handleFileUpload(
+                      file,
+                      'videos',
+                      'homepage-horizontal',
+                      setUploadingHomeHorizontal,
+                      setUploadProgressHomeHorizontal,
+                      setHomeHorizontalUrl
+                    );
+                  }
+                }}
+              />
+              {uploadingHomeHorizontal && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Enviando vídeo...</span>
+                    <span className="font-medium">{uploadProgressHomeHorizontal}%</span>
+                  </div>
+                  <Progress value={uploadProgressHomeHorizontal} className="h-2" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {homeHorizontalUrl && (
+            <div className="rounded-lg overflow-hidden bg-black">
+              <video
+                src={homeHorizontalUrl}
                 controls
                 className="w-full max-h-96 object-contain"
               />
@@ -449,7 +524,7 @@ const VideosSitePage = () => {
       <div className="flex justify-end">
         <Button
           onClick={handleSaveConfig}
-          disabled={loading || uploadingHome || uploadingMain || uploadingSecondary}
+          disabled={loading || uploadingHome || uploadingHomeHorizontal || uploadingMain || uploadingSecondary}
           size="lg"
         >
           {loading ? (
