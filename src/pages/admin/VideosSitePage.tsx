@@ -49,6 +49,7 @@ const VideosSitePage = () => {
       if (data) {
         console.log('[VideosSitePage] Config carregada:', data.id);
         setHomeVideoUrl(data.video_homepage_url || '');
+        setHomeHorizontalUrl((data as any).video_homepage_horizontal_url || '');
         setSouSindicoMainUrl(data.video_principal_url || '');
         setSouSindicoSecondaryUrl(data.video_secundario_url || '');
         toast.success('Configurações carregadas');
