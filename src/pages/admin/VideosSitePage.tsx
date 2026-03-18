@@ -13,12 +13,15 @@ const VideosSitePage = () => {
   const [loading, setLoading] = useState(false);
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [homeVideoUrl, setHomeVideoUrl] = useState('');
+  const [homeHorizontalUrl, setHomeHorizontalUrl] = useState('');
   const [souSindicoMainUrl, setSouSindicoMainUrl] = useState('');
   const [souSindicoSecondaryUrl, setSouSindicoSecondaryUrl] = useState('');
   const [uploadingHome, setUploadingHome] = useState(false);
+  const [uploadingHomeHorizontal, setUploadingHomeHorizontal] = useState(false);
   const [uploadingMain, setUploadingMain] = useState(false);
   const [uploadingSecondary, setUploadingSecondary] = useState(false);
   const [uploadProgressHome, setUploadProgressHome] = useState(0);
+  const [uploadProgressHomeHorizontal, setUploadProgressHomeHorizontal] = useState(0);
   const [uploadProgressMain, setUploadProgressMain] = useState(0);
   const [uploadProgressSecondary, setUploadProgressSecondary] = useState(0);
 
