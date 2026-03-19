@@ -12907,6 +12907,7 @@ export type Database = {
         Row: {
           ativo: boolean
           created_at: string | null
+          fired_at: string | null
           id: string
           task_id: string
           tipo: string
@@ -12916,6 +12917,7 @@ export type Database = {
         Insert: {
           ativo?: boolean
           created_at?: string | null
+          fired_at?: string | null
           id?: string
           task_id: string
           tipo?: string
@@ -12925,6 +12927,7 @@ export type Database = {
         Update: {
           ativo?: boolean
           created_at?: string | null
+          fired_at?: string | null
           id?: string
           task_id?: string
           tipo?: string

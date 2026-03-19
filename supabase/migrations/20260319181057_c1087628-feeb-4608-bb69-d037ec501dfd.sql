@@ -1,0 +1,1 @@
+ALTER TABLE task_reminders ADD COLUMN IF NOT EXISTS fired_at TIMESTAMPTZ;
