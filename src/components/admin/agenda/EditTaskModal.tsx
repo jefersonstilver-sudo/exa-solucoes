@@ -896,7 +896,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
             <div className="grid grid-cols-1 md:grid-cols-[1fr_400px] divide-y md:divide-y-0 md:divide-x">
               
               {/* ── LEFT: Form Fields ── */}
-              <div className="p-5 space-y-4 overflow-y-auto">
+              <div className="px-6 py-5 space-y-5 overflow-y-auto">
                 {/* Tipo de Evento */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
