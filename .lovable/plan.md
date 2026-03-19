@@ -1,80 +1,72 @@
 
 
-# Plano de Correção — 2FA Seguro com Auth Gate
+# Plano: Lembretes de Notificação por Tarefa (estilo Google Calendar)
 
-## Diagnóstico Confirmado
+## Problema
 
-1. **Rota ausente**: `/verificacao-2fa` não existe no `App.tsx` (linha 495-501). Existe apenas no `src/routes/index.tsx` que **não é usado**.
-2. **Sessão criada antes do 2FA**: `signInWithPassword` (linha 47 do `useLoginForm.tsx`) cria sessão imediatamente. O `AuthProvider` detecta a sessão e considera o usuário logado.
+O EditTaskModal não tem nenhum painel para configurar **lembretes individuais por tarefa** — ex: "notificar 5 minutos antes", "1 dia antes", "1 semana antes". Hoje só existe configuração **global** (AgendaNotificationSettingsModal) com um único "Lembrete Pré-Evento" fixo em X minutos. Falta a granularidade por evento como no Google Calendar.
 
-## Limitação Técnica do Supabase
+## Solução
 
-O SDK do Supabase **não possui** uma API "validar credenciais sem criar sessão". O `signInWithPassword` sempre cria uma sessão ativa. Isso é uma limitação da plataforma, não há como evitar.
+Criar uma tabela `task_reminders` para armazenar N regras de lembrete por tarefa, e adicionar um painel de lembretes dentro do EditTaskModal (sidebar direita) + CreateTaskModal.
 
-## Solução: Auth Gate no AuthProvider
+## Alterações
 
-Em vez de tentar evitar a sessão (impossível com Supabase), criamos um **portão de segurança** no `AuthProvider` que bloqueia o acesso enquanto o 2FA estiver pendente.
+### 1. Migration — nova tabela `task_reminders`
 
-```text
-Email + Senha
-  ↓
-signInWithPassword (sessão Supabase criada — inevitável)
-  ↓
-2FA ativado? → SIM → sessionStorage.set('pending_2fa', userId)
-  ↓                    → navigate('/verificacao-2fa')
-  ↓                    → AuthProvider vê flag → isLoggedIn = FALSE
-  ↓                    → Todas as rotas protegidas bloqueadas
-  ↓                    ↓
-  ↓                  Código validado → sessionStorage.remove('pending_2fa')
-  ↓                    → isLoggedIn = TRUE → acesso liberado
-  ↓
-  NÃO → login normal
+```sql
+CREATE TABLE task_reminders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  tipo TEXT NOT NULL DEFAULT 'notificacao',  -- notificacao, email
+  unidade TEXT NOT NULL DEFAULT 'minutos',   -- minutos, horas, dias, semanas
+  valor INT NOT NULL DEFAULT 30,
+  ativo BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- RLS: authenticated users can manage
+ALTER TABLE task_reminders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated manage task_reminders" ON task_reminders
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Index for fast lookup
+CREATE INDEX idx_task_reminders_task_id ON task_reminders(task_id);
 ```
 
-**Por que isso é seguro:** Mesmo com sessão Supabase ativa, o app inteiro trata `isLoggedIn = false` quando `pending_2fa` existe. Nenhuma rota protegida é acessível. O usuário só vê a página de verificação 2FA ou o login.
+Ao criar uma tarefa sem lembretes customizados, inserir 3 regras padrão:
+- 30 minutos antes (Notificação)
+- 1 dia antes (Notificação)  
+- 1 semana antes (Notificação)
 
-## Arquivos a Modificar (4 arquivos)
+### 2. Novo componente `TaskRemindersPanel.tsx`
 
-### A. `src/App.tsx` (1 linha)
-- Adicionar rota `/verificacao-2fa` antes do catch-all `*`, após linha 501
-- Importar `TwoFactorVerificationPage`
+Componente reutilizável (usado no EditTaskModal e CreateTaskModal) com:
+- Lista de lembretes existentes, cada um com:
+  - Select de unidade (minutos / horas / dias / semanas)
+  - Input numérico do valor
+  - Toggle ativo/inativo
+  - Botão remover
+- Botão "+ Adicionar lembrete" (máximo 5)
+- Visual estilo Apple/iOS consistente com o resto do modal
+- Responsivo (funciona na sidebar desktop e em tela cheia mobile)
 
-### B. `src/hooks/useAuth.tsx` — Auth Gate
-- Na derivação de `isLoggedIn` (linha 40), adicionar verificação:
-  ```
-  const pending2fa = sessionStorage.getItem('pending_2fa');
-  const isLoggedIn = !!session?.access_token && !!userProfile && !pending2fa;
-  ```
-- Quando `pending_2fa` existir, `isLoggedIn = false` → todas as rotas protegidas bloqueiam acesso
+### 3. Atualizar `EditTaskModal.tsx`
 
-### C. `src/components/auth/hooks/useLoginForm.tsx` — Definir flag antes de redirecionar
-- Após detectar `two_factor_enabled` (linha 134):
-  - `sessionStorage.setItem('pending_2fa', data.user.id)`
-  - Navegar para `/verificacao-2fa?userId=...`
-  - **Não fazer signOut**, **não armazenar credenciais**
+- Na sidebar direita (seção "Notificações"), adicionar o `TaskRemindersPanel` acima do monitor de confirmações
+- Carregar lembretes da tarefa via query (`task_reminders` WHERE `task_id`)
+- Salvar lembretes no `handleSubmit` (upsert/delete conforme alterações)
+- Se a tarefa não tem lembretes, criar os 3 padrões na primeira abertura
 
-### D. `src/pages/auth/TwoFactorVerificationPage.tsx` — Limpar flag após sucesso
-- Após verificação do código bem-sucedida (linha 99):
-  - `sessionStorage.removeItem('pending_2fa')`
-  - Isso faz `isLoggedIn` mudar para `true` automaticamente
-  - Redirecionar para rota correta baseada no role
+### 4. Atualizar `CreateTaskModal.tsx`
 
-- No botão "Voltar ao Login" (linha 239):
-  - Fazer `supabase.auth.signOut()` + `sessionStorage.removeItem('pending_2fa')` antes de navegar
-  - Isso garante logout limpo se o usuário desistir
+- Adicionar o `TaskRemindersPanel` no formulário
+- Ao criar a tarefa, inserir os lembretes configurados na tabela `task_reminders`
+- Iniciar com os 3 lembretes padrão pré-preenchidos
 
-## Garantias
+### 5. Atualizar tipos Supabase
 
-| Regra | Cumprida |
-|-------|----------|
-| Sem tabelas novas | ✓ |
-| Sem signOut como solução | ✓ |
-| Sem credenciais em sessionStorage | ✓ |
-| Sem fluxos paralelos | ✓ |
-| Sessão bloqueada até 2FA | ✓ |
-| Reutiliza componentes existentes | ✓ |
+- A tabela `task_reminders` será adicionada automaticamente aos tipos após a migration
 
-## Limitação Transparente
-
-A sessão Supabase existe tecnicamente antes do 2FA (limitação do SDK). Porém, o app **ignora essa sessão** até o 2FA ser validado. As RLS policies do Supabase continuam protegendo os dados no backend. A única forma de eliminar isso seria uma edge function de validação de credenciais, o que adicionaria complexidade sem benefício real — as RLS já protegem os dados.
+**5 alterações: 1 migration + 1 componente novo + 2 modais atualizados + tipos**
 
