@@ -899,7 +899,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
           </div>
 
           {/* ── Two-column body ── */}
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto max-h-[calc(92vh-180px)]">
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto max-h-[calc(92dvh-180px)]">
             <div className="grid grid-cols-1 md:grid-cols-[1fr_400px] divide-y md:divide-y-0 md:divide-x">
               
               {/* ── LEFT: Form Fields ── */}
