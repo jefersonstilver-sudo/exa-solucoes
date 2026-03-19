@@ -347,6 +347,27 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
           .then(({ data }) => {
             if (data) setSelectedPropostas(data.map(d => d.proposta_id));
           });
+
+        // Load reminders
+        supabase
+          .from('task_reminders')
+          .select('*')
+          .eq('task_id', task.id)
+          .order('created_at')
+          .then(({ data }) => {
+            if (data && data.length > 0) {
+              setTaskReminders(data.map(r => ({
+                id: r.id,
+                tipo: r.tipo,
+                unidade: r.unidade,
+                valor: r.valor,
+                ativo: r.ativo,
+              })));
+            } else {
+              // First time — set defaults
+              setTaskReminders(DEFAULT_REMINDERS.map(r => ({ ...r, id: crypto.randomUUID() })));
+            }
+          });
       }
     }
   }, [task]);
