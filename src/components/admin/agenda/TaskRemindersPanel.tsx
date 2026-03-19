@@ -143,7 +143,7 @@ export const TaskRemindersPanel = ({
                 value={reminder.unidade}
                 onValueChange={(v) => updateReminder(reminder.id, 'unidade', v)}
               >
-                <SelectTrigger className="h-8 flex-1 min-w-[100px] text-xs border-0 bg-muted/50">
+                <SelectTrigger className="h-8 w-[90px] text-xs border-0 bg-muted/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
