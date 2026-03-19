@@ -578,6 +578,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
     setIsRecorrente(false);
     setFrequenciaRecorrencia('semanal');
     setSelectedBuildingId(null);
+    setTaskReminders(DEFAULT_REMINDERS.map(r => ({ ...r, id: crypto.randomUUID() })));
   };
 
   const addDataPrevista = (date: Date | undefined) => {
