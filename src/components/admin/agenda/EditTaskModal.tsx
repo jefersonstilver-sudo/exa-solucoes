@@ -1373,6 +1373,8 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                     Atualiza automaticamente a cada 5s
                   </p>
                 </div>
+                </CollapsibleContent>
+                </Collapsible>
 
                 {/* Separador */}
                 <div className="border-t" />
