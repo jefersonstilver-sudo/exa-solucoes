@@ -1125,16 +1125,6 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                 <div className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                      <Bell className="h-3.5 w-3.5" /> Notificações
-                    </h3>
-                    {totalReceipts > 0 && (
-                      <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                        {confirmedCount}/{totalReceipts} confirmaram
-                      </span>
-                    )}
-                  </div>
 
                   {totalReceipts === 0 ? (
                     <div className="text-center py-6 bg-background rounded-lg border border-dashed">
