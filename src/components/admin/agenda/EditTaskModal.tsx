@@ -1583,8 +1583,31 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
               </div>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
+    </>
+  );
+
+  return (
+    <>
+      {isMobile ? (
+        <Drawer open={open} onOpenChange={onOpenChange}>
+          <DrawerContent className="max-h-[92dvh] p-0 overflow-y-auto">
+            <DrawerTitle className="sr-only">Editar Evento</DrawerTitle>
+            {modalContent}
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="sm:max-w-[1100px] max-h-[95dvh] overflow-hidden p-0 gap-0">
+            <DialogHeader className="sr-only">
+              <DialogTitle>Editar Evento</DialogTitle>
+              <p>Edite os dados do evento</p>
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-[95dvh]">
+              {modalContent}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
