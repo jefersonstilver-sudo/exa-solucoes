@@ -33,7 +33,7 @@ serve(async (req) => {
     // 1. Check by creator phone
     const { data: creatorUser } = await supabase
       .from('users')
-      .select('id, telefone')
+      .select('id, telefone, nome')
       .ilike('telefone', `%${phone.slice(-8)}%`)
       .maybeSingle();
 
@@ -52,7 +52,7 @@ serve(async (req) => {
       if (notif) activeNotif = notif;
     }
 
-    // 2. Check by responsável — if this user is a responsável for a task with active notification
+    // 2. Check by responsável
     if (!activeNotif && creatorUser) {
       const { data: responsavelTasks } = await supabase
         .from('task_responsaveis')
@@ -74,7 +74,7 @@ serve(async (req) => {
       }
     }
 
-    // 3. Fallback: check escalation contacts (any active notification)
+    // 3. Fallback: check escalation contacts
     if (!activeNotif) {
       const { data: notifs } = await supabase
         .from('task_notification_queue')
@@ -94,10 +94,29 @@ serve(async (req) => {
       });
     }
 
+    // ========== M-03: LOCK CHECK ==========
+    // For menu choices (1/2/3), check concurrency lock before processing
+    const isMenuChoice = ['1', '2', '3'].includes(msgTrimmed);
+    if (isMenuChoice && activeNotif.locked_by && activeNotif.locked_by !== phone) {
+      const lockedAt = activeNotif.locked_at ? new Date(activeNotif.locked_at).getTime() : 0;
+      const lockedMinutesAgo = Math.floor((Date.now() - lockedAt) / 60000);
+      if (lockedMinutesAgo < 10) {
+        const sendReplyLock = async (replyMsg: string) => {
+          await supabase.functions.invoke('zapi-send-message', {
+            body: { agentKey: 'exa_alert', phone, message: replyMsg, skipSplit: true }
+          });
+        };
+        await sendReplyLock(`⏳ Outra pessoa já está respondendo a esta tarefa. Aguarde alguns instantes.`);
+        return new Response(JSON.stringify({ handled: true, action: 'locked_by_other' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
     // Get task info
     const { data: task } = await supabase
       .from('tasks')
-      .select('id, titulo, data_prevista, criada_por')
+      .select('id, titulo, data_prevista, criada_por, status')
       .eq('id', activeNotif.task_id)
       .single();
 
@@ -107,6 +126,10 @@ serve(async (req) => {
       });
     }
 
+    // Resolve respondent user
+    const respondentUser = creatorUser;
+    const respondentName = respondentUser?.nome || phone;
+
     const sendReply = async (replyMsg: string) => {
       await supabase.functions.invoke('zapi-send-message', {
         body: { agentKey: 'exa_alert', phone, message: replyMsg, skipSplit: true }
@@ -115,7 +138,6 @@ serve(async (req) => {
 
     // Helper: notify creator when a responsável takes action
     const notifyCreatorOfAction = async (actionDesc: string, respondentPhone: string) => {
-      // Only notify if the responder is not the creator
       if (!task.criada_por) return;
       const { data: creator } = await supabase
         .from('users')
@@ -126,24 +148,40 @@ serve(async (req) => {
       if (!creator?.telefone) return;
       const creatorPhoneClean = creator.telefone.replace(/\D/g, '');
       const respondentClean = respondentPhone.replace(/\D/g, '');
-      if (creatorPhoneClean.includes(respondentClean.slice(-8))) return; // same person
+      if (creatorPhoneClean.includes(respondentClean.slice(-8))) return;
 
-      // Find respondent name
       const { data: respondent } = await supabase
         .from('users')
         .select('nome')
         .ilike('telefone', `%${respondentPhone.slice(-8)}%`)
         .maybeSingle();
-      const respondentName = respondent?.nome || respondentPhone;
+      const rName = respondent?.nome || respondentPhone;
 
       await supabase.functions.invoke('zapi-send-message', {
         body: {
           agentKey: 'exa_alert',
           phone: creator.telefone,
-          message: `📋 *Atualização de Tarefa*\n\n${actionDesc}\n\n📋 *"${task.titulo}"*\n👤 Respondido por: ${respondentName}`,
+          message: `📋 *Atualização de Tarefa*\n\n${actionDesc}\n\n📋 *"${task.titulo}"*\n👤 Respondido por: ${rName}`,
           skipSplit: true
         }
       });
+    };
+
+    // Helper: insert task_status_log
+    const logStatusChange = async (statusAnterior: string, statusNovo: string, motivo: string) => {
+      await supabase.from('task_status_log').insert({
+        task_id: task.id,
+        status_anterior: statusAnterior,
+        status_novo: statusNovo,
+        motivo,
+        alterado_por: respondentUser?.id || null,
+      });
+    };
+
+    // Helper: format date dd/mm/yyyy
+    const formatDateBR = (dateStr: string) => {
+      const [year, month, day] = dateStr.split('-');
+      return `${day}/${month}/${year}`;
     };
 
     // ========== HANDLE CONFIRMATION (SIM/NAO) ==========
@@ -152,9 +190,11 @@ serve(async (req) => {
         const action = activeNotif.pending_action;
 
         if (action === 'concluir') {
+          // M-01: Update task with concluida_por
           await supabase.from('tasks').update({
             status: 'concluida',
             data_conclusao: new Date().toISOString(),
+            concluida_por: respondentUser?.id || null,
           }).eq('id', task.id);
 
           await supabase.from('task_notification_queue').update({
@@ -162,13 +202,17 @@ serve(async (req) => {
             action: 'concluir',
             resposta_de: phone,
             resolved_at: new Date().toISOString(),
-            awaiting_confirmation: false
+            awaiting_confirmation: false,
+            locked_by: null,
+            locked_at: null,
           }).eq('id', activeNotif.id);
+
+          // M-01/M-07: Register in task_status_log
+          await logStatusChange(task.status || 'pendente', 'concluida', `Concluída via WhatsApp por ${respondentName}`);
 
           await sendReply(`✅ *Tarefa concluída!*\n\n"${task.titulo}" foi marcada como concluída com sucesso.`);
           await notifyCreatorOfAction('✅ Tarefa marcada como *concluída*.', phone);
 
-          // Notify all contacts
           const { data: contacts } = await supabase
             .from('exa_alerts_directors')
             .select('telefone')
@@ -190,22 +234,39 @@ serve(async (req) => {
 
         } else if (action === 'reagendar') {
           const newDate = activeNotif.nova_data;
+          const newHour = activeNotif.nova_hora;
           if (newDate) {
-            await supabase.from('tasks').update({
+            const updatePayload: any = {
               data_prevista: newDate,
               status: 'pendente'
-            }).eq('id', task.id);
+            };
+            if (newHour) {
+              updatePayload.horario_inicio = newHour;
+              updatePayload.horario_limite = newHour;
+            }
+            await supabase.from('tasks').update(updatePayload).eq('id', task.id);
+
+            // Reset fired_at on all task_reminders for this task
+            await supabase.from('task_reminders').update({ fired_at: null }).eq('task_id', task.id);
 
             await supabase.from('task_notification_queue').update({
               status: 'resolved',
               action: 'reagendar',
               resposta_de: phone,
               resolved_at: new Date().toISOString(),
-              awaiting_confirmation: false
+              awaiting_confirmation: false,
+              locked_by: null,
+              locked_at: null,
             }).eq('id', activeNotif.id);
 
-            await sendReply(`📅 *Tarefa reagendada!*\n\n"${task.titulo}" foi reagendada para ${newDate}.`);
-            await notifyCreatorOfAction(`📅 Tarefa *reagendada* para ${newDate}.`, phone);
+            const dateFormatted = formatDateBR(newDate);
+            const timeStr = newHour ? ` às ${newHour}` : '';
+
+            // M-07: Register in task_status_log
+            await logStatusChange(task.status || 'pendente', 'pendente', `Reagendado via WhatsApp para ${dateFormatted}${timeStr} por ${respondentName}`);
+
+            await sendReply(`📅 *Tarefa reagendada!*\n\n"${task.titulo}" foi reagendada para ${dateFormatted}${timeStr}.`);
+            await notifyCreatorOfAction(`📅 Tarefa *reagendada* para ${dateFormatted}${timeStr}.`, phone);
 
             const { data: contacts } = await supabase
               .from('exa_alerts_directors')
@@ -219,7 +280,7 @@ serve(async (req) => {
                   body: {
                     agentKey: 'exa_alert',
                     phone: c.telefone,
-                    message: `📅 A tarefa *"${task.titulo}"* foi *reagendada* para ${newDate}.`,
+                    message: `📅 A tarefa *"${task.titulo}"* foi *reagendada* para ${dateFormatted}${timeStr}.`,
                     skipSplit: true
                   }
                 });
@@ -239,13 +300,17 @@ serve(async (req) => {
             action: 'cancelar',
             resposta_de: phone,
             resolved_at: new Date().toISOString(),
-            awaiting_confirmation: false
+            awaiting_confirmation: false,
+            locked_by: null,
+            locked_at: null,
           }).eq('id', activeNotif.id);
+
+          // M-07: Register in task_status_log
+          await logStatusChange(task.status || 'pendente', 'cancelada', `Cancelado via WhatsApp por ${respondentName}. Motivo: ${justificativa}`);
 
           await sendReply(`❌ *Compromisso cancelado!*\n\n"${task.titulo}" foi cancelado.\nJustificativa enviada ao gestor.`);
           await notifyCreatorOfAction(`❌ Compromisso *cancelado*.\n📝 Justificativa: ${justificativa}`, phone);
 
-          // Send justification to CEO
           const { data: ceoUsers } = await supabase
             .from('users')
             .select('telefone')
@@ -258,7 +323,7 @@ serve(async (req) => {
                 body: {
                   agentKey: 'exa_alert',
                   phone: ceo.telefone,
-                  message: `⚠️ *Compromisso cancelado*\n\n📋 "${task.titulo}"\n📝 Justificativa: ${justificativa}\n👤 Cancelado por: ${phone}`,
+                  message: `⚠️ *Compromisso cancelado*\n\n📋 "${task.titulo}"\n📝 Justificativa: ${justificativa}\n👤 Cancelado por: ${respondentName}`,
                   skipSplit: true
                 }
               });
@@ -288,23 +353,26 @@ serve(async (req) => {
         // Log
         await supabase.from('agent_logs').insert({
           agent_key: 'exa_alert',
-          event_type: `task_${action}_confirmed`,
+          event_type: `task_${activeNotif.pending_action}_confirmed`,
           metadata: {
             task_id: task.id,
             titulo: task.titulo,
             confirmed_by: phone,
+            confirmed_by_name: respondentName,
             timestamp: new Date().toISOString()
           }
         });
 
-        return new Response(JSON.stringify({ handled: true, action, confirmed: true }), {
+        return new Response(JSON.stringify({ handled: true, action: activeNotif.pending_action, confirmed: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
 
       } else if (msgTrimmed === 'NAO' || msgTrimmed === 'NÃO' || msgTrimmed === 'N') {
         await supabase.from('task_notification_queue').update({
           awaiting_confirmation: false,
-          pending_action: null
+          pending_action: null,
+          locked_by: null,
+          locked_at: null,
         }).eq('id', activeNotif.id);
 
         await sendReply(`↩️ Ação cancelada. Responda:\n*1* - Concluir\n*2* - Reagendar\n*3* - Cancelar`);
@@ -315,7 +383,37 @@ serve(async (req) => {
       }
     }
 
-    // ========== HANDLE DATE INPUT (for reschedule) ==========
+    // ========== M-02: HANDLE TIME INPUT (for reschedule awaiting hour) ==========
+    if (activeNotif.pending_action === 'reagendar_aguardando_horario' && !activeNotif.awaiting_confirmation) {
+      const timeMatch = msgTrimmed.match(/^(\d{1,2}):(\d{2})$/);
+      if (timeMatch) {
+        const hour = parseInt(timeMatch[1], 10);
+        const minute = parseInt(timeMatch[2], 10);
+        if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+          const formattedTime = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+          const dateFormatted = activeNotif.nova_data ? formatDateBR(activeNotif.nova_data) : '';
+
+          await supabase.from('task_notification_queue').update({
+            nova_hora: formattedTime,
+            awaiting_confirmation: true,
+            pending_action: 'reagendar',
+          }).eq('id', activeNotif.id);
+
+          await sendReply(`📅 Confirma reagendar *"${task.titulo}"* para *${dateFormatted}* às *${formattedTime}*?\n\nResponda *SIM* para confirmar ou *NAO* para cancelar.`);
+
+          return new Response(JSON.stringify({ handled: true, action: 'time_received' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+      // Invalid time format
+      await sendReply(`⚠️ Horário inválido. Informe no formato *HH:MM* (ex: 14:30)`);
+      return new Response(JSON.stringify({ handled: true, action: 'invalid_time' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // ========== HANDLE DATE INPUT (for reschedule) — M-02 expanded ==========
     if (activeNotif.pending_action === 'reagendar' && !activeNotif.awaiting_confirmation) {
       const dateMatch = msgTrimmed.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
       if (dateMatch) {
@@ -326,10 +424,10 @@ serve(async (req) => {
 
         await supabase.from('task_notification_queue').update({
           nova_data: newDate,
-          awaiting_confirmation: true
+          pending_action: 'reagendar_aguardando_horario',
         }).eq('id', activeNotif.id);
 
-        await sendReply(`📅 Confirma reagendar *"${task.titulo}"* para *${day}/${month}/${year}*?\n\nResponda *SIM* para confirmar ou *NAO* para cancelar.`);
+        await sendReply(`📅 Data recebida: *${day}/${month}/${year}*.\n\nAgora informe o novo horário no formato *HH:MM* (ex: 14:30)`);
 
         return new Response(JSON.stringify({ handled: true, action: 'date_received' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -351,11 +449,13 @@ serve(async (req) => {
       });
     }
 
-    // ========== HANDLE MENU CHOICES (1, 2, 3) ==========
+    // ========== HANDLE MENU CHOICES (1, 2, 3) — with M-03 lock ==========
     if (msgTrimmed === '1') {
       await supabase.from('task_notification_queue').update({
         pending_action: 'concluir',
-        awaiting_confirmation: true
+        awaiting_confirmation: true,
+        locked_by: phone,
+        locked_at: new Date().toISOString(),
       }).eq('id', activeNotif.id);
 
       await sendReply(`Tem certeza que a tarefa *"${task.titulo}"* foi concluída?\n\nResponda *SIM* para confirmar.`);
@@ -367,7 +467,9 @@ serve(async (req) => {
 
     if (msgTrimmed === '2') {
       await supabase.from('task_notification_queue').update({
-        pending_action: 'reagendar'
+        pending_action: 'reagendar',
+        locked_by: phone,
+        locked_at: new Date().toISOString(),
       }).eq('id', activeNotif.id);
 
       await sendReply(`📅 Para qual data deseja reagendar *"${task.titulo}"*?\n\nResponda no formato: *dd/mm* (ex: 25/02)`);
@@ -379,7 +481,9 @@ serve(async (req) => {
 
     if (msgTrimmed === '3') {
       await supabase.from('task_notification_queue').update({
-        pending_action: 'cancelar'
+        pending_action: 'cancelar',
+        locked_by: phone,
+        locked_at: new Date().toISOString(),
       }).eq('id', activeNotif.id);
 
       await sendReply(`❌ Qual a justificativa para cancelar *"${task.titulo}"*?\n\n⚠️ A justificativa será enviada ao gestor.`);
