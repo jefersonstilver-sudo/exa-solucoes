@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { TaskRemindersPanel, TaskReminder, DEFAULT_REMINDERS } from './TaskRemindersPanel';
+import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -8,6 +9,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -188,6 +194,9 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   const [selectedReminderContacts, setSelectedReminderContacts] = useState<string[]>([]);
   const { activeEventTypes, getEventTypeConfig } = useEventTypes();
   const { userProfile } = useAuth();
+  const { isMobile } = useAdvancedResponsive();
+  const [confirmacaoOpen, setConfirmacaoOpen] = useState(false);
+  const [contatosOpen, setContatosOpen] = useState(false);
 
   // Notification contacts selection
   const [selectedNotifyContacts, setSelectedNotifyContacts] = useState<string[]>([]);
@@ -852,17 +861,10 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
     return 'Enviado';
   };
 
-  return (
+  const modalContent = (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[1100px] max-h-[95vh] overflow-hidden p-0 gap-0">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Editar Evento</DialogTitle>
-            <p>Edite os dados do evento, incluindo tipo, data, horário, prioridade e notificações.</p>
-          </DialogHeader>
-
-          {/* ── Visual Header ── */}
-          <div className="relative px-6 pt-5 pb-4 border-b bg-muted/30">
+      {/* ── Visual Header (sticky) ── */}
+      <div className="sticky top-0 z-10 relative px-6 pt-5 pb-4 border-b bg-muted/30">
             <div className="flex items-start gap-4">
               <div className="text-3xl flex-shrink-0 mt-0.5">
                 {eventConfig.icon}
@@ -897,7 +899,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
           </div>
 
           {/* ── Two-column body ── */}
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto max-h-[calc(92vh-180px)]">
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto max-h-[calc(92dvh-180px)]">
             <div className="grid grid-cols-1 md:grid-cols-[1fr_400px] divide-y md:divide-y-0 md:divide-x">
               
               {/* ── LEFT: Form Fields ── */}
@@ -1113,18 +1115,16 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                 />
 
                 <div className="border-t" />
-                {/* Monitor de Confirmações */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                {/* Monitor de Confirmações — Collapsible */}
+                <Collapsible open={confirmacaoOpen} onOpenChange={setConfirmacaoOpen}>
+                <CollapsibleTrigger className="flex items-center justify-between w-full py-1 cursor-pointer group">
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                      <Bell className="h-3.5 w-3.5" /> Notificações
+                      <Bell className="h-3.5 w-3.5" /> Confirmações {totalReceipts > 0 && `(${confirmedCount}/${totalReceipts})`}
                     </h3>
-                    {totalReceipts > 0 && (
-                      <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                        {confirmedCount}/{totalReceipts} confirmaram
-                      </span>
-                    )}
-                  </div>
+                    <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", confirmacaoOpen && "rotate-180")} />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                <div className="space-y-3 pt-2">
 
                   {totalReceipts === 0 ? (
                     <div className="text-center py-6 bg-background rounded-lg border border-dashed">
@@ -1373,6 +1373,8 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                     Atualiza automaticamente a cada 5s
                   </p>
                 </div>
+                </CollapsibleContent>
+                </Collapsible>
 
                 {/* Separador */}
                 <div className="border-t" />
@@ -1398,9 +1400,16 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                   </div>
                 </div>
 
-                {/* Seleção de contatos para notificar */}
-                <div className="space-y-2">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Contatos WhatsApp</p>
+                {/* Seleção de contatos para notificar — Collapsible */}
+                <Collapsible open={contatosOpen} onOpenChange={setContatosOpen}>
+                <CollapsibleTrigger className="flex items-center justify-between w-full py-1 cursor-pointer group">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                      <Users className="h-3 w-3" /> Contatos WhatsApp {selectedNotifyContacts.length > 0 && `(${selectedNotifyContacts.length})`}
+                    </p>
+                    <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", contatosOpen && "rotate-180")} />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                <div className="space-y-2 pt-2">
                   {allSelectableContacts.length === 0 ? (
                     <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">Nenhum contato com telefone</p>
                   ) : (
@@ -1562,6 +1571,8 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                     <Users className="h-3 w-3" /> Gerenciar Contatos
                   </Button>
                 </div>
+                </CollapsibleContent>
+                </Collapsible>
               </div>
             </div>
 
@@ -1581,8 +1592,31 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
               </div>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
+    </>
+  );
+
+  return (
+    <>
+      {isMobile ? (
+        <Drawer open={open} onOpenChange={onOpenChange}>
+          <DrawerContent className="max-h-[92dvh] p-0 overflow-y-auto">
+            <DrawerTitle className="sr-only">Editar Evento</DrawerTitle>
+            {modalContent}
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="sm:max-w-[1100px] max-h-[95dvh] overflow-hidden p-0 gap-0">
+            <DialogHeader className="sr-only">
+              <DialogTitle>Editar Evento</DialogTitle>
+              <p>Edite os dados do evento</p>
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-[95dvh]">
+              {modalContent}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

@@ -28,10 +28,10 @@ interface TaskRemindersPanelProps {
 }
 
 const UNIDADE_LABELS: Record<string, string> = {
-  minutos: 'minutos antes',
-  horas: 'horas antes',
+  minutos: 'min antes',
+  horas: 'h antes',
   dias: 'dias antes',
-  semanas: 'semanas antes',
+  semanas: 'sem antes',
 };
 
 const TIPO_LABELS: Record<string, string> = {
@@ -118,7 +118,7 @@ export const TaskRemindersPanel = ({
                 value={reminder.tipo}
                 onValueChange={(v) => updateReminder(reminder.id, 'tipo', v)}
               >
-                <SelectTrigger className="h-8 w-[110px] text-xs border-0 bg-muted/50">
+                <SelectTrigger className="h-8 w-[100px] text-xs border-0 bg-muted/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -143,7 +143,7 @@ export const TaskRemindersPanel = ({
                 value={reminder.unidade}
                 onValueChange={(v) => updateReminder(reminder.id, 'unidade', v)}
               >
-                <SelectTrigger className="h-8 flex-1 min-w-[100px] text-xs border-0 bg-muted/50">
+                <SelectTrigger className="h-8 w-[90px] text-xs border-0 bg-muted/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
