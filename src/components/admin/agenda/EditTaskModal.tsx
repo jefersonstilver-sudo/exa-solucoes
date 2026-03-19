@@ -48,7 +48,8 @@ import {
   FileText,
   Send,
   Check,
-  RefreshCw
+  RefreshCw,
+  History
 } from 'lucide-react';
 import { useEventTypes } from '@/hooks/agenda/useEventTypes';
 import EventTypeManagerModal from './EventTypeManagerModal';
