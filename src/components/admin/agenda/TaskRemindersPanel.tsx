@@ -107,10 +107,11 @@ export const TaskRemindersPanel = ({
               )}
             >
               {/* Toggle */}
-              <AppleSwitch
+              <ToggleExa
                 size="sm"
                 checked={reminder.ativo}
-                onCheckedChange={(checked) => updateReminder(reminder.id, 'ativo', checked)}
+                onChange={(checked) => updateReminder(reminder.id, 'ativo', checked)}
+                color="red"
               />
 
               {/* Tipo */}

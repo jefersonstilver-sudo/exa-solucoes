@@ -190,11 +190,11 @@ const AgendaNotificationSettingsModal = ({ open, onOpenChange }: Props) => {
                     {section.description}
                   </p>
                 </div>
-                <AppleSwitch
+                <ToggleExa
                   checked={isActive}
-                  onCheckedChange={(checked) => handleToggle(section.key, checked)}
+                  onChange={(checked) => handleToggle(section.key, checked)}
                   disabled={isSaving}
-                  size="md"
+                  color="red"
                 />
               </div>
 

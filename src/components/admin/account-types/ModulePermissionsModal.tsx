@@ -456,10 +456,11 @@ export default function ModulePermissionsModal({ role, onClose }: ModulePermissi
                                       Ativo
                                     </Badge>
                                   ) : (
-                                    <AppleSwitch
+                                    <ToggleExa
                                       checked={isEnabled}
-                                      onCheckedChange={() => toggleModule(module.key)}
+                                      onChange={() => toggleModule(module.key)}
                                       size="sm"
+                                      color="red"
                                     />
                                   )}
                                 </div>

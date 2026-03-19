@@ -461,11 +461,11 @@ const AdvertiserSettings = () => {
                 )}
               </div>
               <div className="flex-shrink-0 pt-1">
-                <AppleSwitch
+                <ToggleExa
                   checked={twoFactorEnabled}
                   disabled={!phoneVerified}
-                  size="lg"
-                  onCheckedChange={async (checked) => {
+                  color="red"
+                  onChange={async (checked) => {
                     if (!phoneVerified) {
                       toast.error('Verifique seu WhatsApp antes de ativar o 2FA');
                       return;
