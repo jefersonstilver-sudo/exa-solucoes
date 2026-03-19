@@ -1268,6 +1268,14 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
         />
       </div>
 
+      {/* Lembretes de Notificação */}
+      <div className="border rounded-lg p-4 bg-muted/20">
+        <TaskRemindersPanel
+          reminders={taskReminders}
+          onChange={setTaskReminders}
+        />
+      </div>
+
       {/* Notificações WhatsApp */}
       <Collapsible open={whatsappNotifOpen} onOpenChange={setWhatsappNotifOpen}>
         <CollapsibleTrigger asChild>
