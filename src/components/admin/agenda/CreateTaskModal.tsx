@@ -159,6 +159,11 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   const [eventTypeManagerOpen, setEventTypeManagerOpen] = useState(false);
 
   // Building state
+  
+  // Reminders state — start with defaults
+  const [taskReminders, setTaskReminders] = useState<TaskReminder[]>(
+    DEFAULT_REMINDERS.map(r => ({ ...r, id: crypto.randomUUID() }))
+  );
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
 
   // WhatsApp notification state
