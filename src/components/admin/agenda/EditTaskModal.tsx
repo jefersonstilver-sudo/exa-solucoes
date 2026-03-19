@@ -1107,7 +1107,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                   onChange={setTaskReminders}
                 />
 
-                <div className="border-t" />
+                <div className="border-t border-border/40" />
                 {/* Monitor de Confirmações — Collapsible */}
                 <Collapsible open={confirmacaoOpen} onOpenChange={setConfirmacaoOpen}>
                 <CollapsibleTrigger className="flex items-center justify-between w-full py-1 cursor-pointer group">
