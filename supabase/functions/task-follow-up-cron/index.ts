@@ -43,9 +43,7 @@ serve(async (req) => {
     const followupDelay = followupMinutes * 60 * 1000;
     const thirtyMinAgo = new Date(now.getTime() - 30 * 60 * 1000);
 
-    // ========== PHASE 1: Send to creator (1h after task time) ==========
-    // Find tasks that are pending/em_andamento, have auto_followup enabled,
-    // and their scheduled time was 1+ hour ago, with no active notification queue entry
+    // ========== PHASE 1: Send to creator (X min after task time) ==========
     const { data: dueTasks, error: dueError } = await supabase
       .from('tasks')
       .select('id, titulo, data_prevista, horario_limite, horario_inicio, criada_por, auto_followup')
@@ -59,16 +57,25 @@ serve(async (req) => {
     }
 
     let sentToCreator = 0;
+    let sentToResponsaveis = 0;
     let escalated = 0;
+
+    const buildFollowUpMessage = (task: any, taskTime: string) => {
+      return `📋 *Follow-up de Tarefa*\n\n` +
+        `A tarefa *"${task.titulo}"* agendada para ${task.data_prevista} às ${taskTime} foi concluída?\n\n` +
+        `Responda:\n` +
+        `*1* - ✅ Concluir tarefa\n` +
+        `*2* - 📅 Reagendar\n` +
+        `*3* - ❌ Cancelar compromisso`;
+    };
 
     if (dueTasks && dueTasks.length > 0) {
       for (const task of dueTasks) {
-        // Calculate task datetime
         const taskDate = task.data_prevista;
         const taskTime = task.horario_limite || task.horario_inicio || '23:59';
-        const taskDateTime = new Date(`${taskDate}T${taskTime}:00-03:00`); // BRT
+        const taskDateTime = new Date(`${taskDate}T${taskTime}:00-03:00`);
 
-        // Skip if task time + 1h hasn't passed yet
+        // Skip if task time + followupDelay hasn't passed yet
         if (taskDateTime.getTime() + followupDelay > now.getTime()) continue;
 
         // Check if already has active notification
@@ -79,10 +86,7 @@ serve(async (req) => {
           .neq('status', 'resolved')
           .maybeSingle();
 
-        if (existingNotif) {
-          // Already has notification, skip phase 1
-          continue;
-        }
+        if (existingNotif) continue; // Already has notification, skip
 
         // Get creator's phone
         const { data: creator } = await supabase
@@ -96,12 +100,7 @@ serve(async (req) => {
           continue;
         }
 
-        const message = `📋 *Follow-up de Tarefa*\n\n` +
-          `A tarefa *"${task.titulo}"* agendada para ${taskDate} às ${taskTime} foi concluída?\n\n` +
-          `Responda:\n` +
-          `*1* - ✅ Concluir tarefa\n` +
-          `*2* - 📅 Reagendar\n` +
-          `*3* - ❌ Cancelar compromisso`;
+        const message = buildFollowUpMessage(task, taskTime);
 
         try {
           const { error: sendError } = await supabase.functions.invoke('zapi-send-message', {
@@ -123,10 +122,56 @@ serve(async (req) => {
             });
 
             sentToCreator++;
-            console.log(`[TASK-FOLLOWUP] ✅ Sent follow-up to creator for: ${task.titulo}`);
+            console.log(`[TASK-FOLLOWUP] ✅ Phase 1: Sent follow-up to creator for: ${task.titulo}`);
           }
         } catch (err) {
           console.error(`[TASK-FOLLOWUP] ❌ Failed to send for: ${task.titulo}`, err);
+        }
+
+        // ========== PHASE 1.5: Send to task_responsaveis ==========
+        try {
+          const { data: responsaveis } = await supabase
+            .from('task_responsaveis')
+            .select('user_id')
+            .eq('task_id', task.id);
+
+          if (responsaveis && responsaveis.length > 0) {
+            // Get user phones, excluding the creator
+            const responsavelIds = responsaveis
+              .map(r => r.user_id)
+              .filter(uid => uid !== task.criada_por);
+
+            if (responsavelIds.length > 0) {
+              const { data: responsavelUsers } = await supabase
+                .from('users')
+                .select('id, telefone, nome')
+                .in('id', responsavelIds);
+
+              for (const user of responsavelUsers || []) {
+                if (!user.telefone) continue;
+
+                try {
+                  const { error: sendErr } = await supabase.functions.invoke('zapi-send-message', {
+                    body: {
+                      agentKey: 'exa_alert',
+                      phone: user.telefone,
+                      message,
+                      skipSplit: true
+                    }
+                  });
+
+                  if (!sendErr) {
+                    sentToResponsaveis++;
+                    console.log(`[TASK-FOLLOWUP] ✅ Phase 1.5: Sent to responsável ${user.nome} for: ${task.titulo}`);
+                  }
+                } catch (sendErr) {
+                  console.error(`[TASK-FOLLOWUP] ❌ Phase 1.5 error for ${user.nome}:`, sendErr);
+                }
+              }
+            }
+          }
+        } catch (respErr) {
+          console.error(`[TASK-FOLLOWUP] ❌ Phase 1.5 error fetching responsáveis:`, respErr);
         }
       }
     }
@@ -134,19 +179,17 @@ serve(async (req) => {
     // ========== PHASE 2: Escalate (30min without response) ==========
     const { data: staleNotifs } = await supabase
       .from('task_notification_queue')
-      .select('id, task_id, criado_por, sent_at')
-      .eq('status', 'sent_to_creator')
+      .select('id, task_id, criado_por, sent_at, status')
+      .in('status', ['sent_to_creator'])
       .lt('sent_at', thirtyMinAgo.toISOString());
 
     if (staleNotifs && staleNotifs.length > 0) {
-      // Get alert contacts
       const { data: contacts } = await supabase
         .from('exa_alerts_directors')
         .select('id, nome, telefone')
         .eq('ativo', true);
 
       for (const notif of staleNotifs) {
-        // Get task info
         const { data: task } = await supabase
           .from('tasks')
           .select('titulo, data_prevista, horario_limite, horario_inicio')
@@ -163,7 +206,6 @@ serve(async (req) => {
           `*2* - 📅 Reagendar\n` +
           `*3* - ❌ Cancelar compromisso`;
 
-        // Get creator's phone to exclude
         const { data: creator } = await supabase
           .from('users')
           .select('telefone')
@@ -175,7 +217,6 @@ serve(async (req) => {
         if (contacts) {
           for (const contact of contacts) {
             if (!contact.telefone) continue;
-            // Skip creator
             if (creatorPhone && contact.telefone.replace(/\D/g, '').includes(creatorPhone.slice(-8))) continue;
 
             try {
@@ -193,7 +234,6 @@ serve(async (req) => {
           }
         }
 
-        // Update status
         await supabase
           .from('task_notification_queue')
           .update({ status: 'escalated', escalated_at: now.toISOString() })
@@ -210,17 +250,19 @@ serve(async (req) => {
       event_type: 'task_followup_cron',
       metadata: {
         sent_to_creator: sentToCreator,
+        sent_to_responsaveis: sentToResponsaveis,
         escalated,
         tasks_checked: dueTasks?.length || 0,
         timestamp: now.toISOString()
       }
     });
 
-    console.log(`[TASK-FOLLOWUP] ✅ Done: ${sentToCreator} sent, ${escalated} escalated`);
+    console.log(`[TASK-FOLLOWUP] ✅ Done: ${sentToCreator} to creator, ${sentToResponsaveis} to responsáveis, ${escalated} escalated`);
 
     return new Response(JSON.stringify({
       success: true,
       sentToCreator,
+      sentToResponsaveis,
       escalated
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

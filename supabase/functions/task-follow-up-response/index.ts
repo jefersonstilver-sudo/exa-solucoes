@@ -30,7 +30,7 @@ serve(async (req) => {
     console.log(`[TASK-RESPONSE] 📥 From ${phone}: "${msgTrimmed}"`);
 
     // Find active notification for this phone
-    // First check by creator phone, then by escalation contacts
+    // 1. Check by creator phone
     const { data: creatorUser } = await supabase
       .from('users')
       .select('id, telefone')
@@ -52,7 +52,29 @@ serve(async (req) => {
       if (notif) activeNotif = notif;
     }
 
-    // Also check escalation contacts
+    // 2. Check by responsável — if this user is a responsável for a task with active notification
+    if (!activeNotif && creatorUser) {
+      const { data: responsavelTasks } = await supabase
+        .from('task_responsaveis')
+        .select('task_id')
+        .eq('user_id', creatorUser.id);
+
+      if (responsavelTasks && responsavelTasks.length > 0) {
+        const taskIds = responsavelTasks.map(r => r.task_id);
+        const { data: notif } = await supabase
+          .from('task_notification_queue')
+          .select('*')
+          .in('task_id', taskIds)
+          .in('status', ['sent_to_creator', 'escalated'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (notif) activeNotif = notif;
+      }
+    }
+
+    // 3. Fallback: check escalation contacts (any active notification)
     if (!activeNotif) {
       const { data: notifs } = await supabase
         .from('task_notification_queue')
@@ -75,7 +97,7 @@ serve(async (req) => {
     // Get task info
     const { data: task } = await supabase
       .from('tasks')
-      .select('id, titulo, data_prevista')
+      .select('id, titulo, data_prevista, criada_por')
       .eq('id', activeNotif.task_id)
       .single();
 
@@ -91,13 +113,45 @@ serve(async (req) => {
       });
     };
 
+    // Helper: notify creator when a responsável takes action
+    const notifyCreatorOfAction = async (actionDesc: string, respondentPhone: string) => {
+      // Only notify if the responder is not the creator
+      if (!task.criada_por) return;
+      const { data: creator } = await supabase
+        .from('users')
+        .select('telefone, nome')
+        .eq('id', task.criada_por)
+        .single();
+      
+      if (!creator?.telefone) return;
+      const creatorPhoneClean = creator.telefone.replace(/\D/g, '');
+      const respondentClean = respondentPhone.replace(/\D/g, '');
+      if (creatorPhoneClean.includes(respondentClean.slice(-8))) return; // same person
+
+      // Find respondent name
+      const { data: respondent } = await supabase
+        .from('users')
+        .select('nome')
+        .ilike('telefone', `%${respondentPhone.slice(-8)}%`)
+        .maybeSingle();
+      const respondentName = respondent?.nome || respondentPhone;
+
+      await supabase.functions.invoke('zapi-send-message', {
+        body: {
+          agentKey: 'exa_alert',
+          phone: creator.telefone,
+          message: `📋 *Atualização de Tarefa*\n\n${actionDesc}\n\n📋 *"${task.titulo}"*\n👤 Respondido por: ${respondentName}`,
+          skipSplit: true
+        }
+      });
+    };
+
     // ========== HANDLE CONFIRMATION (SIM/NAO) ==========
     if (activeNotif.awaiting_confirmation) {
       if (msgTrimmed === 'SIM' || msgTrimmed === 'S') {
         const action = activeNotif.pending_action;
 
         if (action === 'concluir') {
-          // Mark task as completed
           await supabase.from('tasks').update({
             status: 'concluida',
             data_conclusao: new Date().toISOString(),
@@ -112,6 +166,7 @@ serve(async (req) => {
           }).eq('id', activeNotif.id);
 
           await sendReply(`✅ *Tarefa concluída!*\n\n"${task.titulo}" foi marcada como concluída com sucesso.`);
+          await notifyCreatorOfAction('✅ Tarefa marcada como *concluída*.', phone);
 
           // Notify all contacts
           const { data: contacts } = await supabase
@@ -150,8 +205,8 @@ serve(async (req) => {
             }).eq('id', activeNotif.id);
 
             await sendReply(`📅 *Tarefa reagendada!*\n\n"${task.titulo}" foi reagendada para ${newDate}.`);
+            await notifyCreatorOfAction(`📅 Tarefa *reagendada* para ${newDate}.`, phone);
 
-            // Notify all contacts
             const { data: contacts } = await supabase
               .from('exa_alerts_directors')
               .select('telefone')
@@ -188,6 +243,7 @@ serve(async (req) => {
           }).eq('id', activeNotif.id);
 
           await sendReply(`❌ *Compromisso cancelado!*\n\n"${task.titulo}" foi cancelado.\nJustificativa enviada ao gestor.`);
+          await notifyCreatorOfAction(`❌ Compromisso *cancelado*.\n📝 Justificativa: ${justificativa}`, phone);
 
           // Send justification to CEO
           const { data: ceoUsers } = await supabase
@@ -209,7 +265,6 @@ serve(async (req) => {
             }
           }
 
-          // Notify all contacts
           const { data: contacts } = await supabase
             .from('exa_alerts_directors')
             .select('telefone')
@@ -247,7 +302,6 @@ serve(async (req) => {
         });
 
       } else if (msgTrimmed === 'NAO' || msgTrimmed === 'NÃO' || msgTrimmed === 'N') {
-        // Cancel the pending action
         await supabase.from('task_notification_queue').update({
           awaiting_confirmation: false,
           pending_action: null
@@ -263,7 +317,6 @@ serve(async (req) => {
 
     // ========== HANDLE DATE INPUT (for reschedule) ==========
     if (activeNotif.pending_action === 'reagendar' && !activeNotif.awaiting_confirmation) {
-      // Try to parse date dd/mm
       const dateMatch = msgTrimmed.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
       if (dateMatch) {
         const day = dateMatch[1].padStart(2, '0');
@@ -286,7 +339,6 @@ serve(async (req) => {
 
     // ========== HANDLE JUSTIFICATION (for cancel) ==========
     if (activeNotif.pending_action === 'cancelar' && !activeNotif.awaiting_confirmation) {
-      // Any text is the justification
       await supabase.from('task_notification_queue').update({
         justificativa: message.trim(),
         awaiting_confirmation: true
