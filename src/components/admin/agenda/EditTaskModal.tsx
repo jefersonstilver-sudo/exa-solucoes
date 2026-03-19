@@ -1395,6 +1395,24 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                   </div>
                 </div>
 
+                {/* Separador */}
+                <div className="border-t border-border/40" />
+
+                {/* M-06: Seção Histórico — Collapsible */}
+                {task?.id && (
+                  <Collapsible>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full py-1 cursor-pointer group">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                        <History className="h-3 w-3" /> Histórico
+                      </p>
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-2">
+                      <TaskStatusHistory taskId={task.id} />
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+
                 {/* Seleção de contatos para notificar — Collapsible */}
                 <Collapsible open={contatosOpen} onOpenChange={setContatosOpen}>
                 <CollapsibleTrigger className="flex items-center justify-between w-full py-1 cursor-pointer group">
