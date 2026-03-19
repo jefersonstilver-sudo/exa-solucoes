@@ -1106,6 +1106,13 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
 
               {/* ── RIGHT: Notifications & Actions ── */}
               <div className="p-5 space-y-5 bg-muted/20">
+                {/* Lembretes por tarefa */}
+                <TaskRemindersPanel
+                  reminders={taskReminders}
+                  onChange={setTaskReminders}
+                />
+
+                <div className="border-t" />
                 {/* Monitor de Confirmações */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
