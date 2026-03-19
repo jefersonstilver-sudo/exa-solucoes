@@ -55,6 +55,7 @@ import { useEventTypes } from '@/hooks/agenda/useEventTypes';
 import EventTypeManagerModal from './EventTypeManagerModal';
 import BuildingSelector from './BuildingSelector';
 import ManageAlertContactsModal from './ManageAlertContactsModal';
+import { TaskStatusHistory } from '@/pages/admin/tarefas/components/TaskStatusHistory';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
