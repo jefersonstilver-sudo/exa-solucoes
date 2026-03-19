@@ -371,10 +371,11 @@ export const ComputerDetailModal = ({
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="alerts-enabled" className="text-sm text-module-primary">Alertas Automáticos</Label>
-                  <ToggleExa
+                  <Toggle
                     checked={alertConfig.alerts_enabled}
-                    onChange={(checked) => setAlertConfig({ ...alertConfig, alerts_enabled: checked })}
+                    onChange={(e) => setAlertConfig({ ...alertConfig, alerts_enabled: e.target.checked })}
                     color="red"
+                    size="large"
                   />
                 </div>
                 <div>

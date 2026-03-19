@@ -1389,7 +1389,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                       <Clock className="h-3.5 w-3.5 text-blue-500" />
                       Follow-up automático
                     </Label>
-                    <ToggleExa checked={autoFollowup} onChange={setAutoFollowup} color="red" size="sm" />
+                    <Toggle checked={autoFollowup} onChange={(e) => setAutoFollowup(e.target.checked)} color="red" size="large" />
                   </div>
                 </div>
 

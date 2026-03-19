@@ -456,10 +456,10 @@ export default function ModulePermissionsModal({ role, onClose }: ModulePermissi
                                       Ativo
                                     </Badge>
                                   ) : (
-                                    <ToggleExa
+                                    <Toggle
                                       checked={isEnabled}
                                       onChange={() => toggleModule(module.key)}
-                                      size="sm"
+                                      size="small"
                                       color="red"
                                     />
                                   )}

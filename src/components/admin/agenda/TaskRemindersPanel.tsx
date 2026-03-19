@@ -103,10 +103,10 @@ export const TaskRemindersPanel = ({
               )}
             >
               {/* Toggle */}
-              <ToggleExa
-                size="sm"
+              <Toggle
+                size="small"
                 checked={reminder.ativo}
-                onChange={(checked) => updateReminder(reminder.id, 'ativo', checked)}
+                onChange={(e) => updateReminder(reminder.id, 'ativo', e.target.checked)}
                 color="red"
               />
 
