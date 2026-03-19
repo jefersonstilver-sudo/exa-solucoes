@@ -194,6 +194,9 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   const [selectedReminderContacts, setSelectedReminderContacts] = useState<string[]>([]);
   const { activeEventTypes, getEventTypeConfig } = useEventTypes();
   const { userProfile } = useAuth();
+  const { isMobile } = useAdvancedResponsive();
+  const [confirmacaoOpen, setConfirmacaoOpen] = useState(false);
+  const [contatosOpen, setContatosOpen] = useState(false);
 
   // Notification contacts selection
   const [selectedNotifyContacts, setSelectedNotifyContacts] = useState<string[]>([]);
