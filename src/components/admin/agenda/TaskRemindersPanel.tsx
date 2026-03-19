@@ -28,10 +28,10 @@ interface TaskRemindersPanelProps {
 }
 
 const UNIDADE_LABELS: Record<string, string> = {
-  minutos: 'minutos antes',
-  horas: 'horas antes',
+  minutos: 'min antes',
+  horas: 'h antes',
   dias: 'dias antes',
-  semanas: 'semanas antes',
+  semanas: 'sem antes',
 };
 
 const TIPO_LABELS: Record<string, string> = {
