@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ToggleExa } from "@/components/ui/toggle-exa";
+import { Toggle } from "@/components/ui/toggle";
 import { cn } from "@/lib/utils";
 import { useRealTimeCounter } from "../../hooks/useRealTimeCounter";
 import { useDeviceIncidents } from "../../hooks/useDeviceIncidents";
