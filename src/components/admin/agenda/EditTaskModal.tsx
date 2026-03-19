@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { TaskRemindersPanel, TaskReminder, DEFAULT_REMINDERS } from './TaskRemindersPanel';
+import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
