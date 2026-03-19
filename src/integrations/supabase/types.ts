@@ -12725,7 +12725,10 @@ export type Database = {
           escalated_at: string | null
           id: string
           justificativa: string | null
+          locked_at: string | null
+          locked_by: string | null
           nova_data: string | null
+          nova_hora: string | null
           pending_action: string | null
           resolved_at: string | null
           resposta_de: string | null
@@ -12741,7 +12744,10 @@ export type Database = {
           escalated_at?: string | null
           id?: string
           justificativa?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
           nova_data?: string | null
+          nova_hora?: string | null
           pending_action?: string | null
           resolved_at?: string | null
           resposta_de?: string | null
@@ -12757,7 +12763,10 @@ export type Database = {
           escalated_at?: string | null
           id?: string
           justificativa?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
           nova_data?: string | null
+          nova_hora?: string | null
           pending_action?: string | null
           resolved_at?: string | null
           resposta_de?: string | null
