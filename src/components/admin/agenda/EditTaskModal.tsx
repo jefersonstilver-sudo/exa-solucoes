@@ -1400,9 +1400,16 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                   </div>
                 </div>
 
-                {/* Seleção de contatos para notificar */}
-                <div className="space-y-2">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Contatos WhatsApp</p>
+                {/* Seleção de contatos para notificar — Collapsible */}
+                <Collapsible open={contatosOpen} onOpenChange={setContatosOpen}>
+                <CollapsibleTrigger className="flex items-center justify-between w-full py-1 cursor-pointer group">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                      <Users className="h-3 w-3" /> Contatos WhatsApp {selectedNotifyContacts.length > 0 && `(${selectedNotifyContacts.length})`}
+                    </p>
+                    <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", contatosOpen && "rotate-180")} />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                <div className="space-y-2 pt-2">
                   {allSelectableContacts.length === 0 ? (
                     <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">Nenhum contato com telefone</p>
                   ) : (
