@@ -6,6 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const UNIDADE_TO_MINUTES: Record<string, number> = {
+  minutos: 1,
+  horas: 60,
+  dias: 1440,
+  semanas: 10080,
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -27,27 +34,7 @@ serve(async (req) => {
 
     console.log(`[task-reminder] Running at ${currentDate} ${currentHours}:${currentMinutes.toString().padStart(2, '0')} BRT`);
 
-    // Read dynamic config
-    const { data: configRow } = await supabase
-      .from('exa_alerts_config')
-      .select('config_value')
-      .eq('config_key', 'agenda_lembrete_pre_evento')
-      .maybeSingle();
-
-    const config = configRow?.config_value
-      ? (typeof configRow.config_value === 'string' ? JSON.parse(configRow.config_value) : configRow.config_value)
-      : { ativo: true, minutos_antes: 60 };
-
-    if (!config.ativo) {
-      console.log('[task-reminder] Disabled by config');
-      return new Response(JSON.stringify({ success: true, skipped: true, reason: 'disabled' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const minutesBefore = config.minutos_antes || 60;
-
-    // Fetch today's tasks from `tasks` table (NOT notion_tasks)
+    // Fetch today's pending tasks with horario_inicio
     const { data: tasks, error: tasksError } = await supabase
       .from('tasks')
       .select('id, titulo, data_prevista, horario_inicio, horario_limite, tipo_evento, status, prioridade, descricao, local_evento, link_reuniao')
@@ -70,6 +57,14 @@ serve(async (req) => {
 
     console.log(`[task-reminder] Found ${tasks.length} tasks to check`);
 
+    // Also check future-date tasks that have reminders in days/weeks range
+    const { data: futureReminders } = await supabase
+      .from('task_reminders')
+      .select('id, task_id, tipo, unidade, valor, ativo, fired_at')
+      .eq('ativo', true)
+      .is('fired_at', null)
+      .in('unidade', ['dias', 'semanas']);
+
     // Get event_types for icons
     const { data: eventTypes } = await supabase
       .from('event_types')
@@ -79,109 +74,182 @@ serve(async (req) => {
       typeMap[et.value] = { icon: et.icon || '📋', label: et.label };
     }
 
-    // Get alert contacts
+    // Get alert contacts (fallback)
     const { data: alertContacts } = await supabase
       .from('exa_alerts_directors')
       .select('id, nome, telefone')
       .eq('ativo', true);
 
+    // Read global config as fallback
+    const { data: configRow } = await supabase
+      .from('exa_alerts_config')
+      .select('config_value')
+      .eq('config_key', 'agenda_lembrete_pre_evento')
+      .maybeSingle();
+
+    const globalConfig = configRow?.config_value
+      ? (typeof configRow.config_value === 'string' ? JSON.parse(configRow.config_value) : configRow.config_value)
+      : { ativo: true, minutos_antes: 60 };
+
+    const globalMinutesBefore = globalConfig.minutos_antes || 60;
+
     let alertsSent = 0;
     const processedAlerts: any[] = [];
 
-    for (const task of tasks) {
-      const [taskH, taskM] = (task.horario_inicio || '00:00').split(':').map(Number);
-      const taskTotalMinutes = taskH * 60 + taskM;
-      const minutesUntilTask = taskTotalMinutes - currentTotalMinutes;
+    // Collect all task IDs to batch-fetch their reminders
+    const taskIds = tasks.map(t => t.id);
+    const { data: allReminders } = await supabase
+      .from('task_reminders')
+      .select('id, task_id, tipo, unidade, valor, ativo, fired_at')
+      .in('task_id', taskIds)
+      .eq('ativo', true)
+      .is('fired_at', null);
 
-      // Check if it's time for the reminder (exact minute match)
-      if (minutesUntilTask !== minutesBefore) continue;
+    // Group reminders by task_id
+    const remindersByTask: Record<string, any[]> = {};
+    for (const r of allReminders || []) {
+      if (!remindersByTask[r.task_id]) remindersByTask[r.task_id] = [];
+      remindersByTask[r.task_id].push(r);
+    }
 
-      console.log(`[task-reminder] Task "${task.titulo}" is ${minutesBefore} min away — sending reminder`);
-
-      // Check duplicate
-      const { data: existingAlert } = await supabase
-        .from('task_alert_logs')
-        .select('id')
-        .eq('task_id', task.id)
-        .eq('alert_type', `lembrete_${minutesBefore}min`)
-        .gte('sent_at', new Date(now.getTime() - 120000).toISOString())
-        .maybeSingle();
-
-      if (existingAlert) {
-        console.log(`[task-reminder] Already sent for "${task.titulo}"`);
-        continue;
+    // Also handle future-date tasks with days/weeks reminders
+    const futureTaskIds = new Set<string>();
+    for (const r of futureReminders || []) {
+      if (!taskIds.includes(r.task_id)) {
+        futureTaskIds.add(r.task_id);
       }
+    }
 
-      // Get task-specific recipients (from task_read_receipts or responsaveis)
-      const { data: receipts } = await supabase
-        .from('task_read_receipts')
-        .select('recipient_phone, recipient_name')
-        .eq('task_id', task.id);
+    let futureTasks: any[] = [];
+    if (futureTaskIds.size > 0) {
+      const { data: ft } = await supabase
+        .from('tasks')
+        .select('id, titulo, data_prevista, horario_inicio, horario_limite, tipo_evento, status, prioridade, descricao, local_evento, link_reuniao')
+        .in('id', Array.from(futureTaskIds))
+        .not('horario_inicio', 'is', null)
+        .in('status', ['pendente', 'em_andamento']);
+      futureTasks = ft || [];
 
-      // Build recipients list: receipts first, fallback to alert contacts
-      let recipients: { nome: string; telefone: string }[] = [];
-      if (receipts && receipts.length > 0) {
-        recipients = receipts
-          .filter(r => r.recipient_phone)
-          .map(r => ({ nome: r.recipient_name || 'Contato', telefone: r.recipient_phone }));
-      }
-      if (recipients.length === 0 && alertContacts) {
-        recipients = alertContacts.filter(c => c.telefone).map(c => ({ nome: c.nome, telefone: c.telefone }));
-      }
-
-      if (recipients.length === 0) continue;
-
-      // Build message
-      const eventIcon = typeMap[task.tipo_evento || '']?.icon || '📋';
-      const eventLabel = typeMap[task.tipo_evento || '']?.label || 'Evento';
-      let message = `⏰ *Lembrete — ${minutesBefore} minutos*\n\n`;
-      message += `${eventIcon} *${task.titulo}*\n`;
-      message += `📅 ${task.data_prevista} às ${task.horario_inicio}\n`;
-      message += `📁 ${eventLabel}\n`;
-      if (task.local_evento) message += `📍 ${task.local_evento}\n`;
-      if (task.link_reuniao) message += `🔗 ${task.link_reuniao}\n`;
-      if (task.descricao) message += `\n📝 ${task.descricao}\n`;
-      if (task.prioridade) {
-        const prioEmoji = task.prioridade === 'emergencia' ? '🔴' : task.prioridade === 'alta' ? '🟠' : task.prioridade === 'media' ? '🟡' : '🟢';
-        message += `\n${prioEmoji} Prioridade: ${task.prioridade}`;
-      }
-
-      const sentTo: any[] = [];
-      const errors: any[] = [];
-
-      for (const recipient of recipients) {
-        try {
-          const { error: sendError } = await supabase.functions.invoke('zapi-send-message', {
-            body: {
-              agentKey: 'exa_alert',
-              phone: recipient.telefone,
-              message,
-              skipSplit: true,
-            },
-          });
-          if (!sendError) {
-            sentTo.push({ nome: recipient.nome, telefone: recipient.telefone });
-            alertsSent++;
-            console.log(`[task-reminder] ✅ Sent to ${recipient.nome}`);
-          } else {
-            errors.push({ nome: recipient.nome, error: sendError.message });
-          }
-        } catch (err: any) {
-          errors.push({ nome: recipient.nome, error: err.message });
-          console.error(`[task-reminder] ❌ Error for ${recipient.nome}:`, err.message);
+      // Group future reminders
+      for (const r of futureReminders || []) {
+        if (futureTaskIds.has(r.task_id)) {
+          if (!remindersByTask[r.task_id]) remindersByTask[r.task_id] = [];
+          remindersByTask[r.task_id].push(r);
         }
       }
+    }
 
-      // Log
-      await supabase.from('task_alert_logs').insert({
-        task_id: task.id,
-        alert_type: `lembrete_${minutesBefore}min`,
-        recipients: sentTo,
-        status: sentTo.length > 0 ? 'sent' : 'failed',
-        error_message: errors.length > 0 ? JSON.stringify(errors) : null,
-      });
+    const allTasksToProcess = [...tasks, ...futureTasks];
 
-      processedAlerts.push({ task: task.titulo, sentTo: sentTo.length, errors: errors.length });
+    for (const task of allTasksToProcess) {
+      const [taskH, taskM] = (task.horario_inicio || '00:00').split(':').map(Number);
+
+      // Calculate task datetime in total minutes from epoch-ish reference for days/weeks comparison
+      const taskDate = new Date(`${task.data_prevista}T${task.horario_inicio || '00:00'}:00`);
+      const taskDateBrt = new Date(taskDate.getTime()); // Already in local format from string
+      
+      // For same-day tasks: use simple total minutes
+      const taskTotalMinutes = taskH * 60 + taskM;
+      
+      // Calculate minutes from now until task (considering date difference for future tasks)
+      const taskDateObj = new Date(`${task.data_prevista}T00:00:00`);
+      const currentDateObj = new Date(`${currentDate}T00:00:00`);
+      const daysDiff = Math.round((taskDateObj.getTime() - currentDateObj.getTime()) / (1000 * 60 * 60 * 24));
+      const minutesUntilTask = (daysDiff * 1440) + taskTotalMinutes - currentTotalMinutes;
+
+      const taskReminders = remindersByTask[task.id];
+
+      if (taskReminders && taskReminders.length > 0) {
+        // === USE PER-TASK REMINDERS ===
+        for (const reminder of taskReminders) {
+          const multiplier = UNIDADE_TO_MINUTES[reminder.unidade] || 1;
+          const reminderMinutes = reminder.valor * multiplier;
+
+          // Check if it's time (exact minute match)
+          if (minutesUntilTask !== reminderMinutes) continue;
+
+          const alertType = `lembrete_custom_${reminder.valor}${reminder.unidade}`;
+
+          console.log(`[task-reminder] Task "${task.titulo}" matches reminder ${reminder.valor} ${reminder.unidade} (${reminderMinutes}min) — sending`);
+
+          // Check duplicate
+          const { data: existingAlert } = await supabase
+            .from('task_alert_logs')
+            .select('id')
+            .eq('task_id', task.id)
+            .eq('alert_type', alertType)
+            .gte('sent_at', new Date(now.getTime() - 120000).toISOString())
+            .maybeSingle();
+
+          if (existingAlert) {
+            console.log(`[task-reminder] Already sent ${alertType} for "${task.titulo}"`);
+            continue;
+          }
+
+          // Get recipients
+          const recipients = await getRecipients(supabase, task.id, alertContacts);
+          if (recipients.length === 0) continue;
+
+          // Build and send message
+          const message = buildMessage(task, reminderMinutes, typeMap);
+          const { sentTo, errors } = await sendToRecipients(supabase, recipients, message);
+          alertsSent += sentTo.length;
+
+          // Log alert
+          await supabase.from('task_alert_logs').insert({
+            task_id: task.id,
+            alert_type: alertType,
+            recipients: sentTo,
+            status: sentTo.length > 0 ? 'sent' : 'failed',
+            error_message: errors.length > 0 ? JSON.stringify(errors) : null,
+          });
+
+          // Mark reminder as fired
+          await supabase
+            .from('task_reminders')
+            .update({ fired_at: new Date().toISOString() })
+            .eq('id', reminder.id);
+
+          processedAlerts.push({ task: task.titulo, alertType, sentTo: sentTo.length, errors: errors.length });
+        }
+      } else if (task.data_prevista === currentDate && globalConfig.ativo) {
+        // === FALLBACK: use global config (only for today's tasks without custom reminders) ===
+        if (minutesUntilTask !== globalMinutesBefore) continue;
+
+        const alertType = `lembrete_${globalMinutesBefore}min`;
+
+        console.log(`[task-reminder] Task "${task.titulo}" matches global ${globalMinutesBefore}min — sending (fallback)`);
+
+        const { data: existingAlert } = await supabase
+          .from('task_alert_logs')
+          .select('id')
+          .eq('task_id', task.id)
+          .eq('alert_type', alertType)
+          .gte('sent_at', new Date(now.getTime() - 120000).toISOString())
+          .maybeSingle();
+
+        if (existingAlert) {
+          console.log(`[task-reminder] Already sent fallback for "${task.titulo}"`);
+          continue;
+        }
+
+        const recipients = await getRecipients(supabase, task.id, alertContacts);
+        if (recipients.length === 0) continue;
+
+        const message = buildMessage(task, globalMinutesBefore, typeMap);
+        const { sentTo, errors } = await sendToRecipients(supabase, recipients, message);
+        alertsSent += sentTo.length;
+
+        await supabase.from('task_alert_logs').insert({
+          task_id: task.id,
+          alert_type: alertType,
+          recipients: sentTo,
+          status: sentTo.length > 0 ? 'sent' : 'failed',
+          error_message: errors.length > 0 ? JSON.stringify(errors) : null,
+        });
+
+        processedAlerts.push({ task: task.titulo, alertType, sentTo: sentTo.length, errors: errors.length });
+      }
     }
 
     console.log(`[task-reminder] Done. ${alertsSent} alerts sent.`);
@@ -189,7 +257,6 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       alertsSent,
-      minutesBefore,
       processedAlerts,
       timestamp: brasilNow.toISOString(),
     }), {
@@ -204,3 +271,85 @@ serve(async (req) => {
     });
   }
 });
+
+// === Helper Functions ===
+
+async function getRecipients(supabase: any, taskId: string, alertContacts: any[] | null) {
+  const { data: receipts } = await supabase
+    .from('task_read_receipts')
+    .select('recipient_phone, recipient_name')
+    .eq('task_id', taskId);
+
+  let recipients: { nome: string; telefone: string }[] = [];
+  if (receipts && receipts.length > 0) {
+    recipients = receipts
+      .filter((r: any) => r.recipient_phone)
+      .map((r: any) => ({ nome: r.recipient_name || 'Contato', telefone: r.recipient_phone }));
+  }
+  if (recipients.length === 0 && alertContacts) {
+    recipients = alertContacts.filter(c => c.telefone).map(c => ({ nome: c.nome, telefone: c.telefone }));
+  }
+  return recipients;
+}
+
+function buildMessage(task: any, minutesBefore: number, typeMap: Record<string, { icon: string; label: string }>) {
+  const eventIcon = typeMap[task.tipo_evento || '']?.icon || '📋';
+  const eventLabel = typeMap[task.tipo_evento || '']?.label || 'Evento';
+
+  // Human-readable time description
+  let timeDesc: string;
+  if (minutesBefore >= 10080) {
+    const weeks = Math.round(minutesBefore / 10080);
+    timeDesc = `${weeks} semana${weeks > 1 ? 's' : ''}`;
+  } else if (minutesBefore >= 1440) {
+    const days = Math.round(minutesBefore / 1440);
+    timeDesc = `${days} dia${days > 1 ? 's' : ''}`;
+  } else if (minutesBefore >= 60) {
+    const hours = Math.round(minutesBefore / 60);
+    timeDesc = `${hours} hora${hours > 1 ? 's' : ''}`;
+  } else {
+    timeDesc = `${minutesBefore} minuto${minutesBefore > 1 ? 's' : ''}`;
+  }
+
+  let message = `⏰ *Lembrete — ${timeDesc}*\n\n`;
+  message += `${eventIcon} *${task.titulo}*\n`;
+  message += `📅 ${task.data_prevista} às ${task.horario_inicio}\n`;
+  message += `📁 ${eventLabel}\n`;
+  if (task.local_evento) message += `📍 ${task.local_evento}\n`;
+  if (task.link_reuniao) message += `🔗 ${task.link_reuniao}\n`;
+  if (task.descricao) message += `\n📝 ${task.descricao}\n`;
+  if (task.prioridade) {
+    const prioEmoji = task.prioridade === 'emergencia' ? '🔴' : task.prioridade === 'alta' ? '🟠' : task.prioridade === 'media' ? '🟡' : '🟢';
+    message += `\n${prioEmoji} Prioridade: ${task.prioridade}`;
+  }
+  return message;
+}
+
+async function sendToRecipients(supabase: any, recipients: { nome: string; telefone: string }[], message: string) {
+  const sentTo: any[] = [];
+  const errors: any[] = [];
+
+  for (const recipient of recipients) {
+    try {
+      const { error: sendError } = await supabase.functions.invoke('zapi-send-message', {
+        body: {
+          agentKey: 'exa_alert',
+          phone: recipient.telefone,
+          message,
+          skipSplit: true,
+        },
+      });
+      if (!sendError) {
+        sentTo.push({ nome: recipient.nome, telefone: recipient.telefone });
+        console.log(`[task-reminder] ✅ Sent to ${recipient.nome}`);
+      } else {
+        errors.push({ nome: recipient.nome, error: sendError.message });
+      }
+    } catch (err: any) {
+      errors.push({ nome: recipient.nome, error: err.message });
+      console.error(`[task-reminder] ❌ Error for ${recipient.nome}:`, err.message);
+    }
+  }
+
+  return { sentTo, errors };
+}
