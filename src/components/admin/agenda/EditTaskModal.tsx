@@ -207,6 +207,9 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   const [selectedPropostas, setSelectedPropostas] = useState<string[]>([]);
   const [loadingPropostas, setLoadingPropostas] = useState(false);
 
+  // Reminders state
+  const [taskReminders, setTaskReminders] = useState<TaskReminder[]>([]);
+
   // Fetch admin users
   const { data: adminUsers = [] } = useQuery({
     queryKey: ['admin-users-for-tasks'],
