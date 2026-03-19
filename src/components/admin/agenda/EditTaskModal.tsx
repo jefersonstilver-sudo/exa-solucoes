@@ -1370,7 +1370,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                 </Collapsible>
 
                 {/* Separador */}
-                <div className="border-t" />
+                <div className="border-t border-border/40" />
 
                 {/* Configuração de notificação ao salvar */}
                 <div className="space-y-3">
