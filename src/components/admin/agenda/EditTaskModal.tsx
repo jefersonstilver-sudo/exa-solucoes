@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Switch } from '@/components/ui/switch';
+import { ToggleExa } from '@/components/ui/toggle-exa';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Calendar as CalendarIcon, 

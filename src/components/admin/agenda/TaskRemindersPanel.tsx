@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AppleSwitch } from '@/components/ui/apple-switch';
+import { ToggleExa } from '@/components/ui/toggle-exa';
 import { cn } from '@/lib/utils';
 
 export interface TaskReminder {
