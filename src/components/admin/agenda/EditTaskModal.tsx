@@ -1571,6 +1571,8 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                     <Users className="h-3 w-3" /> Gerenciar Contatos
                   </Button>
                 </div>
+                </CollapsibleContent>
+                </Collapsible>
               </div>
             </div>
 
