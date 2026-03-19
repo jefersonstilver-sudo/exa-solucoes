@@ -482,6 +482,20 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
           selectedPropostas.map(pid => ({ task_id: task.id, proposta_id: pid }))
         );
       }
+
+      // Save reminders
+      await supabase.from('task_reminders').delete().eq('task_id', task.id);
+      if (taskReminders.length > 0) {
+        await supabase.from('task_reminders').insert(
+          taskReminders.map(r => ({
+            task_id: task.id,
+            tipo: r.tipo,
+            unidade: r.unidade,
+            valor: r.valor,
+            ativo: r.ativo,
+          }))
+        );
+      }
     },
     onSuccess: () => {
       toast.success('Tarefa atualizada com sucesso!');
