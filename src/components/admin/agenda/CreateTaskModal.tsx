@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { TaskRemindersPanel, TaskReminder, DEFAULT_REMINDERS } from './TaskRemindersPanel';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -158,6 +159,11 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
   const [eventTypeManagerOpen, setEventTypeManagerOpen] = useState(false);
 
   // Building state
+  
+  // Reminders state — start with defaults
+  const [taskReminders, setTaskReminders] = useState<TaskReminder[]>(
+    DEFAULT_REMINDERS.map(r => ({ ...r, id: crypto.randomUUID() }))
+  );
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
 
   // WhatsApp notification state
@@ -472,6 +478,19 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
               console.error('Erro ao vincular propostas:', propError);
             }
           }
+
+          // Inserir lembretes
+          if (taskReminders.length > 0) {
+            await supabase.from('task_reminders').insert(
+              taskReminders.map(r => ({
+                task_id: taskId,
+                tipo: r.tipo,
+                unidade: r.unidade,
+                valor: r.valor,
+                ativo: r.ativo,
+              }))
+            );
+          }
         }
       }
 
@@ -559,6 +578,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
     setIsRecorrente(false);
     setFrequenciaRecorrencia('semanal');
     setSelectedBuildingId(null);
+    setTaskReminders(DEFAULT_REMINDERS.map(r => ({ ...r, id: crypto.randomUUID() })));
   };
 
   const addDataPrevista = (date: Date | undefined) => {
@@ -1245,6 +1265,14 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
           onChange={(e) => setDescricao(e.target.value)}
           placeholder="Detalhes adicionais..."
           rows={3}
+        />
+      </div>
+
+      {/* Lembretes de Notificação */}
+      <div className="border rounded-lg p-4 bg-muted/20">
+        <TaskRemindersPanel
+          reminders={taskReminders}
+          onChange={setTaskReminders}
         />
       </div>
 

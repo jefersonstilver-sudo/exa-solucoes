@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { TaskRemindersPanel, TaskReminder, DEFAULT_REMINDERS } from './TaskRemindersPanel';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -206,6 +207,9 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   const [selectedPropostas, setSelectedPropostas] = useState<string[]>([]);
   const [loadingPropostas, setLoadingPropostas] = useState(false);
 
+  // Reminders state
+  const [taskReminders, setTaskReminders] = useState<TaskReminder[]>([]);
+
   // Fetch admin users
   const { data: adminUsers = [] } = useQuery({
     queryKey: ['admin-users-for-tasks'],
@@ -343,6 +347,27 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
           .then(({ data }) => {
             if (data) setSelectedPropostas(data.map(d => d.proposta_id));
           });
+
+        // Load reminders
+        supabase
+          .from('task_reminders')
+          .select('*')
+          .eq('task_id', task.id)
+          .order('created_at')
+          .then(({ data }) => {
+            if (data && data.length > 0) {
+              setTaskReminders(data.map(r => ({
+                id: r.id,
+                tipo: r.tipo,
+                unidade: r.unidade,
+                valor: r.valor,
+                ativo: r.ativo,
+              })));
+            } else {
+              // First time — set defaults
+              setTaskReminders(DEFAULT_REMINDERS.map(r => ({ ...r, id: crypto.randomUUID() })));
+            }
+          });
       }
     }
   }, [task]);
@@ -455,6 +480,20 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
       if (selectedPropostas.length > 0) {
         await supabase.from('task_propostas').insert(
           selectedPropostas.map(pid => ({ task_id: task.id, proposta_id: pid }))
+        );
+      }
+
+      // Save reminders
+      await supabase.from('task_reminders').delete().eq('task_id', task.id);
+      if (taskReminders.length > 0) {
+        await supabase.from('task_reminders').insert(
+          taskReminders.map(r => ({
+            task_id: task.id,
+            tipo: r.tipo,
+            unidade: r.unidade,
+            valor: r.valor,
+            ativo: r.ativo,
+          }))
         );
       }
     },
@@ -1067,6 +1106,13 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
 
               {/* ── RIGHT: Notifications & Actions ── */}
               <div className="p-5 space-y-5 bg-muted/20">
+                {/* Lembretes por tarefa */}
+                <TaskRemindersPanel
+                  reminders={taskReminders}
+                  onChange={setTaskReminders}
+                />
+
+                <div className="border-t" />
                 {/* Monitor de Confirmações */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">

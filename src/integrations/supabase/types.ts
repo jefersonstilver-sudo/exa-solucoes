@@ -12903,6 +12903,44 @@ export type Database = {
           },
         ]
       }
+      task_reminders: {
+        Row: {
+          ativo: boolean
+          created_at: string | null
+          id: string
+          task_id: string
+          tipo: string
+          unidade: string
+          valor: number
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string | null
+          id?: string
+          task_id: string
+          tipo?: string
+          unidade?: string
+          valor?: number
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string | null
+          id?: string
+          task_id?: string
+          tipo?: string
+          unidade?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_reminders_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_responsaveis: {
         Row: {
           created_at: string | null
