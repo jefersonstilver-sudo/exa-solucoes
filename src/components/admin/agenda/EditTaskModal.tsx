@@ -1389,7 +1389,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                       <BellRing className="h-3.5 w-3.5 text-primary" />
                       Notificar ao salvar
                     </Label>
-                    <Switch id="edit-notify-save" checked={notifyOnSave} onCheckedChange={setNotifyOnSave} />
+                    <ToggleExa checked={notifyOnSave} onChange={setNotifyOnSave} color="red" size="sm" />
                   </div>
                   <div className="flex items-center justify-between">
                     <Label htmlFor="edit-auto-followup" className="text-xs flex items-center gap-1.5 cursor-pointer">
