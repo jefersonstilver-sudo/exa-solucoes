@@ -12,7 +12,7 @@ import {
   Settings, Shield, BarChart3, RefreshCw, Landmark, UsersRound
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { AppleSwitch } from '@/components/ui/apple-switch';
+import { ToggleExa } from '@/components/ui/toggle-exa';
 import { Badge } from '@/components/ui/badge';
 
 interface RoleType {
@@ -456,10 +456,11 @@ export default function ModulePermissionsModal({ role, onClose }: ModulePermissi
                                       Ativo
                                     </Badge>
                                   ) : (
-                                    <AppleSwitch
+                                    <ToggleExa
                                       checked={isEnabled}
-                                      onCheckedChange={() => toggleModule(module.key)}
+                                      onChange={() => toggleModule(module.key)}
                                       size="sm"
+                                      color="red"
                                     />
                                   )}
                                 </div>

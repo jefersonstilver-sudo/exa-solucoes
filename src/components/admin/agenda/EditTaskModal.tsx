@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Switch } from '@/components/ui/switch';
+import { ToggleExa } from '@/components/ui/toggle-exa';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Calendar as CalendarIcon, 
@@ -155,20 +155,9 @@ const formatCurrency = (value: number | null) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 };
 
-const priorityConfig: Record<string, { label: string; color: string }> = {
-  emergencia: { label: 'Emergência', color: 'bg-red-100 text-red-700 border-red-200' },
-  alta: { label: 'Alta', color: 'bg-orange-100 text-orange-700 border-orange-200' },
-  media: { label: 'Média', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-  baixa: { label: 'Baixa', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-};
-
-const statusConfig: Record<string, { label: string; color: string }> = {
-  pendente: { label: 'Pendente', color: 'bg-amber-100 text-amber-700 border-amber-200' },
-  em_andamento: { label: 'Em andamento', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  concluida: { label: 'Concluída', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-  nao_realizada: { label: 'Não realizada', color: 'bg-red-100 text-red-700 border-red-200' },
-  cancelada: { label: 'Cancelada', color: 'bg-slate-100 text-slate-700 border-slate-200' },
-};
+// Usando mappers centrais — removido priorityConfig e statusConfig locais
+import { getTaskPriorityConfig } from '@/constants/taskPriority';
+import { getTaskStatusConfig } from '@/constants/taskStatus';
 
 const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   const queryClient = useQueryClient();
@@ -864,9 +853,9 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   const modalContent = (
     <>
       {/* ── Visual Header (sticky) ── */}
-      <div className="sticky top-0 z-10 relative px-6 pt-5 pb-4 border-b bg-muted/30">
+      <div className="sticky top-0 z-10 relative px-6 pt-5 pb-4 border-b bg-gradient-to-r from-[#9C1E1E]/5 to-transparent backdrop-blur-sm">
             <div className="flex items-start gap-4">
-              <div className="text-3xl flex-shrink-0 mt-0.5">
+              <div className="text-3xl flex-shrink-0 mt-0.5 bg-[#9C1E1E]/10 rounded-2xl p-2.5">
                 {eventConfig.icon}
               </div>
               <div className="flex-1 min-w-0 space-y-1.5">
@@ -877,12 +866,16 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                   {titulo || 'Sem título'}
                 </h2>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-semibold border', statusConfig[status]?.color || 'bg-muted text-muted-foreground')}>
-                    {statusConfig[status]?.label || status}
-                  </span>
-                  <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-semibold border', priorityConfig[prioridade]?.color || 'bg-muted text-muted-foreground')}>
-                    {priorityConfig[prioridade]?.label || prioridade}
-                  </span>
+                  {(() => { const sc = getTaskStatusConfig(status); return (
+                    <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-semibold border', sc.className)}>
+                      {sc.icon} {sc.shortLabel}
+                    </span>
+                  ); })()}
+                  {(() => { const pc = getTaskPriorityConfig(prioridade); return (
+                    <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-semibold border', pc.className)}>
+                      {pc.icon} {pc.shortLabel}
+                    </span>
+                  ); })()}
                   {dataPrevista && (
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-medium">
                       📅 {format(dataPrevista, "dd/MM/yyyy", { locale: ptBR })}
@@ -903,7 +896,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
             <div className="grid grid-cols-1 md:grid-cols-[1fr_400px] divide-y md:divide-y-0 md:divide-x">
               
               {/* ── LEFT: Form Fields ── */}
-              <div className="p-5 space-y-4 overflow-y-auto">
+              <div className="px-6 py-5 space-y-5 overflow-y-auto">
                 {/* Tipo de Evento */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -1107,14 +1100,14 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
               </div>
 
               {/* ── RIGHT: Notifications & Actions ── */}
-              <div className="p-5 space-y-5 bg-muted/20">
+              <div className="p-5 space-y-4 bg-muted/10">
                 {/* Lembretes por tarefa */}
                 <TaskRemindersPanel
                   reminders={taskReminders}
                   onChange={setTaskReminders}
                 />
 
-                <div className="border-t" />
+                <div className="border-t border-border/40" />
                 {/* Monitor de Confirmações — Collapsible */}
                 <Collapsible open={confirmacaoOpen} onOpenChange={setConfirmacaoOpen}>
                 <CollapsibleTrigger className="flex items-center justify-between w-full py-1 cursor-pointer group">
@@ -1377,7 +1370,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                 </Collapsible>
 
                 {/* Separador */}
-                <div className="border-t" />
+                <div className="border-t border-border/40" />
 
                 {/* Configuração de notificação ao salvar */}
                 <div className="space-y-3">
@@ -1389,14 +1382,14 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                       <BellRing className="h-3.5 w-3.5 text-primary" />
                       Notificar ao salvar
                     </Label>
-                    <Switch id="edit-notify-save" checked={notifyOnSave} onCheckedChange={setNotifyOnSave} />
+                    <ToggleExa checked={notifyOnSave} onChange={setNotifyOnSave} color="red" size="sm" />
                   </div>
                   <div className="flex items-center justify-between">
                     <Label htmlFor="edit-auto-followup" className="text-xs flex items-center gap-1.5 cursor-pointer">
                       <Clock className="h-3.5 w-3.5 text-blue-500" />
                       Follow-up automático
                     </Label>
-                    <Switch id="edit-auto-followup" checked={autoFollowup} onCheckedChange={setAutoFollowup} />
+                    <ToggleExa checked={autoFollowup} onChange={setAutoFollowup} color="red" size="sm" />
                   </div>
                 </div>
 
@@ -1585,7 +1578,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                 <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)} className="text-xs">
                   Cancelar
                 </Button>
-                <Button type="submit" size="sm" disabled={updateMutation.isPending} className="bg-primary hover:bg-primary/90 text-xs gap-1.5">
+                <Button type="submit" size="sm" disabled={updateMutation.isPending} className="bg-[#9C1E1E] hover:bg-[#9C1E1E]/90 text-white text-xs gap-1.5">
                   {updateMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Pencil className="h-3.5 w-3.5" />}
                   Salvar
                 </Button>

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Moon, Sun, Clock, MessageSquare, Users, ChevronRight, Loader2 } from 'lucide-react';
-import { AppleSwitch } from '@/components/ui/apple-switch';
+import { ToggleExa } from '@/components/ui/toggle-exa';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAgendaNotificationSettings, type AgendaConfigKey, type AgendaNotificationConfig } from '@/hooks/tarefas/useAgendaNotificationSettings';
 import { useQuery } from '@tanstack/react-query';
@@ -190,11 +190,11 @@ const AgendaNotificationSettingsModal = ({ open, onOpenChange }: Props) => {
                     {section.description}
                   </p>
                 </div>
-                <AppleSwitch
+                <ToggleExa
                   checked={isActive}
-                  onCheckedChange={(checked) => handleToggle(section.key, checked)}
+                  onChange={(checked) => handleToggle(section.key, checked)}
                   disabled={isSaving}
-                  size="md"
+                  color="red"
                 />
               </div>
 

@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { ToggleExa } from "@/components/ui/toggle-exa";
 import { cn } from "@/lib/utils";
 import { useRealTimeCounter } from "../../hooks/useRealTimeCounter";
 import { useDeviceIncidents } from "../../hooks/useDeviceIncidents";
@@ -371,10 +371,10 @@ export const ComputerDetailModal = ({
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="alerts-enabled" className="text-sm text-module-primary">Alertas Automáticos</Label>
-                  <Switch
-                    id="alerts-enabled"
+                  <ToggleExa
                     checked={alertConfig.alerts_enabled}
-                    onCheckedChange={(checked) => setAlertConfig({ ...alertConfig, alerts_enabled: checked })}
+                    onChange={(checked) => setAlertConfig({ ...alertConfig, alerts_enabled: checked })}
+                    color="red"
                   />
                 </div>
                 <div>
