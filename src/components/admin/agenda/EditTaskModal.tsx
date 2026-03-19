@@ -853,9 +853,9 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   const modalContent = (
     <>
       {/* ── Visual Header (sticky) ── */}
-      <div className="sticky top-0 z-10 relative px-6 pt-5 pb-4 border-b bg-muted/30">
+      <div className="sticky top-0 z-10 relative px-6 pt-5 pb-4 border-b bg-gradient-to-r from-[#9C1E1E]/5 to-transparent backdrop-blur-sm">
             <div className="flex items-start gap-4">
-              <div className="text-3xl flex-shrink-0 mt-0.5">
+              <div className="text-3xl flex-shrink-0 mt-0.5 bg-[#9C1E1E]/10 rounded-2xl p-2.5">
                 {eventConfig.icon}
               </div>
               <div className="flex-1 min-w-0 space-y-1.5">
@@ -866,12 +866,16 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                   {titulo || 'Sem título'}
                 </h2>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-semibold border', statusConfig[status]?.color || 'bg-muted text-muted-foreground')}>
-                    {statusConfig[status]?.label || status}
-                  </span>
-                  <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-semibold border', priorityConfig[prioridade]?.color || 'bg-muted text-muted-foreground')}>
-                    {priorityConfig[prioridade]?.label || prioridade}
-                  </span>
+                  {(() => { const sc = getTaskStatusConfig(status); return (
+                    <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-semibold border', sc.className)}>
+                      {sc.icon} {sc.shortLabel}
+                    </span>
+                  ); })()}
+                  {(() => { const pc = getTaskPriorityConfig(prioridade); return (
+                    <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-semibold border', pc.className)}>
+                      {pc.icon} {pc.shortLabel}
+                    </span>
+                  ); })()}
                   {dataPrevista && (
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-medium">
                       📅 {format(dataPrevista, "dd/MM/yyyy", { locale: ptBR })}
