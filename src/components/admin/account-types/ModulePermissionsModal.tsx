@@ -12,7 +12,7 @@ import {
   Settings, Shield, BarChart3, RefreshCw, Landmark, UsersRound
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ToggleExa } from '@/components/ui/toggle-exa';
+import { Toggle } from '@/components/ui/toggle';
 import { Badge } from '@/components/ui/badge';
 
 interface RoleType {
