@@ -861,17 +861,10 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
     return 'Enviado';
   };
 
-  return (
+  const modalContent = (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[1100px] max-h-[95vh] overflow-hidden p-0 gap-0">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Editar Evento</DialogTitle>
-            <p>Edite os dados do evento, incluindo tipo, data, horário, prioridade e notificações.</p>
-          </DialogHeader>
-
-          {/* ── Visual Header ── */}
-          <div className="relative px-6 pt-5 pb-4 border-b bg-muted/30">
+      {/* ── Visual Header (sticky) ── */}
+      <div className="sticky top-0 z-10 relative px-6 pt-5 pb-4 border-b bg-muted/30">
             <div className="flex items-start gap-4">
               <div className="text-3xl flex-shrink-0 mt-0.5">
                 {eventConfig.icon}
