@@ -12,7 +12,7 @@ import {
   Settings, Shield, BarChart3, RefreshCw, Landmark, UsersRound
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ToggleExa } from '@/components/ui/toggle-exa';
+import { Toggle } from '@/components/ui/toggle';
 import { Badge } from '@/components/ui/badge';
 
 interface RoleType {
@@ -456,10 +456,10 @@ export default function ModulePermissionsModal({ role, onClose }: ModulePermissi
                                       Ativo
                                     </Badge>
                                   ) : (
-                                    <ToggleExa
+                                    <Toggle
                                       checked={isEnabled}
                                       onChange={() => toggleModule(module.key)}
-                                      size="sm"
+                                      size="small"
                                       color="red"
                                     />
                                   )}

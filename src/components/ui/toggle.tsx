@@ -1,43 +1,66 @@
-import * as React from "react"
-import * as TogglePrimitive from "@radix-ui/react-toggle"
-import { cva, type VariantProps } from "class-variance-authority"
+import React from "react";
 
-import { cn } from "@/lib/utils"
+const colors = {
+  blue: { backgroundColor: "bg-blue-700", fill: "fill-blue-1000 dark:fill-blue-100" },
+  red: { backgroundColor: "bg-red-600", fill: "fill-red-1000 dark:fill-red-100" },
+  amber: { backgroundColor: "bg-amber-700", fill: "fill-amber-1000 dark:fill-amber-100" },
+  green: { backgroundColor: "bg-green-700", fill: "fill-green-1000 dark:fill-green-100" },
+  teal: { backgroundColor: "bg-teal-700", fill: "fill-teal-1000 dark:fill-teal-100" },
+  purple: { backgroundColor: "bg-purple-700", fill: "fill-purple-1000 dark:fill-purple-100" },
+  pink: { backgroundColor: "bg-pink-700", fill: "fill-pink-1000 dark:fill-pink-100" },
+  gray: { backgroundColor: "bg-gray-700", fill: "fill-gray-1000 dark:fill-gray-100" },
+};
 
-const toggleVariants = cva(
-  "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground",
-  {
-    variants: {
-      variant: {
-        default: "bg-transparent",
-        outline:
-          "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
-      },
-      size: {
-        default: "h-10 px-3",
-        sm: "h-9 px-2.5",
-        lg: "h-11 px-5",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
+type TToggleColor = keyof typeof colors;
+
+interface ToggleProps {
+  checked: boolean;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  disabled?: boolean;
+  size?: "small" | "large";
+  color?: TToggleColor;
+  icon?: { checked: React.ReactNode; unchecked: React.ReactNode };
+  direction?: "switch-first" | "label-first";
+  children?: React.ReactNode;
+}
+
+const getClasses = (checked: boolean, disabled: boolean, size: "small" | "large", color?: TToggleColor) => {
+  let toggle = "rounded-[14px] inline-block relative duration-150";
+  let thumb = "rounded-[50%] border border-transparent absolute top-1/2 -translate-y-1/2 shadow-toggle duration-150 flex items-center justify-center";
+  if (size === "small") { toggle += " h-3.5 w-7"; thumb += " h-3 w-3"; }
+  else { toggle += " h-6 w-10"; thumb += " h-[22px] w-[22px]"; }
+  if (checked) {
+    if (size === "small") thumb += " left-3.5"; else thumb += " left-4";
+    if (disabled) { toggle += " bg-accents-1 border border-accents-2 cursor-not-allowed"; thumb += " bg-gray-200"; }
+    else {
+      toggle += ` ${color ? `${colors[color].backgroundColor} ${colors[color].fill}` : "bg-success fill-gray-900 dark:fill-background-100"} border border-gray-alpha-400 cursor-pointer`;
+      thumb += " bg-background-100 dark:bg-gray-1000";
+    }
+  } else {
+    if (disabled) { toggle += " bg-background-100 border border-gray-alpha-400 cursor-not-allowed"; thumb += " bg-gray-200 left-0"; }
+    else {
+      toggle += ` ${color ? `${colors[color].backgroundColor} ${colors[color].fill}` : "bg-background-100 fill-gray-900 dark:fill-background-100"} border border-gray-alpha-400 cursor-pointer`;
+      thumb += " bg-background-200 dark:bg-gray-1000 left-0";
+    }
   }
-)
+  return { toggle, thumb };
+};
 
-const Toggle = React.forwardRef<
-  React.ElementRef<typeof TogglePrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof TogglePrimitive.Root> &
-    VariantProps<typeof toggleVariants>
->(({ className, variant, size, ...props }, ref) => (
-  <TogglePrimitive.Root
-    ref={ref}
-    className={cn(toggleVariants({ variant, size, className }))}
-    {...props}
-  />
-))
+export const Toggle = ({ checked, onChange, disabled = false, size = "small", color, icon, direction = "label-first", children, ...rest }: ToggleProps) => {
+  return (
+    <label className={`inline-flex items-center gap-2 ${direction === "switch-first" ? "flex-row-reverse" : ""} ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}>
+      {children && <span className="text-sm text-secondary select-none">{children}</span>}
+      <span className="relative inline-flex items-center">
+        <input type="checkbox" className="sr-only peer" checked={checked} disabled={disabled} onChange={onChange} {...rest} />
+        <span className={getClasses(checked, disabled, size, color).toggle}>
+          <span className={getClasses(checked, disabled, size, color).thumb}>
+            {icon && checked && icon.checked}
+            {icon && !checked && icon.unchecked}
+          </span>
+        </span>
+      </span>
+    </label>
+  );
+};
 
-Toggle.displayName = TogglePrimitive.Root.displayName
-
-export { Toggle, toggleVariants }
+export default Toggle;

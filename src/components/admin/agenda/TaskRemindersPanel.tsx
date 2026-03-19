@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ToggleExa } from '@/components/ui/toggle-exa';
+import { Toggle } from '@/components/ui/toggle';
 import { cn } from '@/lib/utils';
 
 export interface TaskReminder {
@@ -103,10 +103,10 @@ export const TaskRemindersPanel = ({
               )}
             >
               {/* Toggle */}
-              <ToggleExa
-                size="sm"
+              <Toggle
+                size="small"
                 checked={reminder.ativo}
-                onChange={(checked) => updateReminder(reminder.id, 'ativo', checked)}
+                onChange={(e) => updateReminder(reminder.id, 'ativo', e.target.checked)}
                 color="red"
               />
 

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2, User, Shield, Save, FileText, Pencil, ShieldCheck, AlertTriangle, Smartphone, Lock, ArrowLeft, X } from 'lucide-react';
-import { ToggleExa } from '@/components/ui/toggle-exa';
+import { Toggle } from '@/components/ui/toggle';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
@@ -461,11 +461,13 @@ const AdvertiserSettings = () => {
                 )}
               </div>
               <div className="flex-shrink-0 pt-1">
-                <ToggleExa
+                <Toggle
                   checked={twoFactorEnabled}
                   disabled={!phoneVerified}
                   color="red"
-                  onChange={async (checked) => {
+                  size="large"
+                  onChange={async (e) => {
+                    const checked = e.target.checked;
                     if (!phoneVerified) {
                       toast.error('Verifique seu WhatsApp antes de ativar o 2FA');
                       return;

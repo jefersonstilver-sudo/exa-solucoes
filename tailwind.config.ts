@@ -133,7 +133,8 @@ export default {
 			boxShadow: {
 				'enhanced': '0 10px 30px -5px rgba(74, 9, 104, 0.15), 0 8px 10px -6px rgba(74, 9, 104, 0.1)',
 				'enhanced-hover': '0 20px 35px -5px rgba(74, 9, 104, 0.2), 0 10px 15px -5px rgba(74, 9, 104, 0.15)',
-				'card-hover': '0 20px 30px -10px rgba(0, 0, 0, 0.15)'
+				'card-hover': '0 20px 30px -10px rgba(0, 0, 0, 0.15)',
+				'toggle': 'var(--ds-toggle-ring)',
 			},
 			keyframes: {
 				'accordion-down': {
@@ -257,8 +258,33 @@ export default {
 					},
 					'100%': {
 						transform: 'translateX(-50%)'
-					}
-				}
+				},
+				// Design System Toggle Colors
+				'blue-700': 'var(--ds-blue-700)',
+				'blue-1000': 'var(--ds-blue-1000)',
+				'red-600': 'var(--ds-red-600)',
+				'red-1000': 'var(--ds-red-1000)',
+				'amber-700': 'var(--ds-amber-700)',
+				'amber-1000': 'var(--ds-amber-1000)',
+				'green-700': 'var(--ds-green-700)',
+				'green-1000': 'var(--ds-green-1000)',
+				'teal-700': 'var(--ds-teal-700)',
+				'teal-1000': 'var(--ds-teal-1000)',
+				'purple-700': 'var(--ds-purple-700)',
+				'purple-1000': 'var(--ds-purple-1000)',
+				'pink-700': 'var(--ds-pink-700)',
+				'pink-1000': 'var(--ds-pink-1000)',
+				'gray-100': 'var(--ds-gray-100)',
+				'gray-200': 'var(--ds-gray-200)',
+				'gray-700': 'var(--ds-gray-700)',
+				'gray-1000': 'var(--ds-gray-1000)',
+				'gray-alpha-400': 'var(--ds-gray-alpha-400)',
+				'background-100': 'var(--ds-background-100)',
+				'background-200': 'var(--ds-background-200)',
+				'success': 'var(--geist-success)',
+				'accents-1': 'var(--accents-1)',
+				'accents-2': 'var(--accents-2)',
+			}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',

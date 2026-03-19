@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ToggleExa } from '@/components/ui/toggle-exa';
+import { Toggle } from '@/components/ui/toggle';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Calendar as CalendarIcon, 
@@ -1382,14 +1382,14 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                       <BellRing className="h-3.5 w-3.5 text-primary" />
                       Notificar ao salvar
                     </Label>
-                    <ToggleExa checked={notifyOnSave} onChange={setNotifyOnSave} color="red" size="sm" />
+                    <Toggle checked={notifyOnSave} onChange={(e) => setNotifyOnSave(e.target.checked)} color="red" size="large" />
                   </div>
                   <div className="flex items-center justify-between">
                     <Label htmlFor="edit-auto-followup" className="text-xs flex items-center gap-1.5 cursor-pointer">
                       <Clock className="h-3.5 w-3.5 text-blue-500" />
                       Follow-up automático
                     </Label>
-                    <ToggleExa checked={autoFollowup} onChange={setAutoFollowup} color="red" size="sm" />
+                    <Toggle checked={autoFollowup} onChange={(e) => setAutoFollowup(e.target.checked)} color="red" size="large" />
                   </div>
                 </div>
 
