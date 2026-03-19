@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2, User, Shield, Save, FileText, Pencil, ShieldCheck, AlertTriangle, Smartphone, Lock, ArrowLeft, X } from 'lucide-react';
-import { AppleSwitch } from '@/components/ui/apple-switch';
+import { ToggleExa } from '@/components/ui/toggle-exa';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
