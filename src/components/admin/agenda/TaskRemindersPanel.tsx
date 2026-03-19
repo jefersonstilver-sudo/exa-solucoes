@@ -28,15 +28,15 @@ interface TaskRemindersPanelProps {
 }
 
 const UNIDADE_LABELS: Record<string, string> = {
-  minutos: 'min antes',
-  horas: 'h antes',
-  dias: 'dias antes',
-  semanas: 'sem antes',
+  minutos: 'min',
+  horas: 'h',
+  dias: 'dias',
+  semanas: 'sem',
 };
 
 const TIPO_LABELS: Record<string, string> = {
-  notificacao: '🔔 Notificação',
-  email: '📧 E-mail',
+  notificacao: '🔔 Alerta',
+  email: '📧 Email',
 };
 
 export const DEFAULT_REMINDERS: TaskReminder[] = [
@@ -68,10 +68,6 @@ export const TaskRemindersPanel = ({
     ]);
   };
 
-  const getResumoTexto = (r: TaskReminder) => {
-    return `${r.valor} ${r.unidade}`;
-  };
-
   const activeCount = reminders.filter(r => r.ativo).length;
 
   return (
@@ -90,7 +86,7 @@ export const TaskRemindersPanel = ({
 
       {/* Reminders list */}
       {reminders.length === 0 ? (
-        <div className="text-center py-4 bg-background rounded-lg border border-dashed">
+        <div className="text-center py-4 bg-background rounded-xl border border-dashed">
           <Bell className="h-6 w-6 mx-auto text-muted-foreground/40 mb-1.5" />
           <p className="text-xs text-muted-foreground">Nenhum lembrete configurado</p>
         </div>
@@ -119,7 +115,7 @@ export const TaskRemindersPanel = ({
                 value={reminder.tipo}
                 onValueChange={(v) => updateReminder(reminder.id, 'tipo', v)}
               >
-                <SelectTrigger className="h-8 w-[100px] text-xs border-0 bg-muted/50">
+                <SelectTrigger className="h-8 w-[100px] text-xs border-border/50 bg-muted/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -136,7 +132,7 @@ export const TaskRemindersPanel = ({
                 max={999}
                 value={reminder.valor}
                 onChange={(e) => updateReminder(reminder.id, 'valor', Math.max(1, parseInt(e.target.value) || 1))}
-                className="h-8 w-16 text-xs text-center border-0 bg-muted/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="h-8 w-14 text-xs text-center border-border/50 bg-muted/50 focus-visible:ring-[#9C1E1E]/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
 
               {/* Unidade */}
@@ -144,7 +140,7 @@ export const TaskRemindersPanel = ({
                 value={reminder.unidade}
                 onValueChange={(v) => updateReminder(reminder.id, 'unidade', v)}
               >
-                <SelectTrigger className="h-8 w-[90px] text-xs border-0 bg-muted/50">
+                <SelectTrigger className="h-8 w-[80px] text-xs border-border/50 bg-muted/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -155,15 +151,13 @@ export const TaskRemindersPanel = ({
               </Select>
 
               {/* Remover */}
-              <Button
+              <button
                 type="button"
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors ml-auto shrink-0"
                 onClick={() => removeReminder(reminder.id)}
               >
                 <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              </button>
             </div>
           ))}
         </div>
@@ -175,7 +169,7 @@ export const TaskRemindersPanel = ({
           type="button"
           variant="outline"
           size="sm"
-          className="w-full h-8 text-xs gap-1.5 border-dashed"
+          className="w-full h-8 text-xs gap-1.5 border-dashed border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E]/50"
           onClick={addReminder}
         >
           <Plus className="h-3.5 w-3.5" />
