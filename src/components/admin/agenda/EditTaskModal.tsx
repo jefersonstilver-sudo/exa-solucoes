@@ -155,20 +155,9 @@ const formatCurrency = (value: number | null) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 };
 
-const priorityConfig: Record<string, { label: string; color: string }> = {
-  emergencia: { label: 'Emergência', color: 'bg-red-100 text-red-700 border-red-200' },
-  alta: { label: 'Alta', color: 'bg-orange-100 text-orange-700 border-orange-200' },
-  media: { label: 'Média', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-  baixa: { label: 'Baixa', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-};
-
-const statusConfig: Record<string, { label: string; color: string }> = {
-  pendente: { label: 'Pendente', color: 'bg-amber-100 text-amber-700 border-amber-200' },
-  em_andamento: { label: 'Em andamento', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  concluida: { label: 'Concluída', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-  nao_realizada: { label: 'Não realizada', color: 'bg-red-100 text-red-700 border-red-200' },
-  cancelada: { label: 'Cancelada', color: 'bg-slate-100 text-slate-700 border-slate-200' },
-};
+// Usando mappers centrais — removido priorityConfig e statusConfig locais
+import { getTaskPriorityConfig } from '@/constants/taskPriority';
+import { getTaskStatusConfig } from '@/constants/taskStatus';
 
 const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   const queryClient = useQueryClient();
