@@ -1,118 +1,75 @@
 
 
-# Plano: 4 Grupos de Correção — Agenda & Notificações
+# Plano: Redesign Visual — EditTaskModal + ToggleExa Unificado
 
-Execução sequencial: cada grupo aguarda confirmação antes do próximo.
-
----
-
-## GRUPO 1 — BUG CRÍTICO: task-reminder-scheduler ignora task_reminders
-
-**Problema**: A Edge Function usa apenas `exa_alerts_config.agenda_lembrete_pre_evento` (valor global fixo). A tabela `task_reminders` criada recentemente é ignorada.
-
-**Alterações**:
-
-### 1a. Migration — campo `fired_at` na tabela `task_reminders`
-```sql
-ALTER TABLE task_reminders ADD COLUMN IF NOT EXISTS fired_at timestamptz;
-```
-
-### 1b. Reescrever `supabase/functions/task-reminder-scheduler/index.ts`
-
-Nova lógica:
-1. Buscar tarefas do dia com `status IN ('pendente', 'em_andamento')` e `horario_inicio NOT NULL`
-2. Para cada tarefa, buscar seus `task_reminders` onde `ativo = true` e `fired_at IS NULL`
-3. Converter cada lembrete em minutos totais (valor * unidade): minutos=1, horas=60, dias=1440, semanas=10080
-4. Comparar: se `taskTotalMinutes - currentTotalMinutes == lembreteMinutos`, disparar
-5. Após disparo, atualizar `fired_at = NOW()` no registro
-6. **Fallback**: tarefas SEM registros em `task_reminders` usam o valor global `minutos_antes` da `exa_alerts_config` (comportamento atual preservado)
-7. Destinatários: mesma lógica atual (task_read_receipts → alertContacts fallback)
-8. Log em `task_alert_logs` com `alert_type = 'lembrete_custom_{valor}{unidade}'`
-
-**Arquivos**: 1 migration + 1 Edge Function reescrita
+Execução em 2 etapas conforme solicitado.
 
 ---
 
-## GRUPO 2 — NOVA FEATURE: follow-up para responsáveis
+## ETAPA 1 — Criar ToggleExa e substituir todos os Switch shadcn
 
-**Problema**: `task-follow-up-cron` envia só para o criador (Fase 1) e escala para diretores (Fase 2). Não notifica os responsáveis vinculados em `task_responsaveis`.
+### 1a. Criar `src/components/ui/toggle-exa.tsx`
+Componente conforme especificado no prompt: multi-color (red/green/blue/amber/gray), sizes sm/md, label com posição configurável, transição suave com cubic-bezier.
 
-**Alterações em `supabase/functions/task-follow-up-cron/index.ts`**:
+### 1b. Substituir Switch em 2 arquivos
 
-Inserir **Fase 1.5** entre a atual Fase 1 e Fase 2:
+| Arquivo | Ocorrências | Mudança |
+|---------|-------------|---------|
+| `EditTaskModal.tsx` (linhas 30, 1392, 1399) | 2 usos | `Switch` → `ToggleExa` com `color="red"` |
+| `ComputerDetailModal.tsx` (linhas 15, 374) | 1 uso | `Switch` → `ToggleExa` com `color="red"` |
 
-1. Após enviar para o criador, buscar `task_responsaveis` para a tarefa
-2. Para cada responsável, buscar telefone na tabela `users`
-3. Excluir o criador da lista (se já recebeu na Fase 1)
-4. Enviar mensagem: "A tarefa '[título]' estava prevista para [horário]. Foi concluída? Responda 1 para Sim ou 2 para Não."
-5. Atualizar `task_notification_queue` com status `sent_to_responsaveis`
+**Nota**: `AppleSwitch` nos demais arquivos (ModulePermissionsModal, AdvertiserSettings, AgendaNotificationSettingsModal, TaskRemindersPanel) também será substituída por `ToggleExa` para unificação total. São 4 arquivos adicionais. O `apple-switch.tsx` e `switch.tsx` originais não serão deletados.
 
-Ajuste na Fase 2 (escalação): verificar `sent_to_responsaveis` além de `sent_to_creator` para o timeout de 30min.
-
-Ajuste no `zapi-webhook` (se responder "2"):
-- Atualizar status da tarefa para `atrasada` (ou manter `pendente` com flag)
-- Notificar o criador: "O responsável [nome] informou que a tarefa '[título]' NÃO foi concluída."
-
-**Arquivos**: 1 Edge Function editada + 1 Edge Function editada (zapi-webhook, trecho de resposta "2")
+**Ajuste de API**: `Switch` usa `onCheckedChange(bool)`, `AppleSwitch` usa `onCheckedChange(bool)`. O `ToggleExa` usa `onChange(bool)` — todas as chamadas serão adaptadas.
 
 ---
 
-## GRUPO 3 — REDESIGN do EditTaskModal.tsx
+## ETAPA 2 — Redesign visual do EditTaskModal + TaskRemindersPanel
 
-### G3-01: Header sticky
-- Extrair o bloco do header (emoji + tipo + título + badges) para fora do `overflow-y-auto`
-- Aplicar `sticky top-0 bg-background z-10 pb-3 border-b`
+### 2a. Header sticky EXA (R-02-A)
+- Substituir `bg-muted/30` por gradiente sutil EXA: `bg-gradient-to-r from-[#9C1E1E]/5 to-transparent`
+- Emoji do tipo em container com `bg-[#9C1E1E]/10 rounded-2xl p-2.5`
+- Remover `statusConfig` e `priorityConfig` locais (linhas 158-171) — usar `getTaskStatusConfig()` de `taskStatus.ts` e `getTaskPriorityConfig()` de `taskPriority.ts`
+- Badges com classes dos mappers centrais
 
-### G3-02: Texto cortado no TaskRemindersPanel
-- No `TaskRemindersPanel.tsx`, trocar labels longas ("minutos antes") por abreviações: `min`, `h`, `dias`, `sem`
-- Ajustar o `SelectTrigger` de unidade para `w-[80px]` fixo em vez de `flex-1 min-w-[100px]`
-- Ajustar o `SelectTrigger` de tipo para `w-[100px]`
+### 2b. Coluna esquerda — form limpo (R-02-B)
+- Container: `space-y-5 px-6 py-5`
+- Labels uniformizados: `text-xs font-semibold uppercase tracking-wide text-muted-foreground`
+- Inputs: adicionar `focus-visible:ring-[#9C1E1E]/30 focus-visible:border-[#9C1E1E]`
+- Separadores: `<div className="border-t border-border/40" />`
 
-### G3-03: Sidebar com seções colapsáveis
-- Envolver "Monitor de Confirmações" (linhas 1117-1375) em `Collapsible` — fechado por padrão
-  - Header: `Confirmações ({confirmedCount}/{totalReceipts})`
-- Envolver "Contatos WhatsApp" (linhas 1401-1563) em `Collapsible` — fechado por padrão
-  - Header: `Contatos ({selectedNotifyContacts.length})`
-- "Lembretes" e "Ao salvar" permanecem sempre visíveis
+### 2c. Coluna direita — sidebar estruturada (R-02-C)
+- Seções com `rounded-xl border bg-background p-4 space-y-3`
+- Lembretes e "Ao Salvar" sempre visíveis
+- Confirmações e Contatos em Collapsible (já implementados no G3) — ajustar visual dos headers com badges EXA
+- Separadores entre seções: `space-y-4` no container principal, sem `<div className="border-t">` explícitos
 
-### G3-04: Mobile → bottom Drawer
-- Importar `Drawer` de vaul e `useAdvancedResponsive`
-- No render, se `isMobile`: renderizar `<Drawer>` com `<DrawerContent className="max-h-[92dvh]">` e handle de arrasto
-- Se desktop: manter `<Dialog>` atual
-- O conteúdo interno (form + sidebar) é o mesmo, apenas o wrapper muda
-- Em mobile o grid vira `grid-cols-1` (já faz isso pelo `md:grid-cols-[1fr_400px]`)
+### 2d. Footer profissional (R-02-D)
+- Botão "Excluir": ghost com ícone + texto, cor `destructive`
+- Botão "Salvar": `bg-[#9C1E1E] hover:bg-[#9C1E1E]/90 text-white` em vez do `bg-primary` genérico
+- Layout: `justify-between` com Excluir à esquerda, Cancelar+Salvar à direita
 
-**Arquivos**: `EditTaskModal.tsx` + `TaskRemindersPanel.tsx`
-
----
-
-## GRUPO 4 — NotificationsPage mobile
-
-**Problema**: Página desktop-only sem otimização mobile.
-
-**Alterações em `src/pages/admin/NotificationsPage.tsx`**:
-
-1. **Header responsivo**: Em mobile, título menor (`text-xl`), badge de não-lidas inline, botão "Marcar todas" como ícone-only
-2. **Cards mobile**: Cada notificação vira um card compacto com:
-   - Ícone de tipo (esquerda) + título + tempo relativo ("há 5 min")
-   - Mensagem truncada (`line-clamp-2`)
-   - Botão check à direita para marcar como lida
-3. **Empty state**: Ilustração com ícone `Bell` grande + texto orientativo
-4. **Filtros mobile**: Chips horizontais scrolláveis em vez de dropdown
-5. Usar `useAdvancedResponsive().isMobile` para alternar layouts
-
-**Arquivos**: `NotificationsPage.tsx`
+### 2e. TaskRemindersPanel redesign (R-03)
+- Cada lembrete: `rounded-xl border bg-background p-2.5 flex items-center gap-2`
+- `AppleSwitch` → `ToggleExa size="sm" color="red"`
+- Select de tipo com `w-[100px]`, unidade com `w-[80px]`
+- Input de valor com `w-14 text-center`
+- Botão remover: `hover:text-destructive hover:bg-destructive/10 rounded-lg`
+- Botão adicionar: `border-dashed border-[#9C1E1E]/30 text-[#9C1E1E]`
 
 ---
 
-## Resumo de execução
+## Arquivos alterados
 
-| Grupo | Arquivos | Tipo |
-|-------|----------|------|
-| G1 | 1 migration + `task-reminder-scheduler/index.ts` | Bug fix + migration |
-| G2 | `task-follow-up-cron/index.ts` + `zapi-webhook/index.ts` | Feature |
-| G3 | `EditTaskModal.tsx` + `TaskRemindersPanel.tsx` | Redesign UI |
-| G4 | `NotificationsPage.tsx` | Redesign UI |
+| Arquivo | Etapa | Tipo |
+|---------|-------|------|
+| `src/components/ui/toggle-exa.tsx` | 1 | Novo |
+| `src/components/admin/agenda/EditTaskModal.tsx` | 1+2 | Edição |
+| `src/modules/monitoramento-ia/components/anydesk/ComputerDetailModal.tsx` | 1 | Edição |
+| `src/components/admin/account-types/ModulePermissionsModal.tsx` | 1 | Edição |
+| `src/pages/advertiser/AdvertiserSettings.tsx` | 1 | Edição |
+| `src/pages/admin/tarefas/components/AgendaNotificationSettingsModal.tsx` | 1 | Edição |
+| `src/components/admin/agenda/TaskRemindersPanel.tsx` | 1+2 | Edição |
 
-Cada grupo será implementado e apresentado separadamente, aguardando confirmação antes de avançar.
+**Nenhuma lógica de negócio, hook, query ou state será alterado.**
 
