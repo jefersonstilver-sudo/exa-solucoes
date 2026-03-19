@@ -1,72 +1,118 @@
 
 
-# Plano: Lembretes de Notificação por Tarefa (estilo Google Calendar)
+# Plano: 4 Grupos de Correção — Agenda & Notificações
 
-## Problema
+Execução sequencial: cada grupo aguarda confirmação antes do próximo.
 
-O EditTaskModal não tem nenhum painel para configurar **lembretes individuais por tarefa** — ex: "notificar 5 minutos antes", "1 dia antes", "1 semana antes". Hoje só existe configuração **global** (AgendaNotificationSettingsModal) com um único "Lembrete Pré-Evento" fixo em X minutos. Falta a granularidade por evento como no Google Calendar.
+---
 
-## Solução
+## GRUPO 1 — BUG CRÍTICO: task-reminder-scheduler ignora task_reminders
 
-Criar uma tabela `task_reminders` para armazenar N regras de lembrete por tarefa, e adicionar um painel de lembretes dentro do EditTaskModal (sidebar direita) + CreateTaskModal.
+**Problema**: A Edge Function usa apenas `exa_alerts_config.agenda_lembrete_pre_evento` (valor global fixo). A tabela `task_reminders` criada recentemente é ignorada.
 
-## Alterações
+**Alterações**:
 
-### 1. Migration — nova tabela `task_reminders`
-
+### 1a. Migration — campo `fired_at` na tabela `task_reminders`
 ```sql
-CREATE TABLE task_reminders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-  tipo TEXT NOT NULL DEFAULT 'notificacao',  -- notificacao, email
-  unidade TEXT NOT NULL DEFAULT 'minutos',   -- minutos, horas, dias, semanas
-  valor INT NOT NULL DEFAULT 30,
-  ativo BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- RLS: authenticated users can manage
-ALTER TABLE task_reminders ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Authenticated manage task_reminders" ON task_reminders
-  FOR ALL TO authenticated USING (true) WITH CHECK (true);
-
--- Index for fast lookup
-CREATE INDEX idx_task_reminders_task_id ON task_reminders(task_id);
+ALTER TABLE task_reminders ADD COLUMN IF NOT EXISTS fired_at timestamptz;
 ```
 
-Ao criar uma tarefa sem lembretes customizados, inserir 3 regras padrão:
-- 30 minutos antes (Notificação)
-- 1 dia antes (Notificação)  
-- 1 semana antes (Notificação)
+### 1b. Reescrever `supabase/functions/task-reminder-scheduler/index.ts`
 
-### 2. Novo componente `TaskRemindersPanel.tsx`
+Nova lógica:
+1. Buscar tarefas do dia com `status IN ('pendente', 'em_andamento')` e `horario_inicio NOT NULL`
+2. Para cada tarefa, buscar seus `task_reminders` onde `ativo = true` e `fired_at IS NULL`
+3. Converter cada lembrete em minutos totais (valor * unidade): minutos=1, horas=60, dias=1440, semanas=10080
+4. Comparar: se `taskTotalMinutes - currentTotalMinutes == lembreteMinutos`, disparar
+5. Após disparo, atualizar `fired_at = NOW()` no registro
+6. **Fallback**: tarefas SEM registros em `task_reminders` usam o valor global `minutos_antes` da `exa_alerts_config` (comportamento atual preservado)
+7. Destinatários: mesma lógica atual (task_read_receipts → alertContacts fallback)
+8. Log em `task_alert_logs` com `alert_type = 'lembrete_custom_{valor}{unidade}'`
 
-Componente reutilizável (usado no EditTaskModal e CreateTaskModal) com:
-- Lista de lembretes existentes, cada um com:
-  - Select de unidade (minutos / horas / dias / semanas)
-  - Input numérico do valor
-  - Toggle ativo/inativo
-  - Botão remover
-- Botão "+ Adicionar lembrete" (máximo 5)
-- Visual estilo Apple/iOS consistente com o resto do modal
-- Responsivo (funciona na sidebar desktop e em tela cheia mobile)
+**Arquivos**: 1 migration + 1 Edge Function reescrita
 
-### 3. Atualizar `EditTaskModal.tsx`
+---
 
-- Na sidebar direita (seção "Notificações"), adicionar o `TaskRemindersPanel` acima do monitor de confirmações
-- Carregar lembretes da tarefa via query (`task_reminders` WHERE `task_id`)
-- Salvar lembretes no `handleSubmit` (upsert/delete conforme alterações)
-- Se a tarefa não tem lembretes, criar os 3 padrões na primeira abertura
+## GRUPO 2 — NOVA FEATURE: follow-up para responsáveis
 
-### 4. Atualizar `CreateTaskModal.tsx`
+**Problema**: `task-follow-up-cron` envia só para o criador (Fase 1) e escala para diretores (Fase 2). Não notifica os responsáveis vinculados em `task_responsaveis`.
 
-- Adicionar o `TaskRemindersPanel` no formulário
-- Ao criar a tarefa, inserir os lembretes configurados na tabela `task_reminders`
-- Iniciar com os 3 lembretes padrão pré-preenchidos
+**Alterações em `supabase/functions/task-follow-up-cron/index.ts`**:
 
-### 5. Atualizar tipos Supabase
+Inserir **Fase 1.5** entre a atual Fase 1 e Fase 2:
 
-- A tabela `task_reminders` será adicionada automaticamente aos tipos após a migration
+1. Após enviar para o criador, buscar `task_responsaveis` para a tarefa
+2. Para cada responsável, buscar telefone na tabela `users`
+3. Excluir o criador da lista (se já recebeu na Fase 1)
+4. Enviar mensagem: "A tarefa '[título]' estava prevista para [horário]. Foi concluída? Responda 1 para Sim ou 2 para Não."
+5. Atualizar `task_notification_queue` com status `sent_to_responsaveis`
 
-**5 alterações: 1 migration + 1 componente novo + 2 modais atualizados + tipos**
+Ajuste na Fase 2 (escalação): verificar `sent_to_responsaveis` além de `sent_to_creator` para o timeout de 30min.
+
+Ajuste no `zapi-webhook` (se responder "2"):
+- Atualizar status da tarefa para `atrasada` (ou manter `pendente` com flag)
+- Notificar o criador: "O responsável [nome] informou que a tarefa '[título]' NÃO foi concluída."
+
+**Arquivos**: 1 Edge Function editada + 1 Edge Function editada (zapi-webhook, trecho de resposta "2")
+
+---
+
+## GRUPO 3 — REDESIGN do EditTaskModal.tsx
+
+### G3-01: Header sticky
+- Extrair o bloco do header (emoji + tipo + título + badges) para fora do `overflow-y-auto`
+- Aplicar `sticky top-0 bg-background z-10 pb-3 border-b`
+
+### G3-02: Texto cortado no TaskRemindersPanel
+- No `TaskRemindersPanel.tsx`, trocar labels longas ("minutos antes") por abreviações: `min`, `h`, `dias`, `sem`
+- Ajustar o `SelectTrigger` de unidade para `w-[80px]` fixo em vez de `flex-1 min-w-[100px]`
+- Ajustar o `SelectTrigger` de tipo para `w-[100px]`
+
+### G3-03: Sidebar com seções colapsáveis
+- Envolver "Monitor de Confirmações" (linhas 1117-1375) em `Collapsible` — fechado por padrão
+  - Header: `Confirmações ({confirmedCount}/{totalReceipts})`
+- Envolver "Contatos WhatsApp" (linhas 1401-1563) em `Collapsible` — fechado por padrão
+  - Header: `Contatos ({selectedNotifyContacts.length})`
+- "Lembretes" e "Ao salvar" permanecem sempre visíveis
+
+### G3-04: Mobile → bottom Drawer
+- Importar `Drawer` de vaul e `useAdvancedResponsive`
+- No render, se `isMobile`: renderizar `<Drawer>` com `<DrawerContent className="max-h-[92dvh]">` e handle de arrasto
+- Se desktop: manter `<Dialog>` atual
+- O conteúdo interno (form + sidebar) é o mesmo, apenas o wrapper muda
+- Em mobile o grid vira `grid-cols-1` (já faz isso pelo `md:grid-cols-[1fr_400px]`)
+
+**Arquivos**: `EditTaskModal.tsx` + `TaskRemindersPanel.tsx`
+
+---
+
+## GRUPO 4 — NotificationsPage mobile
+
+**Problema**: Página desktop-only sem otimização mobile.
+
+**Alterações em `src/pages/admin/NotificationsPage.tsx`**:
+
+1. **Header responsivo**: Em mobile, título menor (`text-xl`), badge de não-lidas inline, botão "Marcar todas" como ícone-only
+2. **Cards mobile**: Cada notificação vira um card compacto com:
+   - Ícone de tipo (esquerda) + título + tempo relativo ("há 5 min")
+   - Mensagem truncada (`line-clamp-2`)
+   - Botão check à direita para marcar como lida
+3. **Empty state**: Ilustração com ícone `Bell` grande + texto orientativo
+4. **Filtros mobile**: Chips horizontais scrolláveis em vez de dropdown
+5. Usar `useAdvancedResponsive().isMobile` para alternar layouts
+
+**Arquivos**: `NotificationsPage.tsx`
+
+---
+
+## Resumo de execução
+
+| Grupo | Arquivos | Tipo |
+|-------|----------|------|
+| G1 | 1 migration + `task-reminder-scheduler/index.ts` | Bug fix + migration |
+| G2 | `task-follow-up-cron/index.ts` + `zapi-webhook/index.ts` | Feature |
+| G3 | `EditTaskModal.tsx` + `TaskRemindersPanel.tsx` | Redesign UI |
+| G4 | `NotificationsPage.tsx` | Redesign UI |
+
+Cada grupo será implementado e apresentado separadamente, aguardando confirmação antes de avançar.
 
