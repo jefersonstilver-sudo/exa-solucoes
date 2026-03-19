@@ -1115,8 +1115,16 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                 />
 
                 <div className="border-t" />
-                {/* Monitor de Confirmações */}
-                <div className="space-y-3">
+                {/* Monitor de Confirmações — Collapsible */}
+                <Collapsible open={confirmacaoOpen} onOpenChange={setConfirmacaoOpen}>
+                <CollapsibleTrigger className="flex items-center justify-between w-full py-1 cursor-pointer group">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                      <Bell className="h-3.5 w-3.5" /> Confirmações {totalReceipts > 0 && `(${confirmedCount}/${totalReceipts})`}
+                    </h3>
+                    <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", confirmacaoOpen && "rotate-180")} />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                <div className="space-y-3 pt-2">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
                       <Bell className="h-3.5 w-3.5" /> Notificações
