@@ -133,7 +133,8 @@ export default {
 			boxShadow: {
 				'enhanced': '0 10px 30px -5px rgba(74, 9, 104, 0.15), 0 8px 10px -6px rgba(74, 9, 104, 0.1)',
 				'enhanced-hover': '0 20px 35px -5px rgba(74, 9, 104, 0.2), 0 10px 15px -5px rgba(74, 9, 104, 0.15)',
-				'card-hover': '0 20px 30px -10px rgba(0, 0, 0, 0.15)'
+				'card-hover': '0 20px 30px -10px rgba(0, 0, 0, 0.15)',
+				'toggle': 'var(--ds-toggle-ring)',
 			},
 			keyframes: {
 				'accordion-down': {
