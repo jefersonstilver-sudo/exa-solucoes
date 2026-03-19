@@ -478,6 +478,19 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
               console.error('Erro ao vincular propostas:', propError);
             }
           }
+
+          // Inserir lembretes
+          if (taskReminders.length > 0) {
+            await supabase.from('task_reminders').insert(
+              taskReminders.map(r => ({
+                task_id: taskId,
+                tipo: r.tipo,
+                unidade: r.unidade,
+                valor: r.valor,
+                ativo: r.ativo,
+              }))
+            );
+          }
         }
       }
 
