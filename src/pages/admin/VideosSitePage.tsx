@@ -96,45 +96,20 @@ const VideosSitePage = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${folder}/${timestamp}.${fileExt}`;
 
-      // Obter signed URL para upload
-      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      let simulatedProgress = 0;
+      const progressInterval = setInterval(() => {
+        simulatedProgress = Math.min(simulatedProgress + 10, 90);
+        setProgress(simulatedProgress);
+      }, 500);
+
+      // Upload direto via SDK (sem signed URL)
+      const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .createSignedUploadUrl(fileName);
+        .upload(fileName, file, { upsert: true });
 
-      if (signedUrlError) throw signedUrlError;
+      clearInterval(progressInterval);
 
-      // Upload com tracking de progresso usando XMLHttpRequest
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-
-        // Tracking de progresso do upload
-        xhr.upload.addEventListener('progress', (e) => {
-          if (e.lengthComputable) {
-            const percentComplete = Math.round((e.loaded / e.total) * 100);
-            setProgress(percentComplete);
-          }
-        });
-
-        xhr.addEventListener('load', () => {
-          if (xhr.status === 200) {
-            resolve();
-          } else {
-            reject(new Error(`Upload failed with status ${xhr.status}`));
-          }
-        });
-
-        xhr.addEventListener('error', () => {
-          reject(new Error('Upload failed'));
-        });
-
-        xhr.addEventListener('abort', () => {
-          reject(new Error('Upload aborted'));
-        });
-
-        xhr.open('PUT', signedUrlData.signedUrl);
-        xhr.setRequestHeader('Content-Type', file.type);
-        xhr.send(file);
-      });
+      if (uploadError) throw uploadError;
 
       // Obter URL pública
       const { data: { publicUrl } } = supabase.storage
