@@ -96,9 +96,10 @@ const VideosSitePage = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${folder}/${timestamp}.${fileExt}`;
 
-      // Simular progresso enquanto o upload acontece
+      let simulatedProgress = 0;
       const progressInterval = setInterval(() => {
-        setProgress((prev) => Math.min(prev + 10, 90));
+        simulatedProgress = Math.min(simulatedProgress + 10, 90);
+        setProgress(simulatedProgress);
       }, 500);
 
       // Upload direto via SDK (sem signed URL)
