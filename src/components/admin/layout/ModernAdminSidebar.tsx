@@ -42,7 +42,8 @@ import {
   MessageCircle,
   CalendarDays,
   Lock,
-  Timer
+  Timer,
+  User as UserIcon
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -393,6 +394,19 @@ export function ModernAdminSidebar() {
           href: buildPath('configuracoes'),
           icon: Settings,
           moduleKey: MODULE_KEYS.configuracoes
+        }
+      ]
+    },
+    // 7. CONTA - Sempre visível
+    {
+      label: 'Conta',
+      icon: UserIcon,
+      items: [
+        {
+          title: 'Meu Perfil',
+          href: buildPath('meu-perfil'),
+          icon: UserIcon,
+          moduleKey: '__always_visible__'
         }
       ]
     }
