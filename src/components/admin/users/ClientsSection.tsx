@@ -30,7 +30,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CreateClientFromProposalModal } from './CreateClientFromProposalModal';
-import { extractWaitSeconds, isRateLimitError, DEFAULT_COOLDOWN_SECONDS } from '@/utils/resetPasswordCooldown';
+import { extractWaitSeconds, isRateLimitError, DEFAULT_COOLDOWN_SECONDS, setCooldown, getRemainingCooldown } from '@/utils/resetPasswordCooldown';
 
 interface User {
   id: string;
@@ -118,6 +118,12 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
   const [resetCooldowns, setResetCooldowns] = useState<Record<string, number>>({});
 
   const handleResetPassword = async (userEmail: string, userId?: string) => {
+    // Check global cooldown first
+    const globalRemaining = getRemainingCooldown(userEmail);
+    if (globalRemaining > 0) {
+      toast.error(`Aguarde ${globalRemaining} segundos antes de tentar novamente`);
+      return;
+    }
     if ((resetCooldowns[userEmail] || 0) > 0) {
       toast.error(`Aguarde ${resetCooldowns[userEmail]} segundos`);
       return;
@@ -130,6 +136,7 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
       if (error) {
         if (isRateLimitError(error)) {
           const wait = extractWaitSeconds(error.message) || 60;
+          setCooldown(userEmail, wait);
           toast.error(`Aguarde ${wait} segundos antes de tentar novamente`);
           return;
         }
@@ -141,9 +148,10 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
         await invalidateUserSessions(userId);
       }
 
+      setCooldown(userEmail, DEFAULT_COOLDOWN_SECONDS);
       toast.success(`Email de reset enviado para ${userEmail}`);
       
-      // Start cooldown for this email
+      // Start local cooldown for UI feedback
       setResetCooldowns(prev => ({ ...prev, [userEmail]: DEFAULT_COOLDOWN_SECONDS }));
       const interval = setInterval(() => {
         setResetCooldowns(prev => {
