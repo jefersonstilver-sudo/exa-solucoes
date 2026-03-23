@@ -1,79 +1,49 @@
 
-Problema real identificado: a API externa até está funcionando, mas nem toda exclusão de vídeo passa por ela.
 
-O que confirmei na auditoria:
-1. A edge function `delete-video-from-external-api` está viva e chama o endpoint externo corretamente.
-2. Teste manual funcionou para um vídeo vertical com 1 prédio.
-3. Também confirmei nos logs da edge function que ela chamou a API externa para outro pedido vertical com vários prédios.
-4. Portanto, o problema não é “a edge function não existe” nem “vertical não é suportado”.
+# Plano: Garantir que toda exclusão de vídeo chame a API externa
 
-Causa raiz encontrada:
-- Existem vários fluxos diferentes de exclusão no sistema.
-- Alguns fluxos chamam a edge function antes de apagar do banco.
-- Outros apagam direto em `pedido_videos` e nunca chamam a API externa.
+## Causa raiz identificada
 
-Arquivos com problema claro:
-- `src/components/admin/approvals/VideoAdminActions.tsx`
-  - hoje faz `supabase.from('pedido_videos').delete()` direto
-- `src/components/admin/approvals/RealRejectedVideosSection.tsx`
-  - hoje faz `supabase.from('pedido_videos').delete()` direto
-- `src/hooks/useActiveVideosForAllOrders.tsx`
-  - hoje faz `supabase.from('pedido_videos').delete()` direto
+Em `src/hooks/useVideoManagement.tsx`, o `handleRemove` (linha 145-210) faz:
+1. Busca `slot` do estado React local (tem `video_id`)
+2. Faz um SELECT em `pedido_videos` para obter `pedido_id`
+3. Se o SELECT retorna dados, chama a edge function
+4. Deleta do banco
 
-Arquivos que já chamam a API externa:
-- `src/hooks/useVideoManagement.tsx`
-- `src/services/videoActionService.ts`
-- `src/services/videoExternalDeletionService.ts`
+O problema: **o `orderId` já está disponível na closure do hook** (passado como prop), mas o código faz uma query extra desnecessária para buscar `pedido_id`. Se essa query falha silenciosamente (RLS, timing, etc.), a edge function é pulada mas o delete do banco funciona normalmente.
 
-Outro problema importante:
-- A edge function atual usa `Promise.all(...)`.
-- Se 1 prédio falha com 404/500 no endpoint externo, a função inteira retorna erro 500, mesmo tendo deletado em vários outros prédios.
-- Eu confirmei isso nos logs: houve prédios deletados com sucesso e depois a função abortou ao encontrar um prédio com “Pasta não encontrada no S3”.
+Além disso, o hook **não usa o helper centralizado** `deleteVideoWithExternalAPI`, criando divergência.
 
-Plano de correção:
-1. Centralizar a exclusão externa
-   - Criar/usar um único helper de exclusão de vídeo que sempre:
-     - busca `pedido_id`
-     - chama `delete-video-from-external-api`
-     - só depois remove do banco
-   - Todos os pontos de exclusão devem usar esse helper
+## Correção
 
-2. Corrigir todos os fluxos que hoje deletam direto
-   - Atualizar:
-     - `src/components/admin/approvals/VideoAdminActions.tsx`
-     - `src/components/admin/approvals/RealRejectedVideosSection.tsx`
-     - `src/hooks/useActiveVideosForAllOrders.tsx`
-   - Esses fluxos hoje bypassam completamente a integração externa
+### C-01: Migrar `handleRemove` para usar o helper centralizado
+**Arquivo**: `src/hooks/useVideoManagement.tsx`
 
-3. Tornar a edge function resiliente
-   - Ajustar `supabase/functions/delete-video-from-external-api/index.ts`
-   - Em vez de falhar tudo com `Promise.all`, retornar resultado por prédio:
-     - sucesso
-     - falha
-   - A função deve responder sucesso parcial quando alguns prédios falharem
-   - Isso evita a falsa impressão de que “não chamou nada” quando na verdade chamou parte dos endpoints
+- Remover a lógica inline de chamada da edge function (linhas 168-195)
+- Remover o delete inline do banco (linhas 197-200)
+- Substituir por chamada a `deleteVideoWithExternalAPI(slotId, slot.video_id, orderId)` passando os 3 parâmetros diretamente (sem query extra)
+- Manter as validações de negócio (is_base_video, último vídeo) antes da chamada
 
-4. Melhorar rastreabilidade
-   - Padronizar logs no frontend para mostrar:
-     - qual fluxo iniciou a exclusão
-     - qual `pedido_video_id`, `video_id` e `pedido_id` foram usados
-     - retorno da edge function
-   - Assim fica fácil validar no próximo teste de deleção
+### C-02: Melhorar o helper para logs mais claros
+**Arquivo**: `src/services/videoDeleteHelper.ts`
 
-5. Regra final esperada após implementação
-   - Qualquer exclusão de vídeo, horizontal ou vertical, em qualquer tela administrativa ou do anunciante:
-     - chama a API externa
-     - tenta deletar em todos os prédios do pedido
-     - não some silenciosamente sem integrar
+- Adicionar logs identificando qual fluxo chamou
+- Log explícito quando `video_id` ou `pedido_id` estão ausentes
+- Log explícito do resultado da edge function
 
-Detalhe técnico importante:
-- Pelo que vi, seu relato “não chegou nada na API” pode acontecer em dois cenários:
-  1. o fluxo usado apaga direto no banco sem chamar a edge function
-  2. a edge function chama vários prédios, mas aborta ao primeiro erro e a UI só enxerga falha genérica
+### C-03: Limpar videoActionService (código morto)
+**Arquivo**: `src/services/videoActionService.ts`
 
-Arquivos previstos na implementação:
-- `src/components/admin/approvals/VideoAdminActions.tsx`
-- `src/components/admin/approvals/RealRejectedVideosSection.tsx`
-- `src/hooks/useActiveVideosForAllOrders.tsx`
-- possivelmente `src/services/videoExternalDeletionService.ts` ou novo helper compartilhado
-- `supabase/functions/delete-video-from-external-api/index.ts`
+- A função `removeVideo` neste arquivo não é importada em nenhum lugar
+- Remover ou atualizar para usar o helper centralizado, evitando confusão futura
+
+## Resultado esperado
+- Toda exclusão de vídeo (admin ou anunciante, horizontal ou vertical) passa obrigatoriamente pela edge function `delete-video-from-external-api`
+- O `orderId` é passado diretamente, sem depender de query extra que pode falhar
+- Um único ponto de código para exclusão: `deleteVideoWithExternalAPI`
+
+## Arquivos alterados
+1. `src/hooks/useVideoManagement.tsx` — usar helper centralizado com orderId direto
+2. `src/services/videoDeleteHelper.ts` — melhorar logs
+3. `src/services/videoActionService.ts` — limpar/atualizar removeVideo
+
