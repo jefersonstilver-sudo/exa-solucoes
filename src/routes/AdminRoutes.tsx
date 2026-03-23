@@ -1,4 +1,5 @@
 import React, { Suspense, lazy } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from '@/pages/admin/Dashboard';
 import BuildingsManagement3 from '@/pages/admin/BuildingsManagement3';
