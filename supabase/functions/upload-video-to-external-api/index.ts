@@ -179,11 +179,14 @@ serve(async (req) => {
       programacao
     };
 
+    const isVertical = pedidoVideo.pedidos.tipo_produto === 'vertical_premium';
+
     const metadataJson = {
       [storageFileName]: {
         ...metadata,
         ativo: isFirstApproved,
-        status: 'new'
+        status: 'new',
+        ...(isVertical && { isPlus: false })
       }
     };
 
