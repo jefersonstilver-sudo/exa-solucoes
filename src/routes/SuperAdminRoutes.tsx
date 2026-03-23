@@ -86,6 +86,7 @@ const CentralTarefasPage = lazy(() => import('@/pages/admin/tarefas/CentralTaref
 const FullscreenAgendaPage = lazy(() => import('@/pages/admin/tarefas/FullscreenAgendaPage'));
 
 // Lazy imports para Processos & Operação
+const AdminProfileSettings = lazy(() => import('@/pages/admin/AdminProfileSettings'));
 const ProcessosPage = lazy(() => import('@/pages/admin/processos/ProcessosPage'));
 const DepartmentProcessesPage = lazy(() => import('@/pages/admin/processos/DepartmentProcessesPage'));
 const ProcessEditorPage = lazy(() => import('@/pages/admin/processos/ProcessEditorPage'));
@@ -264,6 +265,13 @@ const SuperAdminRoutes = () => {
       <Route path="seguranca" element={<SecurityDashboard />} />
       <Route path="zapi-diagnostico" element={<ZApiDiagnostics />} />
       
+      {/* ============ MEU PERFIL ============ */}
+      <Route path="meu-perfil" element={
+        <Suspense fallback={<GlobalLoadingPage />}>
+          <AdminProfileSettings />
+        </Suspense>
+      } />
+
       {/* ============ REDIRECTS (rotas antigas) ============ */}
       <Route path="monitoramento-ia" element={<Navigate to="/super_admin/paineis-exa" replace />} />
       <Route path="monitoramento-ia/dashboard" element={<Navigate to="/super_admin" replace />} />

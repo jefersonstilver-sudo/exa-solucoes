@@ -41,6 +41,9 @@ import ProtectedModuleRoute from '@/components/admin/ProtectedModuleRoute';
 import { MODULE_KEYS } from '@/hooks/useDynamicModulePermissions';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
 
+// Meu Perfil
+const AdminProfileSettings = lazy(() => import('@/pages/admin/AdminProfileSettings'));
+
 // Lazy load editor video control page
 const EditorVideoControlePage = lazy(() => import('@/pages/video-editor/VideoEditorAccessControl'));
 
@@ -432,6 +435,13 @@ const AdminRoutes = () => {
         </ProtectedModuleRoute>
       } />
       
+      {/* ============ MEU PERFIL ============ */}
+      <Route path="meu-perfil" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando perfil..." />}>
+          <AdminProfileSettings />
+        </Suspense>
+      } />
+
       {/* ============ REDIRECTS (rotas antigas) ============ */}
       <Route path="monitoramento-ia" element={<Navigate to="/admin/paineis-exa" replace />} />
       <Route path="monitoramento-ia/dashboard" element={<Navigate to="/admin" replace />} />
