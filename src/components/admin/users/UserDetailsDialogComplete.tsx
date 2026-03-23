@@ -36,7 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { extractWaitSeconds, isRateLimitError, DEFAULT_COOLDOWN_SECONDS } from '@/utils/resetPasswordCooldown';
+import { extractWaitSeconds, isRateLimitError, DEFAULT_COOLDOWN_SECONDS, setCooldown, getRemainingCooldown } from '@/utils/resetPasswordCooldown';
 import { UserActivityTimeline } from './UserActivityTimeline';
 import { updateUserRoleInDB } from '@/services/userRoleService';
 import { CCEmailsInput } from '@/components/ui/cc-emails-input';
@@ -751,7 +751,11 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
                           variant="outline"
                           size="sm"
                           onClick={async () => {
-                            if (resetCooldown > 0) return;
+                            const globalRemaining = getRemainingCooldown(user.email);
+                            if (globalRemaining > 0 || resetCooldown > 0) {
+                              toast.error(`Aguarde ${globalRemaining || resetCooldown} segundos`);
+                              return;
+                            }
                             try {
                               setLoading(true);
                               const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
@@ -760,12 +764,14 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
                               if (error) {
                                 if (isRateLimitError(error)) {
                                   const wait = extractWaitSeconds(error.message) || 60;
+                                  setCooldown(user.email, wait);
                                   startResetCooldown(wait);
                                   toast.error(`Aguarde ${wait} segundos antes de tentar novamente`);
                                   return;
                                 }
                                 throw error;
                               }
+                              setCooldown(user.email, DEFAULT_COOLDOWN_SECONDS);
                               startResetCooldown(DEFAULT_COOLDOWN_SECONDS);
                               toast.success('Email de reset enviado!', {
                                 description: `Link enviado para ${user.email}`
