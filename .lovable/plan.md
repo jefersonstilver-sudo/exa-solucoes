@@ -1,47 +1,48 @@
 
 
-# Plano: Corrigir label do sidebar + Página "Meu Perfil" para admins/funcionários
+# Plano: Menu dinâmico baseado em permissões + redirect inteligente
 
-## Problema 1 — Label incorreta na sidebar
+## Problema
+O `UserMenu.tsx` (dropdown do avatar na homepage) mostra itens hardcoded por role. A Jeniffer (Comercial, role `admin`) vê "Dashboard Administrativo", "Prédios", "Painéis", "Aprovações" — mas quando clica, recebe "Acesso Restrito" porque ela não tem esses módulos liberados na `role_permissions`.
 
-A sidebar (`ModernAdminSidebar.tsx`) mostra labels estáticas como "Admin Geral" baseadas apenas no `role`. A Jeniffer é do departamento **Comercial** mas aparece como "Admin Geral" porque o `getAdminTitle()` não considera o departamento. O profile já carrega `departamento` do banco (via `useAuth`).
+Além disso, o badge mostra "ADMIN" genérico em vez do departamento.
 
-**Correção**: Alterar `getAdminTitle()` para usar o nome do departamento quando disponível:
-- `super_admin` → "CEO / Diretoria"
-- `admin` → "Coordenação"
-- `admin_departamental` / roles legados → nome do departamento (ex: "Comercial")
-- Fallback: label atual
+## Correções
 
-Também atualizar `getRoleDisplayInfo` em `userRoleService.ts` e os mapas de labels em `UserDetailsDialog.tsx`, `UserDetailsDialogComplete.tsx`, `IndexaTeamSection.tsx`, `UserManagementPanel.tsx` para usar a mesma lógica com departamento.
+### 1. UserMenu dinâmico com permissões reais
+**Arquivo**: `src/components/user/UserMenu.tsx`
 
-## Problema 2 — Não existe página "Meu Perfil" para admins
+- Importar `useDynamicModulePermissions` 
+- Para o bloco `isAdmin && !isSuperAdmin` (e `isAdminFinanceiro`, `isAdminMarketing`): substituir a lista hardcoded por uma lista filtrada que só mostra itens com `hasModuleAccess(moduleKey)` === true
+- O link principal "Dashboard" vai para o primeiro módulo habilitado em vez de `/admin` fixo
+- Badge: usar departamento do `userProfile` quando disponível (ex: "COMERCIAL" em vez de "ADMIN")
 
-A `ProfileSettings.tsx` existe mas **não tem rota** (foi removida em favor de `AdvertiserSettings`). Admins e funcionários não têm acesso a:
-- Verificação de WhatsApp (para EXA Alerts)
-- Ativação de 2FA
-- Configurações pessoais dentro do painel admin
+### 2. Redirect inteligente na rota index do admin
+**Arquivo**: `src/routes/AdminRoutes.tsx`
 
-**Solução**: Criar uma página completa `AdminProfileSettings.tsx` com:
+- Criar componente `AdminIndexRedirect` que verifica qual é o primeiro módulo liberado e redireciona para ele
+- Se `dashboard` está liberado → `/admin` (Dashboard)
+- Se não, encontra o primeiro módulo habilitado e redireciona (ex: `/admin/pedidos`, `/admin/propostas`)
+- Se nenhum módulo liberado → `/admin/meu-perfil`
 
-### Seções da página:
-1. **Informações Pessoais** — Nome, email (read-only), telefone
-2. **Verificação de WhatsApp** — Reutilizar `WhatsAppVerificationModal` para validar telefone e ficar disponível para notificações EXA Alerts
-3. **Autenticação em Duas Etapas (2FA)** — Toggle para ativar/desativar, idêntico ao dos clientes em `AdvertiserSettings.tsx` (requer WhatsApp verificado primeiro)
-4. **Segurança** — Botão de reset de senha (com cooldown global)
-5. **Informações da Conta** — ID, data de criação, cargo, departamento
+### 3. Mapeamento módulo → rota
+Definir um mapa simples `MODULE_ROUTES` conectando cada `MODULE_KEY` à sua rota e label/ícone para uso tanto no UserMenu quanto no redirect:
 
-### Rota e navegação:
-- Adicionar rota `meu-perfil` em `AdminRoutes.tsx` e `SuperAdminRoutes.tsx`
-- Adicionar link "Meu Perfil" no footer da sidebar (ao lado do avatar) e no dropdown do header
+```text
+dashboard → /admin (Dashboard)
+pedidos → /admin/pedidos (Pedidos)  
+predios → /admin/predios (Prédios)
+paineis → /admin/paineis (Painéis)
+aprovacoes → /admin/aprovacoes (Aprovações)
+propostas → /admin/propostas (Propostas)
+...etc
+```
 
 ## Arquivos alterados
 
 | # | Arquivo | Mudança |
 |---|---------|---------|
-| 1 | `src/components/admin/layout/ModernAdminSidebar.tsx` | Corrigir `getAdminTitle()` para usar departamento; adicionar link "Meu Perfil" |
-| 2 | `src/pages/admin/AdminProfileSettings.tsx` | **NOVO** — Página completa de perfil admin com WhatsApp, 2FA, senha |
-| 3 | `src/routes/AdminRoutes.tsx` | Adicionar rota `meu-perfil` |
-| 4 | `src/routes/SuperAdminRoutes.tsx` | Adicionar rota `meu-perfil` |
-| 5 | `src/components/admin/layout/AdminHeader.tsx` | Adicionar link "Meu Perfil" no dropdown |
-| 6 | `src/components/admin/layout/AdminSidebar.tsx` | Corrigir `getAdminTitle()` para usar departamento |
+| 1 | `src/components/user/UserMenu.tsx` | Menu dinâmico baseado em `hasModuleAccess`; badge com departamento |
+| 2 | `src/routes/AdminRoutes.tsx` | Componente `AdminIndexRedirect` para redirecionar ao primeiro módulo permitido |
+| 3 | `src/hooks/useDynamicModulePermissions.ts` | Adicionar mapa `MODULE_ROUTES` com rota + label + ícone de cada módulo |
 
