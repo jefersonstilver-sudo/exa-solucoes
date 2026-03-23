@@ -101,8 +101,9 @@ const UserMenu = () => {
   const getRoleBadge = () => {
     if (isSuperAdmin) return { label: "MASTER", colors: "bg-gradient-to-r from-amber-500/10 to-orange-500/10 text-amber-700 border-amber-200/50" };
     const dept = (user as any)?.departamento;
-    if (dept) {
-      return { label: dept.toUpperCase(), colors: "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-700 border-blue-200/50" };
+    const deptName = typeof dept === 'string' ? dept : dept?.name;
+    if (deptName) {
+      return { label: deptName.toUpperCase(), colors: "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-700 border-blue-200/50" };
     }
     if (isAdmin) return { label: "ADMIN", colors: "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-700 border-blue-200/50" };
     if (isAdminFinanceiro) return { label: "FINANCEIRO", colors: "bg-gradient-to-r from-green-500/10 to-emerald-500/10 text-green-700 border-green-200/50" };
