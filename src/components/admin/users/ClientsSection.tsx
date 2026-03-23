@@ -30,6 +30,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CreateClientFromProposalModal } from './CreateClientFromProposalModal';
+import { extractWaitSeconds, isRateLimitError, DEFAULT_COOLDOWN_SECONDS } from '@/utils/resetPasswordCooldown';
 
 interface User {
   id: string;
@@ -114,13 +115,26 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
     }
   };
 
+  const [resetCooldowns, setResetCooldowns] = useState<Record<string, number>>({});
+
   const handleResetPassword = async (userEmail: string, userId?: string) => {
+    if ((resetCooldowns[userEmail] || 0) > 0) {
+      toast.error(`Aguarde ${resetCooldowns[userEmail]} segundos`);
+      return;
+    }
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
         redirectTo: `${window.location.origin}/reset-password`
       });
 
-      if (error) throw error;
+      if (error) {
+        if (isRateLimitError(error)) {
+          const wait = extractWaitSeconds(error.message) || 60;
+          toast.error(`Aguarde ${wait} segundos antes de tentar novamente`);
+          return;
+        }
+        throw error;
+      }
 
       // 🚨 Invalidar sessões se temos o userId
       if (userId) {
@@ -128,6 +142,16 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
       }
 
       toast.success(`Email de reset enviado para ${userEmail}`);
+      
+      // Start cooldown for this email
+      setResetCooldowns(prev => ({ ...prev, [userEmail]: DEFAULT_COOLDOWN_SECONDS }));
+      const interval = setInterval(() => {
+        setResetCooldowns(prev => {
+          const remaining = (prev[userEmail] || 0) - 1;
+          if (remaining <= 0) { clearInterval(interval); const { [userEmail]: _, ...rest } = prev; return rest; }
+          return { ...prev, [userEmail]: remaining };
+        });
+      }, 1000);
     } catch (error) {
       console.error('Erro ao resetar senha:', error);
       toast.error('Erro ao enviar email de reset');

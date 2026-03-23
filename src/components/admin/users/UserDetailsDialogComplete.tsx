@@ -36,6 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { extractWaitSeconds, isRateLimitError, DEFAULT_COOLDOWN_SECONDS } from '@/utils/resetPasswordCooldown';
 import { UserActivityTimeline } from './UserActivityTimeline';
 import { updateUserRoleInDB } from '@/services/userRoleService';
 import { CCEmailsInput } from '@/components/ui/cc-emails-input';
@@ -78,6 +79,23 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
   const [loading, setLoading] = useState(false);
   const [blockingUser, setBlockingUser] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
+  const [resetCooldown, setResetCooldown] = useState(0);
+  const resetCooldownRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  React.useEffect(() => {
+    return () => { if (resetCooldownRef.current) clearInterval(resetCooldownRef.current); };
+  }, []);
+
+  const startResetCooldown = (seconds: number) => {
+    setResetCooldown(seconds);
+    if (resetCooldownRef.current) clearInterval(resetCooldownRef.current);
+    resetCooldownRef.current = setInterval(() => {
+      setResetCooldown(prev => {
+        if (prev <= 1) { clearInterval(resetCooldownRef.current!); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
   const [selectedRole, setSelectedRole] = useState(user?.role || 'client');
   const [editData, setEditData] = useState({
     name: '',
@@ -733,12 +751,22 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
                           variant="outline"
                           size="sm"
                           onClick={async () => {
+                            if (resetCooldown > 0) return;
                             try {
                               setLoading(true);
                               const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
                                 redirectTo: `${window.location.origin}/reset-password`
                               });
-                              if (error) throw error;
+                              if (error) {
+                                if (isRateLimitError(error)) {
+                                  const wait = extractWaitSeconds(error.message) || 60;
+                                  startResetCooldown(wait);
+                                  toast.error(`Aguarde ${wait} segundos antes de tentar novamente`);
+                                  return;
+                                }
+                                throw error;
+                              }
+                              startResetCooldown(DEFAULT_COOLDOWN_SECONDS);
                               toast.success('Email de reset enviado!', {
                                 description: `Link enviado para ${user.email}`
                               });
@@ -748,7 +776,7 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
                               setLoading(false);
                             }
                           }}
-                          disabled={loading}
+                          disabled={loading || resetCooldown > 0}
                           className="w-full border-amber-300 text-amber-700 hover:bg-amber-100"
                         >
                           {loading ? (
@@ -756,7 +784,7 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
                           ) : (
                             <Key className="h-4 w-4 mr-2" />
                           )}
-                          Enviar Email de Reset de Senha
+                          {resetCooldown > 0 ? `Aguarde ${resetCooldown}s` : 'Enviar Email de Reset de Senha'}
                         </Button>
                       </div>
 

@@ -11,6 +11,7 @@ import { Loader2, User, Mail, Phone, Building2, Lock, ArrowLeft, Save, Send } fr
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
+import { extractWaitSeconds, isRateLimitError, DEFAULT_COOLDOWN_SECONDS } from '@/utils/resetPasswordCooldown';
 import { CompanyBrandSection } from '@/components/settings/CompanyBrandSection';
 import { cn } from '@/lib/utils';
 import { NotificationSettings } from '@/components/admin/notifications/NotificationSettings';
@@ -35,7 +36,23 @@ const ProfileSettings = () => {
 
   const [saving, setSaving] = useState(false);
   const [sendingPasswordReset, setSendingPasswordReset] = useState(false);
+  const [resetCooldown, setResetCooldown] = useState(0);
+  const resetCooldownRef = React.useRef<NodeJS.Timeout | null>(null);
 
+  React.useEffect(() => {
+    return () => { if (resetCooldownRef.current) clearInterval(resetCooldownRef.current); };
+  }, []);
+
+  const startResetCooldown = (seconds: number) => {
+    setResetCooldown(seconds);
+    if (resetCooldownRef.current) clearInterval(resetCooldownRef.current);
+    resetCooldownRef.current = setInterval(() => {
+      setResetCooldown(prev => {
+        if (prev <= 1) { clearInterval(resetCooldownRef.current!); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   useEffect(() => {
     if (settings) {
@@ -82,6 +99,8 @@ const ProfileSettings = () => {
       return;
     }
 
+    if (resetCooldown > 0) return;
+
     setSendingPasswordReset(true);
 
     try {
@@ -89,8 +108,17 @@ const ProfileSettings = () => {
         redirectTo: `${window.location.origin}/reset-password`,
       });
 
-      if (error) throw error;
+      if (error) {
+        if (isRateLimitError(error)) {
+          const wait = extractWaitSeconds((error as any).message) || 60;
+          startResetCooldown(wait);
+          toast.error(`Aguarde ${wait} segundos antes de tentar novamente`);
+          return;
+        }
+        throw error;
+      }
 
+      startResetCooldown(DEFAULT_COOLDOWN_SECONDS);
       toast.success('Link de redefinição enviado para seu email!');
     } catch (error) {
       console.error('Erro ao solicitar redefinição:', error);
@@ -247,7 +275,7 @@ const ProfileSettings = () => {
                 <Button
                   onClick={handlePasswordResetRequest}
                   className="w-full"
-                  disabled={sendingPasswordReset}
+                  disabled={sendingPasswordReset || resetCooldown > 0}
                   variant="secondary"
                 >
                   {sendingPasswordReset ? (
@@ -255,6 +283,8 @@ const ProfileSettings = () => {
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Enviando...
                     </>
+                  ) : resetCooldown > 0 ? (
+                    <>Aguarde {resetCooldown}s</>
                   ) : (
                     <>
                       <Send className="mr-2 h-4 w-4" />
