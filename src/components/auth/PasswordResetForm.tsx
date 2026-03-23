@@ -100,7 +100,7 @@ export const PasswordResetForm = ({
         <Button 
           type="submit" 
           className="w-full"
-          disabled={isLoading}
+          disabled={isLoading || cooldown > 0}
         >
           {isLoading ? 'Enviando...' : cooldown > 0 ? `Aguarde ${cooldown}s` : 'Enviar instruções'}
         </Button>
