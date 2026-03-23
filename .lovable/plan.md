@@ -1,64 +1,63 @@
 
 
-# Plano: Corrigir nomenclatura, filtro de permissões e visibilidade do Meu Perfil
+# Plano: Correção completa de labels, filtros e redirect departamental
 
-## Diagnóstico
+## Diagnóstico confirmado
 
-### Por que o filtro não funciona
-O `useDynamicModulePermissions` busca permissões na tabela `role_permissions` filtrando por `role_key`. Jeniffer tem role `admin` (igual a Coordenação), então recebe **todas** as permissões do role `admin` — incluindo Dashboard, Prédios, Painéis, Aprovações. O sistema não diferencia por departamento.
+### Por que a sidebar ainda mostra itens não liberados
+O banco de dados ESTÁ correto — existem 11 permissões departamentais para Comercial (propostas, pedidos, contatos, crm_hub, etc.) e módulos como `dashboard`, `predios`, `paineis`, `aprovacoes` NÃO estão na lista. O hook `useDynamicModulePermissions` prioriza dept-specific quando existem registros. Porém há **2 bugs de mapeamento**:
+- `CRM Hub` no sidebar usa `MODULE_KEYS.crm_site`, mas no banco a permissão é `crm_hub` → CRM Hub fica invisível para Comercial
+- `Central de Tarefas` usa `MODULE_KEYS.dashboard`, mas deveria usar `minha_manha` (que está habilitado para Comercial)
 
-### Por que o badge mostra "ADMIN"
-O `UserMenu.tsx` tenta ler `(user as any)?.departamento`, mas o `useUserSession` retorna `userProfile` como `user`. O `departamento` vem como um objeto `{id, name, color, icon, display_order}` do `useAuth`. O código já tenta extrair `dept?.name`, mas na prática o campo pode não estar chegando ou o fallback para "ADMIN" está sendo atingido.
+### Por que aparece "Admin Geral" e "Painel Administrativo"
+A label "Admin Geral" existe em **4 arquivos** diferentes, incluindo a sidebar legada (`AdminSidebar.tsx`), o header legado (`AdminHeader.tsx`), o `ModernAdminHeader.tsx`, o `userRoleService.ts` e o `UserManagementPanel.tsx`. A sidebar moderna já tem lógica correta para usar departamento, mas os outros componentes NÃO foram atualizados.
 
-### Por que "Meu Perfil" não aparece na sidebar
-Já está no footer (linhas 598-621 do sidebar), mas não como item de menu no corpo da sidebar.
+### Onde "Meu Perfil" está faltando
+Já está no sidebar (grupo "Conta") e nas rotas. Verificar se está renderizando — pode estar sendo filtrado por algum bug.
 
 ---
 
 ## Correções
 
-### C-01: Permissões por departamento (não só por role)
+### C-01: Corrigir mapeamento de module keys no sidebar
+**Arquivo**: `src/components/admin/layout/ModernAdminSidebar.tsx`
+- `CRM Hub`: trocar moduleKey de `MODULE_KEYS.crm_site` para `MODULE_KEYS.crm_hub`
+- `Central de Tarefas`: trocar moduleKey de `MODULE_KEYS.dashboard` para `MODULE_KEYS.minha_manha` (ou criar novo key)
+- Garantir que `crm_hub` exista em `MODULE_KEYS`
 
-A tabela `role_permissions` precisa suportar filtro por `departamento_id` além de `role_key`. Sem isso, é impossível dar permissões diferentes para dois usuários com o mesmo role `admin` mas departamentos diferentes.
+### C-02: Atualizar labels em TODOS os componentes
+Substituir "Admin Geral", "Administrador Geral", "Admin" por lógica baseada em departamento em:
 
-**Migration**: Adicionar coluna opcional `departamento_id` na tabela `role_permissions`. A query passa a filtrar por `role_key` + `departamento_id` quando o usuário tem departamento.
+| Arquivo | Label atual | Correção |
+|---------|------------|---------|
+| `AdminSidebar.tsx` line 272 | `'Admin Geral'` | Usar departamento ou "Coordenação" |
+| `ModernAdminHeader.tsx` line 51 | `'Admin'` | Usar departamento ou "Coordenação" |
+| `AdminHeader.tsx` line 96 | `'Admin'` | Usar departamento ou "Coordenação" |
+| `userRoleService.ts` line 98 | `'Administrador Geral'` | `'Coordenação'` (label genérico, dept aparece nos componentes) |
+| `UserManagementPanel.tsx` (5 ocorrências) | `'Administrador Geral'` / `'Admin Geral'` | `'Coordenação'` |
 
-```text
-Lógica:
-1. Se o usuário tem departamento_id → buscar role_permissions WHERE role_key = X AND departamento_id = Y
-2. Se não encontrar resultados → fallback para WHERE role_key = X AND departamento_id IS NULL
-3. CEO → acesso total (sem consulta)
-```
+Padrão: se o usuário tem `departamento.name`, mostrar esse nome. Senão, usar "Coordenação" para role `admin`.
 
+### C-03: Redirect departamental inteligente
+**Arquivo**: `src/routes/AdminRoutes.tsx` — `AdminIndexRedirect`
+
+Atualizar a lista de prioridade para considerar o setor. Para Comercial, a prioridade natural já é: `pedidos, propostas, contatos` — que são os primeiros na lista e estão habilitados. Confirmar que o redirect funciona corretamente com as permissões dept-specific.
+
+Adicionar mapa de prioridade por departamento:
+- Comercial → propostas, pedidos, contatos, crm_hub
+- Marketing → leads, emails, videos_site
+- Financeiro → financeiro, relatorios, pedidos
+- Administrativo → dashboard, predios, paineis
+- Tecnologia → processos, configuracoes
+
+### C-04: Adicionar `crm_hub` ao MODULE_KEYS e MODULE_ROUTES
 **Arquivo**: `src/hooks/useDynamicModulePermissions.ts`
-- Alterar a query para incluir `departamento_id` do `userProfile`
-- Implementar fallback para permissões genéricas do role
+- Verificar se `crm_hub` já existe em MODULE_KEYS (sim, existe como valor `'crm_hub'`)
+- Mas o CRM Hub na sidebar usa `MODULE_KEYS.crm_site` — essa é a inconsistência
+- Corrigir a referência no sidebar
 
-### C-02: Inserir permissões por departamento
-
-**Migration SQL**: Inserir registros na `role_permissions` para cada departamento. Ex: para o departamento Comercial com role `admin`, habilitar apenas os módulos que a equipe comercial precisa (propostas, pedidos, contatos, CRM, etc.) e desabilitar os que não precisa (dashboard administrativo completo, prédios, painéis, aprovações de vídeo).
-
-### C-03: Corrigir badge no UserMenu
-
-**Arquivo**: `src/components/user/UserMenu.tsx`
-- O `user` do `useUserSession` é na verdade `userProfile` do `useAuth`, que tem `departamento` como `UserDepartment | undefined`
-- Trocar `(user as any)?.departamento` por acesso tipado correto
-- Garantir que o nome do departamento é extraído corretamente
-
-### C-04: Corrigir nomenclatura na sidebar
-
-**Arquivo**: `src/components/admin/layout/ModernAdminSidebar.tsx`
-- `getAdminTitle()` já tenta usar departamento, mas o fallback para role `admin` retorna "Coordenação"
-- Jeniffer tem role `admin` e departamento "Comercial" — o `dept` deveria ser encontrado
-- Investigar se `userProfile.departamento` está populado corretamente (pode ser que a join não retorne dados)
-- Mudar o título "Painel Administrativo" para "Painel {Departamento}" quando o departamento existe
-
-### C-05: Adicionar "Meu Perfil" como item na sidebar
-
-**Arquivo**: `src/components/admin/layout/ModernAdminSidebar.tsx`
-- Adicionar item "Meu Perfil" em um grupo existente (ex: no final da lista, ou em um grupo "Conta")
-- Rota: `buildPath('meu-perfil')`
-- Este item não precisa de permissão — sempre visível para qualquer admin/funcionário
+### C-05: Verificar "Meu Perfil" renderiza corretamente
+Confirmar que o grupo "Conta" com `__always_visible__` não está sendo removido por algum filtro. Adicionar console.log temporário se necessário.
 
 ---
 
@@ -66,8 +65,13 @@ Lógica:
 
 | # | Arquivo | Mudança |
 |---|---------|---------|
-| 1 | Migration SQL | Adicionar `departamento_id` à `role_permissions` + inserir permissões por departamento |
-| 2 | `src/hooks/useDynamicModulePermissions.ts` | Query com filtro por `departamento_id` + fallback |
-| 3 | `src/components/user/UserMenu.tsx` | Corrigir extração do departamento + badge |
-| 4 | `src/components/admin/layout/ModernAdminSidebar.tsx` | Título dinâmico + item "Meu Perfil" no menu |
+| 1 | `src/components/admin/layout/ModernAdminSidebar.tsx` | Fix moduleKeys (crm_site→crm_hub, dashboard→minha_manha) |
+| 2 | `src/components/admin/layout/AdminSidebar.tsx` | "Admin Geral" → departamento/Coordenação |
+| 3 | `src/components/admin/layout/ModernAdminHeader.tsx` | "Admin" → departamento/Coordenação |
+| 4 | `src/components/admin/layout/AdminHeader.tsx` | "Admin" → departamento/Coordenação |
+| 5 | `src/services/userRoleService.ts` | "Administrador Geral" → "Coordenação" |
+| 6 | `src/components/admin/users/UserManagementPanel.tsx` | 5 ocorrências "Admin Geral"/"Administrador Geral" → "Coordenação" |
+| 7 | `src/routes/AdminRoutes.tsx` | Prioridade de redirect por departamento |
+
+Nenhuma migration necessária — o banco já está correto.
 
