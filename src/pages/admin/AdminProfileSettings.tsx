@@ -22,7 +22,8 @@ import type { UserRole } from '@/types/userTypes';
 
 const AdminProfileSettings = () => {
   const { userProfile, refreshUserProfile } = useAuth();
-  const { requestReset, isOnCooldown, remainingSeconds } = usePasswordReset();
+  const email = userProfile?.email;
+  const { sendReset, isLoading: resetHookLoading, cooldown } = usePasswordReset(email);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -37,7 +38,7 @@ const AdminProfileSettings = () => {
   const [createdAt, setCreatedAt] = useState('');
   const [userId, setUserId] = useState('');
   const [departamento, setDepartamento] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
+  const [departamento, setDepartamento] = useState('');
 
   const loadProfile = useCallback(async () => {
     if (!userProfile) return;
@@ -62,7 +63,11 @@ const AdminProfileSettings = () => {
       setPhoneVerified(userData?.telefone_verificado === true || !!userData?.telefone_verificado_at);
       setCreatedAt(authUser.user.created_at || '');
       setUserId(authUser.user.id);
-      setDepartamento(userData?.departamento || userProfile?.departamento || '');
+      setDepartamento(
+        typeof userProfile?.departamento === 'object' && userProfile?.departamento?.name 
+          ? userProfile.departamento.name 
+          : ''
+      );
     } catch (error) {
       console.error('Erro ao carregar perfil:', error);
       toast.error('Erro ao carregar perfil');
@@ -96,13 +101,7 @@ const AdminProfileSettings = () => {
   };
 
   const handleResetPassword = async () => {
-    if (!email) return;
-    setResetLoading(true);
-    try {
-      await requestReset(email);
-    } finally {
-      setResetLoading(false);
-    }
+    await sendReset();
   };
 
   const handleToggle2FA = async (checked: boolean) => {
@@ -315,15 +314,15 @@ const AdminProfileSettings = () => {
               <Button 
                 variant="outline" 
                 onClick={handleResetPassword} 
-                disabled={resetLoading || isOnCooldown}
+                disabled={resetHookLoading || cooldown > 0}
                 className="min-h-[44px]"
               >
-                {resetLoading ? (
+                {resetHookLoading ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
                   <Key className="h-4 w-4 mr-2" />
                 )}
-                {isOnCooldown ? `Aguarde ${remainingSeconds}s` : 'Enviar Link'}
+                {cooldown > 0 ? `Aguarde ${cooldown}s` : 'Enviar Link'}
               </Button>
             </div>
           </CardContent>
