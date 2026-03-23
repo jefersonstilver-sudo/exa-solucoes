@@ -8,6 +8,7 @@ import { Upload, Video, Loader2, Save, AlertCircle, CheckCircle2 } from 'lucide-
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import * as tus from 'tus-js-client';
 
 const VideosSitePage = () => {
   const [loading, setLoading] = useState(false);
