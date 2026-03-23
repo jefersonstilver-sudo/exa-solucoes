@@ -110,16 +110,22 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
     }
   }, [formData.listaPredios]);
 
-  // Fetch buildings
+  // Fetch buildings (ativo + interno, internos por último)
   useEffect(() => {
     const fetchBuildings = async () => {
       setLoadingBuildings(true);
       const { data } = await supabase
         .from('buildings')
-        .select('id, nome, bairro, codigo_predio')
-        .eq('status', 'ativo')
+        .select('id, nome, bairro, codigo_predio, status')
+        .in('status', ['ativo', 'interno'])
         .order('nome');
-      setBuildings(data || []);
+      // Sort: ativos first, internos last
+      const sorted = (data || []).sort((a, b) => {
+        if (a.status === 'interno' && b.status !== 'interno') return 1;
+        if (a.status !== 'interno' && b.status === 'interno') return -1;
+        return a.nome.localeCompare(b.nome);
+      });
+      setBuildings(sorted);
       setLoadingBuildings(false);
     };
     fetchBuildings();
@@ -237,8 +243,8 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
                 />
                 <Building2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                 <span className={`truncate ${isSelected ? 'font-medium' : ''}`}>{b.nome}</span>
+                {b.status === 'interno' && <span className="text-[10px] bg-accent text-accent-foreground px-1.5 py-0.5 rounded">Interno</span>}
                 <span className="text-xs text-muted-foreground ml-auto">{b.bairro}</span>
-                {b.codigo_predio && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{b.codigo_predio}</span>}
               </button>
             );
           })}
