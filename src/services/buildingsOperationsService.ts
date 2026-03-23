@@ -38,12 +38,23 @@ export const updateBuildingInDatabase = async (id: string, updates: Partial<Buil
 
 export const deleteBuildingFromDatabase = async (id: string) => {
   try {
+    // Desvincular devices antes de excluir (safety net)
+    await supabase
+      .from('devices')
+      .update({ building_id: null })
+      .eq('building_id', id);
+
     const { error } = await supabase
       .from('buildings')
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (error) {
+      if (error.message?.includes('foreign key constraint')) {
+        throw new Error('Este prédio possui registros vinculados que impedem a exclusão. Desvincule-os primeiro.');
+      }
+      throw error;
+    }
 
     // Log da ação
     await supabase.rpc('log_building_action', {
