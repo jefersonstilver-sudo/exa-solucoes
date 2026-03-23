@@ -12,7 +12,7 @@ export const deleteVideoWithExternalAPI = async (
   videoId?: string,
   pedidoId?: string
 ): Promise<void> => {
-  console.log(`🗑️ [DELETE_HELPER] Iniciando exclusão do pedido_video: ${pedidoVideoId}`);
+  console.log(`🗑️ [DELETE_HELPER] Iniciando exclusão do pedido_video: ${pedidoVideoId}, video_id=${videoId || 'N/A'}, pedido_id=${pedidoId || 'N/A'}`);
 
   // Se não temos video_id/pedido_id, buscar do banco
   let resolvedVideoId = videoId;
