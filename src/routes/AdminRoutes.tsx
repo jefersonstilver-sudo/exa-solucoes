@@ -43,7 +43,8 @@ import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
 
 // Redirect inteligente: redireciona ao primeiro módulo permitido
 const AdminIndexRedirect = () => {
-  const { hasModuleAccess, isCEO, isLoading, userProfile } = useDynamicModulePermissions();
+  const { hasModuleAccess, isCEO, isLoading } = useDynamicModulePermissions();
+  const { userProfile } = useAuth();
   
   if (isLoading) return <GlobalLoadingPage message="Verificando permissões..." />;
   if (isCEO) return <Dashboard />;
