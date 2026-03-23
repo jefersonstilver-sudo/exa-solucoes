@@ -31,7 +31,7 @@ const getRoleInfo = (role: string) => {
       bg: 'bg-yellow-100 border-yellow-300',
     },
     admin: {
-      label: 'Administrador Geral',
+      label: 'Coordenação',
       icon: Shield,
       color: 'text-blue-700',
       bg: 'bg-blue-100 border-blue-300',

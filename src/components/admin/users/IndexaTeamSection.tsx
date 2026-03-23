@@ -96,7 +96,7 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
       case 'admin':
         return (
           <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-0 font-normal text-xs">
-            Admin Geral
+            Coordenação
           </Badge>
         );
       case 'admin_marketing':

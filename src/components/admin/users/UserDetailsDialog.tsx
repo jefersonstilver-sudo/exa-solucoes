@@ -120,7 +120,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
         return (
           <Badge className="bg-blue-500/20 text-blue-100 border-blue-300/30">
             <Shield className="h-3 w-3 mr-1" />
-            Admin Geral
+            Coordenação
           </Badge>
         );
       case 'admin_marketing':
@@ -186,7 +186,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
   const getRoleLabel = (role: string): string => {
     const labels: Record<string, string> = {
       'super_admin': 'Super Admin',
-      'admin': 'Admin Geral',
+      'admin': 'Coordenação',
       'admin_marketing': 'Admin Marketing',
       'admin_financeiro': 'Admin Financeiro',
       'client': 'Cliente',

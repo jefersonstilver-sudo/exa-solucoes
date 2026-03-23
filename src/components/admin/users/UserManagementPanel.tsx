@@ -165,7 +165,7 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
       }
 
       const roleLabels = {
-        admin: 'Administrador Geral',
+        admin: 'Coordenação',
         admin_marketing: 'Administrador Marketing',
         super_admin: 'Super Administrador'
       };
@@ -244,7 +244,7 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
       }
 
       const roleLabels = {
-        admin: 'Administrador Geral',
+        admin: 'Coordenação',
         admin_marketing: 'Administrador Marketing',
         super_admin: 'Super Administrador'
       };
@@ -316,7 +316,7 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
         return (
           <Badge className="bg-blue-100 text-blue-800 border-blue-300">
             <Shield className="h-3 w-3 mr-1" />
-            Admin Geral
+            Coordenação
           </Badge>
         );
       case 'admin_marketing':
@@ -406,8 +406,8 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
                         <div className="flex items-center space-x-2">
                           <Shield className="h-4 w-4 text-blue-500" />
                           <div>
-                            <div className="font-medium">Administrador Geral</div>
-                            <div className="text-xs text-gray-500">Gestão completa de prédios, painéis e pedidos</div>
+                            <div className="font-medium">Coordenação</div>
+                            <div className="text-xs text-gray-500">Gestão operacional completa do sistema</div>
                           </div>
                         </div>
                       </SelectItem>
@@ -490,8 +490,8 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
                         <div className="flex items-center space-x-2">
                           <Shield className="h-4 w-4 text-blue-500" />
                           <div>
-                            <div className="font-medium">Administrador Geral</div>
-                            <div className="text-xs text-gray-500">Gestão completa de prédios, painéis e pedidos</div>
+                            <div className="font-medium">Coordenação</div>
+                            <div className="text-xs text-gray-500">Gestão operacional completa do sistema</div>
                           </div>
                         </div>
                       </SelectItem>

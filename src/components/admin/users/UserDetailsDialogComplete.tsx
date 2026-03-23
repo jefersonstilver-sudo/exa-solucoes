@@ -148,7 +148,7 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
       'admin': (
         <Badge className="bg-blue-500/20 text-blue-100 border-blue-300/30">
           <Shield className="h-3 w-3 mr-1" />
-          Admin Geral
+          Coordenação
         </Badge>
       ),
       'admin_marketing': (
@@ -240,7 +240,7 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
   const getRoleLabel = (role: string): string => {
     const labels: Record<string, string> = {
       'super_admin': 'Super Admin',
-      'admin': 'Admin Geral',
+      'admin': 'Coordenação',
       'admin_marketing': 'Admin Marketing',
       'admin_financeiro': 'Admin Financeiro',
       'client': 'Cliente',
@@ -597,7 +597,7 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
                           <SelectItem value="admin">
                             <div className="flex items-center gap-2">
                               <Shield className="h-4 w-4 text-blue-500" />
-                              Admin Geral
+                              Coordenação
                             </div>
                           </SelectItem>
                           <SelectItem value="admin_marketing">
