@@ -95,14 +95,41 @@ const UserMenu = () => {
     return "bg-gradient-to-br from-gray-600 to-gray-700 text-white border-2 border-gray-400/50";
   };
 
-  // Get role badge info
+  const { hasModuleAccess, isCEO } = useDynamicModulePermissions();
+
+  // Get role badge info - usa departamento quando disponível
   const getRoleBadge = () => {
     if (isSuperAdmin) return { label: "MASTER", colors: "bg-gradient-to-r from-amber-500/10 to-orange-500/10 text-amber-700 border-amber-200/50" };
+    const dept = (user as any)?.departamento;
+    if (dept) {
+      return { label: dept.toUpperCase(), colors: "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-700 border-blue-200/50" };
+    }
     if (isAdmin) return { label: "ADMIN", colors: "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-700 border-blue-200/50" };
     if (isAdminFinanceiro) return { label: "FINANCEIRO", colors: "bg-gradient-to-r from-green-500/10 to-emerald-500/10 text-green-700 border-green-200/50" };
     if (isAdminMarketing) return { label: "MARKETING", colors: "bg-gradient-to-r from-purple-500/10 to-violet-500/10 text-purple-700 border-purple-200/50" };
     return null;
   };
+
+  // Menu items dinâmicos para admins não-CEO
+  const adminMenuItems = useMemo(() => {
+    if (isSuperAdmin || !isAnyAdmin) return [];
+    
+    // Módulos prioritários para mostrar no menu rápido
+    const menuModules = [
+      { key: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+      { key: 'pedidos', icon: Package, label: 'Pedidos' },
+      { key: 'propostas', icon: ClipboardList, label: 'Propostas' },
+      { key: 'contatos', icon: Users, label: 'Contatos' },
+      { key: 'predios', icon: Building, label: 'Prédios' },
+      { key: 'paineis', icon: Monitor, label: 'Painéis' },
+      { key: 'aprovacoes', icon: CheckCircle, label: 'Aprovações' },
+      { key: 'videos_anunciantes', icon: Film, label: 'Vídeos' },
+      { key: 'beneficios', icon: Gift, label: 'Benefícios' },
+      { key: 'relatorios', icon: CheckCircle, label: 'Relatórios' },
+    ];
+    
+    return menuModules.filter(m => hasModuleAccess(m.key));
+  }, [isSuperAdmin, isAnyAdmin, hasModuleAccess]);
 
   const roleBadge = getRoleBadge();
 
