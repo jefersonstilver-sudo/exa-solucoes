@@ -165,6 +165,35 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
         }
       }
 
+      // 🆕 Deletar da API externa ANTES de deletar do banco
+      if (slot?.video_id) {
+        try {
+          console.log('🌐 [useVideoManagement] Deletando vídeo da API externa...');
+          const { data: slotData } = await supabase
+            .from('pedido_videos')
+            .select('pedido_id')
+            .eq('id', slotId)
+            .single();
+
+          if (slotData?.pedido_id) {
+            const { data, error: extError } = await supabase.functions.invoke('delete-video-from-external-api', {
+              body: {
+                video_id: slot.video_id,
+                pedido_id: slotData.pedido_id
+              }
+            });
+
+            if (extError) {
+              console.warn('⚠️ [useVideoManagement] Falha ao deletar da API externa:', extError);
+            } else {
+              console.log('✅ [useVideoManagement] Vídeo deletado da API externa:', data);
+            }
+          }
+        } catch (awsError) {
+          console.warn('⚠️ [useVideoManagement] Erro ao chamar API externa:', awsError);
+        }
+      }
+
       const { error } = await supabase
         .from('pedido_videos')
         .delete()
