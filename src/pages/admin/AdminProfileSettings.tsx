@@ -56,7 +56,7 @@ const AdminProfileSettings = () => {
                        authUser.user.user_metadata?.full_name || '';
       setName(userName);
       setOriginalName(userName);
-      setEmail(authUser.user.email || '');
+      setDisplayEmail(authUser.user.email || '');
       setPhone(authUser.user.user_metadata?.phone || userData?.telefone || '');
       setTwoFactorEnabled(userData?.two_factor_enabled || false);
       setPhoneVerified(userData?.telefone_verificado === true || !!userData?.telefone_verificado_at);
@@ -181,7 +181,7 @@ const AdminProfileSettings = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="space-y-1.5">
                 <Label className="text-sm">Email</Label>
-                <Input value={email} disabled className="bg-muted border-transparent shadow-none cursor-not-allowed min-h-[44px]" />
+                <Input value={displayEmail} disabled className="bg-muted border-transparent shadow-none cursor-not-allowed min-h-[44px]" />
                 <p className="text-xs text-muted-foreground">O email não pode ser alterado</p>
               </div>
               <div className="space-y-1.5">
