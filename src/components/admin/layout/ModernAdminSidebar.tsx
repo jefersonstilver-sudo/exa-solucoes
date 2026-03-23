@@ -422,12 +422,12 @@ export function ModernAdminSidebar() {
 
   const getAdminTitle = () => {
     if (userInfo.role === 'super_admin') return 'CEO / Diretoria';
-    if (userInfo.role === 'admin') return 'Coordenação';
-    // Use department name if available
+    // Priority: department name > role label
     const dept = userProfile?.departamento;
     const deptName = typeof dept === 'object' && dept?.name ? dept.name : (typeof dept === 'string' ? dept : null);
     if (deptName) return deptName;
-    // Fallback for legacy roles
+    // Fallback for roles without department
+    if (userInfo.role === 'admin') return 'Coordenação';
     switch (userInfo.role) {
       case 'admin_marketing': return 'Marketing';
       case 'admin_financeiro': return 'Financeiro';
@@ -463,7 +463,7 @@ export function ModernAdminSidebar() {
         {!collapsed && (
           <div className="text-center">
             <div className="text-white/90 font-semibold text-sm tracking-wide">
-              Painel Administrativo
+              {userProfile?.departamento?.name ? `Painel ${userProfile.departamento.name}` : 'Painel Administrativo'}
             </div>
             <div className="flex items-center justify-center space-x-1 mt-1">
               <Crown className="h-3 w-3 text-amber-300" />
