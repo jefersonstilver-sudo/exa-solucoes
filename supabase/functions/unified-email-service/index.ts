@@ -174,7 +174,24 @@ serve(async (req: Request) => {
         throw new Error('Email e token são obrigatórios');
       }
 
-      const recoveryUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=recovery&redirect_to=${encodeURIComponent(`${baseUrl}/reset-password`)}`;
+      console.log('🔑 [RECOVERY] Processando recovery para:', userEmail);
+      console.log('🔑 [RECOVERY] token_hash presente:', !!email_data.token_hash);
+      console.log('🔑 [RECOVERY] confirmation_url presente:', !!email_data?.confirmation_url);
+
+      // STRATEGY 1: Use confirmation_url from webhook payload if available (most reliable)
+      let recoveryUrl: string;
+      if (email_data?.confirmation_url) {
+        console.log('✅ [RECOVERY] Usando confirmation_url oficial do webhook');
+        const url = new URL(email_data.confirmation_url);
+        url.searchParams.set('redirect_to', `${baseUrl}/reset-password`);
+        recoveryUrl = url.toString();
+      } else {
+        // STRATEGY 2: Construct from token_hash (fallback)
+        console.log('🔄 [RECOVERY] Construindo URL a partir do token_hash');
+        recoveryUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=recovery&redirect_to=${encodeURIComponent(`${baseUrl}/reset-password`)}`;
+      }
+      
+      console.log('🔗 [RECOVERY] URL final:', recoveryUrl.substring(0, 120) + '...');
       const userName = user?.user_metadata?.name || userEmail.split('@')[0];
       
       const { data: emailData, error: emailError } = await emailService.sendPasswordRecoveryEmail(

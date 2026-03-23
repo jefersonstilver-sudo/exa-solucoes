@@ -114,14 +114,30 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
 
     setSendingPasswordReset(true);
     try {
+      const { isRateLimitError, extractWaitSeconds, setCooldown, getRemainingCooldown } = await import('@/utils/resetPasswordCooldown');
+
+      const remaining = getRemainingCooldown(order.client_email);
+      if (remaining > 0) {
+        toast.error(`Aguarde ${remaining} segundos antes de tentar novamente`);
+        setSendingPasswordReset(false);
+        return;
+      }
+
       const { error } = await supabase.auth.resetPasswordForEmail(order.client_email, {
         redirectTo: `${window.location.origin}/definir-senha`
       });
 
       if (error) {
+        if (isRateLimitError(error)) {
+          const wait = extractWaitSeconds(error.message) || 60;
+          setCooldown(order.client_email, wait);
+          toast.error(`Aguarde ${wait} segundos antes de tentar novamente`);
+          return;
+        }
         throw error;
       }
 
+      setCooldown(order.client_email, 60);
       toast.success(`Link de senha enviado para ${order.client_email}`);
     } catch (err: any) {
       console.error('Erro ao enviar link de senha:', err);
