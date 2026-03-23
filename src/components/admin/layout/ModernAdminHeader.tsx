@@ -44,16 +44,15 @@ const ModernAdminHeader = () => {
   };
 
   const getRoleLabel = () => {
-    switch (userInfo.role) {
-      case 'super_admin':
-        return 'Super Admin';
-      case 'admin':
-        return 'Admin';
-      case 'admin_marketing':
-        return 'Admin Marketing';
-      default:
-        return 'Admin';
-    }
+    if (userInfo.role === 'super_admin') return 'CEO / Diretoria';
+    // Use department name when available
+    const dept = userProfile?.departamento;
+    const deptName = typeof dept === 'object' && dept?.name ? dept.name : (typeof dept === 'string' ? dept : null);
+    if (deptName) return deptName;
+    if (userInfo.role === 'admin') return 'Coordenação';
+    if (userInfo.role === 'admin_marketing') return 'Marketing';
+    if (userInfo.role === 'admin_financeiro') return 'Financeiro';
+    return 'Admin';
   };
 
   return (

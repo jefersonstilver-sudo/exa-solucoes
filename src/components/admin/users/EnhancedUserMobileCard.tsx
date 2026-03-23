@@ -97,7 +97,7 @@ const EnhancedUserMobileCard: React.FC<EnhancedUserMobileCardProps> = ({
       case 'super_admin':
         return 'Super Administrador';
       case 'admin':
-        return 'Administrador Geral';
+        return 'Coordenação';
       case 'admin_marketing':
         return 'Administrador Marketing';
       case 'admin_financeiro':

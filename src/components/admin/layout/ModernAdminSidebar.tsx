@@ -135,7 +135,7 @@ export function ModernAdminSidebar() {
           title: 'Central de Tarefas',
           href: buildPath('tarefas'),
           icon: Sunrise,
-          moduleKey: MODULE_KEYS.dashboard
+          moduleKey: MODULE_KEYS.minha_manha
         },
         {
           title: 'Dashboard',
@@ -169,7 +169,7 @@ export function ModernAdminSidebar() {
           title: 'CRM Hub',
           href: buildPath('crm-hub'),
           icon: UsersRound,
-          moduleKey: MODULE_KEYS.crm_site,
+          moduleKey: MODULE_KEYS.crm_hub,
           badge: unreadCount > 0 ? unreadCount : undefined,
           badgeColor: 'bg-[#9C1E1E]',
           badgeTooltip: 'Mensagens não lidas'

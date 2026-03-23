@@ -1,4 +1,5 @@
 import React, { Suspense, lazy } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from '@/pages/admin/Dashboard';
 import BuildingsManagement3 from '@/pages/admin/BuildingsManagement3';
@@ -44,6 +45,7 @@ import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
 // Redirect inteligente: redireciona ao primeiro módulo permitido
 const AdminIndexRedirect = () => {
   const { hasModuleAccess, isCEO, isLoading } = useDynamicModulePermissions();
+  const { userProfile } = useAuth();
   
   if (isLoading) return <GlobalLoadingPage message="Verificando permissões..." />;
   if (isCEO) return <Dashboard />;
@@ -51,12 +53,25 @@ const AdminIndexRedirect = () => {
   // Se tem acesso ao dashboard, mostra ele
   if (hasModuleAccess('dashboard')) return <Dashboard />;
   
-  // Ordem de prioridade para redirect
-  const priorityModules = [
-    'pedidos', 'propostas', 'contatos', 'crm_chat', 'predios', 'paineis',
-    'aprovacoes', 'videos_anunciantes', 'beneficios', 'relatorios', 'financeiro',
-    'leads', 'sindicos', 'emails', 'usuarios', 'agenda', 'processos'
-  ];
+  // Departmental priority map for smart redirect
+  const deptSlug = userProfile?.departamento?.name?.toLowerCase()
+    ?.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    ?.replace(/[^a-z0-9]+/g, '_')
+    ?.replace(/^_|_$/g, '') || null;
+
+  const DEPT_PRIORITY: Record<string, string[]> = {
+    comercial: ['propostas', 'pedidos', 'contatos', 'crm_hub', 'vendas', 'juridico'],
+    marketing: ['leads', 'emails', 'videos_site', 'ticker', 'editor_videos', 'homepage_config'],
+    financeiro: ['financeiro', 'relatorios', 'pedidos', 'assinaturas'],
+    administrativo: ['dashboard', 'predios', 'paineis', 'usuarios', 'processos'],
+    tecnologia: ['processos', 'configuracoes', 'seguranca'],
+  };
+
+  const priorityModules = deptSlug && DEPT_PRIORITY[deptSlug]
+    ? DEPT_PRIORITY[deptSlug]
+    : ['pedidos', 'propostas', 'contatos', 'crm_hub', 'predios', 'paineis',
+       'aprovacoes', 'videos_anunciantes', 'beneficios', 'relatorios', 'financeiro',
+       'leads', 'sindicos', 'emails', 'usuarios', 'agenda', 'processos'];
   
   for (const mod of priorityModules) {
     if (hasModuleAccess(mod) && MODULE_ROUTES[mod]) {
