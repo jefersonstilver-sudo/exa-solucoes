@@ -64,6 +64,49 @@ export const MODULE_KEYS = {
 
 export type ModuleKey = keyof typeof MODULE_KEYS;
 
+// Mapeamento módulo → rota + label para uso no UserMenu e redirect
+export const MODULE_ROUTES: Record<string, { path: string; label: string }> = {
+  dashboard: { path: '/admin', label: 'Dashboard' },
+  pedidos: { path: '/admin/pedidos', label: 'Pedidos' },
+  propostas: { path: '/admin/propostas', label: 'Propostas' },
+  predios: { path: '/admin/predios', label: 'Prédios' },
+  paineis: { path: '/admin/paineis-exa', label: 'Painéis' },
+  aprovacoes: { path: '/admin/aprovacoes', label: 'Aprovações' },
+  contatos: { path: '/admin/contatos', label: 'Contatos' },
+  contatos_kanban: { path: '/admin/contatos-kanban', label: 'Kanban' },
+  crm_site: { path: '/admin/crm', label: 'CRM Site' },
+  crm_chat: { path: '/admin/crm-chat', label: 'CRM Chat' },
+  vendas: { path: '/admin/pedidos', label: 'Vendas' },
+  juridico: { path: '/admin/juridico', label: 'Jurídico' },
+  assinaturas: { path: '/admin/assinaturas', label: 'Assinaturas' },
+  posicoes: { path: '/admin/posicoes', label: 'Posições' },
+  produtos: { path: '/admin/produtos', label: 'Produtos' },
+  cupons: { path: '/admin/cupons', label: 'Cupons' },
+  sync_notion: { path: '/admin/sync-notion', label: 'Sync Notion' },
+  agenda: { path: '/admin/agenda', label: 'Agenda' },
+  videos_anunciantes: { path: '/admin/videos', label: 'Vídeos' },
+  beneficios: { path: '/admin/beneficio-prestadores', label: 'Benefícios' },
+  sindicos: { path: '/admin/sindicos-interessados', label: 'Síndicos' },
+  leads: { path: '/admin/leads-exa', label: 'Leads' },
+  processos: { path: '/admin/processos', label: 'Processos' },
+  gestao_tempo: { path: '/admin/gestao-tempo', label: 'Gestão de Tempo' },
+  emails: { path: '/admin/comunicacoes', label: 'Comunicações' },
+  ticker: { path: '/admin/ticker', label: 'Ticker' },
+  videos_site: { path: '/admin/videos-site', label: 'Vídeos Site' },
+  editor_videos: { path: '/admin/editor-video-controle', label: 'Editor Vídeos' },
+  agentes_sofia: { path: '/admin/agentes-sofia', label: 'Agentes Sofia' },
+  exa_alerts: { path: '/admin/exa-alerts', label: 'EXA Alerts' },
+  escalacoes: { path: '/admin/escalacoes', label: 'Escalações' },
+  financeiro: { path: '/admin/financeiro/categorias', label: 'Financeiro' },
+  relatorios: { path: '/admin/relatorios-financeiros', label: 'Relatórios' },
+  usuarios: { path: '/admin/usuarios', label: 'Usuários' },
+  notificacoes: { path: '/admin/notificacoes', label: 'Notificações' },
+  seguranca: { path: '/admin/seguranca', label: 'Segurança' },
+  configuracoes: { path: '/admin/configuracoes', label: 'Configurações' },
+  homepage_config: { path: '/admin/homepage-config', label: 'Homepage' },
+  logos: { path: '/admin/logos', label: 'Logos' },
+};
+
 interface ModulePermission {
   permission_key: string;
   is_enabled: boolean;
