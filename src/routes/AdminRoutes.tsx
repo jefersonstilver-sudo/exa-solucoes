@@ -87,8 +87,8 @@ const AdminIndexRedirect = () => {
 const AdminProfileSettings = lazy(() => import('@/pages/admin/AdminProfileSettings'));
 
 // Central de Tarefas
-const CentralTarefasPage = lazy(() => import('@/pages/admin/CentralTarefasPage'));
-const FullscreenAgendaPage = lazy(() => import('@/pages/admin/FullscreenAgendaPage'));
+const CentralTarefasPage = lazy(() => import('@/pages/admin/tarefas/CentralTarefasPage'));
+const FullscreenAgendaPage = lazy(() => import('@/pages/admin/tarefas/FullscreenAgendaPage'));
 
 // Lazy load editor video control page
 const EditorVideoControlePage = lazy(() => import('@/pages/video-editor/VideoEditorAccessControl'));
