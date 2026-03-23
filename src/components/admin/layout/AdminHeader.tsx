@@ -93,7 +93,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
                   <p className="text-sm font-medium text-white">{userName}</p>
                   <p className="text-xs text-white/70 flex items-center">
                     {isSuperAdmin && <Crown className="h-3 w-3 mr-1" />}
-                    {isSuperAdmin ? 'Super Admin' : 'Admin'}
+                    {isSuperAdmin ? 'Super Admin' : (userProfile?.departamento?.name || 'Coordenação')}
                   </p>
                 </div>
               </Button>

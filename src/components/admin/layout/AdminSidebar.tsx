@@ -269,7 +269,7 @@ const AdminSidebar = () => {
       case 'super_admin':
         return 'Super Admin';
       case 'admin':
-        return 'Admin Geral';
+        return 'Coordenação';
       case 'admin_marketing':
         return 'Admin Marketing';
       default:
