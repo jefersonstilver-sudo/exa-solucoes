@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { deleteVideoFromStorage } from '@/services/videoStorageService';
+import { deleteVideoWithExternalAPI } from '@/services/videoDeleteHelper';
 import { VideoSlot } from '@/types/videoManagement';
 // Removed n8n integration
 
@@ -219,73 +220,29 @@ export const removeVideo = async (
       return false;
     }
 
-    // 🆕 FASE 5: Deletar da AWS ANTES de deletar do Supabase
-    if (videoToRemove.video_id) {
-      console.log('🌐 [VIDEO_ACTION] Deletando vídeo da AWS em todos os prédios...');
-      
-      try {
-        // Buscar pedido_id do slot
-        const { data: slotData } = await supabase
-          .from('pedido_videos')
-          .select('pedido_id')
-          .eq('id', slotId)
-          .single();
-
-        if (slotData?.pedido_id) {
-          const { data, error } = await supabase.functions.invoke('delete-video-from-external-api', {
-            body: {
-              video_id: videoToRemove.video_id,
-              pedido_id: slotData.pedido_id
-            }
-          });
-
-          if (error) {
-            console.warn('⚠️ [VIDEO_ACTION] Falha ao deletar vídeo da AWS:', error);
-            // NÃO bloquear - continuar com deleção local
-          } else {
-            console.log('✅ [VIDEO_ACTION] Vídeo deletado da AWS:', data);
-          }
-        }
-      } catch (awsError) {
-        console.warn('⚠️ [VIDEO_ACTION] Erro ao chamar API AWS:', awsError);
-        // NÃO bloquear - continuar com deleção local
-      }
-    }
-
     // Deletar arquivo do storage se existir
     if (videoToRemove.video_data?.url && videoToRemove.video_data.url !== 'pending_upload') {
       await deleteVideoFromStorage(videoToRemove.video_data.url);
     }
 
-    // Deletar do banco - o trigger prevent_last_video_removal fará a validação
-    const { error } = await supabase
-      .from('pedido_videos')
-      .delete()
-      .eq('id', slotId);
-
-    if (error) {
-      console.error('❌ [VIDEO_ACTION] Erro ao remover vídeo:', error);
-      
-      // Verificar se é erro de proteção do último vídeo
-      if (error.message?.includes('CANNOT_REMOVE_LAST_VIDEO')) {
-        toast.error('❌ Não é possível remover o último vídeo aprovado. Envie outro vídeo primeiro.');
-        return false;
-      }
-      
-      // Verificar se é erro de proteção do vídeo base
-      if (error.message?.includes('CANNOT_REMOVE_BASE_VIDEO')) {
-        toast.error('❌ Não é possível remover o vídeo base. Defina outro vídeo como base primeiro.');
-        return false;
-      }
-      
-      toast.error('❌ Erro ao remover vídeo');
-      return false;
-    }
+    // Usar helper centralizado: API externa + banco
+    console.log(`🗑️ [VIDEO_ACTION] Chamando deleteVideoWithExternalAPI: slotId=${slotId}, video_id=${videoToRemove.video_id}`);
+    await deleteVideoWithExternalAPI(slotId, videoToRemove.video_id);
 
     toast.success('✅ Vídeo removido com sucesso');
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [VIDEO_ACTION] Erro inesperado:', error);
+    
+    if (error.message?.includes('CANNOT_REMOVE_LAST_VIDEO')) {
+      toast.error('❌ Não é possível remover o último vídeo aprovado. Envie outro vídeo primeiro.');
+      return false;
+    }
+    if (error.message?.includes('CANNOT_REMOVE_BASE_VIDEO')) {
+      toast.error('❌ Não é possível remover o vídeo base. Defina outro vídeo como base primeiro.');
+      return false;
+    }
+    
     toast.error('❌ Erro inesperado ao remover vídeo');
     return false;
   }
