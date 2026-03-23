@@ -20,50 +20,51 @@ const ResetPassword = () => {
   const [hasValidSession, setHasValidSession] = useState<boolean | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
-  // Verificar sessão ao montar + escutar PASSWORD_RECOVERY
+  // IMPORTANT: Register onAuthStateChange BEFORE getSession to catch PASSWORD_RECOVERY
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Erro ao verificar sessão:', error);
-          // Don't set false yet — wait for onAuthStateChange
-          return;
-        }
+    let sessionFound = false;
 
-        if (session) {
-          console.log('✅ Sessão válida encontrada');
-          setHasValidSession(true);
-          setIsCheckingSession(false);
-        }
-      } catch (error) {
-        console.error('Erro inesperado ao verificar sessão:', error);
-      }
-    };
-
-    checkSession();
-
-    // Listen for PASSWORD_RECOVERY event from the recovery link
+    // 1. Register listener FIRST — catches PASSWORD_RECOVERY from the hash fragment
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('🔐 [RESET] Auth event:', event);
       if (event === 'PASSWORD_RECOVERY' && session) {
         console.log('✅ PASSWORD_RECOVERY event received');
+        sessionFound = true;
         setHasValidSession(true);
         setIsCheckingSession(false);
       } else if (event === 'SIGNED_IN' && session) {
-        // Recovery link can also trigger SIGNED_IN
         console.log('✅ SIGNED_IN event (may be recovery)');
+        sessionFound = true;
         setHasValidSession(true);
         setIsCheckingSession(false);
       }
     });
 
-    // Timeout: if no session after 5 seconds, show expired
+    // 2. Then check existing session (in case the event already fired)
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && !sessionFound) {
+          console.log('✅ Sessão válida encontrada via getSession');
+          sessionFound = true;
+          setHasValidSession(true);
+          setIsCheckingSession(false);
+        }
+      } catch (error) {
+        console.error('Erro ao verificar sessão:', error);
+      }
+    };
+
+    checkSession();
+
+    // 3. Extended timeout (10s) to allow for slow networks / cold starts
     const timeout = setTimeout(() => {
-      setIsCheckingSession(false);
-      setHasValidSession(prev => prev === null ? false : prev);
-    }, 5000);
+      if (!sessionFound) {
+        console.log('⏰ [RESET] Timeout reached without session');
+        setIsCheckingSession(false);
+        setHasValidSession(prev => prev === null ? false : prev);
+      }
+    }, 10000);
 
     return () => {
       subscription.unsubscribe();

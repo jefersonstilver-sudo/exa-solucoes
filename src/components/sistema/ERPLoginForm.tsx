@@ -181,11 +181,19 @@ const ERPLoginForm = () => {
     }
 
     try {
+      const { isRateLimitError, extractWaitSeconds } = await import('@/utils/resetPasswordCooldown');
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`
       });
 
-      if (error) throw error;
+      if (error) {
+        if (isRateLimitError(error)) {
+          const wait = extractWaitSeconds(error.message) || 60;
+          toast.error(`Aguarde ${wait} segundos antes de tentar novamente`);
+          return;
+        }
+        throw error;
+      }
 
       toast.success('Email de redefinição enviado!', {
         description: 'Verifique sua caixa de entrada'

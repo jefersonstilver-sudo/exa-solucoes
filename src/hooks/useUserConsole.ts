@@ -570,12 +570,31 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     
     try {
       setIsSaving(true);
+
+      const { isRateLimitError, extractWaitSeconds, setCooldown, getRemainingCooldown } = await import('@/utils/resetPasswordCooldown');
+
+      // Check global cooldown
+      const remaining = getRemainingCooldown(user.email);
+      if (remaining > 0) {
+        toast.error(`Aguarde ${remaining} segundos antes de tentar novamente`);
+        return;
+      }
       
       const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
         redirectTo: `${window.location.origin}/reset-password`
       });
       
-      if (error) throw error;
+      if (error) {
+        if (isRateLimitError(error)) {
+          const wait = extractWaitSeconds(error.message) || 60;
+          setCooldown(user.email, wait);
+          toast.error(`Aguarde ${wait} segundos antes de tentar novamente`);
+          return;
+        }
+        throw error;
+      }
+
+      setCooldown(user.email, 60);
       
       await supabase.from('log_eventos_sistema').insert({
         tipo_evento: 'PASSWORD_RESET_REQUESTED',

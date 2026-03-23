@@ -3,7 +3,7 @@
  * Bloqueio, reset de senha, exclusão de conta
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -19,7 +19,7 @@ import {
 import { ConsoleUser } from '@/types/userConsoleTypes';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { extractWaitSeconds, isRateLimitError, DEFAULT_COOLDOWN_SECONDS } from '@/utils/resetPasswordCooldown';
+import { usePasswordReset } from '@/hooks/usePasswordReset';
 
 interface DangerZoneProps {
   user: ConsoleUser;
@@ -42,56 +42,19 @@ export const DangerZone: React.FC<DangerZoneProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
-  const cooldownRef = useRef<NodeJS.Timeout | null>(null);
   
   const isBlocked = user.is_blocked;
 
-  useEffect(() => {
-    return () => { if (cooldownRef.current) clearInterval(cooldownRef.current); };
-  }, []);
-
-  const startCooldown = (seconds: number) => {
-    setCooldown(seconds);
-    if (cooldownRef.current) clearInterval(cooldownRef.current);
-    cooldownRef.current = setInterval(() => {
-      setCooldown(prev => {
-        if (prev <= 1) { clearInterval(cooldownRef.current!); return 0; }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const handleResetPassword = async () => {
-    if (cooldown > 0) return;
-    try {
-      setLoading(true);
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/reset-password`
-      });
-      
-      if (error) {
-        if (isRateLimitError(error)) {
-          const wait = extractWaitSeconds(error.message) || 60;
-          startCooldown(wait);
-          toast.error(`Aguarde ${wait} segundos antes de tentar novamente`);
-          return;
-        }
-        throw error;
-      }
-      
-      startCooldown(DEFAULT_COOLDOWN_SECONDS);
+  const { sendReset, isLoading: resetLoading, cooldown } = usePasswordReset(user.email, {
+    onSuccess: () => {
       toast.success('Email de reset enviado!', {
         description: `Link enviado para ${user.email}`
       });
-    } catch (error: unknown) {
-      toast.error('Erro ao enviar email', {
-        description: error instanceof Error ? error.message : 'Erro desconhecido'
-      });
-    } finally {
-      setLoading(false);
     }
+  });
+
+  const handleResetPassword = async () => {
+    await sendReset();
   };
 
   const handleToggleBlock = async () => {
@@ -191,10 +154,10 @@ export const DangerZone: React.FC<DangerZoneProps> = ({
             variant="outline"
             size="sm"
             onClick={handleResetPassword}
-            disabled={loading || cooldown > 0}
+            disabled={loading || resetLoading || cooldown > 0}
             className="w-full border-amber-300 text-amber-700 hover:bg-amber-100"
           >
-            {loading ? (
+            {resetLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Key className="h-4 w-4 mr-2" />
