@@ -52,13 +52,12 @@ export const fetchAllBuildingsForAdmin = async () => {
   try {
     console.log('🏢 [ADMIN BUILDINGS SERVICE] Iniciando busca de TODOS os prédios para administração...');
     
-    // Buscar APENAS prédios manuais com conexão AWS (codigo_predio) E foto (imagem_principal)
-    // Isso exclui Sala Jeff (sem foto) e prédios que não foram adicionados manualmente à loja
+    // Buscar TODOS prédios manuais com conexão AWS (codigo_predio)
+    // Prédios sem foto também devem aparecer no admin
     const buildingsPromise = supabase
       .from('buildings')
       .select('*')
       .not('codigo_predio', 'is', null)
-      .not('imagem_principal', 'is', null)
       .order('nome');
 
     // Buscar devices para vincular via building_id (relacionamento reverso)
@@ -149,6 +148,7 @@ export const fetchAllBuildingsForAdmin = async () => {
     console.log('✅ [ADMIN BUILDINGS SERVICE] Prédios carregados para administração:', {
       total: enrichedBuildings.length,
       ativos: enrichedBuildings.filter((b: any) => b.status === 'ativo').length,
+      internos: enrichedBuildings.filter((b: any) => b.status === 'interno').length,
       inativos: enrichedBuildings.filter((b: any) => b.status === 'inativo').length
     });
 

@@ -56,12 +56,11 @@ export const AssignBuildingDialog = ({
   const loadStoreBuildings = async () => {
     setLoading(true);
     try {
-      // Buscar apenas prédios manuais da loja (codigo_predio + imagem_principal)
+      // Buscar todos os prédios manuais (codigo_predio), incluindo sem foto
       const { data, error } = await supabase
         .from('buildings')
         .select('id, nome, bairro, codigo_predio, imagem_principal, status')
         .not('codigo_predio', 'is', null)
-        .not('imagem_principal', 'is', null)
         .order('nome');
 
       if (error) throw error;
