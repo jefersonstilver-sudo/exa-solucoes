@@ -116,6 +116,7 @@ export const useDynamicModulePermissions = () => {
   const { userProfile, isLoading: authLoading } = useAuth();
   const roleKey = userProfile?.role;
   const userEmail = userProfile?.email;
+  const departamentoId = userProfile?.departamento_id;
   
   // CEO (super_admin) has full access - NO hardcoded email
   const isCEO = roleKey === 'super_admin';
@@ -123,15 +124,32 @@ export const useDynamicModulePermissions = () => {
   const isMasterAccount = isCEO;
 
   // Fetch module permissions from role_permissions table
+  // Priority: department-specific permissions > generic role permissions
   const { data: modulePermissions, isLoading: permissionsLoading } = useQuery({
-    queryKey: ['module-permissions', roleKey],
+    queryKey: ['module-permissions', roleKey, departamentoId],
     queryFn: async () => {
       if (!roleKey) return [];
       
+      // If user has a department, try department-specific permissions first
+      if (departamentoId) {
+        const { data: deptPerms, error: deptError } = await supabase
+          .from('role_permissions')
+          .select('permission_key, is_enabled')
+          .eq('role_key', roleKey)
+          .eq('departamento_id', departamentoId);
+        
+        if (!deptError && deptPerms && deptPerms.length > 0) {
+          console.log('✅ [Permissions] Using department-specific permissions:', deptPerms.length);
+          return deptPerms as ModulePermission[];
+        }
+      }
+      
+      // Fallback: generic role permissions (departamento_id IS NULL)
       const { data, error } = await supabase
         .from('role_permissions')
         .select('permission_key, is_enabled')
-        .eq('role_key', roleKey);
+        .eq('role_key', roleKey)
+        .is('departamento_id', null);
       
       if (error) {
         console.error('Error fetching module permissions:', error);
@@ -141,7 +159,7 @@ export const useDynamicModulePermissions = () => {
       return data as ModulePermission[];
     },
     enabled: !!roleKey && !isCEO,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
   // Create a map of module permissions for quick lookup

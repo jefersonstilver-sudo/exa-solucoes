@@ -42,7 +42,8 @@ import {
   MessageCircle,
   CalendarDays,
   Lock,
-  Timer
+  Timer,
+  User as UserIcon
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -395,6 +396,19 @@ export function ModernAdminSidebar() {
           moduleKey: MODULE_KEYS.configuracoes
         }
       ]
+    },
+    // 7. CONTA - Sempre visível
+    {
+      label: 'Conta',
+      icon: UserIcon,
+      items: [
+        {
+          title: 'Meu Perfil',
+          href: buildPath('meu-perfil'),
+          icon: UserIcon,
+          moduleKey: '__always_visible__'
+        }
+      ]
     }
   ];
 
@@ -402,9 +416,10 @@ export function ModernAdminSidebar() {
   const filteredGroups = navigationGroups.map(group => ({
     ...group,
     items: group.items.filter(item => {
+      // Always visible items (like Meu Perfil)
+      if (item.moduleKey === '__always_visible__') return true;
       // Master account always has access
       if (isMasterAccount) return true;
-      
       // Check dynamic permission from database
       return hasModuleAccess(item.moduleKey);
     })
@@ -422,12 +437,12 @@ export function ModernAdminSidebar() {
 
   const getAdminTitle = () => {
     if (userInfo.role === 'super_admin') return 'CEO / Diretoria';
-    if (userInfo.role === 'admin') return 'Coordenação';
-    // Use department name if available
+    // Priority: department name > role label
     const dept = userProfile?.departamento;
     const deptName = typeof dept === 'object' && dept?.name ? dept.name : (typeof dept === 'string' ? dept : null);
     if (deptName) return deptName;
-    // Fallback for legacy roles
+    // Fallback for roles without department
+    if (userInfo.role === 'admin') return 'Coordenação';
     switch (userInfo.role) {
       case 'admin_marketing': return 'Marketing';
       case 'admin_financeiro': return 'Financeiro';
@@ -463,7 +478,7 @@ export function ModernAdminSidebar() {
         {!collapsed && (
           <div className="text-center">
             <div className="text-white/90 font-semibold text-sm tracking-wide">
-              Painel Administrativo
+              {userProfile?.departamento?.name ? `Painel ${userProfile.departamento.name}` : 'Painel Administrativo'}
             </div>
             <div className="flex items-center justify-center space-x-1 mt-1">
               <Crown className="h-3 w-3 text-amber-300" />

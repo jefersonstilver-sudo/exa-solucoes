@@ -100,12 +100,13 @@ const UserMenu = () => {
   // Get role badge info - usa departamento quando disponível
   const getRoleBadge = () => {
     if (isSuperAdmin) return { label: "MASTER", colors: "bg-gradient-to-r from-amber-500/10 to-orange-500/10 text-amber-700 border-amber-200/50" };
+    // Extract department name from UserProfile.departamento (UserDepartment object)
     const dept = (user as any)?.departamento;
-    const deptName = typeof dept === 'string' ? dept : dept?.name;
+    const deptName = typeof dept === 'string' ? dept : (dept && typeof dept === 'object' ? dept.name : null);
     if (deptName) {
       return { label: deptName.toUpperCase(), colors: "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-700 border-blue-200/50" };
     }
-    if (isAdmin) return { label: "ADMIN", colors: "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-700 border-blue-200/50" };
+    if (isAdmin) return { label: "COORDENAÇÃO", colors: "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-700 border-blue-200/50" };
     if (isAdminFinanceiro) return { label: "FINANCEIRO", colors: "bg-gradient-to-r from-green-500/10 to-emerald-500/10 text-green-700 border-green-200/50" };
     if (isAdminMarketing) return { label: "MARKETING", colors: "bg-gradient-to-r from-purple-500/10 to-violet-500/10 text-purple-700 border-purple-200/50" };
     return null;
