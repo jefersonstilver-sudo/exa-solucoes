@@ -63,7 +63,8 @@ serve(async (req) => {
           data_inicio,
           data_fim,
           plano_meses,
-          lista_predios
+          lista_predios,
+          tipo_produto
         ),
         videos!inner (
           id,
