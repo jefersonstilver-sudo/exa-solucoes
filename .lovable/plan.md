@@ -1,69 +1,91 @@
 
+Plano de auditoria e correção imediata do reset de senha
 
-# Plano: Auditoria e Correção do Reset de Senha
+Diagnóstico confirmado do erro da screenshot
+- O erro exibido agora é real e vem do Supabase Auth: `429 email rate limit exceeded` no endpoint `/recover`.
+- Ou seja: nesta tentativa o pedido de reset nem chegou a falhar “dentro do email”; ele foi bloqueado antes, pelo limite anti-spam do próprio Supabase.
+- Os logs confirmam várias tentativas seguidas para `comercial@examidia.com.br` em segundos/minutos próximos, todas com `status 429`.
+- Por isso também não aparecem logs recentes do `unified-email-service`: nessas tentativas o hook de envio nem foi alcançado.
 
-## Diagnóstico (baseado nos logs do Supabase Auth e Edge Function)
+O que a auditoria encontrou no código
+1. O cooldown atual não é global
+- `DangerZone`, `PasswordResetForm`, `SecureAdminReset`, `ProfileSettings`, `ClientsSection` e `UserDetailsDialogComplete` já têm cooldown local.
+- Mas esse cooldown vive só dentro do componente. Se o modal fecha, a tela troca, a página recarrega ou outro ponto da aplicação dispara reset, o bloqueio “some”.
+- Resultado: o usuário consegue clicar de novo em outra tela e o Supabase responde 429.
 
-Identifiquei **3 problemas distintos** que se combinam para quebrar o fluxo:
+2. Ainda existem pontos sem a proteção aplicada
+- `src/components/sistema/ERPLoginForm.tsx`
+- `src/hooks/useUserConsole.ts`
+- `src/components/admin/orders/ProfessionalOrderReport.tsx`
+- Esses fluxos ainda chamam `resetPasswordForEmail()` sem a mesma proteção robusta.
 
-### Problema 1 — Hook timeout no cold start
-O `unified-email-service` é o hook de `send_email` do Supabase Auth. O Auth tem timeout de **5 segundos**. Na primeira invocação (cold start), a função leva mais que isso e retorna 422 "Failed to reach hook within maximum time". O email de recovery **não é enviado**.
+3. O fluxo do link de recuperação ainda é frágil
+- `src/pages/ResetPassword.tsx` melhorou, mas ainda registra o listener `onAuthStateChange` depois de iniciar `getSession()`.
+- Para recovery, isso é arriscado: o evento pode acontecer antes do listener estar ativo.
+- Além disso, o timeout fixo de 5s ainda pode marcar o link como expirado cedo demais.
 
-### Problema 2 — Sem debounce nos botões
-O botão "Enviar Email de Reset" (DangerZone.tsx, PasswordResetForm.tsx, etc.) não tem cooldown. O usuário clica de novo rapidamente e o Supabase retorna **429 "For security purposes, you can only request this after 5 seconds"** — que é exatamente o erro da screenshot.
+4. O hook customizado de email de recovery está montando a URL manualmente
+- Em `supabase/functions/unified-email-service/index.ts`, o link de recovery é reconstruído manualmente.
+- Isso é um ponto sensível e provavelmente explica os relatos de “clicar no link e não funcionar”.
+- Para signup o código já tenta usar a URL oficial do payload; para recovery ele não faz o mesmo padrão seguro.
 
-### Problema 3 — "One-time token not found"
-Nos logs do Auth aparece este erro em `/verify`. Quando o email de recovery chega a ser enviado com sucesso e o usuário clica no link, se ele já usou ou expirou, a página `/reset-password` mostra "Link Expirado". Mas o ResetPassword.tsx **não escuta o evento `PASSWORD_RECOVERY`** do `onAuthStateChange` — ele só faz `getSession()` uma vez. Se a verificação do token cria a sessão após o check inicial, a sessão não é detectada.
+O que eu vou corrigir
+1. Centralizar o reset de senha em um único fluxo compartilhado
+- Criar um serviço/hook único para solicitar reset.
+- Esse fluxo vai:
+  - aplicar cooldown por email
+  - persistir o tempo em storage local para sobreviver a troca de tela/modal
+  - padronizar o tratamento de 429
+  - evitar duplicação entre componentes
 
----
+2. Migrar todos os pontos de disparo para o fluxo central
+- Atualizar todos os chamadores de `resetPasswordForEmail`.
+- Prioridade:
+  1. `src/components/admin/users/console/DangerZone.tsx`
+  2. `src/components/auth/PasswordResetForm.tsx`
+  3. `src/components/admin/security/SecureAdminReset.tsx`
+  4. `src/pages/ProfileSettings.tsx`
+  5. `src/components/admin/users/ClientsSection.tsx`
+  6. `src/components/admin/users/UserDetailsDialogComplete.tsx`
+  7. `src/components/sistema/ERPLoginForm.tsx`
+  8. `src/hooks/useUserConsole.ts`
+  9. `src/components/admin/orders/ProfessionalOrderReport.tsx`
 
-## Correções
+3. Corrigir o fluxo da página `/reset-password`
+- Registrar `onAuthStateChange` antes de `getSession()`.
+- Tratar corretamente `PASSWORD_RECOVERY` e `SIGNED_IN`.
+- Evitar mostrar “Link expirado” só por timeout curto.
+- Deixar a checagem baseada em sessão/token realmente válido.
 
-### C-01: Debounce + cooldown em TODOS os botões de reset (6 arquivos)
+4. Corrigir o link de recovery gerado pelo hook de email
+- Revisar `supabase/functions/unified-email-service/index.ts`.
+- Parar de depender de montagem manual frágil do link quando houver dado oficial disponível no payload.
+- Garantir consistência total do `redirectTo` para `/reset-password`.
+- Adicionar logs mínimos e úteis para recovery, para facilitar nova auditoria se algo ainda falhar.
 
-Adicionar um estado `cooldown` com timer de 60 segundos após cada envio bem-sucedido, e um handler de erro que extrai os segundos do 429:
+5. Validar ponta a ponta após as correções
+- Teste 1: admin envia reset uma vez e recebe confirmação sem 429.
+- Teste 2: segundo clique imediato fica bloqueado no frontend.
+- Teste 3: usuário clica no link e a tela de nova senha abre corretamente.
+- Teste 4: senha é alterada com sucesso e o login volta a funcionar.
+- Teste 5: fluxo ERP e fluxo administrativo ficam consistentes.
 
-| Arquivo | Localização |
-|---------|-------------|
-| `src/components/admin/users/console/DangerZone.tsx` | `handleResetPassword` |
-| `src/components/auth/PasswordResetForm.tsx` | `handleResetPassword` |
-| `src/hooks/useUserConsole.ts` | função de reset |
-| `src/components/admin/users/ClientsSection.tsx` | `handleResetPassword` |
-| `src/components/admin/users/UserDetailsDialogComplete.tsx` | inline handler |
-| `src/components/admin/security/SecureAdminReset.tsx` | `handlePasswordReset` |
+Arquivos previstos para alteração
+- `src/utils/resetPasswordCooldown.ts`
+- `src/components/admin/users/console/DangerZone.tsx`
+- `src/components/auth/PasswordResetForm.tsx`
+- `src/components/admin/security/SecureAdminReset.tsx`
+- `src/pages/ProfileSettings.tsx`
+- `src/components/admin/users/ClientsSection.tsx`
+- `src/components/admin/users/UserDetailsDialogComplete.tsx`
+- `src/components/sistema/ERPLoginForm.tsx`
+- `src/hooks/useUserConsole.ts`
+- `src/components/admin/orders/ProfessionalOrderReport.tsx`
+- `src/pages/ResetPassword.tsx`
+- `supabase/functions/unified-email-service/index.ts`
 
-Padrão: após sucesso, desabilitar botão por 60s com countdown. Ao receber 429, extrair o tempo da mensagem e mostrar toast com "Aguarde X segundos".
-
-### C-02: Corrigir ResetPassword.tsx para escutar PASSWORD_RECOVERY
-
-O `useEffect` atual só faz `getSession()` uma vez. Precisa adicionar `onAuthStateChange` listener para o evento `PASSWORD_RECOVERY` — quando o Supabase processa o token do link, ele emite esse evento e cria a sessão. Sem esse listener, a página pode mostrar "Link Expirado" mesmo quando o link é válido.
-
-```text
-Fluxo correto:
-1. User clica no link → redireciona para /reset-password#access_token=...
-2. Supabase detecta o hash e processa → emite PASSWORD_RECOVERY
-3. onAuthStateChange captura → seta hasValidSession = true
-4. Formulário aparece
-```
-
-### C-03: Tratamento robusto de erro 429 com extração de tempo
-
-Em todos os handlers, ao receber erro com mensagem contendo "after X seconds", extrair o número e mostrar toast informativo: "Aguarde mais X segundos antes de tentar novamente".
-
----
-
-## Arquivos alterados (8 total)
-
-| # | Arquivo | Mudança |
-|---|---------|---------|
-| 1 | `src/components/admin/users/console/DangerZone.tsx` | Cooldown + 429 handling |
-| 2 | `src/components/auth/PasswordResetForm.tsx` | Cooldown + 429 handling |
-| 3 | `src/hooks/useUserConsole.ts` | Cooldown + 429 handling |
-| 4 | `src/components/admin/users/ClientsSection.tsx` | Cooldown + 429 handling |
-| 5 | `src/components/admin/users/UserDetailsDialogComplete.tsx` | Cooldown + 429 handling |
-| 6 | `src/components/admin/security/SecureAdminReset.tsx` | Cooldown + 429 handling |
-| 7 | `src/pages/ResetPassword.tsx` | onAuthStateChange listener para PASSWORD_RECOVERY |
-| 8 | `src/pages/ProfileSettings.tsx` | Cooldown + 429 handling |
-
-Nenhuma lógica de negócio alterada. Nenhuma migration necessária.
-
+Resumo objetivo
+- O erro da screenshot aconteceu porque o Supabase bloqueou novas tentativas com 429.
+- Isso continuou acontecendo porque a proteção atual está fragmentada e não é compartilhada entre todas as telas.
+- Além disso, o fluxo do link de recovery ainda tem dois pontos frágeis: a página `/reset-password` e a montagem manual do link no hook de email.
+- A correção certa agora é tratar o problema como sistema completo, não só como botão isolado.
