@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { deleteVideoWithExternalAPI } from '@/services/videoDeleteHelper';
 import AdminActionModal from './AdminActionModal';
 
 interface VideoAdminActionsProps {
@@ -115,12 +116,8 @@ const VideoAdminActions: React.FC<VideoAdminActionsProps> = ({
     try {
       setActionLoading('delete');
       
-      const { error } = await supabase
-        .from('pedido_videos')
-        .delete()
-        .eq('id', video.pedido_video_id);
-
-      if (error) throw error;
+      // Chama API externa + deleta do banco via helper centralizado
+      await deleteVideoWithExternalAPI(video.pedido_video_id, video.video_id, video.pedido_id);
 
       // Log da ação
       await supabase

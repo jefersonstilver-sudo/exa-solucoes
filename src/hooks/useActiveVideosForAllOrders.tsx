@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { videoScheduleService } from '@/services/videoScheduleService';
+import { deleteVideoWithExternalAPI } from '@/services/videoDeleteHelper';
 
 interface ActiveVideoInfo {
   orderId: string;
@@ -142,15 +143,8 @@ export const useActiveVideosForAllOrders = () => {
     try {
       console.log('🗑️ [ACTIVE_VIDEOS] Removendo vídeo:', pedidoVideoId);
 
-      const { error } = await supabase
-        .from('pedido_videos')
-        .delete()
-        .eq('id', pedidoVideoId);
-
-      if (error) {
-        console.error('❌ [ACTIVE_VIDEOS] Erro ao remover vídeo:', error);
-        throw error;
-      }
+      // Chama API externa + deleta do banco via helper centralizado
+      await deleteVideoWithExternalAPI(pedidoVideoId);
 
       // Atualizar lista local
       await fetchActiveVideos();

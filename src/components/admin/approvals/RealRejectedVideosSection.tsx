@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Video, RotateCcw, Trash2, ExternalLink, User, DollarSign, Calendar, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { deleteVideoWithExternalAPI } from '@/services/videoDeleteHelper';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import {
   AlertDialog,
@@ -147,12 +148,8 @@ const RealRejectedVideosSection: React.FC<RealRejectedVideosSectionProps> = ({ l
       setActionLoading(true);
       console.log('🗑️ Excluindo vídeo definitivamente:', videoId);
 
-      const { error } = await supabase
-        .from('pedido_videos')
-        .delete()
-        .eq('id', videoId);
-
-      if (error) throw error;
+      // Chama API externa + deleta do banco via helper centralizado
+      await deleteVideoWithExternalAPI(videoId);
 
       toast.success('Vídeo excluído definitivamente');
       await fetchRejectedVideos();

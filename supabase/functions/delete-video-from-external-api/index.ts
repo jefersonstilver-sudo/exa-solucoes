@@ -63,9 +63,8 @@ Deno.serve(async (req) => {
 
     console.log(`📁 [DELETE_EXTERNAL_API] Arquivo a deletar: ${fileName}`);
 
-    // 4. CRÍTICO: Deletar de TODOS os prédios usando apenas os 4 primeiros dígitos
+    // 4. Deletar de TODOS os prédios — usando Promise.allSettled para resiliência
     const deletePromises = buildings.map(async (buildingUuid: string) => {
-      // Extrair apenas os 4 primeiros dígitos do UUID
       const clientId = buildingUuid.substring(0, 4);
       const deleteUrl = `http://15.228.8.3:8000/geral/deletar-arquivos/${clientId}/Propagandas`;
       
@@ -80,23 +79,32 @@ Deno.serve(async (req) => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`❌ [DELETE_EXTERNAL_API] Erro ao deletar do prédio ${buildingUuid}:`, errorText);
-        throw new Error(`AWS API erro para prédio ${buildingUuid}: ${response.statusText}`);
+        throw new Error(`AWS API erro para prédio ${buildingUuid} (${clientId}): ${response.status} - ${errorText}`);
       }
 
+      const responseText = await response.text();
       console.log(`✅ [DELETE_EXTERNAL_API] Deletado de prédio ${buildingUuid} (clientId: ${clientId})`);
       return { buildingUuid, clientId, success: true };
     });
 
-    const results = await Promise.all(deletePromises);
+    const settled = await Promise.allSettled(deletePromises);
 
-    console.log(`✅ [DELETE_EXTERNAL_API] Vídeo ${fileName} deletado de ${results.length} prédio(s)`);
+    const successes = settled.filter(r => r.status === 'fulfilled').map(r => (r as PromiseFulfilledResult<any>).value);
+    const failures = settled.filter(r => r.status === 'rejected').map(r => ({
+      error: (r as PromiseRejectedResult).reason?.message || 'Erro desconhecido'
+    }));
+
+    console.log(`✅ [DELETE_EXTERNAL_API] Resultado: ${successes.length} sucesso(s), ${failures.length} falha(s)`);
 
     return new Response(
       JSON.stringify({
-        success: true,
+        success: failures.length === 0,
+        partial: failures.length > 0 && successes.length > 0,
         deleted_file: fileName,
-        buildings_count: results.length,
-        results: results
+        buildings_count: successes.length,
+        failed_count: failures.length,
+        successes,
+        failures
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
