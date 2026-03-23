@@ -186,7 +186,7 @@ serve(async (req) => {
         ...metadata,
         ativo: isFirstApproved,
         status: 'new',
-        ...(isVertical && { isPlus: false })
+        ...(isVertical && { isPlus: true })
       }
     };
 
