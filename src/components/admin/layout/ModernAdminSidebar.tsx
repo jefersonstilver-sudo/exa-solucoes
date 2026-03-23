@@ -424,7 +424,8 @@ export function ModernAdminSidebar() {
     if (userInfo.role === 'super_admin') return 'CEO / Diretoria';
     if (userInfo.role === 'admin') return 'Coordenação';
     // Use department name if available
-    const deptName = userProfile?.departamento;
+    const dept = userProfile?.departamento;
+    const deptName = typeof dept === 'object' && dept?.name ? dept.name : (typeof dept === 'string' ? dept : null);
     if (deptName) return deptName;
     // Fallback for legacy roles
     switch (userInfo.role) {

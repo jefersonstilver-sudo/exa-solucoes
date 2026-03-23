@@ -22,11 +22,11 @@ import type { UserRole } from '@/types/userTypes';
 
 const AdminProfileSettings = () => {
   const { userProfile, refreshUserProfile } = useAuth();
-  const email = userProfile?.email;
-  const { sendReset, isLoading: resetHookLoading, cooldown } = usePasswordReset(email);
+  const userEmail = userProfile?.email;
+  const { sendReset, isLoading: resetHookLoading, cooldown } = usePasswordReset(userEmail);
 
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [displayEmail, setDisplayEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [originalName, setOriginalName] = useState('');
   const [loading, setLoading] = useState(true);
@@ -37,7 +37,6 @@ const AdminProfileSettings = () => {
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [createdAt, setCreatedAt] = useState('');
   const [userId, setUserId] = useState('');
-  const [departamento, setDepartamento] = useState('');
   const [departamento, setDepartamento] = useState('');
 
   const loadProfile = useCallback(async () => {
