@@ -106,6 +106,10 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-200" />
+              <DropdownMenuItem onClick={() => navigate(buildPath('meu-perfil'))} className="text-gray-900 hover:bg-gray-100">
+                <User className="mr-3 h-4 w-4" />
+                <span>Meu Perfil</span>
+              </DropdownMenuItem>
               {isSuperAdmin && (
                 <DropdownMenuItem onClick={() => navigate(buildPath('configuracoes'))} className="text-gray-900 hover:bg-gray-100">
                   <Settings className="mr-3 h-4 w-4" />

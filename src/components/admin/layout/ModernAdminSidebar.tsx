@@ -421,11 +421,16 @@ export function ModernAdminSidebar() {
   };
 
   const getAdminTitle = () => {
+    if (userInfo.role === 'super_admin') return 'CEO / Diretoria';
+    if (userInfo.role === 'admin') return 'Coordenação';
+    // Use department name if available
+    const deptName = userProfile?.departamento;
+    if (deptName) return deptName;
+    // Fallback for legacy roles
     switch (userInfo.role) {
-      case 'super_admin': return 'Super Admin';
-      case 'admin': return 'Admin Geral';
-      case 'admin_marketing': return 'Admin Marketing';
-      case 'admin_financeiro': return 'Admin Financeiro';
+      case 'admin_marketing': return 'Marketing';
+      case 'admin_financeiro': return 'Financeiro';
+      case 'comercial': return 'Comercial';
       default: return 'Admin';
     }
   };
@@ -589,21 +594,29 @@ export function ModernAdminSidebar() {
       {/* Footer - Red Glass */}
       <SidebarFooter className="mt-auto p-3 border-t border-white/10 bg-black/10 backdrop-blur-sm">
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
-          <Avatar className="h-9 w-9 ring-2 ring-white/30 shadow-lg">
-            <AvatarFallback className="bg-white/20 text-white font-semibold text-sm backdrop-blur-sm">
-              {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
-            </AvatarFallback>
-          </Avatar>
+          <button
+            onClick={() => navigate(buildPath('meu-perfil'))}
+            className="flex-shrink-0"
+          >
+            <Avatar className="h-9 w-9 ring-2 ring-white/30 shadow-lg cursor-pointer hover:ring-amber-300/50 transition-all">
+              <AvatarFallback className="bg-white/20 text-white font-semibold text-sm backdrop-blur-sm">
+                {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
+              </AvatarFallback>
+            </Avatar>
+          </button>
           
           {!collapsed && (
-            <div className="flex-1 min-w-0">
+            <button
+              onClick={() => navigate(buildPath('meu-perfil'))}
+              className="flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
+            >
               <p className="text-sm font-medium text-white truncate">
                 {userProfile?.email?.split('@')[0] || 'Admin'}
               </p>
               <p className="text-[10px] text-white/50">
-                {getAdminTitle()}
+                {getAdminTitle()} · Meu Perfil
               </p>
-            </div>
+            </button>
           )}
           
           {!collapsed && (
