@@ -38,8 +38,35 @@ import SecurityPage from '@/pages/admin/SecurityPage';
 import AcessoNegadoPage from '@/pages/admin/AcessoNegadoPage';
 import PosicoesDisponiveisPage from '@/pages/admin/PosicoesDisponiveisPage';
 import ProtectedModuleRoute from '@/components/admin/ProtectedModuleRoute';
-import { MODULE_KEYS } from '@/hooks/useDynamicModulePermissions';
+import { MODULE_KEYS, MODULE_ROUTES, useDynamicModulePermissions } from '@/hooks/useDynamicModulePermissions';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
+
+// Redirect inteligente: redireciona ao primeiro módulo permitido
+const AdminIndexRedirect = () => {
+  const { hasModuleAccess, isCEO, isLoading } = useDynamicModulePermissions();
+  
+  if (isLoading) return <GlobalLoadingPage message="Verificando permissões..." />;
+  if (isCEO) return <Dashboard />;
+  
+  // Se tem acesso ao dashboard, mostra ele
+  if (hasModuleAccess('dashboard')) return <Dashboard />;
+  
+  // Ordem de prioridade para redirect
+  const priorityModules = [
+    'pedidos', 'propostas', 'contatos', 'crm_chat', 'predios', 'paineis',
+    'aprovacoes', 'videos_anunciantes', 'beneficios', 'relatorios', 'financeiro',
+    'leads', 'sindicos', 'emails', 'usuarios', 'agenda', 'processos'
+  ];
+  
+  for (const mod of priorityModules) {
+    if (hasModuleAccess(mod) && MODULE_ROUTES[mod]) {
+      return <Navigate to={MODULE_ROUTES[mod].path} replace />;
+    }
+  }
+  
+  // Fallback: meu perfil
+  return <Navigate to="/admin/meu-perfil" replace />;
+};
 
 // Meu Perfil
 const AdminProfileSettings = lazy(() => import('@/pages/admin/AdminProfileSettings'));
@@ -84,11 +111,7 @@ const AdminRoutes = () => {
       <Route path="acesso-negado" element={<AcessoNegadoPage />} />
 
       {/* ============ GESTÃO PRINCIPAL ============ */}
-      <Route index element={
-        <ProtectedModuleRoute moduleKey={MODULE_KEYS.dashboard}>
-          <Dashboard />
-        </ProtectedModuleRoute>
-      } />
+      <Route index element={<AdminIndexRedirect />} />
       <Route path="posicoes" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.posicoes}>
           <PosicoesDisponiveisPage />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Settings, Lock, LogOut, LogIn, UserPlus, User as UserIcon, ShieldCheck, LayoutDashboard, Users, Package, Building, Monitor, CheckCircle, ClipboardList, ListOrdered, Gift, Film, Bot } from 'lucide-react';
 import { toast } from 'sonner';
@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Avatar, AvatarFallback, AvatarImage, AvatarGlow } from '@/components/ui/avatar';
 import { useUserSession } from '@/hooks/useUserSession';
 import { ClientOnly } from '@/components/ui/client-only';
+import { useDynamicModulePermissions, MODULE_ROUTES } from '@/hooks/useDynamicModulePermissions';
 
 // Glass menu item styles
 const glassMenuItemBase = "mx-2 rounded-xl cursor-pointer p-3 transition-all duration-200 ease-out active:scale-[0.98]";
@@ -94,14 +95,41 @@ const UserMenu = () => {
     return "bg-gradient-to-br from-gray-600 to-gray-700 text-white border-2 border-gray-400/50";
   };
 
-  // Get role badge info
+  const { hasModuleAccess, isCEO } = useDynamicModulePermissions();
+
+  // Get role badge info - usa departamento quando disponível
   const getRoleBadge = () => {
     if (isSuperAdmin) return { label: "MASTER", colors: "bg-gradient-to-r from-amber-500/10 to-orange-500/10 text-amber-700 border-amber-200/50" };
+    const dept = (user as any)?.departamento;
+    if (dept) {
+      return { label: dept.toUpperCase(), colors: "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-700 border-blue-200/50" };
+    }
     if (isAdmin) return { label: "ADMIN", colors: "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-700 border-blue-200/50" };
     if (isAdminFinanceiro) return { label: "FINANCEIRO", colors: "bg-gradient-to-r from-green-500/10 to-emerald-500/10 text-green-700 border-green-200/50" };
     if (isAdminMarketing) return { label: "MARKETING", colors: "bg-gradient-to-r from-purple-500/10 to-violet-500/10 text-purple-700 border-purple-200/50" };
     return null;
   };
+
+  // Menu items dinâmicos para admins não-CEO
+  const adminMenuItems = useMemo(() => {
+    if (isSuperAdmin || !isAnyAdmin) return [];
+    
+    // Módulos prioritários para mostrar no menu rápido
+    const menuModules = [
+      { key: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+      { key: 'pedidos', icon: Package, label: 'Pedidos' },
+      { key: 'propostas', icon: ClipboardList, label: 'Propostas' },
+      { key: 'contatos', icon: Users, label: 'Contatos' },
+      { key: 'predios', icon: Building, label: 'Prédios' },
+      { key: 'paineis', icon: Monitor, label: 'Painéis' },
+      { key: 'aprovacoes', icon: CheckCircle, label: 'Aprovações' },
+      { key: 'videos_anunciantes', icon: Film, label: 'Vídeos' },
+      { key: 'beneficios', icon: Gift, label: 'Benefícios' },
+      { key: 'relatorios', icon: CheckCircle, label: 'Relatórios' },
+    ];
+    
+    return menuModules.filter(m => hasModuleAccess(m.key));
+  }, [isSuperAdmin, isAnyAdmin, hasModuleAccess]);
 
   const roleBadge = getRoleBadge();
 
@@ -319,195 +347,45 @@ const UserMenu = () => {
                             </>
                           )}
 
-                          {/* MENU PARA ADMIN REGULAR */}
-                          {isAdmin && !isSuperAdmin && (
+                          {/* MENU DINÂMICO PARA ADMINS NÃO-CEO */}
+                          {isAnyAdmin && !isSuperAdmin && (
                             <>
-                              <SectionLabel>Administração</SectionLabel>
+                              <SectionLabel>Acesso Rápido</SectionLabel>
                               
-                              <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
-                                <Link to="/admin" className="flex items-center group">
-                                  <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-blue-500/10 transition-colors duration-200">
-                                    <LayoutDashboard className="h-4 w-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
-                                  </div>
-                                  <span className="text-sm font-medium">Dashboard Administrativo</span>
-                                </Link>
-                              </DropdownMenuItem>
+                              {adminMenuItems.map((item) => (
+                                <DropdownMenuItem key={item.key} asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
+                                  <Link to={MODULE_ROUTES[item.key]?.path || '/admin'} className="flex items-center group">
+                                    <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-blue-500/10 transition-colors duration-200">
+                                      <item.icon className="h-4 w-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
+                                    </div>
+                                    <span className="text-sm font-medium">{item.label}</span>
+                                  </Link>
+                                </DropdownMenuItem>
+                              ))}
                               
-                              <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
-                                <Link to="/admin/pedidos" className="flex items-center group">
-                                  <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-blue-500/10 transition-colors duration-200">
-                                    <Package className="h-4 w-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
-                                  </div>
-                                  <span className="text-sm font-medium">Gerenciar Pedidos</span>
-                                </Link>
-                              </DropdownMenuItem>
-                              
-                              <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
-                                <Link to="/admin/predios" className="flex items-center group">
-                                  <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-blue-500/10 transition-colors duration-200">
-                                    <Building className="h-4 w-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
-                                  </div>
-                                  <span className="text-sm font-medium">Gerenciar Prédios</span>
-                                </Link>
-                              </DropdownMenuItem>
-                              
-                              <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
-                                <Link to="/admin/paineis" className="flex items-center group">
-                                  <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-blue-500/10 transition-colors duration-200">
-                                    <Monitor className="h-4 w-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
-                                  </div>
-                                  <span className="text-sm font-medium">Gerenciar Painéis</span>
-                                </Link>
-                              </DropdownMenuItem>
-                              
-                              <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
-                                <Link to="/admin/aprovacoes" className="flex items-center group">
-                                  <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-blue-500/10 transition-colors duration-200">
-                                    <CheckCircle className="h-4 w-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
-                                  </div>
-                                  <span className="text-sm font-medium">Aprovações</span>
-                                </Link>
-                              </DropdownMenuItem>
+                              {adminMenuItems.length === 0 && (
+                                <div className="px-4 py-3 text-xs text-gray-400 text-center">
+                                  Nenhum módulo habilitado
+                                </div>
+                              )}
                               
                               <GlassSeparator />
                               
                               <SectionLabel>Conta</SectionLabel>
+                              
+                              <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
+                                <Link to="/admin/meu-perfil" className="flex items-center group">
+                                  <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-blue-500/10 transition-colors duration-200">
+                                    <UserIcon className="h-4 w-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
+                                  </div>
+                                  <span className="text-sm font-medium">Meu Perfil</span>
+                                </Link>
+                              </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
                                 <Link to="/alterar-senha" className="flex items-center group">
                                   <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-blue-500/10 transition-colors duration-200">
                                     <Lock className="h-4 w-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
-                                  </div>
-                                  <span className="text-sm font-medium">Alterar Senha</span>
-                                </Link>
-                              </DropdownMenuItem>
-                              
-                              <GlassSeparator />
-                              
-                              <DropdownMenuItem 
-                                onClick={handleLogout} 
-                                className={`${glassMenuItemBase} ${glassMenuItemDanger} mb-2`}
-                              >
-                                <div className="flex items-center">
-                                  <div className="mr-3 p-2 rounded-lg bg-red-100/80">
-                                    <LogOut className="h-4 w-4" />
-                                  </div>
-                                  <span className="text-sm font-medium">Sair</span>
-                                </div>
-                              </DropdownMenuItem>
-                            </>
-                          )}
-
-                          {/* MENU PARA ADMIN FINANCEIRO */}
-                          {isAdminFinanceiro && (
-                            <>
-                              <SectionLabel>Financeiro</SectionLabel>
-                              
-                              <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
-                                <Link to="/admin" className="flex items-center group">
-                                  <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-green-500/10 transition-colors duration-200">
-                                    <LayoutDashboard className="h-4 w-4 text-gray-500 group-hover:text-green-600 transition-colors" />
-                                  </div>
-                                  <span className="text-sm font-medium">Painel Financeiro</span>
-                                </Link>
-                              </DropdownMenuItem>
-                              
-                              <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
-                                <Link to="/admin/pedidos" className="flex items-center group">
-                                  <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-green-500/10 transition-colors duration-200">
-                                    <Package className="h-4 w-4 text-gray-500 group-hover:text-green-600 transition-colors" />
-                                  </div>
-                                  <span className="text-sm font-medium">Pedidos</span>
-                                </Link>
-                              </DropdownMenuItem>
-                              
-                              <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
-                                <Link to="/admin/beneficio-prestadores" className="flex items-center group">
-                                  <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-green-500/10 transition-colors duration-200">
-                                    <Gift className="h-4 w-4 text-gray-500 group-hover:text-green-600 transition-colors" />
-                                  </div>
-                                  <span className="text-sm font-medium">Benefícios Prestadores</span>
-                                </Link>
-                              </DropdownMenuItem>
-                              
-                              <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
-                                <Link to="/admin/relatorios-financeiros" className="flex items-center group">
-                                  <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-green-500/10 transition-colors duration-200">
-                                    <CheckCircle className="h-4 w-4 text-gray-500 group-hover:text-green-600 transition-colors" />
-                                  </div>
-                                  <span className="text-sm font-medium">Relatórios Financeiros</span>
-                                </Link>
-                              </DropdownMenuItem>
-                              
-                              <GlassSeparator />
-                              
-                              <SectionLabel>Conta</SectionLabel>
-                              
-                              <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
-                                <Link to="/alterar-senha" className="flex items-center group">
-                                  <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-green-500/10 transition-colors duration-200">
-                                    <Lock className="h-4 w-4 text-gray-500 group-hover:text-green-600 transition-colors" />
-                                  </div>
-                                  <span className="text-sm font-medium">Alterar Senha</span>
-                                </Link>
-                              </DropdownMenuItem>
-                              
-                              <GlassSeparator />
-                              
-                              <DropdownMenuItem 
-                                onClick={handleLogout} 
-                                className={`${glassMenuItemBase} ${glassMenuItemDanger} mb-2`}
-                              >
-                                <div className="flex items-center">
-                                  <div className="mr-3 p-2 rounded-lg bg-red-100/80">
-                                    <LogOut className="h-4 w-4" />
-                                  </div>
-                                  <span className="text-sm font-medium">Sair</span>
-                                </div>
-                              </DropdownMenuItem>
-                            </>
-                          )}
-
-                          {/* MENU PARA ADMIN MARKETING */}
-                          {isAdminMarketing && (
-                            <>
-                              <SectionLabel>Marketing</SectionLabel>
-                              
-                              <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
-                                <Link to="/admin" className="flex items-center group">
-                                  <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-purple-500/10 transition-colors duration-200">
-                                    <LayoutDashboard className="h-4 w-4 text-gray-500 group-hover:text-purple-600 transition-colors" />
-                                  </div>
-                                  <span className="text-sm font-medium">Painel de Marketing</span>
-                                </Link>
-                              </DropdownMenuItem>
-                              
-                              <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
-                                <Link to="/admin/predios" className="flex items-center group">
-                                  <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-purple-500/10 transition-colors duration-200">
-                                    <Building className="h-4 w-4 text-gray-500 group-hover:text-purple-600 transition-colors" />
-                                  </div>
-                                  <span className="text-sm font-medium">Prédios</span>
-                                </Link>
-                              </DropdownMenuItem>
-                              
-                              <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
-                                <Link to="/admin/paineis" className="flex items-center group">
-                                  <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-purple-500/10 transition-colors duration-200">
-                                    <Monitor className="h-4 w-4 text-gray-500 group-hover:text-purple-600 transition-colors" />
-                                  </div>
-                                  <span className="text-sm font-medium">Painéis Publicitários</span>
-                                </Link>
-                              </DropdownMenuItem>
-                              
-                              <GlassSeparator />
-                              
-                              <SectionLabel>Conta</SectionLabel>
-                              
-                              <DropdownMenuItem asChild className={`${glassMenuItemBase} ${glassMenuItemDefault}`}>
-                                <Link to="/alterar-senha" className="flex items-center group">
-                                  <div className="mr-3 p-2 rounded-lg bg-gray-100/80 group-hover:bg-purple-500/10 transition-colors duration-200">
-                                    <Lock className="h-4 w-4 text-gray-500 group-hover:text-purple-600 transition-colors" />
                                   </div>
                                   <span className="text-sm font-medium">Alterar Senha</span>
                                 </Link>
