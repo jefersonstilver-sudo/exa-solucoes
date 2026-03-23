@@ -20,7 +20,7 @@ const ResetPassword = () => {
   const [hasValidSession, setHasValidSession] = useState<boolean | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
-  // Verificar sessão ao montar componente
+  // Verificar sessão ao montar + escutar PASSWORD_RECOVERY
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -28,27 +28,47 @@ const ResetPassword = () => {
         
         if (error) {
           console.error('Erro ao verificar sessão:', error);
-          setHasValidSession(false);
+          // Don't set false yet — wait for onAuthStateChange
           return;
         }
 
-        // Verificar se existe uma sessão válida
         if (session) {
           console.log('✅ Sessão válida encontrada');
           setHasValidSession(true);
-        } else {
-          console.warn('⚠️ Nenhuma sessão válida encontrada');
-          setHasValidSession(false);
+          setIsCheckingSession(false);
         }
       } catch (error) {
         console.error('Erro inesperado ao verificar sessão:', error);
-        setHasValidSession(false);
-      } finally {
-        setIsCheckingSession(false);
       }
     };
 
     checkSession();
+
+    // Listen for PASSWORD_RECOVERY event from the recovery link
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔐 [RESET] Auth event:', event);
+      if (event === 'PASSWORD_RECOVERY' && session) {
+        console.log('✅ PASSWORD_RECOVERY event received');
+        setHasValidSession(true);
+        setIsCheckingSession(false);
+      } else if (event === 'SIGNED_IN' && session) {
+        // Recovery link can also trigger SIGNED_IN
+        console.log('✅ SIGNED_IN event (may be recovery)');
+        setHasValidSession(true);
+        setIsCheckingSession(false);
+      }
+    });
+
+    // Timeout: if no session after 5 seconds, show expired
+    const timeout = setTimeout(() => {
+      setIsCheckingSession(false);
+      setHasValidSession(prev => prev === null ? false : prev);
+    }, 5000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   // Password strength validation
