@@ -1,91 +1,47 @@
 
-Plano de auditoria e correção imediata do reset de senha
 
-Diagnóstico confirmado do erro da screenshot
-- O erro exibido agora é real e vem do Supabase Auth: `429 email rate limit exceeded` no endpoint `/recover`.
-- Ou seja: nesta tentativa o pedido de reset nem chegou a falhar “dentro do email”; ele foi bloqueado antes, pelo limite anti-spam do próprio Supabase.
-- Os logs confirmam várias tentativas seguidas para `comercial@examidia.com.br` em segundos/minutos próximos, todas com `status 429`.
-- Por isso também não aparecem logs recentes do `unified-email-service`: nessas tentativas o hook de envio nem foi alcançado.
+# Plano: Corrigir label do sidebar + Página "Meu Perfil" para admins/funcionários
 
-O que a auditoria encontrou no código
-1. O cooldown atual não é global
-- `DangerZone`, `PasswordResetForm`, `SecureAdminReset`, `ProfileSettings`, `ClientsSection` e `UserDetailsDialogComplete` já têm cooldown local.
-- Mas esse cooldown vive só dentro do componente. Se o modal fecha, a tela troca, a página recarrega ou outro ponto da aplicação dispara reset, o bloqueio “some”.
-- Resultado: o usuário consegue clicar de novo em outra tela e o Supabase responde 429.
+## Problema 1 — Label incorreta na sidebar
 
-2. Ainda existem pontos sem a proteção aplicada
-- `src/components/sistema/ERPLoginForm.tsx`
-- `src/hooks/useUserConsole.ts`
-- `src/components/admin/orders/ProfessionalOrderReport.tsx`
-- Esses fluxos ainda chamam `resetPasswordForEmail()` sem a mesma proteção robusta.
+A sidebar (`ModernAdminSidebar.tsx`) mostra labels estáticas como "Admin Geral" baseadas apenas no `role`. A Jeniffer é do departamento **Comercial** mas aparece como "Admin Geral" porque o `getAdminTitle()` não considera o departamento. O profile já carrega `departamento` do banco (via `useAuth`).
 
-3. O fluxo do link de recuperação ainda é frágil
-- `src/pages/ResetPassword.tsx` melhorou, mas ainda registra o listener `onAuthStateChange` depois de iniciar `getSession()`.
-- Para recovery, isso é arriscado: o evento pode acontecer antes do listener estar ativo.
-- Além disso, o timeout fixo de 5s ainda pode marcar o link como expirado cedo demais.
+**Correção**: Alterar `getAdminTitle()` para usar o nome do departamento quando disponível:
+- `super_admin` → "CEO / Diretoria"
+- `admin` → "Coordenação"
+- `admin_departamental` / roles legados → nome do departamento (ex: "Comercial")
+- Fallback: label atual
 
-4. O hook customizado de email de recovery está montando a URL manualmente
-- Em `supabase/functions/unified-email-service/index.ts`, o link de recovery é reconstruído manualmente.
-- Isso é um ponto sensível e provavelmente explica os relatos de “clicar no link e não funcionar”.
-- Para signup o código já tenta usar a URL oficial do payload; para recovery ele não faz o mesmo padrão seguro.
+Também atualizar `getRoleDisplayInfo` em `userRoleService.ts` e os mapas de labels em `UserDetailsDialog.tsx`, `UserDetailsDialogComplete.tsx`, `IndexaTeamSection.tsx`, `UserManagementPanel.tsx` para usar a mesma lógica com departamento.
 
-O que eu vou corrigir
-1. Centralizar o reset de senha em um único fluxo compartilhado
-- Criar um serviço/hook único para solicitar reset.
-- Esse fluxo vai:
-  - aplicar cooldown por email
-  - persistir o tempo em storage local para sobreviver a troca de tela/modal
-  - padronizar o tratamento de 429
-  - evitar duplicação entre componentes
+## Problema 2 — Não existe página "Meu Perfil" para admins
 
-2. Migrar todos os pontos de disparo para o fluxo central
-- Atualizar todos os chamadores de `resetPasswordForEmail`.
-- Prioridade:
-  1. `src/components/admin/users/console/DangerZone.tsx`
-  2. `src/components/auth/PasswordResetForm.tsx`
-  3. `src/components/admin/security/SecureAdminReset.tsx`
-  4. `src/pages/ProfileSettings.tsx`
-  5. `src/components/admin/users/ClientsSection.tsx`
-  6. `src/components/admin/users/UserDetailsDialogComplete.tsx`
-  7. `src/components/sistema/ERPLoginForm.tsx`
-  8. `src/hooks/useUserConsole.ts`
-  9. `src/components/admin/orders/ProfessionalOrderReport.tsx`
+A `ProfileSettings.tsx` existe mas **não tem rota** (foi removida em favor de `AdvertiserSettings`). Admins e funcionários não têm acesso a:
+- Verificação de WhatsApp (para EXA Alerts)
+- Ativação de 2FA
+- Configurações pessoais dentro do painel admin
 
-3. Corrigir o fluxo da página `/reset-password`
-- Registrar `onAuthStateChange` antes de `getSession()`.
-- Tratar corretamente `PASSWORD_RECOVERY` e `SIGNED_IN`.
-- Evitar mostrar “Link expirado” só por timeout curto.
-- Deixar a checagem baseada em sessão/token realmente válido.
+**Solução**: Criar uma página completa `AdminProfileSettings.tsx` com:
 
-4. Corrigir o link de recovery gerado pelo hook de email
-- Revisar `supabase/functions/unified-email-service/index.ts`.
-- Parar de depender de montagem manual frágil do link quando houver dado oficial disponível no payload.
-- Garantir consistência total do `redirectTo` para `/reset-password`.
-- Adicionar logs mínimos e úteis para recovery, para facilitar nova auditoria se algo ainda falhar.
+### Seções da página:
+1. **Informações Pessoais** — Nome, email (read-only), telefone
+2. **Verificação de WhatsApp** — Reutilizar `WhatsAppVerificationModal` para validar telefone e ficar disponível para notificações EXA Alerts
+3. **Autenticação em Duas Etapas (2FA)** — Toggle para ativar/desativar, idêntico ao dos clientes em `AdvertiserSettings.tsx` (requer WhatsApp verificado primeiro)
+4. **Segurança** — Botão de reset de senha (com cooldown global)
+5. **Informações da Conta** — ID, data de criação, cargo, departamento
 
-5. Validar ponta a ponta após as correções
-- Teste 1: admin envia reset uma vez e recebe confirmação sem 429.
-- Teste 2: segundo clique imediato fica bloqueado no frontend.
-- Teste 3: usuário clica no link e a tela de nova senha abre corretamente.
-- Teste 4: senha é alterada com sucesso e o login volta a funcionar.
-- Teste 5: fluxo ERP e fluxo administrativo ficam consistentes.
+### Rota e navegação:
+- Adicionar rota `meu-perfil` em `AdminRoutes.tsx` e `SuperAdminRoutes.tsx`
+- Adicionar link "Meu Perfil" no footer da sidebar (ao lado do avatar) e no dropdown do header
 
-Arquivos previstos para alteração
-- `src/utils/resetPasswordCooldown.ts`
-- `src/components/admin/users/console/DangerZone.tsx`
-- `src/components/auth/PasswordResetForm.tsx`
-- `src/components/admin/security/SecureAdminReset.tsx`
-- `src/pages/ProfileSettings.tsx`
-- `src/components/admin/users/ClientsSection.tsx`
-- `src/components/admin/users/UserDetailsDialogComplete.tsx`
-- `src/components/sistema/ERPLoginForm.tsx`
-- `src/hooks/useUserConsole.ts`
-- `src/components/admin/orders/ProfessionalOrderReport.tsx`
-- `src/pages/ResetPassword.tsx`
-- `supabase/functions/unified-email-service/index.ts`
+## Arquivos alterados
 
-Resumo objetivo
-- O erro da screenshot aconteceu porque o Supabase bloqueou novas tentativas com 429.
-- Isso continuou acontecendo porque a proteção atual está fragmentada e não é compartilhada entre todas as telas.
-- Além disso, o fluxo do link de recovery ainda tem dois pontos frágeis: a página `/reset-password` e a montagem manual do link no hook de email.
-- A correção certa agora é tratar o problema como sistema completo, não só como botão isolado.
+| # | Arquivo | Mudança |
+|---|---------|---------|
+| 1 | `src/components/admin/layout/ModernAdminSidebar.tsx` | Corrigir `getAdminTitle()` para usar departamento; adicionar link "Meu Perfil" |
+| 2 | `src/pages/admin/AdminProfileSettings.tsx` | **NOVO** — Página completa de perfil admin com WhatsApp, 2FA, senha |
+| 3 | `src/routes/AdminRoutes.tsx` | Adicionar rota `meu-perfil` |
+| 4 | `src/routes/SuperAdminRoutes.tsx` | Adicionar rota `meu-perfil` |
+| 5 | `src/components/admin/layout/AdminHeader.tsx` | Adicionar link "Meu Perfil" no dropdown |
+| 6 | `src/components/admin/layout/AdminSidebar.tsx` | Corrigir `getAdminTitle()` para usar departamento |
+
