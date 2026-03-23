@@ -416,9 +416,10 @@ export function ModernAdminSidebar() {
   const filteredGroups = navigationGroups.map(group => ({
     ...group,
     items: group.items.filter(item => {
+      // Always visible items (like Meu Perfil)
+      if (item.moduleKey === '__always_visible__') return true;
       // Master account always has access
       if (isMasterAccount) return true;
-      
       // Check dynamic permission from database
       return hasModuleAccess(item.moduleKey);
     })
