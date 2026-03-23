@@ -65,7 +65,8 @@ export const fetchAllBuildingsForAdmin = async () => {
       .from('devices')
       .select('id, building_id, status, last_online_at, condominio_name')
       .eq('is_active', true)
-      .not('building_id', 'is', null);
+      .not('building_id', 'is', null)
+      .neq('status', 'deleted');
 
     // Buscar painéis ativos por prédio
     const panelsPromise = supabase
@@ -105,9 +106,16 @@ export const fetchAllBuildingsForAdmin = async () => {
     }
 
     // Criar mapa de devices por building_id (relacionamento reverso)
+    // Priorizar melhor device por prédio: online > offline > outros
+    const statusPriority: Record<string, number> = { online: 3, offline: 2 };
     const devicesByBuildingId = (devicesData || []).reduce((acc: any, device: any) => {
       if (device.building_id) {
-        acc[device.building_id] = device;
+        const existing = acc[device.building_id];
+        const existingPriority = existing ? (statusPriority[existing.status] || 0) : -1;
+        const newPriority = statusPriority[device.status] || 0;
+        if (newPriority > existingPriority) {
+          acc[device.building_id] = device;
+        }
       }
       return acc;
     }, {});
