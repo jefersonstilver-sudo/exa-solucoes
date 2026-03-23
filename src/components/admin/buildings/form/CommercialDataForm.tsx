@@ -197,6 +197,7 @@ const CommercialDataForm: React.FC<CommercialDataFormProps> = ({ formData, onUpd
             </SelectTrigger>
             <SelectContent className="bg-white z-50">
               <SelectItem value="ativo">Ativo</SelectItem>
+              <SelectItem value="interno">🏢 Interno</SelectItem>
               <SelectItem value="manutenção">Manutenção</SelectItem>
               <SelectItem value="instalação">Instalação</SelectItem>
               <SelectItem value="inativo">Inativo</SelectItem>

@@ -38,6 +38,7 @@ export const useAdminBuildingsData = () => {
         total: processedBuildings.length,
         active: processedBuildings.filter(b => b.status === 'ativo').length,
         inactive: processedBuildings.filter(b => b.status === 'inativo').length,
+        interno: processedBuildings.filter(b => b.status === 'interno').length,
         totalPanels: processedBuildings.reduce((acc, building) => acc + (building.quantidade_telas || 0), 0)
       };
       
