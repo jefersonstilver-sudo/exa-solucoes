@@ -8,6 +8,7 @@ import { Upload, Video, Loader2, Save, AlertCircle, CheckCircle2 } from 'lucide-
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import * as tus from 'tus-js-client';
 
 const VideosSitePage = () => {
   const [loading, setLoading] = useState(false);
@@ -74,13 +75,11 @@ const VideosSitePage = () => {
   ) => {
     if (!file) return;
 
-    // Validar tipo de arquivo
     if (!file.type.startsWith('video/')) {
       toast.error('Por favor, selecione apenas arquivos de vídeo');
       return;
     }
 
-    // Validar tamanho (máximo 100MB)
     const maxSize = 100 * 1024 * 1024;
     if (file.size > maxSize) {
       toast.error('O vídeo não pode ter mais de 100MB');
@@ -90,28 +89,56 @@ const VideosSitePage = () => {
     try {
       setUploading(true);
       setProgress(0);
-      
-      // Gerar nome único para o arquivo
+
       const timestamp = Date.now();
       const fileExt = file.name.split('.').pop();
       const fileName = `${folder}/${timestamp}.${fileExt}`;
 
-      let simulatedProgress = 0;
-      const progressInterval = setInterval(() => {
-        simulatedProgress = Math.min(simulatedProgress + 10, 90);
-        setProgress(simulatedProgress);
-      }, 500);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
 
-      // Upload direto via SDK (sem signed URL)
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, file, { upsert: true });
+      const projectId = 'aakenoljsycyrcrchgxj';
 
-      clearInterval(progressInterval);
+      await new Promise<void>((resolve, reject) => {
+        const upload = new tus.Upload(file, {
+          endpoint: `https://${projectId}.supabase.co/storage/v1/upload/resumable`,
+          retryDelays: [0, 3000, 5000, 10000],
+          headers: {
+            authorization: `Bearer ${session.access_token}`,
+            'x-upsert': 'true',
+          },
+          uploadDataDuringCreation: true,
+          removeFingerprintOnSuccess: true,
+          metadata: {
+            bucketName: bucket,
+            objectName: fileName,
+            contentType: file.type,
+            cacheControl: '3600',
+          },
+          chunkSize: 6 * 1024 * 1024,
+          onError: (error) => {
+            console.error('[TUS] Upload error:', error);
+            reject(error);
+          },
+          onProgress: (bytesUploaded, bytesTotal) => {
+            const pct = Math.round((bytesUploaded / bytesTotal) * 100);
+            setProgress(pct);
+          },
+          onSuccess: () => {
+            resolve();
+          },
+        });
 
-      if (uploadError) throw uploadError;
+        upload.findPreviousUploads().then((previousUploads) => {
+          if (previousUploads.length) {
+            upload.resumeFromPreviousUpload(previousUploads[0]);
+          }
+          upload.start();
+        });
+      });
 
-      // Obter URL pública
       const { data: { publicUrl } } = supabase.storage
         .from(bucket)
         .getPublicUrl(fileName);
@@ -121,7 +148,7 @@ const VideosSitePage = () => {
       setProgress(100);
     } catch (error: any) {
       console.error('Erro no upload:', error);
-      toast.error(`Erro ao fazer upload: ${error.message}`);
+      toast.error(`Erro ao fazer upload: ${error.message || error}`);
       setProgress(0);
     } finally {
       setTimeout(() => {
