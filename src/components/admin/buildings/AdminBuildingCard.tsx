@@ -46,6 +46,8 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
     switch (status) {
       case 'ativo':
         return <Badge className="bg-green-500/90 text-white text-xs">Ativo</Badge>;
+      case 'interno':
+        return <Badge className="bg-purple-500/90 text-white text-xs">🏢 Interno</Badge>;
       case 'manutenção':
         return <Badge className="bg-orange-500/90 text-white text-xs">Manutenção</Badge>;
       case 'instalação':

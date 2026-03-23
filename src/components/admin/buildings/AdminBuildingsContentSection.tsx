@@ -33,6 +33,7 @@ const AdminBuildingsContentSection: React.FC<AdminBuildingsContentSectionProps> 
   );
 
   const activeBuildings = filteredBuildings.filter(b => b.status === 'ativo');
+  const internalBuildings = filteredBuildings.filter(b => b.status === 'interno');
   const maintenanceBuildings = filteredBuildings.filter(b => b.status === 'manutenção');
   const installationBuildings = filteredBuildings.filter(b => b.status === 'instalação');
   const inactiveBuildings = filteredBuildings.filter(b => b.status === 'inativo');
@@ -45,7 +46,7 @@ const AdminBuildingsContentSection: React.FC<AdminBuildingsContentSectionProps> 
         {/* Admin-only section: do NOT display these metrics publicly */}
         <CardTitle className="text-gray-900">Ativos em Prédios Cadastrados</CardTitle>
         <CardDescription className="text-gray-600">
-          {filteredBuildings.length} prédios encontrados ({activeBuildings.length} ativos, {inactiveBuildings.length} inativos)
+          {filteredBuildings.length} prédios encontrados ({activeBuildings.length} ativos, {internalBuildings.length} internos, {inactiveBuildings.length} inativos)
         </CardDescription>
       </CardHeader>
       <CardContent>
