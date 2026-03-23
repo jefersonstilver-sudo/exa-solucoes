@@ -99,11 +99,11 @@ const VideosSitePage = () => {
         throw new Error('Sessão expirada. Faça login novamente.');
       }
 
-      const projectId = 'aakenoljsycyrcrchgxj';
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || 'aakenoljsycyrcrchgxj';
 
       await new Promise<void>((resolve, reject) => {
         const upload = new tus.Upload(file, {
-          endpoint: `https://${projectId}.supabase.co/storage/v1/upload/resumable`,
+          endpoint: `https://${projectId}.storage.supabase.co/storage/v1/upload/resumable`,
           retryDelays: [0, 3000, 5000, 10000],
           headers: {
             authorization: `Bearer ${session.access_token}`,
