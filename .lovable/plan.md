@@ -1,25 +1,49 @@
 
 
-# Plano: Device status e visibilidade do COMERCIAL TABLET
+# Plano: Corrigir exclusão de prédios bloqueada por foreign keys
 
-## Esclarecimentos
+## Diagnóstico
 
-### 1. "Não conectado" vs "Online"
-Isso é **correto e esperado**. O badge mostra o status do **dispositivo físico** (computador/tablet) vinculado ao prédio na tabela `devices`. "Não conectado" significa que nenhum dispositivo foi vinculado àquele prédio (não existe registro em `devices` com `building_id` apontando para ele). "Online" significa que há um dispositivo vinculado e ele está reportando como ativo. Para que todos apareçam como "Online", é necessário vincular um dispositivo a cada prédio no módulo de monitoramento/AnyDesk.
+O erro `"update or delete on table 'buildings' violates foreign key constraint 'devices_building_id_fkey' on table 'devices'"` ocorre porque **5 tabelas** têm foreign keys para `buildings` sem `ON DELETE` definido (default = RESTRICT, que bloqueia a exclusão):
 
-### 2. COMERCIAL TABLET na loja pública
-O prédio está com status `ativo`, então a RPC `get_buildings_for_public_store` **já o retorna**. Ele deveria aparecer na loja. Se não está aparecendo visualmente, pode ser porque:
-- Não tem `imagem_principal` (a foto aparece vazia na screenshot) — o card da loja pode renderizar sem destaque
-- Tem `quantidade_telas = 0`, `publico_estimado = 0`, `preco_base = 0` — pode estar sendo renderizado mas sem dados visíveis
+| Tabela | FK | ON DELETE atual |
+|--------|-----|----------------|
+| `devices` | `building_id` | RESTRICT (bloqueia) |
+| `client_behavior_analytics` | `most_viewed_building_id` | RESTRICT (bloqueia) |
+| `despesas_fixas` | `building_id` | RESTRICT (bloqueia) |
+| `despesas_variaveis` | `building_id` | RESTRICT (bloqueia) |
+| `tasks` | `building_id` | RESTRICT (bloqueia) |
 
-**O prédio JÁ aparece na loja se está como `ativo`** — a RPC não filtra por imagem. Mas se o objetivo é que ele seja **apenas interno** (uso administrativo, sem aparecer na loja), o status correto é `interno`.
+As outras 11 FKs já têm `CASCADE` ou `SET NULL` e funcionam corretamente.
 
-### Sem mudança de código necessária
+## Correção
 
-A lógica já está correta:
-- `ativo` → aparece na loja pública E no admin
-- `interno` → aparece APENAS no admin, agendamentos, manutenções
-- `Não conectado` → nenhum dispositivo físico vinculado (vincular no módulo AnyDesk/Monitoramento)
+### Migration SQL
 
-Se você quer que o COMERCIAL TABLET **não apareça na loja**, mude o status para `interno`. Se quer que apareça, mantenha como `ativo` e adicione foto + dados (preço, telas, público).
+Dropar e recriar as 5 foreign keys com `ON DELETE SET NULL` (desvincula o registro sem apagá-lo):
+
+```sql
+ALTER TABLE devices DROP CONSTRAINT devices_building_id_fkey;
+ALTER TABLE devices ADD CONSTRAINT devices_building_id_fkey 
+  FOREIGN KEY (building_id) REFERENCES buildings(id) ON DELETE SET NULL;
+
+-- Repetir para as outras 4 tabelas
+```
+
+Usar `SET NULL` (não CASCADE) porque:
+- Devices, tasks, despesas devem continuar existindo mesmo sem o prédio
+- Apenas o vínculo é removido
+
+### Melhoria no código de exclusão
+
+**Arquivo**: `src/services/buildingsOperationsService.ts`
+- Antes de deletar o prédio, desvincular devices explicitamente (set `building_id = null`)
+- Adicionar tratamento de erro mais claro para o usuário
+
+## Arquivos alterados
+
+| # | Arquivo | Mudança |
+|---|---------|---------|
+| 1 | Migration SQL | Recriar 5 FKs com `ON DELETE SET NULL` |
+| 2 | `src/services/buildingsOperationsService.ts` | Desvincular dependências antes de deletar |
 
