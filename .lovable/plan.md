@@ -1,168 +1,47 @@
 
-# Plano: alinhar "Ativo" com Online no admin e garantir exibição na loja pública
 
-## Auditoria profunda: causa real encontrada
+# Plano: Conciliação de status de devices nos prédios
 
-Há **dois problemas separados** hoje:
+## Causa raiz encontrada na auditoria do banco
 
-### 1) Loja pública ainda bloqueia prédio ativo sem foto
-O banco já retorna corretamente os prédios `ativo` pela RPC `get_buildings_for_public_store`, inclusive o **COMERCIAL TABLET**.
+Dados reais do banco de dados revelam **3 bugs simultâneos**:
 
-Confirmei isso no banco:
-- `COMERCIAL TABLET` está em `get_buildings_for_public_store()`
-- Portanto o backend **não** é o bloqueio principal nesse caso
+### Bug 1: Múltiplos devices por prédio — último vence
+O reduce no `buildingsAdminService.ts` faz `acc[building_id] = device` — assignment simples. Quando um prédio tem vários devices (Vale do Monjolo tem 2, Saint Peter tem 3, Foz Residence tem 3), o **último da lista** vence. Se esse último tem `status = 'deleted'`, o prédio inteiro aparece como "Não conectado".
 
-Mas no frontend da loja existe um filtro extra indevido:
-- `src/hooks/building-store/buildingStoreActions.ts`
-- `src/hooks/building-store/buildingStoreFilters.ts`
+Exemplo real: **Vale do Monjolo** tem:
+- `14cebf33` → status `online` ✅
+- `d130ea60` → status `deleted` ❌ ← este pode ganhar
 
-Hoje eles exigem:
-- status ativo/instalação **e**
-- `imagem_principal` preenchida
+### Bug 2: Devices com status `deleted` ainda retornados
+A query filtra `is_active = true`, mas **9 devices com status `deleted`** ainda têm `is_active = true` no banco. Eles poluem o mapa.
 
-Isso contradiz sua regra. Resultado:
-- prédio `ativo` sem foto fica fora da loja pública
-- por isso o COMERCIAL TABLET não entra visualmente
+### Bug 3: Status `deleted` não mapeado no badge
+O `BuildingPanelStatusBadge` só conhece `online`, `offline`, `not_connected`. O status `deleted` cai no `default` → mostra "Não conectado".
 
-### 2) "Não conectado" aparece porque o card usa vínculo real com `devices`
-Hoje o admin calcula o badge assim:
-- busca devices com `building_id = prédio.id`
-- se não houver device ativo vinculado, mostra `not_connected`
-- isso vira badge **"Não conectado"**
+## Correções
 
-Arquivos centrais:
-- `src/services/buildingsAdminService.ts`
-- `src/hooks/useBuildingDeviceStatus.ts`
-- `src/components/admin/buildings/BuildingPanelStatusBadge.tsx`
+### C-01: Priorizar melhor device no reduce
+**Arquivo**: `src/services/buildingsAdminService.ts`
 
-Na auditoria do banco:
-- existem **16 prédios ativos**
-- **7 prédios ativos não têm device vinculado**
-- exemplos: `COMERCIAL TABLET`, `Condomínio Cheverny`, `Edificio Barcelona`, `Bella Vita`, `Residencial Miró`, `Viena`, `Vila Appia`
+Trocar o reduce simples por lógica que prioriza: `online > offline > deleted/outros`. Quando múltiplos devices existem para o mesmo prédio, o melhor status vence.
 
-Então o sistema atual está coerente com a modelagem antiga, mas **não coerente com a regra de negócio que você definiu agora**:
-- se está `ativo`, no admin precisa parecer **Online**
-- e se está `ativo`, precisa estar na loja pública **independente do preenchimento**
+### C-02: Filtrar devices deletados da query
+**Arquivo**: `src/services/buildingsAdminService.ts`
 
-## O que precisa mudar
+Adicionar `.neq('status', 'deleted')` na query de devices para excluir devices marcados como deletados.
 
-### C-01: Loja pública deve usar somente status, sem exigir foto
-**Arquivos**
-- `src/hooks/building-store/buildingStoreActions.ts`
-- `src/hooks/building-store/buildingStoreFilters.ts`
+### C-03: Mapear `deleted` como fallback no badge
+**Arquivo**: `src/components/admin/buildings/BuildingPanelStatusBadge.tsx`
 
-**Mudança**
-Remover a exigência de `imagem_principal` dos filtros da loja.
+Status `deleted` deve ser tratado como `not_connected` explicitamente (já funciona pelo default, mas a regra de negócio do `buildingStatus === 'ativo'` precisa cobrir esse caso também — hoje só cobre `not_connected`, não `deleted`).
 
-**Nova regra**
-Entram na loja pública todos os prédios com status:
-- `ativo`
-- `instalação`
-- `instalacao`
+Atualizar a lógica do `effectiveStatus` para: se `buildingStatus === 'ativo'` e status não é `online` nem `offline`, forçar `online`.
 
-Sem depender de:
-- foto
-- preço
-- quantidade_telas
-- público estimado
+## Arquivos alterados
 
-Isso atende exatamente sua regra:
-> tudo que tiver ATIVO precisa estar na loja pública independente do que está preenchido ou não
+| # | Arquivo | Mudança |
+|---|---------|---------|
+| 1 | `src/services/buildingsAdminService.ts` | Filtrar deleted + priorizar melhor device |
+| 2 | `src/components/admin/buildings/BuildingPanelStatusBadge.tsx` | Cobrir status `deleted` na regra de ativo=online |
 
-### C-02: Separar "status operacional" da "vinculação física"
-Hoje o badge mistura duas coisas:
-- disponibilidade comercial do prédio
-- existência de device vinculado
-
-Pela sua regra, prédio `ativo` deve aparecer como **Online** no card admin, mesmo sem device vinculado.
-
-**Arquivos**
-- `src/services/buildingsAdminService.ts`
-- `src/components/admin/buildings/AdminBuildingCard.tsx`
-- `src/components/admin/buildings/v3/BuildingCard3.tsx`
-- `src/components/admin/buildings/BuildingPanelStatusBadge.tsx`
-
-**Mudança**
-Criar distinção entre:
-- **status comercial do prédio**: deriva de `building.status`
-- **status técnico do device**: deriva de `devices`
-
-**Comportamento novo proposto**
-- `building.status === 'ativo'` → badge verde **Online**
-- `building.status === 'interno'` → badge próprio interno
-- quando houver device real vinculado, o detalhe técnico pode continuar existindo em tooltip/popover/histórico
-- quando não houver device, não mostrar "Não conectado" como status principal do prédio ativo
-
-### C-03: Preservar o histórico técnico sem quebrar sua regra visual
-Hoje `BuildingPanelStatusBadge` abre histórico de quedas via `deviceId`.
-
-Problema:
-- se forçar tudo para `online` sem `deviceId`, o popover técnico deixa de fazer sentido
-
-**Ajuste**
-- usar o badge principal para a regra de negócio
-- e mover o estado técnico real para texto secundário, tooltip ou indicador auxiliar, por exemplo:
-  - "Sem device vinculado"
-  - "Device offline"
-  - "Última conexão ..."
-  
-Assim:
-- o card obedece sua regra visual e operacional
-- a equipe técnica não perde rastreabilidade
-
-### C-04: Garantir consistência total na loja pública
-Além da store principal, revisar pontos que ainda possam filtrar por foto ou campos obrigatórios para exibição pública.
-
-Arquivos já identificados como prioritários:
-- `src/hooks/building-store/buildingStoreActions.ts`
-- `src/hooks/building-store/buildingStoreFilters.ts`
-
-Também vou revisar os componentes que renderizam card/lista para garantir que ausência de foto:
-- não remova o item
-- apenas use placeholder visual
-
-### C-05: Ajustar fallbacks visuais para prédios ativos incompletos
-Como agora todo ativo deve aparecer mesmo incompleto, a UI precisa suportar:
-- sem foto
-- sem preço
-- sem público estimado
-- sem telas
-
-**Ajustes esperados**
-- imagem placeholder quando `imagem_principal` estiver vazia
-- preço como `—` ou `Sob consulta`
-- telas com fallback coerente
-- público com fallback neutro
-
-Isso evita novo "sumiço visual" mesmo quando o item está na lista.
-
-## Resultado esperado após implementação
-
-### Admin
-- todo prédio com status `ativo` aparece como **Online** no card
-- não aparece mais "Não conectado" como status principal de prédio ativo
-- ainda será possível identificar tecnicamente se existe ou não device vinculado
-
-### Loja pública
-- todo prédio `ativo` aparece, mesmo sem:
-  - foto
-  - preço
-  - telas
-  - público estimado
-
-### COMERCIAL TABLET
-- aparecerá na loja pública se estiver `ativo`
-- aparecerá apenas no admin se estiver `interno`
-- no admin ficará coerente com a nova regra visual
-
-## Arquivos que devem entrar na implementação
-
-1. `src/hooks/building-store/buildingStoreActions.ts`
-2. `src/hooks/building-store/buildingStoreFilters.ts`
-3. `src/services/buildingsAdminService.ts`
-4. `src/components/admin/buildings/BuildingPanelStatusBadge.tsx`
-5. `src/components/admin/buildings/AdminBuildingCard.tsx`
-6. `src/components/admin/buildings/v3/BuildingCard3.tsx`
-
-## Observação importante da auditoria
-Não encontrei evidência de que o Supabase esteja removendo o COMERCIAL TABLET da loja pública. O bloqueio principal está no **frontend da store**, que ainda filtra por foto. Já o "Não conectado" vem da ausência real de vínculo em `devices` para 7 prédios ativos, então isso precisa ser reinterpretado na interface para obedecer sua regra de negócio.
