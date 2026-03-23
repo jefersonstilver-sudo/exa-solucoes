@@ -22,9 +22,9 @@ const BuildingPanelStatusBadge: React.FC<BuildingPanelStatusBadgeProps> = ({
   showOutageHistory = true,
   className
 }) => {
-  // Regra de negócio: prédio ativo = Online, independente de device vinculado
+  // Regra de negócio: prédio ativo = Online, exceto se device real está offline
   const effectiveStatus: DeviceStatus = 
-    (buildingStatus === 'ativo' && status === 'not_connected') ? 'online' : status;
+    (buildingStatus === 'ativo' && status !== 'online' && status !== 'offline') ? 'online' : status;
 
   const getStatusConfig = () => {
     switch (effectiveStatus) {
