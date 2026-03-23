@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 interface BuildingPanelStatusBadgeProps {
   deviceId: string | null;
   status: DeviceStatus;
+  buildingStatus?: string;
   lastOnlineAt?: string | null;
   showOutageHistory?: boolean;
   className?: string;
@@ -16,12 +17,17 @@ interface BuildingPanelStatusBadgeProps {
 const BuildingPanelStatusBadge: React.FC<BuildingPanelStatusBadgeProps> = ({
   deviceId,
   status,
+  buildingStatus,
   lastOnlineAt,
   showOutageHistory = true,
   className
 }) => {
+  // Regra de negócio: prédio ativo = Online, independente de device vinculado
+  const effectiveStatus: DeviceStatus = 
+    (buildingStatus === 'ativo' && status === 'not_connected') ? 'online' : status;
+
   const getStatusConfig = () => {
-    switch (status) {
+    switch (effectiveStatus) {
       case 'online':
         return {
           label: 'Online',
@@ -66,7 +72,7 @@ const BuildingPanelStatusBadge: React.FC<BuildingPanelStatusBadgeProps> = ({
   );
 
   // Se for offline ou online e showOutageHistory, permite clique para ver histórico
-  if (showOutageHistory && deviceId && (status === 'offline' || status === 'online')) {
+  if (showOutageHistory && deviceId && (effectiveStatus === 'offline' || effectiveStatus === 'online')) {
     return (
       <BuildingOutageHistory deviceId={deviceId}>
         {badgeContent}

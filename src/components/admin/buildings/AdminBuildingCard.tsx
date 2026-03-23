@@ -162,10 +162,11 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                   {/* Status do Prédio (exposição pública) - MANUAL */}
                   {getBuildingStatusBadge(building.status)}
                   
-                  {/* Status do Painel (device) - AUTOMÁTICO */}
+                  {/* Status do Painel - ativo=Online automaticamente */}
                   <BuildingPanelStatusBadge
                     deviceId={deviceId}
                     status={deviceStatus}
+                    buildingStatus={building.status}
                     showOutageHistory={true}
                   />
 

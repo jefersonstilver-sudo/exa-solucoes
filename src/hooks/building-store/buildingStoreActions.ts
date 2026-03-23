@@ -30,11 +30,9 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
       console.log('📊 [BUILDING STORE] Prédios atualizados:', buildings.length);
 
       const activeBuildings = buildings.filter(building =>
-        ['ativo', 'instalação', 'instalacao'].includes(building.status) &&
-        typeof building.imagem_principal === 'string' &&
-        building.imagem_principal.trim().length > 0
+        ['ativo', 'instalação', 'instalacao'].includes(building.status)
       );
-      console.log('🔄 [BUILDING STORE] Prédios elegíveis (status + foto) após refresh:', activeBuildings.length);
+      console.log('🔄 [BUILDING STORE] Prédios elegíveis (status ativo) após refresh:', activeBuildings.length);
 
       set({
         allBuildings: buildings as BuildingStore[],
@@ -102,15 +100,13 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
         console.log(`📊 [BUILDING STORE] Prédio ${index + 1}: ${building.nome} (Status: ${building.status}, Público: ${building.publico_estimado})`);
       });
 
-      // Mostrar na loja pública somente prédios elegíveis: status certo + com imagem principal
+      // Mostrar na loja pública todos os prédios com status ativo (independente de foto/preço)
       const eligibleBuildings = buildings.filter(building =>
-        ['ativo', 'instalação', 'instalacao'].includes(building.status) &&
-        typeof building.imagem_principal === 'string' &&
-        building.imagem_principal.trim().length > 0
+        ['ativo', 'instalação', 'instalacao'].includes(building.status)
       );
       console.log('🔄 [BUILDING STORE] === ANÁLISE DE PRÉDIOS (LOJA PÚBLICA) ===');
       console.log('🔄 [BUILDING STORE] Total de prédios recebidos:', buildings.length);
-      console.log('🔄 [BUILDING STORE] Prédios elegíveis (status + foto):', eligibleBuildings.length);
+      console.log('🔄 [BUILDING STORE] Prédios elegíveis (status ativo):', eligibleBuildings.length);
 
       eligibleBuildings.forEach((building, index) => {
         console.log(`🏢 [BUILDING STORE] Prédio elegível ${index + 1}: ${building.nome} (Lat: ${building.latitude}, Lng: ${building.longitude})`);
