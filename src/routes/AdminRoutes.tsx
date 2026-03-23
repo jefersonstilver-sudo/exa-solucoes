@@ -60,7 +60,7 @@ const AdminIndexRedirect = () => {
     ?.replace(/^_|_$/g, '') || null;
 
   const DEPT_PRIORITY: Record<string, string[]> = {
-    comercial: ['propostas', 'pedidos', 'contatos', 'crm_hub', 'vendas', 'juridico'],
+    comercial: ['propostas', 'pedidos', 'contatos', 'crm_hub', 'minha_manha', 'vendas', 'juridico'],
     marketing: ['leads', 'emails', 'videos_site', 'ticker', 'editor_videos', 'homepage_config'],
     financeiro: ['financeiro', 'relatorios', 'pedidos', 'assinaturas'],
     administrativo: ['dashboard', 'predios', 'paineis', 'usuarios', 'processos'],
@@ -85,6 +85,10 @@ const AdminIndexRedirect = () => {
 
 // Meu Perfil
 const AdminProfileSettings = lazy(() => import('@/pages/admin/AdminProfileSettings'));
+
+// Central de Tarefas
+const CentralTarefasPage = lazy(() => import('@/pages/admin/CentralTarefasPage'));
+const FullscreenAgendaPage = lazy(() => import('@/pages/admin/FullscreenAgendaPage'));
 
 // Lazy load editor video control page
 const EditorVideoControlePage = lazy(() => import('@/pages/video-editor/VideoEditorAccessControl'));
@@ -473,6 +477,23 @@ const AdminRoutes = () => {
         </ProtectedModuleRoute>
       } />
       
+      {/* ============ CENTRAL DE TAREFAS ============ */}
+      <Route path="tarefas" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.minha_manha}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Tarefas..." />}>
+            <CentralTarefasPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="tarefas/fullscreen" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.minha_manha}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Agenda..." />}>
+            <FullscreenAgendaPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="minha-manha" element={<Navigate to="/admin/tarefas" replace />} />
+
       {/* ============ MEU PERFIL ============ */}
       <Route path="meu-perfil" element={
         <Suspense fallback={<GlobalLoadingPage message="Carregando perfil..." />}>
