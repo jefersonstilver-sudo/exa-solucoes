@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Settings, Lock, LogOut, LogIn, UserPlus, User as UserIcon, ShieldCheck, LayoutDashboard, Users, Package, Building, Monitor, CheckCircle, ClipboardList, ListOrdered, Gift, Film, Bot } from 'lucide-react';
 import { toast } from 'sonner';

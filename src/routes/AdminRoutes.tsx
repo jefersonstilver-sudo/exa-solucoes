@@ -111,11 +111,7 @@ const AdminRoutes = () => {
       <Route path="acesso-negado" element={<AcessoNegadoPage />} />
 
       {/* ============ GESTÃO PRINCIPAL ============ */}
-      <Route index element={
-        <ProtectedModuleRoute moduleKey={MODULE_KEYS.dashboard}>
-          <Dashboard />
-        </ProtectedModuleRoute>
-      } />
+      <Route index element={<AdminIndexRedirect />} />
       <Route path="posicoes" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.posicoes}>
           <PosicoesDisponiveisPage />
