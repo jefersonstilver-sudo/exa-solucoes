@@ -17,11 +17,9 @@ export const createFilterActions = (set: any, get: any) => ({
     if (disableFilters || allBuildings.length === 0) {
       const activeStatuses = ['ativo', 'instalação', 'instalacao'];
       const activeBuildings = allBuildings.filter((building: any) =>
-        activeStatuses.includes(building.status) &&
-        typeof building.imagem_principal === 'string' &&
-        building.imagem_principal.trim().length > 0
+        activeStatuses.includes(building.status)
       );
-      console.log('✅ [BUILDING STORE] Filtros desabilitados ou sem prédios - Mostrando todos os prédios elegíveis (status + foto):', activeBuildings.length);
+      console.log('✅ [BUILDING STORE] Filtros desabilitados ou sem prédios - Mostrando todos os prédios elegíveis:', activeBuildings.length);
       activeBuildings.forEach((building: any, index: number) => {
         console.log(`🏢 [BUILDING STORE] Prédio sem filtro ${index + 1}: ${building.nome}`);
       });
@@ -29,12 +27,10 @@ export const createFilterActions = (set: any, get: any) => ({
       return;
     }
 
-    // Base: only buildings eligible for public store (status + required photo)
+    // Base: todos os prédios com status ativo (independente de foto/preço/telas)
     const activeStatuses = ['ativo', 'instalação', 'instalacao'];
     let result = allBuildings.filter((building: any) =>
-      activeStatuses.includes(building.status) &&
-      typeof building.imagem_principal === 'string' &&
-      building.imagem_principal.trim().length > 0
+      activeStatuses.includes(building.status)
     );
     console.log('🏢 [BUILDING STORE] Eligible filter applied - Buildings:', result.length,
       'Status counts:', allBuildings.reduce((acc: Record<string, number>, b: any) => {

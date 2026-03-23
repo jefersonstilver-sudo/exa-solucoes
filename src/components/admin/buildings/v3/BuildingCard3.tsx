@@ -148,6 +148,7 @@ const BuildingCard3: React.FC<BuildingCard3Props> = ({
                 <BuildingPanelStatusBadge
                   deviceId={deviceId}
                   status={deviceStatus}
+                  buildingStatus={building.status}
                   showOutageHistory={true}
                 />
                 {hasAWSConnection && (
