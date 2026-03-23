@@ -110,16 +110,22 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
     }
   }, [formData.listaPredios]);
 
-  // Fetch buildings
+  // Fetch buildings (ativo + interno, internos por último)
   useEffect(() => {
     const fetchBuildings = async () => {
       setLoadingBuildings(true);
       const { data } = await supabase
         .from('buildings')
-        .select('id, nome, bairro, codigo_predio')
-        .eq('status', 'ativo')
+        .select('id, nome, bairro, codigo_predio, status')
+        .in('status', ['ativo', 'interno'])
         .order('nome');
-      setBuildings(data || []);
+      // Sort: ativos first, internos last
+      const sorted = (data || []).sort((a, b) => {
+        if (a.status === 'interno' && b.status !== 'interno') return 1;
+        if (a.status !== 'interno' && b.status === 'interno') return -1;
+        return a.nome.localeCompare(b.nome);
+      });
+      setBuildings(sorted);
       setLoadingBuildings(false);
     };
     fetchBuildings();
