@@ -1,27 +1,25 @@
 
 
-# Plano: Adicionar 'interno' ao CHECK constraint do banco
+# Plano: Device status e visibilidade do COMERCIAL TABLET
 
-## Problema
-A tabela `buildings` tem um CHECK constraint `buildings_status_check` que lista os status válidos. O valor `'interno'` não está incluído, por isso o banco rejeita a atualização.
+## Esclarecimentos
 
-## Correção
+### 1. "Não conectado" vs "Online"
+Isso é **correto e esperado**. O badge mostra o status do **dispositivo físico** (computador/tablet) vinculado ao prédio na tabela `devices`. "Não conectado" significa que nenhum dispositivo foi vinculado àquele prédio (não existe registro em `devices` com `building_id` apontando para ele). "Online" significa que há um dispositivo vinculado e ele está reportando como ativo. Para que todos apareçam como "Online", é necessário vincular um dispositivo a cada prédio no módulo de monitoramento/AnyDesk.
 
-### Migration SQL
-Dropar e recriar o constraint incluindo `'interno'`:
+### 2. COMERCIAL TABLET na loja pública
+O prédio está com status `ativo`, então a RPC `get_buildings_for_public_store` **já o retorna**. Ele deveria aparecer na loja. Se não está aparecendo visualmente, pode ser porque:
+- Não tem `imagem_principal` (a foto aparece vazia na screenshot) — o card da loja pode renderizar sem destaque
+- Tem `quantidade_telas = 0`, `publico_estimado = 0`, `preco_base = 0` — pode estar sendo renderizado mas sem dados visíveis
 
-```sql
-ALTER TABLE public.buildings DROP CONSTRAINT buildings_status_check;
-ALTER TABLE public.buildings ADD CONSTRAINT buildings_status_check 
-  CHECK (status = ANY (ARRAY[
-    'ativo', 'inativo', 'manutencao', 'instalacao', 'lead', 
-    'subir_nuc', 'instalacao_internet', 'troca_painel', 
-    'primeira_reuniao', 'visita_tecnica', 'interno'
-  ]));
-```
+**O prédio JÁ aparece na loja se está como `ativo`** — a RPC não filtra por imagem. Mas se o objetivo é que ele seja **apenas interno** (uso administrativo, sem aparecer na loja), o status correto é `interno`.
 
-## Arquivos
-| # | Arquivo | Mudança |
-|---|---------|---------|
-| 1 | Migration SQL | Recriar `buildings_status_check` com 'interno' |
+### Sem mudança de código necessária
+
+A lógica já está correta:
+- `ativo` → aparece na loja pública E no admin
+- `interno` → aparece APENAS no admin, agendamentos, manutenções
+- `Não conectado` → nenhum dispositivo físico vinculado (vincular no módulo AnyDesk/Monitoramento)
+
+Se você quer que o COMERCIAL TABLET **não apareça na loja**, mude o status para `interno`. Se quer que apareça, mantenha como `ativo` e adicione foto + dados (preço, telas, público).
 
