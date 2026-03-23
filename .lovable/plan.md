@@ -1,39 +1,26 @@
 
 
-# Diagnóstico: Upload falhando com status 400 na VideosSitePage
+# Fix: Upload falha com "object exceeded maximum allowed size"
 
-## Problema identificado
+## Problema
+O bucket `videos` no Supabase não tem `file_size_limit` definido, então usa o default do plano (50MB). O arquivo que você tentou enviar excede esse limite.
 
-O código em `VideosSitePage.tsx` (linha 100-136) usa `createSignedUploadUrl` + `XMLHttpRequest` PUT manual. O PUT retorna **400 Bad Request**.
-
-A policy de INSERT no bucket `videos` está OK (`bucket_id = 'videos'`), o bucket existe e é público. O problema está na **requisição PUT ao signed URL** — falta o header `x-upsert: true` caso o arquivo já exista, ou o Supabase espera headers adicionais que o XHR não está enviando.
+O código client-side permite até 100MB (`maxSize = 100 * 1024 * 1024`), mas o bucket no servidor rejeita acima de 50MB.
 
 ## Solução
 
-Simplificar o upload substituindo o fluxo `createSignedUploadUrl` + XHR por `supabase.storage.from('videos').upload()` direto. Para manter o tracking de progresso, usar `tus` ou `onUploadProgress` — mas como o Supabase JS v2 não expõe progresso nativo no `upload()`, a alternativa mais simples e confiável é:
+### Migration SQL
+Atualizar o bucket `videos` para aceitar até 100MB:
 
-1. Usar `supabase.storage.from(bucket).upload(fileName, file, { upsert: true })` — funciona sem problemas de signed URL
-2. Remover o XHR manual e o `createSignedUploadUrl`
-3. Simular progresso com estimativa baseada em tamanho do arquivo (ou simplesmente mostrar spinner sem percentual)
-
-**Alternativa com progresso real**: Manter o XHR mas adicionar o header `Authorization: Bearer {session.access_token}` e usar a URL direta do storage API em vez do signed URL.
-
-## Alteração
-
-**Arquivo**: `src/pages/admin/VideosSitePage.tsx` (função `handleFileUpload`, linhas 67-157)
-
-Substituir o bloco de `createSignedUploadUrl` + XHR por:
-
-```typescript
-const { error: uploadError } = await supabase.storage
-  .from(bucket)
-  .upload(fileName, file, { upsert: true });
-
-if (uploadError) throw uploadError;
+```sql
+UPDATE storage.buckets 
+SET file_size_limit = 104857600  -- 100MB
+WHERE id = 'videos';
 ```
 
-Remover `setProgress` granular (ou manter como indeterminate). O resto do código (obter publicUrl, chamar onSuccess) permanece igual.
+### Alteração no frontend
+Nenhuma — o código já valida 100MB no client-side, que ficará consistente com o bucket.
 
-## Arquivos alterados
-- `src/pages/admin/VideosSitePage.tsx` — simplificar upload
+## Arquivos
+- 1 migration SQL (UPDATE storage.buckets)
 
