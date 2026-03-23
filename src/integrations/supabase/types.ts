@@ -11962,6 +11962,7 @@ export type Database = {
       role_permissions: {
         Row: {
           created_at: string | null
+          departamento_id: string | null
           id: string
           is_enabled: boolean | null
           permission_group: string
@@ -11972,6 +11973,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          departamento_id?: string | null
           id?: string
           is_enabled?: boolean | null
           permission_group: string
@@ -11982,6 +11984,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          departamento_id?: string | null
           id?: string
           is_enabled?: boolean | null
           permission_group?: string
@@ -11991,6 +11994,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "role_permissions_departamento_id_fkey"
+            columns: ["departamento_id"]
+            isOneToOne: false
+            referencedRelation: "process_departments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "role_permissions_role_key_fkey"
             columns: ["role_key"]
