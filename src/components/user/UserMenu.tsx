@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Avatar, AvatarFallback, AvatarImage, AvatarGlow } from '@/components/ui/avatar';
 import { useUserSession } from '@/hooks/useUserSession';
 import { ClientOnly } from '@/components/ui/client-only';
+import { useDynamicModulePermissions, MODULE_ROUTES } from '@/hooks/useDynamicModulePermissions';
 
 // Glass menu item styles
 const glassMenuItemBase = "mx-2 rounded-xl cursor-pointer p-3 transition-all duration-200 ease-out active:scale-[0.98]";
