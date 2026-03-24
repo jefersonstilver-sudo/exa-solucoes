@@ -396,8 +396,9 @@ export const useRealOrderDetails = (orderId: string) => {
       } finally {
         setLoading(false);
       }
-    };
+  };
 
+  useEffect(() => {
     fetchOrderDetails();
   }, [orderId]);
 
@@ -405,6 +406,7 @@ export const useRealOrderDetails = (orderId: string) => {
     loading,
     orderDetails,
     orderVideos,
-    panelData: buildingData
+    panelData: buildingData,
+    refetch: fetchOrderDetails
   };
 };
