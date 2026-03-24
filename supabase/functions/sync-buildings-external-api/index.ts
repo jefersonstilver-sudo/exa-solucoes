@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
       // Get approved videos for this order
       const { data: videos, error: videoError } = await supabase
         .from('pedido_videos')
-        .select('video_id, videos(nome, url, duracao, orientacao)')
+        .select('video_id, selected_for_display, videos(nome, url, duracao, orientacao)')
         .eq('pedido_id', pedido_id)
         .eq('approval_status', 'approved')
         .eq('is_active', true)
@@ -49,69 +49,139 @@ Deno.serve(async (req) => {
         })
       }
 
-      // Get pedido details for tipo_produto
+      // Get pedido details
       const { data: pedido } = await supabase
         .from('pedidos')
-        .select('tipo_produto')
+        .select('tipo_produto, data_inicio, data_fim')
         .eq('id', pedido_id)
         .single()
 
       const isVertical = pedido?.tipo_produto === 'vertical_premium'
 
-      // Get building prefixes
-      const { data: buildings } = await supabase
-        .from('buildings')
-        .select('id, nome')
-        .in('id', building_ids)
+      // Build client_ids: first 4 chars of each building UUID (no hyphens)
+      const clientIds = building_ids.map((id: string) => id.replace(/-/g, '').substring(0, 4))
+      console.log(`📋 [SYNC-BUILDINGS] client_ids: ${JSON.stringify(clientIds)}`)
 
-      let synced = 0
-      const errors: string[] = []
+      // Download video files from Supabase Storage and build metadata
+      const formData = new FormData()
+      const metadados: Record<string, any> = {}
 
-      for (const building of buildings || []) {
-        const prefix = building.id.substring(0, 4)
-        
-        for (const pv of videos) {
-          const video = (pv as any).videos
-          if (!video?.url) continue
+      for (const pv of videos) {
+        const video = (pv as any).videos
+        if (!video?.url) continue
 
-          try {
-            const metadata: any = {
-              nome: video.nome,
-              url: video.url,
-              duracao: video.duracao,
-              orientacao: video.orientacao,
-              pedido_id: pedido_id,
-              video_id: pv.video_id,
-              building_id: building.id
-            }
+        const fileName = video.nome || `video_${pv.video_id}.mp4`
+        const fileNameClean = fileName.endsWith('.mp4') ? fileName : `${fileName}.mp4`
 
-            if (isVertical) {
-              metadata.isPlus = true
-            }
-
-            const response = await fetch(`${EXTERNAL_API_BASE}/geral/upload-arquivo/${prefix}/Propagandas`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(metadata)
-            })
-
-            if (response.ok) {
-              synced++
-              console.log(`✅ [SYNC-BUILDINGS] Video ${video.nome} synced to building ${building.nome}`)
-            } else {
-              const errText = await response.text()
-              errors.push(`${building.nome}: ${errText}`)
-            }
-          } catch (e: any) {
-            errors.push(`${building.nome}: ${e.message}`)
+        // Download video from Supabase Storage
+        try {
+          // Extract storage path from URL
+          const urlParts = video.url.split('/storage/v1/object/public/')
+          if (urlParts.length < 2) {
+            console.error(`⚠️ [SYNC-BUILDINGS] Invalid storage URL for video: ${video.url}`)
+            continue
           }
+          const fullPath = urlParts[1]
+          const bucketName = fullPath.split('/')[0]
+          const filePath = fullPath.substring(bucketName.length + 1)
+
+          const { data: fileData, error: downloadError } = await supabase.storage
+            .from(bucketName)
+            .download(filePath)
+
+          if (downloadError || !fileData) {
+            console.error(`⚠️ [SYNC-BUILDINGS] Failed to download video ${fileNameClean}:`, downloadError)
+            continue
+          }
+
+          if (fileData.size === 0) {
+            console.error(`⚠️ [SYNC-BUILDINGS] Empty file for video ${fileNameClean}`)
+            continue
+          }
+
+          console.log(`📥 [SYNC-BUILDINGS] Downloaded ${fileNameClean} (${(fileData.size / 1024 / 1024).toFixed(2)} MB)`)
+
+          // Append file to FormData
+          formData.append('files', fileData, fileNameClean)
+
+          // Build metadata for this video
+          const dataIni = pedido?.data_inicio 
+            ? new Date(pedido.data_inicio).toISOString().replace('Z', '')
+            : new Date().toISOString().replace('Z', '')
+          const dataFim = pedido?.data_fim
+            ? new Date(pedido.data_fim).toISOString().replace('Z', '')
+            : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().replace('Z', '')
+
+          metadados[fileNameClean] = {
+            titulo: video.nome || 'Campanha',
+            data_ini: dataIni,
+            data_fim: dataFim,
+            ativo: pv.selected_for_display === true,
+            isPlus: isVertical,
+            programacao: {
+              segunda: [{ inicio: "00:00", fim: "23:59" }],
+              terca: [{ inicio: "00:00", fim: "23:59" }],
+              quarta: [{ inicio: "00:00", fim: "23:59" }],
+              quinta: [{ inicio: "00:00", fim: "23:59" }],
+              sexta: [{ inicio: "00:00", fim: "23:59" }]
+            }
+          }
+        } catch (dlError: any) {
+          console.error(`⚠️ [SYNC-BUILDINGS] Error downloading ${fileNameClean}:`, dlError.message)
+          continue
         }
       }
 
+      // Check if we have any files to send
+      if (Object.keys(metadados).length === 0) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'No video files could be downloaded for sync' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Append client_ids and metadados as JSON strings
+      formData.append('client_ids', JSON.stringify(clientIds))
+      formData.append('metadados', JSON.stringify(metadados))
+
+      console.log(`🚀 [SYNC-BUILDINGS] Sending ${Object.keys(metadados).length} videos to ${clientIds.length} buildings`)
+      console.log(`📋 [SYNC-BUILDINGS] Metadados: ${JSON.stringify(metadados)}`)
+
+      // POST to external API
+      const response = await fetch(`${EXTERNAL_API_BASE}/admin/add-to-specific-buildings`, {
+        method: 'POST',
+        body: formData
+      })
+
+      const responseText = await response.text()
+      console.log(`📡 [SYNC-BUILDINGS] API Response [${response.status}]: ${responseText}`)
+
+      let responseData: any = {}
+      try {
+        responseData = JSON.parse(responseText)
+      } catch {
+        responseData = { raw: responseText }
+      }
+
+      if (!response.ok) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `AWS API returned ${response.status}`,
+          details: responseData
+        }), {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
       return new Response(JSON.stringify({ 
-        success: errors.length === 0, 
-        synced, 
-        errors 
+        success: true, 
+        synced: Object.keys(metadados).length,
+        buildings: clientIds.length,
+        apiResponse: responseData
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
