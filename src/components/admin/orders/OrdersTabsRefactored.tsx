@@ -18,7 +18,8 @@ import { EnhancedOrderCard } from './components/EnhancedOrderCard';
 import { SortSelector, SortField, SortDirection } from './components/SortSelector';
 import { SortableTab } from './components/SortableTab';
 import { bulkDeletePedidos, bulkDeleteTentativas, superAdminBulkDeletePedidos } from '@/services/bulkDeleteService';
-import { Trash2, AlertTriangle, LayoutList, LayoutGrid, List } from 'lucide-react';
+import { Trash2, AlertTriangle, LayoutList, LayoutGrid, Users } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 
@@ -59,7 +60,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
   const [selectedOrderForBlocking, setSelectedOrderForBlocking] = useState<string | null>(null);
   const [blockingMode, setBlockingMode] = useState<'block' | 'unblock'>('block');
   const [viewMode, setViewMode] = useState<'minimal' | 'detailed'>('minimal');
-  
+  const [groupByClient, setGroupByClient] = useState(false);
   // Estado de ordenação
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -294,6 +295,23 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
     }
   };
 
+  // Agrupar itens por client_email
+  const groupItemsByClient = (items: OrderOrAttempt[]) => {
+    const groups: Record<string, { name: string; email: string; items: OrderOrAttempt[] }> = {};
+    items.forEach(item => {
+      const email = item.client_email || 'sem-email';
+      if (!groups[email]) {
+        groups[email] = {
+          name: item.client_name || 'Nome não disponível',
+          email,
+          items: []
+        };
+      }
+      groups[email].items.push(item);
+    });
+    return Object.values(groups).sort((a, b) => b.items.length - a.items.length);
+  };
+
   // Renderização de lista
   const renderOrdersList = (items: OrderOrAttempt[], emptyMessage: string) => (
     <div className="space-y-2">
@@ -357,8 +375,59 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
             {emptyMessage}
           </CardContent>
         </Card>
+      ) : groupByClient ? (
+        // Agrupado por cliente
+        <div className="space-y-4">
+          {groupItemsByClient(items).map((group) => (
+            <Collapsible key={group.email} defaultOpen>
+              <div className="border border-border/60 rounded-xl overflow-hidden bg-card/50">
+                <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-semibold text-sm text-foreground">{group.name}</span>
+                    <span className="text-xs text-muted-foreground">{group.email}</span>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    {group.items.length} pedido{group.items.length !== 1 ? 's' : ''}
+                  </Badge>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="px-2 pb-2 space-y-1">
+                    {viewMode === 'minimal' ? (
+                      group.items.map(item => (
+                        <MinimalOrderCard
+                          key={item.id}
+                          item={item}
+                          isSelected={selectedItems.includes(item.id)}
+                          onSelectionChange={handleSelectItem}
+                          onViewOrderDetails={onViewOrderDetails}
+                          showCheckbox={isSuperAdmin}
+                          isSuperAdmin={isSuperAdmin}
+                        />
+                      ))
+                    ) : (
+                      group.items.map(item => (
+                        <EnhancedOrderCard
+                          key={item.id}
+                          item={item}
+                          isSelected={selectedItems.includes(item.id)}
+                          onSelectionChange={handleSelectItem}
+                          onViewOrderDetails={onViewOrderDetails}
+                          onBlockOrder={handleBlockOrder}
+                          onUnblockOrder={handleUnblockOrder}
+                          isBlocking={isBlocking}
+                          isUnblocking={isUnblocking}
+                        />
+                      ))
+                    )}
+                  </div>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+          ))}
+        </div>
       ) : viewMode === 'minimal' ? (
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           {items.map(item => (
             <MinimalOrderCard
               key={item.id}
@@ -367,6 +436,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
               onSelectionChange={handleSelectItem}
               onViewOrderDetails={onViewOrderDetails}
               showCheckbox={isSuperAdmin}
+              isSuperAdmin={isSuperAdmin}
             />
           ))}
         </div>
@@ -412,6 +482,17 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
           onSortChange={handleSortChange}
         />
         
+        {/* Toggle de agrupamento */}
+        <Button
+          variant={groupByClient ? 'secondary' : 'outline'}
+          size="sm"
+          onClick={() => setGroupByClient(!groupByClient)}
+          className="h-8 px-3"
+        >
+          <Users className="h-4 w-4 mr-1.5" />
+          Agrupar por cliente
+        </Button>
+
         {/* Toggle de visualização */}
         <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
           <Button
