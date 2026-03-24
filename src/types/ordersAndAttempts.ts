@@ -6,6 +6,7 @@ export interface OrderOrAttempt {
   status: string;
   valor_total: number;
   lista_paineis?: string[];
+  lista_predios?: string[];
   plano_meses?: number;
   data_inicio?: string;
   data_fim?: string;
