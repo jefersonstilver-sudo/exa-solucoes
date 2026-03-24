@@ -1,35 +1,42 @@
 
 
-# Plano: Corrigir CORS da Edge Function de Exclusao
+# Plano: Nome do Pedido em Destaque
 
-## Causa raiz
+## Situacao atual
+- O campo `nome_pedido` existe no banco e no tipo `OrderDetails`
+- O componente `OrderNameEdit` existe e funciona (usa RPC `set_pedido_nome`), mas **nunca e renderizado** na pagina de detalhes
+- O card na listagem (`AdvertiserOrderCard`) ja exibe `nome_pedido` quando existe, mas sem destaque visual claro
+- O header da pagina de detalhes mostra apenas "Detalhes do Pedido" + codigo truncado
 
-A edge function `delete-video-from-external-api` tem **CORS incompleto**:
+## Alteracoes
 
-```
-'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
-```
+### 1. Integrar OrderNameEdit no header da pagina de detalhes
+**Arquivo**: `src/pages/advertiser/OrderDetails.tsx`
 
-O SDK do Supabase envia headers extras (`x-supabase-client-platform`, `x-supabase-client-platform-version`, etc.). Como esses headers nao estao no `Access-Control-Allow-Headers`, o **preflight CORS falha** e o browser **nunca envia o POST**. A edge function nunca executa (zero logs).
+- Substituir o header estatico (linhas 500-503) por um header que:
+  - Se `nome_pedido` existe: exibe o nome grande e em destaque, com o codigo `#3c0ac976` pequeno abaixo como subtitulo
+  - Se nao existe: exibe "Detalhes do Pedido" com botao inline para adicionar nome
+- Renderizar `<OrderNameEdit>` logo abaixo do titulo, permitindo edicao inline
+- Ao salvar, atualizar o state local para refletir imediatamente
 
-O helper `videoDeleteHelper.ts` captura o erro silenciosamente (linhas 57-59) e continua deletando do banco. Por isso o toast mostra "sucesso" mas a API externa nunca recebe a chamada.
+### 2. Melhorar destaque do nome na listagem de pedidos
+**Arquivo**: `src/components/advertiser/orders/AdvertiserOrderCard.tsx`
 
-## Correcao
+- Quando `nome_pedido` existe:
+  - Nome em fonte maior e bold como titulo principal do card
+  - Codigo `#XXXXXXXX` vira badge/tag discreta ao lado
+- Quando nao existe: manter comportamento atual (Campanha #XXXXXXXX)
 
-### Unico arquivo: `supabase/functions/delete-video-from-external-api/index.ts`
+### 3. Limpar import nao utilizado
+**Arquivo**: `src/pages/advertiser/OrderDetails.tsx`
+- O import de `OrderNameEdit` ja existe mas nao e usado — agora sera usado
 
-Atualizar os CORS headers para:
+## Resultado esperado
+- Na pagina de detalhes: nome do pedido em destaque no topo, editavel inline
+- Na listagem: nome do pedido como titulo principal do card, codigo como detalhe secundario
+- Facilita gestao por areas, predios e grupos como o usuario precisa
 
-```javascript
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
-```
+## Arquivos alterados
+1. `src/pages/advertiser/OrderDetails.tsx` — header com nome editavel
+2. `src/components/advertiser/orders/AdvertiserOrderCard.tsx` — destaque visual do nome
 
-Isso e tudo. Uma linha alterada. O resto do fluxo (helper, hook, edge function) ja esta correto.
-
-## Por que isso resolve
-
-1. Browser faz preflight OPTIONS -> edge function responde com CORS completo -> browser permite o POST
-2. POST
