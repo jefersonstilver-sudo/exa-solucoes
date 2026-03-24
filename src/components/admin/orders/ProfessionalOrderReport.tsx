@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload, Key, Loader2, Send, Monitor, Smartphone, Plus, Trash2 } from 'lucide-react';
+import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload, Key, Loader2, Send, Monitor, Smartphone, Plus, Trash2, ChevronDown, Building } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import exaLogo from '@/assets/exa-logo.png';
 import { Button } from '@/components/ui/button';
 import { useFixAuditData } from '@/hooks/admin/useFixAuditData';
@@ -765,68 +766,71 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
           </section>}
 
         {/* SEÇÃO: LOCAIS CONTRATADOS */}
-        {panels && panels.length > 0 ? <section className="border border-gray-200 rounded">
-            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Prédios Contratados</h2>
-              <div className="flex items-center gap-2">
-                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">
-                  {panels.length} {panels.length === 1 ? 'prédio' : 'prédios'}
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowAddBuildingDialog(true)}
-                  className="h-7 px-2 text-xs border-green-500 text-green-700 hover:bg-green-50"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Adicionar
-                </Button>
-              </div>
-            </div>
-            
-            <div className="overflow-hidden">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="bg-gray-100 border-b border-gray-200">
-                    <th className="px-4 py-2 text-left font-semibold text-gray-700">ID</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-700">Nome do Prédio</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-700">Endereço</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-700">Bairro</th>
-                    <th className="px-4 py-2 text-right font-semibold text-gray-700">Ação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {panels.map((panel, index) => <tr key={panel.id} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                      <td className="px-4 py-2">
-                        <span className="font-mono text-blue-600 font-semibold">#{panel.id.substring(0, 8)}</span>
-                      </td>
-                      <td className="px-4 py-2 font-semibold text-gray-900">{panel.nome}</td>
-                      <td className="px-4 py-2 text-gray-700">{panel.endereco}</td>
-                      <td className="px-4 py-2 text-gray-700">{panel.bairro}</td>
-                      <td className="px-4 py-2 text-right">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={async () => {
-                            setRemovingBuildingId(panel.id);
-                            const success = await removeBuilding(order.id, panel.id);
-                            setRemovingBuildingId(null);
-                            if (success) window.location.reload();
-                          }}
-                          disabled={removingBuildingId === panel.id}
-                          className="h-6 px-2 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-                        >
-                          {removingBuildingId === panel.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3 w-3" />
-                          )}
-                        </Button>
-                      </td>
-                    </tr>)}
-                </tbody>
-              </table>
-            </div>
+        {panels && panels.length > 0 ? <section className="border border-border rounded-xl overflow-hidden">
+            <Collapsible defaultOpen={false}>
+              <CollapsibleTrigger asChild>
+                <button className="w-full bg-muted/50 px-5 py-3.5 border-b border-border flex items-center justify-between hover:bg-muted/80 transition-colors cursor-pointer group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Building className="h-4 w-4 text-primary" />
+                    </div>
+                    <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Prédios Contratados</h2>
+                    <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full text-xs font-bold">
+                      {panels.length}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => { e.stopPropagation(); setShowAddBuildingDialog(true); }}
+                      className="h-7 px-2 text-xs border-green-500 text-green-700 hover:bg-green-50"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Adicionar
+                    </Button>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  </div>
+                </button>
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent>
+                <div className="divide-y divide-border">
+                  {panels.map((panel, index) => (
+                    <div key={panel.id} className={`flex items-center gap-4 px-5 py-3 ${index % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-accent/50 transition-colors`}>
+                      <div className="w-8 h-8 rounded-lg bg-primary/5 border border-border flex items-center justify-center flex-shrink-0">
+                        <span className="text-[10px] font-mono font-bold text-primary">#{panel.id.substring(0, 4)}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{panel.nome}</p>
+                        <p className="text-xs text-muted-foreground truncate">{panel.endereco}</p>
+                      </div>
+                      <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full hidden sm:inline-block">
+                        {panel.bairro}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={async () => {
+                          setRemovingBuildingId(panel.id);
+                          const success = await removeBuilding(order.id, panel.id);
+                          setRemovingBuildingId(null);
+                          if (success) window.location.reload();
+                        }}
+                        disabled={removingBuildingId === panel.id}
+                        className="h-7 w-7 p-0 text-red-500 hover:bg-red-50 hover:text-red-700 flex-shrink-0"
+                      >
+                        {removingBuildingId === panel.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </section> : <section className="border border-red-200 rounded bg-red-50">
             <div className="bg-red-100 px-4 py-2 border-b border-red-200">
               <h2 className="text-sm font-bold text-red-900 uppercase tracking-wide flex items-center gap-2">
