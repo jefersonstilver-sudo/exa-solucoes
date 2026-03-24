@@ -263,7 +263,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   });
   const subtotal = order.valor_total;
   const desconto = order.cupom_id ? subtotal * 0.1 : 0;
-  return <div className="w-full max-w-7xl mx-auto bg-white shadow-sm border border-gray-200 overflow-hidden">
+  return <><div className="w-full max-w-7xl mx-auto bg-white shadow-sm border border-gray-200 overflow-hidden">
       {/* HEADER MINIMALISTA PROFISSIONAL - RESPONSIVO */}
       <div className="bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] text-white px-4 lg:px-6 py-4 lg:py-5 border-b-2 border-gray-200">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
