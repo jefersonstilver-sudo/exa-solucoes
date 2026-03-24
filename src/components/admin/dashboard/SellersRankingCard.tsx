@@ -6,20 +6,8 @@ import { VendedorProposalStats } from '@/hooks/useDashboardUnifiedStats';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { usePrivacyModeStore } from '@/hooks/usePrivacyMode';
 
-// IDs fixos dos vendedores que devem aparecer
-const FIXED_SELLER_IDS = [
-  '7cca6d1b-ca4f-4190-a7fe-5148e7dc2308', // Jeferson Stilver
-  '6390fcd3-3eaa-4f57-9a7b-b3466a306ee8', // Bruno Dantas
-  'c9ff75c5-a051-4b6d-a278-cdd5a2306820', // Eduardo Comercial
-  '21333746-3d73-48f2-8af8-61fb3f86bcf8', // Suzana Financeiro
-];
 
-const FIXED_SELLER_NAMES: Record<string, string> = {
-  '7cca6d1b-ca4f-4190-a7fe-5148e7dc2308': 'Jeferson Stilver',
-  '6390fcd3-3eaa-4f57-9a7b-b3466a306ee8': 'Bruno Dantas',
-  'c9ff75c5-a051-4b6d-a278-cdd5a2306820': 'Eduardo',
-  '21333746-3d73-48f2-8af8-61fb3f86bcf8': 'Suzana',
-};
+
 
 interface SellersRankingCardProps {
   vendedores: VendedorProposalStats[];
