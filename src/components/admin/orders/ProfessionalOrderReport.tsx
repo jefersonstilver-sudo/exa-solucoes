@@ -86,11 +86,13 @@ interface ProfessionalOrderReportProps {
   order: OrderData;
   panels: PanelData[];
   videos: OrderVideo[];
+  onBuildingChanged?: () => void;
 }
 export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = ({
   order,
   panels,
-  videos
+  videos,
+  onBuildingChanged
 }) => {
   console.log('📋 [PROFESSIONAL REPORT] Renderizando relatório');
   console.log('📋 [PROFESSIONAL REPORT] Panels recebidos:', panels?.length || 0);
