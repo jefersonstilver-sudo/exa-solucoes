@@ -2,12 +2,13 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, Clock, Building, User, Calendar, Monitor, Smartphone } from 'lucide-react';
+import { Eye, Clock, Building, User, Calendar, Monitor, Smartphone, Video } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 import { getStatusConfig as getCanonicalStatusConfig } from '@/constants/pedidoStatus';
+import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
 
 interface MinimalOrderCardProps {
   item: OrderOrAttempt;
@@ -45,6 +46,8 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
   showCheckbox = true
 }) => {
   const statusConfig = getStatusConfig(item.status, item.type);
+  const showVideoPreview = item.type === 'order' && ['ativo', 'video_aprovado'].includes(item.status);
+  const { videoData } = useOrderCurrentVideoData(showVideoPreview ? item.id : '');
   
   // Calcular tempo relativo
   const timeAgo = formatDistanceToNow(new Date(item.created_at), { 
@@ -66,12 +69,39 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
           onCheckedChange={(checked) => onSelectionChange(item.id, checked as boolean)}
         />
       )}
+
+      {/* Mini Preview de Vídeo */}
+      {showVideoPreview && (
+        <div className="flex-shrink-0 w-20 aspect-video rounded overflow-hidden bg-black/90 border border-border/50">
+          {videoData?.videoUrl ? (
+            <video
+              src={videoData.videoUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full h-full object-contain"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Video className="h-4 w-4 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+      )}
       
-      {/* ID, Tipo Produto e Status */}
+      {/* ID, Nome, Tipo Produto e Status */}
       <div className="flex items-center gap-2 min-w-[280px]">
-        <span className="font-mono text-sm text-muted-foreground">
-          #{item.id.substring(0, 8)}
-        </span>
+        <div className="flex flex-col">
+          {item.nome_pedido && (
+            <span className="text-sm font-semibold text-foreground truncate max-w-[160px]">
+              {item.nome_pedido}
+            </span>
+          )}
+          <span className="font-mono text-xs text-muted-foreground">
+            #{item.id.substring(0, 8)}
+          </span>
+        </div>
         {item.type === 'order' && (
           (item as any).tipo_produto === 'vertical_premium' ? (
             <Badge variant="outline" className="text-[10px] border-purple-400 text-purple-700 bg-purple-50 px-1.5 py-0">

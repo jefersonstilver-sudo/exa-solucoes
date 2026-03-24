@@ -149,7 +149,7 @@ export const ActiveVideosColumn = ({ orderId, orderStatus }: ActiveVideosColumnP
     );
   }
 
-  if (orderVideos.length === 0) {
+  if (orderVideos.length === 0 && !videoData) {
     return (
       <div className="text-center py-4">
         <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-300">
