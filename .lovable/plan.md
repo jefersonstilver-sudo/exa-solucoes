@@ -1,37 +1,31 @@
 
 
-# Plano: Card maior, agrupamento por email e exibicao de paineis
+# Plano: Remover vendedores fixos e usar dados reais do banco
 
-## O que sera feito
+## Problema
+`SellersRankingCard.tsx` e `ProposalStatsRow.tsx` usam listas hardcoded (`FIXED_SELLER_IDS`) com 4 vendedores fixos (Bruno, Eduardo, Suzana, Jeferson). Tres deles nao fazem mais parte da equipe. O hook `useDashboardUnifiedStats` ja retorna `propostasPorVendedor` dinamicamente de todas as propostas reais -- mas os componentes filtram e descartam esses dados.
 
-### 1. Aumentar o MinimalOrderCard
-**Arquivo**: `src/components/admin/orders/components/MinimalOrderCard.tsx`
+## Alteracoes
 
-O card atual usa `p-3` e layout horizontal comprimido. Mudancas:
-- Padding maior (`p-4`)
-- Preview de video maior (`w-28` ao inves de `w-20`)
-- Nome do pedido com fonte maior (`text-base font-bold`)
-- Separacao visual com grid/rows mais espacados
-- Informacoes de cliente com mais destaque
+### 1. SellersRankingCard.tsx
+- Remover `FIXED_SELLER_IDS` e `FIXED_SELLER_NAMES`
+- Usar diretamente o array `vendedores` (que ja vem do hook com dados reais)
+- Ordenar por `valorRecebido` decrescente
+- Mostrar todos os vendedores que tem pelo menos 1 proposta (filtrar `enviadas > 0`)
+- Manter layout de ranking, medalhas e grafico iguais
 
-### 2. Mostrar numeros dos paineis para super_admin
-**Arquivo**: `src/components/admin/orders/components/MinimalOrderCard.tsx`
+### 2. ProposalStatsRow.tsx
+- Remover `FIXED_SELLER_IDS` e `FIXED_SELLER_NAMES`
+- Usar diretamente `stats.propostasPorVendedor` filtrado por `enviadas > 0`
+- Ordenar por `valorVendido` decrescente
+- Grid responsivo: ajustar `grid-cols` dinamicamente baseado na quantidade de vendedores (max 6 colunas)
 
-- Receber prop `isSuperAdmin` (ja disponivel no pai `OrdersTabsRefactored`)
-- Quando `isSuperAdmin === true`, exibir `lista_paineis` como badges com os IDs truncados (primeiros 8 chars) ao lado da contagem
-- Isso inclui paineis de predios ativos da loja publica E internos (todos que estao em `lista_paineis`)
-
-### 3. Agrupamento por email/conta do cliente
-**Arquivo**: `src/components/admin/orders/OrdersTabsRefactored.tsx`
-
-- Adicionar opcao de agrupamento no header (ao lado do SortSelector): botao toggle "Agrupar por cliente"
-- Quando ativado, os pedidos sao agrupados por `client_email`
-- Cada grupo renderiza um header com: nome do cliente, email, quantidade de pedidos
-- Dentro do grupo, os cards aparecem normalmente (MinimalOrderCard ou EnhancedOrderCard)
-- Collapsible por grupo (aberto por padrao)
+### Resultado
+- Dashboard mostra apenas vendedores que realmente tem propostas no periodo
+- Novos vendedores aparecem automaticamente sem precisar editar codigo
+- Dados 100% sincronizados com a base real
 
 ## Arquivos alterados
-
-1. `src/components/admin/orders/components/MinimalOrderCard.tsx` - card maior + paineis para super_admin
-2. `src/components/admin/orders/OrdersTabsRefactored.tsx` - logica de agrupamento por email + passar `isSuperAdmin` ao MinimalOrderCard
+1. `src/components/admin/dashboard/SellersRankingCard.tsx`
+2. `src/components/admin/dashboard/ProposalStatsRow.tsx`
 
