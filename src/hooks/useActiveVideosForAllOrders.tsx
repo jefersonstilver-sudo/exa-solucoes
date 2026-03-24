@@ -55,7 +55,7 @@ export const useActiveVideosForAllOrders = () => {
         .eq('approval_status', 'approved')
         .eq('selected_for_display', true)
         .eq('is_active', true)
-        .in('pedidos.status', ['video_aprovado']);
+        .in('pedidos.status', ['video_aprovado', 'ativo']);
 
       if (error) {
         console.error('❌ [ACTIVE_VIDEOS] Erro ao buscar vídeos:', error);
