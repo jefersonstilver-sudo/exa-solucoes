@@ -16,11 +16,11 @@ interface MinimalOrderCardProps {
   onSelectionChange: (id: string, checked: boolean) => void;
   onViewOrderDetails?: (orderId: string) => void;
   showCheckbox?: boolean;
+  isSuperAdmin?: boolean;
 }
 
 // Usa o mapper central canônico para obter configuração de status
 const getStatusConfig = (status: string, type: 'order' | 'attempt') => {
-  // Tentativas têm configuração especial
   if (type === 'attempt') {
     return {
       label: 'Tentativa',
@@ -29,7 +29,6 @@ const getStatusConfig = (status: string, type: 'order' | 'attempt') => {
     };
   }
   
-  // Usa o mapper central canônico
   const config = getCanonicalStatusConfig(status);
   return {
     label: config.label,
@@ -43,36 +42,37 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
   isSelected,
   onSelectionChange,
   onViewOrderDetails,
-  showCheckbox = true
+  showCheckbox = true,
+  isSuperAdmin = false
 }) => {
   const statusConfig = getStatusConfig(item.status, item.type);
   const showVideoPreview = item.type === 'order' && ['ativo', 'video_aprovado'].includes(item.status);
   const { videoData } = useOrderCurrentVideoData(showVideoPreview ? item.id : '');
   
-  // Calcular tempo relativo
   const timeAgo = formatDistanceToNow(new Date(item.created_at), { 
     addSuffix: true, 
     locale: ptBR 
   });
   
-  // Contagem de painéis
   const panelCount = item.type === 'order' 
     ? (item.lista_paineis?.length || 0)
     : (item.predios_selecionados?.length || 0);
 
   return (
-    <div className="flex items-center gap-4 p-3 bg-card border border-border/50 rounded-lg hover:border-border hover:shadow-sm transition-all">
+    <div className="flex items-start gap-4 p-4 bg-card border border-border/50 rounded-xl hover:border-border hover:shadow-md transition-all">
       {/* Checkbox */}
       {showCheckbox && (
-        <Checkbox 
-          checked={isSelected} 
-          onCheckedChange={(checked) => onSelectionChange(item.id, checked as boolean)}
-        />
+        <div className="pt-1">
+          <Checkbox 
+            checked={isSelected} 
+            onCheckedChange={(checked) => onSelectionChange(item.id, checked as boolean)}
+          />
+        </div>
       )}
 
       {/* Mini Preview de Vídeo */}
       {showVideoPreview && (
-        <div className="flex-shrink-0 w-20 aspect-video rounded overflow-hidden bg-black/90 border border-border/50">
+        <div className="flex-shrink-0 w-28 aspect-video rounded-lg overflow-hidden bg-black/90 border border-border/50 shadow-sm">
           {videoData?.videoUrl ? (
             <video
               src={videoData.videoUrl}
@@ -84,96 +84,116 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <Video className="h-4 w-4 text-muted-foreground" />
+              <Video className="h-5 w-5 text-muted-foreground" />
             </div>
           )}
         </div>
       )}
       
-      {/* ID, Nome, Tipo Produto e Status */}
-      <div className="flex items-center gap-2 min-w-[280px]">
-        <div className="flex flex-col">
-          {item.nome_pedido && (
-            <span className="text-sm font-semibold text-foreground truncate max-w-[160px]">
-              {item.nome_pedido}
+      {/* Conteúdo Principal */}
+      <div className="flex-1 min-w-0 space-y-2">
+        {/* Linha 1: Nome/ID + Status + Tipo Produto */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-col mr-2">
+            {item.nome_pedido && (
+              <span className="text-base font-bold text-foreground truncate max-w-[220px]">
+                {item.nome_pedido}
+              </span>
+            )}
+            <span className="font-mono text-xs text-muted-foreground">
+              #{item.id.substring(0, 8)}
             </span>
+          </div>
+          {item.type === 'order' && (
+            (item as any).tipo_produto === 'vertical_premium' ? (
+              <Badge variant="outline" className="text-[10px] border-purple-400 text-purple-700 bg-purple-50 px-1.5 py-0">
+                <Smartphone className="h-2.5 w-2.5 mr-0.5" />
+                Vertical
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[10px] border-blue-400 text-blue-700 bg-blue-50 px-1.5 py-0">
+                <Monitor className="h-2.5 w-2.5 mr-0.5" />
+                Horizontal
+              </Badge>
+            )
           )}
-          <span className="font-mono text-xs text-muted-foreground">
-            #{item.id.substring(0, 8)}
-          </span>
+          <Badge className={`${statusConfig.className} text-xs font-medium`}>
+            {statusConfig.icon} {statusConfig.label}
+          </Badge>
         </div>
-        {item.type === 'order' && (
-          (item as any).tipo_produto === 'vertical_premium' ? (
-            <Badge variant="outline" className="text-[10px] border-purple-400 text-purple-700 bg-purple-50 px-1.5 py-0">
-              <Smartphone className="h-2.5 w-2.5 mr-0.5" />
-              Vertical
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="text-[10px] border-blue-400 text-blue-700 bg-blue-50 px-1.5 py-0">
-              <Monitor className="h-2.5 w-2.5 mr-0.5" />
-              Horizontal
-            </Badge>
-          )
-        )}
-        <Badge className={`${statusConfig.className} text-xs font-medium`}>
-          {statusConfig.icon} {statusConfig.label}
-        </Badge>
-      </div>
-      
-      {/* Cliente */}
-      <div className="flex-1 min-w-0">
+
+        {/* Linha 2: Cliente */}
         <div className="flex items-center gap-2">
           <User className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
           <span className="text-sm font-medium truncate">
             {item.client_name || 'Nome não disponível'}
           </span>
+          <span className="text-xs text-muted-foreground truncate hidden sm:inline">
+            • {item.client_email || 'Email não disponível'}
+          </span>
         </div>
-        <div className="text-xs text-muted-foreground truncate">
-          {item.client_email || 'Email não disponível'}
+
+        {/* Linha 3: Painéis (com IDs para super_admin) */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Building className="h-3.5 w-3.5" />
+            <span>{panelCount} painéis</span>
+          </div>
+          {isSuperAdmin && item.type === 'order' && item.lista_paineis && item.lista_paineis.length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap">
+              {item.lista_paineis.map((painelId: string) => (
+                <Badge 
+                  key={painelId} 
+                  variant="outline" 
+                  className="text-[10px] font-mono px-1.5 py-0 bg-muted/50 text-muted-foreground border-border"
+                >
+                  {painelId.substring(0, 8)}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       
-      {/* Painéis */}
-      <div className="flex items-center gap-1.5 text-sm text-muted-foreground min-w-[80px]">
-        <Building className="h-3.5 w-3.5" />
-        <span>{panelCount} painéis</span>
-      </div>
-      
-      {/* Duração */}
-      {item.type === 'order' && item.plano_meses && (
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground min-w-[70px]">
-          <Calendar className="h-3.5 w-3.5" />
-          <span>{item.plano_meses} meses</span>
-        </div>
-      )}
-      
-      {/* Valor */}
-      <div className="text-sm font-semibold min-w-[90px] text-right">
-        {formatCurrency(item.valor_total || 0)}
-      </div>
-      
-      {/* Data e Tempo */}
-      <div className="flex flex-col items-end min-w-[90px]">
-        <span className="text-xs font-medium text-foreground">
-          {format(new Date(item.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+      {/* Coluna direita: Valor + Data + Ação */}
+      <div className="flex flex-col items-end gap-2 flex-shrink-0">
+        {/* Valor */}
+        <span className="text-base font-bold text-foreground">
+          {formatCurrency(item.valor_total || 0)}
         </span>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Clock className="h-3 w-3" />
-          <span>{timeAgo}</span>
+        
+        {/* Duração */}
+        {item.type === 'order' && item.plano_meses && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Calendar className="h-3 w-3" />
+            <span>{item.plano_meses} meses</span>
+          </div>
+        )}
+
+        {/* Data */}
+        <div className="flex flex-col items-end">
+          <span className="text-xs font-medium text-foreground">
+            {format(new Date(item.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+          </span>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Clock className="h-3 w-3" />
+            <span>{timeAgo}</span>
+          </div>
         </div>
+        
+        {/* Ação */}
+        {item.type === 'order' && onViewOrderDetails && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => onViewOrderDetails(item.id)}
+            className="h-8 px-3 text-xs"
+          >
+            <Eye className="h-3.5 w-3.5 mr-1" />
+            Ver
+          </Button>
+        )}
       </div>
-      
-      {/* Ação */}
-      {item.type === 'order' && onViewOrderDetails && (
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => onViewOrderDetails(item.id)}
-          className="h-8 px-2"
-        >
-          <Eye className="h-4 w-4" />
-        </Button>
-      )}
     </div>
   );
 };

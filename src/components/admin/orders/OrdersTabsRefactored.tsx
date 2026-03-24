@@ -18,7 +18,8 @@ import { EnhancedOrderCard } from './components/EnhancedOrderCard';
 import { SortSelector, SortField, SortDirection } from './components/SortSelector';
 import { SortableTab } from './components/SortableTab';
 import { bulkDeletePedidos, bulkDeleteTentativas, superAdminBulkDeletePedidos } from '@/services/bulkDeleteService';
-import { Trash2, AlertTriangle, LayoutList, LayoutGrid, List } from 'lucide-react';
+import { Trash2, AlertTriangle, LayoutList, LayoutGrid, Users } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 
