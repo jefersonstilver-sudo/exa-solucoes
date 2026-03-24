@@ -6,20 +6,8 @@ import { VendedorProposalStats } from '@/hooks/useDashboardUnifiedStats';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { usePrivacyModeStore } from '@/hooks/usePrivacyMode';
 
-// IDs fixos dos vendedores que devem aparecer
-const FIXED_SELLER_IDS = [
-  '7cca6d1b-ca4f-4190-a7fe-5148e7dc2308', // Jeferson Stilver
-  '6390fcd3-3eaa-4f57-9a7b-b3466a306ee8', // Bruno Dantas
-  'c9ff75c5-a051-4b6d-a278-cdd5a2306820', // Eduardo Comercial
-  '21333746-3d73-48f2-8af8-61fb3f86bcf8', // Suzana Financeiro
-];
 
-const FIXED_SELLER_NAMES: Record<string, string> = {
-  '7cca6d1b-ca4f-4190-a7fe-5148e7dc2308': 'Jeferson Stilver',
-  '6390fcd3-3eaa-4f57-9a7b-b3466a306ee8': 'Bruno Dantas',
-  'c9ff75c5-a051-4b6d-a278-cdd5a2306820': 'Eduardo',
-  '21333746-3d73-48f2-8af8-61fb3f86bcf8': 'Suzana',
-};
+
 
 interface SellersRankingCardProps {
   vendedores: VendedorProposalStats[];
@@ -43,36 +31,11 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
     return isPrivate ? '•••••' : formatCurrency(value);
   };
 
-  // Filtrar apenas os 4 vendedores fixos
+  // Filtrar vendedores com propostas e ordenar por valor recebido
   const filteredVendedores = useMemo(() => {
-    const result: VendedorProposalStats[] = [];
-    
-    FIXED_SELLER_IDS.forEach(sellerId => {
-      const found = vendedores.find(v => v.vendedorId === sellerId);
-      if (found) {
-        result.push({
-          ...found,
-          vendedorNome: FIXED_SELLER_NAMES[sellerId] || found.vendedorNome
-        });
-      } else {
-        // Se não encontrou, criar entrada zerada
-        result.push({
-          vendedorId: sellerId,
-          vendedorNome: FIXED_SELLER_NAMES[sellerId] || 'Vendedor',
-          enviadas: 0,
-          visualizadas: 0,
-          aguardando: 0,
-          aceitas: 0,
-          valorRecebido: 0,
-          valorProjetado: 0,
-          valorVendido: 0,
-          taxaConversao: 0
-        });
-      }
-    });
-    
-    // Ordenar por valor recebido
-    return result.sort((a, b) => b.valorRecebido - a.valorRecebido);
+    return vendedores
+      .filter(v => v.enviadas > 0)
+      .sort((a, b) => b.valorRecebido - a.valorRecebido);
   }, [vendedores]);
 
   // Cores para o ranking (medalhas)
