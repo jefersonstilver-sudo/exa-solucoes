@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload, Key, Loader2, Send, Monitor, Smartphone } from 'lucide-react';
+import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload, Key, Loader2, Send, Monitor, Smartphone, Plus, Trash2 } from 'lucide-react';
 import exaLogo from '@/assets/exa-logo.png';
 import { Button } from '@/components/ui/button';
 import { useFixAuditData } from '@/hooks/admin/useFixAuditData';
 import { resyncVideoToExternalAPI } from '@/services/videoExternalSyncService';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useOrderBuildingsManagement } from '@/hooks/useOrderBuildingsManagement';
+import { BuildingManagementDialog } from './BuildingManagementDialog';
+import { OrderNameEdit } from '@/components/order/OrderNameEdit';
 interface Parcela {
   id: string;
   numero_parcela: number;
@@ -35,6 +38,7 @@ interface OrderData {
   ip_origem?: string;
   device_info?: any;
   expires_at?: string;
+  nome_pedido?: string;
   // Campos de fidelidade
   tipo_pagamento?: string;
   metodo_pagamento?: string;
@@ -92,10 +96,13 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   console.log('📋 [PROFESSIONAL REPORT] Videos recebidos:', videos?.length || 0);
   const [resyncingVideoId, setResyncingVideoId] = useState<string | null>(null);
   const [sendingPasswordReset, setSendingPasswordReset] = useState(false);
+  const [showAddBuildingDialog, setShowAddBuildingDialog] = useState(false);
+  const [removingBuildingId, setRemovingBuildingId] = useState<string | null>(null);
   const {
     fixOrderAuditData,
     isFixing
   } = useFixAuditData();
+  const { addBuildings, removeBuilding, loading: buildingsLoading } = useOrderBuildingsManagement();
 
   const handleResyncVideo = async (pedidoVideoId: string) => {
     setResyncingVideoId(pedidoVideoId);
@@ -256,7 +263,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   });
   const subtotal = order.valor_total;
   const desconto = order.cupom_id ? subtotal * 0.1 : 0;
-  return <div className="w-full max-w-7xl mx-auto bg-white shadow-sm border border-gray-200 overflow-hidden">
+  return <><div className="w-full max-w-7xl mx-auto bg-white shadow-sm border border-gray-200 overflow-hidden">
       {/* HEADER MINIMALISTA PROFISSIONAL - RESPONSIVO */}
       <div className="bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] text-white px-4 lg:px-6 py-4 lg:py-5 border-b-2 border-gray-200">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -265,7 +272,14 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
             <img src={exaLogo} alt="EXA" className="h-8 lg:h-10 w-auto brightness-0 invert" />
             <div className="border-l border-white/30 pl-4 lg:pl-6">
               <p className="text-[10px] lg:text-xs text-white/80 mb-0.5">Relatório de Pedido</p>
-              <p className="text-xs lg:text-sm font-semibold">#{order.id.substring(0, 8).toUpperCase()}</p>
+              {order.nome_pedido ? (
+                <>
+                  <p className="text-sm lg:text-base font-bold">{order.nome_pedido}</p>
+                  <p className="text-[10px] lg:text-xs text-white/70 font-mono">#{order.id.substring(0, 8).toUpperCase()}</p>
+                </>
+              ) : (
+                <p className="text-xs lg:text-sm font-semibold">#{order.id.substring(0, 8).toUpperCase()}</p>
+              )}
             </div>
           </div>
           
@@ -293,6 +307,9 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
 
       {/* CONTEÚDO PRINCIPAL - MINIMALISTA */}
       <div className="px-6 py-6 space-y-6">
+
+        {/* SEÇÃO: NOME DO PEDIDO */}
+        <OrderNameEdit orderId={order.id} currentName={order.nome_pedido} />
         
         {/* SEÇÃO: INFORMAÇÕES DO PEDIDO */}
         <section className="border border-gray-200 rounded">
@@ -746,9 +763,20 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
         {panels && panels.length > 0 ? <section className="border border-gray-200 rounded">
             <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Prédios Contratados</h2>
-              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">
-                {panels.length} {panels.length === 1 ? 'prédio' : 'prédios'}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">
+                  {panels.length} {panels.length === 1 ? 'prédio' : 'prédios'}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowAddBuildingDialog(true)}
+                  className="h-7 px-2 text-xs border-green-500 text-green-700 hover:bg-green-50"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Adicionar
+                </Button>
+              </div>
             </div>
             
             <div className="overflow-hidden">
@@ -759,6 +787,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                     <th className="px-4 py-2 text-left font-semibold text-gray-700">Nome do Prédio</th>
                     <th className="px-4 py-2 text-left font-semibold text-gray-700">Endereço</th>
                     <th className="px-4 py-2 text-left font-semibold text-gray-700">Bairro</th>
+                    <th className="px-4 py-2 text-right font-semibold text-gray-700">Ação</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -769,6 +798,26 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                       <td className="px-4 py-2 font-semibold text-gray-900">{panel.nome}</td>
                       <td className="px-4 py-2 text-gray-700">{panel.endereco}</td>
                       <td className="px-4 py-2 text-gray-700">{panel.bairro}</td>
+                      <td className="px-4 py-2 text-right">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={async () => {
+                            setRemovingBuildingId(panel.id);
+                            const success = await removeBuilding(order.id, panel.id);
+                            setRemovingBuildingId(null);
+                            if (success) window.location.reload();
+                          }}
+                          disabled={removingBuildingId === panel.id}
+                          className="h-6 px-2 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                        >
+                          {removingBuildingId === panel.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </td>
                     </tr>)}
                 </tbody>
               </table>
@@ -796,6 +845,15 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                     ⚠️ Estes prédios podem ter sido removidos do sistema
                   </p>
                 </div>}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowAddBuildingDialog(true)}
+                className="mt-3 border-green-500 text-green-700 hover:bg-green-50"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Adicionar Prédio
+              </Button>
             </div>
           </section>}
 
@@ -936,5 +994,18 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+
+    {/* Dialog de Gestão de Prédios */}
+    <BuildingManagementDialog
+      isOpen={showAddBuildingDialog}
+      onClose={() => setShowAddBuildingDialog(false)}
+      onConfirm={async (buildingIds) => {
+        const success = await addBuildings(order.id, buildingIds);
+        if (success) window.location.reload();
+      }}
+      existingBuildingIds={order.lista_predios || []}
+      loading={buildingsLoading}
+    />
+    </>;
 };

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useActiveVideosForAllOrders } from '@/hooks/useActiveVideosForAllOrders';
 import { useOrderBlocking } from '@/hooks/useOrderBlocking';
+import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
 import { BlockOrderModal } from './BlockOrderModal';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -38,6 +39,7 @@ interface BlockDialog {
 export const ActiveVideosColumn = ({ orderId, orderStatus }: ActiveVideosColumnProps) => {
   const { activeVideos, loading, deleteVideo } = useActiveVideosForAllOrders();
   const { blockOrder, unblockOrder, isBlocking, isUnblocking } = useOrderBlocking();
+  const { videoData } = useOrderCurrentVideoData(orderId);
 
   const [confirmDialog, setConfirmDialog] = useState<ConfirmationDialog>({
     isOpen: false,
@@ -160,6 +162,25 @@ export const ActiveVideosColumn = ({ orderId, orderStatus }: ActiveVideosColumnP
 
   return (
     <div className="space-y-3">
+      {/* Mini Player de Preview */}
+      {videoData?.videoUrl && (
+        <div className="rounded-lg overflow-hidden border border-border bg-black">
+          <video
+            src={videoData.videoUrl}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full aspect-video object-contain"
+          />
+          <div className="bg-muted px-2 py-1">
+            <p className="text-[10px] text-muted-foreground truncate font-medium">
+              🔴 {videoData.videoName}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Lista de Vídeos Ativos */}
       {orderVideos.map((video) => (
         <div key={video.videoId} className="border border-green-200 rounded-lg p-3 bg-green-50">
