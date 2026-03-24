@@ -516,74 +516,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
         </div>
       </div>
       
-      <Tabs defaultValue="todos" className="space-y-4">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={tabOrder} strategy={horizontalListSortingStrategy}>
-            <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
-              {tabOrder.map((tabId) => {
-                const config = TAB_CONFIG[tabId];
-                if (!config) return null;
-                const count = filteredOrders[tabId as keyof typeof filteredOrders]?.length || 0;
-                
-                return (
-                  <SortableTab key={tabId} id={tabId}>
-                    <TabsTrigger value={tabId} className="min-w-[80px] cursor-grab active:cursor-grabbing">
-                      {config.icon} {config.shortLabel}
-                      <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
-                        {count}
-                      </Badge>
-                    </TabsTrigger>
-                  </SortableTab>
-                );
-              })}
-            </TabsList>
-          </SortableContext>
-        </DndContext>
-
-        <TabsContent value="todos">
-          {renderOrdersList(filteredOrders.todos, 'Nenhum pedido ou tentativa encontrada.')}
-        </TabsContent>
-
-        <TabsContent value="pendente">
-          {renderOrdersList(filteredOrders.pendente, 'Nenhum pedido ou tentativa aguardando pagamento.')}
-        </TabsContent>
-        
-        <TabsContent value="aguardando_contrato">
-          {renderOrdersList(filteredOrders.aguardando_contrato, 'Nenhum pedido aguardando contrato.')}
-        </TabsContent>
-        
-        <TabsContent value="aguardando_video">
-          {renderOrdersList(filteredOrders.aguardando_video, 'Nenhum pedido aguardando vídeo.')}
-        </TabsContent>
-        
-        <TabsContent value="video_enviado">
-          {renderOrdersList(filteredOrders.video_enviado, 'Nenhum vídeo em análise.')}
-        </TabsContent>
-        
-        <TabsContent value="video_aprovado">
-          {renderOrdersList(filteredOrders.video_aprovado, 'Nenhum vídeo aprovado aguardando ativação.')}
-        </TabsContent>
-        
-        <TabsContent value="ativo">
-          {renderOrdersList(filteredOrders.ativo, 'Nenhuma campanha em exibição.')}
-        </TabsContent>
-        
-        <TabsContent value="finalizado">
-          {renderOrdersList(filteredOrders.finalizado, 'Nenhuma campanha finalizada.')}
-        </TabsContent>
-        
-        <TabsContent value="cancelado">
-          {renderOrdersList(filteredOrders.cancelado, 'Nenhum pedido cancelado.')}
-        </TabsContent>
-        
-        <TabsContent value="bloqueado">
-          {renderOrdersList(filteredOrders.bloqueado, 'Nenhum pedido bloqueado.')}
-        </TabsContent>
-      </Tabs>
+      {renderOrdersList(filteredOrders.todos, 'Nenhum pedido ou tentativa encontrada.')}
 
       {/* Modal de Bloqueio */}
       <BlockOrderModal
