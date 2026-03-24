@@ -96,10 +96,13 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   console.log('📋 [PROFESSIONAL REPORT] Videos recebidos:', videos?.length || 0);
   const [resyncingVideoId, setResyncingVideoId] = useState<string | null>(null);
   const [sendingPasswordReset, setSendingPasswordReset] = useState(false);
+  const [showAddBuildingDialog, setShowAddBuildingDialog] = useState(false);
+  const [removingBuildingId, setRemovingBuildingId] = useState<string | null>(null);
   const {
     fixOrderAuditData,
     isFixing
   } = useFixAuditData();
+  const { addBuildings, removeBuilding, loading: buildingsLoading } = useOrderBuildingsManagement();
 
   const handleResyncVideo = async (pedidoVideoId: string) => {
     setResyncingVideoId(pedidoVideoId);
