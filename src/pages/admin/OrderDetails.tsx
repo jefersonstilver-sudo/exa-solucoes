@@ -10,7 +10,7 @@ import { ProfessionalPDFExporter } from '@/components/admin/orders/ProfessionalP
 const OrderDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { loading, orderDetails, orderVideos, panelData } = useRealOrderDetails(id || '');
+  const { loading, orderDetails, orderVideos, panelData, refetch } = useRealOrderDetails(id || '');
   const [isExporting, setIsExporting] = React.useState(false);
 
   const handleExportPDF = async () => {
@@ -83,6 +83,7 @@ const OrderDetails = () => {
           order={orderDetails}
           panels={panelData}
           videos={orderVideos}
+          onBuildingChanged={refetch}
         />
       </div>
     </div>
