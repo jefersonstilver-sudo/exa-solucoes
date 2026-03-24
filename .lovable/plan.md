@@ -1,29 +1,40 @@
 
 
-# Plano: Corrigir PATCH duplicado no global-toggle-ativo
+# Plano: Migrar para endpoint batch `PATCH /ativo/batch`
 
-## Problema
+## Situacao atual
 
-Quando o usuario troca o video ativo, o `global-toggle-ativo` e chamado **DUAS VEZES** para cada predio:
+O `sync-video-status-to-aws` faz um loop por cada predio e chama `global-toggle-ativo/{clientId}` individualmente, que por sua vez chama `PATCH /ativo/{client_id}` na API externa. Isso causa lentidao e falhas em predios apos o primeiro.
 
-1. `setBaseVideoService()` → `notifyExternalAPI()` → `sync-video-status-to-aws` → loop predios → `global-toggle-ativo` ✅
-2. `OrderDetails.tsx` (linhas 303-365) → loop predios → `global-toggle-ativo` ❌ (duplicado)
+## Novo endpoint
 
-A segunda chamada conflita com a primeira na API externa, causando falha nos predios apos o primeiro (1110).
+```
+PATCH http://15.228.8.3:8000/ativo/batch
+Content-Type: application/json
+Body: { "client_ids": ["101", "102", "105"], "titulo": "arquivo.mp4", "ativo": true }
+```
+
+Uma unica chamada atualiza todos os predios de uma vez.
 
 ## Correcao
 
-### 1. `src/pages/advertiser/OrderDetails.tsx`
+### `supabase/functions/sync-video-status-to-aws/index.ts`
 
-**Remover** o bloco de linhas 303-369 que chama `global-toggle-ativo` diretamente. O `setBaseVideoService` ja faz isso internamente via `sync-video-status-to-aws`.
+Substituir o loop que chama `global-toggle-ativo` por chamadas diretas ao endpoint batch:
 
-O codigo apos `if (result.success)` deve ir direto para o `toast.success` e `refreshSlots`.
+1. **Ativar o video selecionado** em todos os predios com uma unica chamada:
+   - `PATCH /ativo/batch` com `client_ids` = todos os prefixos, `titulo` = nome do video ativo, `ativo` = true
 
-### 2. `supabase/functions/sync-video-status-to-aws/index.ts`
+2. **Desativar os demais videos** em todos os predios, uma chamada por titulo:
+   - `PATCH /ativo/batch` com `client_ids` = todos os prefixos, `titulo` = nome do video a desativar, `ativo` = false
 
-Ja esta correto — loop por todos os predios com try/catch individual. Nenhuma alteracao necessaria.
+Isso elimina o loop N predios x M videos, substituindo por apenas (1 + quantidade de videos inativos) chamadas HTTP.
+
+### `supabase/functions/global-toggle-ativo/index.ts`
+
+Nenhuma alteracao. Continua disponivel caso seja necessario para operacoes individuais, mas nao sera mais chamado pelo `sync-video-status-to-aws`.
 
 ## Arquivo alterado
 
-1. `src/pages/advertiser/OrderDetails.tsx` — remover chamada duplicada ao `global-toggle-ativo`
+1. `supabase/functions/sync-video-status-to-aws/index.ts` — chamadas batch diretas substituindo loop individual
 
