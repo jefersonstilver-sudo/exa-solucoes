@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CustomCheckbox } from '@/components/ui/custom-checkbox';
 import { Input } from '@/components/ui/input';
 import { Building2, Search, Loader2 } from 'lucide-react';
-import { useActiveBuildingNames } from '@/hooks/useActiveBuildingNames';
 import { supabase } from '@/integrations/supabase/client';
-import { useState as useStateReact, useEffect } from 'react';
 
 interface BuildingOption {
   id: string;
