@@ -212,13 +212,12 @@ Deno.serve(async (req) => {
       const errors: string[] = []
       let deleted = 0
 
-      // Buscar vídeos aprovados do pedido para saber quais arquivos deletar
+      // Buscar TODOS os vídeos do pedido para deletar de cada prédio
       const { data: pedidoVideos, error: pvError } = await supabase
         .from('pedido_videos')
         .select('video_id, videos(nome, url)')
         .eq('pedido_id', pedido_id)
-        .eq('approval_status', 'approved')
-        .eq('is_active', true)
+        .not('video_id', 'is', null)
 
       if (pvError) {
         console.error('⚠️ [SYNC-BUILDINGS] Erro ao buscar vídeos do pedido:', pvError)
