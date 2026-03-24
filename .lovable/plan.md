@@ -1,55 +1,47 @@
 
 
-# Plano: Implementar endpoint /admin/add-to-specific-buildings na Edge Function
+# Plano: Corrigir sincronizacao do video ativo com a API externa
 
-## Contexto
+## Problema
 
-A Edge Function `sync-buildings-external-api` (action: `add`) atualmente usa o endpoint `/geral/upload-arquivo/{prefix}/Propagandas` com JSON. O novo endpoint correto e `/admin/add-to-specific-buildings` com `multipart/form-data`, enviando os arquivos de video, `client_ids` (primeiros 4 chars dos UUIDs dos predios), e `metadados` com a estrutura especificada.
+O banco de dados mostra `selected_for_display: true` para VIDEO 1 KAMMER, mas o sistema de agendamento (RPC `get_current_display_video`) determina que VIDEO 2 KAMMER e o video em exibicao. A Edge Function `sync-buildings-external-api` usa `pv.selected_for_display` para definir `ativo`, enviando VIDEO 1 como ativo=true -- incorreto.
 
-## Alteracao
+Alem disso, a sincronizacao so ocorre quando predios sao adicionados/removidos. Nao ha mecanismo para re-sincronizar quando o video em exibicao muda.
 
-### Arquivo: `supabase/functions/sync-buildings-external-api/index.ts`
+## Alteracoes
 
-Reescrever o bloco `action === 'add'` (linhas 31-117):
+### 1. Edge Function `sync-buildings-external-api/index.ts` - Usar RPC para determinar `ativo`
 
-1. Buscar videos aprovados do pedido (mesmo query atual)
-2. Buscar dados do pedido (`data_inicio`, `data_fim`, `tipo_produto`)
-3. Para cada video:
-   - Baixar o arquivo do Supabase Storage (como faz `upload-video-to-external-api`)
-   - Validar que nao esta vazio
-4. Montar `client_ids`: array JSON com primeiros 4 chars de cada building UUID (sem hifens)
-5. Montar `metadados`: objeto JSON com chave = nome do arquivo, contendo:
-   - `titulo`: nome da campanha/video
-   - `data_ini` / `data_fim`: datas do pedido formatadas
-   - `ativo`: baseado em `selected_for_display`
-   - `isPlus`: true se `vertical_premium`
-   - `programacao`: seg-sex 00:00 a 23:59 (padrao, ou customizada se houver campanha)
-6. Construir `FormData`:
-   - `files`: cada arquivo de video como Blob
-   - `client_ids`: JSON string do array de IDs
-   - `metadados`: JSON string do objeto
-7. POST unico para `http://15.228.8.3:8000/admin/add-to-specific-buildings`
-8. Tratar resposta e retornar resultado
-
-### Detalhes tecnicos
+No bloco `action === 'add'`, apos buscar os videos:
+- Chamar a RPC `get_current_display_video` com o `pedido_id`
+- Usar o `video_id` retornado pela RPC para definir `ativo: true` apenas no video correto
+- Todos os outros videos recebem `ativo: false`
 
 ```text
-POST /admin/add-to-specific-buildings
-Content-Type: multipart/form-data
+// Antes (errado):
+ativo: pv.selected_for_display === true
 
-fields:
-  files[]     = video1.mp4, video2.mp4 (binarios)
-  client_ids  = '["1001","1002"]'  (4 primeiros chars dos UUIDs)
-  metadados   = '{"video1.mp4": { titulo, data_ini, data_fim, ativo, isPlus, programacao }}'
+// Depois (correto):
+const currentDisplay = await supabase.rpc('get_current_display_video', { p_pedido_id })
+ativo: currentDisplayVideoId === pv.video_id
 ```
 
-A programacao padrao sera seg-sex 00:00-23:59 conforme especificado. Se houver campanha avancada, usara as regras do banco.
+### 2. Nova action `update_status` na Edge Function
 
-### Hook `useOrderBuildingsManagement.ts`
+Adicionar uma terceira action alem de `add` e `remove` para permitir re-sincronizar o status ativo dos videos sem re-enviar os arquivos. Esta action:
+- Chama a API externa com endpoint de atualizacao de metadados (ou re-envia com os mesmos arquivos)
+- Usa a RPC para determinar qual video esta ativo agora
 
-Sem alteracao necessaria - ele ja chama `sync-buildings-external-api` com action `add`.
+### 3. Hook `useOrderBuildingsManagement.ts` - Expor funcao de re-sync
+
+Adicionar funcao `resyncVideoStatus` que chama a edge function com `action: 'add'` e os `building_ids` do pedido atual, forcando re-envio com metadados corretos.
+
+### 4. Trigger automatico (opcional)
+
+Adicionar chamada de re-sync no hook de agendamento quando o video em exibicao muda, ou expor um botao "Resincronizar API" no painel admin.
 
 ## Arquivos alterados
 
-1. `supabase/functions/sync-buildings-external-api/index.ts` - reescrever bloco `add` para usar novo endpoint
+1. `supabase/functions/sync-buildings-external-api/index.ts` - usar RPC para `ativo`
+2. `src/hooks/useOrderBuildingsManagement.ts` - adicionar `resyncVideoStatus`
 
