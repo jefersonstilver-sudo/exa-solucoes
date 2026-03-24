@@ -300,7 +300,7 @@ export const useOrderVideoManagement = (orderId: string) => {
 
   return {
     // Estados de loading
-    loading: loading || baseHook.uploading,
+    loading: loading,
     loadError,
     
     // Dados dos vídeos
