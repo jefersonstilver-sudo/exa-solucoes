@@ -86,14 +86,13 @@ Deno.serve(async (req) => {
 
         // Extract filename from URL (same logic as sync-video-status-to-aws extractTitulo)
         // This ensures the name matches what global-toggle-ativo sends in PATCH
-        const extractTituloFromUrl = (videoUrl?: string | null): string | null => {
+        const extractFileNameFromUrl = (videoUrl?: string | null): string | null => {
           if (!videoUrl) return null;
           const base = String(videoUrl).split("/").pop() || "";
-          const noQueryHash = base.split("?")[0].split("#")[0];
-          const cleaned = noQueryHash.replace(/\.[^.]+$/, "").trim();
+          const cleaned = base.split("?")[0].split("#")[0].trim();
           return cleaned || null;
         };
-        const fileNameClean = extractTituloFromUrl(video.url) || video.nome?.replace(/\.[^.]+$/, '') || `video_${pv.video_id}`
+        const fileNameClean = extractFileNameFromUrl(video.url) || video.nome || `video_${pv.video_id}.mp4`
         console.log(`📝 [SYNC-BUILDINGS] Video nome="${video.nome}", URL-extracted title="${fileNameClean}"`);
 
         // Download video from Supabase Storage

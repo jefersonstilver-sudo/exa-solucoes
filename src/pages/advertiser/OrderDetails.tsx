@@ -307,8 +307,7 @@ const OrderDetails = () => {
           const extractTituloFromUrl = (url?: string | null): string | null => {
             if (!url) return null;
             const base = String(url).split("/").pop() || "";
-            const noQueryHash = base.split("?")[0].split("#")[0];
-            const cleaned = noQueryHash.replace(/\.[^.]+$/, "").trim();
+            const cleaned = base.split("?")[0].split("#")[0].trim();
             return cleaned || null;
           };
           
