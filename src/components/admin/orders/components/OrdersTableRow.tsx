@@ -80,8 +80,15 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
           )}
         </div>
       </TableCell>
-      <TableCell className="font-medium text-gray-900">
-        {item.id.substring(0, 8)}...
+      <TableCell className="font-medium text-foreground">
+        {(item as any).nome_pedido ? (
+          <div className="flex flex-col gap-0.5">
+            <span className="font-semibold text-foreground">{(item as any).nome_pedido}</span>
+            <span className="text-[10px] text-muted-foreground font-mono">{item.id.substring(0, 8)}...</span>
+          </div>
+        ) : (
+          <span>{item.id.substring(0, 8)}...</span>
+        )}
       </TableCell>
       <TableCell className="text-gray-800 font-medium">
         {formatDate(item.created_at)}

@@ -35,6 +35,7 @@ interface OrderData {
   ip_origem?: string;
   device_info?: any;
   expires_at?: string;
+  nome_pedido?: string;
   // Campos de fidelidade
   tipo_pagamento?: string;
   metodo_pagamento?: string;
@@ -265,7 +266,14 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
             <img src={exaLogo} alt="EXA" className="h-8 lg:h-10 w-auto brightness-0 invert" />
             <div className="border-l border-white/30 pl-4 lg:pl-6">
               <p className="text-[10px] lg:text-xs text-white/80 mb-0.5">Relatório de Pedido</p>
-              <p className="text-xs lg:text-sm font-semibold">#{order.id.substring(0, 8).toUpperCase()}</p>
+              {order.nome_pedido ? (
+                <>
+                  <p className="text-sm lg:text-base font-bold">{order.nome_pedido}</p>
+                  <p className="text-[10px] lg:text-xs text-white/70 font-mono">#{order.id.substring(0, 8).toUpperCase()}</p>
+                </>
+              ) : (
+                <p className="text-xs lg:text-sm font-semibold">#{order.id.substring(0, 8).toUpperCase()}</p>
+              )}
             </div>
           </div>
           
