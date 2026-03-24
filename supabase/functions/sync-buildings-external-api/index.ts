@@ -35,7 +35,6 @@ Deno.serve(async (req) => {
         .select('video_id, selected_for_display, videos(nome, url, duracao, orientacao)')
         .eq('pedido_id', pedido_id)
         .eq('approval_status', 'approved')
-        .eq('is_active', true)
 
       if (videoError) throw videoError
 
