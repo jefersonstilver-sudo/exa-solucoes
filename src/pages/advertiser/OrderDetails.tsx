@@ -301,74 +301,7 @@ const OrderDetails = () => {
       });
 
       if (result.success) {
-        // 🔄 Chamar global-toggle-ativo para sincronizar com API externa
-        try {
-          // Helper para extrair título da URL (igual edge functions)
-          const extractTituloFromUrl = (url?: string | null): string | null => {
-            if (!url) return null;
-            const base = String(url).split("/").pop() || "";
-            const cleaned = base.split("?")[0].split("#")[0].trim();
-            return cleaned || null;
-          };
-          
-          // Encontrar o slot que está sendo definido como principal
-          const mainSlot = videoSlots.find(s => s.id === slotId);
-          const mainVideoTitle = extractTituloFromUrl(mainSlot?.video_data?.url);
-          
-          // Coletar títulos de todos os outros vídeos aprovados
-          const otherTitles = videoSlots
-            .filter(s => s.id !== slotId && s.video_data && s.approval_status === 'approved')
-            .map(s => extractTituloFromUrl(s.video_data?.url))
-            .filter(Boolean) as string[];
-          
-          // Obter TODOS os prédios do pedido
-          const allBuildingIds = orderDetails?.lista_predios || [];
-          
-          console.log('🔄 [GLOBAL_TOGGLE] Preparando chamada para TODOS os prédios:', {
-            mainVideoTitle,
-            otherTitles,
-            totalPredios: allBuildingIds.length,
-            buildingIds: allBuildingIds
-          });
-          
-          if (mainVideoTitle && allBuildingIds.length > 0) {
-            const titulos = [mainVideoTitle, ...otherTitles];
-            
-            for (const buildingId of allBuildingIds) {
-              const clientId = buildingId.replace(/-/g, '').substring(0, 4);
-              
-              try {
-                console.log(`🔄 [GLOBAL_TOGGLE] Chamando global-toggle-ativo para prédio ${clientId}:`, {
-                  clientId,
-                  buildingId,
-                  titulos
-                });
-                
-                const toggleResponse = await supabase.functions.invoke(`global-toggle-ativo/${clientId}`, {
-                  body: { titulos }
-                });
-                
-                if (toggleResponse.error) {
-                  console.error(`❌ [GLOBAL_TOGGLE] Erro no prédio ${clientId}:`, toggleResponse.error);
-                } else if (toggleResponse.data?.ok) {
-                  console.log(`✅ [GLOBAL_TOGGLE] Sucesso no prédio ${clientId}:`, toggleResponse.data);
-                } else {
-                  console.warn(`⚠️ [GLOBAL_TOGGLE] Resposta parcial no prédio ${clientId}:`, toggleResponse.data);
-                }
-              } catch (buildingError) {
-                console.error(`❌ [GLOBAL_TOGGLE] Erro no prédio ${clientId}:`, buildingError);
-                // Continua para os próximos prédios
-              }
-            }
-          } else {
-            console.warn('⚠️ [GLOBAL_TOGGLE] Dados insuficientes:', { mainVideoTitle, totalPredios: allBuildingIds.length });
-          }
-        } catch (toggleError: any) {
-          console.error('❌ [GLOBAL_TOGGLE] Erro ao chamar global-toggle-ativo:', toggleError);
-          // Não bloquear o sucesso da operação principal
-        }
-        
-        toast.success('✅ Vídeo definido como principal!', { 
+        toast.success('✅ Vídeo definido como principal!', {
           id: 'set-base-video',
           description: 'Este vídeo será exibido quando não houver outros agendados.'
         });
