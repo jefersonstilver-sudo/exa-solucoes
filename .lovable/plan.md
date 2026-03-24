@@ -1,34 +1,49 @@
 
 
-# Plano: Alinhar nome do arquivo no add-to-specific-buildings com o PATCH
+# Plano: Usar nome original do arquivo (.mp4) no POST e no PATCH
 
 ## Problema
 
-- `add-to-specific-buildings` envia o arquivo como `"VIDEO 2 KAMMER.mp4"` e usa isso como chave nos metadados
-- `global-toggle-ativo` (PATCH) envia `"VIDEO 2 KAMMER"` (sem extensao, extraido da URL)
-- A API externa nao consegue correlacionar os dois porque os nomes nao batem
+Apos remover a extensao `.mp4` do nome do arquivo no `add-to-specific-buildings`, os edificios pararam de receber o video. A API externa espera o nome do arquivo COM a extensao `.mp4` (ex: `1774364942651_Kammer_Soho_-_Tela_Exa_01_v4.mp4`).
+
+O PATCH (`global-toggle-ativo`) tambem precisa enviar o mesmo nome com `.mp4` para que a API consiga correlacionar.
 
 ## Correcao
 
-### Arquivo: `supabase/functions/sync-buildings-external-api/index.ts`
+### 1. `supabase/functions/sync-buildings-external-api/index.ts`
 
-Remover a logica que adiciona `.mp4` ao nome do arquivo. Usar `video.nome` diretamente (sem extensao) tanto para:
-1. O nome do arquivo no `formData.append('files', fileData, nomeDoVideo)` 
-2. A chave no objeto `metadados`
+Extrair o nome do arquivo da URL **com** a extensao `.mp4`:
 
 ```text
-// ANTES (linhas 87-88):
-const fileName = video.nome || `video_${pv.video_id}.mp4`
-const fileNameClean = fileName.endsWith('.mp4') ? fileName : `${fileName}.mp4`
+// ANTES (sem extensao):
+const cleaned = noQueryHash.replace(/\.[^.]+$/, "").trim();
 
-// DEPOIS:
-const fileName = video.nome || `video_${pv.video_id}`
-const fileNameClean = fileName.replace(/\.[^.]+$/, '')  // remove extensao se houver
+// DEPOIS (com extensao):
+const base = url.split("/").pop().split("?")[0].split("#")[0].trim()
+// Resultado: "1774364942651_Kammer_Soho_-_Tela_Exa_01_v4.mp4"
 ```
 
-Isso alinha com o `extractTitulo` do `sync-video-status-to-aws` que tambem remove a extensao da URL.
+Usar esse nome com extensao tanto no `formData.append('files', fileData, fileName)` quanto na chave do `metadados`.
 
-## Arquivo alterado
+### 2. `supabase/functions/sync-video-status-to-aws/index.ts`
 
-1. `supabase/functions/sync-buildings-external-api/index.ts` — usar nome sem extensao
+Alterar `extractTitulo` para tambem manter a extensao `.mp4`, garantindo que o array `titulos` enviado ao `global-toggle-ativo` use o mesmo formato:
+
+```text
+// ANTES:
+const cleaned = noQueryHash.replace(/\.[^.]+$/, "").trim();
+
+// DEPOIS:
+const cleaned = noQueryHash.trim();  // mantem .mp4
+```
+
+### 3. `src/pages/advertiser/OrderDetails.tsx`
+
+Na logica que monta `titulos` para o PATCH no portal do anunciante, garantir que os titulos tambem incluam `.mp4` (extraidos da URL com extensao).
+
+## Arquivos alterados
+
+1. `supabase/functions/sync-buildings-external-api/index.ts` — manter extensao no nome do arquivo
+2. `supabase/functions/sync-video-status-to-aws/index.ts` — `extractTitulo` mantém `.mp4`
+3. `src/pages/advertiser/OrderDetails.tsx` — titulos com extensao `.mp4`
 
