@@ -1,27 +1,29 @@
 
 
-# Plano: Adicionar prefixo `/propagandas` no endpoint de delete
+# Plano: Corrigir PATCH duplicado no global-toggle-ativo
 
 ## Problema
 
-As duas Edge Functions usam `/admin/delete-propaganda/{client_id}` mas o endpoint correto tem o prefixo `/propagandas/`:
-`/propagandas/admin/delete-propaganda/{client_id}`
+Quando o usuario troca o video ativo, o `global-toggle-ativo` e chamado **DUAS VEZES** para cada predio:
 
-## Correções
+1. `setBaseVideoService()` → `notifyExternalAPI()` → `sync-video-status-to-aws` → loop predios → `global-toggle-ativo` ✅
+2. `OrderDetails.tsx` (linhas 303-365) → loop predios → `global-toggle-ativo` ❌ (duplicado)
 
-### 1. `supabase/functions/delete-video-from-external-api/index.ts` (linha 69)
-Mudar URL de:
-`http://15.228.8.3:8000/admin/delete-propaganda/${clientId}`
-para:
-`http://15.228.8.3:8000/propagandas/admin/delete-propaganda/${clientId}`
+A segunda chamada conflita com a primeira na API externa, causando falha nos predios apos o primeiro (1110).
 
-### 2. `supabase/functions/sync-buildings-external-api/index.ts` (linha 251)
-Mudar URL de:
-`${EXTERNAL_API_BASE}/admin/delete-propaganda/${prefix}`
-para:
-`${EXTERNAL_API_BASE}/propagandas/admin/delete-propaganda/${prefix}`
+## Correcao
 
-## Arquivos alterados
-1. `supabase/functions/delete-video-from-external-api/index.ts`
-2. `supabase/functions/sync-buildings-external-api/index.ts`
+### 1. `src/pages/advertiser/OrderDetails.tsx`
+
+**Remover** o bloco de linhas 303-369 que chama `global-toggle-ativo` diretamente. O `setBaseVideoService` ja faz isso internamente via `sync-video-status-to-aws`.
+
+O codigo apos `if (result.success)` deve ir direto para o `toast.success` e `refreshSlots`.
+
+### 2. `supabase/functions/sync-video-status-to-aws/index.ts`
+
+Ja esta correto — loop por todos os predios com try/catch individual. Nenhuma alteracao necessaria.
+
+## Arquivo alterado
+
+1. `src/pages/advertiser/OrderDetails.tsx` — remover chamada duplicada ao `global-toggle-ativo`
 
