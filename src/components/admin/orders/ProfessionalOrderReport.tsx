@@ -307,6 +307,9 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
 
       {/* CONTEÚDO PRINCIPAL - MINIMALISTA */}
       <div className="px-6 py-6 space-y-6">
+
+        {/* SEÇÃO: NOME DO PEDIDO */}
+        <OrderNameEdit orderId={order.id} currentName={order.nome_pedido} />
         
         {/* SEÇÃO: INFORMAÇÕES DO PEDIDO */}
         <section className="border border-gray-200 rounded">
