@@ -246,9 +246,9 @@ Deno.serve(async (req) => {
             const formData = new FormData()
             formData.append('video_name', videoFileName)
 
-            console.log(`🔄 [SYNC-BUILDINGS] DELETE /admin/delete-propaganda/${prefix} video_name=${videoFileName}`)
+            console.log(`🔄 [SYNC-BUILDINGS] DELETE /propagandas/admin/delete-propaganda/${prefix} video_name=${videoFileName}`)
 
-            const response = await fetch(`${EXTERNAL_API_BASE}/admin/delete-propaganda/${prefix}`, {
+            const response = await fetch(`${EXTERNAL_API_BASE}/propagandas/admin/delete-propaganda/${prefix}`, {
               method: 'DELETE',
               body: formData
             })
