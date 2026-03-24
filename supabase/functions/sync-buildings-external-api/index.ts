@@ -212,21 +212,58 @@ Deno.serve(async (req) => {
       const errors: string[] = []
       let deleted = 0
 
-      for (const buildingId of building_ids) {
-        const prefix = buildingId.substring(0, 4)
-        try {
-          const response = await fetch(`${EXTERNAL_API_BASE}/geral/deletar-arquivos/${prefix}/Propagandas`, {
-            method: 'DELETE'
-          })
+      // Buscar vídeos aprovados do pedido para saber quais arquivos deletar
+      const { data: pedidoVideos, error: pvError } = await supabase
+        .from('pedido_videos')
+        .select('video_id, videos(nome, url)')
+        .eq('pedido_id', pedido_id)
+        .eq('approval_status', 'approved')
+        .eq('is_active', true)
 
-          if (response.ok) {
-            deleted++
-          } else {
-            const errText = await response.text()
-            errors.push(`${buildingId}: ${errText}`)
+      if (pvError) {
+        console.error('⚠️ [SYNC-BUILDINGS] Erro ao buscar vídeos do pedido:', pvError)
+      }
+
+      // Extrair nomes de arquivo das URLs
+      const fileNames: string[] = []
+      if (pedidoVideos) {
+        for (const pv of pedidoVideos) {
+          const video = (pv as any).videos
+          if (!video?.url) continue
+          const base = String(video.url).split("/").pop() || ""
+          const cleaned = base.split("?")[0].split("#")[0].trim()
+          if (cleaned) fileNames.push(cleaned)
+        }
+      }
+
+      console.log(`🗑️ [SYNC-BUILDINGS] Removendo ${fileNames.length} vídeo(s) de ${building_ids.length} prédio(s)`)
+
+      for (const buildingId of building_ids) {
+        const prefix = buildingId.replace(/-/g, '').substring(0, 4)
+        
+        for (const videoFileName of fileNames) {
+          try {
+            const formData = new FormData()
+            formData.append('video_name', videoFileName)
+
+            console.log(`🔄 [SYNC-BUILDINGS] DELETE /admin/delete-propaganda/${prefix} video_name=${videoFileName}`)
+
+            const response = await fetch(`${EXTERNAL_API_BASE}/admin/delete-propaganda/${prefix}`, {
+              method: 'DELETE',
+              body: formData
+            })
+
+            if (response.ok) {
+              deleted++
+              console.log(`✅ [SYNC-BUILDINGS] Deletado ${videoFileName} do prédio ${prefix}`)
+            } else {
+              const errText = await response.text()
+              console.error(`❌ [SYNC-BUILDINGS] Erro ao deletar ${videoFileName} do prédio ${prefix}: ${errText}`)
+              errors.push(`${buildingId}/${videoFileName}: ${errText}`)
+            }
+          } catch (e: any) {
+            errors.push(`${buildingId}/${videoFileName}: ${e.message}`)
           }
-        } catch (e: any) {
-          errors.push(`${buildingId}: ${e.message}`)
         }
       }
 
