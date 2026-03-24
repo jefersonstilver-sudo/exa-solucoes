@@ -2,13 +2,15 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 import { Eye, Clock, Building, User, Calendar, Monitor, Smartphone, Video } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow, format, differenceInDays, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 import { getStatusConfig as getCanonicalStatusConfig } from '@/constants/pedidoStatus';
 import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
+import OrderExpirationIndicator from '@/components/admin/orders/OrderExpirationIndicator';
 
 interface MinimalOrderCardProps {
   item: OrderOrAttempt;
@@ -48,15 +50,35 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
   const statusConfig = getStatusConfig(item.status, item.type);
   const showVideoPreview = item.type === 'order' && ['ativo', 'video_aprovado'].includes(item.status);
   const { videoData } = useOrderCurrentVideoData(showVideoPreview ? item.id : '');
+  const isVertical = (item as any).tipo_produto === 'vertical_premium';
   
   const timeAgo = formatDistanceToNow(new Date(item.created_at), { 
     addSuffix: true, 
     locale: ptBR 
   });
   
+  // Usar lista_predios como fonte principal, fallback para lista_paineis
+  const panelList = item.lista_predios?.length ? item.lista_predios : item.lista_paineis;
   const panelCount = item.type === 'order' 
-    ? (item.lista_paineis?.length || 0)
+    ? (panelList?.length || 0)
     : (item.predios_selecionados?.length || 0);
+
+  // Calcular progresso do contrato
+  const now = new Date();
+  const hasContractDates = item.data_inicio && item.data_fim;
+  let contractProgress = 0;
+  let totalDays = 0;
+  let elapsedDays = 0;
+  let isExpired = false;
+
+  if (hasContractDates) {
+    const start = new Date(item.data_inicio!);
+    const end = new Date(item.data_fim!);
+    totalDays = differenceInDays(end, start);
+    elapsedDays = differenceInDays(now, start);
+    isExpired = isPast(end);
+    contractProgress = totalDays > 0 ? Math.min(Math.max((elapsedDays / totalDays) * 100, 0), 100) : 0;
+  }
 
   return (
     <div className="flex items-start gap-4 p-4 bg-card border border-border/50 rounded-xl hover:border-border hover:shadow-md transition-all">
@@ -72,7 +94,11 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
 
       {/* Mini Preview de Vídeo */}
       {showVideoPreview && (
-        <div className="flex-shrink-0 w-28 aspect-video rounded-lg overflow-hidden bg-black/90 border border-border/50 shadow-sm">
+        <div 
+          className={`flex-shrink-0 rounded-lg overflow-hidden bg-black/90 border border-border/50 shadow-sm ${
+            isVertical ? 'w-20 h-36' : 'w-28 aspect-video'
+          }`}
+        >
           {videoData?.videoUrl ? (
             <video
               src={videoData.videoUrl}
@@ -105,7 +131,7 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
             </span>
           </div>
           {item.type === 'order' && (
-            (item as any).tipo_produto === 'vertical_premium' ? (
+            isVertical ? (
               <Badge variant="outline" className="text-[10px] border-purple-400 text-purple-700 bg-purple-50 px-1.5 py-0">
                 <Smartphone className="h-2.5 w-2.5 mr-0.5" />
                 Vertical
@@ -137,11 +163,11 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Building className="h-3.5 w-3.5" />
-            <span>{panelCount} painéis</span>
+            <span>{panelCount} {panelCount === 1 ? 'painel' : 'painéis'}</span>
           </div>
-          {isSuperAdmin && item.type === 'order' && item.lista_paineis && item.lista_paineis.length > 0 && (
+          {isSuperAdmin && item.type === 'order' && panelList && panelList.length > 0 && (
             <div className="flex items-center gap-1 flex-wrap">
-              {item.lista_paineis.map((painelId: string) => (
+              {panelList.map((painelId: string) => (
                 <Badge 
                   key={painelId} 
                   variant="outline" 
@@ -153,6 +179,19 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
             </div>
           )}
         </div>
+
+        {/* Linha 4: Barra de progresso do contrato */}
+        {item.type === 'order' && hasContractDates && (
+          <div className="flex items-center gap-3">
+            <OrderExpirationIndicator endDate={item.data_fim!} compact />
+            <div className="flex-1 max-w-[200px]">
+              <Progress value={contractProgress} className="h-1.5" />
+            </div>
+            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+              {isExpired ? 'Finalizado' : `${Math.max(totalDays - elapsedDays, 0)}d restantes`}
+            </span>
+          </div>
+        )}
       </div>
       
       {/* Coluna direita: Valor + Data + Ação */}
