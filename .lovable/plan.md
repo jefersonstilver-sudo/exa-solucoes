@@ -1,49 +1,56 @@
 
 
-# Plano: Usar nome original do arquivo (.mp4) no POST e no PATCH
+# Plano: Usar endpoint `DELETE /admin/delete-propaganda/{client_id}` para deleção individual
 
-## Problema
+## Situação atual
 
-Apos remover a extensao `.mp4` do nome do arquivo no `add-to-specific-buildings`, os edificios pararam de receber o video. A API externa espera o nome do arquivo COM a extensao `.mp4` (ex: `1774364942651_Kammer_Soho_-_Tela_Exa_01_v4.mp4`).
+O código atual usa `DELETE /geral/deletar-arquivos/{client_id}/Propagandas` com um array JSON de nomes de arquivo no body. Isso existe em dois lugares:
 
-O PATCH (`global-toggle-ativo`) tambem precisa enviar o mesmo nome com `.mp4` para que a API consiga correlacionar.
+1. **`delete-video-from-external-api/index.ts`** (linha 69) — deleta vídeo de todos os prédios do pedido
+2. **`sync-buildings-external-api/index.ts`** (linha 218) — ação `remove` ao desassociar prédios
 
-## Correcao
+## Novo endpoint documentado pelo usuário
 
-### 1. `supabase/functions/sync-buildings-external-api/index.ts`
-
-Extrair o nome do arquivo da URL **com** a extensao `.mp4`:
-
-```text
-// ANTES (sem extensao):
-const cleaned = noQueryHash.replace(/\.[^.]+$/, "").trim();
-
-// DEPOIS (com extensao):
-const base = url.split("/").pop().split("?")[0].split("#")[0].trim()
-// Resultado: "1774364942651_Kammer_Soho_-_Tela_Exa_01_v4.mp4"
+```
+DELETE /admin/delete-propaganda/{client_id}
+Content-Type: multipart/form-data
+Body: video_name = "nomedoarquivo.mp4"
 ```
 
-Usar esse nome com extensao tanto no `formData.append('files', fileData, fileName)` quanto na chave do `metadados`.
+## Correções
 
-### 2. `supabase/functions/sync-video-status-to-aws/index.ts`
+### 1. `supabase/functions/delete-video-from-external-api/index.ts`
 
-Alterar `extractTitulo` para tambem manter a extensao `.mp4`, garantindo que o array `titulos` enviado ao `global-toggle-ativo` use o mesmo formato:
+Alterar o fetch de cada prédio para usar o novo endpoint:
+- URL: `http://15.228.8.3:8000/admin/delete-propaganda/{clientId}`
+- Method: `DELETE`
+- Body: `FormData` com campo `video_name` contendo o nome do arquivo `.mp4`
 
-```text
-// ANTES:
-const cleaned = noQueryHash.replace(/\.[^.]+$/, "").trim();
+### 2. `supabase/functions/sync-buildings-external-api/index.ts`
 
-// DEPOIS:
-const cleaned = noQueryHash.trim();  // mantem .mp4
+Na ação `remove` (linha 211+), alterar igualmente para usar o novo endpoint com `FormData` e `video_name`. Aqui será necessário saber qual vídeo ativo deletar — buscar os vídeos do pedido antes de chamar a API.
+
+## Detalhe técnico
+
+```typescript
+// Antes:
+fetch(`${BASE}/geral/deletar-arquivos/${clientId}/Propagandas`, {
+  method: 'DELETE',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify([fileName])
+});
+
+// Depois:
+const formData = new FormData();
+formData.append('video_name', fileName); // ex: "1774364942651_Kammer.mp4"
+fetch(`${BASE}/admin/delete-propaganda/${clientId}`, {
+  method: 'DELETE',
+  body: formData
+});
 ```
-
-### 3. `src/pages/advertiser/OrderDetails.tsx`
-
-Na logica que monta `titulos` para o PATCH no portal do anunciante, garantir que os titulos tambem incluam `.mp4` (extraidos da URL com extensao).
 
 ## Arquivos alterados
 
-1. `supabase/functions/sync-buildings-external-api/index.ts` — manter extensao no nome do arquivo
-2. `supabase/functions/sync-video-status-to-aws/index.ts` — `extractTitulo` mantém `.mp4`
-3. `src/pages/advertiser/OrderDetails.tsx` — titulos com extensao `.mp4`
+1. `supabase/functions/delete-video-from-external-api/index.ts` — novo endpoint + FormData
+2. `supabase/functions/sync-buildings-external-api/index.ts` — ação `remove` com novo endpoint
 
