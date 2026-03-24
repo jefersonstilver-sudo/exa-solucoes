@@ -1,116 +1,86 @@
 
 
-# Plano: Painel Admin Confiavel - Preview de Video, Sincronizacao e Gestao de Predios
+# Plano: Corrigir nome_pedido e video em exibicao no admin
 
-## Diagnostico
+## Diagnostico com dados reais
 
-### Problema 1: Sem preview de video no admin
-- A listagem admin (`OrdersTableRow`) usa `ActiveVideosColumn` que mostra apenas texto (nome do video + badges)
-- A area do anunciante (`AdvertiserOrderCard`) tem um mini player com `<video>` autoplay muted usando `useOrderCurrentVideoData`
-- A pagina de detalhes admin (`ProfessionalOrderReport`) tem preview com `controls` mas nao autoplay
+### Problema 1: nome_pedido nao aparece na lista
+**Causa**: `useOrdersWithAttemptsRefactored.ts` linha 71-93 mapeia os campos de `get_pedidos_com_clientes` mas **nao inclui `nome_pedido`**. O campo existe na RPC, no tipo `OrderOrAttempt`, e no banco - mas nao e mapeado no ponto onde os dados sao formatados.
 
-### Problema 2: Desincronizacao de videos
-- `useActiveVideosForAllOrders` filtra por `pedidos.status IN ['video_aprovado']` -- **exclui status 'ativo'**
-- A area do anunciante usa `useCurrentVideoDisplay` que chama a RPC `get_current_display_video` (correta, sem filtro de status)
-- Isso explica por que videos aparecem na area do anunciante mas nao no admin
+### Problema 2: video errado mostrado como "EM EXIBICAO"
+**Dados do banco (pedido GRUPO KAMMER / fac11754)**:
+- `selected_for_display=true` aponta para VIDEO 1 KAMMER (4a83b3c2)
+- RPC `get_current_display_video` retorna VIDEO 2 KAMMER (418f4adc) - agendamento ativo
 
-### Problema 3: Nome do pedido no admin
-- O `OrderData` no `ProfessionalOrderReport` nao tem campo `nome_pedido`
-- O header mostra apenas `#{order.id.substring(0,8)}`
+O `ProfessionalOrderReport` (linha 875) usa `video.selected_for_display` para decidir quem esta "EM EXIBICAO". Isso esta errado - a RPC e a fonte da verdade (considera agendamentos).
 
-### Funcionalidade nova: Gestao de predios
-- A secao "Predios Contratados" ja existe (somente leitura)
-- Falta: adicionar/remover predios com sync API AWS
+### Problema 3: ActiveVideosColumn nao encontra videos
+O hook `useActiveVideosForAllOrders` filtra por `is_active=true AND selected_for_display=true`. Pedido 3c0ac976: o video que a RPC diz estar exibindo (f9f29c8e / ar condicionado) tem `is_active=false`. Entao a coluna nao o encontra.
+
+### Problema 4: MinimalOrderCard sem preview nem nome
+O componente compacto (usado na view padrao) nao exibe `nome_pedido` nem tem qualquer preview de video.
 
 ---
 
 ## Alteracoes
 
-### 1. Corrigir filtro de status em useActiveVideosForAllOrders
-**Arquivo**: `src/hooks/useActiveVideosForAllOrders.tsx`
+### 1. Adicionar nome_pedido ao mapeamento de dados
+**Arquivo**: `src/hooks/useOrdersWithAttemptsRefactored.ts`
 
-- Linha 58: mudar `.in('pedidos.status', ['video_aprovado'])` para `.in('pedidos.status', ['video_aprovado', 'ativo'])`
-- Isso faz os videos de pedidos ativos aparecerem no admin
+Na funcao `fetchData`, linha 93, adicionar `nome_pedido: pedido.nome_pedido` ao objeto formatado. O campo ja vem da RPC e ja existe no tipo.
 
-### 2. Adicionar mini player na listagem admin
-**Arquivo**: `src/components/admin/orders/ActiveVideosColumn.tsx`
+### 2. Exibir nome_pedido no MinimalOrderCard
+**Arquivo**: `src/components/admin/orders/components/MinimalOrderCard.tsx`
+
+Na area do ID (linhas 72-74): se `item.nome_pedido` existe, mostrar o nome em bold como identificador principal e o `#XXXXXXXX` como subtitulo discreto.
+
+### 3. Adicionar mini preview de video no MinimalOrderCard
+**Arquivo**: `src/components/admin/orders/components/MinimalOrderCard.tsx`
 
 - Importar `useOrderCurrentVideoData`
-- Adicionar um mini `<video>` autoplay muted loop acima da lista de videos ativos
-- Tamanho: ~120px width, aspect-video, rounded, object-cover
-- Mesmo padrao do `AdvertiserOrderCard` (lazy loading nao e critico aqui pois a coluna ja e filtrada por pedido)
+- Para pedidos com status `ativo` ou `video_aprovado`, renderizar um mini `<video autoPlay muted loop playsInline>` de ~80px width antes do bloco de ID/nome
+- Se nao tem video, mostrar icone estatico
 
-### 3. Adicionar nome do pedido no header do relatorio admin
+### 4. Corrigir indicacao de "EM EXIBICAO" no ProfessionalOrderReport
 **Arquivo**: `src/components/admin/orders/ProfessionalOrderReport.tsx`
 
-- Adicionar `nome_pedido?: string` ao `OrderData` interface
-- No header (linha 267-268): se `nome_pedido` existe, exibir como titulo principal grande, com o codigo `#XXXXXXXX` como subtitulo menor
-- Adicionar `OrderNameEdit` no corpo do relatorio para edicao inline (similar ao que fizemos no advertiser)
+- Importar `useCurrentVideoDisplay`
+- Chamar a RPC com o `order.id` para obter o `video_id` real em exibicao
+- Substituir a logica `video.selected_for_display` pela comparacao `video.video_data?.id === currentVideoId` para determinar quem recebe o badge "EM EXIBICAO AGORA"
+- Isso afeta as linhas 875 e 948-957
 
-### 4. Adicionar nome do pedido na listagem compacta admin
-**Arquivo**: `src/components/admin/orders/components/OrdersTableRow.tsx`
+### 5. Corrigir ActiveVideosColumn para usar RPC
+**Arquivo**: `src/components/admin/orders/ActiveVideosColumn.tsx`
 
-- Na celula do ID (linha 83-84): se `nome_pedido` existe, mostrar nome em bold + ID como badge discreto
-- Se nao existe, manter comportamento atual
+O componente ja importa e usa `useOrderCurrentVideoData` (linha 42) para o mini player. Porem, a lista de videos abaixo (linhas 185-241) vem de `useActiveVideosForAllOrders` que filtra por `selected_for_display + is_active` - inconsistente.
 
-### 5. Gestao de predios no relatorio admin
-**Arquivo**: `src/components/admin/orders/ProfessionalOrderReport.tsx`
+Solucao: se `videoData` da RPC existe mas `orderVideos` (do hook antigo) esta vazio, exibir o video da RPC como unico item ativo. Isso garante que mesmo quando `is_active=false` no banco, o video retornado pela RPC apareca.
 
-Na secao "Predios Contratados" (linhas 746-800):
-- Adicionar botao "Adicionar Predio" no header da secao
-- Adicionar botao "Remover" em cada linha de predio
-- Ao adicionar: abrir dialog com lista de predios disponiveis (multi-select)
-- Ao remover: confirmar e deletar
+### 6. Exibir nome_pedido no OrderMobileCard
+**Arquivo**: `src/components/admin/orders/OrderMobileCard.tsx`
 
-### 6. Hook para gestao de predios do pedido
-**Novo arquivo**: `src/hooks/useOrderBuildingsManagement.ts`
+Na linha 145 (`#{order.id.substring(0, 8)}`): se `order.nome_pedido` existe, mostrar como titulo principal antes do ID.
 
-- `addBuildings(orderId, buildingIds[])`: atualiza `lista_predios` no banco + chama edge function para sync API AWS
-- `removeBuilding(orderId, buildingId)`: remove de `lista_predios` + chama edge function para deletar videos do predio na API AWS
-- Usa real-time para refletir mudancas instantaneamente
+### 7. Exibir nome_pedido no EnhancedOrderCard
+**Arquivo**: `src/components/admin/orders/components/EnhancedOrderCard.tsx`
 
-### 7. Edge function para sync predios com API AWS
-**Novo arquivo**: `supabase/functions/sync-buildings-external-api/index.ts`
+Na linha 180 (CardTitle): se `item.nome_pedido` existe, usar como titulo ao inves de "Pedido #XXXXXXXX".
 
-- Recebe: `pedido_id`, `action` (add/remove), `building_ids`
-- Para "add": envia videos aprovados do pedido para os novos predios via API AWS
-- Para "remove": remove videos do predio via endpoint de delecao AWS
-- CORS headers completos (mesmo padrao corrigido)
+---
 
-## Detalhes tecnicos
+## Arquivos alterados
 
-```text
-Fluxo de sincronizacao:
-Admin clica "Adicionar Predio"
-  -> Dialog com lista de predios
-  -> Seleciona predios
-  -> Hook atualiza lista_predios no Supabase
-  -> Hook chama edge function sync-buildings-external-api
-  -> Edge function envia videos para novos predios na API AWS
-  -> UI atualiza em tempo real
-
-Admin clica "Remover Predio" 
-  -> Confirmacao
-  -> Hook remove de lista_predios
-  -> Hook chama edge function (action: remove)
-  -> Edge function deleta videos daquele predio na API AWS
-  -> UI atualiza em tempo real
-```
-
-## Arquivos alterados/criados
-
-1. `src/hooks/useActiveVideosForAllOrders.tsx` -- fix filtro status (1 linha)
-2. `src/components/admin/orders/ActiveVideosColumn.tsx` -- mini player video
-3. `src/components/admin/orders/ProfessionalOrderReport.tsx` -- nome_pedido + gestao predios
-4. `src/components/admin/orders/components/OrdersTableRow.tsx` -- nome_pedido na listagem
-5. `src/hooks/useOrderBuildingsManagement.ts` -- novo hook gestao predios
-6. `supabase/functions/sync-buildings-external-api/index.ts` -- nova edge function
-7. `src/components/admin/orders/BuildingManagementDialog.tsx` -- novo dialog selecao predios
+1. `src/hooks/useOrdersWithAttemptsRefactored.ts` - adicionar nome_pedido ao mapeamento
+2. `src/components/admin/orders/components/MinimalOrderCard.tsx` - nome + mini preview
+3. `src/components/admin/orders/ProfessionalOrderReport.tsx` - usar RPC para "EM EXIBICAO"
+4. `src/components/admin/orders/ActiveVideosColumn.tsx` - fallback para RPC
+5. `src/components/admin/orders/OrderMobileCard.tsx` - nome_pedido
+6. `src/components/admin/orders/components/EnhancedOrderCard.tsx` - nome_pedido
 
 ## Ordem de implementacao
 
-1. Fix filtro status (resolve desincronizacao imediatamente)
-2. Mini player na listagem admin
-3. Nome do pedido no admin (header + listagem)
-4. Gestao de predios (hook + edge function + UI)
+1. Fix mapeamento nome_pedido (resolve problema em todos os cards de uma vez)
+2. Fix logica de video em exibicao (ProfessionalOrderReport + ActiveVideosColumn)
+3. Mini preview no MinimalOrderCard
+4. Nome nos cards mobile e enhanced
 
