@@ -171,9 +171,10 @@ serve(async (req) => {
         success: overallSuccess,
         video_activated: tituloAtivo,
         videos_deactivated: otherTitulos,
-        buildings_success: successCount,
-        buildings_failed: failedCount,
-        details: toggleResults
+        batch_calls_success: successCount,
+        batch_calls_failed: failedCount,
+        client_ids: allClientIds,
+        details: batchResults
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
