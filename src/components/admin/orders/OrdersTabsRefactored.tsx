@@ -60,7 +60,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
   const [selectedOrderForBlocking, setSelectedOrderForBlocking] = useState<string | null>(null);
   const [blockingMode, setBlockingMode] = useState<'block' | 'unblock'>('block');
   const [viewMode, setViewMode] = useState<'minimal' | 'detailed'>('minimal');
-  
+  const [groupByClient, setGroupByClient] = useState(false);
   // Estado de ordenação
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
