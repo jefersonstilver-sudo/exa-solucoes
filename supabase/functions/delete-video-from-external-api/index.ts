@@ -65,15 +65,17 @@ Deno.serve(async (req) => {
 
     // 4. Deletar de TODOS os prédios — usando Promise.allSettled para resiliência
     const deletePromises = buildings.map(async (buildingUuid: string) => {
-      const clientId = buildingUuid.substring(0, 4);
-      const deleteUrl = `http://15.228.8.3:8000/geral/deletar-arquivos/${clientId}/Propagandas`;
+      const clientId = buildingUuid.replace(/-/g, '').substring(0, 4);
+      const deleteUrl = `http://15.228.8.3:8000/admin/delete-propaganda/${clientId}`;
       
-      console.log(`🔄 [DELETE_EXTERNAL_API] Deletando de prédio ${buildingUuid} (clientId: ${clientId})`);
+      console.log(`🔄 [DELETE_EXTERNAL_API] Deletando de prédio ${buildingUuid} (clientId: ${clientId}), video_name: ${fileName}`);
+
+      const formData = new FormData();
+      formData.append('video_name', fileName);
 
       const response = await fetch(deleteUrl, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([fileName])
+        body: formData
       });
 
       if (!response.ok) {
