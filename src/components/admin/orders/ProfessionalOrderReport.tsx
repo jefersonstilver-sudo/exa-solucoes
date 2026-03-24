@@ -886,7 +886,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                       <div className="col-span-3">
                         <div className="aspect-video bg-gray-900 relative group">
                           {video.video_data?.url ? <>
-                              <video src={video.video_data.url} className="w-full h-full object-contain" controls preload="metadata" />
+                              <video src={video.video_data.url} className="w-full h-full object-contain" autoPlay muted loop playsInline preload="metadata" />
                               <div className="absolute top-2 left-2">
                                 <span className={`px-2 py-1 rounded text-xs font-semibold ${isInDisplay ? 'bg-blue-600 text-white' : 'bg-black/80 text-white'}`}>
                                   Slot {video.slot_position}
@@ -931,16 +931,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                                 Pendente
                               </span>}
                             
-                            {/* Botão de Resync para vídeos aprovados */}
-                            {video.approval_status === 'approved' && <Button size="sm" variant="outline" onClick={() => handleResyncVideo(video.id)} disabled={resyncingVideoId === video.id} className="h-7 px-2 text-xs border-blue-300 hover:bg-blue-50">
-                                {resyncingVideoId === video.id ? <>
-                                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                                    Enviando...
-                                  </> : <>
-                                    <Upload className="h-3 w-3 mr-1" />
-                                    Reenviar AWS
-                                  </>}
-                              </Button>}
+                            
                           </div>
                         </div>
                         
