@@ -22,8 +22,7 @@ export const useActiveVideosForAllOrders = () => {
     try {
       console.log('🔍 [ACTIVE_VIDEOS] Buscando vídeos em exibição...');
 
-      // Buscar todos os pedidos ativos com vídeos aprovados e selecionados
-      // CORRIGIDO: Apenas status 'video_aprovado' (removido 'ativo')
+      // Buscar todos os pedido_videos aprovados e selecionados
       const { data: activeOrders, error } = await supabase
         .from('pedido_videos')
         .select(`
@@ -41,7 +40,7 @@ export const useActiveVideosForAllOrders = () => {
             duracao,
             orientacao
           ),
-          pedidos (
+          pedidos!inner (
             id,
             status,
             data_inicio,
