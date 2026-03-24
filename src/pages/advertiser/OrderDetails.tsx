@@ -322,40 +322,47 @@ const OrderDetails = () => {
             .map(s => extractTituloFromUrl(s.video_data?.url))
             .filter(Boolean) as string[];
           
-          // Obter clientId do primeiro prédio (primeiros 4 caracteres do UUID)
-          const firstBuildingId = orderDetails?.lista_predios?.[0];
-          const clientId = firstBuildingId ? firstBuildingId.replace(/-/g, '').substring(0, 4) : null;
+          // Obter TODOS os prédios do pedido
+          const allBuildingIds = orderDetails?.lista_predios || [];
           
-          console.log('🔄 [GLOBAL_TOGGLE] Preparando chamada:', {
+          console.log('🔄 [GLOBAL_TOGGLE] Preparando chamada para TODOS os prédios:', {
             mainVideoTitle,
             otherTitles,
-            clientId,
-            firstBuildingId
+            totalPredios: allBuildingIds.length,
+            buildingIds: allBuildingIds
           });
           
-          if (mainVideoTitle && clientId) {
+          if (mainVideoTitle && allBuildingIds.length > 0) {
             const titulos = [mainVideoTitle, ...otherTitles];
             
-            console.log('🔄 [GLOBAL_TOGGLE] Chamando global-toggle-ativo:', {
-              clientId,
-              titulos
-            });
-            
-            const toggleResponse = await supabase.functions.invoke(`global-toggle-ativo/${clientId}`, {
-              body: { titulos }
-            });
-            
-            console.log('📥 [GLOBAL_TOGGLE] Resposta:', toggleResponse);
-            
-            if (toggleResponse.error) {
-              console.error('❌ [GLOBAL_TOGGLE] Erro:', toggleResponse.error);
-            } else if (toggleResponse.data?.ok) {
-              console.log('✅ [GLOBAL_TOGGLE] Sucesso:', toggleResponse.data);
-            } else {
-              console.warn('⚠️ [GLOBAL_TOGGLE] Resposta parcial:', toggleResponse.data);
+            for (const buildingId of allBuildingIds) {
+              const clientId = buildingId.replace(/-/g, '').substring(0, 4);
+              
+              try {
+                console.log(`🔄 [GLOBAL_TOGGLE] Chamando global-toggle-ativo para prédio ${clientId}:`, {
+                  clientId,
+                  buildingId,
+                  titulos
+                });
+                
+                const toggleResponse = await supabase.functions.invoke(`global-toggle-ativo/${clientId}`, {
+                  body: { titulos }
+                });
+                
+                if (toggleResponse.error) {
+                  console.error(`❌ [GLOBAL_TOGGLE] Erro no prédio ${clientId}:`, toggleResponse.error);
+                } else if (toggleResponse.data?.ok) {
+                  console.log(`✅ [GLOBAL_TOGGLE] Sucesso no prédio ${clientId}:`, toggleResponse.data);
+                } else {
+                  console.warn(`⚠️ [GLOBAL_TOGGLE] Resposta parcial no prédio ${clientId}:`, toggleResponse.data);
+                }
+              } catch (buildingError) {
+                console.error(`❌ [GLOBAL_TOGGLE] Erro no prédio ${clientId}:`, buildingError);
+                // Continua para os próximos prédios
+              }
             }
           } else {
-            console.warn('⚠️ [GLOBAL_TOGGLE] Dados insuficientes:', { mainVideoTitle, clientId });
+            console.warn('⚠️ [GLOBAL_TOGGLE] Dados insuficientes:', { mainVideoTitle, totalPredios: allBuildingIds.length });
           }
         } catch (toggleError: any) {
           console.error('❌ [GLOBAL_TOGGLE] Erro ao chamar global-toggle-ativo:', toggleError);
