@@ -43,36 +43,11 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
     return isPrivate ? '•••••' : formatCurrency(value);
   };
 
-  // Filtrar apenas os 4 vendedores fixos
+  // Filtrar vendedores com propostas e ordenar por valor recebido
   const filteredVendedores = useMemo(() => {
-    const result: VendedorProposalStats[] = [];
-    
-    FIXED_SELLER_IDS.forEach(sellerId => {
-      const found = vendedores.find(v => v.vendedorId === sellerId);
-      if (found) {
-        result.push({
-          ...found,
-          vendedorNome: FIXED_SELLER_NAMES[sellerId] || found.vendedorNome
-        });
-      } else {
-        // Se não encontrou, criar entrada zerada
-        result.push({
-          vendedorId: sellerId,
-          vendedorNome: FIXED_SELLER_NAMES[sellerId] || 'Vendedor',
-          enviadas: 0,
-          visualizadas: 0,
-          aguardando: 0,
-          aceitas: 0,
-          valorRecebido: 0,
-          valorProjetado: 0,
-          valorVendido: 0,
-          taxaConversao: 0
-        });
-      }
-    });
-    
-    // Ordenar por valor recebido
-    return result.sort((a, b) => b.valorRecebido - a.valorRecebido);
+    return vendedores
+      .filter(v => v.enviadas > 0)
+      .sort((a, b) => b.valorRecebido - a.valorRecebido);
   }, [vendedores]);
 
   // Cores para o ranking (medalhas)
