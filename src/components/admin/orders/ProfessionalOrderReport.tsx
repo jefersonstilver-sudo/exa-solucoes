@@ -99,6 +99,10 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   const [sendingPasswordReset, setSendingPasswordReset] = useState(false);
   const [showAddBuildingDialog, setShowAddBuildingDialog] = useState(false);
   const [removingBuildingId, setRemovingBuildingId] = useState<string | null>(null);
+  
+  // RPC como fonte da verdade para vídeo em exibição
+  const { currentVideo } = useCurrentVideoDisplay({ orderId: order.id, enabled: !!order.id });
+  const currentVideoId = currentVideo?.video_id || null;
   const {
     fixOrderAuditData,
     isFixing
@@ -873,7 +877,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               <p className="text-xs text-gray-500">Os vídeos aparecerão aqui quando forem enviados.</p>
             </div> : <div className="p-4 space-y-4">
               {sortedVideos.map((video, videoIndex) => {
-            const isInDisplay = video.selected_for_display;
+            const isInDisplay = video.video_data?.id === currentVideoId;
             return <div key={video.id} className={`border rounded-lg overflow-hidden transition-all ${isInDisplay ? 'bg-blue-50 border-blue-300 shadow-lg ring-2 ring-blue-200' : 'bg-white border-gray-200 hover:shadow-md'}`}>
                     {isInDisplay && <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-1.5 text-xs font-bold flex items-center gap-2">
                         <div className="relative flex items-center">
