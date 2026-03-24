@@ -763,9 +763,20 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
         {panels && panels.length > 0 ? <section className="border border-gray-200 rounded">
             <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Prédios Contratados</h2>
-              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">
-                {panels.length} {panels.length === 1 ? 'prédio' : 'prédios'}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">
+                  {panels.length} {panels.length === 1 ? 'prédio' : 'prédios'}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowAddBuildingDialog(true)}
+                  className="h-7 px-2 text-xs border-green-500 text-green-700 hover:bg-green-50"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Adicionar
+                </Button>
+              </div>
             </div>
             
             <div className="overflow-hidden">
@@ -776,6 +787,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                     <th className="px-4 py-2 text-left font-semibold text-gray-700">Nome do Prédio</th>
                     <th className="px-4 py-2 text-left font-semibold text-gray-700">Endereço</th>
                     <th className="px-4 py-2 text-left font-semibold text-gray-700">Bairro</th>
+                    <th className="px-4 py-2 text-right font-semibold text-gray-700">Ação</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -786,6 +798,26 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                       <td className="px-4 py-2 font-semibold text-gray-900">{panel.nome}</td>
                       <td className="px-4 py-2 text-gray-700">{panel.endereco}</td>
                       <td className="px-4 py-2 text-gray-700">{panel.bairro}</td>
+                      <td className="px-4 py-2 text-right">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={async () => {
+                            setRemovingBuildingId(panel.id);
+                            const success = await removeBuilding(order.id, panel.id);
+                            setRemovingBuildingId(null);
+                            if (success) window.location.reload();
+                          }}
+                          disabled={removingBuildingId === panel.id}
+                          className="h-6 px-2 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                        >
+                          {removingBuildingId === panel.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </td>
                     </tr>)}
                 </tbody>
               </table>
