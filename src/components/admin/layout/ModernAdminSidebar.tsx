@@ -209,7 +209,7 @@ export function ModernAdminSidebar() {
           badgeTooltip: 'Propostas enviadas aguardando resposta'
         },
         {
-          title: 'Pedidos (Legado)',
+          title: 'PEDIDOS',
           href: buildPath('pedidos'),
           icon: ShoppingBag,
           moduleKey: MODULE_KEYS.pedidos,
