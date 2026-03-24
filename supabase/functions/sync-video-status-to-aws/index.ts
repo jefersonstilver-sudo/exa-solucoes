@@ -106,68 +106,63 @@ serve(async (req) => {
 
     console.log(`📋 [AWS_SYNC] Outros vídeos para desativar: ${otherTitulos.length}`, otherTitulos);
 
-    // 7. Montar array de títulos: primeiro o ativo, depois os outros
-    const titulos = [tituloAtivo, ...otherTitulos];
-    console.log(`📋 [AWS_SYNC] Array titulos para global-toggle-ativo:`, titulos);
+    // 7. Coletar todos os client_ids (prefixos 4 chars)
+    const allClientIds = buildingClients.map(b => b.clientId);
+    console.log(`📋 [AWS_SYNC] Client IDs para batch:`, allClientIds);
 
-    // 8. Chamar global-toggle-ativo para cada clientId
-    const toggleResults = [];
+    // 8. Chamar PATCH /ativo/batch para ATIVAR o vídeo selecionado em todos os prédios
+    const batchResults = [];
 
-    for (const { clientId, buildingId } of buildingClients) {
-      console.log(`🔄 [AWS_SYNC] Chamando global-toggle-ativo para clientId: ${clientId}`);
+    try {
+      console.log(`🔄 [AWS_SYNC] BATCH ATIVAR: "${tituloAtivo}" em ${allClientIds.length} prédios`);
+      const activateResponse = await fetch(`${EXTERNAL_API_BASE}/ativo/batch`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_ids: allClientIds,
+          titulo: tituloAtivo,
+          ativo: true
+        })
+      });
+      const activateData = await activateResponse.json().catch(() => null);
+      console.log(`📥 [AWS_SYNC] Resposta ATIVAR (${activateResponse.status}):`, activateData);
+      batchResults.push({ action: 'activate', titulo: tituloAtivo, status: activateResponse.status, success: activateResponse.ok, data: activateData });
+    } catch (err: any) {
+      console.error(`💥 [AWS_SYNC] Erro batch ATIVAR:`, err.message);
+      batchResults.push({ action: 'activate', titulo: tituloAtivo, success: false, error: err.message });
+    }
 
+    // 9. Chamar PATCH /ativo/batch para DESATIVAR cada outro vídeo em todos os prédios
+    for (const otherTitulo of otherTitulos) {
       try {
-        const toggleResponse = await supabase.functions.invoke(`global-toggle-ativo/${clientId}`, {
-          body: { titulos }
+        console.log(`🔄 [AWS_SYNC] BATCH DESATIVAR: "${otherTitulo}" em ${allClientIds.length} prédios`);
+        const deactivateResponse = await fetch(`${EXTERNAL_API_BASE}/ativo/batch`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_ids: allClientIds,
+            titulo: otherTitulo,
+            ativo: false
+          })
         });
-
-        console.log(`📥 [AWS_SYNC] Resposta global-toggle-ativo (${clientId}):`, toggleResponse);
-
-        if (toggleResponse.error) {
-          console.error(`❌ [AWS_SYNC] Erro global-toggle-ativo (${clientId}):`, toggleResponse.error);
-          toggleResults.push({
-            clientId,
-            buildingId,
-            success: false,
-            error: toggleResponse.error.message
-          });
-        } else if (toggleResponse.data?.ok) {
-          console.log(`✅ [AWS_SYNC] Sucesso global-toggle-ativo (${clientId}):`, toggleResponse.data);
-          toggleResults.push({
-            clientId,
-            buildingId,
-            success: true,
-            data: toggleResponse.data
-          });
-        } else {
-          console.warn(`⚠️ [AWS_SYNC] Resposta parcial global-toggle-ativo (${clientId}):`, toggleResponse.data);
-          toggleResults.push({
-            clientId,
-            buildingId,
-            success: toggleResponse.data?.activated || false,
-            data: toggleResponse.data
-          });
-        }
+        const deactivateData = await deactivateResponse.json().catch(() => null);
+        console.log(`📥 [AWS_SYNC] Resposta DESATIVAR "${otherTitulo}" (${deactivateResponse.status}):`, deactivateData);
+        batchResults.push({ action: 'deactivate', titulo: otherTitulo, status: deactivateResponse.status, success: deactivateResponse.ok, data: deactivateData });
       } catch (err: any) {
-        console.error(`💥 [AWS_SYNC] Exceção global-toggle-ativo (${clientId}):`, err.message);
-        toggleResults.push({
-          clientId,
-          buildingId,
-          success: false,
-          error: err.message
-        });
+        console.error(`💥 [AWS_SYNC] Erro batch DESATIVAR "${otherTitulo}":`, err.message);
+        batchResults.push({ action: 'deactivate', titulo: otherTitulo, success: false, error: err.message });
       }
     }
 
-    // 9. Resumo final
-    const successCount = toggleResults.filter(r => r.success).length;
-    const failedCount = toggleResults.filter(r => !r.success).length;
+    // 10. Resumo final
+    const successCount = batchResults.filter(r => r.success).length;
+    const failedCount = batchResults.filter(r => !r.success).length;
     const overallSuccess = failedCount === 0;
 
     console.log('🔄 [AWS_SYNC] ====== RESULTADO FINAL ======');
     console.log(`📊 [AWS_SYNC] Sucesso geral: ${overallSuccess}`);
-    console.log(`📊 [AWS_SYNC] Prédios OK: ${successCount}/${toggleResults.length}`);
-    console.log(`📊 [AWS_SYNC] Prédios com falha: ${failedCount}`);
+    console.log(`📊 [AWS_SYNC] Chamadas OK: ${successCount}/${batchResults.length}`);
+    console.log(`📊 [AWS_SYNC] Chamadas com falha: ${failedCount}`);
     console.log(`📊 [AWS_SYNC] Vídeo ativado: "${tituloAtivo}"`);
     console.log(`📊 [AWS_SYNC] Vídeos desativados: ${otherTitulos.length}`);
 
