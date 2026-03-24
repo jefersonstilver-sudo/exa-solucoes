@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useOrderBuildingsManagement } from '@/hooks/useOrderBuildingsManagement';
 import { BuildingManagementDialog } from './BuildingManagementDialog';
 import { OrderNameEdit } from '@/components/order/OrderNameEdit';
+import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 interface Parcela {
   id: string;
   numero_parcela: number;

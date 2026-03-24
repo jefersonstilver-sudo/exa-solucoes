@@ -89,7 +89,8 @@ export const useOrdersWithAttemptsRefactored = () => {
         contrato_assinado_em: pedido.contrato_assinado_em,
         hasVideo: pedidoIdsComVideo.has(pedido.id),
         hasPaidInstallment: pedidoIdsComPagamento.has(pedido.id),
-        tipo_produto: tipoProdutoMap.get(pedido.id) || 'horizontal'
+        tipo_produto: tipoProdutoMap.get(pedido.id) || 'horizontal',
+        nome_pedido: pedido.nome_pedido
       }));
       
       const tentativasFormatadas = formatAttemptsData(tentativasComEmails);

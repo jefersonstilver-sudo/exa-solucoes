@@ -2,12 +2,13 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, Clock, Building, User, Calendar, Monitor, Smartphone } from 'lucide-react';
+import { Eye, Clock, Building, User, Calendar, Monitor, Smartphone, Video } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 import { getStatusConfig as getCanonicalStatusConfig } from '@/constants/pedidoStatus';
+import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
 
 interface MinimalOrderCardProps {
   item: OrderOrAttempt;

@@ -142,6 +142,9 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
     <>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
+          {order.nome_pedido && (
+            <span className="text-xs font-semibold text-foreground">{order.nome_pedido}</span>
+          )}
           <span className="text-xs text-muted-foreground">#{order.id.substring(0, 8)}</span>
           <CouponBadge couponCode={order.coupon_code} couponCategory={order.coupon_category} size="sm" />
           {isCustomPayment && (
