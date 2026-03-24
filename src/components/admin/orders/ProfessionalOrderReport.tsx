@@ -845,6 +845,15 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                     ⚠️ Estes prédios podem ter sido removidos do sistema
                   </p>
                 </div>}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowAddBuildingDialog(true)}
+                className="mt-3 border-green-500 text-green-700 hover:bg-green-50"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Adicionar Prédio
+              </Button>
             </div>
           </section>}
 
@@ -985,5 +994,18 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+
+    {/* Dialog de Gestão de Prédios */}
+    <BuildingManagementDialog
+      isOpen={showAddBuildingDialog}
+      onClose={() => setShowAddBuildingDialog(false)}
+      onConfirm={async (buildingIds) => {
+        const success = await addBuildings(order.id, buildingIds);
+        if (success) window.location.reload();
+      }}
+      existingBuildingIds={order.lista_predios || []}
+      loading={buildingsLoading}
+    />
+    </>;
 };
