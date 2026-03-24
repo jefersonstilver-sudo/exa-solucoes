@@ -1004,7 +1004,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
       onClose={() => setShowAddBuildingDialog(false)}
       onConfirm={async (buildingIds) => {
         const success = await addBuildings(order.id, buildingIds);
-        if (success) window.location.reload();
+        if (success && onBuildingChanged) onBuildingChanged();
       }}
       existingBuildingIds={order.lista_predios || []}
       loading={buildingsLoading}
