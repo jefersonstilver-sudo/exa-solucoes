@@ -1,36 +1,34 @@
 
 
-# Plano: Corrigir PATCH para atualizar TODOS os predios do pedido
+# Plano: Alinhar nome do arquivo no add-to-specific-buildings com o PATCH
 
 ## Problema
 
-Em `src/pages/advertiser/OrderDetails.tsx` (linha 325-346), quando o anunciante define um video como principal, o codigo pega apenas o PRIMEIRO predio (`lista_predios[0]`) e chama `global-toggle-ativo` uma unica vez. Todos os outros predios do pedido ficam com o status desatualizado na API externa.
-
-O painel admin (`videoBaseService.ts`) nao tem esse bug — ele chama `sync-video-status-to-aws`, que ja itera por todos os predios corretamente.
+- `add-to-specific-buildings` envia o arquivo como `"VIDEO 2 KAMMER.mp4"` e usa isso como chave nos metadados
+- `global-toggle-ativo` (PATCH) envia `"VIDEO 2 KAMMER"` (sem extensao, extraido da URL)
+- A API externa nao consegue correlacionar os dois porque os nomes nao batem
 
 ## Correcao
 
-### Arquivo: `src/pages/advertiser/OrderDetails.tsx` (linhas 325-356)
+### Arquivo: `supabase/functions/sync-buildings-external-api/index.ts`
 
-Substituir a logica de pegar apenas o primeiro predio por um loop que chama `global-toggle-ativo` para CADA predio do pedido:
+Remover a logica que adiciona `.mp4` ao nome do arquivo. Usar `video.nome` diretamente (sem extensao) tanto para:
+1. O nome do arquivo no `formData.append('files', fileData, nomeDoVideo)` 
+2. A chave no objeto `metadados`
 
 ```text
-// ANTES (errado - apenas 1 predio):
-const firstBuildingId = orderDetails?.lista_predios?.[0];
-const clientId = firstBuildingId?.replace(/-/g, '').substring(0, 4);
-await supabase.functions.invoke(`global-toggle-ativo/${clientId}`, { body: { titulos } });
+// ANTES (linhas 87-88):
+const fileName = video.nome || `video_${pv.video_id}.mp4`
+const fileNameClean = fileName.endsWith('.mp4') ? fileName : `${fileName}.mp4`
 
-// DEPOIS (correto - todos os predios):
-const allBuildingIds = orderDetails?.lista_predios || [];
-for (const buildingId of allBuildingIds) {
-  const clientId = buildingId.replace(/-/g, '').substring(0, 4);
-  await supabase.functions.invoke(`global-toggle-ativo/${clientId}`, { body: { titulos } });
-}
+// DEPOIS:
+const fileName = video.nome || `video_${pv.video_id}`
+const fileNameClean = fileName.replace(/\.[^.]+$/, '')  // remove extensao se houver
 ```
 
-Adicionar logs para cada predio processado e tratar erros individuais sem interromper o loop (igual ao padrao usado em `sync-video-status-to-aws`).
+Isso alinha com o `extractTitulo` do `sync-video-status-to-aws` que tambem remove a extensao da URL.
 
-## Arquivos alterados
+## Arquivo alterado
 
-1. `src/pages/advertiser/OrderDetails.tsx` — loop por todos os predios em `lista_predios`
+1. `supabase/functions/sync-buildings-external-api/index.ts` — usar nome sem extensao
 
