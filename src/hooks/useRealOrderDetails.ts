@@ -93,8 +93,7 @@ export const useRealOrderDetails = (orderId: string) => {
   const [orderVideos, setOrderVideos] = useState<OrderVideo[]>([]);
   const [buildingData, setBuildingData] = useState<BuildingData[]>([]);
 
-  useEffect(() => {
-    const fetchOrderDetails = async () => {
+  const fetchOrderDetails = async () => {
       if (!orderId) return;
 
       try {
@@ -397,8 +396,9 @@ export const useRealOrderDetails = (orderId: string) => {
       } finally {
         setLoading(false);
       }
-    };
+  };
 
+  useEffect(() => {
     fetchOrderDetails();
   }, [orderId]);
 
@@ -406,6 +406,7 @@ export const useRealOrderDetails = (orderId: string) => {
     loading,
     orderDetails,
     orderVideos,
-    panelData: buildingData
+    panelData: buildingData,
+    refetch: fetchOrderDetails
   };
 };

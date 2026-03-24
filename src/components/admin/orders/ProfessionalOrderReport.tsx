@@ -86,11 +86,13 @@ interface ProfessionalOrderReportProps {
   order: OrderData;
   panels: PanelData[];
   videos: OrderVideo[];
+  onBuildingChanged?: () => void;
 }
 export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = ({
   order,
   panels,
-  videos
+  videos,
+  onBuildingChanged
 }) => {
   console.log('📋 [PROFESSIONAL REPORT] Renderizando relatório');
   console.log('📋 [PROFESSIONAL REPORT] Panels recebidos:', panels?.length || 0);
@@ -815,7 +817,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                           setRemovingBuildingId(panel.id);
                           const success = await removeBuilding(order.id, panel.id);
                           setRemovingBuildingId(null);
-                          if (success) window.location.reload();
+                          if (success && onBuildingChanged) onBuildingChanged();
                         }}
                         disabled={removingBuildingId === panel.id}
                         className="h-7 w-7 p-0 text-red-500 hover:bg-red-50 hover:text-red-700 flex-shrink-0"
@@ -1002,7 +1004,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
       onClose={() => setShowAddBuildingDialog(false)}
       onConfirm={async (buildingIds) => {
         const success = await addBuildings(order.id, buildingIds);
-        if (success) window.location.reload();
+        if (success && onBuildingChanged) onBuildingChanged();
       }}
       existingBuildingIds={order.lista_predios || []}
       loading={buildingsLoading}
