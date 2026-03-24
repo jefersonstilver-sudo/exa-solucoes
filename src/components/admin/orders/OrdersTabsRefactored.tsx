@@ -482,6 +482,17 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
           onSortChange={handleSortChange}
         />
         
+        {/* Toggle de agrupamento */}
+        <Button
+          variant={groupByClient ? 'secondary' : 'outline'}
+          size="sm"
+          onClick={() => setGroupByClient(!groupByClient)}
+          className="h-8 px-3"
+        >
+          <Users className="h-4 w-4 mr-1.5" />
+          Agrupar por cliente
+        </Button>
+
         {/* Toggle de visualização */}
         <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
           <Button
