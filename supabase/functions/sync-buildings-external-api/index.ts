@@ -84,8 +84,8 @@ Deno.serve(async (req) => {
         const video = (pv as any).videos
         if (!video?.url) continue
 
-        const fileName = video.nome || `video_${pv.video_id}.mp4`
-        const fileNameClean = fileName.endsWith('.mp4') ? fileName : `${fileName}.mp4`
+        const fileName = video.nome || `video_${pv.video_id}`
+        const fileNameClean = fileName.replace(/\.[^.]+$/, '') // remove extensao se houver
 
         // Download video from Supabase Storage
         try {
