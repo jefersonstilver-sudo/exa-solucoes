@@ -98,5 +98,48 @@ export const useOrderBuildingsManagement = () => {
     }
   };
 
-  return { addBuildings, removeBuilding, loading };
+  const resyncVideoStatus = async (orderId: string) => {
+    setLoading(true);
+    try {
+      // Get current building list for this order
+      const { data: order, error: fetchError } = await supabase
+        .from('pedidos')
+        .select('lista_predios')
+        .eq('id', orderId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const buildingIds: string[] = order?.lista_predios || [];
+      if (buildingIds.length === 0) {
+        toast.error('Nenhum prédio associado a este pedido.');
+        return false;
+      }
+
+      // Re-sync with AWS API using current RPC-based active video
+      const { data, error: syncError } = await supabase.functions.invoke('sync-buildings-external-api', {
+        body: { pedido_id: orderId, action: 'add', building_ids: buildingIds }
+      });
+
+      if (syncError) {
+        console.error('⚠️ [RESYNC] Erro ao resincronizar com AWS:', syncError);
+        toast.error('Erro ao resincronizar status dos vídeos com a API.');
+      } else if (!data?.success) {
+        console.error('⚠️ [RESYNC] AWS retornou erro:', data);
+        toast.error('Resincronização parcial com a API.');
+      } else {
+        toast.success('Status dos vídeos resincronizado com sucesso!');
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error('❌ [RESYNC] Erro:', error);
+      toast.error(`Erro ao resincronizar: ${error.message}`);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { addBuildings, removeBuilding, resyncVideoStatus, loading };
 };
