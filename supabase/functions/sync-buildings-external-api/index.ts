@@ -58,6 +58,20 @@ Deno.serve(async (req) => {
 
       const isVertical = pedido?.tipo_produto === 'vertical_premium'
 
+      // Use RPC to determine which video is currently active (dynamic scheduling)
+      let currentDisplayVideoId: string | null = null
+      try {
+        const { data: displayData } = await supabase.rpc('get_current_display_video', {
+          p_pedido_id: pedido_id
+        })
+        if (displayData && displayData.length > 0) {
+          currentDisplayVideoId = displayData[0].video_id
+        }
+        console.log(`🎯 [SYNC-BUILDINGS] Current display video from RPC: ${currentDisplayVideoId}`)
+      } catch (rpcError: any) {
+        console.error(`⚠️ [SYNC-BUILDINGS] RPC error, falling back to selected_for_display:`, rpcError.message)
+      }
+
       // Build client_ids: first 4 chars of each building UUID (no hyphens)
       const clientIds = building_ids.map((id: string) => id.replace(/-/g, '').substring(0, 4))
       console.log(`📋 [SYNC-BUILDINGS] client_ids: ${JSON.stringify(clientIds)}`)
@@ -116,7 +130,7 @@ Deno.serve(async (req) => {
             titulo: video.nome || 'Campanha',
             data_ini: dataIni,
             data_fim: dataFim,
-            ativo: pv.selected_for_display === true,
+            ativo: currentDisplayVideoId ? (pv.video_id === currentDisplayVideoId) : (pv.selected_for_display === true),
             isPlus: isVertical,
             programacao: {
               segunda: [{ inicio: "00:00", fim: "23:59" }],
