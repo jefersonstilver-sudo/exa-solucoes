@@ -94,7 +94,7 @@ export const OrderNameEdit: React.FC<OrderNameEditProps> = ({
                 size="sm"
                 onClick={handleSave}
                 disabled={loading}
-                className="bg-indexa-purple hover:bg-indexa-purple/90"
+                className="bg-[#C7141A] hover:bg-[#B40D1A] text-white"
               >
                 <Save className="h-4 w-4 mr-1" />
                 {loading ? 'Salvando...' : 'Salvar'}
