@@ -295,6 +295,23 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
     }
   };
 
+  // Agrupar itens por client_email
+  const groupItemsByClient = (items: OrderOrAttempt[]) => {
+    const groups: Record<string, { name: string; email: string; items: OrderOrAttempt[] }> = {};
+    items.forEach(item => {
+      const email = item.client_email || 'sem-email';
+      if (!groups[email]) {
+        groups[email] = {
+          name: item.client_name || 'Nome não disponível',
+          email,
+          items: []
+        };
+      }
+      groups[email].items.push(item);
+    });
+    return Object.values(groups).sort((a, b) => b.items.length - a.items.length);
+  };
+
   // Renderização de lista
   const renderOrdersList = (items: OrderOrAttempt[], emptyMessage: string) => (
     <div className="space-y-2">
@@ -358,8 +375,59 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
             {emptyMessage}
           </CardContent>
         </Card>
+      ) : groupByClient ? (
+        // Agrupado por cliente
+        <div className="space-y-4">
+          {groupItemsByClient(items).map((group) => (
+            <Collapsible key={group.email} defaultOpen>
+              <div className="border border-border/60 rounded-xl overflow-hidden bg-card/50">
+                <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-semibold text-sm text-foreground">{group.name}</span>
+                    <span className="text-xs text-muted-foreground">{group.email}</span>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    {group.items.length} pedido{group.items.length !== 1 ? 's' : ''}
+                  </Badge>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="px-2 pb-2 space-y-1">
+                    {viewMode === 'minimal' ? (
+                      group.items.map(item => (
+                        <MinimalOrderCard
+                          key={item.id}
+                          item={item}
+                          isSelected={selectedItems.includes(item.id)}
+                          onSelectionChange={handleSelectItem}
+                          onViewOrderDetails={onViewOrderDetails}
+                          showCheckbox={isSuperAdmin}
+                          isSuperAdmin={isSuperAdmin}
+                        />
+                      ))
+                    ) : (
+                      group.items.map(item => (
+                        <EnhancedOrderCard
+                          key={item.id}
+                          item={item}
+                          isSelected={selectedItems.includes(item.id)}
+                          onSelectionChange={handleSelectItem}
+                          onViewOrderDetails={onViewOrderDetails}
+                          onBlockOrder={handleBlockOrder}
+                          onUnblockOrder={handleUnblockOrder}
+                          isBlocking={isBlocking}
+                          isUnblocking={isUnblocking}
+                        />
+                      ))
+                    )}
+                  </div>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+          ))}
+        </div>
       ) : viewMode === 'minimal' ? (
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           {items.map(item => (
             <MinimalOrderCard
               key={item.id}
@@ -368,6 +436,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
               onSelectionChange={handleSelectItem}
               onViewOrderDetails={onViewOrderDetails}
               showCheckbox={isSuperAdmin}
+              isSuperAdmin={isSuperAdmin}
             />
           ))}
         </div>
