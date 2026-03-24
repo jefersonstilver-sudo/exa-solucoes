@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
       console.log(`📋 [SYNC-BUILDINGS] Metadados: ${JSON.stringify(metadados)}`)
 
       // POST to external API
-      const response = await fetch(`${EXTERNAL_API_BASE}/admin/add-to-specific-buildings`, {
+      const response = await fetch(`${EXTERNAL_API_BASE}/propagandas/admin/add-to-specific-buildings`, {
         method: 'POST',
         body: formData
       })
