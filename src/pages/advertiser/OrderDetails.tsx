@@ -496,11 +496,29 @@ const OrderDetails = () => {
     <>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="space-y-3 sm:space-y-4 max-w-4xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
-          {/* Header Simples */}
+          {/* Header com Nome do Pedido */}
           <div className="mb-3">
-            <h1 className="text-lg sm:text-2xl font-bold">Detalhes do Pedido</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">#{orderDetails.id.substring(0, 8)}</p>
+            {orderDetails.nome_pedido ? (
+              <>
+                <h1 className="text-lg sm:text-2xl font-bold text-foreground">{orderDetails.nome_pedido}</h1>
+                <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">#{orderDetails.id.substring(0, 8)}</p>
+              </>
+            ) : (
+              <>
+                <h1 className="text-lg sm:text-2xl font-bold">Detalhes do Pedido</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground">#{orderDetails.id.substring(0, 8)}</p>
+              </>
+            )}
           </div>
+
+          {/* Editar Nome do Pedido */}
+          <OrderNameEdit
+            orderId={orderDetails.id}
+            currentName={orderDetails.nome_pedido}
+            onNameUpdate={(newName) => {
+              setOrderDetails(prev => prev ? { ...prev, nome_pedido: newName } : prev);
+            }}
+          />
 
         {/* Alerta se pedido bloqueado */}
         {orderDetails.blocked_reason && (

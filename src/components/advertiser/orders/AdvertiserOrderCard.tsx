@@ -148,16 +148,28 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
           {/* Top: Name/ID + Status */}
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-sm sm:text-base text-foreground truncate">
-                {item.type === 'order' && item.nome_pedido
-                  ? item.nome_pedido
-                  : `${item.type === 'attempt' ? 'Tentativa' : 'Campanha'} #${item.id.substring(0, 8)}`}
-              </h3>
-              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
-                {item.type === 'order' && item.nome_pedido
-                  ? `#${item.id.substring(0, 8)} · Criado em ${formatDate(item.created_at)}`
-                  : `Criado em ${formatDate(item.created_at)}`}
-              </p>
+              {item.type === 'order' && item.nome_pedido ? (
+                <>
+                  <h3 className="font-bold text-base sm:text-lg text-foreground truncate">
+                    {item.nome_pedido}
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
+                      #{item.id.substring(0, 8)}
+                    </Badge>
+                    <span>· Criado em {formatDate(item.created_at)}</span>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="font-semibold text-sm sm:text-base text-foreground truncate">
+                    {`${item.type === 'attempt' ? 'Tentativa' : 'Campanha'} #${item.id.substring(0, 8)}`}
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+                    Criado em {formatDate(item.created_at)}
+                  </p>
+                </>
+              )}
             </div>
             <div className="flex flex-wrap gap-1.5 flex-shrink-0">
               {item.type === 'order' && (
