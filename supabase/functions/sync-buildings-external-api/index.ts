@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
             titulo: video.nome || 'Campanha',
             data_ini: dataIni,
             data_fim: dataFim,
-            ativo: pv.selected_for_display === true,
+            ativo: currentDisplayVideoId ? (pv.video_id === currentDisplayVideoId) : (pv.selected_for_display === true),
             isPlus: isVertical,
             programacao: {
               segunda: [{ inicio: "00:00", fim: "23:59" }],
