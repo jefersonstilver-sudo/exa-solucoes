@@ -18,6 +18,12 @@ interface AdvertiserOrderCardProps {
   isGeneratingPix: boolean;
   handleGeneratePix: (orderId: string) => void;
   handleStripePayment: (orderId: string) => void;
+  // Group support
+  groups?: OrderGroup[];
+  onMoveToGroup?: (orderId: string, groupId: string | null) => void;
+  onCreateGroup?: () => void;
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent, orderId: string) => void;
 }
 
 const formatCurrency = (value: number) =>
