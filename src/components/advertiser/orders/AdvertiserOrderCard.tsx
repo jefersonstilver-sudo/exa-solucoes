@@ -44,6 +44,11 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
   isGeneratingPix,
   handleGeneratePix,
   handleStripePayment,
+  groups,
+  onMoveToGroup,
+  onCreateGroup,
+  draggable,
+  onDragStart,
 }) => {
   const statusInfo = useOrderStatus(item, handleGeneratePix, handleStripePayment);
   const painelsList = item.type === 'order' ? item.lista_paineis || [] : item.predios_selecionados || [];
