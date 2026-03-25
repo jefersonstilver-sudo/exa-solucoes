@@ -55,159 +55,165 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+          transition={{ duration: 0.25 }}
+          className="fixed inset-0 flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-lg"
           style={{ zIndex: 99999 }}
           onClick={(e) => e.target === e.currentTarget && !state.isProcessing && onClose()}
         >
           <motion.div
-            initial={{ scale: 0.92, opacity: 0, y: 30 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.92, opacity: 0, y: 30 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 350 }}
-            className="w-full max-w-[680px] bg-white rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)] overflow-hidden border border-slate-200/60"
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className="w-full sm:max-w-[720px] max-h-[95dvh] sm:max-h-[92vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-[0_-10px_60px_rgba(0,0,0,0.3)] sm:shadow-[0_25px_80px_-15px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-white flex-shrink-0">
+              {/* Mobile drag indicator */}
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-slate-300 sm:hidden" />
+              
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#C7141A]/10 flex items-center justify-center">
-                  <Scissors className="w-[18px] h-[18px] text-[#C7141A]" />
+                <div className="w-10 h-10 rounded-xl bg-[#C7141A]/10 flex items-center justify-center">
+                  <Scissors className="w-5 h-5 text-[#C7141A]" />
                 </div>
                 <div>
-                  <h2 className="text-[15px] font-bold text-slate-900 tracking-tight">Cortar Vídeo</h2>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Selecione até {maxDuration}s do vídeo
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">Cortar Vídeo</h2>
+                  <p className="text-xs text-slate-500">
+                    Selecione até <span className="font-semibold text-[#C7141A]">{maxDuration}s</span> do vídeo
                   </p>
                 </div>
               </div>
               <button
                 onClick={onClose}
                 disabled={state.isProcessing}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors disabled:opacity-50"
+                className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-50"
               >
-                <X className="w-4 h-4 text-slate-400" />
+                <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
 
-            {/* Video Preview */}
-            <div className="px-5 pt-4">
-              <div
-                className="relative w-full bg-black rounded-xl overflow-hidden shadow-inner"
-                style={{ aspectRatio: '16/9', maxHeight: '340px' }}
-              >
-                <video
-                  ref={videoRef}
-                  className="w-full h-full object-contain"
-                  playsInline
-                  muted
-                  preload="auto"
-                />
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+              {/* Video Preview */}
+              <div className="px-4 sm:px-5 pt-4">
+                <div
+                  className="relative w-full bg-black rounded-xl overflow-hidden shadow-[inset_0_0_20px_rgba(0,0,0,0.3)]"
+                  style={{ aspectRatio: '16/9' }}
+                >
+                  <video
+                    ref={videoRef}
+                    className="w-full h-full object-contain"
+                    playsInline
+                    muted
+                    preload="auto"
+                  />
 
-                {/* Play overlay */}
-                {!state.isPlaying && state.isReady && (
+                  {/* Play overlay */}
+                  {!state.isPlaying && state.isReady && (
+                    <button
+                      onClick={togglePlay}
+                      className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-colors"
+                    >
+                      <div className="w-16 h-16 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center shadow-2xl">
+                        <Play className="w-7 h-7 text-slate-900 ml-1" />
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Current time badge */}
+                  <div className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur text-white text-xs font-mono tracking-wider">
+                    {formatTime(state.currentTime)}
+                  </div>
+
+                  {/* Loading overlay */}
+                  {!state.isReady && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/90">
+                      <div className="flex flex-col items-center gap-3">
+                        <Loader2 className="w-10 h-10 text-white/60 animate-spin" />
+                        <span className="text-sm text-white/40 font-medium">Carregando vídeo...</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Play/Pause control */}
+              {state.isReady && (
+                <div className="flex justify-center py-3">
                   <button
                     onClick={togglePlay}
-                    className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-colors"
+                    className="w-11 h-11 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-95 flex items-center justify-center transition-all"
                   >
-                    <div className="w-14 h-14 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center shadow-xl">
-                      <Play className="w-6 h-6 text-slate-900 ml-0.5" />
-                    </div>
+                    {state.isPlaying ? (
+                      <Pause className="w-5 h-5 text-slate-700" />
+                    ) : (
+                      <Play className="w-5 h-5 text-slate-700 ml-0.5" />
+                    )}
                   </button>
-                )}
-
-                {/* Current time badge */}
-                <div className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur text-white text-xs font-mono tracking-wide">
-                  {formatTime(state.currentTime)}
                 </div>
+              )}
 
-                {/* Loading overlay */}
-                {!state.isReady && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-slate-900/90">
-                    <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="w-8 h-8 text-white/70 animate-spin" />
-                      <span className="text-xs text-white/50">Carregando vídeo...</span>
-                    </div>
-                  </div>
+              {/* Timeline */}
+              <div className="px-4 sm:px-5 pb-3">
+                {state.isReady && (
+                  <TrimmerTimeline
+                    duration={state.duration}
+                    startTime={state.startTime}
+                    endTime={state.endTime}
+                    currentTime={state.currentTime}
+                    maxDuration={maxDuration}
+                    thumbnails={state.thumbnails}
+                    onStartChange={setStartTime}
+                    onEndChange={setEndTime}
+                    onSeek={seekPreview}
+                  />
                 )}
               </div>
-            </div>
 
-            {/* Play/Pause control */}
-            {state.isReady && (
-              <div className="flex justify-center py-3">
-                <button
-                  onClick={togglePlay}
-                  className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all active:scale-95"
-                >
-                  {state.isPlaying ? (
-                    <Pause className="w-4 h-4 text-slate-700" />
-                  ) : (
-                    <Play className="w-4 h-4 text-slate-700 ml-0.5" />
-                  )}
-                </button>
+              {/* Duration info */}
+              <div className="px-4 sm:px-5 pb-4">
+                <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-sm text-slate-500">Trecho:</span>
+                  <span className={`text-sm font-bold tabular-nums ${
+                    selectedDuration > maxDuration ? 'text-red-600' : 'text-[#C7141A]'
+                  }`}>
+                    {selectedDuration.toFixed(1)}s
+                  </span>
+                  <span className="text-sm text-slate-400">/ {maxDuration}s máx</span>
+                </div>
               </div>
-            )}
 
-            {/* Timeline */}
-            <div className="px-5 pb-2">
-              {state.isReady && (
-                <TrimmerTimeline
-                  duration={state.duration}
-                  startTime={state.startTime}
-                  endTime={state.endTime}
-                  currentTime={state.currentTime}
-                  maxDuration={maxDuration}
-                  thumbnails={state.thumbnails}
-                  onStartChange={setStartTime}
-                  onEndChange={setEndTime}
-                  onSeek={seekPreview}
-                />
+              {/* Processing progress */}
+              {state.isProcessing && (
+                <div className="px-4 sm:px-5 pb-4">
+                  <div className="space-y-2.5 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 text-[#C7141A] animate-spin" />
+                      <span className="text-sm text-slate-600 font-medium">Processando vídeo...</span>
+                      <span className="text-sm font-mono font-bold text-slate-700 ml-auto">
+                        {Math.round(state.processingProgress)}%
+                      </span>
+                    </div>
+                    <Progress value={state.processingProgress} className="h-2" />
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* Duration info */}
-            <div className="px-5 pb-4">
-              <div className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-50/80 border border-slate-100">
-                <span className="text-[13px] text-slate-500">Trecho:</span>
-                <span className={`text-[13px] font-bold tabular-nums ${
-                  selectedDuration > maxDuration ? 'text-red-600' : 'text-[#C7141A]'
-                }`}>
-                  {selectedDuration.toFixed(1)}s
-                </span>
-                <span className="text-[13px] text-slate-400">/ {maxDuration}s máx</span>
-              </div>
-            </div>
-
-            {/* Processing progress */}
-            {state.isProcessing && (
-              <div className="px-5 pb-4">
-                <div className="space-y-2 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 text-[#C7141A] animate-spin" />
-                    <span className="text-sm text-slate-600">Processando vídeo...</span>
-                    <span className="text-sm font-mono font-semibold text-slate-700 ml-auto">
-                      {Math.round(state.processingProgress)}%
-                    </span>
-                  </div>
-                  <Progress value={state.processingProgress} className="h-1.5" />
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-slate-100 bg-slate-50/50">
+            {/* Actions - sticky bottom */}
+            <div className="flex items-center justify-between sm:justify-end gap-3 px-4 sm:px-5 py-4 border-t border-slate-100 bg-white flex-shrink-0 safe-bottom">
               <Button
                 variant="ghost"
                 onClick={onClose}
                 disabled={state.isProcessing}
-                className="text-slate-500 hover:text-slate-700"
+                className="text-slate-500 hover:text-slate-700 flex-1 sm:flex-none h-12 sm:h-10 text-sm"
               >
                 Cancelar
               </Button>
               <Button
                 onClick={handleTrim}
                 disabled={state.isProcessing || !state.isReady || selectedDuration > maxDuration}
-                className="bg-[#C7141A] hover:bg-[#B40D1A] text-white gap-2 shadow-lg shadow-red-500/20 transition-all active:scale-[0.97]"
+                className="bg-[#C7141A] hover:bg-[#B40D1A] text-white gap-2 shadow-lg shadow-red-500/25 transition-all active:scale-[0.97] flex-1 sm:flex-none h-12 sm:h-10 text-sm font-semibold"
               >
                 {state.isProcessing ? (
                   <>

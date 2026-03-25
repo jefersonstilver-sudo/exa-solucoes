@@ -1,5 +1,5 @@
 
-import React, { useRef, useCallback, useEffect, useState } from 'react';
+import React, { useRef, useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface TrimmerTimelineProps {
@@ -57,9 +57,23 @@ export const TrimmerTimeline: React.FC<TrimmerTimelineProps> = ({
     const time = getTimeFromX(e.clientX);
 
     if (dragging === 'start') {
-      onStartChange(time);
+      // When dragging start handle, clamp so selection never exceeds maxDuration
+      const newStart = Math.max(0, Math.min(time, endTime - 1));
+      // If the new range would be > maxDuration, push end forward
+      if (endTime - newStart > maxDuration) {
+        onStartChange(newStart);
+        onEndChange(Math.min(newStart + maxDuration, duration));
+      } else {
+        onStartChange(newStart);
+      }
     } else if (dragging === 'end') {
-      onEndChange(time);
+      const newEnd = Math.min(time, duration);
+      if (newEnd - startTime > maxDuration) {
+        onEndChange(newEnd);
+        onStartChange(Math.max(newEnd - maxDuration, 0));
+      } else if (newEnd > startTime + 0.5) {
+        onEndChange(newEnd);
+      }
     } else if (dragging === 'region') {
       const track = trackRef.current;
       if (!track) return;
@@ -72,7 +86,7 @@ export const TrimmerTimeline: React.FC<TrimmerTimelineProps> = ({
       onStartChange(newStart);
       onEndChange(newStart + regionLen);
     }
-  }, [dragging, getTimeFromX, duration, onStartChange, onEndChange]);
+  }, [dragging, getTimeFromX, duration, startTime, endTime, maxDuration, onStartChange, onEndChange]);
 
   const handlePointerUp = useCallback(() => {
     setDragging(null);
@@ -97,20 +111,21 @@ export const TrimmerTimeline: React.FC<TrimmerTimelineProps> = ({
   };
 
   return (
-    <div className="w-full space-y-2">
+    <div className="w-full space-y-2.5">
       {/* Time display */}
-      <div className="flex justify-between text-xs text-slate-500 font-mono px-1">
-        <span>{formatTime(startTime)}</span>
-        <span className="text-slate-700 font-semibold">
+      <div className="flex justify-between items-center text-xs font-mono px-1">
+        <span className="text-slate-500">{formatTime(startTime)}</span>
+        <span className="text-slate-800 font-bold text-sm tracking-tight">
           {formatTime(endTime - startTime)} / {formatTime(maxDuration)}
         </span>
-        <span>{formatTime(endTime)}</span>
+        <span className="text-slate-500">{formatTime(endTime)}</span>
       </div>
 
       {/* Timeline track */}
       <div
         ref={trackRef}
-        className="relative w-full h-20 sm:h-24 rounded-xl overflow-hidden cursor-pointer select-none touch-none border-2 border-slate-200/80 shadow-sm"
+        className="relative w-full rounded-xl overflow-hidden cursor-pointer select-none touch-none"
+        style={{ height: '72px' }}
         onClick={handleTrackClick}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -139,17 +154,17 @@ export const TrimmerTimeline: React.FC<TrimmerTimelineProps> = ({
 
         {/* Dimmed areas outside selection */}
         <div
-          className="absolute top-0 bottom-0 left-0 bg-black/55 transition-all duration-75"
+          className="absolute top-0 bottom-0 left-0 bg-black/60 transition-[width] duration-75"
           style={{ width: `${startPct}%` }}
         />
         <div
-          className="absolute top-0 bottom-0 right-0 bg-black/55 transition-all duration-75"
+          className="absolute top-0 bottom-0 right-0 bg-black/60 transition-[width] duration-75"
           style={{ width: `${100 - endPct}%` }}
         />
 
-        {/* Selected region border (top/bottom yellow like WhatsApp) */}
+        {/* Selected region border */}
         <div
-          className="absolute top-0 bottom-0 border-y-[3px] border-[#C7141A] transition-all duration-75"
+          className="absolute top-0 bottom-0 border-y-[3px] border-[#C7141A] cursor-grab active:cursor-grabbing transition-[left,width] duration-75"
           style={{ left: `${startPct}%`, width: `${endPct - startPct}%` }}
           onPointerDown={(e) => handlePointerDown(e, 'region')}
         />
@@ -157,44 +172,44 @@ export const TrimmerTimeline: React.FC<TrimmerTimelineProps> = ({
         {/* Start handle */}
         <div
           className={cn(
-            "absolute top-0 bottom-0 w-6 sm:w-7 cursor-ew-resize z-10 flex items-center justify-center",
-            "bg-[#C7141A] rounded-l-lg transition-all",
-            dragging === 'start' && "shadow-xl shadow-red-500/50 scale-y-105"
+            "absolute top-0 bottom-0 w-7 cursor-ew-resize z-10 flex items-center justify-center",
+            "bg-[#C7141A] rounded-l-lg transition-shadow",
+            dragging === 'start' && "shadow-[0_0_16px_rgba(199,20,26,0.5)]"
           )}
-          style={{ left: `calc(${startPct}% - 12px)` }}
+          style={{ left: `calc(${startPct}% - 14px)` }}
           onPointerDown={(e) => handlePointerDown(e, 'start')}
         >
-          <div className="w-[3px] h-7 sm:h-9 bg-white/90 rounded-full" />
+          <div className="w-[3px] h-8 bg-white/90 rounded-full" />
         </div>
 
         {/* End handle */}
         <div
           className={cn(
-            "absolute top-0 bottom-0 w-6 sm:w-7 cursor-ew-resize z-10 flex items-center justify-center",
-            "bg-[#C7141A] rounded-r-lg transition-all",
-            dragging === 'end' && "shadow-xl shadow-red-500/50 scale-y-105"
+            "absolute top-0 bottom-0 w-7 cursor-ew-resize z-10 flex items-center justify-center",
+            "bg-[#C7141A] rounded-r-lg transition-shadow",
+            dragging === 'end' && "shadow-[0_0_16px_rgba(199,20,26,0.5)]"
           )}
-          style={{ left: `calc(${endPct}% - 12px)` }}
+          style={{ left: `calc(${endPct}% - 14px)` }}
           onPointerDown={(e) => handlePointerDown(e, 'end')}
         >
-          <div className="w-[3px] h-7 sm:h-9 bg-white/90 rounded-full" />
+          <div className="w-[3px] h-8 bg-white/90 rounded-full" />
         </div>
 
         {/* Playhead */}
         {currentTime >= startTime && currentTime <= endTime && (
           <div
             className="absolute top-0 bottom-0 w-[3px] bg-white z-20 pointer-events-none"
-            style={{ left: `${currentPct}%`, boxShadow: '0 0 8px rgba(0,0,0,0.5)' }}
+            style={{ left: `${currentPct}%`, boxShadow: '0 0 10px rgba(0,0,0,0.6)' }}
           >
-            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-white shadow-md" />
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-white shadow-md" />
+            <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-white shadow-lg border-2 border-slate-300" />
+            <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-white shadow-lg border-2 border-slate-300" />
           </div>
         )}
       </div>
 
       {/* Total duration label */}
       <div className="flex justify-end">
-        <span className="text-[10px] text-slate-400 font-mono">
+        <span className="text-[11px] text-slate-400 font-mono">
           Duração total: {formatTime(duration)}
         </span>
       </div>
