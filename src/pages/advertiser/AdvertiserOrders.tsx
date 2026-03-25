@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useAttemptFinalizer } from '@/hooks/useAttemptFinalizer';
 import { useCheckoutPro } from '@/hooks/payment/useCheckoutPro';
+import { useOrderGroups } from '@/hooks/useOrderGroups';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
-import { Loader2, ShoppingBag, Search } from 'lucide-react';
+import { Loader2, ShoppingBag, Search, FolderOpen, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,6 +15,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useNavigate } from 'react-router-dom';
 import { CortesiaOrderSuccessModal } from '@/components/orders/CortesiaOrderSuccessModal';
 import { useCortesiaSuccessDetection } from '@/hooks/useCortesiaSuccessDetection';
+import { CreateGroupDialog } from '@/components/orders/CreateGroupDialog';
+import { OrderGroupHeader } from '@/components/orders/OrderGroupHeader';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
