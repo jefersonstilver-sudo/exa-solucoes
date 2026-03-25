@@ -18,10 +18,13 @@ import { EnhancedOrderCard } from './components/EnhancedOrderCard';
 import { SortSelector, SortField, SortDirection } from './components/SortSelector';
 import { SortableTab } from './components/SortableTab';
 import { bulkDeletePedidos, bulkDeleteTentativas, superAdminBulkDeletePedidos } from '@/services/bulkDeleteService';
-import { Trash2, AlertTriangle, LayoutList, LayoutGrid, Users } from 'lucide-react';
+import { Trash2, AlertTriangle, LayoutList, LayoutGrid, Users, FolderOpen, Plus } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
+import { useOrderGroups, OrderGroup } from '@/hooks/useOrderGroups';
+import { OrderGroupHeader } from '@/components/orders/OrderGroupHeader';
+import { CreateGroupDialog } from '@/components/orders/CreateGroupDialog';
 
 interface OrdersTabsRefactoredProps {
   onViewOrderDetails: (orderId: string) => void;
@@ -61,6 +64,13 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
   const [blockingMode, setBlockingMode] = useState<'block' | 'unblock'>('block');
   const [viewMode, setViewMode] = useState<'minimal' | 'detailed'>('minimal');
   const [groupByClient, setGroupByClient] = useState(false);
+  const [groupByGroup, setGroupByGroup] = useState(false);
+  const [createGroupDialogOpen, setCreateGroupDialogOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<OrderGroup | null>(null);
+  const [expandedOrderGroups, setExpandedOrderGroups] = useState<Record<string, boolean>>({});
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
+  
+  const { groups, createGroup, updateGroup, deleteGroup, moveOrderToGroup } = useOrderGroups(userProfile?.id);
   // Estado de ordenação
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -493,6 +503,29 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
           Agrupar por cliente
         </Button>
 
+        {/* Toggle de agrupamento por grupo */}
+        <Button
+          variant={groupByGroup ? 'secondary' : 'outline'}
+          size="sm"
+          onClick={() => { setGroupByGroup(!groupByGroup); if (!groupByGroup) setGroupByClient(false); }}
+          className="h-8 px-3"
+        >
+          <FolderOpen className="h-4 w-4 mr-1.5" />
+          Agrupar por grupo
+        </Button>
+
+        {groupByGroup && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCreateGroupDialogOpen(true)}
+            className="h-8 px-3"
+          >
+            <Plus className="h-4 w-4 mr-1.5" />
+            Novo grupo
+          </Button>
+        )}
+
         {/* Toggle de visualização */}
         <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
           <Button
@@ -516,7 +549,74 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
         </div>
       </div>
       
-      {renderOrdersList(filteredOrders.todos, 'Nenhum pedido ou tentativa encontrada.')}
+      {groupByGroup ? (
+        /* Grouped by order groups */
+        <div className="space-y-4">
+          {groups.map((group) => {
+            const groupItems = filteredOrders.todos.filter((item: any) => item.grupo_id === group.id);
+            const isExpanded = expandedOrderGroups[group.id] !== false;
+            return (
+              <div key={group.id} className="space-y-2">
+                <OrderGroupHeader
+                  group={group}
+                  count={groupItems.length}
+                  isExpanded={isExpanded}
+                  onToggle={() => setExpandedOrderGroups(prev => ({ ...prev, [group.id]: !prev[group.id] }))}
+                  onEdit={(g) => setEditingGroup(g)}
+                  onDelete={(id) => deleteGroup(id)}
+                  isDragOver={dragOverGroupId === group.id}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverGroupId(group.id); }}
+                  onDragLeave={() => setDragOverGroupId(null)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOverGroupId(null);
+                    const orderId = e.dataTransfer.getData('text/plain');
+                    if (orderId) moveOrderToGroup(orderId, group.id);
+                  }}
+                />
+                {isExpanded && groupItems.length > 0 && (
+                  <div className="pl-4 space-y-1.5">
+                    {renderOrdersList(groupItems, '')}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Ungrouped */}
+          {(() => {
+            const ungrouped = filteredOrders.todos.filter((item: any) => !item.grupo_id);
+            const isExpanded = expandedOrderGroups['__ungrouped__'] !== false;
+            if (ungrouped.length === 0) return null;
+            return (
+              <div className="space-y-2">
+                <OrderGroupHeader
+                  group={null}
+                  count={ungrouped.length}
+                  isExpanded={isExpanded}
+                  onToggle={() => setExpandedOrderGroups(prev => ({ ...prev, ['__ungrouped__']: !prev['__ungrouped__'] }))}
+                  isDragOver={dragOverGroupId === '__ungrouped__'}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverGroupId('__ungrouped__'); }}
+                  onDragLeave={() => setDragOverGroupId(null)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOverGroupId(null);
+                    const orderId = e.dataTransfer.getData('text/plain');
+                    if (orderId) moveOrderToGroup(orderId, null);
+                  }}
+                />
+                {isExpanded && (
+                  <div className="pl-4 space-y-1.5">
+                    {renderOrdersList(ungrouped, '')}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      ) : (
+        renderOrdersList(filteredOrders.todos, 'Nenhum pedido ou tentativa encontrada.')
+      )}
 
       {/* Modal de Bloqueio */}
       <BlockOrderModal
@@ -526,6 +626,26 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
         isBlocking={blockingMode === 'block' ? isBlocking : isUnblocking}
         mode={blockingMode}
       />
+
+      {/* Group Dialogs */}
+      <CreateGroupDialog
+        isOpen={createGroupDialogOpen}
+        onClose={() => setCreateGroupDialogOpen(false)}
+        onConfirm={(nome, cor) => createGroup(nome, cor)}
+      />
+      {editingGroup && (
+        <CreateGroupDialog
+          isOpen={!!editingGroup}
+          onClose={() => setEditingGroup(null)}
+          onConfirm={(nome, cor) => {
+            updateGroup(editingGroup.id, { nome, cor });
+            setEditingGroup(null);
+          }}
+          initialName={editingGroup.nome}
+          initialColor={editingGroup.cor}
+          title="Editar Grupo"
+        />
+      )}
     </div>
   );
 };

@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useAttemptFinalizer } from '@/hooks/useAttemptFinalizer';
 import { useCheckoutPro } from '@/hooks/payment/useCheckoutPro';
+import { useOrderGroups } from '@/hooks/useOrderGroups';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
-import { Loader2, ShoppingBag, Search } from 'lucide-react';
+import { Loader2, ShoppingBag, Search, FolderOpen, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,6 +15,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useNavigate } from 'react-router-dom';
 import { CortesiaOrderSuccessModal } from '@/components/orders/CortesiaOrderSuccessModal';
 import { useCortesiaSuccessDetection } from '@/hooks/useCortesiaSuccessDetection';
+import { CreateGroupDialog } from '@/components/orders/CreateGroupDialog';
+import { OrderGroupHeader } from '@/components/orders/OrderGroupHeader';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -112,6 +115,35 @@ const AdvertiserOrders = () => {
     itemType: 'order' | 'attempt';
   }>({ isOpen: false, itemId: null, itemType: 'order' });
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Order groups
+  const { groups, createGroup, updateGroup, deleteGroup, moveOrderToGroup } = useOrderGroups(userProfile?.id);
+  const [showGrouped, setShowGrouped] = useState(false);
+  const [createGroupDialogOpen, setCreateGroupDialogOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<any>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
+  const [draggedOrderId, setDraggedOrderId] = useState<string | null>(null);
+
+  const toggleGroupExpanded = (groupId: string) => {
+    setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
+
+  const handleDragStart = (e: React.DragEvent, orderId: string) => {
+    setDraggedOrderId(orderId);
+    e.dataTransfer.setData('text/plain', orderId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleGroupDrop = async (e: React.DragEvent, groupId: string | null) => {
+    e.preventDefault();
+    setDragOverGroupId(null);
+    const orderId = e.dataTransfer.getData('text/plain') || draggedOrderId;
+    if (orderId) {
+      await moveOrderToGroup(orderId, groupId);
+    }
+    setDraggedOrderId(null);
+  };
 
   const { finalizeAttemptToOrder, isProcessing: isProcessingAttempt } = useAttemptFinalizer();
 
@@ -298,6 +330,26 @@ const AdvertiserOrders = () => {
             </SelectContent>
           </Select>
         }
+        <Button
+          variant={showGrouped ? 'secondary' : 'outline'}
+          size="sm"
+          onClick={() => setShowGrouped(!showGrouped)}
+          className="min-h-[44px] sm:min-h-[36px] gap-1.5"
+        >
+          <FolderOpen className="h-4 w-4" />
+          {!isMobile && 'Agrupar'}
+        </Button>
+        {showGrouped && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCreateGroupDialogOpen(true)}
+            className="min-h-[44px] sm:min-h-[36px] gap-1.5"
+          >
+            <Plus className="h-4 w-4" />
+            {!isMobile && 'Novo grupo'}
+          </Button>
+        )}
       </div>
 
       {/* Section 3: Campaign List */}
@@ -324,7 +376,100 @@ const AdvertiserOrders = () => {
           </Button>
         </div> :
 
-      <div className="space-y-3">
+      showGrouped ? (
+        /* Grouped view */
+        <div className="space-y-4">
+          {groups.map((group) => {
+            const groupItems = filteredItems.filter((item: any) => item.grupo_id === group.id);
+            const isExpanded = expandedGroups[group.id] !== false; // default expanded
+            return (
+              <div key={group.id} className="space-y-2">
+                <OrderGroupHeader
+                  group={group}
+                  count={groupItems.length}
+                  isExpanded={isExpanded}
+                  onToggle={() => toggleGroupExpanded(group.id)}
+                  onEdit={(g) => setEditingGroup(g)}
+                  onDelete={(id) => deleteGroup(id)}
+                  isDragOver={dragOverGroupId === group.id}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverGroupId(group.id); }}
+                  onDragLeave={() => setDragOverGroupId(null)}
+                  onDrop={(e) => handleGroupDrop(e, group.id)}
+                />
+                {isExpanded && groupItems.length > 0 && (
+                  <div className="space-y-3 pl-4">
+                    {groupItems.map((item: any) => (
+                      <AdvertiserOrderCard
+                        key={`${item.type}-${item.id}`}
+                        item={item}
+                        isMobile={isMobile}
+                        onNavigate={(path) => navigate(path)}
+                        onDelete={(id, type) => setDeleteConfirm({ isOpen: true, itemId: id, itemType: type })}
+                        onFinalize={(id) => finalizeAttemptToOrder(id)}
+                        isProcessingAttempt={isProcessingAttempt}
+                        isGeneratingPix={isGeneratingPix}
+                        handleGeneratePix={handleGeneratePix}
+                        handleStripePayment={handleStripePayment}
+                        groups={groups}
+                        onMoveToGroup={moveOrderToGroup}
+                        onCreateGroup={() => setCreateGroupDialogOpen(true)}
+                        draggable
+                        onDragStart={handleDragStart}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Sem grupo */}
+          {(() => {
+            const ungroupedItems = filteredItems.filter((item: any) => !item.grupo_id);
+            const isExpanded = expandedGroups['__ungrouped__'] !== false;
+            if (ungroupedItems.length === 0) return null;
+            return (
+              <div className="space-y-2">
+                <OrderGroupHeader
+                  group={null}
+                  count={ungroupedItems.length}
+                  isExpanded={isExpanded}
+                  onToggle={() => toggleGroupExpanded('__ungrouped__')}
+                  isDragOver={dragOverGroupId === '__ungrouped__'}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverGroupId('__ungrouped__'); }}
+                  onDragLeave={() => setDragOverGroupId(null)}
+                  onDrop={(e) => handleGroupDrop(e, null)}
+                />
+                {isExpanded && (
+                  <div className="space-y-3 pl-4">
+                    {ungroupedItems.map((item: any) => (
+                      <AdvertiserOrderCard
+                        key={`${item.type}-${item.id}`}
+                        item={item}
+                        isMobile={isMobile}
+                        onNavigate={(path) => navigate(path)}
+                        onDelete={(id, type) => setDeleteConfirm({ isOpen: true, itemId: id, itemType: type })}
+                        onFinalize={(id) => finalizeAttemptToOrder(id)}
+                        isProcessingAttempt={isProcessingAttempt}
+                        isGeneratingPix={isGeneratingPix}
+                        handleGeneratePix={handleGeneratePix}
+                        handleStripePayment={handleStripePayment}
+                        groups={groups}
+                        onMoveToGroup={moveOrderToGroup}
+                        onCreateGroup={() => setCreateGroupDialogOpen(true)}
+                        draggable
+                        onDragStart={handleDragStart}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      ) : (
+        /* Flat view */
+        <div className="space-y-3">
           {filteredItems.slice(0, visibleCount).map((item) =>
         <AdvertiserOrderCard
           key={`${item.type}-${item.id}`}
@@ -336,8 +481,10 @@ const AdvertiserOrders = () => {
           isProcessingAttempt={isProcessingAttempt}
           isGeneratingPix={isGeneratingPix}
           handleGeneratePix={handleGeneratePix}
-          handleStripePayment={handleStripePayment} />
-
+          handleStripePayment={handleStripePayment}
+          groups={groups}
+          onMoveToGroup={moveOrderToGroup}
+          onCreateGroup={() => setCreateGroupDialogOpen(true)} />
         )}
 
           {/* Load more + counter */}
@@ -356,6 +503,7 @@ const AdvertiserOrders = () => {
             </div>
         }
         </div>
+      )
       }
 
       {/* Dialogs & Modals */}
@@ -411,6 +559,26 @@ const AdvertiserOrders = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Group Dialogs */}
+      <CreateGroupDialog
+        isOpen={createGroupDialogOpen}
+        onClose={() => setCreateGroupDialogOpen(false)}
+        onConfirm={(nome, cor) => createGroup(nome, cor)}
+      />
+      {editingGroup && (
+        <CreateGroupDialog
+          isOpen={!!editingGroup}
+          onClose={() => setEditingGroup(null)}
+          onConfirm={(nome, cor) => {
+            updateGroup(editingGroup.id, { nome, cor });
+            setEditingGroup(null);
+          }}
+          initialName={editingGroup.nome}
+          initialColor={editingGroup.cor}
+          title="Editar Grupo"
+        />
+      )}
     </div>);
 
 };

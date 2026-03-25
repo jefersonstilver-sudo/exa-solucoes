@@ -7,6 +7,8 @@ import { Loader2, Repeat, Monitor, Smartphone, Clock } from 'lucide-react';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
+import { MoveToGroupMenu } from '@/components/orders/MoveToGroupMenu';
+import { OrderGroup } from '@/hooks/useOrderGroups';
 
 interface AdvertiserOrderCardProps {
   item: any;
@@ -18,6 +20,12 @@ interface AdvertiserOrderCardProps {
   isGeneratingPix: boolean;
   handleGeneratePix: (orderId: string) => void;
   handleStripePayment: (orderId: string) => void;
+  // Group support
+  groups?: OrderGroup[];
+  onMoveToGroup?: (orderId: string, groupId: string | null) => void;
+  onCreateGroup?: () => void;
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent, orderId: string) => void;
 }
 
 const formatCurrency = (value: number) =>
@@ -36,6 +44,11 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
   isGeneratingPix,
   handleGeneratePix,
   handleStripePayment,
+  groups,
+  onMoveToGroup,
+  onCreateGroup,
+  draggable,
+  onDragStart,
 }) => {
   const statusInfo = useOrderStatus(item, handleGeneratePix, handleStripePayment);
   const painelsList = item.type === 'order' ? item.lista_paineis || [] : item.predios_selecionados || [];
@@ -112,8 +125,11 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
       className={cn(
         'bg-card border border-border/40 rounded-xl shadow-sm overflow-hidden',
         'hover:shadow-md transition-all duration-200',
-        item.type === 'attempt' && 'border-l-4 border-l-orange-500'
+        item.type === 'attempt' && 'border-l-4 border-l-orange-500',
+        draggable && 'cursor-grab active:cursor-grabbing'
       )}
+      draggable={draggable}
+      onDragStart={draggable && onDragStart ? (e) => onDragStart(e, item.id) : undefined}
     >
       <div className={cn('flex', isMobile ? 'flex-col' : 'flex-row')}>
 
@@ -305,6 +321,16 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
               >
                 Ver Detalhes
               </Button>
+            )}
+
+            {/* Move to group menu */}
+            {item.type === 'order' && groups && onMoveToGroup && onCreateGroup && (
+              <MoveToGroupMenu
+                groups={groups}
+                currentGroupId={item.grupo_id}
+                onMove={(groupId) => onMoveToGroup(item.id, groupId)}
+                onCreateNew={onCreateGroup}
+              />
             )}
 
             {canDelete && (
