@@ -20,6 +20,11 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
   const [videoOrientation, setVideoOrientation] = useState<'landscape' | 'portrait' | 'unknown'>('unknown');
   const [videoError, setVideoError] = useState<string | null>(null);
 
+  // Trimmer state
+  const [showTrimmer, setShowTrimmer] = useState(false);
+  const [trimmerFile, setTrimmerFile] = useState<File | null>(null);
+  const [trimmerMaxDuration, setTrimmerMaxDuration] = useState(10);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,7 +42,6 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
     setVideoError(null);
 
     try {
-      // Garantir que o bucket existe
       const bucketReady = await ensureVideosBucket();
       if (!bucketReady) {
         throw new Error('Erro ao preparar storage de vídeos');
@@ -45,6 +49,16 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
 
       const validation = await validateVideoFile(file);
       
+      // If needs trimming, open trimmer modal
+      if (validation.needsTrimming && validation.maxDuration) {
+        console.log('✂️ Vídeo excede duração, abrindo trimmer');
+        setTrimmerFile(file);
+        setTrimmerMaxDuration(validation.maxDuration);
+        setShowTrimmer(true);
+        setUploadStatus('idle');
+        return;
+      }
+
       if (!validation.valid) {
         console.error('Validação falhou:', validation.errors);
         setVideoError(validation.errors.join(', '));
@@ -54,7 +68,6 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
 
       console.log('Arquivo validado com sucesso:', validation.metadata);
       setVideoDuration(validation.metadata.duration);
-      // Map the orientation from validation service to our state type
       const mappedOrientation = validation.metadata.orientation === 'horizontal' ? 'landscape' : 'portrait';
       setVideoOrientation(mappedOrientation);
       setUploadStatus('idle');
@@ -64,6 +77,23 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
       setVideoError(errorMessage);
       setUploadStatus('error');
     }
+  };
+
+  const handleTrimComplete = (trimmedFile: File) => {
+    console.log('✅ Vídeo cortado com sucesso:', trimmedFile.name, trimmedFile.size);
+    setShowTrimmer(false);
+    setTrimmerFile(null);
+    setVideoFile(trimmedFile);
+    setVideoDuration(trimmerMaxDuration);
+    setUploadStatus('idle');
+    toast.success('Vídeo cortado com sucesso!');
+  };
+
+  const handleTrimmerClose = () => {
+    setShowTrimmer(false);
+    setTrimmerFile(null);
+    setVideoFile(null);
+    setUploadStatus('idle');
   };
 
   const { handleDragEnter, handleDragOver, handleDragLeave, handleDrop } = useDragAndDrop({
@@ -212,6 +242,13 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
     handleDrop,
     startUpload,
     handleReset,
-    handleContinue
+    handleContinue,
+
+    // Trimmer
+    showTrimmer,
+    trimmerFile,
+    trimmerMaxDuration,
+    handleTrimComplete,
+    handleTrimmerClose
   };
 };

@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 export interface VideoValidationResult {
   valid: boolean;
   errors: string[];
+  needsTrimming?: boolean;
+  maxDuration?: number;
   metadata: {
     duration: number;
     width: number;
@@ -80,9 +82,7 @@ export const validateVideoFile = (file: File, tipo: 'horizontal' | 'vertical' = 
       
       // Duração máxima dinâmica baseada no tipo
       const maxDuration = defaultMaxDuration;
-      if (duration > maxDuration) {
-        errors.push(`Vídeo deve ter no máximo ${maxDuration} segundos`);
-      }
+      const durationExceeded = duration > maxDuration;
       
       // Validação de orientação dinâmica baseada no tipo de produto
       if (orientation !== expectedOrientation) {
@@ -91,6 +91,23 @@ export const validateVideoFile = (file: File, tipo: 'horizontal' | 'vertical' = 
       
       if (file.size > 100 * 1024 * 1024) {
         errors.push('Vídeo deve ter no máximo 100MB');
+      }
+
+      // Se só excedeu duração (sem outros erros), sinaliza para trimming
+      if (durationExceeded && errors.length === 0) {
+        finalize({
+          valid: false,
+          errors: [],
+          needsTrimming: true,
+          maxDuration,
+          metadata: { duration, width, height, orientation, size: file.size, format: file.type }
+        });
+        return;
+      }
+
+      // Se excedeu duração E tem outros erros, adiciona o erro de duração também
+      if (durationExceeded) {
+        errors.push(`Vídeo deve ter no máximo ${maxDuration} segundos`);
       }
       
       finalize({

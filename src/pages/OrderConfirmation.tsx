@@ -14,6 +14,7 @@ import OrderSummary from '@/components/order-confirmation/OrderSummary';
 import VideoRequirements from '@/components/order-confirmation/VideoRequirements';
 import UploadStatus from '@/components/order-confirmation/UploadStatus';
 import { VideoPlayer } from '@/components/video-management/VideoPlayer';
+import { VideoTrimmerModal } from '@/components/video-trimmer/VideoTrimmerModal';
 import { Upload } from 'lucide-react';
 
 const OrderConfirmation: React.FC = () => {
@@ -51,7 +52,12 @@ const OrderConfirmation: React.FC = () => {
     handleDrop,
     startUpload,
     handleReset,
-    handleContinue
+    handleContinue,
+    showTrimmer,
+    trimmerFile,
+    trimmerMaxDuration,
+    handleTrimComplete,
+    handleTrimmerClose
   } = useSimpleVideoUpload({ 
     orderId, 
     userId: user?.id
@@ -137,6 +143,17 @@ const OrderConfirmation: React.FC = () => {
         
         {/* Hidden video element for metadata extraction */}
         <video ref={videoRef} className="hidden" />
+
+        {/* Video Trimmer Modal */}
+        {trimmerFile && (
+          <VideoTrimmerModal
+            file={trimmerFile}
+            maxDuration={trimmerMaxDuration}
+            isOpen={showTrimmer}
+            onClose={handleTrimmerClose}
+            onTrimComplete={handleTrimComplete}
+          />
+        )}
       </motion.div>
     </Layout>
   );

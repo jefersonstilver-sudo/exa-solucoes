@@ -6,6 +6,8 @@ import { VideoUploadScheduleForm, ScheduleRule } from '@/components/video-upload
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { validateVideoFile } from '@/services/videoStorageService';
+import { VideoTrimmerModal } from '@/components/video-trimmer/VideoTrimmerModal';
 interface VideoSlotUploadProps {
   slotPosition: number;
   uploading: boolean;
@@ -30,6 +32,9 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [companyInfoComplete, setCompanyInfoComplete] = useState(false);
   const [checkingCompanyInfo, setCheckingCompanyInfo] = useState(companyInfoCompleteProp === undefined);
+  const [showTrimmer, setShowTrimmer] = useState(false);
+  const [trimmerFile, setTrimmerFile] = useState<File | null>(null);
+  const [trimmerMaxDuration, setTrimmerMaxDuration] = useState(10);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -85,7 +90,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
     setTitleError('');
     return true;
   };
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -101,7 +106,38 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       alert('O arquivo deve ter no máximo 100MB');
       return;
     }
+
+    // Run full validation to check duration
+    const tipo = isVertical ? 'vertical' : 'horizontal';
+    const validation = await validateVideoFile(file, tipo);
+
+    if (validation.needsTrimming && validation.maxDuration) {
+      console.log('✂️ Vídeo excede duração, abrindo trimmer');
+      setTrimmerFile(file);
+      setTrimmerMaxDuration(validation.maxDuration);
+      setShowTrimmer(true);
+      return;
+    }
+
+    if (!validation.valid) {
+      alert(validation.errors.join('\n'));
+      return;
+    }
+
     setSelectedFile(file);
+  };
+
+  const handleTrimComplete = (trimmedFile: File) => {
+    console.log('✅ Vídeo cortado:', trimmedFile.name);
+    setShowTrimmer(false);
+    setTrimmerFile(null);
+    setSelectedFile(trimmedFile);
+    toast.success('Vídeo cortado com sucesso!');
+  };
+
+  const handleTrimmerClose = () => {
+    setShowTrimmer(false);
+    setTrimmerFile(null);
   };
 
   // Upload direto sem agendamento
@@ -258,5 +294,15 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       {/* Debug info - remover em produção */}
       {import.meta.env.DEV}
 
+      {/* Video Trimmer Modal */}
+      {trimmerFile && (
+        <VideoTrimmerModal
+          file={trimmerFile}
+          maxDuration={trimmerMaxDuration}
+          isOpen={showTrimmer}
+          onClose={handleTrimmerClose}
+          onTrimComplete={handleTrimComplete}
+        />
+      )}
     </div>;
 };
