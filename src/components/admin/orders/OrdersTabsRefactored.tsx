@@ -64,6 +64,13 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
   const [blockingMode, setBlockingMode] = useState<'block' | 'unblock'>('block');
   const [viewMode, setViewMode] = useState<'minimal' | 'detailed'>('minimal');
   const [groupByClient, setGroupByClient] = useState(false);
+  const [groupByGroup, setGroupByGroup] = useState(false);
+  const [createGroupDialogOpen, setCreateGroupDialogOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<OrderGroup | null>(null);
+  const [expandedOrderGroups, setExpandedOrderGroups] = useState<Record<string, boolean>>({});
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
+  
+  const { groups, createGroup, updateGroup, deleteGroup, moveOrderToGroup } = useOrderGroups(userProfile?.id);
   // Estado de ordenação
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
