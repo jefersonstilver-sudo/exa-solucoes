@@ -41,9 +41,9 @@ export const TaskFAB: React.FC<TaskFABProps> = ({
         // Tamanho e forma
         "h-14 w-14 rounded-full",
         // Cores e estilo
-        "bg-blue-600 hover:bg-blue-700 text-white",
-        // Sombra Apple-style
-        "shadow-lg shadow-blue-600/30",
+        "bg-[#C7141A] hover:bg-[#B40D1A] text-white",
+        // Sombra brand
+        "shadow-lg shadow-[#C7141A]/30",
         // Animação
         "transition-colors duration-200",
         // Touch
