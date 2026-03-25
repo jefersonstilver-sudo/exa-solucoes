@@ -323,6 +323,16 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
               </Button>
             )}
 
+            {/* Move to group menu */}
+            {item.type === 'order' && groups && onMoveToGroup && onCreateGroup && (
+              <MoveToGroupMenu
+                groups={groups}
+                currentGroupId={item.grupo_id}
+                onMove={(groupId) => onMoveToGroup(item.id, groupId)}
+                onCreateNew={onCreateGroup}
+              />
+            )}
+
             {canDelete && (
               <Button
                 variant="ghost"
