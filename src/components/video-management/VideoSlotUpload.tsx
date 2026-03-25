@@ -294,5 +294,15 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       {/* Debug info - remover em produção */}
       {import.meta.env.DEV}
 
+      {/* Video Trimmer Modal */}
+      {trimmerFile && (
+        <VideoTrimmerModal
+          file={trimmerFile}
+          maxDuration={trimmerMaxDuration}
+          isOpen={showTrimmer}
+          onClose={handleTrimmerClose}
+          onTrimComplete={handleTrimComplete}
+        />
+      )}
     </div>;
 };
