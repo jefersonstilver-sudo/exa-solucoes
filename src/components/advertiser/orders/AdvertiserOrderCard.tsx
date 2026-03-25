@@ -7,6 +7,8 @@ import { Loader2, Repeat, Monitor, Smartphone, Clock } from 'lucide-react';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
+import { MoveToGroupMenu } from '@/components/orders/MoveToGroupMenu';
+import { OrderGroup } from '@/hooks/useOrderGroups';
 
 interface AdvertiserOrderCardProps {
   item: any;
