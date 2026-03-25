@@ -1,6 +1,5 @@
 
 import React, { useRef, useCallback, useState } from 'react';
-import { cn } from '@/lib/utils';
 
 interface TrimmerTimelineProps {
   duration: number;
@@ -10,7 +9,6 @@ interface TrimmerTimelineProps {
   maxDuration: number;
   thumbnails: string[];
   onStartChange: (time: number) => void;
-  onEndChange: (time: number) => void;
   onSeek: (time: number) => void;
 }
 
@@ -22,14 +20,12 @@ export const TrimmerTimeline: React.FC<TrimmerTimelineProps> = ({
   maxDuration,
   thumbnails,
   onStartChange,
-  onEndChange,
   onSeek,
 }) => {
   const trackRef = useRef<HTMLDivElement>(null);
-  const [dragging, setDragging] = useState<'start' | 'end' | 'region' | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const dragStartX = useRef(0);
-  const dragStartTime = useRef(0);
-  const dragEndTime = useRef(0);
+  const dragStartTimeRef = useRef(0);
 
   const getTimeFromX = useCallback((clientX: number): number => {
     const track = trackRef.current;
@@ -40,69 +36,52 @@ export const TrimmerTimeline: React.FC<TrimmerTimelineProps> = ({
     return ratio * duration;
   }, [duration]);
 
-  const handlePointerDown = useCallback((e: React.PointerEvent, type: 'start' | 'end' | 'region') => {
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragging(type);
+    setIsDragging(true);
     dragStartX.current = e.clientX;
-    dragStartTime.current = startTime;
-    dragEndTime.current = endTime;
+    dragStartTimeRef.current = startTime;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  }, [startTime, endTime]);
+  }, [startTime]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragging) return;
+    if (!isDragging) return;
     e.preventDefault();
 
-    const time = getTimeFromX(e.clientX);
-
-    if (dragging === 'start') {
-      // When dragging start handle, clamp so selection never exceeds maxDuration
-      const newStart = Math.max(0, Math.min(time, endTime - 1));
-      // If the new range would be > maxDuration, push end forward
-      if (endTime - newStart > maxDuration) {
-        onStartChange(newStart);
-        onEndChange(Math.min(newStart + maxDuration, duration));
-      } else {
-        onStartChange(newStart);
-      }
-    } else if (dragging === 'end') {
-      const newEnd = Math.min(time, duration);
-      if (newEnd - startTime > maxDuration) {
-        onEndChange(newEnd);
-        onStartChange(Math.max(newEnd - maxDuration, 0));
-      } else if (newEnd > startTime + 0.5) {
-        onEndChange(newEnd);
-      }
-    } else if (dragging === 'region') {
-      const track = trackRef.current;
-      if (!track) return;
-      const rect = track.getBoundingClientRect();
-      const dx = e.clientX - dragStartX.current;
-      const dt = (dx / rect.width) * duration;
-      const regionLen = dragEndTime.current - dragStartTime.current;
-      let newStart = dragStartTime.current + dt;
-      newStart = Math.max(0, Math.min(newStart, duration - regionLen));
-      onStartChange(newStart);
-      onEndChange(newStart + regionLen);
-    }
-  }, [dragging, getTimeFromX, duration, startTime, endTime, maxDuration, onStartChange, onEndChange]);
+    const track = trackRef.current;
+    if (!track) return;
+    const rect = track.getBoundingClientRect();
+    const dx = e.clientX - dragStartX.current;
+    const dt = (dx / rect.width) * duration;
+    const windowSize = Math.min(maxDuration, duration);
+    let newStart = dragStartTimeRef.current + dt;
+    newStart = Math.max(0, Math.min(newStart, duration - windowSize));
+    onStartChange(newStart);
+  }, [isDragging, duration, maxDuration, onStartChange]);
 
   const handlePointerUp = useCallback(() => {
-    setDragging(null);
+    setIsDragging(false);
   }, []);
 
   const handleTrackClick = useCallback((e: React.MouseEvent) => {
-    if (dragging) return;
+    if (isDragging) return;
     const time = getTimeFromX(e.clientX);
+    // If clicking inside the window, seek; if outside, move window there
     if (time >= startTime && time <= endTime) {
       onSeek(time);
+    } else {
+      // Center the window on click position
+      const windowSize = Math.min(maxDuration, duration);
+      const newStart = Math.max(0, Math.min(time - windowSize / 2, duration - windowSize));
+      onStartChange(newStart);
     }
-  }, [dragging, getTimeFromX, startTime, endTime, onSeek]);
+  }, [isDragging, getTimeFromX, startTime, endTime, maxDuration, duration, onStartChange, onSeek]);
 
   const startPct = (startTime / duration) * 100;
   const endPct = (endTime / duration) * 100;
-  const currentPct = (currentTime / duration) * 100;
+  const currentPct = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const windowPct = endPct - startPct;
 
   const formatTime = (t: number) => {
     const m = Math.floor(t / 60);
@@ -111,21 +90,24 @@ export const TrimmerTimeline: React.FC<TrimmerTimelineProps> = ({
   };
 
   return (
-    <div className="w-full space-y-2.5">
+    <div className="w-full space-y-3">
       {/* Time display */}
-      <div className="flex justify-between items-center text-xs font-mono px-1">
-        <span className="text-slate-500">{formatTime(startTime)}</span>
-        <span className="text-slate-800 font-bold text-sm tracking-tight">
-          {formatTime(endTime - startTime)} / {formatTime(maxDuration)}
-        </span>
-        <span className="text-slate-500">{formatTime(endTime)}</span>
+      <div className="flex justify-between items-center px-1">
+        <span className="text-xs font-mono text-slate-400 tabular-nums">{formatTime(startTime)}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-bold text-slate-800 tabular-nums tracking-tight">
+            {maxDuration}s
+          </span>
+          <span className="text-xs text-slate-400">fixo</span>
+        </div>
+        <span className="text-xs font-mono text-slate-400 tabular-nums">{formatTime(endTime)}</span>
       </div>
 
       {/* Timeline track */}
       <div
         ref={trackRef}
-        className="relative w-full rounded-xl overflow-hidden cursor-pointer select-none touch-none"
-        style={{ height: '72px' }}
+        className="relative w-full rounded-2xl overflow-hidden select-none touch-none"
+        style={{ height: '80px' }}
         onClick={handleTrackClick}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -154,63 +136,69 @@ export const TrimmerTimeline: React.FC<TrimmerTimelineProps> = ({
 
         {/* Dimmed areas outside selection */}
         <div
-          className="absolute top-0 bottom-0 left-0 bg-black/60 transition-[width] duration-75"
-          style={{ width: `${startPct}%` }}
+          className="absolute top-0 bottom-0 left-0 bg-black/65 pointer-events-none"
+          style={{ width: `${startPct}%`, transition: isDragging ? 'none' : 'width 0.15s ease-out' }}
         />
         <div
-          className="absolute top-0 bottom-0 right-0 bg-black/60 transition-[width] duration-75"
-          style={{ width: `${100 - endPct}%` }}
-        />
-
-        {/* Selected region border */}
-        <div
-          className="absolute top-0 bottom-0 border-y-[3px] border-[#C7141A] cursor-grab active:cursor-grabbing transition-[left,width] duration-75"
-          style={{ left: `${startPct}%`, width: `${endPct - startPct}%` }}
-          onPointerDown={(e) => handlePointerDown(e, 'region')}
+          className="absolute top-0 bottom-0 right-0 bg-black/65 pointer-events-none"
+          style={{ width: `${100 - endPct}%`, transition: isDragging ? 'none' : 'width 0.15s ease-out' }}
         />
 
-        {/* Start handle */}
+        {/* Selected region — the single draggable block */}
         <div
-          className={cn(
-            "absolute top-0 bottom-0 w-7 cursor-ew-resize z-10 flex items-center justify-center",
-            "bg-[#C7141A] rounded-l-lg transition-shadow",
-            dragging === 'start' && "shadow-[0_0_16px_rgba(199,20,26,0.5)]"
-          )}
-          style={{ left: `calc(${startPct}% - 14px)` }}
-          onPointerDown={(e) => handlePointerDown(e, 'start')}
+          className={`absolute top-0 bottom-0 border-y-[4px] border-[#C7141A] ${
+            isDragging ? 'cursor-grabbing shadow-[0_0_24px_rgba(199,20,26,0.35)]' : 'cursor-grab'
+          }`}
+          style={{
+            left: `${startPct}%`,
+            width: `${windowPct}%`,
+            transition: isDragging ? 'none' : 'left 0.15s ease-out, width 0.15s ease-out',
+          }}
+          onPointerDown={handlePointerDown}
         >
-          <div className="w-[3px] h-8 bg-white/90 rounded-full" />
-        </div>
+          {/* Left edge bar */}
+          <div className="absolute left-0 top-0 bottom-0 w-5 bg-[#C7141A] rounded-l-xl flex items-center justify-center">
+            <div className="w-[3px] h-7 bg-white/90 rounded-full" />
+          </div>
 
-        {/* End handle */}
-        <div
-          className={cn(
-            "absolute top-0 bottom-0 w-7 cursor-ew-resize z-10 flex items-center justify-center",
-            "bg-[#C7141A] rounded-r-lg transition-shadow",
-            dragging === 'end' && "shadow-[0_0_16px_rgba(199,20,26,0.5)]"
-          )}
-          style={{ left: `calc(${endPct}% - 14px)` }}
-          onPointerDown={(e) => handlePointerDown(e, 'end')}
-        >
-          <div className="w-[3px] h-8 bg-white/90 rounded-full" />
+          {/* Right edge bar */}
+          <div className="absolute right-0 top-0 bottom-0 w-5 bg-[#C7141A] rounded-r-xl flex items-center justify-center">
+            <div className="w-[3px] h-7 bg-white/90 rounded-full" />
+          </div>
+
+          {/* Center duration badge */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="px-2.5 py-1 rounded-md bg-black/50 backdrop-blur-sm">
+              <span className="text-[11px] font-bold text-white tabular-nums tracking-wide">
+                {maxDuration}s
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Playhead */}
         {currentTime >= startTime && currentTime <= endTime && (
           <div
-            className="absolute top-0 bottom-0 w-[3px] bg-white z-20 pointer-events-none"
-            style={{ left: `${currentPct}%`, boxShadow: '0 0 10px rgba(0,0,0,0.6)' }}
+            className="absolute top-0 bottom-0 w-[3px] bg-white pointer-events-none"
+            style={{
+              left: `${currentPct}%`,
+              boxShadow: '0 0 8px rgba(0,0,0,0.7), 0 0 2px rgba(255,255,255,0.5)',
+              transition: isDragging ? 'none' : 'left 0.05s linear',
+            }}
           >
-            <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-white shadow-lg border-2 border-slate-300" />
-            <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-white shadow-lg border-2 border-slate-300" />
+            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-r-[5px] border-t-[6px] border-l-transparent border-r-transparent border-t-white" />
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-r-[5px] border-b-[6px] border-l-transparent border-r-transparent border-b-white" />
           </div>
         )}
       </div>
 
       {/* Total duration label */}
-      <div className="flex justify-end">
-        <span className="text-[11px] text-slate-400 font-mono">
-          Duração total: {formatTime(duration)}
+      <div className="flex justify-between items-center px-1">
+        <span className="text-[11px] text-slate-400">
+          Arraste para escolher o trecho
+        </span>
+        <span className="text-[11px] text-slate-400 font-mono tabular-nums">
+          Total: {formatTime(duration)}
         </span>
       </div>
     </div>

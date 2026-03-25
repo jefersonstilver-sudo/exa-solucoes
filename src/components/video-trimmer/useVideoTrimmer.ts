@@ -8,7 +8,6 @@ interface UseVideoTrimmerProps {
 
 export interface TrimmerState {
   startTime: number;
-  endTime: number;
   duration: number;
   currentTime: number;
   isPlaying: boolean;
@@ -25,7 +24,6 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
 
   const [state, setState] = useState<TrimmerState>({
     startTime: 0,
-    endTime: maxDuration,
     duration: 0,
     currentTime: 0,
     isPlaying: false,
@@ -36,6 +34,11 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
   });
 
   const videoUrl = useRef<string>('');
+
+  // Derived: endTime is always startTime + windowSize
+  const windowSize = Math.min(maxDuration, state.duration || maxDuration);
+  const endTime = state.startTime + windowSize;
+  const selectedDuration = Math.round(windowSize * 10) / 10;
 
   // Load video and generate thumbnails
   useEffect(() => {
@@ -50,11 +53,10 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
 
     video.onloadedmetadata = () => {
       const dur = video.duration;
-      const end = Math.min(maxDuration, dur);
       setState(prev => ({
         ...prev,
         duration: dur,
-        endTime: end,
+        startTime: 0,
         isReady: true,
       }));
       generateThumbnails(video, dur);
@@ -71,9 +73,9 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const thumbCount = Math.min(12, Math.max(6, Math.floor(duration)));
-    canvas.width = 120;
-    canvas.height = 68;
+    const thumbCount = Math.min(16, Math.max(8, Math.floor(duration * 1.5)));
+    canvas.width = 160;
+    canvas.height = 90;
     const thumbs: string[] = [];
 
     for (let i = 0; i < thumbCount; i++) {
@@ -81,7 +83,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
       try {
         await seekTo(video, time);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        thumbs.push(canvas.toDataURL('image/jpeg', 0.5));
+        thumbs.push(canvas.toDataURL('image/jpeg', 0.6));
       } catch {
         thumbs.push('');
       }
@@ -101,31 +103,12 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     });
   };
 
+  // Only setter: slides the fixed window along the timeline
   const setStartTime = useCallback((time: number) => {
     setState(prev => {
-      const newStart = Math.max(0, Math.min(time, prev.duration - 1));
-      let newEnd = prev.endTime;
-      if (newEnd - newStart > maxDuration) {
-        newEnd = newStart + maxDuration;
-      }
-      if (newEnd <= newStart) {
-        newEnd = Math.min(newStart + 1, prev.duration);
-      }
-      return { ...prev, startTime: newStart, endTime: newEnd };
-    });
-  }, [maxDuration]);
-
-  const setEndTime = useCallback((time: number) => {
-    setState(prev => {
-      const newEnd = Math.min(time, prev.duration);
-      let newStart = prev.startTime;
-      if (newEnd - newStart > maxDuration) {
-        newStart = newEnd - maxDuration;
-      }
-      if (newEnd <= newStart) {
-        newStart = Math.max(newEnd - 1, 0);
-      }
-      return { ...prev, startTime: newStart, endTime: newEnd };
+      const ws = Math.min(maxDuration, prev.duration);
+      const newStart = Math.max(0, Math.min(time, prev.duration - ws));
+      return { ...prev, startTime: newStart };
     });
   }, [maxDuration]);
 
@@ -133,32 +116,40 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     const video = videoRef.current;
     if (!video) return;
 
-    if (state.isPlaying) {
-      video.pause();
-      cancelAnimationFrame(animFrameRef.current);
-      setState(prev => ({ ...prev, isPlaying: false }));
-    } else {
-      video.currentTime = state.startTime;
-      video.play();
-      setState(prev => ({ ...prev, isPlaying: true }));
+    setState(prev => {
+      if (prev.isPlaying) {
+        video.pause();
+        cancelAnimationFrame(animFrameRef.current);
+        return { ...prev, isPlaying: false };
+      } else {
+        const ws = Math.min(maxDuration, prev.duration);
+        const end = prev.startTime + ws;
+        video.currentTime = prev.startTime;
+        video.play();
 
-      const tick = () => {
-        if (video.currentTime >= state.endTime) {
-          video.currentTime = state.startTime;
-        }
-        setState(prev => ({ ...prev, currentTime: video.currentTime }));
-        animFrameRef.current = requestAnimationFrame(tick);
-      };
-      tick();
-    }
-  }, [state.isPlaying, state.startTime, state.endTime]);
+        const tick = () => {
+          if (video.currentTime >= end) {
+            video.currentTime = prev.startTime;
+          }
+          setState(s => ({ ...s, currentTime: video.currentTime }));
+          animFrameRef.current = requestAnimationFrame(tick);
+        };
+        tick();
+
+        return { ...prev, isPlaying: true };
+      }
+    });
+  }, [maxDuration]);
 
   const seekPreview = useCallback((time: number) => {
     const video = videoRef.current;
-    if (!video || state.isPlaying) return;
-    video.currentTime = time;
-    setState(prev => ({ ...prev, currentTime: time }));
-  }, [state.isPlaying]);
+    if (!video) return;
+    setState(prev => {
+      if (prev.isPlaying) return prev;
+      video.currentTime = time;
+      return { ...prev, currentTime: time };
+    });
+  }, []);
 
   // Trim the video using MediaRecorder + Canvas
   const trimVideo = useCallback(async (): Promise<File> => {
@@ -168,8 +159,10 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     setState(prev => ({ ...prev, isProcessing: true, processingProgress: 0 }));
 
     try {
-      const { startTime, endTime } = state;
-      const trimDuration = endTime - startTime;
+      const startT = state.startTime;
+      const ws = Math.min(maxDuration, state.duration);
+      const endT = startT + ws;
+      const trimDuration = ws;
 
       // Setup canvas matching video dimensions
       const canvas = document.createElement('canvas');
@@ -227,13 +220,13 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
         };
 
         // Seek to start and begin recording
-        video.currentTime = startTime;
+        video.currentTime = startT;
         video.onseeked = () => {
           recorder.start();
           video.play();
 
           const drawFrame = () => {
-            if (video.currentTime >= endTime || video.paused) {
+            if (video.currentTime >= endT || video.paused) {
               video.pause();
               recorder.stop();
               return;
@@ -242,7 +235,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             // Update progress
-            const elapsed = video.currentTime - startTime;
+            const elapsed = video.currentTime - startT;
             const progress = Math.min(95, (elapsed / trimDuration) * 100);
             setState(prev => ({ ...prev, processingProgress: progress, currentTime: video.currentTime }));
 
@@ -255,18 +248,17 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
       setState(prev => ({ ...prev, isProcessing: false }));
       throw error;
     }
-  }, [state.startTime, state.endTime, file]);
-
-  const selectedDuration = Math.round((state.endTime - state.startTime) * 10) / 10;
+  }, [state.startTime, state.duration, maxDuration, file]);
 
   return {
     videoRef,
     canvasRef,
     state,
+    endTime,
     selectedDuration,
     maxDuration,
+    windowSize,
     setStartTime,
-    setEndTime,
     togglePlay,
     seekPreview,
     trimVideo,
