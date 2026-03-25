@@ -559,6 +559,26 @@ const AdvertiserOrders = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Group Dialogs */}
+      <CreateGroupDialog
+        isOpen={createGroupDialogOpen}
+        onClose={() => setCreateGroupDialogOpen(false)}
+        onConfirm={(nome, cor) => createGroup(nome, cor)}
+      />
+      {editingGroup && (
+        <CreateGroupDialog
+          isOpen={!!editingGroup}
+          onClose={() => setEditingGroup(null)}
+          onConfirm={(nome, cor) => {
+            updateGroup(editingGroup.id, { nome, cor });
+            setEditingGroup(null);
+          }}
+          initialName={editingGroup.nome}
+          initialColor={editingGroup.cor}
+          title="Editar Grupo"
+        />
+      )}
     </div>);
 
 };
