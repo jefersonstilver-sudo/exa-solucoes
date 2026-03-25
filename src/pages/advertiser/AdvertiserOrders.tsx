@@ -116,6 +116,35 @@ const AdvertiserOrders = () => {
   }>({ isOpen: false, itemId: null, itemType: 'order' });
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Order groups
+  const { groups, createGroup, updateGroup, deleteGroup, moveOrderToGroup } = useOrderGroups(userProfile?.id);
+  const [showGrouped, setShowGrouped] = useState(false);
+  const [createGroupDialogOpen, setCreateGroupDialogOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<any>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
+  const [draggedOrderId, setDraggedOrderId] = useState<string | null>(null);
+
+  const toggleGroupExpanded = (groupId: string) => {
+    setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
+
+  const handleDragStart = (e: React.DragEvent, orderId: string) => {
+    setDraggedOrderId(orderId);
+    e.dataTransfer.setData('text/plain', orderId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleGroupDrop = async (e: React.DragEvent, groupId: string | null) => {
+    e.preventDefault();
+    setDragOverGroupId(null);
+    const orderId = e.dataTransfer.getData('text/plain') || draggedOrderId;
+    if (orderId) {
+      await moveOrderToGroup(orderId, groupId);
+    }
+    setDraggedOrderId(null);
+  };
+
   const { finalizeAttemptToOrder, isProcessing: isProcessingAttempt } = useAttemptFinalizer();
 
   // Delete handler
