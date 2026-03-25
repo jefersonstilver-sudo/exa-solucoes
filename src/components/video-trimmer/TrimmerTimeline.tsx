@@ -110,7 +110,7 @@ export const TrimmerTimeline: React.FC<TrimmerTimelineProps> = ({
       {/* Timeline track */}
       <div
         ref={trackRef}
-        className="relative w-full h-16 sm:h-20 rounded-lg overflow-hidden cursor-pointer select-none touch-none"
+        className="relative w-full h-20 sm:h-24 rounded-xl overflow-hidden cursor-pointer select-none touch-none border-2 border-slate-200/80 shadow-sm"
         onClick={handleTrackClick}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -139,17 +139,17 @@ export const TrimmerTimeline: React.FC<TrimmerTimelineProps> = ({
 
         {/* Dimmed areas outside selection */}
         <div
-          className="absolute top-0 bottom-0 left-0 bg-black/60 transition-all"
+          className="absolute top-0 bottom-0 left-0 bg-black/55 transition-all duration-75"
           style={{ width: `${startPct}%` }}
         />
         <div
-          className="absolute top-0 bottom-0 right-0 bg-black/60 transition-all"
+          className="absolute top-0 bottom-0 right-0 bg-black/55 transition-all duration-75"
           style={{ width: `${100 - endPct}%` }}
         />
 
-        {/* Selected region border */}
+        {/* Selected region border (top/bottom yellow like WhatsApp) */}
         <div
-          className="absolute top-0 bottom-0 border-y-[3px] border-[hsl(var(--primary))] transition-all"
+          className="absolute top-0 bottom-0 border-y-[3px] border-[#C7141A] transition-all duration-75"
           style={{ left: `${startPct}%`, width: `${endPct - startPct}%` }}
           onPointerDown={(e) => handlePointerDown(e, 'region')}
         />
@@ -157,43 +157,44 @@ export const TrimmerTimeline: React.FC<TrimmerTimelineProps> = ({
         {/* Start handle */}
         <div
           className={cn(
-            "absolute top-0 bottom-0 w-5 sm:w-6 cursor-ew-resize z-10 flex items-center justify-center",
-            "bg-[hsl(var(--primary))] rounded-l-md transition-shadow",
-            dragging === 'start' && "shadow-lg shadow-primary/40"
+            "absolute top-0 bottom-0 w-6 sm:w-7 cursor-ew-resize z-10 flex items-center justify-center",
+            "bg-[#C7141A] rounded-l-lg transition-all",
+            dragging === 'start' && "shadow-xl shadow-red-500/50 scale-y-105"
           )}
-          style={{ left: `calc(${startPct}% - 10px)` }}
+          style={{ left: `calc(${startPct}% - 12px)` }}
           onPointerDown={(e) => handlePointerDown(e, 'start')}
         >
-          <div className="w-0.5 h-6 sm:h-8 bg-white/80 rounded-full" />
+          <div className="w-[3px] h-7 sm:h-9 bg-white/90 rounded-full" />
         </div>
 
         {/* End handle */}
         <div
           className={cn(
-            "absolute top-0 bottom-0 w-5 sm:w-6 cursor-ew-resize z-10 flex items-center justify-center",
-            "bg-[hsl(var(--primary))] rounded-r-md transition-shadow",
-            dragging === 'end' && "shadow-lg shadow-primary/40"
+            "absolute top-0 bottom-0 w-6 sm:w-7 cursor-ew-resize z-10 flex items-center justify-center",
+            "bg-[#C7141A] rounded-r-lg transition-all",
+            dragging === 'end' && "shadow-xl shadow-red-500/50 scale-y-105"
           )}
-          style={{ left: `calc(${endPct}% - 10px)` }}
+          style={{ left: `calc(${endPct}% - 12px)` }}
           onPointerDown={(e) => handlePointerDown(e, 'end')}
         >
-          <div className="w-0.5 h-6 sm:h-8 bg-white/80 rounded-full" />
+          <div className="w-[3px] h-7 sm:h-9 bg-white/90 rounded-full" />
         </div>
 
         {/* Playhead */}
         {currentTime >= startTime && currentTime <= endTime && (
           <div
-            className="absolute top-0 bottom-0 w-0.5 bg-white shadow-md z-20 pointer-events-none"
-            style={{ left: `${currentPct}%` }}
+            className="absolute top-0 bottom-0 w-[3px] bg-white z-20 pointer-events-none"
+            style={{ left: `${currentPct}%`, boxShadow: '0 0 8px rgba(0,0,0,0.5)' }}
           >
-            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white shadow" />
+            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-white shadow-md" />
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-white shadow-md" />
           </div>
         )}
       </div>
 
       {/* Total duration label */}
       <div className="flex justify-end">
-        <span className="text-[10px] text-slate-400">
+        <span className="text-[10px] text-slate-400 font-mono">
           Duração total: {formatTime(duration)}
         </span>
       </div>

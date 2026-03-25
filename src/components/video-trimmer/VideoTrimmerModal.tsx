@@ -56,25 +56,26 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+          style={{ zIndex: 99999 }}
           onClick={(e) => e.target === e.currentTarget && !state.isProcessing && onClose()}
         >
           <motion.div
-            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            initial={{ scale: 0.92, opacity: 0, y: 30 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="w-full max-w-2xl bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl overflow-hidden border border-slate-200/50"
+            exit={{ scale: 0.92, opacity: 0, y: 30 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 350 }}
+            className="w-full max-w-[680px] bg-white rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)] overflow-hidden border border-slate-200/60"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[hsl(var(--primary))]/10 flex items-center justify-center">
-                  <Scissors className="w-4 h-4 text-[hsl(var(--primary))]" />
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#C7141A]/10 flex items-center justify-center">
+                  <Scissors className="w-[18px] h-[18px] text-[#C7141A]" />
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-slate-900">Cortar Vídeo</h2>
-                  <p className="text-xs text-slate-500">
+                  <h2 className="text-[15px] font-bold text-slate-900 tracking-tight">Cortar Vídeo</h2>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
                     Selecione até {maxDuration}s do vídeo
                   </p>
                 </div>
@@ -84,15 +85,15 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
                 disabled={state.isProcessing}
                 className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors disabled:opacity-50"
               >
-                <X className="w-4 h-4 text-slate-500" />
+                <X className="w-4 h-4 text-slate-400" />
               </button>
             </div>
 
             {/* Video Preview */}
             <div className="px-5 pt-4">
               <div
-                className="relative w-full bg-black rounded-xl overflow-hidden"
-                style={{ aspectRatio: '16/9' }}
+                className="relative w-full bg-black rounded-xl overflow-hidden shadow-inner"
+                style={{ aspectRatio: '16/9', maxHeight: '340px' }}
               >
                 <video
                   ref={videoRef}
@@ -108,32 +109,35 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
                     onClick={togglePlay}
                     className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-colors"
                   >
-                    <div className="w-14 h-14 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg">
-                      <Play className="w-6 h-6 text-slate-900 ml-1" />
+                    <div className="w-14 h-14 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center shadow-xl">
+                      <Play className="w-6 h-6 text-slate-900 ml-0.5" />
                     </div>
                   </button>
                 )}
 
                 {/* Current time badge */}
-                <div className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-black/60 backdrop-blur text-white text-xs font-mono">
+                <div className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur text-white text-xs font-mono tracking-wide">
                   {formatTime(state.currentTime)}
                 </div>
 
                 {/* Loading overlay */}
                 {!state.isReady && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
-                    <Loader2 className="w-8 h-8 text-slate-400 animate-spin" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-slate-900/90">
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader2 className="w-8 h-8 text-white/70 animate-spin" />
+                      <span className="text-xs text-white/50">Carregando vídeo...</span>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Play/Pause button */}
+            {/* Play/Pause control */}
             {state.isReady && (
               <div className="flex justify-center py-3">
                 <button
                   onClick={togglePlay}
-                  className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
+                  className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all active:scale-95"
                 >
                   {state.isPlaying ? (
                     <Pause className="w-4 h-4 text-slate-700" />
@@ -145,7 +149,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
             )}
 
             {/* Timeline */}
-            <div className="px-5 pb-3">
+            <div className="px-5 pb-2">
               {state.isReady && (
                 <TrimmerTimeline
                   duration={state.duration}
@@ -163,25 +167,25 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
 
             {/* Duration info */}
             <div className="px-5 pb-4">
-              <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-slate-50 border border-slate-100">
-                <span className="text-sm text-slate-600">Trecho selecionado:</span>
-                <span className={`text-sm font-semibold ${
-                  selectedDuration > maxDuration ? 'text-red-600' : 'text-[hsl(var(--primary))]'
+              <div className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-50/80 border border-slate-100">
+                <span className="text-[13px] text-slate-500">Trecho:</span>
+                <span className={`text-[13px] font-bold tabular-nums ${
+                  selectedDuration > maxDuration ? 'text-red-600' : 'text-[#C7141A]'
                 }`}>
                   {selectedDuration.toFixed(1)}s
                 </span>
-                <span className="text-sm text-slate-400">/ {maxDuration}s máx</span>
+                <span className="text-[13px] text-slate-400">/ {maxDuration}s máx</span>
               </div>
             </div>
 
             {/* Processing progress */}
             {state.isProcessing && (
               <div className="px-5 pb-4">
-                <div className="space-y-2">
+                <div className="space-y-2 p-3 rounded-xl bg-slate-50 border border-slate-100">
                   <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 text-[hsl(var(--primary))] animate-spin" />
+                    <Loader2 className="w-4 h-4 text-[#C7141A] animate-spin" />
                     <span className="text-sm text-slate-600">Processando vídeo...</span>
-                    <span className="text-sm font-mono text-slate-500 ml-auto">
+                    <span className="text-sm font-mono font-semibold text-slate-700 ml-auto">
                       {Math.round(state.processingProgress)}%
                     </span>
                   </div>
@@ -196,14 +200,14 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
                 variant="ghost"
                 onClick={onClose}
                 disabled={state.isProcessing}
-                className="text-slate-600"
+                className="text-slate-500 hover:text-slate-700"
               >
                 Cancelar
               </Button>
               <Button
                 onClick={handleTrim}
                 disabled={state.isProcessing || !state.isReady || selectedDuration > maxDuration}
-                className="bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-white gap-2"
+                className="bg-[#C7141A] hover:bg-[#B40D1A] text-white gap-2 shadow-lg shadow-red-500/20 transition-all active:scale-[0.97]"
               >
                 {state.isProcessing ? (
                   <>
