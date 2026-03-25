@@ -10067,6 +10067,33 @@ export type Database = {
           },
         ]
       }
+      pedido_grupos: {
+        Row: {
+          cor: string | null
+          created_at: string | null
+          id: string
+          nome: string
+          ordem: number | null
+          user_id: string
+        }
+        Insert: {
+          cor?: string | null
+          created_at?: string | null
+          id?: string
+          nome: string
+          ordem?: number | null
+          user_id: string
+        }
+        Update: {
+          cor?: string | null
+          created_at?: string | null
+          id?: string
+          nome?: string
+          ordem?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       pedido_status_log: {
         Row: {
           created_at: string
@@ -10207,6 +10234,7 @@ export type Database = {
           email: string | null
           exigir_contrato: boolean | null
           expires_at: string | null
+          grupo_id: string | null
           id: string
           ip_origem: string | null
           is_fidelidade: boolean | null
@@ -10268,6 +10296,7 @@ export type Database = {
           email?: string | null
           exigir_contrato?: boolean | null
           expires_at?: string | null
+          grupo_id?: string | null
           id?: string
           ip_origem?: string | null
           is_fidelidade?: boolean | null
@@ -10329,6 +10358,7 @@ export type Database = {
           email?: string | null
           exigir_contrato?: boolean | null
           expires_at?: string | null
+          grupo_id?: string | null
           id?: string
           ip_origem?: string | null
           is_fidelidade?: boolean | null
@@ -10385,6 +10415,13 @@ export type Database = {
             columns: ["cupom_id"]
             isOneToOne: false
             referencedRelation: "cupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "pedido_grupos"
             referencedColumns: ["id"]
           },
           {
