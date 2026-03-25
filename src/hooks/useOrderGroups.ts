@@ -58,6 +58,8 @@ export const useOrderGroups = (userId?: string) => {
         .select()
         .single();
       if (error) throw error;
+      // Optimistic update — add to state immediately
+      setGroups(prev => [...prev, data as OrderGroup]);
       toast.success('Grupo criado com sucesso');
       return data;
     } catch (err: any) {
@@ -73,6 +75,8 @@ export const useOrderGroups = (userId?: string) => {
         .update(updates)
         .eq('id', groupId);
       if (error) throw error;
+      // Optimistic update
+      setGroups(prev => prev.map(g => g.id === groupId ? { ...g, ...updates } : g));
       toast.success('Grupo atualizado');
     } catch (err: any) {
       toast.error('Erro ao atualizar grupo', { description: err.message });
@@ -86,6 +90,8 @@ export const useOrderGroups = (userId?: string) => {
         .delete()
         .eq('id', groupId);
       if (error) throw error;
+      // Optimistic update
+      setGroups(prev => prev.filter(g => g.id !== groupId));
       toast.success('Grupo excluído');
     } catch (err: any) {
       toast.error('Erro ao excluir grupo', { description: err.message });
@@ -99,6 +105,7 @@ export const useOrderGroups = (userId?: string) => {
         .update({ grupo_id: groupId } as any)
         .eq('id', orderId);
       if (error) throw error;
+      toast.success('Pedido movido com sucesso');
     } catch (err: any) {
       toast.error('Erro ao mover pedido', { description: err.message });
     }
