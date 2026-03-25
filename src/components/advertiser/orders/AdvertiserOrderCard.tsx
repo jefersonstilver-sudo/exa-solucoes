@@ -125,8 +125,11 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
       className={cn(
         'bg-card border border-border/40 rounded-xl shadow-sm overflow-hidden',
         'hover:shadow-md transition-all duration-200',
-        item.type === 'attempt' && 'border-l-4 border-l-orange-500'
+        item.type === 'attempt' && 'border-l-4 border-l-orange-500',
+        draggable && 'cursor-grab active:cursor-grabbing'
       )}
+      draggable={draggable}
+      onDragStart={draggable && onDragStart ? (e) => onDragStart(e, item.id) : undefined}
     >
       <div className={cn('flex', isMobile ? 'flex-col' : 'flex-row')}>
 
