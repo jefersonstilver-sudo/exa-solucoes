@@ -210,7 +210,8 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               {slot.video_data && getStatusIcon(slot.approval_status)}
               {/* Badges dos status - Ultra Compacto Mobile */}
               {slot.approval_status === 'rejected' && <Badge variant="destructive" className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2">✗</Badge>}
-              {slot.approval_status === 'pending' && <Badge variant="secondary" className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2">⏱</Badge>}
+              {slot.approval_status === 'pending' && slot.video_data && <Badge className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2 bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-100">Enviado</Badge>}
+              {slot.approval_status === 'pending' && !slot.video_data && <Badge variant="secondary" className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2">⏱</Badge>}
             </div>
           </div>
           
