@@ -253,15 +253,15 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         </Button>
       </div>;
   }
-  return <div className="border border-gray-200 rounded-lg p-2 sm:p-4 text-center bg-white/50">
+  return <div className={`rounded-lg p-2 sm:p-4 text-center transition-all duration-300 ${selectedFile ? 'border-2 border-green-400 bg-green-50/60 shadow-md' : 'border border-gray-200 bg-white/50'}`}>
       <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="video/*" className="hidden" id={`file-upload-${slotPosition}`} />
       
       <div className="space-y-1 sm:space-y-3">
         <div className="flex items-center gap-2 lg:flex-col">
-          <Video className="h-4 w-4 sm:h-10 sm:w-10 text-gray-400 shrink-0 lg:mx-auto lg:mb-2" />
+          <Video className={`h-4 w-4 sm:h-10 sm:w-10 shrink-0 lg:mx-auto lg:mb-2 ${selectedFile ? 'text-green-500' : 'text-gray-400'}`} />
           <div className="flex-1 text-left lg:text-center">
-            <p className="text-[10px] sm:text-sm text-gray-600 font-medium leading-tight">
-              Envie aqui seu vídeo {isVertical ? 'vertical' : 'horizontal'}!
+            <p className={`text-[10px] sm:text-sm font-medium leading-tight ${selectedFile ? 'text-green-700' : 'text-gray-600'}`}>
+              {selectedFile ? '✓ Vídeo pronto para envio!' : `Envie aqui seu vídeo ${isVertical ? 'vertical' : 'horizontal'}!`}
             </p>
             
           </div>
@@ -277,7 +277,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
           </Button>
         </label>
         
-        {selectedFile && <div className="text-[9px] sm:text-xs text-gray-500 bg-white p-1 sm:p-2 rounded border">
+        {selectedFile && <div className="text-[9px] sm:text-xs text-green-800 bg-green-100 p-1 sm:p-2 rounded border border-green-300">
             <div className="truncate"><strong>Arquivo:</strong> {selectedFile.name}</div>
             <div><strong>Tam:</strong> {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</div>
           </div>}

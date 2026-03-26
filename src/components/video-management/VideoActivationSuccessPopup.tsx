@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CheckCircle, Monitor, Clock } from 'lucide-react';
+import { X, CheckCircle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SuccessAnimation } from './SuccessAnimation';
 
@@ -74,10 +74,10 @@ export const VideoActivationSuccessPopup: React.FC<VideoActivationSuccessPopupPr
                   transition={{ delay: 0.1, duration: 0.2 }}
                 >
                   <h2 className="text-xl font-bold text-gray-900 mb-1">
-                    🎉 Vídeo Selecionado!
+                    🎉 Vídeo Enviado!
                   </h2>
                   <p className="text-gray-600 text-sm">
-                    {videoName} foi selecionado com sucesso
+                    {videoName} foi enviado para aprovação
                   </p>
                 </motion.div>
 
@@ -86,15 +86,15 @@ export const VideoActivationSuccessPopup: React.FC<VideoActivationSuccessPopupPr
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15, duration: 0.2 }}
-                  className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-5 border border-blue-100"
+                  className="bg-gradient-to-r from-blue-50 to-amber-50 rounded-xl p-5 border border-amber-100"
                 >
                   <div className="flex items-center justify-center space-x-3 mb-2">
-                    <Monitor className="h-5 w-5 text-blue-600" />
-                    <span className="font-semibold text-gray-900">Entrando no Ar</span>
+                    <Clock className="h-5 w-5 text-amber-600" />
+                    <span className="font-semibold text-gray-900">Em Análise</span>
                   </div>
                   <p className="text-gray-700 text-sm leading-relaxed">
-                    Seu vídeo entrará no ar nos painéis selecionados em até{' '}
-                    <span className="font-bold text-blue-600">20 minutos</span>
+                    Seu vídeo foi enviado e será analisado pela nossa equipe.{' '}
+                    <span className="font-bold text-amber-600">Em breve estará disponível!</span>
                   </p>
                 </motion.div>
 
@@ -105,8 +105,8 @@ export const VideoActivationSuccessPopup: React.FC<VideoActivationSuccessPopupPr
                   transition={{ delay: 0.2, duration: 0.2 }}
                   className="flex items-center justify-center space-x-2 text-sm text-gray-500"
                 >
-                  <Clock className="h-4 w-4" />
-                  <span>Sincronização automática ativa</span>
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span>Você será notificado quando for aprovado</span>
                 </motion.div>
 
                 {/* Botão de ação otimizado */}
@@ -119,7 +119,7 @@ export const VideoActivationSuccessPopup: React.FC<VideoActivationSuccessPopupPr
                     onClick={onClose}
                     className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white rounded-xl py-3 font-medium transition-all duration-150 transform hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    Perfeito! 🚀
+                    Entendi! ✅
                   </Button>
                 </motion.div>
               </div>
