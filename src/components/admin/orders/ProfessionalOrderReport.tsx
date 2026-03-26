@@ -914,7 +914,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                                   document.body.removeChild(a);
                                 }}
                                 title="Download vídeo original"
-                                className="absolute top-2 right-2 p-1.5 rounded bg-black/60 hover:bg-black/80 text-white transition-opacity opacity-0 group-hover:opacity-100"
+                                className="absolute top-2 right-2 p-1.5 rounded bg-black/60 hover:bg-black/80 text-white transition-colors"
                               >
                                 <Download className="h-4 w-4" />
                               </button>
