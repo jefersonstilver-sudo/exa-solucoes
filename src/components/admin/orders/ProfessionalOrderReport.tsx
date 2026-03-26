@@ -904,14 +904,23 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                                 </span>
                               </div>
                               <button
-                                onClick={(e) => {
+                                onClick={async (e) => {
                                   e.stopPropagation();
-                                  const a = document.createElement('a');
-                                  a.href = video.video_data.url;
-                                  a.download = `${video.video_data.nome || 'video'}.mp4`;
-                                  document.body.appendChild(a);
-                                  a.click();
-                                  document.body.removeChild(a);
+                                  try {
+                                    const response = await fetch(video.video_data.url);
+                                    const blob = await response.blob();
+                                    const blobUrl = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = blobUrl;
+                                    a.download = `${video.video_data.nome || 'video'}.mp4`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(blobUrl);
+                                  } catch (err) {
+                                    console.error('Erro ao baixar vídeo:', err);
+                                    window.open(video.video_data.url, '_blank');
+                                  }
                                 }}
                                 title="Download vídeo original"
                                 className="absolute top-2 right-2 p-1.5 rounded bg-black/60 hover:bg-black/80 text-white transition-colors"
