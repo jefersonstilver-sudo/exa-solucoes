@@ -156,7 +156,10 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     const video = videoRef.current;
     if (!video) throw new Error('Video element not available');
 
-    setState(prev => ({ ...prev, isProcessing: true, processingProgress: 0 }));
+    // Stop playback if active
+    video.pause();
+    cancelAnimationFrame(animFrameRef.current);
+    setState(prev => ({ ...prev, isPlaying: false, isProcessing: true, processingProgress: 0 }));
 
     try {
       const startT = state.startTime;
@@ -202,6 +205,25 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
       };
 
       return new Promise<File>((resolve, reject) => {
+        let safetyTimeout: ReturnType<typeof setTimeout>;
+        let drawFrameId: number;
+        let resolved = false;
+
+        const cleanup = () => {
+          if (safetyTimeout) clearTimeout(safetyTimeout);
+          if (drawFrameId) cancelAnimationFrame(drawFrameId);
+          video.pause();
+        };
+
+        const stopRecording = () => {
+          if (resolved) return;
+          resolved = true;
+          cleanup();
+          if (recorder.state === 'recording') {
+            recorder.stop();
+          }
+        };
+
         recorder.onstop = () => {
           const blob = new Blob(chunks, { type: mimeType });
           const ext = mimeType.includes('webm') ? 'webm' : 'mp4';
@@ -215,34 +237,50 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
         };
 
         recorder.onerror = () => {
+          cleanup();
           setState(prev => ({ ...prev, isProcessing: false }));
           reject(new Error('Erro ao processar vídeo'));
         };
 
-        // Seek to start and begin recording
+        // Safety timeout: 30s max processing time
+        safetyTimeout = setTimeout(() => {
+          console.warn('⚠️ Trim safety timeout reached, forcing stop');
+          stopRecording();
+        }, 30_000);
+
+        // Seek to start, then begin recording ONCE
         video.currentTime = startT;
-        video.onseeked = () => {
+        video.addEventListener('seeked', () => {
+          // Guard: only start if not already recording
+          if (recorder.state === 'recording') return;
+          
           recorder.start();
           video.play();
 
           const drawFrame = () => {
-            if (video.currentTime >= endT || video.paused) {
-              video.pause();
-              recorder.stop();
+            if (resolved) return;
+
+            if (video.currentTime >= endT || video.paused || video.ended) {
+              stopRecording();
               return;
             }
 
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // Update progress
+            // Real progress based on actual video position
             const elapsed = video.currentTime - startT;
-            const progress = Math.min(95, (elapsed / trimDuration) * 100);
+            const progress = Math.min(99, (elapsed / trimDuration) * 100);
             setState(prev => ({ ...prev, processingProgress: progress, currentTime: video.currentTime }));
 
-            requestAnimationFrame(drawFrame);
+            drawFrameId = requestAnimationFrame(drawFrame);
           };
           drawFrame();
-        };
+        }, { once: true });
+
+        // Fallback: if video ends before endT
+        video.addEventListener('ended', () => {
+          stopRecording();
+        }, { once: true });
       });
     } catch (error) {
       setState(prev => ({ ...prev, isProcessing: false }));
