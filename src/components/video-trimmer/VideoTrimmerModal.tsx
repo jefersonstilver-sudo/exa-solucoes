@@ -68,7 +68,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
             className="
               w-full h-[100dvh]
-              sm:w-[95vw] sm:max-w-4xl sm:h-auto sm:max-h-[92vh]
+              sm:w-[95vw] sm:max-w-5xl sm:h-auto sm:max-h-[92vh]
               bg-white sm:rounded-2xl
               shadow-[0_30px_100px_-20px_rgba(0,0,0,0.6)]
               overflow-hidden flex flex-col
@@ -98,10 +98,10 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
 
             {/* Video Preview — takes maximum space */}
             <div className="flex-1 min-h-0 flex flex-col bg-slate-950">
-              <div className="flex-1 min-h-0 flex items-center justify-center p-3 sm:p-5">
+              <div className="flex-1 min-h-[280px] sm:min-h-[420px] flex items-center justify-center p-3 sm:p-5">
                 <div
-                  className="relative w-full h-full max-h-full bg-black rounded-xl overflow-hidden shadow-[inset_0_0_30px_rgba(0,0,0,0.4)]"
-                  style={{ aspectRatio: '16/9', maxHeight: '100%' }}
+                  className="relative w-full bg-black rounded-xl overflow-hidden shadow-[inset_0_0_30px_rgba(0,0,0,0.4)]"
+                  style={{ aspectRatio: '16/9' }}
                 >
                   <video
                     ref={videoRef}
@@ -142,7 +142,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
 
               {/* Play/Pause button */}
               {state.isReady && (
-                <div className="flex justify-center pb-2">
+                <div className="flex justify-center py-3">
                   <button
                     onClick={togglePlay}
                     className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center transition-all"
@@ -190,19 +190,19 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
             )}
 
             {/* Actions */}
-            <div className="flex items-center justify-between sm:justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white flex-shrink-0 safe-bottom">
+            <div className="flex items-center justify-between sm:justify-end gap-4 px-5 sm:px-6 py-5 border-t border-slate-100 bg-white flex-shrink-0 safe-bottom">
               <Button
                 variant="ghost"
                 onClick={onClose}
                 disabled={state.isProcessing}
-                className="text-slate-500 hover:text-slate-700 flex-1 sm:flex-none h-12 sm:h-11 text-sm"
+                className="text-slate-500 hover:text-slate-700 flex-1 sm:flex-none sm:min-w-[140px] h-12 sm:h-11 text-sm"
               >
                 Cancelar
               </Button>
               <Button
                 onClick={handleTrim}
                 disabled={state.isProcessing || !state.isReady}
-                className="bg-[#C7141A] hover:bg-[#B40D1A] text-white gap-2 shadow-lg shadow-red-500/25 transition-all active:scale-[0.97] flex-1 sm:flex-none h-12 sm:h-11 text-sm font-semibold"
+                className="bg-[#C7141A] hover:bg-[#B40D1A] text-white gap-2 shadow-lg shadow-red-500/25 transition-all active:scale-[0.97] flex-1 sm:flex-none sm:min-w-[180px] h-12 sm:h-11 text-sm font-semibold"
               >
                 {state.isProcessing ? (
                   <>

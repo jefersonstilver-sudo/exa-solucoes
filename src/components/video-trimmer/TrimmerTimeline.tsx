@@ -107,7 +107,7 @@ export const TrimmerTimeline: React.FC<TrimmerTimelineProps> = ({
       <div
         ref={trackRef}
         className="relative w-full rounded-2xl overflow-hidden select-none touch-none"
-        style={{ height: '80px' }}
+        style={{ height: '88px' }}
         onClick={handleTrackClick}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -157,13 +157,13 @@ export const TrimmerTimeline: React.FC<TrimmerTimelineProps> = ({
           onPointerDown={handlePointerDown}
         >
           {/* Left edge bar */}
-          <div className="absolute left-0 top-0 bottom-0 w-5 bg-[#C7141A] rounded-l-xl flex items-center justify-center">
-            <div className="w-[3px] h-7 bg-white/90 rounded-full" />
+          <div className="absolute left-0 top-0 bottom-0 w-6 bg-[#C7141A] rounded-l-xl flex items-center justify-center">
+            <div className="w-[3px] h-8 bg-white/90 rounded-full" />
           </div>
 
           {/* Right edge bar */}
-          <div className="absolute right-0 top-0 bottom-0 w-5 bg-[#C7141A] rounded-r-xl flex items-center justify-center">
-            <div className="w-[3px] h-7 bg-white/90 rounded-full" />
+          <div className="absolute right-0 top-0 bottom-0 w-6 bg-[#C7141A] rounded-r-xl flex items-center justify-center">
+            <div className="w-[3px] h-8 bg-white/90 rounded-full" />
           </div>
 
           {/* Center duration badge */}
