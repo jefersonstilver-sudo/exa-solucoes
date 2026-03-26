@@ -1215,6 +1215,55 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                     </div>
                   )}
 
+                  {/* Contatos selecionados mas ainda não notificados */}
+                  {(() => {
+                    const receiptPhones = new Set(
+                      receipts.map(r => (r.contact_phone || '').replace(/\D/g, ''))
+                    );
+                    const pendingContacts = allSelectableContacts.filter(
+                      c => selectedNotifyContacts.includes(c.compositeId) &&
+                           !receiptPhones.has((c.telefone || '').replace(/\D/g, ''))
+                    );
+                    if (pendingContacts.length === 0) return null;
+                    return (
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-2">
+                          Aguardando envio
+                        </p>
+                        {pendingContacts.map(contact => (
+                          <div
+                            key={contact.compositeId}
+                            className="flex items-center justify-between px-3 py-2 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 text-sm"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Clock className="h-4 w-4 text-muted-foreground/50" />
+                              <span className="text-sm font-medium truncate">{contact.nome}</span>
+                            </div>
+                            <div className="flex items-center gap-1 ml-2">
+                              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                                Não notificado
+                              </span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 hover:bg-primary/10 flex-shrink-0"
+                                title="Enviar notificação para este contato"
+                                disabled={sendingReminder}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSendReminder([contact.compositeId]);
+                                }}
+                              >
+                                <Send className={cn("h-3 w-3 text-primary", sendingReminder && "animate-spin")} />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
                   {/* Botão Enviar Lembrete com Popover de seleção */}
                   <Popover open={reminderPopoverOpen} onOpenChange={setReminderPopoverOpen}>
                     <PopoverTrigger asChild>
