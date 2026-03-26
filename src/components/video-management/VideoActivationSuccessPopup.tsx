@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CheckCircle, Monitor, Clock } from 'lucide-react';
+import { X, CheckCircle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SuccessAnimation } from './SuccessAnimation';
 
