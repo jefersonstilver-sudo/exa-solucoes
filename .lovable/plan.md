@@ -1,19 +1,29 @@
 
 
-# Plano: Botao de download do video original
+# Plano: Atualizar IP da API externa
 
-## Mudanca
+## Problema
+O servidor da API externa mudou de IP. Todas as referências a `http://15.228.8.3:8000` precisam ser atualizadas para `http://18.228.252.149:8000`.
 
-Adicionar um botao minimalista (icone Download) no canto superior direito da area de preview do video (ao lado oposto do badge de Slot) em `ProfessionalOrderReport.tsx`.
+## Arquivos a alterar (8 arquivos, 55 ocorrências)
 
-### `src/components/admin/orders/ProfessionalOrderReport.tsx`
+| Arquivo | Ocorrências |
+|---------|-------------|
+| `supabase/functions/delete-video-from-external-api/index.ts` | 1 |
+| `supabase/functions/create-building-client/index.ts` | 2 |
+| `supabase/functions/delete-building-client/index.ts` | 2 |
+| `supabase/functions/upload-video-to-external-api/index.ts` | 1 |
+| `supabase/functions/sync-buildings-external-api/index.ts` | 1 |
+| `supabase/functions/global-toggle-ativo/index.ts` | 1 |
+| `supabase/functions/notify-active/index.ts` | 1 |
+| `supabase/functions/sync-video-status-to-aws/index.ts` | 1 |
 
-1. Adicionar `Download` ao import do lucide-react (linha 2)
-2. Na area de preview do video (linha 898-905), apos o badge de Slot, adicionar um botao no `top-2 right-2`:
-   - Icone `Download` pequeno (h-4 w-4) com fundo semi-transparente (`bg-black/60 hover:bg-black/80 text-white`)
-   - `onClick`: cria um `<a>` temporario com `href=video.video_data.url`, `download=video.video_data.nome + '.mp4'`, e dispara `.click()` para forcar o download com o nome original do arquivo
-   - Visivel apenas quando `video.video_data?.url` existe
+Arquivo de documentação (atualizar também):
+- `docs/VIDEO_LOGGING_SYSTEM.md` — 1 ocorrência
 
-### Arquivo editado
-1. `src/components/admin/orders/ProfessionalOrderReport.tsx`
+## Mudança
+Substituição direta de `15.228.8.3` por `18.228.252.149` em todos os arquivos listados. Nenhuma outra alteração de lógica ou UI.
+
+## Pós-deploy
+As Edge Functions alteradas precisarão ser re-deployed no Supabase para que a mudança entre em vigor.
 
