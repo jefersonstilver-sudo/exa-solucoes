@@ -18,7 +18,7 @@ serve(async (req) => {
     }
 
     console.log('[DELETE EDGE FUNCTION] Deletando cliente externo:', {
-      url: `http://15.228.8.3:8000/clientes/${cliente_id}`,
+      url: `http://18.228.252.149:8000/clientes/${cliente_id}`,
       cliente_id
     })
 
@@ -27,7 +27,7 @@ serve(async (req) => {
     const timeoutId = setTimeout(() => controller.abort(), 10000)
 
     try {
-      const response = await fetch(`http://15.228.8.3:8000/clientes/${cliente_id}`, {
+      const response = await fetch(`http://18.228.252.149:8000/clientes/${cliente_id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

@@ -276,7 +276,7 @@ serve(async (req) => {
       
       try {
         const externalApiResponse = await fetch(
-          `http://15.228.8.3:8000/propagandas/upload-propagandas/${clientId}`,
+          `http://18.228.252.149:8000/propagandas/upload-propagandas/${clientId}`,
           {
             method: 'POST',
             body: formDataForBuilding,

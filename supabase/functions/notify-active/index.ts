@@ -39,7 +39,7 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    const url = `http://15.228.8.3:8000/ativo/${clientId}`;
+    const url = `http://18.228.252.149:8000/ativo/${clientId}`;
     const body = {
       titulo,
       ativo: ativo === true

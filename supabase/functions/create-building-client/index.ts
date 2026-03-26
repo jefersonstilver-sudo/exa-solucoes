@@ -28,7 +28,7 @@ serve(async (req) => {
     }
 
     console.log('[EDGE FUNCTION] Enviando para API externa:', {
-      url: 'http://15.228.8.3:8000/criar-cliente',
+      url: 'http://18.228.252.149:8000/criar-cliente',
       payload
     })
 
@@ -37,7 +37,7 @@ serve(async (req) => {
     const timeoutId = setTimeout(() => controller.abort(), 10000)
 
     try {
-      const response = await fetch('http://15.228.8.3:8000/criar-cliente', {
+      const response = await fetch('http://18.228.252.149:8000/criar-cliente', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
