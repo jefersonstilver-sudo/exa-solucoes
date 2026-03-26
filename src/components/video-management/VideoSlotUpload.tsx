@@ -253,7 +253,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         </Button>
       </div>;
   }
-  return <div className={`rounded-lg p-2 sm:p-4 text-center transition-all duration-300 ${selectedFile ? 'border-2 border-green-400 bg-green-50/60 shadow-md' : 'border border-gray-200 bg-white/50'}`}>
+  return <div className="border border-gray-200 rounded-lg p-2 sm:p-4 text-center bg-white/50">
       <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="video/*" className="hidden" id={`file-upload-${slotPosition}`} />
       
       <div className="space-y-1 sm:space-y-3">
@@ -277,10 +277,9 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
           </Button>
         </label>
         
-        {selectedFile && <div className="text-[9px] sm:text-xs text-green-800 bg-green-100 p-1 sm:p-2 rounded border border-green-300">
+        {selectedFile && <div className="text-[9px] sm:text-xs text-gray-500 bg-white p-1 sm:p-2 rounded border">
             <div className="truncate"><strong>Arquivo:</strong> {selectedFile.name}</div>
             <div><strong>Tam:</strong> {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</div>
-            <div className="mt-1 text-green-700 font-semibold">✓ Vídeo pronto para envio</div>
           </div>}
       </div>
 
