@@ -142,7 +142,7 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   // URL base para chamadas - substituir {client_id}
-  const baseUrl = (wait_for || 'http://15.228.8.3:8000/ativo/{client_id}')
+  const baseUrl = (wait_for || 'http://18.228.252.149:8000/ativo/{client_id}')
     .replace('{client_id}', clientId);
 
   console.log(`🔗 [GLOBAL-TOGGLE] URL base: ${baseUrl}`);

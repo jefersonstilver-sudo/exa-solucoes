@@ -81,7 +81,7 @@ Clique no botão "Exportar" para baixar um arquivo `.txt` com todos os logs filt
   "action": "API Call",
   "data": {
     "clientId": "964d",
-    "url": "http://15.228.8.3:8000/ativo/964d",
+    "url": "http://18.228.252.149:8000/ativo/964d",
     "payload": {
       "titulo": "1762788321277_WhatsApp_Video_2025-11-10_at_9.24.37_AM",
       "ativo": true
