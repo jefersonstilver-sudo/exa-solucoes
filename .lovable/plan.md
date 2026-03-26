@@ -1,50 +1,39 @@
 
 
-# Plano: Revisao Completa do Video Trimmer
+# Plano: Corrigir Layout, Progresso Ficticio e Bug do MediaRecorder
 
-## Problemas identificados
+## Problemas Identificados
 
-1. **Z-index**: O modal usa `zIndex: 99999` inline mas esta renderizado DENTRO de um componente pai com contexto de stacking (motion.div, Card). Precisa ser renderizado via React Portal para escapar da hierarquia DOM.
-2. **Janela nao fixa**: Atualmente as alcas sao independentes. O usuario quer uma janela fixa de exatamente 10s (ou maxDuration) que so desliza pela timeline.
-3. **Modal pequeno**: Precisa ser fullscreen em mobile e maior em desktop.
-4. **Feedback ao arrastar**: Precisa de animacoes mais fluidas e indicadores visuais melhores.
+1. **Player mal alinhado e modulo pequeno**: O video preview usa `flex-1` com `aspectRatio: 16/9` que conflita — o video nao ocupa o espaco necessario. Precisa de altura minima fixa no desktop e melhor distribuicao do espaco.
+2. **Botoes mal posicionados**: O footer com botoes precisa de mais padding e melhor alinhamento em mobile.
+3. **MediaRecorder em loop infinito**: O `video.onseeked` (linha 224) pode disparar multiplas vezes, chamando `recorder.start()` quando ja esta gravando (erro confirmado no runtime: `InvalidStateError: Failed to execute 'start' on 'MediaRecorder': The MediaRecorder's state is 'recording'`). Isso trava o processamento.
+4. **Progresso ficticio**: O progresso e calculado por `(video.currentTime - startT) / trimDuration * 100`, capped em 95%. Se o recorder nunca chega ao `stop()`, fica em loop eterno entre 0-95%. Nao ha timeout de seguranca.
 
 ## Mudancas
 
-### 1. VideoTrimmerModal.tsx — Redesign completo
+### 1. `useVideoTrimmer.ts` — Corrigir bug critico do MediaRecorder
 
-- Renderizar via `ReactDOM.createPortal(modal, document.body)` para garantir que fique acima de TUDO
-- **Fullscreen em mobile**: `fixed inset-0` com `100dvh`
-- **Desktop**: modal centralizado com `max-w-4xl` (bem maior que o atual 720px)
-- Preview do video ocupa a maior area possivel (aspect-ratio 16/9, width total)
-- Remover scroll desnecessario — layout flex vertical com video grande + timeline compacta + botoes
-- Animacoes framer-motion refinadas (spring com damping otimizado)
-- Fundo `bg-black/90 backdrop-blur-xl` para imersao total
+- Usar `addEventListener('seeked', handler, { once: true })` em vez de `video.onseeked` para garantir que `recorder.start()` so e chamado UMA vez
+- Adicionar guard: verificar `recorder.state !== 'recording'` antes de chamar `start()`
+- Adicionar timeout de seguranca (30s) para evitar loop eterno — se expirar, forca `recorder.stop()` e entrega o que foi gravado
+- Quando `video.currentTime >= endT`, pausar video E parar recorder de forma segura (verificar `recorder.state`)
+- Escutar evento `video.ended` como fallback — se o video terminar antes do endT, parar recorder
 
-### 2. TrimmerTimeline.tsx — Janela fixa
+### 2. `VideoTrimmerModal.tsx` — Layout maior e melhor alinhado
 
-- **Logica nova**: Apenas UMA regiao arrastavel de tamanho fixo (= maxDuration)
-- Remover alcas individuais start/end
-- A regiao inteira e arrastavel (grab/drag) pela timeline
-- Ao arrastar, a regiao desliza mantendo sempre o tamanho fixo
-- Thumbnails maiores (h-20) com mais qualidade visual
-- Feedback visual: regiao ativa com borda vermelha grossa, areas fora escurecidas
-- Animacao suave no playhead com transition CSS
-- Indicador claro "10s" no centro da regiao selecionada
+- Video preview: substituir `flex-1 min-h-0` por altura minima `min-h-[300px] sm:min-h-[420px]` para garantir que o video seja grande
+- Aumentar o modal: `sm:max-w-5xl` (era 4xl)
+- Botoes: adicionar `px-6 py-5` no footer, gap maior, e tamanho minimo `min-w-[140px]` nos botoes
+- Centralizar melhor o play/pause button com `py-3` em vez de `pb-2`
 
-### 3. useVideoTrimmer.ts — Simplificar estado
+### 3. `TrimmerTimeline.tsx` — Ajustes menores de layout
 
-- `startTime` calculado automaticamente: `endTime = startTime + maxDuration`
-- Apenas `setStartTime` como setter (endTime e derivado)
-- Clamp: `startTime` entre 0 e `duration - maxDuration`
-
-### 4. Integracao (VideoSlotUpload + OrderConfirmation)
-
-- Mover renderizacao do `VideoTrimmerModal` para usar `createPortal(el, document.body)` dentro do proprio modal (nao precisa mudar os pais)
+- Aumentar altura da timeline de 80px para 88px no desktop
+- Melhorar touch targets dos handles laterais (w-6 em vez de w-5)
 
 ## Arquivos editados
 
-1. `src/components/video-trimmer/VideoTrimmerModal.tsx` — Rewrite com portal, fullscreen, layout maior
-2. `src/components/video-trimmer/TrimmerTimeline.tsx` — Rewrite com janela fixa arrastavel
-3. `src/components/video-trimmer/useVideoTrimmer.ts` — Simplificar para janela fixa
+1. `src/components/video-trimmer/useVideoTrimmer.ts` — Fix MediaRecorder, add safety timeout, fix onseeked
+2. `src/components/video-trimmer/VideoTrimmerModal.tsx` — Layout maior, video maior, botoes melhores
+3. `src/components/video-trimmer/TrimmerTimeline.tsx` — Timeline mais alta, handles maiores
 
