@@ -74,7 +74,7 @@ export const VideoActivationSuccessPopup: React.FC<VideoActivationSuccessPopupPr
                   transition={{ delay: 0.1, duration: 0.2 }}
                 >
                   <h2 className="text-xl font-bold text-gray-900 mb-1">
-                    🎉 Vídeo Selecionado!
+                    🎉 Vídeo Enviado!
                   </h2>
                   <p className="text-gray-600 text-sm">
                     {videoName} foi selecionado com sucesso
