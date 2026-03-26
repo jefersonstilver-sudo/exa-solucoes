@@ -158,7 +158,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
             </div>
 
             {/* Timeline section */}
-            <div className="px-4 sm:px-6 pt-4 pb-2 bg-white flex-shrink-0">
+            <div className="px-4 sm:px-6 pt-6 pb-3 bg-white flex-shrink-0 border-t border-slate-100">
               {state.isReady && (
                 <TrimmerTimeline
                   duration={state.duration}
@@ -190,7 +190,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
             )}
 
             {/* Actions */}
-            <div className="flex items-center justify-between sm:justify-end gap-4 px-5 sm:px-6 py-5 border-t border-slate-100 bg-white flex-shrink-0 safe-bottom">
+            <div className="flex items-center justify-between sm:justify-end gap-5 px-6 sm:px-8 py-6 border-t border-slate-100 bg-white flex-shrink-0" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
               <Button
                 variant="ghost"
                 onClick={onClose}

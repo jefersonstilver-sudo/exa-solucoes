@@ -187,7 +187,8 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     return false;
   };
   const isBlocked = slot.video_data && slot.approval_status !== 'approved';
-  const cardClasses = `transition-all duration-200 rounded-xl animate-fade-in ${slot.is_base_video ? 'border-2 border-yellow-500 bg-yellow-50/50 shadow-lg' : hasActiveSchedule && isScheduledActiveNow() ? 'border-2 border-green-500 bg-green-50/50 shadow-md' : hasActiveSchedule ? 'border border-blue-400 bg-blue-50/50 shadow-sm' : isBlocked ? 'border border-gray-300 bg-gray-50 opacity-75' : 'bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm hover:shadow-md'}`;
+  const isPendingWithVideo = slot.video_data && slot.approval_status === 'pending';
+  const cardClasses = `transition-all duration-200 rounded-xl animate-fade-in ${slot.is_base_video ? 'border-2 border-yellow-500 bg-yellow-50/50 shadow-lg' : hasActiveSchedule && isScheduledActiveNow() ? 'border-2 border-green-500 bg-green-50/50 shadow-md' : hasActiveSchedule ? 'border border-blue-400 bg-blue-50/50 shadow-sm' : isPendingWithVideo ? 'border-2 border-amber-400 bg-amber-50/60 shadow-md' : isBlocked ? 'border border-gray-300 bg-gray-50 opacity-75' : 'bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm hover:shadow-md'}`;
   const getScheduleTooltipContent = () => {
     if (!hasActiveSchedule || !slot.schedule_rules) return null;
     return <div className="p-2 space-y-2">
@@ -209,7 +210,8 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               {slot.video_data && getStatusIcon(slot.approval_status)}
               {/* Badges dos status - Ultra Compacto Mobile */}
               {slot.approval_status === 'rejected' && <Badge variant="destructive" className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2">✗</Badge>}
-              {slot.approval_status === 'pending' && <Badge variant="secondary" className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2">⏱</Badge>}
+              {slot.approval_status === 'pending' && slot.video_data && <Badge className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2 bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-100">Enviado</Badge>}
+              {slot.approval_status === 'pending' && !slot.video_data && <Badge variant="secondary" className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2">⏱</Badge>}
             </div>
           </div>
           

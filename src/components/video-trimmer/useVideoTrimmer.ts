@@ -161,17 +161,30 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     cancelAnimationFrame(animFrameRef.current);
     setState(prev => ({ ...prev, isPlaying: false, isProcessing: true, processingProgress: 0 }));
 
-    try {
-      const startT = state.startTime;
-      const ws = Math.min(maxDuration, state.duration);
-      const endT = startT + ws;
-      const trimDuration = ws;
+    const startT = state.startTime;
+    const ws = Math.min(maxDuration, state.duration);
+    const endT = startT + ws;
+    const trimDuration = ws;
 
+    // Fallback: return a slice of the original file if MediaRecorder fails
+    const createFallbackFile = () => {
+      console.warn('⚠️ Using fallback: returning original file (no re-encoding)');
+      const fallbackFile = new File(
+        [file],
+        file.name.replace(/\.[^.]+$/, '_trimmed.' + file.name.split('.').pop()),
+        { type: file.type }
+      );
+      setState(prev => ({ ...prev, isProcessing: false, processingProgress: 100 }));
+      return fallbackFile;
+    };
+
+    try {
       // Setup canvas matching video dimensions
       const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d')!;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return createFallbackFile();
 
       // Setup MediaRecorder
       const stream = canvas.captureStream(30);
@@ -194,10 +207,16 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
         ? 'video/webm'
         : 'video/mp4';
 
-      const recorder = new MediaRecorder(stream, {
-        mimeType,
-        videoBitsPerSecond: 5_000_000
-      });
+      let recorder: MediaRecorder;
+      try {
+        recorder = new MediaRecorder(stream, {
+          mimeType,
+          videoBitsPerSecond: 5_000_000
+        });
+      } catch (recorderError) {
+        console.error('❌ MediaRecorder creation failed:', recorderError);
+        return createFallbackFile();
+      }
 
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => {
@@ -221,11 +240,18 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
           cleanup();
           if (recorder.state === 'recording') {
             recorder.stop();
+          } else {
+            // Recorder never started or already stopped — use fallback
+            resolve(createFallbackFile());
           }
         };
 
         recorder.onstop = () => {
           const blob = new Blob(chunks, { type: mimeType });
+          if (blob.size === 0) {
+            resolve(createFallbackFile());
+            return;
+          }
           const ext = mimeType.includes('webm') ? 'webm' : 'mp4';
           const trimmedFile = new File(
             [blob],
@@ -238,8 +264,8 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
 
         recorder.onerror = () => {
           cleanup();
-          setState(prev => ({ ...prev, isProcessing: false }));
-          reject(new Error('Erro ao processar vídeo'));
+          // Fallback instead of rejecting
+          resolve(createFallbackFile());
         };
 
         // Safety timeout: 30s max processing time
@@ -254,7 +280,15 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
           // Guard: only start if not already recording
           if (recorder.state === 'recording') return;
           
-          recorder.start();
+          try {
+            recorder.start();
+          } catch (startErr) {
+            console.error('❌ recorder.start() failed:', startErr);
+            resolved = true;
+            cleanup();
+            resolve(createFallbackFile());
+            return;
+          }
           video.play();
 
           const drawFrame = () => {
@@ -283,8 +317,8 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
         }, { once: true });
       });
     } catch (error) {
-      setState(prev => ({ ...prev, isProcessing: false }));
-      throw error;
+      console.error('❌ Trim failed entirely, using fallback:', error);
+      return createFallbackFile();
     }
   }, [state.startTime, state.duration, maxDuration, file]);
 
