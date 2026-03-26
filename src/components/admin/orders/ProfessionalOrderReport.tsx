@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload, Key, Loader2, Send, Monitor, Smartphone, Plus, Trash2, ChevronDown, Building } from 'lucide-react';
+import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload, Key, Loader2, Send, Monitor, Smartphone, Plus, Trash2, ChevronDown, Building, Download } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import exaLogo from '@/assets/exa-logo.png';
 import { Button } from '@/components/ui/button';
@@ -903,6 +903,21 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                                   Slot {video.slot_position}
                                 </span>
                               </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const a = document.createElement('a');
+                                  a.href = video.video_data.url;
+                                  a.download = `${video.video_data.nome || 'video'}.mp4`;
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  document.body.removeChild(a);
+                                }}
+                                title="Download vídeo original"
+                                className="absolute top-2 right-2 p-1.5 rounded bg-black/60 hover:bg-black/80 text-white transition-opacity opacity-0 group-hover:opacity-100"
+                              >
+                                <Download className="h-4 w-4" />
+                              </button>
                             </> : <div className="w-full h-full flex items-center justify-center text-gray-500">
                               <Video className="h-8 w-8" />
                             </div>}
