@@ -122,7 +122,8 @@ export const PanelCard = ({
   const rawName = device.comments || device.name;
 
   // Extrair apenas o nome do prédio (primeira parte antes do " - ")
-  const displayName = rawName.split(' - ')[0].trim();
+  // Fallback para AnyDesk ID se nome estiver vazio
+  const displayName = rawName.split(' - ')[0].trim() || device.anydesk_client_id;
 
   // Cores por provedor
   const getProviderColor = (providerName: string) => {
