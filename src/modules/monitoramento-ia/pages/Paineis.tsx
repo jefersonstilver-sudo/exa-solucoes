@@ -417,7 +417,7 @@ export const PaineisPage = () => {
         <>
           {/* Visualização: Cards (2 cols mobile) ou Tabela (responsiva) */}
           {viewMode === 'cards' ? (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6 items-stretch">
               {sortedDevices.map((device) => (
                 <PanelCard
                   key={device.id}
