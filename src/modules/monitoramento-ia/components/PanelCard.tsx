@@ -122,7 +122,8 @@ export const PanelCard = ({
   const rawName = device.comments || device.name;
 
   // Extrair apenas o nome do prédio (primeira parte antes do " - ")
-  const displayName = rawName.split(' - ')[0].trim();
+  // Fallback para AnyDesk ID se nome estiver vazio
+  const displayName = rawName.split(' - ')[0].trim() || device.anydesk_client_id;
 
   // Cores por provedor
   const getProviderColor = (providerName: string) => {
@@ -219,7 +220,7 @@ export const PanelCard = ({
   return (
     <div 
       onClick={onClick} 
-      className={`glass-card rounded-[14px] shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border-2 overflow-hidden group hover:scale-[1.03] ${hasCriticalAlert ? 'border-red-600 animate-pulse shadow-lg shadow-red-200 glow-danger' : getCardBgClass()}`}
+      className={`glass-card rounded-[14px] shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border-2 overflow-hidden group hover:scale-[1.03] flex flex-col ${hasCriticalAlert ? 'border-red-600 animate-pulse shadow-lg shadow-red-200 glow-danger' : getCardBgClass()}`}
       style={{
         backgroundColor: hasCriticalAlert 
           ? undefined 
@@ -231,35 +232,33 @@ export const PanelCard = ({
       }}
     >
       {/* Corpo do card */}
-      <div className="p-2 sm:p-4 lg:p-6 text-center">
+      <div className="p-2 sm:p-4 lg:p-6 text-center flex-1 flex flex-col">
         {/* Nome principal grande */}
-        <div className="mb-1 sm:mb-2 lg:mb-3">
-          <div className="text-sm sm:text-lg lg:text-3xl font-bold text-gray-900 group-hover:text-gray-700 transition-colors leading-tight">
+        <div className="mb-1 sm:mb-2 lg:mb-3 min-h-[20px] sm:min-h-[28px] lg:min-h-[36px]">
+          <div className="text-sm sm:text-lg lg:text-3xl font-bold text-gray-900 group-hover:text-gray-700 transition-colors leading-tight line-clamp-1">
             {displayName}
           </div>
         </div>
 
         {/* Provedor - colorido */}
-        <div className="mb-2 sm:mb-3 lg:mb-4">
+        <div className="mb-2 sm:mb-3 lg:mb-4 min-h-[16px] sm:min-h-[20px] lg:min-h-[28px]">
           <div className={`text-xs sm:text-sm lg:text-lg font-semibold tracking-wide ${getProviderColor(provider)}`}>
             {provider}
           </div>
         </div>
 
-        {/* Nome do prédio (condomínio) */}
-        {device.condominio_name && (
-          <div className="mb-2 sm:mb-3 lg:mb-4">
-            {device.metadata?.torre && (
-              <div className="text-[10px] sm:text-xs lg:text-sm text-gray-600 mt-1">
-                Torre {device.metadata.torre}
-                {device.metadata?.elevador && ` - Elevador ${device.metadata.elevador}`}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Nome do prédio (condomínio) - altura fixa */}
+        <div className="mb-2 sm:mb-3 lg:mb-4 min-h-[16px] sm:min-h-[18px] lg:min-h-[20px]">
+          {device.condominio_name && device.metadata?.torre && (
+            <div className="text-[10px] sm:text-xs lg:text-sm text-gray-600">
+              Torre {device.metadata.torre}
+              {device.metadata?.elevador && ` - Elevador ${device.metadata.elevador}`}
+            </div>
+          )}
+        </div>
 
         {/* Badge: Eventos + Atribuição + Empresa Elevador */}
-        <div className="flex flex-wrap gap-1 sm:gap-2 justify-center mb-2 sm:mb-3 lg:mb-4">
+        <div className="flex flex-wrap gap-1 sm:gap-2 justify-center mb-2 sm:mb-3 lg:mb-4 min-h-[32px] lg:min-h-[40px] items-start">
           <Badge variant="secondary" className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-gray-200 text-gray-900 border-gray-300 px-1.5 sm:px-2 py-0.5">
             <Activity className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
             {eventsLabel}
@@ -293,8 +292,8 @@ export const PanelCard = ({
           {renderIncidentBadge()}
         </div>
 
-        {/* AnyDesk ID - Secundário e discreto */}
-        <div className="mb-1 sm:mb-2 text-[10px] sm:text-xs lg:text-xs text-gray-600 font-mono">
+        {/* AnyDesk ID - Secundário e discreto - empurrado para baixo */}
+        <div className="mt-auto mb-1 sm:mb-2 text-[10px] sm:text-xs lg:text-xs text-gray-600 font-mono">
           ID: {device.anydesk_client_id}
         </div>
       </div>
