@@ -47,9 +47,13 @@ export function ProposalSummaryText({
       <div className="flex gap-3">
         <FileText className="h-4 w-4 text-slate-500 flex-shrink-0 mt-0.5" />
         <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
-          {/* Parágrafo principal - formato de proposta */}
+          {/* Parágrafo principal - impacto e vitrine digital */}
           <p>
-            Esta proposta oferece{' '}
+            Imagine sua marca presente na rotina de cada morador e visitante,{' '}
+            <span className="font-semibold text-slate-800">todos os dias, várias vezes ao dia</span>.
+            Um residente que usa o elevador apenas 2 vezes por dia já é impactado pelo seu anúncio cerca de{' '}
+            <span className="font-semibold text-[#9C1E1E]">40 vezes por semana</span>.
+            Esta proposta garante{' '}
             <span className="font-semibold text-slate-800">
               {quantidadePosicoes} {quantidadePosicoes === 1 ? 'posição' : 'posições'}
             </span>{' '}
@@ -57,32 +61,42 @@ export function ProposalSummaryText({
             <span className="font-semibold text-slate-800">{formatoNome}</span>, com presença em{' '}
             <span className="font-semibold text-slate-800">{prediosExibidos} prédios</span> e{' '}
             <span className="font-semibold text-slate-800">{totalTelas} telas</span>.
-            Seu anúncio de{' '}
-            <span className="font-semibold text-slate-800">{duracaoVideoSegundos}s</span> será exibido aproximadamente{' '}
+            São aproximadamente{' '}
             <span className="font-semibold text-[#9C1E1E]">
-              {exibicoesMes.toLocaleString('pt-BR')}x/mês
+              {exibicoesMes.toLocaleString('pt-BR')} exibições por mês
             </span>{' '}
-            — uma exposição diária que forma opinião e gera lembrança de marca.
+            — sua marca se torna parte do dia a dia do público, como uma{' '}
+            <span className="font-semibold text-slate-800">vitrine premium</span> que ninguém consegue ignorar.
           </p>
 
-          {/* Diferenciais da mídia - sempre presente */}
+          {/* Diferenciais - público cativo e repetição */}
           <p className="text-slate-500 italic">
-            A mídia em elevador é altamente eficaz: público <span className="font-medium text-slate-600">recorrente</span> (residentes e visitantes diários), 
-            atenção <span className="font-medium text-slate-600">inevitável</span> (ambiente fechado) e 
-            repetição que <span className="font-medium text-slate-600">consolida sua marca</span> na mente do consumidor.
+            Diferente de qualquer outra mídia, o elevador é um ambiente{' '}
+            <span className="font-medium text-slate-600">fechado e inevitável</span>: 
+            não existe como pular, fechar ou ignorar. O público é{' '}
+            <span className="font-medium text-slate-600">100% cativo</span> — moradores, 
+            visitantes e hóspedes que veem sua marca a cada viagem.
+            Essa repetição diária{' '}
+            <span className="font-medium text-slate-600">grava sua marca no subconsciente</span> do 
+            consumidor, criando familiaridade e confiança que nenhum anúncio de feed ou stories consegue replicar.
           </p>
 
           {/* Condicionais por tipo/cenário */}
           <div className="space-y-1.5 pt-1 border-t border-slate-200">
-            {/* Destaque HORIZONTAL */}
+            {/* Destaque HORIZONTAL - revista digital */}
             {isHorizontal && !hasMultiplePosicoes && (
               <p className="text-slate-600">
                 <span className="text-slate-400">→</span>{' '}
-                Com o formato Horizontal, sua marca pode agendar até{' '}
+                Sua marca funciona como uma{' '}
+                <span className="font-semibold text-slate-800">nova revista digital</span>: 
+                você pode agendar até{' '}
                 <span className="font-semibold text-slate-800">{maxVideosPorPedido} vídeos diferentes</span>{' '}
-                no mesmo pedido, funcionando como uma{' '}
-                <span className="font-semibold text-slate-800">nova revista digital</span>. Você pode exibir uma campanha na segunda,
-                outra na terça, uma terceira na quarta e ainda criar promoções específicas para sábado e domingo.
+                no mesmo pedido, cada um como uma "página" nova.
+                O morador nunca vê a mesma coisa — segunda pode ser um vídeo institucional, 
+                quarta uma oferta especial, sexta o lançamento de um produto e no fim de semana uma promoção exclusiva.
+                Isso{' '}
+                <span className="font-semibold text-slate-800">elimina a fadiga visual</span> e mantém a 
+                curiosidade e o engajamento a cada viagem de elevador.
               </p>
             )}
 
