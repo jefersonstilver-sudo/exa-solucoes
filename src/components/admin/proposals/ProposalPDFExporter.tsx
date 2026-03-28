@@ -648,7 +648,7 @@ export class ProposalPDFExporter {
     const isHorizontal = tipoProduto === 'horizontal';
     const formatoNome = isHorizontal ? 'Horizontal' : 'Vertical Premium';
     const hasMultiplePosicoes = quantidadePosicoes > 1;
-    const maxVideosPorPedido = proposal.max_videos_por_pedido || 4;
+    const maxVideosPorPedido = proposal.max_videos_por_pedido || 10;
     const isVendaFutura = proposal.is_venda_futura || false;
     const prediosContratados = proposal.predios_contratados || 0;
     const prediosExibidos = isVendaFutura && prediosContratados ? prediosContratados : totalPredios;
@@ -687,14 +687,14 @@ export class ProposalPDFExporter {
     this.doc.setFont('helvetica', 'normal');
 
     if (isHorizontal && !hasMultiplePosicoes) {
-      const t = this.normalizeText(`-> Com o formato Horizontal, voce pode intercalar ate ${maxVideosPorPedido} videos diferentes no mesmo pedido, transmitindo variedade e alto posicionamento.`);
+      const t = this.normalizeText(`-> Com o formato Horizontal, sua marca pode agendar ate ${maxVideosPorPedido} videos diferentes no mesmo pedido, funcionando como uma nova revista digital. E possivel exibir uma campanha na segunda, outra na terca, uma terceira na quarta e criar promocoes especificas para sabado e domingo.`);
       const l = this.doc.splitTextToSize(t, maxW);
       this.doc.text(l, this.margin + 5, this.yPosition);
       this.yPosition += l.length * 3.5 + 1;
     }
 
     if (isHorizontal && hasMultiplePosicoes) {
-      const t = this.normalizeText(`-> Com o formato Horizontal e ${quantidadePosicoes} marcas, sua empresa pode manter ${totalVideosSimultaneos} videos simultaneos na plataforma (${maxVideosPorPedido} videos x ${quantidadePosicoes} posicoes) com programacoes automaticas de exibicao.`);
+      const t = this.normalizeText(`-> Com o formato Horizontal e ${quantidadePosicoes} marcas, sua empresa pode manter ${totalVideosSimultaneos} videos simultaneos na plataforma (${maxVideosPorPedido} videos x ${quantidadePosicoes} posicoes), distribuindo campanhas por dia, horario, QR Code, lancamento ou promocao especifica.`);
       const l = this.doc.splitTextToSize(t, maxW);
       this.doc.text(l, this.margin + 5, this.yPosition);
       this.yPosition += l.length * 3.5 + 1;
