@@ -81,6 +81,27 @@ export function ProposalSummaryText({
             consumidor, criando familiaridade e confiança que nenhum anúncio de feed ou stories consegue replicar.
           </p>
 
+          {/* Exemplos práticos + pioneirismo */}
+          <div className="bg-white/70 rounded-lg border border-slate-100 p-3 space-y-2">
+            <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
+              Exemplos do que você pode fazer com o agendamento inteligente:
+            </p>
+            <div className="space-y-1.5 text-sm text-slate-600">
+              <p>
+                <span className="font-semibold text-slate-800">🛍️ Promoção de fim de semana</span> — Uma loja de departamento pode programar um vídeo exclusivo para sábado e domingo promovendo uma oferta relâmpago de um produto específico, atingindo moradores no momento exato de saída para compras.
+              </p>
+              <p>
+                <span className="font-semibold text-slate-800">📱 QR Code segmentado</span> — Exiba um QR Code diferente em cada dia da semana, direcionando para landing pages específicas: cardápio do dia, cupom exclusivo ou agendamento online — tudo rastreável.
+              </p>
+              <p>
+                <span className="font-semibold text-slate-800">⏰ Comunicação por horário</span> — Programe um vídeo de café da manhã pela manhã e uma oferta de happy hour no fim da tarde. Você norteia a comunicação para o momento certo, com a mensagem certa.
+              </p>
+            </div>
+            <p className="text-xs text-slate-400 italic pt-1 border-t border-slate-100">
+              Esse nível de personalização <span className="font-medium text-slate-500">não existe hoje no mercado da região</span>. A EXA é pioneira, replicando modelos de sucesso já consolidados nas grandes capitais do país.
+            </p>
+          </div>
+
           {/* Condicionais por tipo/cenário */}
           <div className="space-y-1.5 pt-1 border-t border-slate-200">
             {/* Destaque HORIZONTAL - revista digital */}
