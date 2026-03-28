@@ -1,67 +1,77 @@
 
+Diagnóstico confirmado: as mudanças não estão implementadas no código atual. O print que você enviou bate exatamente com o estado do repositório.
 
-# Plano: Atualizar Texto do Resumo + Botão de Vídeo Demonstrativo
+O que verifiquei:
+- `src/components/public/proposal/ProposalSummaryText.tsx` ainda está com:
+  - fallback `maxVideosPorPedido = 4`
+  - texto antigo “até 4 vídeos diferentes”
+  - sem botão de play
+  - sem `FullscreenVideoPlayer`
+- `src/pages/public/PropostaPublicaPage.tsx` ainda passa `maxVideosPorPedido={4}`
+- `src/components/admin/proposals/ProposalPDFExporter.tsx` ainda usa `proposal.max_videos_por_pedido || 4` e mantém o texto antigo
+- não existe referência a `amostra-agendamento.mp4` no projeto atual
+- o componente `FullscreenVideoPlayer` existe e pode ser reutilizado sem alterar o fluxo atual
 
-## Problema
-O texto atual diz "até 4 vídeos" mas o correto é **10**. Além disso, falta destacar o grande diferencial: a flexibilidade de agendamento (dias, horários, promoções específicas). O cliente precisa entender que isso é um **novo canal de comunicação** — a nova revista digital.
+Como resolver com segurança, sem mexer em nada fora do escopo:
 
-## Mudanças
+1. Corrigir a origem do número de vídeos
+- Trocar o valor passado em `PropostaPublicaPage.tsx` de `4` para `10`
+- Trocar os fallbacks locais de `4` para `10` em:
+  - `ProposalSummaryText.tsx`
+  - `ProposalPDFExporter.tsx`
+- Assim a proposta pública e o PDF ficam coerentes mesmo se o campo não vier preenchido
 
-### 1. Corrigir `maxVideosPorPedido` de 4 para 10
+2. Reescrever apenas o bloco horizontal do resumo
+- Manter intacto:
+  - layout do card
+  - métricas
+  - bloco vertical premium
+  - venda futura
+  - fluxo geral da página
+- Substituir só o texto horizontal por uma versão mais forte e clara:
+  - até 10 vídeos por pedido
+  - liberdade para distribuir por dias e horários
+  - exemplos práticos: segunda, terça, quarta; promoções de sábado/domingo
+  - conceito “nova revista digital”
+  - QR Codes e campanhas segmentadas
 
-**Arquivos:**
-- `src/pages/public/PropostaPublicaPage.tsx` — linha 2002: `maxVideosPorPedido={10}`
-- `src/components/public/proposal/ProposalSummaryText.tsx` — default de 4 para 10
-- `src/components/admin/proposals/ProposalPDFExporter.tsx` — fallback de 4 para 10
+3. Adicionar o botão de demonstração dentro do resumo
+- Inserir no próprio `ProposalSummaryText.tsx`
+- Botão discreto, minimalista, com leve pulsação
+- Texto sugerido: “Veja como funciona o agendamento”
+- Ao clicar, abrir o `FullscreenVideoPlayer` já existente
+- Isso resolve sem criar fluxo novo nem alterar outras áreas da proposta
 
-### 2. Reescrever bloco Horizontal no `ProposalSummaryText.tsx`
+4. Conectar o vídeo corretamente
+- Como o arquivo hoje não existe no projeto, ele precisa ser adicionado em:
+  - `public/videos/amostra-agendamento.mp4`
+- O player abrirá esse caminho público:
+  - `/videos/amostra-agendamento.mp4`
+- Isso evita dependência de storage, autenticação ou URL assinada
 
-Substituir o parágrafo genérico (linhas 72-78) por um bloco mais rico com 3 pontos de destaque:
+5. Atualizar o PDF para refletir o mesmo discurso comercial
+- Ajustar somente o trecho equivalente do resumo executivo em `ProposalPDFExporter.tsx`
+- Garantir consistência entre:
+  - proposta pública
+  - PDF exportado
+- Sem alterar paginação, layout ou demais seções do PDF
 
-- **Parágrafo principal**: "Faça upload de até **10 vídeos** e distribua sua comunicação como quiser — programe vídeos diferentes para segunda, terça, quarta, ou vários no mesmo dia em horários distintos."
-- **Diferencial estratégico**: "É a nova revista digital do seu negócio: promoção no sábado, lançamento na segunda, QR Code com link direto na quarta. O cérebro do consumidor recebe sempre uma novidade, aumentando atenção e engajamento."
-- **Mesma lógica para múltiplas posições**: atualizar com 10 vídeos × N posições
+6. Verificação final após implementar
+- Conferir na rota pública atual que:
+  - não aparece mais “4 vídeos”
+  - aparece “até 10 vídeos”
+  - o botão de play está visível
+  - o modal escuro abre corretamente
+  - o vídeo reproduz
+- Conferir que o PDF exportado também usa o novo texto
 
-### 3. Adicionar botão "Ver como funciona" com vídeo demonstrativo
+Arquivos que precisam ser alterados:
+- `src/components/public/proposal/ProposalSummaryText.tsx`
+- `src/pages/public/PropostaPublicaPage.tsx`
+- `src/components/admin/proposals/ProposalPDFExporter.tsx`
 
-No `ProposalSummaryText.tsx`:
+Arquivo que precisa ser adicionado:
+- `public/videos/amostra-agendamento.mp4`
 
-- Adicionar estado `useState` para controlar o player
-- Copiar o vídeo `AMOSTRA_SITE.mp4` para o Supabase Storage (usar URL pública)
-- Botão minimalista com ícone Play pulsando suavemente (`animate-pulse` com opacidade reduzida), texto "Veja como funciona o agendamento"
-- Ao clicar, abre o `FullscreenVideoPlayer` (já existente no projeto) com fundo escuro e player quase tela cheia
-- Estilo: borda slate, fundo branco, texto discreto, pulso sutil no ícone Play (CSS `animate-[pulse_2s_ease-in-out_infinite]` com escala mínima)
-
-### 4. Atualizar PDF Exporter
-
-Replicar o texto atualizado no `ProposalPDFExporter.tsx` para manter consistência entre proposta web e PDF exportado.
-
----
-
-## Detalhes Técnicos
-
-### Estrutura do novo bloco horizontal (sem múltiplas posições):
-
-```text
-→ Faça upload de até 10 vídeos e distribua como quiser...
-→ É a nova revista digital: promoção no sábado, lançamento na segunda...
-  [▶ Veja como funciona o agendamento]  ← botão com pulso sutil
-```
-
-### Vídeo:
-O arquivo `AMOSTRA_SITE.mp4` será copiado para `public/videos/amostra-agendamento.mp4` e referenciado via path estático, pois é uma página pública que não requer autenticação Supabase.
-
-### Componente do botão:
-```tsx
-<button onClick={() => setShowVideo(true)} className="...">
-  <Play className="w-4 h-4 animate-[pulse_2s_ease-in-out_infinite]" />
-  Veja como funciona o agendamento
-</button>
-```
-
-### Arquivos editados:
-1. `src/components/public/proposal/ProposalSummaryText.tsx` — texto + botão + player
-2. `src/pages/public/PropostaPublicaPage.tsx` — `maxVideosPorPedido={10}`
-3. `src/components/admin/proposals/ProposalPDFExporter.tsx` — texto atualizado
-4. `public/videos/amostra-agendamento.mp4` — arquivo de vídeo copiado
-
+Causa mais provável do erro anterior:
+- as respostas anteriores afirmaram implementação, mas o estado real do repositório não contém essas mudanças; ou elas não foram persistidas, ou foram sobrescritas depois. O caminho correto agora é reaplicar diretamente nesses 3 arquivos e no asset do vídeo, depois validar na mesma página pública que você está usando.
