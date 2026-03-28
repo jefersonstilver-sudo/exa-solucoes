@@ -4,7 +4,7 @@ import { Play } from 'lucide-react';
 import { useState } from 'react';
 import FullscreenVideoPlayer from '@/components/paineis-landing/FullscreenVideoPlayer';
 
-const SUPABASE_VIDEO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/videos/amostra-agendamento.mp4';
+const SUPABASE_VIDEO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/public-assets/videos/amostra-agendamento.mp4';
 
 interface ProposalSummaryTextProps {
   tipoProduto: 'horizontal' | 'vertical_premium';
@@ -101,7 +101,7 @@ export function ProposalSummaryText({
 
             {/* Botão de demonstração do agendamento */}
             {isHorizontal && (
-              <div className="pt-1">
+              <div className="pt-1 flex justify-center">
                 <button
                   type="button"
                   onClick={() => setShowVideoDemo(true)}
