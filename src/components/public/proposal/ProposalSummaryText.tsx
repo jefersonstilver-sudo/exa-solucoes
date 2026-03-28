@@ -113,24 +113,22 @@ export function ProposalSummaryText({
               </p>
             )}
 
-            {/* Botão de demonstração do agendamento */}
-            {isHorizontal && (
-              <div className="pt-1 flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => setShowVideoDemo(true)}
-                  className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-[#9C1E1E]/20 bg-[#9C1E1E]/5 px-4 py-2 text-sm font-medium text-[#9C1E1E] transition-all duration-300 hover:bg-[#9C1E1E]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9C1E1E]/30"
-                >
-                  <span className="absolute left-3 inline-flex h-3 w-3 rounded-full bg-[#9C1E1E]/25 motion-safe:animate-ping" />
-                  <span className="relative flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#9C1E1E]/15">
-                      <Play className="h-3.5 w-3.5 fill-current" />
-                    </span>
-                    Veja como funciona o agendamento
+            {/* Botão de demonstração do agendamento - visível em todos os tipos */}
+            <div className="pt-1 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setShowVideoDemo(true)}
+                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-[#9C1E1E]/20 bg-[#9C1E1E]/5 px-4 py-2 text-sm font-medium text-[#9C1E1E] transition-all duration-300 hover:bg-[#9C1E1E]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9C1E1E]/30"
+              >
+                <span className="absolute left-3 inline-flex h-3 w-3 rounded-full bg-[#9C1E1E]/25 motion-safe:animate-ping" />
+                <span className="relative flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#9C1E1E]/15">
+                    <Play className="h-3.5 w-3.5 fill-current" />
                   </span>
-                </button>
-              </div>
-            )}
+                  Veja como funciona o agendamento
+                </span>
+              </button>
+            </div>
 
             {/* Destaque VERTICAL PREMIUM */}
             {!isHorizontal && (
