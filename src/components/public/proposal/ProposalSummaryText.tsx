@@ -1,5 +1,10 @@
 import { Card } from '@/components/ui/card';
 import { FileText } from 'lucide-react';
+import { Play } from 'lucide-react';
+import { useState } from 'react';
+import FullscreenVideoPlayer from '@/components/paineis-landing/FullscreenVideoPlayer';
+
+const SUPABASE_VIDEO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/videos/amostra-agendamento.mp4';
 
 interface ProposalSummaryTextProps {
   tipoProduto: 'horizontal' | 'vertical_premium';
@@ -24,8 +29,9 @@ export function ProposalSummaryText({
   duracaoVideoSegundos,
   isVendaFutura,
   prediosContratados,
-  maxVideosPorPedido = 4
+  maxVideosPorPedido = 10
 }: ProposalSummaryTextProps) {
+  const [showVideoDemo, setShowVideoDemo] = useState(false);
   const isHorizontal = tipoProduto === 'horizontal';
   const formatoNome = isHorizontal ? 'Horizontal' : 'Vertical Premium';
   const hasMultiplePosicoes = quantidadePosicoes > 1;
@@ -72,9 +78,11 @@ export function ProposalSummaryText({
             {isHorizontal && !hasMultiplePosicoes && (
               <p className="text-slate-600">
                 <span className="text-slate-400">→</span>{' '}
-                Com o formato Horizontal, você pode intercalar até{' '}
+                Com o formato Horizontal, sua marca pode agendar até{' '}
                 <span className="font-semibold text-slate-800">{maxVideosPorPedido} vídeos diferentes</span>{' '}
-                no mesmo pedido, transmitindo variedade e alto posicionamento.
+                no mesmo pedido, funcionando como uma{' '}
+                <span className="font-semibold text-slate-800">nova revista digital</span>. Você pode exibir uma campanha na segunda,
+                outra na terça, uma terceira na quarta e ainda criar promoções específicas para sábado e domingo.
               </p>
             )}
 
@@ -86,8 +94,28 @@ export function ProposalSummaryText({
                 <span className="font-semibold text-slate-800">{quantidadePosicoes} marcas</span>, 
                 sua empresa pode manter{' '}
                 <span className="font-semibold text-[#9C1E1E]">{totalVideosSimultaneos} vídeos simultâneos</span>{' '}
-                na plataforma ({maxVideosPorPedido} vídeos × {quantidadePosicoes} posições) com programações automáticas de exibição.
+                na plataforma ({maxVideosPorPedido} vídeos × {quantidadePosicoes} posições), distribuindo campanhas diferentes por dia,
+                horário, QR Code, lançamento ou promoção específica.
               </p>
+            )}
+
+            {/* Botão de demonstração do agendamento */}
+            {isHorizontal && (
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowVideoDemo(true)}
+                  className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-[#9C1E1E]/20 bg-[#9C1E1E]/5 px-4 py-2 text-sm font-medium text-[#9C1E1E] transition-all duration-300 hover:bg-[#9C1E1E]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9C1E1E]/30"
+                >
+                  <span className="absolute left-3 inline-flex h-3 w-3 rounded-full bg-[#9C1E1E]/25 motion-safe:animate-ping" />
+                  <span className="relative flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#9C1E1E]/15">
+                      <Play className="h-3.5 w-3.5 fill-current" />
+                    </span>
+                    Veja como funciona o agendamento
+                  </span>
+                </button>
+              </div>
             )}
 
             {/* Destaque VERTICAL PREMIUM */}
@@ -124,6 +152,12 @@ export function ProposalSummaryText({
           </div>
         </div>
       </div>
+
+      <FullscreenVideoPlayer
+        isOpen={showVideoDemo}
+        onClose={() => setShowVideoDemo(false)}
+        videoSrc={SUPABASE_VIDEO_URL}
+      />
     </Card>
   );
 }

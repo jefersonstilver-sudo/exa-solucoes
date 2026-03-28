@@ -1999,7 +1999,7 @@ const PropostaPublicaPage = () => {
           duracaoVideoSegundos={proposal.tipo_produto === 'vertical_premium' ? 15 : 10}
           isVendaFutura={isVendaFutura}
           prediosContratados={proposal.predios_contratados || undefined}
-          maxVideosPorPedido={4}
+          maxVideosPorPedido={10}
         />
 
         {/* Conheça a EXA Mídia - MOVED UP */}
