@@ -113,8 +113,8 @@ export function ProposalSummaryText({
               </p>
             )}
 
-            {/* Botão de demonstração do agendamento */}
-            {isHorizontal && (
+            {/* Botão de demonstração do agendamento - visível em todos os tipos */}
+            {(
               <div className="pt-1 flex justify-center">
                 <button
                   type="button"
