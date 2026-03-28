@@ -75,10 +75,13 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
           />
           <button
             onClick={() => setShowSampleVideo(true)}
-            className="mt-3 flex items-center gap-2 mx-auto px-4 py-2 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-600 hover:shadow-md hover:border-gray-300 transition-all duration-200"
+            className="mt-3 group relative flex items-center gap-2 mx-auto px-5 py-2.5 bg-[#9C1E1E] text-white rounded-full text-xs font-semibold shadow-lg shadow-[#9C1E1E]/30 hover:bg-[#B40D1A] hover:shadow-xl hover:shadow-[#9C1E1E]/40 transition-all duration-300 hover:scale-105"
           >
-            <Play className="w-3.5 h-3.5 fill-current" />
-            Ver amostra
+            <span className="absolute inset-0 rounded-full bg-white/20 motion-safe:animate-ping opacity-30" />
+            <span className="relative flex items-center gap-2">
+              <Play className="w-3.5 h-3.5 fill-current" />
+              Ver amostra
+            </span>
           </button>
         </div>
 
