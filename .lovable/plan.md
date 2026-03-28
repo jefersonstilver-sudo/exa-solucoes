@@ -1,77 +1,22 @@
 
-Diagnóstico confirmado: as mudanças não estão implementadas no código atual. O print que você enviou bate exatamente com o estado do repositório.
 
-O que verifiquei:
-- `src/components/public/proposal/ProposalSummaryText.tsx` ainda está com:
-  - fallback `maxVideosPorPedido = 4`
-  - texto antigo “até 4 vídeos diferentes”
-  - sem botão de play
-  - sem `FullscreenVideoPlayer`
-- `src/pages/public/PropostaPublicaPage.tsx` ainda passa `maxVideosPorPedido={4}`
-- `src/components/admin/proposals/ProposalPDFExporter.tsx` ainda usa `proposal.max_videos_por_pedido || 4` e mantém o texto antigo
-- não existe referência a `amostra-agendamento.mp4` no projeto atual
-- o componente `FullscreenVideoPlayer` existe e pode ser reutilizado sem alterar o fluxo atual
+## Plano: Reescrever o texto do resumo para ser mais persuasivo
 
-Como resolver com segurança, sem mexer em nada fora do escopo:
+O objetivo é tornar o texto do bloco selecionado (div linha 49) mais vendedor, enfatizando o conceito de "vitrine digital" / "nova revista", o impacto da repetição (40x por semana no elevador), e o diferencial de alcançar moradores e hóspedes de forma inevitável.
 
-1. Corrigir a origem do número de vídeos
-- Trocar o valor passado em `PropostaPublicaPage.tsx` de `4` para `10`
-- Trocar os fallbacks locais de `4` para `10` em:
-  - `ProposalSummaryText.tsx`
-  - `ProposalPDFExporter.tsx`
-- Assim a proposta pública e o PDF ficam coerentes mesmo se o campo não vier preenchido
+### O que muda
 
-2. Reescrever apenas o bloco horizontal do resumo
-- Manter intacto:
-  - layout do card
-  - métricas
-  - bloco vertical premium
-  - venda futura
-  - fluxo geral da página
-- Substituir só o texto horizontal por uma versão mais forte e clara:
-  - até 10 vídeos por pedido
-  - liberdade para distribuir por dias e horários
-  - exemplos práticos: segunda, terça, quarta; promoções de sábado/domingo
-  - conceito “nova revista digital”
-  - QR Codes e campanhas segmentadas
+**Arquivo**: `src/components/public/proposal/ProposalSummaryText.tsx`
 
-3. Adicionar o botão de demonstração dentro do resumo
-- Inserir no próprio `ProposalSummaryText.tsx`
-- Botão discreto, minimalista, com leve pulsação
-- Texto sugerido: “Veja como funciona o agendamento”
-- Ao clicar, abrir o `FullscreenVideoPlayer` já existente
-- Isso resolve sem criar fluxo novo nem alterar outras áreas da proposta
+1. **Parágrafo principal (linha 51-66)** - Reescrever para abrir com o impacto emocional: sua marca vira parte da rotina do morador. Incluir o dado de "40 vezes por semana" no elevador, traduzindo em impacto real (quem sai 2x por dia já vê seu anúncio ~40x por semana). Manter os dados dinâmicos (posições, prédios, telas, exibições/mês).
 
-4. Conectar o vídeo corretamente
-- Como o arquivo hoje não existe no projeto, ele precisa ser adicionado em:
-  - `public/videos/amostra-agendamento.mp4`
-- O player abrirá esse caminho público:
-  - `/videos/amostra-agendamento.mp4`
-- Isso evita dependência de storage, autenticação ou URL assinada
+2. **Parágrafo de diferenciais (linha 69-73)** - Reforçar o conceito de vitrine: ambiente fechado = atenção 100%, público cativo que não pode ignorar, repetição que grava a marca no subconsciente. Comparar com uma vitrine premium onde cada ida ao elevador é uma nova oportunidade de contato.
 
-5. Atualizar o PDF para refletir o mesmo discurso comercial
-- Ajustar somente o trecho equivalente do resumo executivo em `ProposalPDFExporter.tsx`
-- Garantir consistência entre:
-  - proposta pública
-  - PDF exportado
-- Sem alterar paginação, layout ou demais seções do PDF
+3. **Bloco horizontal "revista digital" (linhas 78-86)** - Expandir a metáfora da revista digital: cada vídeo é uma "página" diferente, o morador sempre vê algo novo, evitando fadiga visual. Reforçar que isso mantém a curiosidade e o engajamento, como folhear uma revista a cada viagem de elevador.
 
-6. Verificação final após implementar
-- Conferir na rota pública atual que:
-  - não aparece mais “4 vídeos”
-  - aparece “até 10 vídeos”
-  - o botão de play está visível
-  - o modal escuro abre corretamente
-  - o vídeo reproduz
-- Conferir que o PDF exportado também usa o novo texto
+### O que NÃO muda
+- Estrutura do componente, props, lógica condicional
+- Botão de play e FullscreenVideoPlayer
+- Blocos de vertical premium, múltiplas posições, venda futura
+- Qualquer outro arquivo ou funcionalidade
 
-Arquivos que precisam ser alterados:
-- `src/components/public/proposal/ProposalSummaryText.tsx`
-- `src/pages/public/PropostaPublicaPage.tsx`
-- `src/components/admin/proposals/ProposalPDFExporter.tsx`
-
-Arquivo que precisa ser adicionado:
-- `public/videos/amostra-agendamento.mp4`
-
-Causa mais provável do erro anterior:
-- as respostas anteriores afirmaram implementação, mas o estado real do repositório não contém essas mudanças; ou elas não foram persistidas, ou foram sobrescritas depois. O caminho correto agora é reaplicar diretamente nesses 3 arquivos e no asset do vídeo, depois validar na mesma página pública que você está usando.
