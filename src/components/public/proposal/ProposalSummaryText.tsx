@@ -94,7 +94,7 @@ export function ProposalSummaryText({
                 <span className="font-semibold text-slate-800">📱 QR Code segmentado</span> — Exiba um QR Code diferente em cada dia da semana, direcionando para landing pages específicas: cardápio do dia, cupom exclusivo ou agendamento online — tudo rastreável.
               </p>
               <p>
-                <span className="font-semibold text-slate-800">⏰ Comunicação por horário</span> — Programe um vídeo de café da manhã pela manhã e uma oferta de happy hour no fim da tarde. Você norteiaaa comunicação para o momento certo, com a mensagem certa.
+                <span className="font-semibold text-slate-800">⏰ Comunicação por horário</span> — Programe um vídeo de café da manhã pela manhã e uma oferta de happy hour no fim da tarde. Você norteia a comunicação para o momento certo, com a mensagem certa.
               </p>
             </div>
             <p className="text-xs text-slate-400 italic pt-1 border-t border-slate-100">
