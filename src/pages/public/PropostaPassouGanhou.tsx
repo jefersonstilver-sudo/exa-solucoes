@@ -453,16 +453,17 @@ const PropostaPassouGanhou: React.FC = () => {
           <h2 style={{ ...h2Style, textAlign: 'center', marginBottom: 8 }}>Estratégia de Crescimento e Dominação Regional</h2>
           <p style={{ color: C.muted, fontSize: 16, marginBottom: 40 }}>Oeste do Paraná — FESPOP 2026</p>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 48, flexWrap: 'wrap', marginBottom: 40 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 56, flexWrap: 'wrap', marginBottom: 40 }}>
             <div>
               <Badge>ELABORADO POR</Badge>
-              <h4 style={{ fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 700, color: C.teal, marginTop: 12 }}>Linkaê Marketing</h4>
-              <p style={{ color: C.muted, fontSize: 14, marginTop: 4 }}>Jeferson Encina — Fundador & Estrategista</p>
+              <h4 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 22, fontWeight: 700, color: C.teal, marginTop: 12 }}>Linkaê Marketing</h4>
+              <p style={{ color: C.text, fontSize: 14, marginTop: 8 }}>Jeferson Encina — <strong style={{ color: C.white }}>Head de Estratégia</strong></p>
+              <p style={{ color: C.text, fontSize: 14, marginTop: 4 }}>Beatriz Almeida — <strong style={{ color: C.white }}>Head de Marketing</strong></p>
             </div>
             <div>
               <Badge color={C.tealDark}>APRESENTADO PARA</Badge>
-              <h4 style={{ fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 700, color: C.white, marginTop: 12 }}>PASSOU GANHOU</h4>
-              <p style={{ color: C.muted, fontSize: 14, marginTop: 4 }}>Magno Sipaúba — Fundador & CEO</p>
+              <img src={passouGanhouLogo} alt="Passou Ganhou" style={{ height: 48, objectFit: 'contain', marginTop: 12 }} />
+              <p style={{ color: C.muted, fontSize: 14, marginTop: 8 }}>Magno Sipaúba — Fundador & CEO</p>
             </div>
           </div>
 
