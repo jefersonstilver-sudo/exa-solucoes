@@ -120,6 +120,42 @@ const PropostaPassouGanhou: React.FC = () => {
           </div>
         </section>
 
+        {/* ═══ CONTEXTO OPERACIONAL ═══ */}
+        <section ref={reveal} style={{ ...sectionStyle, ...hidden } as any}>
+          <SectionTag num="00" label="CONTEXTO OPERACIONAL" />
+          <h2 style={h2Style}>Onde estamos agora</h2>
+          <p style={{ color: C.muted, maxWidth: 750, lineHeight: 1.8, marginBottom: 32 }}>Antes de planejar, é preciso enxergar com clareza o ponto de partida. Esses são os fatos hoje — sem filtro.</p>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, minWidth: 600 }}>
+              <thead>
+                <tr style={{ borderBottom: `2px solid ${C.border}` }}>
+                  <th style={{ textAlign: 'left', padding: '12px 8px', color: C.muted, fontWeight: 600 }}>ITEM</th>
+                  <th style={{ textAlign: 'left', padding: '12px 8px', color: C.muted, fontWeight: 600 }}>STATUS ATUAL</th>
+                  <th style={{ textAlign: 'center', padding: '12px 8px', color: C.muted, fontWeight: 600, width: 90 }}>SITUAÇÃO</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['Estabelecimentos credenciados em Foz', 'Zero — início do zero', '🔴'],
+                  ['App disponível para download', 'Sim (iOS e Android)', '🟢'],
+                  ['Dias até a FESPOP', '60 a 90 dias', '🟡'],
+                  ['Parceria com Abrasel', 'Em negociação', '🟡'],
+                  ['Stand na FESPOP', 'Em negociação', '🟡'],
+                  ['Canais digitais ativos', 'Apenas Instagram', '🟡'],
+                  ['Verba Linkaê aprovada', 'Em negociação', '🟡'],
+                ].map(([item, status, sit], i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
+                    <td style={{ padding: '12px 8px', color: C.white, fontWeight: 500 }}>{item}</td>
+                    <td style={{ padding: '12px 8px', color: C.text }}>{status}</td>
+                    <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: 16 }}>{sit}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         {/* ═══ 01 — DECISÃO ═══ */}
         <section id="decisao" style={{ ...sectionStyle }} ref={reveal} {...{ style: { ...sectionStyle, ...hidden } } as any}>
           <SectionTag num="01" label="DECISÃO PRIORITÁRIA" />
@@ -287,6 +323,62 @@ const PropostaPassouGanhou: React.FC = () => {
           </div>
         </section>
 
+        {/* ═══ 04b — SCRIPTS PRONTOS ═══ */}
+        <section ref={reveal} style={{ ...sectionStyle, ...hidden } as any}>
+          <SectionTag num="04b" label="SCRIPTS DE ATIVAÇÃO" />
+          <h2 style={h2Style}>Scripts prontos para uso</h2>
+          <p style={{ color: C.muted, maxWidth: 750, lineHeight: 1.8, marginBottom: 32 }}>Cada abordagem tem um script específico testado para maximizar conversão. Nada é improvisado — tudo é treinável e replicável.</p>
+
+          {[
+            {
+              title: '🎯 Pitch dos 10 Fundadores',
+              badge: 'PRÉ-FESPOP · FUNDADORES',
+              color: '#ef4444',
+              script: '"Magno, o que tô te propondo é diferente de qualquer proposta que você já recebeu. Não é um app pedindo pra você aceitar. É uma sociedade estratégica. Você vai ser um dos 10 primeiros. E quando a cidade inteira estiver usando, todo mundo vai saber quem foram os 10 que começaram. Posso te mostrar como funciona em 2 minutos?"',
+              note: 'Foco em escassez e status. O lojista não está "aceitando um app" — está sendo convidado para um grupo restrito.',
+            },
+            {
+              title: '🔥 Pitch de FOMO (Vizinhos dos Fundadores)',
+              badge: 'PRÉ-FESPOP · EXPANSÃO',
+              color: '#f59e0b',
+              script: '"Você viu que o [Nome do Fundador] do [Restaurante Fundador] já tá usando? Ele foi um dos primeiros. Agora a galera da rua já tá perguntando por que aqui ainda não aceita. Quer que eu te mostre como funciona? Leva 2 minutos."',
+              note: 'Prova social direta. O lojista vê o vizinho usando e sente que está ficando para trás.',
+            },
+            {
+              title: '🏪 Ativação no PDV (Atendentes)',
+              badge: 'PRÉ-FESPOP · PDV',
+              color: C.teal,
+              script: '"Oi! Você já conhece o app que dá cashback em tudo que você compra aqui em Foz? Funciona assim: você baixa, compra normal, e o dinheiro volta. Quer ver? Posso te mostrar agora."',
+              note: 'Script simples e direto para ativadores de rua e atendentes treinados nos estabelecimentos.',
+            },
+            {
+              title: '🎪 Ativador FESPOP (Zona 2)',
+              badge: 'FESPOP · ZONA 2',
+              color: C.purple,
+              script: '"Ei! Você costuma pagar no cartão ou no PIX? [Resposta] Então olha só — imagina se toda vez que você pagasse, uma parte voltasse pra você. Aqui na FESPOP, quem baixar o app agora já ganha cashback na primeira compra. Posso te ajudar a baixar? Leva 30 segundos."',
+              note: 'Microcompromisso antes de mostrar o produto. A pergunta inicial cria engajamento antes do pitch.',
+            },
+            {
+              title: '📱 Ancoragem Pós-Download (Zona 3)',
+              badge: 'FESPOP · ZONA 3',
+              color: '#6366f1',
+              script: '"Show, tá baixado! Agora vou te mostrar a melhor parte. Vê esses pontos? Eles já são seus. Agora, quando você for comer em qualquer lugar que aceita Passou Ganhou, é só pagar pelo app e o cashback cai automatico. Quer ver a lista de lugares? Tá tudo aqui."',
+              note: 'Ancoragem imediata — o usuário sai do stand já sabendo usar e já tendo experimentado o benefício.',
+            },
+          ].map((s, i) => (
+            <div key={i} ref={reveal} style={{ ...cardStyle, borderLeft: `4px solid ${s.color}`, marginBottom: 20, ...hidden } as any}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <Badge color={s.color}>{s.badge}</Badge>
+              </div>
+              <h3 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 20, fontWeight: 700, color: C.white, marginBottom: 12 }}>{s.title}</h3>
+              <div style={{ background: C.cardAlt, borderRadius: 12, padding: 20, marginBottom: 12, borderLeft: `3px solid ${s.color}` }}>
+                <p style={{ color: C.text, fontSize: 14, lineHeight: 1.8, fontStyle: 'italic' }}>{s.script}</p>
+              </div>
+              <p style={{ color: C.muted, fontSize: 13, lineHeight: 1.6 }}>💡 {s.note}</p>
+            </div>
+          ))}
+        </section>
+
         {/* ═══ 05 — NURTURING ═══ */}
         <section ref={reveal} style={{ ...sectionStyle, ...hidden } as any}>
           <SectionTag num="05" label="RETENÇÃO" />
@@ -307,6 +399,34 @@ const PropostaPassouGanhou: React.FC = () => {
                 <p style={{ color: C.muted, fontSize: 13, lineHeight: 1.6, fontStyle: 'italic' }}>{f.desc}</p>
               </div>
             ))}
+          </div>
+
+          {/* Conversão pós-FESPOP — Leads de Lojistas */}
+          <div ref={reveal} style={{ ...cardStyle, marginTop: 40, ...hidden } as any}>
+            <h3 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 20, fontWeight: 700, color: C.white, marginBottom: 8 }}>Conversão de leads de lojistas pós-FESPOP</h3>
+            <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.7, marginBottom: 20 }}>Os 50-80 leads captados no evento precisam de follow-up estruturado para virar credenciamentos reais.</p>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, minWidth: 500 }}>
+              <thead>
+                <tr style={{ borderBottom: `2px solid ${C.border}` }}>
+                  <th style={{ textAlign: 'left', padding: '10px 8px', color: C.muted, fontWeight: 600, width: 80 }}>TIMING</th>
+                  <th style={{ textAlign: 'left', padding: '10px 8px', color: C.muted, fontWeight: 600 }}>AÇÃO</th>
+                  <th style={{ textAlign: 'left', padding: '10px 8px', color: C.muted, fontWeight: 600 }}>OBJETIVO</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['D+1', 'WhatsApp personalizado: "Foi um prazer na FESPOP! Vou te mandar o material que conversamos."', 'Manter o lead aquecido enquanto o evento está fresco'],
+                  ['D+3', 'Envio de caso de sucesso de um Fundador + proposta simplificada', 'Prova social + facilitar a decisão com dados reais'],
+                  ['D+7', 'Ligação direta para agendar visita ou ativação assistida no estabelecimento', 'Converter o lead em credenciamento efetivo'],
+                ].map(([t, a, o], i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
+                    <td style={{ padding: '12px 8px', color: C.teal, fontWeight: 700 }}>{t}</td>
+                    <td style={{ padding: '12px 8px', color: C.text }}>{a}</td>
+                    <td style={{ padding: '12px 8px', color: C.muted }}>{o}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
 
@@ -333,6 +453,67 @@ const PropostaPassouGanhou: React.FC = () => {
                 <div style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{k.sub}</div>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* ═══ 06b — POSICIONAMENTO DA MARCA ═══ */}
+        <section ref={reveal} style={{ ...sectionStyle, ...hidden } as any}>
+          <SectionTag num="06b" label="POSICIONAMENTO" />
+          <h2 style={h2Style}>Comunicação que constrói.<br />Comunicação que destrói.</h2>
+          <p style={{ color: C.muted, maxWidth: 750, lineHeight: 1.8, marginBottom: 32 }}>A marca Passou Ganhou precisa comunicar de uma forma específica. Qualquer desvio dilui o posicionamento e confunde o público.</p>
+
+          <div style={gridTwo}>
+            {/* O que NÃO comunicar */}
+            <div style={{ ...cardStyle, borderTop: `3px solid #ef4444` }}>
+              <h3 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 20, fontWeight: 700, color: '#ef4444', marginBottom: 16 }}>✗ O que NÃO comunicar</h3>
+              {[
+                '"Somos um app de cashback" — reduz a marca a uma commodity',
+                '"Desconto" ou "promoção" — posiciona como descartável',
+                'Linguagem técnica de fintech — afasta o público regional',
+                'Comparação direta com concorrentes — demonstra insegurança',
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
+                  <span style={{ color: '#ef4444', fontSize: 18, fontWeight: 700, flexShrink: 0 }}>✗</span>
+                  <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.6 }}>{item}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* O que comunicar */}
+            <div style={{ ...cardStyle, borderTop: `3px solid ${C.teal}` }}>
+              <h3 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 20, fontWeight: 700, color: C.teal, marginBottom: 16 }}>✓ O que comunicar</h3>
+              {[
+                '"Passou, ganhou" — a marca É a ação. Simples e memorável.',
+                '"Seu dinheiro volta" — benefício direto, sem jargão.',
+                '"Foz não paga mais" — conceito territorial e aspiracional.',
+                '"Os primeiros 10 já estão usando" — prova social e escassez.',
+                '"Compre onde você já compra e ganhe de volta" — sem mudança de hábito.',
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
+                  <span style={{ color: C.teal, fontSize: 18, fontWeight: 700, flexShrink: 0 }}>✓</span>
+                  <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.6 }}>{item}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Hierarquia da comunicação */}
+          <div ref={reveal} style={{ ...cardStyle, marginTop: 24, ...hidden } as any}>
+            <h3 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 20, fontWeight: 700, color: C.white, marginBottom: 20 }}>Hierarquia da comunicação</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 16 }}>
+              {[
+                { level: '1º', title: 'Benefício direto', desc: '"Seu dinheiro volta"', color: C.teal },
+                { level: '2º', title: 'Prova social', desc: '"Os primeiros já estão usando"', color: '#f59e0b' },
+                { level: '3º', title: 'Território', desc: '"Foz não paga mais"', color: C.purple },
+                { level: '4º', title: 'Marca', desc: '"Passou Ganhou"', color: '#6366f1' },
+              ].map((h, i) => (
+                <div key={i} style={{ background: C.cardAlt, borderRadius: 12, padding: 20, borderLeft: `4px solid ${h.color}`, textAlign: 'left' }}>
+                  <span style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 32, fontWeight: 800, color: h.color }}>{h.level}</span>
+                  <h4 style={{ color: C.white, fontSize: 15, fontWeight: 700, marginTop: 4 }}>{h.title}</h4>
+                  <p style={{ color: C.muted, fontSize: 13, fontStyle: 'italic', marginTop: 4 }}>{h.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -381,19 +562,9 @@ const PropostaPassouGanhou: React.FC = () => {
           <div style={{ ...cardStyle, maxWidth: 520, margin: '0 auto', padding: 40, border: `2px solid ${C.purple}`, textAlign: 'center' }}>
             <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 'clamp(40px,6vw,56px)', fontWeight: 800, background: `linear-gradient(135deg,${C.purple},${C.teal})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>R$ 35.000</div>
             <p style={{ color: C.muted, fontSize: 15, marginTop: 8 }}>por mês · contrato mínimo de 6 meses</p>
+            <p style={{ color: C.text, fontSize: 14, marginTop: 8 }}>Modelo variável atrelado a metas de performance e crescimento</p>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 24, margin: '28px 0', flexWrap: 'wrap' }}>
-              <div style={{ background: C.cardAlt, borderRadius: 12, padding: '16px 24px' }}>
-                <div style={{ color: C.white, fontWeight: 700, fontSize: 18 }}>R$25.000</div>
-                <div style={{ color: C.muted, fontSize: 12 }}>Base fixa · Operação garantida</div>
-              </div>
-              <div style={{ background: C.cardAlt, borderRadius: 12, padding: '16px 24px' }}>
-                <div style={{ color: C.teal, fontWeight: 700, fontSize: 18 }}>até R$10.000</div>
-                <div style={{ color: C.muted, fontSize: 12 }}>Variável · Por metas atingidas</div>
-              </div>
-            </div>
-
-            <div style={{ textAlign: 'left', background: C.cardAlt, borderRadius: 12, padding: 20, marginTop: 16 }}>
+            <div style={{ textAlign: 'left', background: C.cardAlt, borderRadius: 12, padding: 20, marginTop: 24 }}>
               <p style={{ color: C.white, fontSize: 14, fontWeight: 600, marginBottom: 10 }}>📋 Modelo variável — como funciona</p>
               <ul style={{ color: C.muted, fontSize: 13, lineHeight: 2, paddingLeft: 18 }}>
                 <li><span style={{ color: C.teal }}>+R$3.000</span> se atingir 20 credenciamentos no mês</li>
