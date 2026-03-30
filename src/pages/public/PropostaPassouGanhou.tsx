@@ -88,9 +88,9 @@ const PropostaPassouGanhou: React.FC = () => {
         {/* ═══ NAV ═══ */}
         <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(8,8,8,.75)', backdropFilter: 'blur(16px)', borderBottom: `1px solid ${C.border}`, padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 18, color: C.white, letterSpacing: 2 }}>PASSOU GANHOU</span>
+            <img src={passouGanhouLogo} alt="Passou Ganhou" style={{ height: 36, objectFit: 'contain' }} />
             <span style={{ color: C.muted, fontSize: 14 }}>×</span>
-            <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 16, color: C.teal }}>linkaê</span>
+            <span style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: 16, color: C.teal }}>linkaê</span>
           </div>
           <Badge color={C.tealDark}>FESPOP 2026</Badge>
         </nav>
