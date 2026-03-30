@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useCallback } from 'react';
+import passouGanhouLogo from '@/assets/passou-ganhou-logo.png';
 import { Helmet } from 'react-helmet-async';
 
 /* ── animate-on-scroll helper ── */
@@ -49,14 +50,14 @@ const Badge = ({ children, color = C.purple }: { children: React.ReactNode; colo
 
 const SectionTag = ({ num, label }: { num: string; label: string }) => (
   <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-    <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 48, fontWeight: 800, background: `linear-gradient(135deg,${C.purple},${C.teal})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{num}</span>
+    <span style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 48, fontWeight: 800, background: `linear-gradient(135deg,${C.purple},${C.teal})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{num}</span>
     <Badge>{label}</Badge>
   </div>
 );
 
 const StatBox = ({ value, label }: { value: string; label: string }) => (
   <div style={{ textAlign: 'center', padding: 16 }}>
-    <div style={{ fontFamily: 'Syne, sans-serif', fontSize: 36, fontWeight: 800, background: `linear-gradient(135deg,${C.teal},${C.purpleLight})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{value}</div>
+    <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 36, fontWeight: 800, background: `linear-gradient(135deg,${C.teal},${C.purpleLight})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{value}</div>
     <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>{label}</div>
   </div>
 );
@@ -70,7 +71,7 @@ const PropostaPassouGanhou: React.FC = () => {
   const reveal = useScrollReveal();
 
   const sectionStyle: React.CSSProperties = { maxWidth: 1100, margin: '0 auto', padding: '80px 24px' };
-  const h2Style: React.CSSProperties = { fontFamily: 'Syne, sans-serif', fontSize: 'clamp(28px,4vw,44px)', fontWeight: 800, color: C.white, lineHeight: 1.15, marginBottom: 16 };
+  const h2Style: React.CSSProperties = { fontFamily: 'Montserrat, sans-serif', fontSize: 'clamp(28px,4vw,44px)', fontWeight: 800, color: C.white, lineHeight: 1.15, marginBottom: 16 };
   const cardStyle: React.CSSProperties = { background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 28, marginBottom: 16 };
   const gridTwo: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20 };
 
@@ -79,7 +80,7 @@ const PropostaPassouGanhou: React.FC = () => {
       <Helmet>
         <title>Proposta Estratégica — Linkaê × Passou Ganhou — FESPOP 2026</title>
         <meta name="robots" content="noindex, nofollow" />
-        <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </Helmet>
 
       <div style={{ background: C.bg, color: C.text, fontFamily: '"DM Sans", sans-serif', minHeight: '100vh', overflowX: 'hidden' }}>
@@ -87,9 +88,9 @@ const PropostaPassouGanhou: React.FC = () => {
         {/* ═══ NAV ═══ */}
         <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(8,8,8,.75)', backdropFilter: 'blur(16px)', borderBottom: `1px solid ${C.border}`, padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 18, color: C.white, letterSpacing: 2 }}>PASSOU GANHOU</span>
+            <img src={passouGanhouLogo} alt="Passou Ganhou" style={{ height: 36, objectFit: 'contain' }} />
             <span style={{ color: C.muted, fontSize: 14 }}>×</span>
-            <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 16, color: C.teal }}>linkaê</span>
+            <span style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: 16, color: C.teal }}>linkaê</span>
           </div>
           <Badge color={C.tealDark}>FESPOP 2026</Badge>
         </nav>
@@ -98,7 +99,7 @@ const PropostaPassouGanhou: React.FC = () => {
         <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '80px 24px', background: `radial-gradient(ellipse at 30% 20%, ${C.purple}33 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, ${C.teal}22 0%, transparent 60%), ${C.bg}` }}>
           <div style={{ maxWidth: 900 }}>
             <Badge>PROPOSTA ESTRATÉGICA 2026</Badge>
-            <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(36px,6vw,72px)', fontWeight: 800, color: C.white, lineHeight: 1.05, margin: '24px 0 20px' }}>
+            <h1 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 'clamp(36px,6vw,72px)', fontWeight: 800, color: C.white, lineHeight: 1.05, margin: '24px 0 20px' }}>
               O Oeste do Paraná<br />não paga mais.
             </h1>
             <p style={{ color: C.muted, fontSize: 18, maxWidth: 640, margin: '0 auto 40px', lineHeight: 1.7 }}>
@@ -129,20 +130,20 @@ const PropostaPassouGanhou: React.FC = () => {
             {/* Opção A */}
             <div style={{ ...cardStyle, borderColor: C.border }}>
               <Badge color={C.border}>OPÇÃO A</Badge>
-              <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 28, fontWeight: 800, color: C.white, margin: '12px 0 8px' }}>R$ 350.000</h3>
+              <h3 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 28, fontWeight: 800, color: C.white, margin: '12px 0 8px' }}>R$ 350.000</h3>
               <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.7 }}>Patrocínio sem maquininha. Exposição de marca sólida — mas sem capturar o MDR do evento. O retorno fica 100% em brand equity, sem receita direta.</p>
             </div>
             {/* Opção B */}
             <div style={{ ...cardStyle, border: `2px solid ${C.teal}`, position: 'relative' }}>
               <Badge color={C.tealDark}>RECOMENDADA</Badge>
-              <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 28, fontWeight: 800, color: C.white, margin: '12px 0 8px' }}>R$ 500.000</h3>
+              <h3 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 28, fontWeight: 800, color: C.white, margin: '12px 0 8px' }}>R$ 500.000</h3>
               <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.7 }}>Patrocínio com maquininha operando no evento. Exposição de marca + R$648k em MDR estimado. O patrocínio se paga com R$148k de lucro — fora downloads e leads.</p>
             </div>
           </div>
 
           {/* Math box */}
           <div ref={reveal} style={{ ...cardStyle, marginTop: 32, ...hidden } as any}>
-            <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 700, color: C.white, marginBottom: 16 }}>A matemática do patrocínio de R$500k</h3>
+            <h3 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 22, fontWeight: 700, color: C.white, marginBottom: 16 }}>A matemática do patrocínio de R$500k</h3>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <tbody>
                 {[
@@ -170,7 +171,7 @@ const PropostaPassouGanhou: React.FC = () => {
 
           {/* Tabela de itens incluídos */}
           <div ref={reveal} style={{ ...cardStyle, marginTop: 24, overflowX: 'auto', ...hidden } as any}>
-            <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 20, fontWeight: 700, color: C.white, marginBottom: 16 }}>O que inclui o patrocínio</h3>
+            <h3 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 20, fontWeight: 700, color: C.white, marginBottom: 16 }}>O que inclui o patrocínio</h3>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 600 }}>
               <thead>
                 <tr style={{ borderBottom: `2px solid ${C.border}` }}>
@@ -256,7 +257,7 @@ const PropostaPassouGanhou: React.FC = () => {
                 <Badge color={p.color}>{p.phase}</Badge>
                 <span style={{ color: C.muted, fontSize: 13 }}>{p.period}</span>
               </div>
-              <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 700, color: C.white, marginBottom: 10 }}>{p.title}</h3>
+              <h3 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 22, fontWeight: 700, color: C.white, marginBottom: 10 }}>{p.title}</h3>
               <ul style={{ color: C.muted, fontSize: 14, lineHeight: 1.9, paddingLeft: 18, marginBottom: 12 }}>
                 {p.items.map((it, j) => <li key={j}>{it}</li>)}
               </ul>
@@ -279,7 +280,7 @@ const PropostaPassouGanhou: React.FC = () => {
             ].map((z, i) => (
               <div key={i} style={{ ...cardStyle, borderTop: `3px solid ${z.color}` }}>
                 <Badge color={z.color}>{z.zone}</Badge>
-                <h4 style={{ fontFamily: 'Syne, sans-serif', fontSize: 20, fontWeight: 700, color: C.white, margin: '10px 0 8px' }}>{z.title}</h4>
+                <h4 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 20, fontWeight: 700, color: C.white, margin: '10px 0 8px' }}>{z.title}</h4>
                 <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.7 }}>{z.desc}</p>
               </div>
             ))}
@@ -327,7 +328,7 @@ const PropostaPassouGanhou: React.FC = () => {
               { value: '15-25', label: 'Novos pós-FESPOP', sub: 'Conversão de leads' },
             ].map((k, i) => (
               <div key={i} style={{ ...cardStyle, textAlign: 'center', padding: 24 }}>
-                <div style={{ fontFamily: 'Syne, sans-serif', fontSize: 32, fontWeight: 800, background: `linear-gradient(135deg,${C.teal},${C.purpleLight})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{k.value}</div>
+                <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 32, fontWeight: 800, background: `linear-gradient(135deg,${C.teal},${C.purpleLight})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{k.value}</div>
                 <div style={{ color: C.white, fontSize: 14, fontWeight: 600, marginTop: 6 }}>{k.label}</div>
                 <div style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{k.sub}</div>
               </div>
@@ -378,7 +379,7 @@ const PropostaPassouGanhou: React.FC = () => {
           <p style={{ color: C.muted, maxWidth: 640, margin: '0 auto 40px', lineHeight: 1.8 }}>A Linkaê acredita nos próprios resultados — por isso parte da remuneração é atrelada ao atingimento de metas reais.</p>
 
           <div style={{ ...cardStyle, maxWidth: 520, margin: '0 auto', padding: 40, border: `2px solid ${C.purple}`, textAlign: 'center' }}>
-            <div style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(40px,6vw,56px)', fontWeight: 800, background: `linear-gradient(135deg,${C.purple},${C.teal})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>R$ 35.000</div>
+            <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 'clamp(40px,6vw,56px)', fontWeight: 800, background: `linear-gradient(135deg,${C.purple},${C.teal})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>R$ 35.000</div>
             <p style={{ color: C.muted, fontSize: 15, marginTop: 8 }}>por mês · contrato mínimo de 6 meses</p>
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: 24, margin: '28px 0', flexWrap: 'wrap' }}>
@@ -452,16 +453,17 @@ const PropostaPassouGanhou: React.FC = () => {
           <h2 style={{ ...h2Style, textAlign: 'center', marginBottom: 8 }}>Estratégia de Crescimento e Dominação Regional</h2>
           <p style={{ color: C.muted, fontSize: 16, marginBottom: 40 }}>Oeste do Paraná — FESPOP 2026</p>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 48, flexWrap: 'wrap', marginBottom: 40 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 56, flexWrap: 'wrap', marginBottom: 40 }}>
             <div>
               <Badge>ELABORADO POR</Badge>
-              <h4 style={{ fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 700, color: C.teal, marginTop: 12 }}>Linkaê Marketing</h4>
-              <p style={{ color: C.muted, fontSize: 14, marginTop: 4 }}>Jeferson Encina — Fundador & Estrategista</p>
+              <h4 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 22, fontWeight: 700, color: C.teal, marginTop: 12 }}>Linkaê Marketing</h4>
+              <p style={{ color: C.text, fontSize: 14, marginTop: 8 }}>Jeferson Encina — <strong style={{ color: C.white }}>Head de Estratégia</strong></p>
+              <p style={{ color: C.text, fontSize: 14, marginTop: 4 }}>Beatriz Almeida — <strong style={{ color: C.white }}>Head de Marketing</strong></p>
             </div>
             <div>
               <Badge color={C.tealDark}>APRESENTADO PARA</Badge>
-              <h4 style={{ fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 700, color: C.white, marginTop: 12 }}>PASSOU GANHOU</h4>
-              <p style={{ color: C.muted, fontSize: 14, marginTop: 4 }}>Magno Sipaúba — Fundador & CEO</p>
+              <img src={passouGanhouLogo} alt="Passou Ganhou" style={{ height: 48, objectFit: 'contain', marginTop: 12 }} />
+              <p style={{ color: C.muted, fontSize: 14, marginTop: 8 }}>Magno Sipaúba — Fundador & CEO</p>
             </div>
           </div>
 
