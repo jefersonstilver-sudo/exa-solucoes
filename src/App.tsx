@@ -257,6 +257,13 @@ const AppContent = () => {
             </Suspense>
           } />
           
+          {/* Proposta Linkaê × Passou Ganhou */}
+          <Route path="/propostapassouganhou3029" element={
+            <Suspense fallback={<GlobalLoadingPage />}>
+              {React.createElement(lazy(() => import('./pages/public/PropostaPassouGanhou')))}
+            </Suspense>
+          } />
+          
           {/* Display comercial (rota raiz) - /[nome-predio]/[codigo] */}
           <Route path="/:buildingSlug/:buildingCode" element={
             <Suspense fallback={<GlobalLoadingPage />}>
