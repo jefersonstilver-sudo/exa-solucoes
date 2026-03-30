@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useCallback } from 'react';
+import passouGanhouLogo from '@/assets/passou-ganhou-logo.png';
 import { Helmet } from 'react-helmet-async';
 
 /* ── animate-on-scroll helper ── */
