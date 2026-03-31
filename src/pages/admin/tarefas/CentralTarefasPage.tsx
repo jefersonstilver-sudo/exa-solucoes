@@ -379,6 +379,12 @@ const CentralTarefasPage: React.FC = () => {
         onOpenChange={setSettingsModalOpen}
       />
 
+      {/* Modal de resumo diário */}
+      <DailySummaryConfigModal
+        open={dailySummaryModalOpen}
+        onOpenChange={setDailySummaryModalOpen}
+      />
+
       {/* Drawer de Detalhes */}
       <TaskDetailDrawer
         task={taskDetail.task || selectedTask}
