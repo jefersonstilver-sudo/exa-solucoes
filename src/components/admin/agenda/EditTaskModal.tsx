@@ -593,11 +593,31 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!task) return;
+
+      // Notify participants about cancellation before deleting
+      try {
+        await supabase.functions.invoke('task-notify-cancelled', {
+          body: {
+            task_id: task.id,
+            titulo: task.titulo,
+            tipo_evento: task.tipo_evento,
+            data: task.data_prevista,
+            horario_inicio: task.horario_inicio,
+            criador_nome: task.criador_nome || 'Sistema',
+            descricao: task.descricao,
+            local_evento: task.local_evento,
+            link_reuniao: task.link_reuniao,
+          }
+        });
+      } catch (notifyErr) {
+        console.error('Erro ao notificar cancelamento:', notifyErr);
+      }
+
       const { error } = await supabase.from('tasks').delete().eq('id', task.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Tarefa excluída com sucesso!');
+      toast.success('Tarefa excluída e participantes notificados sobre o cancelamento!');
       queryClient.invalidateQueries({ queryKey: ['agenda-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['minha-manha-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['central-tarefas'] });
