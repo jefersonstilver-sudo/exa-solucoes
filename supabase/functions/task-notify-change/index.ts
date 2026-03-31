@@ -23,6 +23,9 @@ serve(async (req) => {
       tipo_evento,
       changes,
       criador_nome,
+      descricao,
+      local_evento,
+      link_reuniao,
     } = await req.json();
 
     if (!task_id || !titulo) {
@@ -34,6 +37,18 @@ serve(async (req) => {
 
     console.log('[TASK-CHANGE] 🔄 Notifying change for task:', titulo, '| task_id:', task_id);
 
+    // Fetch full task data for fallback info
+    const { data: taskData } = await supabase
+      .from('tasks')
+      .select('descricao, local_evento, link_reuniao, data_prevista, horario_inicio, horario_limite')
+      .eq('id', task_id)
+      .maybeSingle();
+
+    // Use caller-provided values or fallback to DB
+    const finalDescricao = descricao || taskData?.descricao || '';
+    const finalLocal = local_evento || taskData?.local_evento || '';
+    const finalLink = link_reuniao || taskData?.link_reuniao || '';
+
     // Resolve event type
     const { data: eventType } = await supabase
       .from('event_types')
@@ -44,6 +59,12 @@ serve(async (req) => {
 
     const emoji = eventType?.icon || '📋';
     const label = eventType?.label || 'Tarefa';
+
+    // Helper: format time to HH:MM (strip seconds)
+    const fmtTime = (t: string | null | undefined): string => {
+      if (!t) return '';
+      return t.length >= 5 ? t.slice(0, 5) : t;
+    };
 
     // Get contacts from task_read_receipts (previously notified)
     const { data: receipts } = await supabase
