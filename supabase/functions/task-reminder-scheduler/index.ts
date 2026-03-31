@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 const UNIDADE_TO_MINUTES: Record<string, number> = {
@@ -165,8 +165,8 @@ serve(async (req) => {
           const multiplier = UNIDADE_TO_MINUTES[reminder.unidade] || 1;
           const reminderMinutes = reminder.valor * multiplier;
 
-          // Check if it's time (exact minute match)
-          if (minutesUntilTask !== reminderMinutes) continue;
+          // Check if it's time (5-minute tolerance window)
+          if (minutesUntilTask < (reminderMinutes - 1) || minutesUntilTask > (reminderMinutes + 4)) continue;
 
           const alertType = `lembrete_custom_${reminder.valor}${reminder.unidade}`;
 
@@ -214,7 +214,7 @@ serve(async (req) => {
         }
       } else if (task.data_prevista === currentDate && globalConfig.ativo) {
         // === FALLBACK: use global config (only for today's tasks without custom reminders) ===
-        if (minutesUntilTask !== globalMinutesBefore) continue;
+        if (minutesUntilTask < (globalMinutesBefore - 1) || minutesUntilTask > (globalMinutesBefore + 4)) continue;
 
         const alertType = `lembrete_${globalMinutesBefore}min`;
 
@@ -277,14 +277,14 @@ serve(async (req) => {
 async function getRecipients(supabase: any, taskId: string, alertContacts: any[] | null) {
   const { data: receipts } = await supabase
     .from('task_read_receipts')
-    .select('recipient_phone, recipient_name')
+    .select('contact_phone, contact_name')
     .eq('task_id', taskId);
 
   let recipients: { nome: string; telefone: string }[] = [];
   if (receipts && receipts.length > 0) {
     recipients = receipts
-      .filter((r: any) => r.recipient_phone)
-      .map((r: any) => ({ nome: r.recipient_name || 'Contato', telefone: r.recipient_phone }));
+      .filter((r: any) => r.contact_phone)
+      .map((r: any) => ({ nome: r.contact_name || 'Contato', telefone: r.contact_phone }));
   }
   if (recipients.length === 0 && alertContacts) {
     recipients = alertContacts.filter(c => c.telefone).map(c => ({ nome: c.nome, telefone: c.telefone }));
