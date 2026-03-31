@@ -23,6 +23,9 @@ serve(async (req) => {
       tipo_evento,
       changes,
       criador_nome,
+      descricao,
+      local_evento,
+      link_reuniao,
     } = await req.json();
 
     if (!task_id || !titulo) {
@@ -34,6 +37,18 @@ serve(async (req) => {
 
     console.log('[TASK-CHANGE] 🔄 Notifying change for task:', titulo, '| task_id:', task_id);
 
+    // Fetch full task data for fallback info
+    const { data: taskData } = await supabase
+      .from('tasks')
+      .select('descricao, local_evento, link_reuniao, data_prevista, horario_inicio, horario_limite')
+      .eq('id', task_id)
+      .maybeSingle();
+
+    // Use caller-provided values or fallback to DB
+    const finalDescricao = descricao || taskData?.descricao || '';
+    const finalLocal = local_evento || taskData?.local_evento || '';
+    const finalLink = link_reuniao || taskData?.link_reuniao || '';
+
     // Resolve event type
     const { data: eventType } = await supabase
       .from('event_types')
@@ -44,6 +59,12 @@ serve(async (req) => {
 
     const emoji = eventType?.icon || '📋';
     const label = eventType?.label || 'Tarefa';
+
+    // Helper: format time to HH:MM (strip seconds)
+    const fmtTime = (t: string | null | undefined): string => {
+      if (!t) return '';
+      return t.length >= 5 ? t.slice(0, 5) : t;
+    };
 
     // Get contacts from task_read_receipts (previously notified)
     const { data: receipts } = await supabase
@@ -80,28 +101,40 @@ serve(async (req) => {
     }
 
     // Build change message
-    let message = `🔄 *${label} reagendad${['compromisso', 'aviso', 'lembrete', 'evento'].some(m => label.toLowerCase().includes(m)) ? 'o' : 'a'}*\n\n`;
+    const genderSuffix = ['compromisso', 'aviso', 'lembrete', 'evento'].some(m => label.toLowerCase().includes(m)) ? 'o' : 'a';
+    let message = `🔄 *${label} reagendad${genderSuffix}*\n\n`;
     message += `*${titulo}*\n\n`;
 
-    if (changes?.data_anterior && changes?.data_nova && changes.data_anterior !== changes.data_nova) {
-      message += `📅 Data: ${changes.data_anterior} → ${changes.data_nova}\n`;
+    // Always show the current/new date
+    const newDate = changes?.data_nova || taskData?.data_prevista || '';
+    const oldDate = changes?.data_anterior || '';
+    if (oldDate && newDate && oldDate !== newDate) {
+      message += `📅 Data: ~${oldDate}~ → *${newDate}*\n`;
+    } else if (newDate) {
+      message += `📅 Data: *${newDate}*\n`;
     }
+
     if (changes?.horario_inicio_anterior !== undefined && changes?.horario_inicio_novo !== undefined && changes.horario_inicio_anterior !== changes.horario_inicio_novo) {
-      const from = changes.horario_inicio_anterior || 'Sem horário';
-      const to = changes.horario_inicio_novo || 'Sem horário';
-      message += `🕐 Início: ${from} → ${to}\n`;
+      const from = fmtTime(changes.horario_inicio_anterior) || 'Sem horário';
+      const to = fmtTime(changes.horario_inicio_novo) || 'Sem horário';
+      message += `🕐 Início: ~${from}~ → *${to}*\n`;
     }
     if (changes?.horario_limite_anterior !== undefined && changes?.horario_limite_novo !== undefined && changes.horario_limite_anterior !== changes.horario_limite_novo) {
-      const from = changes.horario_limite_anterior || 'Sem limite';
-      const to = changes.horario_limite_novo || 'Sem limite';
-      message += `⏰ Limite: ${from} → ${to}\n`;
+      const from = fmtTime(changes.horario_limite_anterior) || 'Sem limite';
+      const to = fmtTime(changes.horario_limite_novo) || 'Sem limite';
+      message += `⏰ Limite: ~${from}~ → *${to}*\n`;
     }
 
     if (criador_nome) {
       message += `\n👤 Alterado por: ${criador_nome}\n`;
     }
 
-    message += `\n⚠️ Por favor, atualize sua agenda.`;
+    // Append extra info
+    if (finalLocal) message += `\n📍 ${finalLocal}`;
+    if (finalLink) message += `\n🔗 ${finalLink}`;
+    if (finalDescricao) message += `\n📝 ${finalDescricao}`;
+
+    message += `\n\n⚠️ Por favor, atualize sua agenda.`;
 
     // Get Z-API config
     const { data: agent } = await supabase

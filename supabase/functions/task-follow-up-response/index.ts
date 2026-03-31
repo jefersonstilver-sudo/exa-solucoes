@@ -116,7 +116,7 @@ serve(async (req) => {
     // Get task info
     const { data: task } = await supabase
       .from('tasks')
-      .select('id, titulo, data_prevista, criada_por, status')
+      .select('id, titulo, data_prevista, criada_por, status, descricao, local_evento, link_reuniao, horario_inicio, horario_limite')
       .eq('id', activeNotif.task_id)
       .single();
 
@@ -260,12 +260,18 @@ serve(async (req) => {
             }).eq('id', activeNotif.id);
 
             const dateFormatted = formatDateBR(newDate);
-            const timeStr = newHour ? ` às ${newHour}` : '';
+            const timeStr = newHour ? ` às ${newHour.slice(0,5)}` : '';
 
             // M-07: Register in task_status_log
             await logStatusChange(task.status || 'pendente', 'pendente', `Reagendado via WhatsApp para ${dateFormatted}${timeStr} por ${respondentName}`);
 
-            await sendReply(`📅 *Tarefa reagendada!*\n\n"${task.titulo}" foi reagendada para ${dateFormatted}${timeStr}.`);
+            // Build rich reschedule message
+            let rescheduleMsg = `📅 *Tarefa reagendada!*\n\n*${task.titulo}*\n\n📅 Nova data: *${dateFormatted}${timeStr}*`;
+            if (task.local_evento) rescheduleMsg += `\n📍 ${task.local_evento}`;
+            if (task.link_reuniao) rescheduleMsg += `\n🔗 ${task.link_reuniao}`;
+            if (task.descricao) rescheduleMsg += `\n📝 ${task.descricao}`;
+
+            await sendReply(rescheduleMsg);
             await notifyCreatorOfAction(`📅 Tarefa *reagendada* para ${dateFormatted}${timeStr}.`, phone);
 
             const { data: contacts } = await supabase
@@ -276,11 +282,14 @@ serve(async (req) => {
             if (contacts) {
               for (const c of contacts) {
                 if (!c.telefone || c.telefone.replace(/\D/g, '').includes(phone.slice(-8))) continue;
+                let dirMsg = `📅 A tarefa *"${task.titulo}"* foi *reagendada* para ${dateFormatted}${timeStr}.`;
+                if (task.local_evento) dirMsg += `\n📍 ${task.local_evento}`;
+                if (task.link_reuniao) dirMsg += `\n🔗 ${task.link_reuniao}`;
                 await supabase.functions.invoke('zapi-send-message', {
                   body: {
                     agentKey: 'exa_alert',
                     phone: c.telefone,
-                    message: `📅 A tarefa *"${task.titulo}"* foi *reagendada* para ${dateFormatted}${timeStr}.`,
+                    message: dirMsg,
                     skipSplit: true
                   }
                 });
