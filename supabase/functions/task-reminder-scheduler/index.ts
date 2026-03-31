@@ -165,8 +165,8 @@ serve(async (req) => {
           const multiplier = UNIDADE_TO_MINUTES[reminder.unidade] || 1;
           const reminderMinutes = reminder.valor * multiplier;
 
-          // Check if it's time (exact minute match)
-          if (minutesUntilTask !== reminderMinutes) continue;
+          // Check if it's time (5-minute tolerance window)
+          if (minutesUntilTask < (reminderMinutes - 1) || minutesUntilTask > (reminderMinutes + 4)) continue;
 
           const alertType = `lembrete_custom_${reminder.valor}${reminder.unidade}`;
 
