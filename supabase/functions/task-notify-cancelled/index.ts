@@ -54,30 +54,33 @@ serve(async (req) => {
       .eq('task_id', task_id)
       .eq('status', 'sent');
 
+    // 2. Também buscar exa_alerts_directors (sempre, não apenas como fallback)
+    const { data: dbContacts } = await supabase
+      .from('exa_alerts_directors')
+      .select('nome, telefone')
+      .eq('ativo', true);
+
+    // 3. Merge ambas as listas, deduplicando por telefone
+    const seen = new Set<string>();
     let contacts: { nome: string; telefone: string }[] = [];
 
-    if (receipts && receipts.length > 0) {
-      // Deduplicate by phone
-      const seen = new Set<string>();
+    if (receipts) {
       for (const r of receipts) {
-        if (r.contact_phone && !seen.has(r.contact_phone)) {
-          seen.add(r.contact_phone);
-          contacts.push({ nome: r.contact_name || 'Contato', telefone: r.contact_phone });
-        }
+        if (!r.contact_phone || seen.has(r.contact_phone)) continue;
+        seen.add(r.contact_phone);
+        contacts.push({ nome: r.contact_name || 'Contato', telefone: r.contact_phone });
       }
-      console.log(`[TASK-CANCEL] 📋 Found ${contacts.length} previously notified contacts`);
-    } else {
-      // Fallback: exa_alerts_directors
-      const { data: dbContacts } = await supabase
-        .from('exa_alerts_directors')
-        .select('nome, telefone')
-        .eq('ativo', true);
-
-      if (dbContacts && dbContacts.length > 0) {
-        contacts = dbContacts.filter((c: any) => c.telefone);
-      }
-      console.log(`[TASK-CANCEL] 📋 Fallback: ${contacts.length} directors`);
     }
+
+    if (dbContacts) {
+      for (const d of dbContacts) {
+        if (!d.telefone || seen.has(d.telefone)) continue;
+        seen.add(d.telefone);
+        contacts.push({ nome: d.nome || 'Diretor', telefone: d.telefone });
+      }
+    }
+
+    console.log(`[TASK-CANCEL] 📋 Merged contacts: ${contacts.length} (receipts: ${receipts?.length || 0}, directors: ${dbContacts?.length || 0})`);
 
     if (contacts.length === 0) {
       console.log('[TASK-CANCEL] ⚠️ No contacts to notify');
