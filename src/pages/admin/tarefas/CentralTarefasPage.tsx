@@ -50,6 +50,7 @@ const CentralTarefasPage: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [dailySummaryModalOpen, setDailySummaryModalOpen] = useState(false);
 
   // Hook principal
   const {
