@@ -116,7 +116,7 @@ serve(async (req) => {
     // Get task info
     const { data: task } = await supabase
       .from('tasks')
-      .select('id, titulo, data_prevista, criada_por, status')
+      .select('id, titulo, data_prevista, criada_por, status, descricao, local_evento, link_reuniao, horario_inicio, horario_limite')
       .eq('id', activeNotif.task_id)
       .single();
 
