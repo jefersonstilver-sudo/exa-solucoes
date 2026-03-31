@@ -23,6 +23,7 @@ import EmbeddedAgenda from './components/EmbeddedAgenda';
 import CreateTaskModal from '@/components/admin/agenda/CreateTaskModal';
 import { ACTIVE_STATUSES } from '@/constants/taskStatus';
 import AgendaNotificationSettingsModal from './components/AgendaNotificationSettingsModal';
+import DailySummaryConfigModal from './components/DailySummaryConfigModal';
 import type { TaskWithDetails, TaskStatusCanonical, TaskPriorityCanonical } from '@/types/tarefas';
 import type { AgendaTask } from '@/components/admin/agenda/TaskCard';
 import { useIsMobile } from '@/hooks/use-mobile';
