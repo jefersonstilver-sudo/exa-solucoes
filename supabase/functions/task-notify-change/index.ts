@@ -6,6 +6,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const DIAS_SEMANA = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+
+function fmtDateBR(dateStr: string): string {
+  if (!dateStr) return '';
+  if (dateStr.includes('/')) {
+    const [d, m, y] = dateStr.split('/').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return `${DIAS_SEMANA[dt.getDay()]}, ${dateStr}`;
+  }
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const dd = String(d).padStart(2, '0');
+  const mm = String(m).padStart(2, '0');
+  return `${DIAS_SEMANA[dt.getDay()]}, ${dd}/${mm}/${y}`;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
