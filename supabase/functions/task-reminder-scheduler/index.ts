@@ -87,16 +87,27 @@ serve(async (req) => {
             if (diff > 2) continue;
           }
 
-          // Check duplicate
+          // Check duplicate (skip for force but still check 5-min window)
+          const alertTypeKey = forceSummary ? `resumo_diario_manual` : `resumo_diario_${scheduledTime}`;
+          const dedupeWindow = forceSummary
+            ? new Date(now.getTime() - 5 * 60 * 1000).toISOString()
+            : `${currentDate}T00:00:00`;
+
           const { data: existingSummary } = await supabase
             .from('task_alert_logs')
             .select('id')
-            .eq('alert_type', `resumo_diario_${scheduledTime}`)
-            .gte('sent_at', `${currentDate}T00:00:00`)
+            .eq('alert_type', alertTypeKey)
+            .gte('sent_at', dedupeWindow)
             .maybeSingle();
 
           if (existingSummary) {
-            console.log(`[task-reminder] Daily summary already sent for ${scheduledTime}`);
+            console.log(`[task-reminder] Daily summary already sent for ${alertTypeKey}`);
+            if (forceSummary) {
+              // For force, return specific message instead of silently skipping
+              return new Response(JSON.stringify({ success: false, reason: 'Resumo já enviado nos últimos 5 minutos' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
             continue;
           }
 
