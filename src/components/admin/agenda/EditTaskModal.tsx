@@ -1708,8 +1708,12 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
               <AlertTriangle className="h-5 w-5 text-red-500" />
               Confirmar Exclusão
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir "{task?.titulo}"? Esta ação não pode ser desfeita.
+            <AlertDialogDescription className="space-y-2">
+              <p>Tem certeza que deseja excluir "<strong>{task?.titulo}</strong>"?</p>
+              <p className="text-destructive font-medium">
+                ⚠️ Todos os participantes que foram notificados serão avisados sobre o cancelamento via WhatsApp.
+              </p>
+              <p className="text-muted-foreground text-sm">Esta ação não pode ser desfeita.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
