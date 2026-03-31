@@ -536,6 +536,9 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
               tipo_evento: tipoEvento || 'tarefa',
               changes,
               criador_nome: userProfile?.nome || userProfile?.email || 'Sistema',
+              descricao: descricao || '',
+              local_evento: localEvento || '',
+              link_reuniao: linkReuniao || '',
             }
           }).then(() => {
             toast.info('Contatos notificados sobre a alteração');

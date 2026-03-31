@@ -101,28 +101,40 @@ serve(async (req) => {
     }
 
     // Build change message
-    let message = `🔄 *${label} reagendad${['compromisso', 'aviso', 'lembrete', 'evento'].some(m => label.toLowerCase().includes(m)) ? 'o' : 'a'}*\n\n`;
+    const genderSuffix = ['compromisso', 'aviso', 'lembrete', 'evento'].some(m => label.toLowerCase().includes(m)) ? 'o' : 'a';
+    let message = `🔄 *${label} reagendad${genderSuffix}*\n\n`;
     message += `*${titulo}*\n\n`;
 
-    if (changes?.data_anterior && changes?.data_nova && changes.data_anterior !== changes.data_nova) {
-      message += `📅 Data: ${changes.data_anterior} → ${changes.data_nova}\n`;
+    // Always show the current/new date
+    const newDate = changes?.data_nova || taskData?.data_prevista || '';
+    const oldDate = changes?.data_anterior || '';
+    if (oldDate && newDate && oldDate !== newDate) {
+      message += `📅 Data: ~${oldDate}~ → *${newDate}*\n`;
+    } else if (newDate) {
+      message += `📅 Data: *${newDate}*\n`;
     }
+
     if (changes?.horario_inicio_anterior !== undefined && changes?.horario_inicio_novo !== undefined && changes.horario_inicio_anterior !== changes.horario_inicio_novo) {
-      const from = changes.horario_inicio_anterior || 'Sem horário';
-      const to = changes.horario_inicio_novo || 'Sem horário';
-      message += `🕐 Início: ${from} → ${to}\n`;
+      const from = fmtTime(changes.horario_inicio_anterior) || 'Sem horário';
+      const to = fmtTime(changes.horario_inicio_novo) || 'Sem horário';
+      message += `🕐 Início: ~${from}~ → *${to}*\n`;
     }
     if (changes?.horario_limite_anterior !== undefined && changes?.horario_limite_novo !== undefined && changes.horario_limite_anterior !== changes.horario_limite_novo) {
-      const from = changes.horario_limite_anterior || 'Sem limite';
-      const to = changes.horario_limite_novo || 'Sem limite';
-      message += `⏰ Limite: ${from} → ${to}\n`;
+      const from = fmtTime(changes.horario_limite_anterior) || 'Sem limite';
+      const to = fmtTime(changes.horario_limite_novo) || 'Sem limite';
+      message += `⏰ Limite: ~${from}~ → *${to}*\n`;
     }
 
     if (criador_nome) {
       message += `\n👤 Alterado por: ${criador_nome}\n`;
     }
 
-    message += `\n⚠️ Por favor, atualize sua agenda.`;
+    // Append extra info
+    if (finalLocal) message += `\n📍 ${finalLocal}`;
+    if (finalLink) message += `\n🔗 ${finalLink}`;
+    if (finalDescricao) message += `\n📝 ${finalDescricao}`;
+
+    message += `\n\n⚠️ Por favor, atualize sua agenda.`;
 
     // Get Z-API config
     const { data: agent } = await supabase
