@@ -1,35 +1,49 @@
 
 
-# Plano: Ajustar investimento e adicionar conteudo faltante do PDF
+# Plano: Eventos com duração visual (estilo Google Calendar) na agenda
 
-## 1. Remover valor R$25.000 da secao de investimento (linhas 385-393)
+## Problema atual
+Na visão de dia (AgendaDayView), cada tarefa ocupa apenas o slot de 1 hora onde começa. Se um evento vai das 14:00 às 15:30, ele aparece só no slot das 14:00 com altura fixa — não cobre visualmente o período inteiro como no Google Calendar.
 
-Remover o grid que mostra "R$25.000 Base fixa" + "até R$10.000 Variavel". Manter apenas o valor total R$35.000/mes com o modelo variavel por metas (que ja existe abaixo). A secao fica mais limpa sem expor a composicao interna.
+## Solução
 
-## 2. Adicionar secoes que estao no PDF mas faltam na pagina
+### Arquivo: `src/pages/admin/tarefas/components/AgendaDayView.tsx`
 
-### 2a. Contexto Operacional (apos o Hero, antes da Decisao)
-Tabela de status com 7 itens: estabelecimentos credenciados (zero), app disponivel (sim), dias para FESPOP (60-90), parceria Abrasel (em negociacao), stand FESPOP (em negociacao), canais digitais (Instagram apenas), verba Linkae (em negociacao).
+**Refatorar para layout absoluto posicionado (como Google Calendar):**
 
-### 2b. Scripts Prontos para Uso (nova secao apos Stand/Zona 3)
-5 scripts completos do PDF:
-- Pitch dos 10 Fundadores
-- Pitch de FOMO (vizinhos dos Fundadores)
-- Ativacao no PDV (atendentes)
-- Ativador FESPOP (Zona 2)
-- Ancoragem pos-download (Zona 3)
+1. **Calcular posição e altura de cada tarefa baseado em `horario_inicio` e `horario_limite`:**
+   - Posição Y = offset em pixels a partir do topo da timeline, baseado no horário de início (hora + minutos)
+   - Altura = duração em horas × altura do slot por hora
+   - Se não tem `horario_limite`, assume 1 hora de duração padrão
+   - Tarefas sem horário continuam na seção "Dia inteiro"
 
-### 2c. Posicionamento da Marca (nova secao apos KPIs)
-- O que NAO comunicar (4 itens com X)
-- O que comunicar (5 itens com check)
-- Hierarquia da comunicacao (4 niveis)
+2. **Mudar a timeline de `flex` por hora para container `relative` com altura fixa:**
+   - Cada hora = 80px (desktop) / 60px (mobile) de altura
+   - Linhas de hora são posicionadas com `absolute` a cada intervalo
+   - Tarefas ficam posicionadas com `absolute` sobre as linhas, cobrindo a faixa horária correta
+   - Tarefas sobrepostas ficam lado a lado (colunas)
 
-### 2d. Conversao de Leads pos-FESPOP (adicionar dentro da secao Nurturing ou como sub-secao)
-Tabela com timing D+1, D+3, D+7 e acoes de follow-up para lojistas.
+3. **Manter a linha vermelha "now indicator"** com posição absoluta baseada na hora/minuto atual
 
-## Arquivo alterado
-- `src/pages/public/PropostaPassouGanhou.tsx`
+4. **Estilizar os blocos de evento** com cores baseadas no `tipo_evento` (via `useEventTypes`), emoji do tipo, título, subtipo e horário — similar à imagem de referência
 
-## O que NAO muda
-- Nenhuma outra pagina, rota ou funcionalidade existente
+### Arquivo: `src/pages/admin/tarefas/components/AgendaWeekView.tsx`
+Aplicar a mesma lógica de altura proporcional nos slots semanais.
+
+### Comportamento visual esperado
+```text
+09:00 |                                    |
+10:00 |████████████████████████████████████ | ← Evento 10:00-11:00 (1h)
+11:00 |████████████████████████████████████ |
+      |██ Evento 11:00-11:30 (30min) ██████|
+12:00 |                                    |
+13:00 |                                    |
+14:00 |████████████████████████████████████ | ← Evento 14:00-15:30
+15:00 |██████████████████████████          | ← continua até 15:30
+```
+
+## O que NÃO muda
+- Nenhuma outra página, modal, rota ou funcionalidade existente
+- A interface AgendaTask permanece inalterada
+- Seção "Dia inteiro / Sem horário" continua igual
 
