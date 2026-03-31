@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { RefreshCw, Loader2, Plus, ChevronDown, ChevronUp, X, SlidersHorizontal, Maximize2, Settings } from 'lucide-react';
+import { RefreshCw, Loader2, Plus, ChevronDown, ChevronUp, X, SlidersHorizontal, Maximize2, Settings, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
