@@ -593,11 +593,31 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!task) return;
+
+      // Notify participants about cancellation before deleting
+      try {
+        await supabase.functions.invoke('task-notify-cancelled', {
+          body: {
+            task_id: task.id,
+            titulo: task.titulo,
+            tipo_evento: task.tipo_evento,
+            data: task.data_prevista,
+            horario_inicio: task.horario_inicio,
+            criador_nome: userProfile?.nome || userProfile?.email || 'Sistema',
+            descricao: task.descricao,
+            local_evento: task.local_evento,
+            link_reuniao: task.link_reuniao,
+          }
+        });
+      } catch (notifyErr) {
+        console.error('Erro ao notificar cancelamento:', notifyErr);
+      }
+
       const { error } = await supabase.from('tasks').delete().eq('id', task.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Tarefa excluída com sucesso!');
+      toast.success('Tarefa excluída e participantes notificados sobre o cancelamento!');
       queryClient.invalidateQueries({ queryKey: ['agenda-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['minha-manha-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['central-tarefas'] });
@@ -1688,8 +1708,12 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
               <AlertTriangle className="h-5 w-5 text-red-500" />
               Confirmar Exclusão
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir "{task?.titulo}"? Esta ação não pode ser desfeita.
+            <AlertDialogDescription className="space-y-2">
+              <p>Tem certeza que deseja excluir "<strong>{task?.titulo}</strong>"?</p>
+              <p className="text-destructive font-medium">
+                ⚠️ Todos os participantes que foram notificados serão avisados sobre o cancelamento via WhatsApp.
+              </p>
+              <p className="text-muted-foreground text-sm">Esta ação não pode ser desfeita.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
