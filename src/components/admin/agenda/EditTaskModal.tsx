@@ -603,7 +603,7 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
             tipo_evento: task.tipo_evento,
             data: task.data_prevista,
             horario_inicio: task.horario_inicio,
-            criador_nome: task.criador_nome || 'Sistema',
+            criador_nome: userProfile?.nome || userProfile?.email || 'Sistema',
             descricao: task.descricao,
             local_evento: task.local_evento,
             link_reuniao: task.link_reuniao,
