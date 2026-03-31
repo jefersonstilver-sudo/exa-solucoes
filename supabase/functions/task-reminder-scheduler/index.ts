@@ -329,7 +329,7 @@ function buildMessage(task: any, minutesBefore: number, typeMap: Record<string, 
 
   let message = `⏰ *Lembrete — ${timeDesc}*\n\n`;
   message += `${eventIcon} *${task.titulo}*\n`;
-  message += `📅 ${task.data_prevista} às ${task.horario_inicio}\n`;
+  message += `📅 ${fmtDateBR(task.data_prevista)} às ${task.horario_inicio}\n`;
   message += `📁 ${eventLabel}\n`;
   if (task.local_evento) message += `📍 ${task.local_evento}\n`;
   if (task.link_reuniao) message += `🔗 ${task.link_reuniao}\n`;

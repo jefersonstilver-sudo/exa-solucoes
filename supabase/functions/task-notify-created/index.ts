@@ -82,7 +82,7 @@ function buildRichMessage(params: {
   
   // Data e horário
   if (params.data && params.data !== 'Sem data') {
-    message += `📅 Data: ${params.data}`;
+    message += `📅 Data: ${fmtDateBR(params.data)}`;
     // Show horario_inicio separate from horario (limite)
     if (params.horario_inicio && params.horario) {
       message += `\n🕐 Início: ${params.horario_inicio} | Limite: ${params.horario}`;

@@ -125,9 +125,9 @@ serve(async (req) => {
     const newDate = changes?.data_nova || taskData?.data_prevista || '';
     const oldDate = changes?.data_anterior || '';
     if (oldDate && newDate && oldDate !== newDate) {
-      message += `📅 Data: ~${oldDate}~ → *${newDate}*\n`;
+      message += `📅 Data: ~${fmtDateBR(oldDate)}~ → *${fmtDateBR(newDate)}*\n`;
     } else if (newDate) {
-      message += `📅 Data: *${newDate}*\n`;
+      message += `📅 Data: *${fmtDateBR(newDate)}*\n`;
     }
 
     if (changes?.horario_inicio_anterior !== undefined && changes?.horario_inicio_novo !== undefined && changes.horario_inicio_anterior !== changes.horario_inicio_novo) {
