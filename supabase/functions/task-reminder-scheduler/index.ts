@@ -277,14 +277,14 @@ serve(async (req) => {
 async function getRecipients(supabase: any, taskId: string, alertContacts: any[] | null) {
   const { data: receipts } = await supabase
     .from('task_read_receipts')
-    .select('recipient_phone, recipient_name')
+    .select('contact_phone, contact_name')
     .eq('task_id', taskId);
 
   let recipients: { nome: string; telefone: string }[] = [];
   if (receipts && receipts.length > 0) {
     recipients = receipts
-      .filter((r: any) => r.recipient_phone)
-      .map((r: any) => ({ nome: r.recipient_name || 'Contato', telefone: r.recipient_phone }));
+      .filter((r: any) => r.contact_phone)
+      .map((r: any) => ({ nome: r.contact_name || 'Contato', telefone: r.contact_phone }));
   }
   if (recipients.length === 0 && alertContacts) {
     recipients = alertContacts.filter(c => c.telefone).map(c => ({ nome: c.nome, telefone: c.telefone }));
