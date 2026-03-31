@@ -6,7 +6,7 @@ import { useSofia } from '@/contexts/SofiaContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-const FULLSCREEN_HIDDEN_ROUTES = ['tarefas/fullscreen'];
+const FULLSCREEN_HIDDEN_ROUTES = ['tarefas/fullscreen', '/tarefas'];
 
 // Sofia Jarvis é EXCLUSIVA para super_admin
 
