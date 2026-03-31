@@ -1,49 +1,45 @@
 
 
-# Plano: Eventos com duração visual (estilo Google Calendar) na agenda
+# Plano: Corrigir sistema de lembretes de tarefas (WhatsApp)
 
-## Problema atual
-Na visão de dia (AgendaDayView), cada tarefa ocupa apenas o slot de 1 hora onde começa. Se um evento vai das 14:00 às 15:30, ele aparece só no slot das 14:00 com altura fixa — não cobre visualmente o período inteiro como no Google Calendar.
+## Problemas encontrados
 
-## Solução
+### 1. Sem cron job — função nunca é chamada (CAUSA PRINCIPAL)
+A edge function `task-reminder-scheduler` **nunca foi invocada** (0 logs). Não existe nenhum cron job no `pg_cron` para chamá-la periodicamente. Os lembretes existem no banco mas ninguém os processa.
 
-### Arquivo: `src/pages/admin/tarefas/components/AgendaDayView.tsx`
+### 2. Colunas erradas no getRecipients
+A função busca `recipient_phone` e `recipient_name` na tabela `task_read_receipts`, mas as colunas reais são `contact_phone` e `contact_name`. Mesmo que a função fosse chamada, ela não encontraria nenhum destinatário.
 
-**Refatorar para layout absoluto posicionado (como Google Calendar):**
+### 3. Match por minuto exato é frágil
+A lógica `minutesUntilTask !== reminderMinutes` exige que o cron rode no minuto EXATO. Se o cron roda a cada 5min, pode perder lembretes. Precisa de uma janela de tolerância.
 
-1. **Calcular posição e altura de cada tarefa baseado em `horario_inicio` e `horario_limite`:**
-   - Posição Y = offset em pixels a partir do topo da timeline, baseado no horário de início (hora + minutos)
-   - Altura = duração em horas × altura do slot por hora
-   - Se não tem `horario_limite`, assume 1 hora de duração padrão
-   - Tarefas sem horário continuam na seção "Dia inteiro"
+## Correções
 
-2. **Mudar a timeline de `flex` por hora para container `relative` com altura fixa:**
-   - Cada hora = 80px (desktop) / 60px (mobile) de altura
-   - Linhas de hora são posicionadas com `absolute` a cada intervalo
-   - Tarefas ficam posicionadas com `absolute` sobre as linhas, cobrindo a faixa horária correta
-   - Tarefas sobrepostas ficam lado a lado (colunas)
+### Arquivo: `supabase/functions/task-reminder-scheduler/index.ts`
 
-3. **Manter a linha vermelha "now indicator"** com posição absoluta baseada na hora/minuto atual
+1. **Corrigir colunas**: Trocar `recipient_phone` → `contact_phone` e `recipient_name` → `contact_name` na função `getRecipients`
 
-4. **Estilizar os blocos de evento** com cores baseadas no `tipo_evento` (via `useEventTypes`), emoji do tipo, título, subtipo e horário — similar à imagem de referência
+2. **Adicionar janela de tolerância**: Mudar de match exato para `minutesUntilTask >= 0 && minutesUntilTask <= reminderMinutes && minutesUntilTask <= reminderMinutes + 5` (janela de 5 minutos)
 
-### Arquivo: `src/pages/admin/tarefas/components/AgendaWeekView.tsx`
-Aplicar a mesma lógica de altura proporcional nos slots semanais.
+3. **Atualizar CORS headers** para incluir headers da plataforma Supabase
 
-### Comportamento visual esperado
-```text
-09:00 |                                    |
-10:00 |████████████████████████████████████ | ← Evento 10:00-11:00 (1h)
-11:00 |████████████████████████████████████ |
-      |██ Evento 11:00-11:30 (30min) ██████|
-12:00 |                                    |
-13:00 |                                    |
-14:00 |████████████████████████████████████ | ← Evento 14:00-15:30
-15:00 |██████████████████████████          | ← continua até 15:30
+### SQL: Criar cron job (via insert tool)
+```sql
+SELECT cron.schedule(
+  'task-reminder-scheduler-cron',
+  '*/2 * * * *',
+  $$
+  SELECT net.http_post(
+    url:='https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/task-reminder-scheduler',
+    headers:='{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFha2Vub2xqc3ljeXJjcmNoZ3hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5MDM3NTUsImV4cCI6MjA2MjQ3OTc1NX0.wEKVfJKfQiybyne0yn0dOUwbujb_WXkZHAzlyfHb0lk"}'::jsonb,
+    body:='{}'::jsonb
+  ) AS request_id;
+  $$
+);
 ```
+Roda a cada 2 minutos para não perder lembretes.
 
-## O que NÃO muda
-- Nenhuma outra página, modal, rota ou funcionalidade existente
-- A interface AgendaTask permanece inalterada
-- Seção "Dia inteiro / Sem horário" continua igual
+### O que NÃO muda
+- UI dos lembretes (TaskRemindersPanel)
+- Nenhuma outra página ou funcionalidade
 
