@@ -214,7 +214,7 @@ serve(async (req) => {
         }
       } else if (task.data_prevista === currentDate && globalConfig.ativo) {
         // === FALLBACK: use global config (only for today's tasks without custom reminders) ===
-        if (minutesUntilTask !== globalMinutesBefore) continue;
+        if (minutesUntilTask < (globalMinutesBefore - 1) || minutesUntilTask > (globalMinutesBefore + 4)) continue;
 
         const alertType = `lembrete_${globalMinutesBefore}min`;
 
