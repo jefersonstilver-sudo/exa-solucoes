@@ -1,29 +1,13 @@
 
 
-# Plano: Corrigir sistema de lembretes de tarefas (WhatsApp)
+# Plano: Criar cron job para ativar os lembretes de tarefas
 
-## Problemas encontrados
+## Problema
+A edge function `task-reminder-scheduler` nunca foi invocada — 0 logs, 0 execuções. Não existe cron job no `pg_cron` para chamá-la. Os lembretes (30min, 1dia, 1semana) estão configurados corretamente no banco mas nunca são processados.
 
-### 1. Sem cron job — função nunca é chamada (CAUSA PRINCIPAL)
-A edge function `task-reminder-scheduler` **nunca foi invocada** (0 logs). Não existe nenhum cron job no `pg_cron` para chamá-la periodicamente. Os lembretes existem no banco mas ninguém os processa.
+## Correção
+Executar via SQL (insert tool) a criação do cron job que chama a função a cada 2 minutos:
 
-### 2. Colunas erradas no getRecipients
-A função busca `recipient_phone` e `recipient_name` na tabela `task_read_receipts`, mas as colunas reais são `contact_phone` e `contact_name`. Mesmo que a função fosse chamada, ela não encontraria nenhum destinatário.
-
-### 3. Match por minuto exato é frágil
-A lógica `minutesUntilTask !== reminderMinutes` exige que o cron rode no minuto EXATO. Se o cron roda a cada 5min, pode perder lembretes. Precisa de uma janela de tolerância.
-
-## Correções
-
-### Arquivo: `supabase/functions/task-reminder-scheduler/index.ts`
-
-1. **Corrigir colunas**: Trocar `recipient_phone` → `contact_phone` e `recipient_name` → `contact_name` na função `getRecipients`
-
-2. **Adicionar janela de tolerância**: Mudar de match exato para `minutesUntilTask >= 0 && minutesUntilTask <= reminderMinutes && minutesUntilTask <= reminderMinutes + 5` (janela de 5 minutos)
-
-3. **Atualizar CORS headers** para incluir headers da plataforma Supabase
-
-### SQL: Criar cron job (via insert tool)
 ```sql
 SELECT cron.schedule(
   'task-reminder-scheduler-cron',
@@ -37,9 +21,17 @@ SELECT cron.schedule(
   $$
 );
 ```
-Roda a cada 2 minutos para não perder lembretes.
 
-### O que NÃO muda
-- UI dos lembretes (TaskRemindersPanel)
-- Nenhuma outra página ou funcionalidade
+Roda a cada 2 minutos — com a janela de tolerância de 5 minutos já implementada no código, nenhum lembrete será perdido.
+
+## Como funciona o fluxo completo
+1. Cron chama a function a cada 2 min
+2. Function busca tarefas pendentes com `horario_inicio`
+3. Busca `task_reminders` ativos com `fired_at = null`
+4. Calcula `minutesUntilTask` vs `reminderMinutes` (ex: 30min, 1440min para 1 dia, 10080min para 1 semana)
+5. Se está dentro da janela de tolerância → envia WhatsApp via `zapi-send-message`
+6. Marca `fired_at` no reminder para não reenviar
+
+## O que NÃO muda
+- Nenhum código, nenhuma UI, nenhuma outra funcionalidade
 
