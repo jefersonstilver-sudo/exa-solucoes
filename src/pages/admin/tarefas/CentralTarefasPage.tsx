@@ -190,17 +190,28 @@ const CentralTarefasPage: React.FC = () => {
         
         <div className="flex items-center gap-2">
 
-          {/* Botão Engrenagem - super_admin only */}
+          {/* Botões de config - super_admin only */}
           {userProfile?.role === 'super_admin' && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSettingsModalOpen(true)}
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              title="Configurações de Notificações"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDailySummaryModalOpen(true)}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                title="Resumo Diário"
+              >
+                <Bell className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSettingsModalOpen(true)}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                title="Configurações de Notificações"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </>
           )}
 
           {/* Botão Atualizar */}
