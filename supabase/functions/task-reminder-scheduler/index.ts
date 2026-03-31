@@ -48,7 +48,16 @@ serve(async (req) => {
     const currentMinutes = brasilNow.getMinutes();
     const currentTotalMinutes = currentHours * 60 + currentMinutes;
 
-    console.log(`[task-reminder] Running at ${currentDate} ${currentHours}:${currentMinutes.toString().padStart(2, '0')} BRT`);
+    // Parse request body for forceSummary flag
+    let forceSummary = false;
+    try {
+      const body = await req.json();
+      forceSummary = body?.forceSummary === true;
+    } catch {
+      // No body or invalid JSON — that's fine for cron calls
+    }
+
+    console.log(`[task-reminder] Running at ${currentDate} ${currentHours}:${currentMinutes.toString().padStart(2, '0')} BRT | forceSummary=${forceSummary}`);
 
     // ======= DAILY SUMMARY SECTION =======
     try {
@@ -62,14 +71,21 @@ serve(async (req) => {
         ? (typeof summaryConfigRow.config_value === 'string' ? JSON.parse(summaryConfigRow.config_value) : summaryConfigRow.config_value)
         : null;
 
-      if (summaryConfig?.ativo && summaryConfig.horarios?.length > 0 && summaryConfig.contatos?.length > 0) {
-        const currentTimeStr = `${String(currentHours).padStart(2, '0')}:${String(currentMinutes).padStart(2, '0')}`;
+      if (summaryConfig?.contatos?.length > 0 && (forceSummary || (summaryConfig?.ativo && summaryConfig.horarios?.length > 0))) {
+        
+        if (forceSummary) {
+          console.log(`[task-reminder] Force summary requested — bypassing schedule check`);
+        }
 
-        for (const scheduledTime of summaryConfig.horarios) {
-          const [sH, sM] = scheduledTime.split(':').map(Number);
-          const diff = Math.abs((sH * 60 + sM) - currentTotalMinutes);
+        const timesToProcess = forceSummary ? ['manual'] : summaryConfig.horarios;
 
-          if (diff > 2) continue;
+        for (const scheduledTime of timesToProcess) {
+          // Skip time check for forced summaries
+          if (!forceSummary) {
+            const [sH, sM] = scheduledTime.split(':').map(Number);
+            const diff = Math.abs((sH * 60 + sM) - currentTotalMinutes);
+            if (diff > 2) continue;
+          }
 
           // Check duplicate
           const { data: existingSummary } = await supabase
