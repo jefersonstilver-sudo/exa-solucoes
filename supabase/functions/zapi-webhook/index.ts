@@ -740,7 +740,7 @@ serve(async (req) => {
            // Fetch task details for the receipt
           const { data: taskData } = await supabase
             .from('tasks')
-            .select('titulo, data_prevista, horario_inicio, horario_limite, tipo_evento, local_evento, building_id, created_by')
+            .select('titulo, data_prevista, horario_inicio, horario_limite, tipo_evento, local_evento, link_reuniao, descricao, building_id, created_by')
             .eq('id', taskId)
             .single();
           
@@ -777,6 +777,8 @@ serve(async (req) => {
           }
           if (buildingName) receiptMsg += `🏢 ${buildingName}\n`;
           if (taskData?.local_evento) receiptMsg += `📍 ${taskData.local_evento}\n`;
+          if (taskData?.link_reuniao) receiptMsg += `🔗 ${taskData.link_reuniao}\n`;
+          if (taskData?.descricao) receiptMsg += `📝 ${taskData.descricao}\n`;
           receiptMsg += `👤 Criado por: ${creatorName}\n`;
           receiptMsg += `\nVocê confirmou o recebimento deste compromisso.\nHorário da confirmação: ${confirmTime}\n\n_Este é seu comprovante de ciência._`;
 

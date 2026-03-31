@@ -1036,19 +1036,17 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                   </div>
                 </div>
 
-                {/* Link reunião / Local */}
-                {tipoEvento === 'reuniao' && (
-                  <div className="space-y-2">
+                {/* Local & Link — sempre visível */}
+                <div className="space-y-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5"><MapPin className="h-3 w-3" /> Local / Endereço</Label>
+                    <Input value={localEvento} onChange={(e) => setLocalEvento(e.target.value)} placeholder="Endereço, sala, link Google Maps..." className="h-9" />
+                  </div>
+                  <div className="space-y-1.5">
                     <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5"><Video className="h-3 w-3" /> Link da Reunião</Label>
                     <Input value={linkReuniao} onChange={(e) => setLinkReuniao(e.target.value)} placeholder="https://meet.google.com/..." className="h-9" />
                   </div>
-                )}
-                {tipoEvento === 'compromisso' && (
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5"><MapPin className="h-3 w-3" /> Local</Label>
-                    <Input value={localEvento} onChange={(e) => setLocalEvento(e.target.value)} placeholder="Endereço..." className="h-9" />
-                  </div>
-                )}
+                </div>
 
                 {/* Prioridade e Status */}
                 <div className="grid grid-cols-2 gap-3">
