@@ -88,11 +88,17 @@ serve(async (req) => {
       .select('contact_phone, contact_name')
       .eq('task_id', task_id);
 
+    // Also get exa_alerts_directors (always, not just as fallback)
+    const { data: dbContacts } = await supabase
+      .from('exa_alerts_directors')
+      .select('nome, telefone')
+      .eq('ativo', true);
+
+    // Merge both lists, deduplicating by phone
+    const seen = new Set<string>();
     let contacts: { nome: string; telefone: string }[] = [];
-    
-    if (receipts && receipts.length > 0) {
-      // Deduplicate by phone
-      const seen = new Set<string>();
+
+    if (receipts) {
       for (const r of receipts) {
         if (!r.contact_phone || seen.has(r.contact_phone)) continue;
         seen.add(r.contact_phone);
@@ -100,14 +106,15 @@ serve(async (req) => {
       }
     }
 
-    // Fallback: use exa_alerts_directors
-    if (contacts.length === 0) {
-      const { data: dbContacts } = await supabase
-        .from('exa_alerts_directors')
-        .select('nome, telefone')
-        .eq('ativo', true);
-      if (dbContacts) contacts = dbContacts.filter((c: any) => c.telefone);
+    if (dbContacts) {
+      for (const d of dbContacts) {
+        if (!d.telefone || seen.has(d.telefone)) continue;
+        seen.add(d.telefone);
+        contacts.push({ nome: d.nome || 'Diretor', telefone: d.telefone });
+      }
     }
+
+    console.log(`[TASK-CHANGE] 📋 Merged contacts: ${contacts.length} (receipts: ${receipts?.length || 0}, directors: ${dbContacts?.length || 0})`);
 
     if (contacts.length === 0) {
       console.log('[TASK-CHANGE] ⚠️ No contacts to notify');
