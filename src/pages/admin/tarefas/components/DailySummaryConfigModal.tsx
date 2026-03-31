@@ -270,10 +270,24 @@ const DailySummaryConfigModal: React.FC<Props> = ({ open, onOpenChange }) => {
         </div>
       )}
 
-      {/* Salvar */}
-      <Button onClick={handleSave} disabled={saveMutation.isPending} className="w-full">
-        {saveMutation.isPending ? 'Salvando...' : 'Salvar configuração'}
-      </Button>
+      {/* Ações */}
+      <div className="space-y-2">
+        <Button onClick={handleSave} disabled={saveMutation.isPending} className="w-full">
+          {saveMutation.isPending ? 'Salvando...' : 'Salvar configuração'}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={handleSendNow}
+          disabled={sendingNow || saveMutation.isPending || config.contatos.length === 0}
+          className="w-full"
+        >
+          {sendingNow ? (
+            <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
+          ) : (
+            <><Send className="h-4 w-4 mr-2" /> Enviar resumo agora</>
+          )}
+        </Button>
+      </div>
     </div>
   );
 

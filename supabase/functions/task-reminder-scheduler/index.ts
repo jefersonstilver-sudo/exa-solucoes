@@ -183,13 +183,26 @@ serve(async (req) => {
           // Log
           await supabase.from('task_alert_logs').insert({
             task_id: null,
-            alert_type: `resumo_diario_${scheduledTime}`,
+            alert_type: alertTypeKey,
             recipients: sentTo,
             status: sentTo.length > 0 ? 'sent' : 'failed',
             error_message: errors.length > 0 ? JSON.stringify(errors) : null,
           });
 
-          console.log(`[task-reminder] Daily summary for ${scheduledTime}: ${sentTo.length} sent, ${errors.length} errors`);
+          console.log(`[task-reminder] Daily summary for ${alertTypeKey}: ${sentTo.length} sent, ${errors.length} errors`);
+
+          // If forced, return immediately after processing
+          if (forceSummary) {
+            return new Response(JSON.stringify({
+              success: true,
+              summaryType: 'forced',
+              taskCount: dayTasks?.length || 0,
+              sentTo: sentTo.length,
+              errors: errors.length,
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
         }
       }
     } catch (summaryErr: any) {
