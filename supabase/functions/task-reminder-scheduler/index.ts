@@ -50,6 +50,126 @@ serve(async (req) => {
 
     console.log(`[task-reminder] Running at ${currentDate} ${currentHours}:${currentMinutes.toString().padStart(2, '0')} BRT`);
 
+    // ======= DAILY SUMMARY SECTION =======
+    try {
+      const { data: summaryConfigRow } = await supabase
+        .from('exa_alerts_config')
+        .select('config_value')
+        .eq('config_key', 'agenda_resumo_diario')
+        .maybeSingle();
+
+      const summaryConfig = summaryConfigRow?.config_value
+        ? (typeof summaryConfigRow.config_value === 'string' ? JSON.parse(summaryConfigRow.config_value) : summaryConfigRow.config_value)
+        : null;
+
+      if (summaryConfig?.ativo && summaryConfig.horarios?.length > 0 && summaryConfig.contatos?.length > 0) {
+        const currentTimeStr = `${String(currentHours).padStart(2, '0')}:${String(currentMinutes).padStart(2, '0')}`;
+
+        for (const scheduledTime of summaryConfig.horarios) {
+          const [sH, sM] = scheduledTime.split(':').map(Number);
+          const diff = Math.abs((sH * 60 + sM) - currentTotalMinutes);
+
+          if (diff > 2) continue;
+
+          // Check duplicate
+          const { data: existingSummary } = await supabase
+            .from('task_alert_logs')
+            .select('id')
+            .eq('alert_type', `resumo_diario_${scheduledTime}`)
+            .gte('sent_at', `${currentDate}T00:00:00`)
+            .maybeSingle();
+
+          if (existingSummary) {
+            console.log(`[task-reminder] Daily summary already sent for ${scheduledTime}`);
+            continue;
+          }
+
+          // Fetch ALL tasks for today
+          const { data: dayTasks } = await supabase
+            .from('tasks')
+            .select('id, titulo, data_prevista, horario_inicio, horario_limite, tipo_evento, status, prioridade, descricao, local_evento, link_reuniao')
+            .eq('data_prevista', currentDate)
+            .in('status', ['pendente', 'em_andamento'])
+            .order('horario_inicio', { ascending: true, nullsFirst: false });
+
+          // Get event_types for summary
+          const { data: evTypes } = await supabase
+            .from('event_types')
+            .select('value, icon, label');
+          const evMap: Record<string, { icon: string; label: string }> = {};
+          for (const et of evTypes || []) {
+            evMap[et.value] = { icon: et.icon || '📋', label: et.label };
+          }
+
+          const taskCount = dayTasks?.length || 0;
+          const dayName = DIAS_SEMANA[brasilNow.getDay()];
+          const dd = String(brasilNow.getDate()).padStart(2, '0');
+          const mm = String(brasilNow.getMonth() + 1).padStart(2, '0');
+          const yyyy = brasilNow.getFullYear();
+
+          let msg = `📋 *Resumo do dia — ${dayName}, ${dd}/${mm}/${yyyy}*\n\n`;
+
+          if (taskCount === 0) {
+            msg += `Nenhum compromisso agendado para hoje. ✅`;
+          } else {
+            msg += `Você tem *${taskCount} compromisso${taskCount > 1 ? 's' : ''}* hoje:\n\n`;
+            const emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+
+            (dayTasks || []).forEach((t: any, i: number) => {
+              const num = i < 10 ? emojis[i] : `${i + 1}.`;
+              const icon = evMap[t.tipo_evento || '']?.icon || '📋';
+              const time = t.horario_inicio || '--:--';
+              msg += `${num} *${time}* — ${icon} ${t.titulo}\n`;
+              if (t.local_evento) msg += `   📍 ${t.local_evento}\n`;
+              if (t.link_reuniao) msg += `   🔗 ${t.link_reuniao}\n`;
+              if (t.descricao) msg += `   📝 ${t.descricao}\n`;
+              if (t.prioridade && (t.prioridade === 'emergencia' || t.prioridade === 'alta')) {
+                const pe = t.prioridade === 'emergencia' ? '🔴' : '🟠';
+                msg += `   ${pe} Prioridade: ${t.prioridade}\n`;
+              }
+              msg += '\n';
+            });
+
+            msg += `Bom dia! 🚀`;
+          }
+
+          // Send to all configured contacts
+          const sentTo: any[] = [];
+          const errors: any[] = [];
+          for (const contact of summaryConfig.contatos) {
+            if (!contact.telefone) continue;
+            try {
+              const { error: sendErr } = await supabase.functions.invoke('zapi-send-message', {
+                body: { agentKey: 'exa_alert', phone: contact.telefone, message: msg, skipSplit: true },
+              });
+              if (!sendErr) {
+                sentTo.push({ nome: contact.nome, telefone: contact.telefone });
+                console.log(`[task-reminder] ✅ Daily summary sent to ${contact.nome}`);
+              } else {
+                errors.push({ nome: contact.nome, error: sendErr.message });
+              }
+            } catch (err: any) {
+              errors.push({ nome: contact.nome, error: err.message });
+            }
+          }
+
+          // Log
+          await supabase.from('task_alert_logs').insert({
+            task_id: null,
+            alert_type: `resumo_diario_${scheduledTime}`,
+            recipients: sentTo,
+            status: sentTo.length > 0 ? 'sent' : 'failed',
+            error_message: errors.length > 0 ? JSON.stringify(errors) : null,
+          });
+
+          console.log(`[task-reminder] Daily summary for ${scheduledTime}: ${sentTo.length} sent, ${errors.length} errors`);
+        }
+      }
+    } catch (summaryErr: any) {
+      console.error('[task-reminder] Daily summary error (non-fatal):', summaryErr.message);
+    }
+    // ======= END DAILY SUMMARY =======
+
     // Fetch today's pending tasks with horario_inicio
     const { data: tasks, error: tasksError } = await supabase
       .from('tasks')
