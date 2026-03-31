@@ -6,6 +6,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const DIAS_SEMANA = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+
+function fmtDateBR(dateStr: string): string {
+  if (!dateStr) return '';
+  if (dateStr.includes('/')) {
+    const [d, m, y] = dateStr.split('/').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return `${DIAS_SEMANA[dt.getDay()]}, ${dateStr}`;
+  }
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const dd = String(d).padStart(2, '0');
+  const mm = String(m).padStart(2, '0');
+  return `${DIAS_SEMANA[dt.getDay()]}, ${dd}/${mm}/${y}`;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -109,9 +125,9 @@ serve(async (req) => {
     const newDate = changes?.data_nova || taskData?.data_prevista || '';
     const oldDate = changes?.data_anterior || '';
     if (oldDate && newDate && oldDate !== newDate) {
-      message += `📅 Data: ~${oldDate}~ → *${newDate}*\n`;
+      message += `📅 Data: ~${fmtDateBR(oldDate)}~ → *${fmtDateBR(newDate)}*\n`;
     } else if (newDate) {
-      message += `📅 Data: *${newDate}*\n`;
+      message += `📅 Data: *${fmtDateBR(newDate)}*\n`;
     }
 
     if (changes?.horario_inicio_anterior !== undefined && changes?.horario_inicio_novo !== undefined && changes.horario_inicio_anterior !== changes.horario_inicio_novo) {

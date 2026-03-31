@@ -9,6 +9,22 @@ const corsHeaders = {
 // Palavras masculinas para concordância de gênero
 const MASCULINOS = ['compromisso', 'aviso', 'lembrete', 'evento'];
 
+const DIAS_SEMANA = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+
+function fmtDateBR(dateStr: string): string {
+  if (!dateStr) return '';
+  if (dateStr.includes('/')) {
+    const [d, m, y] = dateStr.split('/').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return `${DIAS_SEMANA[dt.getDay()]}, ${dateStr}`;
+  }
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const dd = String(d).padStart(2, '0');
+  const mm = String(m).padStart(2, '0');
+  return `${DIAS_SEMANA[dt.getDay()]}, ${dd}/${mm}/${y}`;
+}
+
 async function resolveEventType(supabase: any, tipoEvento: string): Promise<{ emoji: string; label: string }> {
   // Buscar no banco de dados
   const { data: eventType } = await supabase
@@ -66,7 +82,7 @@ function buildRichMessage(params: {
   
   // Data e horário
   if (params.data && params.data !== 'Sem data') {
-    message += `📅 Data: ${params.data}`;
+    message += `📅 Data: ${fmtDateBR(params.data)}`;
     // Show horario_inicio separate from horario (limite)
     if (params.horario_inicio && params.horario) {
       message += `\n🕐 Início: ${params.horario_inicio} | Limite: ${params.horario}`;

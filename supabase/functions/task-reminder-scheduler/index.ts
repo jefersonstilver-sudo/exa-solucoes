@@ -13,6 +13,22 @@ const UNIDADE_TO_MINUTES: Record<string, number> = {
   semanas: 10080,
 };
 
+const DIAS_SEMANA = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+
+function fmtDateBR(dateStr: string): string {
+  if (!dateStr) return '';
+  if (dateStr.includes('/')) {
+    const [d, m, y] = dateStr.split('/').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return `${DIAS_SEMANA[dt.getDay()]}, ${dateStr}`;
+  }
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const dd = String(d).padStart(2, '0');
+  const mm = String(m).padStart(2, '0');
+  return `${DIAS_SEMANA[dt.getDay()]}, ${dd}/${mm}/${y}`;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -313,7 +329,7 @@ function buildMessage(task: any, minutesBefore: number, typeMap: Record<string, 
 
   let message = `⏰ *Lembrete — ${timeDesc}*\n\n`;
   message += `${eventIcon} *${task.titulo}*\n`;
-  message += `📅 ${task.data_prevista} às ${task.horario_inicio}\n`;
+  message += `📅 ${fmtDateBR(task.data_prevista)} às ${task.horario_inicio}\n`;
   message += `📁 ${eventLabel}\n`;
   if (task.local_evento) message += `📍 ${task.local_evento}\n`;
   if (task.link_reuniao) message += `🔗 ${task.link_reuniao}\n`;
