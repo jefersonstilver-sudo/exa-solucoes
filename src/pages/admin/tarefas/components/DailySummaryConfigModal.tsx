@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Plus, Trash2, Clock, User, Phone } from 'lucide-react';
+import { Bell, Plus, Trash2, Clock, User, Phone, Send, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
@@ -94,7 +94,45 @@ const DailySummaryConfigModal: React.FC<Props> = ({ open, onOpenChange }) => {
     onError: (err: any) => toast.error(`Erro: ${err.message}`),
   });
 
-  const handleSave = () => saveMutation.mutate(config);
+  const handleSave = () => {
+    if (config.ativo && config.horarios.length === 0) {
+      toast.error('Adicione pelo menos um horário de envio');
+      return;
+    }
+    if (config.ativo && config.contatos.length === 0) {
+      toast.error('Adicione pelo menos um contato');
+      return;
+    }
+    saveMutation.mutate(config);
+  };
+
+  const [sendingNow, setSendingNow] = useState(false);
+
+  const handleSendNow = async () => {
+    if (config.contatos.length === 0) {
+      toast.error('Adicione pelo menos um contato antes de enviar');
+      return;
+    }
+    // Save first to ensure config is persisted
+    saveMutation.mutate(config, {
+      onSuccess: async () => {
+        setSendingNow(true);
+        try {
+          const { data, error } = await supabase.functions.invoke('task-reminder-scheduler', {
+            body: { forceSummary: true },
+          });
+          if (error) throw error;
+          toast.success(`Resumo enviado com sucesso!`);
+          console.log('[DailySummary] Force send result:', data);
+        } catch (err: any) {
+          console.error('[DailySummary] Force send error:', err);
+          toast.error(`Erro ao enviar resumo: ${err.message}`);
+        } finally {
+          setSendingNow(false);
+        }
+      },
+    });
+  };
 
   const addTime = () => {
     if (!newTime || config.horarios.includes(newTime)) return;
@@ -232,10 +270,24 @@ const DailySummaryConfigModal: React.FC<Props> = ({ open, onOpenChange }) => {
         </div>
       )}
 
-      {/* Salvar */}
-      <Button onClick={handleSave} disabled={saveMutation.isPending} className="w-full">
-        {saveMutation.isPending ? 'Salvando...' : 'Salvar configuração'}
-      </Button>
+      {/* Ações */}
+      <div className="space-y-2">
+        <Button onClick={handleSave} disabled={saveMutation.isPending} className="w-full">
+          {saveMutation.isPending ? 'Salvando...' : 'Salvar configuração'}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={handleSendNow}
+          disabled={sendingNow || saveMutation.isPending || config.contatos.length === 0}
+          className="w-full"
+        >
+          {sendingNow ? (
+            <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
+          ) : (
+            <><Send className="h-4 w-4 mr-2" /> Enviar resumo agora</>
+          )}
+        </Button>
+      </div>
     </div>
   );
 

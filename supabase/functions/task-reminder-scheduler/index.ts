@@ -48,7 +48,16 @@ serve(async (req) => {
     const currentMinutes = brasilNow.getMinutes();
     const currentTotalMinutes = currentHours * 60 + currentMinutes;
 
-    console.log(`[task-reminder] Running at ${currentDate} ${currentHours}:${currentMinutes.toString().padStart(2, '0')} BRT`);
+    // Parse request body for forceSummary flag
+    let forceSummary = false;
+    try {
+      const body = await req.json();
+      forceSummary = body?.forceSummary === true;
+    } catch {
+      // No body or invalid JSON — that's fine for cron calls
+    }
+
+    console.log(`[task-reminder] Running at ${currentDate} ${currentHours}:${currentMinutes.toString().padStart(2, '0')} BRT | forceSummary=${forceSummary}`);
 
     // ======= DAILY SUMMARY SECTION =======
     try {
@@ -62,25 +71,43 @@ serve(async (req) => {
         ? (typeof summaryConfigRow.config_value === 'string' ? JSON.parse(summaryConfigRow.config_value) : summaryConfigRow.config_value)
         : null;
 
-      if (summaryConfig?.ativo && summaryConfig.horarios?.length > 0 && summaryConfig.contatos?.length > 0) {
-        const currentTimeStr = `${String(currentHours).padStart(2, '0')}:${String(currentMinutes).padStart(2, '0')}`;
+      if (summaryConfig?.contatos?.length > 0 && (forceSummary || (summaryConfig?.ativo && summaryConfig.horarios?.length > 0))) {
+        
+        if (forceSummary) {
+          console.log(`[task-reminder] Force summary requested — bypassing schedule check`);
+        }
 
-        for (const scheduledTime of summaryConfig.horarios) {
-          const [sH, sM] = scheduledTime.split(':').map(Number);
-          const diff = Math.abs((sH * 60 + sM) - currentTotalMinutes);
+        const timesToProcess = forceSummary ? ['manual'] : summaryConfig.horarios;
 
-          if (diff > 2) continue;
+        for (const scheduledTime of timesToProcess) {
+          // Skip time check for forced summaries
+          if (!forceSummary) {
+            const [sH, sM] = scheduledTime.split(':').map(Number);
+            const diff = Math.abs((sH * 60 + sM) - currentTotalMinutes);
+            if (diff > 2) continue;
+          }
 
-          // Check duplicate
+          // Check duplicate (skip for force but still check 5-min window)
+          const alertTypeKey = forceSummary ? `resumo_diario_manual` : `resumo_diario_${scheduledTime}`;
+          const dedupeWindow = forceSummary
+            ? new Date(now.getTime() - 5 * 60 * 1000).toISOString()
+            : `${currentDate}T00:00:00`;
+
           const { data: existingSummary } = await supabase
             .from('task_alert_logs')
             .select('id')
-            .eq('alert_type', `resumo_diario_${scheduledTime}`)
-            .gte('sent_at', `${currentDate}T00:00:00`)
+            .eq('alert_type', alertTypeKey)
+            .gte('sent_at', dedupeWindow)
             .maybeSingle();
 
           if (existingSummary) {
-            console.log(`[task-reminder] Daily summary already sent for ${scheduledTime}`);
+            console.log(`[task-reminder] Daily summary already sent for ${alertTypeKey}`);
+            if (forceSummary) {
+              // For force, return specific message instead of silently skipping
+              return new Response(JSON.stringify({ success: false, reason: 'Resumo já enviado nos últimos 5 minutos' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
             continue;
           }
 
@@ -156,13 +183,26 @@ serve(async (req) => {
           // Log
           await supabase.from('task_alert_logs').insert({
             task_id: null,
-            alert_type: `resumo_diario_${scheduledTime}`,
+            alert_type: alertTypeKey,
             recipients: sentTo,
             status: sentTo.length > 0 ? 'sent' : 'failed',
             error_message: errors.length > 0 ? JSON.stringify(errors) : null,
           });
 
-          console.log(`[task-reminder] Daily summary for ${scheduledTime}: ${sentTo.length} sent, ${errors.length} errors`);
+          console.log(`[task-reminder] Daily summary for ${alertTypeKey}: ${sentTo.length} sent, ${errors.length} errors`);
+
+          // If forced, return immediately after processing
+          if (forceSummary) {
+            return new Response(JSON.stringify({
+              success: true,
+              summaryType: 'forced',
+              taskCount: dayTasks?.length || 0,
+              sentTo: sentTo.length,
+              errors: errors.length,
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
         }
       }
     } catch (summaryErr: any) {
