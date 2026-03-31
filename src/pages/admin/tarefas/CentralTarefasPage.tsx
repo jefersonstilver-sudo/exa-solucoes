@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { RefreshCw, Loader2, Plus, ChevronDown, ChevronUp, X, SlidersHorizontal, Maximize2, Settings } from 'lucide-react';
+import { RefreshCw, Loader2, Plus, ChevronDown, ChevronUp, X, SlidersHorizontal, Maximize2, Settings, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -23,6 +23,7 @@ import EmbeddedAgenda from './components/EmbeddedAgenda';
 import CreateTaskModal from '@/components/admin/agenda/CreateTaskModal';
 import { ACTIVE_STATUSES } from '@/constants/taskStatus';
 import AgendaNotificationSettingsModal from './components/AgendaNotificationSettingsModal';
+import DailySummaryConfigModal from './components/DailySummaryConfigModal';
 import type { TaskWithDetails, TaskStatusCanonical, TaskPriorityCanonical } from '@/types/tarefas';
 import type { AgendaTask } from '@/components/admin/agenda/TaskCard';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -49,6 +50,7 @@ const CentralTarefasPage: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [dailySummaryModalOpen, setDailySummaryModalOpen] = useState(false);
 
   // Hook principal
   const {
@@ -188,17 +190,28 @@ const CentralTarefasPage: React.FC = () => {
         
         <div className="flex items-center gap-2">
 
-          {/* Botão Engrenagem - super_admin only */}
+          {/* Botões de config - super_admin only */}
           {userProfile?.role === 'super_admin' && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSettingsModalOpen(true)}
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              title="Configurações de Notificações"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDailySummaryModalOpen(true)}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                title="Resumo Diário"
+              >
+                <Bell className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSettingsModalOpen(true)}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                title="Configurações de Notificações"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </>
           )}
 
           {/* Botão Atualizar */}
@@ -364,6 +377,12 @@ const CentralTarefasPage: React.FC = () => {
       <AgendaNotificationSettingsModal
         open={settingsModalOpen}
         onOpenChange={setSettingsModalOpen}
+      />
+
+      {/* Modal de resumo diário */}
+      <DailySummaryConfigModal
+        open={dailySummaryModalOpen}
+        onOpenChange={setDailySummaryModalOpen}
       />
 
       {/* Drawer de Detalhes */}
