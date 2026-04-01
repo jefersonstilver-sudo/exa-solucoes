@@ -1,64 +1,77 @@
 
 
-# Plano: Corrigir Publicação de Propostas — Atomic Update
+# Plano: Resolver Preview Branco + Aplicar Correções Pendentes
 
 ## Diagnóstico
 
-A proposta `EXA-2026-2586` continua com `status: rascunho` apesar de tentativas de publicação. O `updated_at` muda (18:06), confirmando que o Supabase recebe algum update, mas o `status` não muda para `enviada`.
+O preview está branco sem erros no console. Os erros visíveis (`ERR_BLOCKED_BY_CLIENT`) são apenas trackers bloqueados (PostHog, Facebook, TikTok, LinkedIn) — não afetam a aplicação.
 
-**Causa raiz identificada**: O `.update()` com spread de `proposalData` (que tem ~50 campos) provavelmente falha silenciosamente em algum campo, ou o PostgREST retorna um erro que não está sendo capturado corretamente. Além disso, o `handleSaveEdits` (que NÃO inclui `status`) pode estar sendo chamado em paralelo ou logo após, sobrescrevendo o timestamp sem alterar status.
+A causa provável é um estado de build corrompido/travado do Vite. As edições anteriores declararam ter aplicado mudanças mas **nenhuma das 3 correções planejadas está presente no código**:
+- Query de prédios: ainda usa `['ativo', 'interno']` (linha 480)
+- Grid dinâmico: ainda usa `` grid-cols-${...} `` (linha 932)
+- Auto-título: não foi adicionado
 
-## Correção
+## Correções a aplicar
 
-### Arquivo: `src/pages/admin/proposals/NovaPropostaPage.tsx`
+### 1. Forçar rebuild limpo
+Adicionar um comentário trivial no `main.tsx` para forçar o Vite a recompilar o entry point.
 
-**1. Tornar o update atômico e verificado** (linhas 1634-1651)
+### 2. `src/pages/admin/proposals/NovaPropostaPage.tsx`
 
-Substituir o `.update()` por `.upsert()` com `onConflict: 'id'` e adicionar verificação pós-update:
-
+**a) Alinhar query de prédios com loja pública** (linha 480):
 ```typescript
-console.log('📤 [PUBLISH] Payload:', { id: editProposalId, status: 'enviada', number: proposalNumber });
-
-const { data, error } = await supabase
-  .from('proposals')
-  .upsert({
-    id: editProposalId,
-    ...proposalData,
-    number: proposalNumber,
-    status: 'enviada',
-    sent_at: existingProposal?.sent_at || new Date().toISOString(),
-  }, { onConflict: 'id' })
-  .select('id, status, number')
-  .single();
-
-if (error) {
-  console.error('❌ [PUBLISH] Erro:', error);
-  throw error;
-}
-
-// Verificação explícita
-if (data?.status !== 'enviada') {
-  console.error('❌ [PUBLISH] Status não atualizou!', data);
-  throw new Error('Falha ao publicar: status não foi atualizado');
-}
-
-console.log('✅ [PUBLISH] Publicada:', data);
-proposal = data;
+// ANTES:
+.in('status', ['ativo', 'interno'])
+// DEPOIS:
+.in('status', ['ativo', 'interno', 'instalação', 'instalacao'])
 ```
 
-**2. Buscar dados completos após upsert** para ter o `proposal` completo (necessário para envio de WhatsApp/Email depois):
+**b) Adicionar auto-título com `useEffect`** (após linha 215):
+```typescript
+// Regex para detectar título automático
+const AUTO_TITLE_REGEX = /^(Horizontal|Vertical Premium) \d+ prédios? - \d+ Meses$/i;
 
-Após o upsert verificado, fazer um `.select('*').eq('id', editProposalId).single()` para obter todos os campos.
-
-**3. Corrigir proposta existente no banco**
-
-Criar migração SQL para corrigir a proposta inconsistente:
-```sql
-UPDATE proposals SET status = 'enviada' WHERE id = '41856389-5de8-4c0e-b5dc-e14d49d1d4e7' AND status = 'rascunho';
+useEffect(() => {
+  if (isEditMode) return;
+  const count = selectedBuildingsData.length;
+  if (count === 0) return;
+  const tipoLabel = tipoProduto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal';
+  const newTitle = `${tipoLabel} ${count} prédios - ${durationMonths} Meses`;
+  if (!tituloProposta || AUTO_TITLE_REGEX.test(tituloProposta)) {
+    setTituloProposta(newTitle);
+  }
+}, [selectedBuildingsData.length, durationMonths, tipoProduto, isEditMode]);
 ```
+
+**c) Adicionar badge de contagem** ao lado do campo título (linha ~2559):
+```typescript
+Título da Proposta (opcional)
+<Badge variant="secondary" className="text-[10px]">
+  {selectedBuildingsData.length} prédios selecionados
+</Badge>
+```
+
+### 3. `src/pages/admin/proposals/PropostasPage.tsx`
+
+**Corrigir grid dinâmico do Tailwind** (linha 932):
+```typescript
+// ANTES:
+<div className={`grid grid-cols-${Math.min(sellersData.length, 3)} gap-2`}>
+// DEPOIS:
+<div className={`grid gap-2 ${
+  sellersData.length === 1 ? 'grid-cols-1' :
+  sellersData.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+}`}>
+```
+
+## Arquivos a editar
+- `src/main.tsx` — trigger rebuild
+- `src/pages/admin/proposals/NovaPropostaPage.tsx` — query + auto-título + badge
+- `src/pages/admin/proposals/PropostasPage.tsx` — fix grid Tailwind
 
 ## Impacto
-- Apenas o fluxo de publicação em `NovaPropostaPage.tsx`
-- Nenhuma alteração em UI, workflows ou funcionalidades existentes
-- A correção garante que falhas de update não passem silenciosas
+- Preview volta a funcionar
+- Proposta passa a mostrar prédios alinhados com loja pública
+- Título se auto-sincroniza com contagem real de prédios
+- Grid de vendedores renderiza corretamente
 
