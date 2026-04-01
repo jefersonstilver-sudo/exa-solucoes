@@ -423,7 +423,7 @@ const AppContent = () => {
               <PainelStore />
             </Suspense>
           } />
-          <Route path="/email-enviado" element={<EmailEnviado />} />
+          <Route path="/email-enviado" element={<Suspense fallback={<GlobalLoadingPage />}><EmailEnviado /></Suspense>} />
 
           {/* PROPOSTA PÚBLICA - indexamidia.com.br/propostacomercial/:id */}
           <Route path="/propostacomercial/:id" element={
