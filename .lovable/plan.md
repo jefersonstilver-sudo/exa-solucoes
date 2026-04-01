@@ -1,30 +1,27 @@
 
 
-# Plano: Eliminar Dados Fictícios do Relatório de Campanha
+# Diagnóstico: Tela Branca
 
-## Problema
+## Análise
 
-A função `calculateDisplayHours` (linha 145-178 de `useVideoReportData.ts`) gera valores fictícios quando não existem logs reais de playback. Ela assume 245 exibições/dia/tela, produzindo "40m50s" para um vídeo que tocou menos de 1 minuto na realidade.
+Revisei todos os arquivos alterados recentemente:
 
-A condição na linha 340-342 usa logs reais **quando existem**, mas o fallback na linha 344-353 inventa números.
+- `src/hooks/useVideoReportData.ts` — função `calculateDisplayHours` removida e não é mais referenciada em nenhum lugar ✅
+- `src/components/advertiser/VideoListItem.tsx` — badge "aguardando dados" adicionado corretamente ✅
+- `src/pages/admin/proposals/NovaPropostaPage.tsx` — query com `.in('status', [...])` e interface `Building` com `status?` ✅
+- `src/services/videoSlotService.ts` — default 4 e `safeMaxSlots` ✅
+- `src/services/videoUploadService.ts` — validação de slot_position ✅
+- `src/components/video-trimmer/TrimmerTimeline.tsx` — zoom e playhead ✅
+
+**Nenhum erro de sintaxe, import quebrado, ou referência a função removida foi encontrado.**
+
+## Causa Provável
+
+A tela branca é causada por um **problema transitório do Vite HMR** (Hot Module Replacement) após múltiplas edições rápidas em sequência. O dev server ficou desatualizado.
 
 ## Solução
 
-Eliminar a função `calculateDisplayHours` e o fallback fictício. Quando não há logs reais (`videoLogs.length === 0`), `horasExibidas = 0`.
+**Recarregar o preview** — basta clicar no botão de reload no preview (ou pressionar F5 na janela de preview). Não há nenhum código corrompido para corrigir.
 
-### Arquivo: `src/hooks/useVideoReportData.ts`
-
-1. **Linhas 336-354**: Substituir o bloco condicional:
-   - Se `videoLogs.length > 0`: manter cálculo real (soma de `duration_seconds`)
-   - Se `videoLogs.length === 0`: `horasExibidas = 0` (sem estimativa)
-
-2. **Linhas 145-178**: Remover a função `calculateDisplayHours` (não será mais usada)
-
-3. **Linhas 430-445**: Ajustar o cálculo de `totalExibicoes` que também usa estimativas fictícias (`totalTelas * 245 * diasAtivos`) — usar apenas COUNT real dos logs
-
-4. **Adicionar badge "Sem dados"**: No `VideoListItem.tsx`, quando `horasExibidas === 0` e o vídeo está ativo/exibindo, mostrar "aguardando dados" em vez de "0s" para que o anunciante saiba que dados reais virão
-
-## Impacto
-- Apenas a seção de relatórios do anunciante
-- Nenhuma mudança de UI, funcionalidade ou workflow fora do relatório
+Se o problema persistir após recarregar, o próximo passo seria verificar os logs do dev server para identificar se há um erro de compilação específico do Vite.
 
