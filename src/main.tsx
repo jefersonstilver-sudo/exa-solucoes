@@ -8,7 +8,7 @@ import { ThemeProvider } from './components/ui/theme-provider'
 import './utils/debugHelpers'
 import { APP_VERSION } from './config/version'
 
-console.log(`🚀 Starting application v${APP_VERSION}...`);
+console.log(`🚀 Starting application v${APP_VERSION} (cache-reset)...`);
 
 // Safety guard: if React hasn't rendered in 15s, show emergency fallback
 const renderTimeout = setTimeout(() => {
