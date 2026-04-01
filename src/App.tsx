@@ -530,7 +530,7 @@ const AppContent = () => {
           <Route path="/admin/*" element={<Suspense fallback={<GlobalLoadingPage />}><AdminPage /></Suspense>} />
           
           {/* Rota catch-all para páginas não encontradas */}
-          <Route path="*" element={<NaoEncontrado />} />
+          <Route path="*" element={<Suspense fallback={<GlobalLoadingPage />}><NaoEncontrado /></Suspense>} />
         </Routes>
         <Toaster />
       </div>
