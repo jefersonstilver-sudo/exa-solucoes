@@ -141,41 +141,6 @@ const formatScheduleInfo = (
   return '24/7';
 };
 
-// Calcular horas de exibição baseado no status e agendamento
-const calculateDisplayHours = (
-  isActive: boolean,
-  selectedForDisplay: boolean,
-  approvalStatus: string,
-  scheduleRules: ScheduleRule[],
-  totalTelas: number,
-  duracaoSegundos: number,
-  diasAtivos: number
-): number => {
-  // Se não está ativo, não foi selecionado para exibição, ou não foi aprovado = 0 horas
-  if (!isActive || !selectedForDisplay || approvalStatus !== 'approved') {
-    return 0;
-  }
-  
-  const scheduledMinutesPerWeek = calculateScheduledMinutesPerWeek(scheduleRules);
-  
-  if (scheduledMinutesPerWeek > 0) {
-    // Vídeo tem agendamento específico
-    // Calcular quantas semanas passaram
-    const semanasAtivas = diasAtivos / 7;
-    // Minutos totais agendados
-    const minutosTotais = scheduledMinutesPerWeek * semanasAtivas;
-    // Converter para horas considerando exibições por minuto
-    // 245 exibições/dia = ~10.2 exibições/hora = ~0.17 exibições/minuto
-    const exibicoesPorMinuto = (245 / 24 / 60) * totalTelas;
-    const exibicoesTotais = exibicoesPorMinuto * minutosTotais;
-    return (exibicoesTotais * duracaoSegundos) / 3600;
-  }
-  
-  // Exibição 24/7 - fórmula padrão
-  const exibicoesPorDia = totalTelas * 245;
-  const exibicoesTotais = exibicoesPorDia * Math.max(1, diasAtivos);
-  return (exibicoesTotais * duracaoSegundos) / 3600;
-};
 
 export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => {
   const [campaigns, setCampaigns] = useState<CampaignReport[]>([]);
