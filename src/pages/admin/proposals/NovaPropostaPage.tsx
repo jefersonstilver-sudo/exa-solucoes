@@ -58,6 +58,7 @@ interface Building {
   preco_anual: number | null;
   publico_estimado: number | null;
   imagem_principal: string | null;
+  status?: string;
   is_manual?: boolean;
 }
 interface ManualBuilding {
