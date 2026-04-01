@@ -24,42 +24,41 @@ import { ZAPIDisconnectAlert } from '@/components/notifications/ZAPIDisconnectAl
 import { useForceCacheClear } from '@/hooks/useForceCacheClear';
 import TwoFactorVerificationPage from '@/pages/auth/TwoFactorVerificationPage';
 
-// Importações diretas para páginas críticas
-import BuildingStore from './pages/BuildingStore';
-import PlanSelection from './pages/PlanSelection';
-import CheckoutCoupon from './pages/CheckoutCoupon';
-import CheckoutSummary from './pages/CheckoutSummary';
-import CheckoutFinish from './pages/CheckoutFinish';
-import Payment from './pages/Payment';
-import PixPayment from './pages/PixPayment';
-import Confirmacao from './pages/Confirmacao';
-import ResetPassword from './pages/ResetPassword';
-import LoginPage from './pages/LoginPage';
-import Cadastro from './pages/Cadastro';
-import TermosUso from './pages/TermosUso';
-import PoliticaPrivacidade from './pages/PoliticaPrivacidade';
-import NaoEncontrado from './pages/NaoEncontrado';
-import SuperAdminPage from './pages/SuperAdminPage';
-import AdminPage from './pages/AdminPage';
-import ProviderBenefitChoice from './pages/ProviderBenefitChoice';
-import EmailNotConfirmed from './pages/EmailNotConfirmed';
-import EmailEnviado from './pages/EmailEnviado';
-import OrderConfirmation from './pages/OrderConfirmation';
-import PainelKiosk from './pages/PainelKiosk';
-import LoginERP from './pages/sistema/LoginERP';
-
-// Importações diretas para páginas principais (performance otimizada)
-import PaineisPublicitarios from './pages/PaineisPublicitarios';
+// Importação direta APENAS para a homepage (rota /)
 import Exa from './pages/Exa';
-import TestLinks from './pages/TestLinks';
-import AIReportsPage from './pages/admin/monitoramento-ia/AIReportsPage';
-// ProfileSettings removido - unificado com AdvertiserSettings
-import AdvertiserInvoices from './pages/advertiser/AdvertiserInvoices';
+
+// Lazy load para todas as outras páginas (reduz carga inicial no proxy)
+const BuildingStore = lazy(() => import('./pages/BuildingStore'));
+const PlanSelection = lazy(() => import('./pages/PlanSelection'));
+const CheckoutCoupon = lazy(() => import('./pages/CheckoutCoupon'));
+const CheckoutSummary = lazy(() => import('./pages/CheckoutSummary'));
+const CheckoutFinish = lazy(() => import('./pages/CheckoutFinish'));
+const Payment = lazy(() => import('./pages/Payment'));
+const PixPayment = lazy(() => import('./pages/PixPayment'));
+const Confirmacao = lazy(() => import('./pages/Confirmacao'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const Cadastro = lazy(() => import('./pages/Cadastro'));
+const TermosUso = lazy(() => import('./pages/TermosUso'));
+const PoliticaPrivacidade = lazy(() => import('./pages/PoliticaPrivacidade'));
+const NaoEncontrado = lazy(() => import('./pages/NaoEncontrado'));
+const SuperAdminPage = lazy(() => import('./pages/SuperAdminPage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
+const ProviderBenefitChoice = lazy(() => import('./pages/ProviderBenefitChoice'));
+const EmailNotConfirmed = lazy(() => import('./pages/EmailNotConfirmed'));
+const EmailEnviado = lazy(() => import('./pages/EmailEnviado'));
+const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
+const PainelKiosk = lazy(() => import('./pages/PainelKiosk'));
+const LoginERP = lazy(() => import('./pages/sistema/LoginERP'));
+const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
+const TestLinks = lazy(() => import('./pages/TestLinks'));
+const AIReportsPage = lazy(() => import('./pages/admin/monitoramento-ia/AIReportsPage'));
+const AdvertiserInvoices = lazy(() => import('./pages/advertiser/AdvertiserInvoices'));
 
 // Video Editor Pages
-import VideoEditorDashboard from './pages/video-editor/VideoEditorDashboard';
-import VideoEditorAccessControl from './pages/video-editor/VideoEditorAccessControl';
-import VideoEditorPage from './pages/video-editor/VideoEditorPage';
+const VideoEditorDashboard = lazy(() => import('./pages/video-editor/VideoEditorDashboard'));
+const VideoEditorAccessControl = lazy(() => import('./pages/video-editor/VideoEditorAccessControl'));
+const VideoEditorPage = lazy(() => import('./pages/video-editor/VideoEditorPage'));
 
 // Monitoramento IA Module imports removidos - agora integrados no AdminRoutes
 
@@ -291,17 +290,17 @@ const AppContent = () => {
           } />
           
           {/* CORREÇÃO: Rotas da loja unificadas */}
-          <Route path="/loja" element={<BuildingStore />} />
-          <Route path="/paineis-digitais/loja" element={<BuildingStore />} />
-          <Route path="/building-store" element={<BuildingStore />} />
+          <Route path="/loja" element={<Suspense fallback={<GlobalLoadingPage message="Carregando loja..." />}><BuildingStore /></Suspense>} />
+          <Route path="/paineis-digitais/loja" element={<Suspense fallback={<GlobalLoadingPage message="Carregando loja..." />}><BuildingStore /></Suspense>} />
+          <Route path="/building-store" element={<Suspense fallback={<GlobalLoadingPage message="Carregando loja..." />}><BuildingStore /></Suspense>} />
           
-          <Route path="/plano" element={<PlanSelection />} />
-          <Route path="/planos" element={<PlanSelection />} />
-          <Route path="/selecionar-plano" element={<PlanSelection />} />
+          <Route path="/plano" element={<Suspense fallback={<GlobalLoadingPage />}><PlanSelection /></Suspense>} />
+          <Route path="/planos" element={<Suspense fallback={<GlobalLoadingPage />}><PlanSelection /></Suspense>} />
+          <Route path="/selecionar-plano" element={<Suspense fallback={<GlobalLoadingPage />}><PlanSelection /></Suspense>} />
           
           {/* CONFIRMAÇÕES - MOVIDA PARA CIMA PARA EVITAR CONFLITOS */}
-          <Route path="/confirmacao" element={<Confirmacao />} />
-          <Route path="/confirmacao/*" element={<Confirmacao />} />
+          <Route path="/confirmacao" element={<Suspense fallback={<GlobalLoadingPage />}><Confirmacao /></Suspense>} />
+          <Route path="/confirmacao/*" element={<Suspense fallback={<GlobalLoadingPage />}><Confirmacao /></Suspense>} />
           <Route path="/reset-password" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando redefinição de senha..." />}>
               <ResetPassword />
@@ -310,17 +309,17 @@ const AppContent = () => {
           
           {/* CHECKOUT FLOW - Redirect antigo checkout para novo fluxo */}
           <Route path="/checkout" element={<Navigate to="/selecionar-plano" replace />} />
-          <Route path="/checkout/cupom" element={<CheckoutCoupon />} />
-          <Route path="/checkout/resumo" element={<CheckoutSummary />} />
+          <Route path="/checkout/cupom" element={<Suspense fallback={<GlobalLoadingPage />}><CheckoutCoupon /></Suspense>} />
+          <Route path="/checkout/resumo" element={<Suspense fallback={<GlobalLoadingPage />}><CheckoutSummary /></Suspense>} />
           <Route path="/checkout/fidelidade" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando contrato..." />}>
               {React.createElement(lazy(() => import('./pages/CheckoutFidelidade')))}
             </Suspense>
           } />
-          <Route path="/checkout/finalizar" element={<CheckoutFinish />} />
+          <Route path="/checkout/finalizar" element={<Suspense fallback={<GlobalLoadingPage />}><CheckoutFinish /></Suspense>} />
           
           {/* PAGAMENTO - ROTAS CORRIGIDAS */}
-          <Route path="/payment" element={<Payment />} />
+          <Route path="/payment" element={<Suspense fallback={<GlobalLoadingPage />}><Payment /></Suspense>} />
           <Route path="/payment/success" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
               {React.createElement(lazy(() => import('./pages/PaymentSuccess')))}
@@ -331,8 +330,8 @@ const AppContent = () => {
               {React.createElement(lazy(() => import('./pages/PaymentCanceled')))}
             </Suspense>
           } />
-          <Route path="/pix-payment" element={<PixPayment />} />
-          <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
+          <Route path="/pix-payment" element={<Suspense fallback={<GlobalLoadingPage />}><PixPayment /></Suspense>} />
+          <Route path="/pedido-confirmado" element={<Suspense fallback={<GlobalLoadingPage />}><OrderConfirmation /></Suspense>} />
           
           {/* VALIDAÇÃO PÚBLICA DE PEDIDOS */}
           <Route path="/validate-order" element={
@@ -342,7 +341,7 @@ const AppContent = () => {
           } />
           
           {/* PAINEL KIOSK - VINCULAÇÃO DE DISPOSITIVOS */}
-          <Route path="/painel-kiosk/:token" element={<PainelKiosk />} />
+          <Route path="/painel-kiosk/:token" element={<Suspense fallback={<GlobalLoadingPage />}><PainelKiosk /></Suspense>} />
           
           {/* PAINEL AGUARDANDO VÍNCULO */}
           <Route path="/painel-aguardando-vinculo/:painelId" element={
@@ -424,7 +423,7 @@ const AppContent = () => {
               <PainelStore />
             </Suspense>
           } />
-          <Route path="/email-enviado" element={<EmailEnviado />} />
+          <Route path="/email-enviado" element={<Suspense fallback={<GlobalLoadingPage />}><EmailEnviado /></Suspense>} />
 
           {/* PROPOSTA PÚBLICA - indexamidia.com.br/propostacomercial/:id */}
           <Route path="/propostacomercial/:id" element={
@@ -481,8 +480,8 @@ const AppContent = () => {
                 <MyVideos />
               </Suspense>
             } />
-            <Route path="editor-video" element={<VideoEditorDashboard />} />
-            <Route path="editor-video/:projectId" element={<VideoEditorPage />} />
+            <Route path="editor-video" element={<Suspense fallback={<GlobalLoadingPage />}><VideoEditorDashboard /></Suspense>} />
+            <Route path="editor-video/:projectId" element={<Suspense fallback={<GlobalLoadingPage />}><VideoEditorPage /></Suspense>} />
             <Route path="perfil" element={
               <Suspense fallback={<GlobalLoadingPage message="Carregando perfil..." />}>
                 <AdvertiserSettings />
@@ -501,16 +500,16 @@ const AppContent = () => {
           </Route>
 
           {/* Rotas de autenticação */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/sistema/login" element={<LoginERP />} />
-          <Route path="/cadastro" element={<Cadastro />} />
-          <Route path="/email-not-confirmed" element={<EmailNotConfirmed />} />
-          <Route path="/termos-uso" element={<TermosUso />} />
-          <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+          <Route path="/login" element={<Suspense fallback={<GlobalLoadingPage />}><LoginPage /></Suspense>} />
+          <Route path="/sistema/login" element={<Suspense fallback={<GlobalLoadingPage />}><LoginERP /></Suspense>} />
+          <Route path="/cadastro" element={<Suspense fallback={<GlobalLoadingPage />}><Cadastro /></Suspense>} />
+          <Route path="/email-not-confirmed" element={<Suspense fallback={<GlobalLoadingPage />}><EmailNotConfirmed /></Suspense>} />
+          <Route path="/termos-uso" element={<Suspense fallback={<GlobalLoadingPage />}><TermosUso /></Suspense>} />
+          <Route path="/politica-privacidade" element={<Suspense fallback={<GlobalLoadingPage />}><PoliticaPrivacidade /></Suspense>} />
           <Route path="/verificacao-2fa" element={<TwoFactorVerificationPage />} />
 
           {/* Rota pública de escolha de benefício prestadores */}
-          <Route path="/presente" element={<ProviderBenefitChoice />} />
+          <Route path="/presente" element={<Suspense fallback={<GlobalLoadingPage />}><ProviderBenefitChoice /></Suspense>} />
           
           {/* Página pública de proposta comercial */}
           <Route path="/proposta" element={
@@ -520,18 +519,18 @@ const AppContent = () => {
           } />
 
           {/* Página de teste de links */}
-          <Route path="/test-links" element={<TestLinks />} />
+          <Route path="/test-links" element={<Suspense fallback={<GlobalLoadingPage />}><TestLinks /></Suspense>} />
 
           {/* Redirects para rotas antigas do Monitoramento IA - agora integrado no AdminRoutes */}
           <Route path="/admin/monitoramento-ia" element={<Navigate to="/admin/paineis-exa" replace />} />
           <Route path="/admin/monitoramento-ia/*" element={<Navigate to="/admin" replace />} />
 
           {/* Rotas administrativas */}
-          <Route path="/super_admin/*" element={<SuperAdminPage />} />
-          <Route path="/admin/*" element={<AdminPage />} />
+          <Route path="/super_admin/*" element={<Suspense fallback={<GlobalLoadingPage />}><SuperAdminPage /></Suspense>} />
+          <Route path="/admin/*" element={<Suspense fallback={<GlobalLoadingPage />}><AdminPage /></Suspense>} />
           
           {/* Rota catch-all para páginas não encontradas */}
-          <Route path="*" element={<NaoEncontrado />} />
+          <Route path="*" element={<Suspense fallback={<GlobalLoadingPage />}><NaoEncontrado /></Suspense>} />
         </Routes>
         <Toaster />
       </div>
