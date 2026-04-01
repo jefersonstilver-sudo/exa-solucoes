@@ -1631,24 +1631,49 @@ Parcelas:
           console.log('🚀 [PUBLICAR] Convertendo rascunho para proposta:', proposalNumber);
         }
         
-        console.log('📤 [PUBLISH] Enviando update para proposta:', editProposalId, { number: proposalNumber, status: 'enviada' });
-        const { data, error } = await supabase
+        // ATOMIC UPSERT - Garante que status='enviada' é gravado atomicamente
+        const upsertPayload = {
+          id: editProposalId,
+          ...proposalData,
+          number: proposalNumber,
+          status: 'enviada' as const,
+          sent_at: existingProposal?.sent_at || new Date().toISOString(),
+        };
+        console.log('📤 [PUBLISH] Upsert payload:', { id: editProposalId, status: 'enviada', number: proposalNumber, fieldCount: Object.keys(upsertPayload).length });
+        
+        const { data: upsertData, error: upsertError } = await supabase
           .from('proposals')
-          .update({
-            ...proposalData,
-            number: proposalNumber,
-            status: 'enviada',
-            sent_at: existingProposal?.sent_at || new Date().toISOString(),
-          })
-          .eq('id', editProposalId)
-          .select()
-          .single();
-        if (error) {
-          console.error('❌ [PUBLISH] Erro no update:', error);
-          throw error;
+          .upsert(upsertPayload, { onConflict: 'id' })
+          .select('id, status, number')
+          .maybeSingle();
+        
+        if (upsertError) {
+          console.error('❌ [PUBLISH] Erro no upsert:', upsertError);
+          throw upsertError;
         }
-        proposal = data;
-        console.log('✅ [PUBLISH] Proposta atualizada com sucesso:', { id: proposal.id, number: proposal.number, status: proposal.status });
+        
+        // Verificação explícita pós-upsert
+        if (!upsertData || upsertData.status !== 'enviada') {
+          console.error('❌ [PUBLISH] Status NÃO atualizou! Retorno:', upsertData);
+          throw new Error(`Falha ao publicar: status retornado = "${upsertData?.status}" (esperado: "enviada")`);
+        }
+        
+        console.log('✅ [PUBLISH] Upsert OK:', upsertData);
+        
+        // Buscar dados completos da proposta para uso posterior (WhatsApp, Email, etc.)
+        const { data: fullProposal, error: fetchError } = await supabase
+          .from('proposals')
+          .select('*')
+          .eq('id', editProposalId)
+          .maybeSingle();
+        
+        if (fetchError || !fullProposal) {
+          console.error('❌ [PUBLISH] Erro ao buscar proposta completa:', fetchError);
+          throw fetchError || new Error('Proposta não encontrada após upsert');
+        }
+        
+        proposal = fullProposal;
+        console.log('✅ [PUBLISH] Proposta completa:', { id: proposal.id, number: proposal.number, status: proposal.status });
         
         // Log de edição/publicação
         const wasRascunho = existingProposal?.number?.startsWith('RASCUNHO-');
