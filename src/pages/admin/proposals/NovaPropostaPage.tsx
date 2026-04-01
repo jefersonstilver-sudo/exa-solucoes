@@ -478,7 +478,7 @@ const NovaPropostaPage = () => {
       const {
         data,
         error
-      } = await supabase.from('buildings').select('id, nome, bairro, endereco, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, preco_trimestral, preco_semestral, preco_anual, publico_estimado, imagem_principal, status').in('status', ['ativo', 'interno']).order('nome');
+      } = await supabase.from('buildings').select('id, nome, bairro, endereco, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, preco_trimestral, preco_semestral, preco_anual, publico_estimado, imagem_principal, status').in('status', ['ativo', 'interno', 'instalação', 'instalacao']).order('nome');
       if (error) throw error;
       return data as Building[];
     }
