@@ -201,11 +201,18 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
         console.log('⚠️ Could not capture audio, trimming video only');
       }
 
-      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+      // PRIORIZAR MP4 para compatibilidade com API AWS
+      // Chrome 116+ suporta video/mp4 no MediaRecorder
+      const mimeType = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')
+        ? 'video/mp4;codecs=avc1'
+        : MediaRecorder.isTypeSupported('video/mp4')
+        ? 'video/mp4'
+        : MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
         ? 'video/webm;codecs=vp9'
-        : MediaRecorder.isTypeSupported('video/webm')
-        ? 'video/webm'
-        : 'video/mp4';
+        : 'video/webm';
+      
+      const isWebmOutput = mimeType.includes('webm');
+      console.log('🎬 [TRIMMER] MediaRecorder mimeType selecionado:', mimeType, '| isWebm:', isWebmOutput);
 
       let recorder: MediaRecorder;
       try {
