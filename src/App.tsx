@@ -299,8 +299,8 @@ const AppContent = () => {
           <Route path="/selecionar-plano" element={<Suspense fallback={<GlobalLoadingPage />}><PlanSelection /></Suspense>} />
           
           {/* CONFIRMAÇÕES - MOVIDA PARA CIMA PARA EVITAR CONFLITOS */}
-          <Route path="/confirmacao" element={<Confirmacao />} />
-          <Route path="/confirmacao/*" element={<Confirmacao />} />
+          <Route path="/confirmacao" element={<Suspense fallback={<GlobalLoadingPage />}><Confirmacao /></Suspense>} />
+          <Route path="/confirmacao/*" element={<Suspense fallback={<GlobalLoadingPage />}><Confirmacao /></Suspense>} />
           <Route path="/reset-password" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando redefinição de senha..." />}>
               <ResetPassword />
