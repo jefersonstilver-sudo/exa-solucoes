@@ -259,12 +259,35 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
             resolve(createFallbackFile());
             return;
           }
-          const ext = mimeType.includes('webm') ? 'webm' : 'mp4';
+          
+          // Se o output é WebM, enviar o ORIGINAL (que já é MP4) com metadados de corte
+          // em vez de enviar WebM disfarçado de MP4
+          if (isWebmOutput) {
+            console.warn('⚠️ [TRIMMER] Browser produziu WebM - enviando arquivo original MP4 com metadados de corte');
+            const originalWithTrimMeta = new File(
+              [file],
+              file.name.replace(/\.[^.]+$/, '_trimmed.' + file.name.split('.').pop()),
+              { type: file.type }
+            );
+            // Attach trim metadata as custom properties
+            (originalWithTrimMeta as any)._trimStart = startT;
+            (originalWithTrimMeta as any)._trimEnd = endT;
+            (originalWithTrimMeta as any)._wasFallbackFromWebm = true;
+            setState(prev => ({ ...prev, isProcessing: false, processingProgress: 100 }));
+            resolve(originalWithTrimMeta);
+            return;
+          }
+          
           const trimmedFile = new File(
             [blob],
-            file.name.replace(/\.[^.]+$/, `_trimmed.${ext}`),
+            file.name.replace(/\.[^.]+$/, '_trimmed.mp4'),
             { type: mimeType }
           );
+          console.log('✅ [TRIMMER] Vídeo trimado em MP4 nativo:', {
+            size: trimmedFile.size,
+            type: trimmedFile.type,
+            name: trimmedFile.name
+          });
           setState(prev => ({ ...prev, isProcessing: false, processingProgress: 100 }));
           resolve(trimmedFile);
         };

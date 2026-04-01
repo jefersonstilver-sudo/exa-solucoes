@@ -14702,6 +14702,8 @@ export type Database = {
           status: string
           tamanho_arquivo: number | null
           tem_audio: boolean | null
+          trim_end_seconds: number | null
+          trim_start_seconds: number | null
           url: string
         }
         Insert: {
@@ -14718,6 +14720,8 @@ export type Database = {
           status?: string
           tamanho_arquivo?: number | null
           tem_audio?: boolean | null
+          trim_end_seconds?: number | null
+          trim_start_seconds?: number | null
           url: string
         }
         Update: {
@@ -14734,6 +14738,8 @@ export type Database = {
           status?: string
           tamanho_arquivo?: number | null
           tem_audio?: boolean | null
+          trim_end_seconds?: number | null
+          trim_start_seconds?: number | null
           url?: string
         }
         Relationships: [
