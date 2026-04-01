@@ -330,8 +330,8 @@ const AppContent = () => {
               {React.createElement(lazy(() => import('./pages/PaymentCanceled')))}
             </Suspense>
           } />
-          <Route path="/pix-payment" element={<PixPayment />} />
-          <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
+          <Route path="/pix-payment" element={<Suspense fallback={<GlobalLoadingPage />}><PixPayment /></Suspense>} />
+          <Route path="/pedido-confirmado" element={<Suspense fallback={<GlobalLoadingPage />}><OrderConfirmation /></Suspense>} />
           
           {/* VALIDAÇÃO PÚBLICA DE PEDIDOS */}
           <Route path="/validate-order" element={
