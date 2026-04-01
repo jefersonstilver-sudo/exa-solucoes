@@ -294,9 +294,9 @@ const AppContent = () => {
           <Route path="/paineis-digitais/loja" element={<Suspense fallback={<GlobalLoadingPage message="Carregando loja..." />}><BuildingStore /></Suspense>} />
           <Route path="/building-store" element={<Suspense fallback={<GlobalLoadingPage message="Carregando loja..." />}><BuildingStore /></Suspense>} />
           
-          <Route path="/plano" element={<PlanSelection />} />
-          <Route path="/planos" element={<PlanSelection />} />
-          <Route path="/selecionar-plano" element={<PlanSelection />} />
+          <Route path="/plano" element={<Suspense fallback={<GlobalLoadingPage />}><PlanSelection /></Suspense>} />
+          <Route path="/planos" element={<Suspense fallback={<GlobalLoadingPage />}><PlanSelection /></Suspense>} />
+          <Route path="/selecionar-plano" element={<Suspense fallback={<GlobalLoadingPage />}><PlanSelection /></Suspense>} />
           
           {/* CONFIRMAÇÕES - MOVIDA PARA CIMA PARA EVITAR CONFLITOS */}
           <Route path="/confirmacao" element={<Confirmacao />} />
