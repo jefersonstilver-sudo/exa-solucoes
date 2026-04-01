@@ -236,6 +236,11 @@ export const uploadVideo = async (
     console.log('✅ Registro de vídeo criado com sucesso:', videoRecord);
     onProgress?.(95);
 
+    // Validar slot_position antes de enviar ao banco
+    if (slotPosition < 1 || slotPosition > 4) {
+      throw new Error(`Posição de slot inválida (${slotPosition}). O máximo permitido é 4 vídeos por pedido.`);
+    }
+
     // Usar UPSERT para evitar race conditions em uploads simultâneos
     // Isso substitui a entrada existente OU cria uma nova automaticamente
     console.log('💾 Salvando/atualizando slot com UPSERT');
