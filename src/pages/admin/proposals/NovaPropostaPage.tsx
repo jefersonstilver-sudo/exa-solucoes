@@ -2571,6 +2571,11 @@ Parcelas:
             <Label className="text-xs flex items-center gap-1.5">
               <FileText className="h-3 w-3" />
               Título da Proposta (opcional)
+              {selectedBuildingsData.length > 0 && (
+                <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0">
+                  {selectedBuildingsData.length} prédio{selectedBuildingsData.length !== 1 ? 's' : ''} selecionado{selectedBuildingsData.length !== 1 ? 's' : ''}
+                </Badge>
+              )}
             </Label>
             <Input
               placeholder="Ex: Campanha Black Friday 2026, Parceria Institucional..."
@@ -2580,7 +2585,7 @@ Parcelas:
               className="mt-1 h-10 text-sm"
             />
             <p className="text-[10px] text-muted-foreground mt-1">
-              Se preenchido, aparece em destaque no topo da proposta para o cliente
+              Se preenchido, aparece em destaque no topo da proposta para o cliente. Auto-gerado com base nos prédios selecionados.
             </p>
           </div>
         </Card>
