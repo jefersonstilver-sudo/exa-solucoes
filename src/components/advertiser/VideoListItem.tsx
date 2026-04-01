@@ -154,13 +154,13 @@ export const VideoListItem = ({
         </div>
       </div>
 
-      {/* Horas exibidas */}
+      {/* Tempo real exibido */}
       <div className="text-right flex-shrink-0">
         <p className={cn(
           "text-2xl font-bold",
           isDisplaying ? "text-[#9C1E1E]" : "text-muted-foreground"
         )}>
-          {horasExibidas.toFixed(1)}h
+          {formatDisplayTime(horasExibidas)}
         </p>
         <p className="text-xs text-muted-foreground">
           {isDisplaying ? 'total exibido' : 'sem exibição'}
