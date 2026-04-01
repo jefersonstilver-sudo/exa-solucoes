@@ -4233,6 +4233,27 @@ Parcelas:
             </Button>
           )}
           
+          {/* Botão Salvar Alterações - aparece apenas ao editar proposta já publicada */}
+          {isEditMode && dataLoaded && existingProposal?.status !== 'rascunho' && !existingProposal?.number?.startsWith('RASCUNHO-') && (
+            <Button 
+              variant="outline"
+              onClick={handleSaveEdits}
+              disabled={
+                selectedBuildings.length === 0 || 
+                isSavingEdits ||
+                !dataLoaded || isLoadingProposal
+              }
+              className="h-11 gap-2 border-green-300 text-green-700 hover:bg-green-50"
+            >
+              {isSavingEdits ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Salvar
+            </Button>
+          )}
+          
           {/* Botão Publicar Proposta */}
           <Button 
             onClick={handleOpenSendDialog} 
