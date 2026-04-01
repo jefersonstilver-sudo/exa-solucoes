@@ -1,34 +1,51 @@
 
 
-# Plano: Animação de Feedback + Auto-refresh na Página de Aprovações
+# Plano: Redesign do Layout de Vídeos Aprovados
 
 ## Problema
-Quando o admin aprova ou rejeita um vídeo, não há feedback visual claro e a lista não atualiza automaticamente — o usuário precisa recarregar a página manualmente.
+O layout atual dos vídeos aprovados é denso, desorganizado e não tem preview de vídeo — diferente da seção de vídeos pendentes que usa `VideoPlayer`.
 
 ## Solução
 
-### 1. Auto-refresh após ação (`RealPendingVideosSection.tsx`)
-- Após `approveVideo` ou `rejectVideo` completar com sucesso, chamar `fetchPendingVideos()` + `onRefresh()` para atualizar a lista e os contadores automaticamente
-- O item aprovado/rejeitado desaparece da lista sem reload
+### 1. Adicionar `video_url` à RPC (`get_approved_videos_by_period`)
+- Nova migration adicionando `v.url as video_url` ao retorno da função
+- Sem quebrar nada existente — apenas adiciona um campo novo
 
-### 2. Animação de feedback inline (`RealPendingVideosSection.tsx`)
-- Adicionar estado `actionResult: { [videoId]: 'approved' | 'rejected' }` para rastrear ações recentes
-- Quando um vídeo é aprovado/rejeitado, mostrar um overlay animado no card do vídeo com:
-  - **Aprovado**: fundo verde com ícone CheckCircle + texto "Aprovado!" com fade-in e scale
-  - **Rejeitado**: fundo vermelho com ícone XCircle + texto "Rejeitado" com fade-in e scale
-- Após 1.5s da animação, remover o item da lista com transição suave (fade-out + slide)
+### 2. Redesign completo do card desktop (`RealApprovedVideosSection.tsx`)
+Layout novo por card, organizado em duas colunas:
 
-### 3. Toast aprimorado (já existe, manter)
-- Manter os toasts existentes como confirmação secundária
+```text
+┌─────────────────────────────────────────────────────┐
+│  ┌──────────┐   Nome do Vídeo        [Slot 2]      │
+│  │          │   Cliente: nome   Valor: R$ 1,00      │
+│  │  VIDEO   │   Aprovado por: nome  em 01/04/2026   │
+│  │ PREVIEW  │   Período: 12 meses (início → fim)    │
+│  │          │                                        │
+│  │          │   [STATUS]   [Visualizar] [▼ Ações]   │
+│  └──────────┘                                        │
+└─────────────────────────────────────────────────────┘
+```
 
-## Mudanças em arquivos
+- **Esquerda**: Preview do vídeo usando `VideoPlayer` (aspect-video, ~200px width)
+- **Direita**: Informações organizadas em linhas compactas, sem repetição de emails
+- **Status + Ações**: Inline na parte inferior direita
+- Remover labels redundantes ("Cliente:", "@email" duplicado)
+- Usar a mesma estética glass/blur das outras seções
+
+### 3. Ajustes mobile
+- Preview de vídeo no topo do card, aspect-video full-width
+- Info compacta abaixo
+- Botões de ação em linha
+
+## Arquivos alterados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/components/admin/approvals/RealPendingVideosSection.tsx` | Adicionar estado `actionResult`, overlay animado nos cards, auto-refresh após ação |
+| `supabase/migrations/new.sql` | Atualizar RPC para retornar `video_url` |
+| `src/components/admin/approvals/RealApprovedVideosSection.tsx` | Redesign completo dos cards com video preview |
 
 ## O que NÃO muda
 - Nenhuma outra página, componente ou workflow
-- Lógica de aprovação/rejeição (RPCs, emails, API externa) permanece idêntica
-- Layout desktop e mobile da ApprovalsPage inalterado
+- Lógica de busca de status, ações admin, period selector — tudo permanece igual
+- Seção de vídeos pendentes inalterada
 
