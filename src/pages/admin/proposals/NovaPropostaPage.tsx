@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package, Copy, Image as ImageIcon, AlertTriangle, Trophy, Info, Layers } from 'lucide-react';
+import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package, Copy, Image as ImageIcon, AlertTriangle, Trophy, Info, Layers, Save } from 'lucide-react';
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
