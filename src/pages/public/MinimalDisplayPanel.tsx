@@ -40,6 +40,7 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
   const buildingId = rawBuildingId;
   
   const { videos: activeVideos, loading, isUpdating, refetch } = useBuildingActiveVideos(buildingId);
+  const { onVideoStart, onVideoEnd } = usePlaybackLogger(buildingId);
   
   // 📦 Sistema de pending updates
   const {
