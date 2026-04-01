@@ -1,32 +1,30 @@
 
 
-# Plano: Corrigir Erro de Upload — Constraint `slot_position` (1-4)
+# Plano: Eliminar Dados Fictícios do Relatório de Campanha
 
-## Problema Identificado
+## Problema
 
-O erro `"pedido_videos_slot_position_check"` ocorre porque:
+A função `calculateDisplayHours` (linha 145-178 de `useVideoReportData.ts`) gera valores fictícios quando não existem logs reais de playback. Ela assume 245 exibições/dia/tela, produzindo "40m50s" para um vídeo que tocou menos de 1 minuto na realidade.
 
-1. O banco de dados tem uma constraint: `slot_position >= 1 AND slot_position <= 4`
-2. O produto "Horizontal" define `max_videos_por_pedido: 4`
-3. **MAS** o código inicializa `maxVideos` com valor **10** (padrão) antes de carregar o produto do banco
-4. Isso faz a UI mostrar 10 slots (incluindo slots 5-10), e quando o usuário tenta fazer upload no slot 5+, o banco rejeita
+A condição na linha 340-342 usa logs reais **quando existem**, mas o fallback na linha 344-353 inventa números.
 
-O usuário tentou fazer upload no **slot 8** ("Vídeo 8" na screenshot), que viola a constraint.
+## Solução
 
-## Correção
+Eliminar a função `calculateDisplayHours` e o fallback fictício. Quando não há logs reais (`videoLogs.length === 0`), `horasExibidas = 0`.
 
-### 1. `src/hooks/useOrderVideoManagement.tsx`
-- Mudar o valor padrão de `maxVideos` de **10** para **4** (linha 27)
-- Isso garante que mesmo antes do produto carregar, a UI só mostra 4 slots
+### Arquivo: `src/hooks/useVideoReportData.ts`
 
-### 2. `src/services/videoSlotService.ts`
-- Mudar o valor padrão de `maxSlots` de **10** para **4** (linha 5)
-- Adicionar validação: `const safeMaxSlots = Math.min(maxSlots, 4)` para nunca ultrapassar o limite do banco
+1. **Linhas 336-354**: Substituir o bloco condicional:
+   - Se `videoLogs.length > 0`: manter cálculo real (soma de `duration_seconds`)
+   - Se `videoLogs.length === 0`: `horasExibidas = 0` (sem estimativa)
 
-### 3. `src/services/videoUploadService.ts`
-- Adicionar validação antes do upsert (antes da linha 242): se `slotPosition > 4`, rejeitar com mensagem clara ao invés de deixar o banco retornar erro críptico
+2. **Linhas 145-178**: Remover a função `calculateDisplayHours` (não será mais usada)
+
+3. **Linhas 430-445**: Ajustar o cálculo de `totalExibicoes` que também usa estimativas fictícias (`totalTelas * 245 * diasAtivos`) — usar apenas COUNT real dos logs
+
+4. **Adicionar badge "Sem dados"**: No `VideoListItem.tsx`, quando `horasExibidas === 0` e o vídeo está ativo/exibindo, mostrar "aguardando dados" em vez de "0s" para que o anunciante saiba que dados reais virão
 
 ## Impacto
-- Apenas corrige o bug de slots excedendo o limite
-- Nenhuma mudança de UI, funcionalidade ou workflow existente
+- Apenas a seção de relatórios do anunciante
+- Nenhuma mudança de UI, funcionalidade ou workflow fora do relatório
 
