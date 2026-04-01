@@ -271,6 +271,21 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
       let totalVideosAtivos = 0;
       let totalVideosExibidos = 0;
 
+      // Buscar logs reais de playback para todos os vídeos do cliente
+      const allVideoIds = (pedidoVideos || []).map(pv => pv.video_id).filter(Boolean);
+      const allPedidoIds = pedidos.map(p => p.id);
+      
+      let playbackLogs: any[] = [];
+      if (allVideoIds.length > 0) {
+        const { data: logs } = await supabase
+          .from('video_playback_logs')
+          .select('video_id, building_id, pedido_id, duration_seconds, started_at')
+          .in('video_id', allVideoIds)
+          .gte('started_at', dateRange?.start?.toISOString() || new Date(0).toISOString())
+          .lte('started_at', dateRange?.end?.toISOString() || new Date().toISOString());
+        playbackLogs = logs || [];
+      }
+
       for (const pedido of pedidos) {
         const videosFromPedido = (pedidoVideos || []).filter(pv => pv.pedido_id === pedido.id);
         if (videosFromPedido.length === 0) continue;
