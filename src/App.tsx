@@ -24,42 +24,41 @@ import { ZAPIDisconnectAlert } from '@/components/notifications/ZAPIDisconnectAl
 import { useForceCacheClear } from '@/hooks/useForceCacheClear';
 import TwoFactorVerificationPage from '@/pages/auth/TwoFactorVerificationPage';
 
-// Importações diretas para páginas críticas
-import BuildingStore from './pages/BuildingStore';
-import PlanSelection from './pages/PlanSelection';
-import CheckoutCoupon from './pages/CheckoutCoupon';
-import CheckoutSummary from './pages/CheckoutSummary';
-import CheckoutFinish from './pages/CheckoutFinish';
-import Payment from './pages/Payment';
-import PixPayment from './pages/PixPayment';
-import Confirmacao from './pages/Confirmacao';
-import ResetPassword from './pages/ResetPassword';
-import LoginPage from './pages/LoginPage';
-import Cadastro from './pages/Cadastro';
-import TermosUso from './pages/TermosUso';
-import PoliticaPrivacidade from './pages/PoliticaPrivacidade';
-import NaoEncontrado from './pages/NaoEncontrado';
-import SuperAdminPage from './pages/SuperAdminPage';
-import AdminPage from './pages/AdminPage';
-import ProviderBenefitChoice from './pages/ProviderBenefitChoice';
-import EmailNotConfirmed from './pages/EmailNotConfirmed';
-import EmailEnviado from './pages/EmailEnviado';
-import OrderConfirmation from './pages/OrderConfirmation';
-import PainelKiosk from './pages/PainelKiosk';
-import LoginERP from './pages/sistema/LoginERP';
-
-// Importações diretas para páginas principais (performance otimizada)
-import PaineisPublicitarios from './pages/PaineisPublicitarios';
+// Importação direta APENAS para a homepage (rota /)
 import Exa from './pages/Exa';
-import TestLinks from './pages/TestLinks';
-import AIReportsPage from './pages/admin/monitoramento-ia/AIReportsPage';
-// ProfileSettings removido - unificado com AdvertiserSettings
-import AdvertiserInvoices from './pages/advertiser/AdvertiserInvoices';
+
+// Lazy load para todas as outras páginas (reduz carga inicial no proxy)
+const BuildingStore = lazy(() => import('./pages/BuildingStore'));
+const PlanSelection = lazy(() => import('./pages/PlanSelection'));
+const CheckoutCoupon = lazy(() => import('./pages/CheckoutCoupon'));
+const CheckoutSummary = lazy(() => import('./pages/CheckoutSummary'));
+const CheckoutFinish = lazy(() => import('./pages/CheckoutFinish'));
+const Payment = lazy(() => import('./pages/Payment'));
+const PixPayment = lazy(() => import('./pages/PixPayment'));
+const Confirmacao = lazy(() => import('./pages/Confirmacao'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const Cadastro = lazy(() => import('./pages/Cadastro'));
+const TermosUso = lazy(() => import('./pages/TermosUso'));
+const PoliticaPrivacidade = lazy(() => import('./pages/PoliticaPrivacidade'));
+const NaoEncontrado = lazy(() => import('./pages/NaoEncontrado'));
+const SuperAdminPage = lazy(() => import('./pages/SuperAdminPage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
+const ProviderBenefitChoice = lazy(() => import('./pages/ProviderBenefitChoice'));
+const EmailNotConfirmed = lazy(() => import('./pages/EmailNotConfirmed'));
+const EmailEnviado = lazy(() => import('./pages/EmailEnviado'));
+const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
+const PainelKiosk = lazy(() => import('./pages/PainelKiosk'));
+const LoginERP = lazy(() => import('./pages/sistema/LoginERP'));
+const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
+const TestLinks = lazy(() => import('./pages/TestLinks'));
+const AIReportsPage = lazy(() => import('./pages/admin/monitoramento-ia/AIReportsPage'));
+const AdvertiserInvoices = lazy(() => import('./pages/advertiser/AdvertiserInvoices'));
 
 // Video Editor Pages
-import VideoEditorDashboard from './pages/video-editor/VideoEditorDashboard';
-import VideoEditorAccessControl from './pages/video-editor/VideoEditorAccessControl';
-import VideoEditorPage from './pages/video-editor/VideoEditorPage';
+const VideoEditorDashboard = lazy(() => import('./pages/video-editor/VideoEditorDashboard'));
+const VideoEditorAccessControl = lazy(() => import('./pages/video-editor/VideoEditorAccessControl'));
+const VideoEditorPage = lazy(() => import('./pages/video-editor/VideoEditorPage'));
 
 // Monitoramento IA Module imports removidos - agora integrados no AdminRoutes
 
