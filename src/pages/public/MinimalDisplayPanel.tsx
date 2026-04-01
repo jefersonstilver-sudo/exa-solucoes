@@ -208,6 +208,7 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
         autoPlay
         muted
         playsInline
+        onPlay={() => onVideoStart(currentVideo.video_id)}
         onEnded={handleVideoEnd}
         onError={handleVideoEnd}
       />
