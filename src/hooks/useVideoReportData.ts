@@ -42,6 +42,7 @@ export interface VideoTimelinePoint {
 
 export interface CampaignReport {
   pedidoId: string;
+  nomePedido: string;
   clientName: string;
   clientEmail: string;
   dataInicio: string;
@@ -55,6 +56,8 @@ export interface CampaignReport {
   totalTelas: number;
   totalExibicoes: number;
   totalHoras: number;
+  prediosComExibicaoReal: number;
+  isRealData: boolean;
   chartData: {
     videoTimeline: VideoTimelinePoint[];
   };
