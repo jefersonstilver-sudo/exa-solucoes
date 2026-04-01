@@ -43,6 +43,7 @@ export interface VideoTimelinePoint {
 export interface CampaignReport {
   pedidoId: string;
   nomePedido: string;
+  tipoProduto: string;
   clientName: string;
   clientEmail: string;
   dataInicio: string;
