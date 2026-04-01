@@ -319,7 +319,7 @@ const AppContent = () => {
           <Route path="/checkout/finalizar" element={<Suspense fallback={<GlobalLoadingPage />}><CheckoutFinish /></Suspense>} />
           
           {/* PAGAMENTO - ROTAS CORRIGIDAS */}
-          <Route path="/payment" element={<Payment />} />
+          <Route path="/payment" element={<Suspense fallback={<GlobalLoadingPage />}><Payment /></Suspense>} />
           <Route path="/payment/success" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
               {React.createElement(lazy(() => import('./pages/PaymentSuccess')))}
