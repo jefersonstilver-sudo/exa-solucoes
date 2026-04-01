@@ -1,77 +1,64 @@
 
 
-# Plano: Corrigir Preview Branco + Alinhar Prédios da Proposta com Loja Pública
+# Plano: Corrigir Publicação de Propostas — Atomic Update
 
 ## Diagnóstico
 
-### Preview branco
-Provável erro de build transitório. Vou verificar se há erro de sintaxe nas edições recentes e corrigir se necessário.
+A proposta `EXA-2026-2586` continua com `status: rascunho` apesar de tentativas de publicação. O `updated_at` muda (18:06), confirmando que o Supabase recebe algum update, mas o `status` não muda para `enviada`.
 
-### Divergência de prédios (problema principal)
-
-A proposta e a loja pública usam **queries diferentes** que retornam **conjuntos diferentes** de prédios:
-
-```text
-PROPOSTA (NovaPropostaPage.tsx):
-  SELECT ... FROM buildings WHERE status IN ('ativo', 'interno')
-  → 14 prédios: 11 ativos + 3 internos (COMERCIAL TABLET, ENTRADA, SALA REUNIÃO)
-
-LOJA PÚBLICA (get_buildings_for_public_store RPC):
-  SELECT ... FROM buildings WHERE status IN ('ativo', 'instalação', 'instalacao')
-  → 14 prédios: 11 ativos + 3 em instalação (Cheverny, Bella Vita, Miró)
-```
-
-São conjuntos diferentes — a proposta inclui prédios internos (administrativos) que NÃO existem na loja pública, e NÃO inclui prédios em instalação que ESTÃO na loja pública.
-
-O cliente vê a proposta pública com os prédios da loja pública, mas o vendedor seleciona de uma lista diferente. Isso causa inconsistência na contagem.
+**Causa raiz identificada**: O `.update()` com spread de `proposalData` (que tem ~50 campos) provavelmente falha silenciosamente em algum campo, ou o PostgREST retorna um erro que não está sendo capturado corretamente. Além disso, o `handleSaveEdits` (que NÃO inclui `status`) pode estar sendo chamado em paralelo ou logo após, sobrescrevendo o timestamp sem alterar status.
 
 ## Correção
 
-### 1. Alinhar query da proposta com loja pública
+### Arquivo: `src/pages/admin/proposals/NovaPropostaPage.tsx`
 
-**Arquivo: `src/pages/admin/proposals/NovaPropostaPage.tsx`** (linha 481)
+**1. Tornar o update atômico e verificado** (linhas 1634-1651)
 
-Alterar a query de prédios para incluir os mesmos status da loja pública:
-
-```typescript
-// ANTES:
-.in('status', ['ativo', 'interno'])
-
-// DEPOIS:
-.in('status', ['ativo', 'interno', 'instalação', 'instalacao'])
-```
-
-Isso garante que o vendedor veja TODOS os prédios que o cliente verá na proposta pública, mais os internos (para uso administrativo, conforme governança existente).
-
-### 2. Corrigir grid dinâmico do Tailwind (possível causa do preview branco)
-
-**Arquivo: `src/pages/admin/proposals/PropostasPage.tsx`** (linha 932)
-
-O Tailwind não suporta classes dinâmicas como `` grid-cols-${n} ``. Substituir por classe fixa com lógica condicional:
+Substituir o `.update()` por `.upsert()` com `onConflict: 'id'` e adicionar verificação pós-update:
 
 ```typescript
-// ANTES:
-<div className={`grid grid-cols-${Math.min(sellersData.length, 3)} gap-2`}>
+console.log('📤 [PUBLISH] Payload:', { id: editProposalId, status: 'enviada', number: proposalNumber });
 
-// DEPOIS:
-<div className={`grid gap-2 ${
-  sellersData.length === 1 ? 'grid-cols-1' : 
-  sellersData.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
-}`}>
+const { data, error } = await supabase
+  .from('proposals')
+  .upsert({
+    id: editProposalId,
+    ...proposalData,
+    number: proposalNumber,
+    status: 'enviada',
+    sent_at: existingProposal?.sent_at || new Date().toISOString(),
+  }, { onConflict: 'id' })
+  .select('id, status, number')
+  .single();
+
+if (error) {
+  console.error('❌ [PUBLISH] Erro:', error);
+  throw error;
+}
+
+// Verificação explícita
+if (data?.status !== 'enviada') {
+  console.error('❌ [PUBLISH] Status não atualizou!', data);
+  throw new Error('Falha ao publicar: status não foi atualizado');
+}
+
+console.log('✅ [PUBLISH] Publicada:', data);
+proposal = data;
 ```
 
-Classes dinâmicas no Tailwind são eliminadas pelo purge/JIT e resultam em layout quebrado, que pode contribuir para o problema visual.
+**2. Buscar dados completos após upsert** para ter o `proposal` completo (necessário para envio de WhatsApp/Email depois):
 
-### 3. Verificar build
+Após o upsert verificado, fazer um `.select('*').eq('id', editProposalId).single()` para obter todos os campos.
 
-Confirmar que o preview carrega corretamente após as correções.
+**3. Corrigir proposta existente no banco**
 
-## Arquivos a editar
-- `src/pages/admin/proposals/NovaPropostaPage.tsx` — query de prédios
-- `src/pages/admin/proposals/PropostasPage.tsx` — fix grid Tailwind
+Criar migração SQL para corrigir a proposta inconsistente:
+```sql
+UPDATE proposals SET status = 'enviada' WHERE id = '41856389-5de8-4c0e-b5dc-e14d49d1d4e7' AND status = 'rascunho';
+```
 
 ## Impacto
-- Proposta agora mostra os mesmos prédios da loja pública + internos
-- Grid de vendedores renderiza corretamente
-- Nenhuma alteração na UI pública, RPC ou funcionalidades existentes
+- Apenas o fluxo de publicação em `NovaPropostaPage.tsx`
+- Nenhuma alteração em UI, workflows ou funcionalidades existentes
+- A correção garante que falhas de update não passem silenciosas
 

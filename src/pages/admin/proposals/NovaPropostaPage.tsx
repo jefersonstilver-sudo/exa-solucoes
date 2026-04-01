@@ -213,7 +213,6 @@ const NovaPropostaPage = () => {
 
   // Estado para título da proposta
   const [tituloProposta, setTituloProposta] = useState('');
-  const autoTitleRegex = /^(Horizontal|Vertical Premium)\s+\d+\s+prédios?\s*-\s*\d+\s*Meses?$/i;
 
   // Estados para novos toggles: Cobrança Futura e Exigir Contrato
   const [cobrancaFutura, setCobrancaFutura] = useState(false);
@@ -478,7 +477,7 @@ const NovaPropostaPage = () => {
       const {
         data,
         error
-      } = await supabase.from('buildings').select('id, nome, bairro, endereco, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, preco_trimestral, preco_semestral, preco_anual, publico_estimado, imagem_principal, status').in('status', ['ativo', 'interno', 'instalação', 'instalacao']).order('nome');
+      } = await supabase.from('buildings').select('id, nome, bairro, endereco, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, preco_trimestral, preco_semestral, preco_anual, publico_estimado, imagem_principal, status').in('status', ['ativo', 'interno']).order('nome');
       if (error) throw error;
       return data as Building[];
     }
@@ -868,20 +867,7 @@ const NovaPropostaPage = () => {
     return selectedBuildingsData.reduce((sum, b) => sum + (b.publico_estimado || 0), 0);
   }, [selectedBuildingsData]);
 
-  // Auto-sincronizar título com contagem real de prédios
-  useEffect(() => {
-    if (isEditMode) return; // Não auto-gerar ao editar proposta existente
-    const count = selectedBuildingsData.length;
-    if (count === 0) return;
-    const tipoLabel = tipoProduto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal';
-    const newAutoTitle = `${tipoLabel} ${count} prédios - ${durationMonths} Meses`;
-    
-    if (!tituloProposta || autoTitleRegex.test(tituloProposta)) {
-      setTituloProposta(newAutoTitle);
-    }
-  }, [selectedBuildingsData.length, durationMonths, tipoProduto]);
-
-
+  // Calcular máximo de posições disponíveis baseado nos prédios selecionados
   const maxPosicoes = useMemo(() => {
     const maxPorProduto = tipoProduto === 'vertical_premium' 
       ? (specifications?.vertical.maxClientesPainel ?? 3)
@@ -2571,11 +2557,6 @@ Parcelas:
             <Label className="text-xs flex items-center gap-1.5">
               <FileText className="h-3 w-3" />
               Título da Proposta (opcional)
-              {selectedBuildingsData.length > 0 && (
-                <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0">
-                  {selectedBuildingsData.length} prédio{selectedBuildingsData.length !== 1 ? 's' : ''} selecionado{selectedBuildingsData.length !== 1 ? 's' : ''}
-                </Badge>
-              )}
             </Label>
             <Input
               placeholder="Ex: Campanha Black Friday 2026, Parceria Institucional..."
@@ -2585,7 +2566,7 @@ Parcelas:
               className="mt-1 h-10 text-sm"
             />
             <p className="text-[10px] text-muted-foreground mt-1">
-              Se preenchido, aparece em destaque no topo da proposta para o cliente. Auto-gerado com base nos prédios selecionados.
+              Se preenchido, aparece em destaque no topo da proposta para o cliente
             </p>
           </div>
         </Card>

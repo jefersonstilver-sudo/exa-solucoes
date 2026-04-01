@@ -929,7 +929,7 @@ const PropostasPage = () => {
 
         {/* Stats Grid - Linha 2: Cards de Vendedores (dinâmico) */}
         {sellersData && sellersData.length > 0 && (
-          <div className={`grid gap-2 ${sellersData.length === 1 ? 'grid-cols-1' : sellersData.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+          <div className={`grid grid-cols-${Math.min(sellersData.length, 3)} gap-2`}>
             {sellersData.map((seller, index) => {
               const colors = [
                 { from: 'from-blue-50', to: 'to-blue-100/50', border: 'border-blue-200/50', bg: 'bg-blue-500', text: 'text-blue-800', value: 'text-blue-700' },
