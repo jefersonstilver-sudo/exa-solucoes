@@ -87,7 +87,7 @@ export const loadVideoSlots = async (orderId: string, maxSlots: number = 4): Pro
     console.log('📋 [VIDEO_SLOTS] Resultados válidos:', validVideoResults);
 
     // Criar slots 1-4, preenchendo com dados existentes
-    const slots: VideoSlot[] = Array.from({ length: maxSlots }, (_, i) => i + 1).map(position => {
+    const slots: VideoSlot[] = Array.from({ length: safeMaxSlots }, (_, i) => i + 1).map(position => {
       const matchingResult = validVideoResults.find(result => 
         result && result.pedidoVideo.slot_position === position
       );
