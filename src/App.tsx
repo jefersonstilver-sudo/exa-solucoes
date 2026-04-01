@@ -526,8 +526,8 @@ const AppContent = () => {
           <Route path="/admin/monitoramento-ia/*" element={<Navigate to="/admin" replace />} />
 
           {/* Rotas administrativas */}
-          <Route path="/super_admin/*" element={<SuperAdminPage />} />
-          <Route path="/admin/*" element={<AdminPage />} />
+          <Route path="/super_admin/*" element={<Suspense fallback={<GlobalLoadingPage />}><SuperAdminPage /></Suspense>} />
+          <Route path="/admin/*" element={<Suspense fallback={<GlobalLoadingPage />}><AdminPage /></Suspense>} />
           
           {/* Rota catch-all para páginas não encontradas */}
           <Route path="*" element={<NaoEncontrado />} />
