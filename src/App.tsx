@@ -500,12 +500,12 @@ const AppContent = () => {
           </Route>
 
           {/* Rotas de autenticação */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/sistema/login" element={<LoginERP />} />
-          <Route path="/cadastro" element={<Cadastro />} />
-          <Route path="/email-not-confirmed" element={<EmailNotConfirmed />} />
-          <Route path="/termos-uso" element={<TermosUso />} />
-          <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+          <Route path="/login" element={<Suspense fallback={<GlobalLoadingPage />}><LoginPage /></Suspense>} />
+          <Route path="/sistema/login" element={<Suspense fallback={<GlobalLoadingPage />}><LoginERP /></Suspense>} />
+          <Route path="/cadastro" element={<Suspense fallback={<GlobalLoadingPage />}><Cadastro /></Suspense>} />
+          <Route path="/email-not-confirmed" element={<Suspense fallback={<GlobalLoadingPage />}><EmailNotConfirmed /></Suspense>} />
+          <Route path="/termos-uso" element={<Suspense fallback={<GlobalLoadingPage />}><TermosUso /></Suspense>} />
+          <Route path="/politica-privacidade" element={<Suspense fallback={<GlobalLoadingPage />}><PoliticaPrivacidade /></Suspense>} />
           <Route path="/verificacao-2fa" element={<TwoFactorVerificationPage />} />
 
           {/* Rota pública de escolha de benefício prestadores */}
