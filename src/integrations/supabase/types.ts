@@ -15244,6 +15244,7 @@ export type Database = {
           valor_total: number
           video_id: string
           video_name: string
+          video_url: string
         }[]
       }
       get_approved_videos_with_details: {
