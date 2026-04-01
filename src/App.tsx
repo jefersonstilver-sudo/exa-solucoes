@@ -316,7 +316,7 @@ const AppContent = () => {
               {React.createElement(lazy(() => import('./pages/CheckoutFidelidade')))}
             </Suspense>
           } />
-          <Route path="/checkout/finalizar" element={<CheckoutFinish />} />
+          <Route path="/checkout/finalizar" element={<Suspense fallback={<GlobalLoadingPage />}><CheckoutFinish /></Suspense>} />
           
           {/* PAGAMENTO - ROTAS CORRIGIDAS */}
           <Route path="/payment" element={<Payment />} />
