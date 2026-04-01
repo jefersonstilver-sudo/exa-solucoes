@@ -1,41 +1,34 @@
 
 
-# Diagnóstico: Resumo Diário não está sendo enviado
+# Plano: Animação de Feedback + Auto-refresh na Página de Aprovações
 
-## Problema encontrado
+## Problema
+Quando o admin aprova ou rejeita um vídeo, não há feedback visual claro e a lista não atualiza automaticamente — o usuário precisa recarregar a página manualmente.
 
-A configuração salva no banco tem **`horarios: []`** (array vazio):
+## Solução
 
-```json
-{
-  "ativo": true,
-  "contatos": [{"id": "...", "nome": "JEFERSON", "telefone": "45998090000"}],
-  "horarios": []
-}
-```
+### 1. Auto-refresh após ação (`RealPendingVideosSection.tsx`)
+- Após `approveVideo` ou `rejectVideo` completar com sucesso, chamar `fetchPendingVideos()` + `onRefresh()` para atualizar a lista e os contadores automaticamente
+- O item aprovado/rejeitado desaparece da lista sem reload
 
-O contato foi selecionado e o toggle está ativo, mas **nenhum horário de envio foi adicionado**. O código do `task-reminder-scheduler` exige `horarios.length > 0` para processar — por isso nunca entra na seção de resumo diário e nenhum log de "resumo" aparece.
+### 2. Animação de feedback inline (`RealPendingVideosSection.tsx`)
+- Adicionar estado `actionResult: { [videoId]: 'approved' | 'rejected' }` para rastrear ações recentes
+- Quando um vídeo é aprovado/rejeitado, mostrar um overlay animado no card do vídeo com:
+  - **Aprovado**: fundo verde com ícone CheckCircle + texto "Aprovado!" com fade-in e scale
+  - **Rejeitado**: fundo vermelho com ícone XCircle + texto "Rejeitado" com fade-in e scale
+- Após 1.5s da animação, remover o item da lista com transição suave (fade-out + slide)
 
-Os logs confirmam: o scheduler roda a cada 2 minutos mas pula direto para os lembretes individuais sem mencionar "resumo" ou "summary".
+### 3. Toast aprimorado (já existe, manter)
+- Manter os toasts existentes como confirmação secundária
 
-## Correção necessária
+## Mudanças em arquivos
 
-Não há bug no código — a configuração está incompleta. Porém, para evitar essa confusão no futuro, vou melhorar a UX:
+| Arquivo | Mudança |
+|---------|---------|
+| `src/components/admin/approvals/RealPendingVideosSection.tsx` | Adicionar estado `actionResult`, overlay animado nos cards, auto-refresh após ação |
 
-### 1. Validação no salvamento (`DailySummaryConfigModal.tsx`)
-- Ao clicar em "Salvar", se `ativo = true` e `horarios` estiver vazio, mostrar toast de erro: *"Adicione pelo menos um horário de envio"*
-- Se `ativo = true` e `contatos` estiver vazio, mostrar toast: *"Adicione pelo menos um contato"*
-- Impedir o salvamento até que ambos estejam preenchidos
-
-### 2. Botão de "Enviar agora" para teste
-- Adicionar botão "Enviar resumo agora" no modal para que o usuário possa testar instantaneamente sem esperar o horário agendado
-- Chama o `task-reminder-scheduler` via `supabase.functions.invoke` com um flag `forceSummary: true`
-
-### 3. Ajuste no `task-reminder-scheduler` — suporte a `forceSummary`
-- Se receber `forceSummary: true` no body, ignora a validação de horário e envia o resumo imediatamente para os contatos configurados
-- Mantém a lógica de deduplicação (não envia novamente se já enviou nos últimos 5 minutos)
-
-### O que NÃO muda
-- Toda a lógica existente de lembretes, notificações de alteração/cancelamento
-- Nenhuma outra UI, workflow ou edge function
+## O que NÃO muda
+- Nenhuma outra página, componente ou workflow
+- Lógica de aprovação/rejeição (RPCs, emails, API externa) permanece idêntica
+- Layout desktop e mobile da ApprovalsPage inalterado
 
