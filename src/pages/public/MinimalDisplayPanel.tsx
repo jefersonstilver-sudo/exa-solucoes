@@ -3,6 +3,7 @@ import { useParams, Navigate } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { useBuildingScheduleMonitor } from '@/hooks/useBuildingScheduleMonitor';
 import { usePendingPlaylistUpdates } from '@/hooks/usePendingPlaylistUpdates';
+import { usePlaybackLogger } from '@/hooks/usePlaybackLogger';
 import { supabase } from '@/integrations/supabase/client';
 import { WifiOff } from 'lucide-react';
 import { UpdateIndicator } from '@/components/display/UpdateIndicator';
