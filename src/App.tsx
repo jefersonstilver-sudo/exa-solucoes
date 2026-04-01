@@ -290,9 +290,9 @@ const AppContent = () => {
           } />
           
           {/* CORREÇÃO: Rotas da loja unificadas */}
-          <Route path="/loja" element={<BuildingStore />} />
-          <Route path="/paineis-digitais/loja" element={<BuildingStore />} />
-          <Route path="/building-store" element={<BuildingStore />} />
+          <Route path="/loja" element={<Suspense fallback={<GlobalLoadingPage message="Carregando loja..." />}><BuildingStore /></Suspense>} />
+          <Route path="/paineis-digitais/loja" element={<Suspense fallback={<GlobalLoadingPage message="Carregando loja..." />}><BuildingStore /></Suspense>} />
+          <Route path="/building-store" element={<Suspense fallback={<GlobalLoadingPage message="Carregando loja..." />}><BuildingStore /></Suspense>} />
           
           <Route path="/plano" element={<PlanSelection />} />
           <Route path="/planos" element={<PlanSelection />} />
