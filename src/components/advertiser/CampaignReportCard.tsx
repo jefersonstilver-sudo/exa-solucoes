@@ -41,6 +41,19 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
     return num.toString();
   };
 
+  const formatDisplayTime = (hours: number): string => {
+    const totalSeconds = Math.round(hours * 3600);
+    if (totalSeconds < 60) {
+      return `${totalSeconds}s`;
+    }
+    if (totalSeconds < 3600) {
+      const min = Math.floor(totalSeconds / 60);
+      const sec = totalSeconds % 60;
+      return sec > 0 ? `${min}m${sec}s` : `${min}min`;
+    }
+    return `${hours.toFixed(1)}h`;
+  };
+
   const handleDownloadPDF = async () => {
     setIsDownloading(true);
     try {
