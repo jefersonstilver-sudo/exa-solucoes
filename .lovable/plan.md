@@ -1,30 +1,31 @@
 
 
-# Plano: Eliminar Dados Fictícios do Relatório de Campanha
+# Plano: Permitir salvar alterações em propostas editadas
 
 ## Problema
 
-A função `calculateDisplayHours` (linha 145-178 de `useVideoReportData.ts`) gera valores fictícios quando não existem logs reais de playback. Ela assume 245 exibições/dia/tela, produzindo "40m50s" para um vídeo que tocou menos de 1 minuto na realidade.
+Quando o usuário edita uma proposta **já publicada** (status `enviada`):
+1. **Auto-save está desabilitado** — linha 911: `if (!clientData.firstName.trim() || isEditMode) return;`
+2. **Botão "Salvar Rascunho" não aparece** — linha 4118 só mostra para propostas com status `rascunho`
+3. **Único caminho para salvar é "Salvar Alterações"** (botão Publicar) — que abre o dialog de envio por WhatsApp/Email, forçando o usuário a confirmar envio novamente
 
-A condição na linha 340-342 usa logs reais **quando existem**, mas o fallback na linha 344-353 inventa números.
+Ou seja, o usuário muda o valor mensal e **não tem nenhuma forma direta de salvar** sem repassar pelo fluxo de envio completo.
 
 ## Solução
 
-Eliminar a função `calculateDisplayHours` e o fallback fictício. Quando não há logs reais (`videoLogs.length === 0`), `horasExibidas = 0`.
+### Arquivo: `src/pages/admin/proposals/NovaPropostaPage.tsx`
 
-### Arquivo: `src/hooks/useVideoReportData.ts`
+1. **Adicionar botão "Salvar Alterações" direto no footer** — visível apenas quando `isEditMode && proposta não é rascunho`. Este botão faz `.update()` direto no banco SEM abrir o dialog de envio (WhatsApp/Email).
 
-1. **Linhas 336-354**: Substituir o bloco condicional:
-   - Se `videoLogs.length > 0`: manter cálculo real (soma de `duration_seconds`)
-   - Se `videoLogs.length === 0`: `horasExibidas = 0` (sem estimativa)
+2. **Criar função `handleSaveEdits`** — similar ao `handleSaveDraft` mas:
+   - Mantém o `status` e `number` existentes (não altera)
+   - Usa o mesmo objeto `proposalData` do `createProposalMutation`
+   - Após salvar, mostra toast de sucesso e invalida o cache
 
-2. **Linhas 145-178**: Remover a função `calculateDisplayHours` (não será mais usada)
+3. **Manter o botão "Publicar/Reenviar"** separado para quando o usuário quiser republicar com envio de notificações.
 
-3. **Linhas 430-445**: Ajustar o cálculo de `totalExibicoes` que também usa estimativas fictícias (`totalTelas * 245 * diasAtivos`) — usar apenas COUNT real dos logs
-
-4. **Adicionar badge "Sem dados"**: No `VideoListItem.tsx`, quando `horasExibidas === 0` e o vídeo está ativo/exibindo, mostrar "aguardando dados" em vez de "0s" para que o anunciante saiba que dados reais virão
-
-## Impacto
-- Apenas a seção de relatórios do anunciante
-- Nenhuma mudança de UI, funcionalidade ou workflow fora do relatório
+### Mudanças específicas:
+- **Nova função `handleSaveEdits`** (~30 linhas): faz `supabase.from('proposals').update(proposalData).eq('id', editProposalId)` direto
+- **Footer (linha ~4095)**: adicionar botão "Salvar" entre os botões existentes, com ícone `Save`, apenas em modo edição de proposta não-rascunho
+- **Nenhuma outra alteração** — fluxo de criação, rascunho e publicação permanecem iguais
 
