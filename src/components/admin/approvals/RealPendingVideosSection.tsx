@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,11 +29,42 @@ interface RealPendingVideosSectionProps {
   onRefresh: () => void;
 }
 
+// Overlay de feedback animado
+const ActionFeedbackOverlay: React.FC<{ result: 'approved' | 'rejected'; onDone: () => void }> = ({ result, onDone }) => {
+  const [phase, setPhase] = useState<'enter' | 'exit'>('enter');
+
+  useEffect(() => {
+    const exitTimer = setTimeout(() => setPhase('exit'), 1200);
+    const doneTimer = setTimeout(onDone, 1700);
+    return () => { clearTimeout(exitTimer); clearTimeout(doneTimer); };
+  }, [onDone]);
+
+  const isApproved = result === 'approved';
+
+  return (
+    <div
+      className={`absolute inset-0 z-30 flex flex-col items-center justify-center rounded-xl transition-all duration-500 ${
+        phase === 'enter' ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+      } ${isApproved ? 'bg-emerald-500/90' : 'bg-red-500/90'}`}
+    >
+      {isApproved ? (
+        <CheckCircle className="h-16 w-16 text-white mb-3 animate-scale-in" />
+      ) : (
+        <XCircle className="h-16 w-16 text-white mb-3 animate-scale-in" />
+      )}
+      <span className="text-white text-xl font-bold animate-fade-in">
+        {isApproved ? 'Aprovado!' : 'Rejeitado'}
+      </span>
+    </div>
+  );
+};
+
 const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loading, onRefresh }) => {
   const [pendingVideos, setPendingVideos] = useState<PendingVideo[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(true);
   const [rejectionReason, setRejectionReason] = useState<{ [key: string]: string }>({});
   const [actionLoading, setActionLoading] = useState(false);
+  const [actionResult, setActionResult] = useState<{ [key: string]: 'approved' | 'rejected' }>({});
   const { isMobile } = useAdvancedResponsive();
 
   const conarViolations = [
@@ -128,6 +159,16 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
   useEffect(() => {
     fetchPendingVideos();
   }, []);
+
+  const handleAnimationDone = useCallback((videoId: string) => {
+    setActionResult(prev => {
+      const next = { ...prev };
+      delete next[videoId];
+      return next;
+    });
+    fetchPendingVideos();
+    onRefresh();
+  }, [onRefresh]);
 
   const approveVideo = async (videoId: string, clientName: string) => {
     try {
@@ -255,7 +296,6 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
         }
 
         console.log('✅ [APPROVE] Vídeo enviado para API externa com sucesso:', externalApiData);
-        toast.success(`✅ Vídeo de ${clientName} aprovado e sincronizado!`);
         
       } catch (externalError: any) {
         console.error('💥 [APPROVE] Erro ao processar API externa:', externalError);
@@ -277,8 +317,10 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
         return;
       }
 
-      onRefresh();
-      fetchPendingVideos();
+      // Mostrar animação de sucesso
+      setActionResult(prev => ({ ...prev, [videoId]: 'approved' }));
+      toast.success(`✅ Vídeo de ${clientName} aprovado e sincronizado!`);
+
     } catch (error: any) {
       console.error('💥 [APPROVE] Erro ao aprovar vídeo:', error);
       toast.error(`Erro ao aprovar vídeo: ${error.message || 'Erro desconhecido'}`);
@@ -334,9 +376,9 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
         }
       }
 
+      // Mostrar animação de rejeição
+      setActionResult(prev => ({ ...prev, [videoId]: 'rejected' }));
       toast.success(`Vídeo de ${clientName} rejeitado. Cliente será notificado.`);
-      onRefresh();
-      fetchPendingVideos();
       setRejectionReason(prev => ({ ...prev, [videoId]: '' }));
     } catch (error) {
       console.error('Erro ao rejeitar vídeo:', error);
@@ -390,8 +432,18 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
           pendingVideos.map((video) => (
             <div 
               key={video.id} 
-              className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-3 shadow-sm space-y-3"
+              className={`relative bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-3 shadow-sm space-y-3 transition-all duration-500 overflow-hidden ${
+                actionResult[video.id] ? 'pointer-events-none' : ''
+              }`}
             >
+              {/* Overlay de feedback */}
+              {actionResult[video.id] && (
+                <ActionFeedbackOverlay
+                  result={actionResult[video.id]}
+                  onDone={() => handleAnimationDone(video.id)}
+                />
+              )}
+
               {/* Header */}
               <div className="flex items-center justify-between">
                 <Badge className="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 font-medium">
@@ -516,7 +568,20 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
           ) : (
             <div className="space-y-8">
               {pendingVideos.map((video) => (
-                <Card key={video.id} className="bg-card border hover:shadow-md transition-shadow">
+                <Card 
+                  key={video.id} 
+                  className={`relative bg-card border hover:shadow-md transition-all duration-500 overflow-hidden ${
+                    actionResult[video.id] ? 'pointer-events-none' : ''
+                  }`}
+                >
+                  {/* Overlay de feedback */}
+                  {actionResult[video.id] && (
+                    <ActionFeedbackOverlay
+                      result={actionResult[video.id]}
+                      onDone={() => handleAnimationDone(video.id)}
+                    />
+                  )}
+
                   <CardContent className="p-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {/* Informações do Cliente e Pedido */}
