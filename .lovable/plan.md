@@ -1,31 +1,42 @@
 
 
-# Plano: Restaurar Fluxo de Publicação com Dialog de Envio para Rascunhos
+# Plano: Dashboard Dinâmico de Vendedores + Diagnóstico de Publicação
 
-## Problema
+## Problema 1: Cards de vendedores com nomes fictícios (PropostasPage.tsx)
 
-A mudança anterior criou a função `handlePublishDraft` (linhas 2068-2267) que publica rascunhos **diretamente**, sem mostrar o dialog de escolha de envio (WhatsApp / Email / Apenas Link). O botão "Publicar" para rascunhos chama `handlePublishDraft` em vez de `handleOpenSendDialog`.
+A seção de vendedores (linhas 227-1015) usa **3 IDs fixos hardcoded** ("Bruno Dantas", "Jeferson Stilver", "Eduardo Comercial"). Consulta ao banco mostra que nos últimos 30 dias, **apenas Jeferson** (`7cca6d1b`) tem propostas enviadas. "Bruno" e "Eduardo" nunca enviaram propostas — são cards fantasma.
 
-O fluxo correto (que já existia para propostas novas) é:
-1. Clicar "Publicar" abre o dialog com opções de envio
-2. Usuário escolhe WhatsApp, Email ou Apenas Link
-3. `createProposalMutation` salva, muda status para `enviada`, gera número EXA, e envia notificações
+O componente `ProposalStatsRow.tsx` (usado no dashboard principal) já é 100% dinâmico e correto. O problema está exclusivamente em `PropostasPage.tsx`.
 
-A `createProposalMutation` já trata rascunhos corretamente (linhas 1623-1660): gera número EXA, muda status para `enviada`, e cria log.
+### Correção
 
-## Solução
+Substituir os 3 cards hardcoded por uma query dinâmica que busca **todos os vendedores que criaram propostas nos últimos 30 dias**, sem lista fixa de IDs:
 
-### Arquivo: `src/pages/admin/proposals/NovaPropostaPage.tsx`
+1. **Remover** `SELLER_IDS` e a query `sellers-stats-fixed` (linhas 227-286)
+2. **Nova query dinâmica**: buscar `SELECT DISTINCT created_by FROM proposals WHERE created_at >= NOW() - 30 days AND status != 'rascunho'`, depois buscar nomes e calcular stats
+3. **Substituir os 3 cards fixos** (linhas 934-1016) por um `.map()` dinâmico que renderiza apenas vendedores reais com propostas no período
+4. Cores dos cards serão atribuídas por índice (array de cores rotativo)
 
-1. **Remover a função `handlePublishDraft`** (linhas 2066-2267) e o state `isPublishingDraft` (linha 2067) — são redundantes com `createProposalMutation`
+## Problema 2: Proposta não sai de "Rascunho" ao publicar
 
-2. **Restaurar o botão "Publicar" para sempre chamar `handleOpenSendDialog`** (linha 4464-4468): remover a condição ternária que desviava rascunhos para `handlePublishDraft`
+### Diagnóstico
 
-3. **Limpar referências a `isPublishingDraft`** no disabled e nos labels do botão (linhas 4476, 4480, 4487-4488)
+A proposta `EXA-2026-2586` tem `status: rascunho` mas `sent_at` definido e número EXA — estado inconsistente. Isso ocorreu com a versão anterior do código que tinha `handlePublishDraft` (já removido). O código atual do `createProposalMutation` (linhas 1634-1644) está correto: faz `.update({ ...proposalData, status: 'enviada' })`.
 
-O `createProposalMutation` (linha 1623-1660) já faz tudo que é necessário para rascunhos: converte número `RASCUNHO-*` para `EXA-*`, muda status para `enviada`, cria contato no CRM, e envia notificações. Nenhuma lógica nova é necessária.
+**Causa provável**: A inconsistência é residual da versão anterior. Porém, para garantir que não aconteça novamente, vou adicionar:
+
+1. **Logs explícitos** antes e depois do `.update()` no `createProposalMutation` para rastrear se o update executa
+2. **Verificação pós-update**: após o `.update()`, fazer um `.select()` e confirmar que `status === 'enviada'` no retorno, logando qualquer discrepância
+3. **Corrigir a proposta inconsistente** existente (EXA-2026-2586) via insert tool: `UPDATE proposals SET status = 'enviada' WHERE id = '41856389-...' AND status = 'rascunho' AND number LIKE 'EXA%'`
+
+## Arquivos a editar
+
+- **`src/pages/admin/proposals/PropostasPage.tsx`**: remover IDs fixos, query dinâmica, cards dinâmicos
+- **`src/pages/admin/proposals/NovaPropostaPage.tsx`**: adicionar logs de diagnóstico no mutation
+- **Dados**: corrigir proposta inconsistente no banco
 
 ## Impacto
-- Apenas o fluxo de publicação de rascunhos
-- Restaura o comportamento original do sistema
+- Dashboard mostra apenas vendedores reais com propostas no período
+- Publicação de rascunhos ganha rastreabilidade com logs
+- Nenhuma alteração em outros fluxos
 
