@@ -98,11 +98,20 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
           <CollapsibleTrigger className="flex-1 text-left">
             <div className="flex items-center gap-3 mb-2">
               <h3 className="text-xl font-semibold text-gray-900">
-                Pedido #{campaign.pedidoId.substring(0, 8)}
+                {campaign.nomePedido}
               </h3>
               <Badge className="bg-green-100 text-green-800 border-green-200">
                 {campaign.status}
               </Badge>
+              {campaign.isRealData ? (
+                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">
+                  Dados Reais
+                </Badge>
+              ) : (
+                <Badge className="bg-amber-100 text-amber-800 border-amber-200">
+                  Estimativa
+                </Badge>
+              )}
               <ChevronDown
                 className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${
                 isOpen ? 'rotate-180' : ''}`
@@ -157,8 +166,13 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
               <p className="text-2xl font-bold text-[#9C1E1E]">{campaign.totalHoras.toFixed(1)}h</p>
             </div>
             <div className="bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl p-4 border border-border/40">
-              <p className="text-xs text-muted-foreground mb-1">Prédios</p>
-              <p className="text-2xl font-bold text-[#9C1E1E]">{campaign.predios.length}</p>
+              <p className="text-xs text-muted-foreground mb-1">Prédios com Exibição</p>
+              <p className="text-2xl font-bold text-[#9C1E1E]">
+                {campaign.isRealData ? campaign.prediosComExibicaoReal : campaign.predios.length}
+              </p>
+              {campaign.isRealData && (
+                <p className="text-xs text-muted-foreground">de {campaign.predios.length} contratados</p>
+              )}
             </div>
             <div className="bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl p-4 border border-border/40">
               <p className="text-xs text-muted-foreground mb-1">Telas</p>

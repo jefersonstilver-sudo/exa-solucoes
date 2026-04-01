@@ -3,6 +3,7 @@ import { useParams, Navigate } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { useBuildingScheduleMonitor } from '@/hooks/useBuildingScheduleMonitor';
 import { usePendingPlaylistUpdates } from '@/hooks/usePendingPlaylistUpdates';
+import { usePlaybackLogger } from '@/hooks/usePlaybackLogger';
 import { supabase } from '@/integrations/supabase/client';
 import { WifiOff } from 'lucide-react';
 import { UpdateIndicator } from '@/components/display/UpdateIndicator';
@@ -39,6 +40,7 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
   const buildingId = rawBuildingId;
   
   const { videos: activeVideos, loading, isUpdating, refetch } = useBuildingActiveVideos(buildingId);
+  const { onVideoStart, onVideoEnd } = usePlaybackLogger(buildingId);
   
   // 📦 Sistema de pending updates
   const {
@@ -138,6 +140,9 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
   }, []);
 
   const handleVideoEnd = useCallback(() => {
+    // Log playback completion
+    onVideoEnd();
+    
     const nextIndex = (currentIndex + 1) % videos.length;
     
     if (nextIndex === 0 && hasPendingUpdates) {
@@ -203,6 +208,7 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
         autoPlay
         muted
         playsInline
+        onPlay={() => onVideoStart(currentVideo.video_id)}
         onEnded={handleVideoEnd}
         onError={handleVideoEnd}
       />
