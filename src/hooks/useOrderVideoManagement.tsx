@@ -24,7 +24,7 @@ export const useOrderVideoManagement = (orderId: string) => {
   const { userProfile } = useAuth();
   const [orderStatus, setOrderStatus] = useState('pendente');
   const [tipoProduto, setTipoProduto] = useState<string | undefined>(undefined);
-  const [maxVideos, setMaxVideos] = useState<number>(10);
+  const [maxVideos, setMaxVideos] = useState<number>(4);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   
