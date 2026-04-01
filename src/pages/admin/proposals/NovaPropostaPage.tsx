@@ -477,7 +477,7 @@ const NovaPropostaPage = () => {
       const {
         data,
         error
-      } = await supabase.from('buildings').select('id, nome, bairro, endereco, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, preco_trimestral, preco_semestral, preco_anual, publico_estimado, imagem_principal, status').in('status', ['ativo', 'interno']).order('nome');
+      } = await supabase.from('buildings').select('id, nome, bairro, endereco, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, preco_trimestral, preco_semestral, preco_anual, publico_estimado, imagem_principal, status').in('status', ['ativo', 'interno', 'instalação', 'instalacao']).order('nome');
       if (error) throw error;
       return data as Building[];
     }
@@ -844,6 +844,21 @@ const NovaPropostaPage = () => {
     const selectedManual = manualBuildings.filter(b => selectedBuildings.includes(b.id));
     return [...dbBuildings, ...selectedManual];
   }, [buildings, manualBuildings, selectedBuildings]);
+
+  // Auto-título sincronizado com seleção de prédios
+  const AUTO_TITLE_REGEX = /^(Horizontal|Vertical Premium) \d+ prédios? - \d+ Meses$/i;
+
+  useEffect(() => {
+    if (isEditMode) return;
+    const count = selectedBuildingsData.length;
+    if (count === 0) return;
+    const tipoLabel = tipoProduto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal';
+    const newTitle = `${tipoLabel} ${count} prédio${count > 1 ? 's' : ''} - ${durationMonths} Meses`;
+    if (!tituloProposta || AUTO_TITLE_REGEX.test(tituloProposta)) {
+      setTituloProposta(newTitle);
+    }
+  }, [selectedBuildingsData.length, durationMonths, tipoProduto, isEditMode]);
+
   // Telas dos prédios selecionados atualmente
   const totalPanelsInstalled = useMemo(() => {
     return selectedBuildingsData.reduce((sum, b) => sum + (b.quantidade_telas || (b as any).numero_elevadores || 0), 0);
@@ -2557,6 +2572,9 @@ Parcelas:
             <Label className="text-xs flex items-center gap-1.5">
               <FileText className="h-3 w-3" />
               Título da Proposta (opcional)
+              <Badge variant="secondary" className="text-[10px] ml-1">
+                {selectedBuildingsData.length} prédios selecionados
+              </Badge>
             </Label>
             <Input
               placeholder="Ex: Campanha Black Friday 2026, Parceria Institucional..."
