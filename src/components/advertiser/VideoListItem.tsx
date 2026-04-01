@@ -170,15 +170,24 @@ export const VideoListItem = ({
 
       {/* Tempo real exibido */}
       <div className="text-right flex-shrink-0">
-        <p className={cn(
-          "text-2xl font-bold",
-          isDisplaying ? "text-[#9C1E1E]" : "text-muted-foreground"
-        )}>
-          {formatDisplayTime(horasExibidas)}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {isDisplaying ? 'total exibido' : 'sem exibição'}
-        </p>
+        {isDisplaying && horasExibidas === 0 ? (
+          <>
+            <p className="text-sm font-medium text-muted-foreground">—</p>
+            <p className="text-xs text-muted-foreground">aguardando dados</p>
+          </>
+        ) : (
+          <>
+            <p className={cn(
+              "text-2xl font-bold",
+              isDisplaying ? "text-[#9C1E1E]" : "text-muted-foreground"
+            )}>
+              {formatDisplayTime(horasExibidas)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {isDisplaying ? 'total exibido' : 'sem exibição'}
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
