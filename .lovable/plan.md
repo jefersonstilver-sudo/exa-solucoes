@@ -1,42 +1,64 @@
 
 
-# Plano: Dashboard Dinâmico de Vendedores + Diagnóstico de Publicação
+# Plano: Corrigir Publicação de Propostas — Atomic Update
 
-## Problema 1: Cards de vendedores com nomes fictícios (PropostasPage.tsx)
+## Diagnóstico
 
-A seção de vendedores (linhas 227-1015) usa **3 IDs fixos hardcoded** ("Bruno Dantas", "Jeferson Stilver", "Eduardo Comercial"). Consulta ao banco mostra que nos últimos 30 dias, **apenas Jeferson** (`7cca6d1b`) tem propostas enviadas. "Bruno" e "Eduardo" nunca enviaram propostas — são cards fantasma.
+A proposta `EXA-2026-2586` continua com `status: rascunho` apesar de tentativas de publicação. O `updated_at` muda (18:06), confirmando que o Supabase recebe algum update, mas o `status` não muda para `enviada`.
 
-O componente `ProposalStatsRow.tsx` (usado no dashboard principal) já é 100% dinâmico e correto. O problema está exclusivamente em `PropostasPage.tsx`.
+**Causa raiz identificada**: O `.update()` com spread de `proposalData` (que tem ~50 campos) provavelmente falha silenciosamente em algum campo, ou o PostgREST retorna um erro que não está sendo capturado corretamente. Além disso, o `handleSaveEdits` (que NÃO inclui `status`) pode estar sendo chamado em paralelo ou logo após, sobrescrevendo o timestamp sem alterar status.
 
-### Correção
+## Correção
 
-Substituir os 3 cards hardcoded por uma query dinâmica que busca **todos os vendedores que criaram propostas nos últimos 30 dias**, sem lista fixa de IDs:
+### Arquivo: `src/pages/admin/proposals/NovaPropostaPage.tsx`
 
-1. **Remover** `SELLER_IDS` e a query `sellers-stats-fixed` (linhas 227-286)
-2. **Nova query dinâmica**: buscar `SELECT DISTINCT created_by FROM proposals WHERE created_at >= NOW() - 30 days AND status != 'rascunho'`, depois buscar nomes e calcular stats
-3. **Substituir os 3 cards fixos** (linhas 934-1016) por um `.map()` dinâmico que renderiza apenas vendedores reais com propostas no período
-4. Cores dos cards serão atribuídas por índice (array de cores rotativo)
+**1. Tornar o update atômico e verificado** (linhas 1634-1651)
 
-## Problema 2: Proposta não sai de "Rascunho" ao publicar
+Substituir o `.update()` por `.upsert()` com `onConflict: 'id'` e adicionar verificação pós-update:
 
-### Diagnóstico
+```typescript
+console.log('📤 [PUBLISH] Payload:', { id: editProposalId, status: 'enviada', number: proposalNumber });
 
-A proposta `EXA-2026-2586` tem `status: rascunho` mas `sent_at` definido e número EXA — estado inconsistente. Isso ocorreu com a versão anterior do código que tinha `handlePublishDraft` (já removido). O código atual do `createProposalMutation` (linhas 1634-1644) está correto: faz `.update({ ...proposalData, status: 'enviada' })`.
+const { data, error } = await supabase
+  .from('proposals')
+  .upsert({
+    id: editProposalId,
+    ...proposalData,
+    number: proposalNumber,
+    status: 'enviada',
+    sent_at: existingProposal?.sent_at || new Date().toISOString(),
+  }, { onConflict: 'id' })
+  .select('id, status, number')
+  .single();
 
-**Causa provável**: A inconsistência é residual da versão anterior. Porém, para garantir que não aconteça novamente, vou adicionar:
+if (error) {
+  console.error('❌ [PUBLISH] Erro:', error);
+  throw error;
+}
 
-1. **Logs explícitos** antes e depois do `.update()` no `createProposalMutation` para rastrear se o update executa
-2. **Verificação pós-update**: após o `.update()`, fazer um `.select()` e confirmar que `status === 'enviada'` no retorno, logando qualquer discrepância
-3. **Corrigir a proposta inconsistente** existente (EXA-2026-2586) via insert tool: `UPDATE proposals SET status = 'enviada' WHERE id = '41856389-...' AND status = 'rascunho' AND number LIKE 'EXA%'`
+// Verificação explícita
+if (data?.status !== 'enviada') {
+  console.error('❌ [PUBLISH] Status não atualizou!', data);
+  throw new Error('Falha ao publicar: status não foi atualizado');
+}
 
-## Arquivos a editar
+console.log('✅ [PUBLISH] Publicada:', data);
+proposal = data;
+```
 
-- **`src/pages/admin/proposals/PropostasPage.tsx`**: remover IDs fixos, query dinâmica, cards dinâmicos
-- **`src/pages/admin/proposals/NovaPropostaPage.tsx`**: adicionar logs de diagnóstico no mutation
-- **Dados**: corrigir proposta inconsistente no banco
+**2. Buscar dados completos após upsert** para ter o `proposal` completo (necessário para envio de WhatsApp/Email depois):
+
+Após o upsert verificado, fazer um `.select('*').eq('id', editProposalId).single()` para obter todos os campos.
+
+**3. Corrigir proposta existente no banco**
+
+Criar migração SQL para corrigir a proposta inconsistente:
+```sql
+UPDATE proposals SET status = 'enviada' WHERE id = '41856389-5de8-4c0e-b5dc-e14d49d1d4e7' AND status = 'rascunho';
+```
 
 ## Impacto
-- Dashboard mostra apenas vendedores reais com propostas no período
-- Publicação de rascunhos ganha rastreabilidade com logs
-- Nenhuma alteração em outros fluxos
+- Apenas o fluxo de publicação em `NovaPropostaPage.tsx`
+- Nenhuma alteração em UI, workflows ou funcionalidades existentes
+- A correção garante que falhas de update não passem silenciosas
 
