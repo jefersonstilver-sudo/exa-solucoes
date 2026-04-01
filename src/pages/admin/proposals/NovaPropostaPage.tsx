@@ -2571,6 +2571,9 @@ Parcelas:
             <Label className="text-xs flex items-center gap-1.5">
               <FileText className="h-3 w-3" />
               Título da Proposta (opcional)
+              <Badge variant="secondary" className="text-[10px] ml-1">
+                {selectedBuildingsData.length} prédios selecionados
+              </Badge>
             </Label>
             <Input
               placeholder="Ex: Campanha Black Friday 2026, Parceria Institucional..."
