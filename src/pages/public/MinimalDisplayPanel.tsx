@@ -67,7 +67,8 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
       video_id: v.video_id,
       video_url: v.video_url,
       video_duracao: v.video_duracao,
-      slot_position: 0
+      slot_position: 0,
+      pedido_id: v.pedido_id
     })),
     [activeVideos]
   );
