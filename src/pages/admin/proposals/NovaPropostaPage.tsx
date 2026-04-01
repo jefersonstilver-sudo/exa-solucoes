@@ -1914,6 +1914,7 @@ Parcelas:
         expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to 
           ? customDateRange.to.toISOString() 
           : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
+        
       };
 
       if (isEditMode && editProposalId) {
