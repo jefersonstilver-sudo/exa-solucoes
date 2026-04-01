@@ -341,7 +341,7 @@ const AppContent = () => {
           } />
           
           {/* PAINEL KIOSK - VINCULAÇÃO DE DISPOSITIVOS */}
-          <Route path="/painel-kiosk/:token" element={<PainelKiosk />} />
+          <Route path="/painel-kiosk/:token" element={<Suspense fallback={<GlobalLoadingPage />}><PainelKiosk /></Suspense>} />
           
           {/* PAINEL AGUARDANDO VÍNCULO */}
           <Route path="/painel-aguardando-vinculo/:painelId" element={
