@@ -1,46 +1,32 @@
 
 
-# Plano: Zoom Fluido + Playhead Interativo no Trimmer
+# Plano: Corrigir Erro de Upload — Constraint `slot_position` (1-4)
 
-## Problema Atual
+## Problema Identificado
 
-A timeline do trimmer mostra o vídeo inteiro em uma faixa fixa de ~800px. Para vídeos longos (ex: 7 minutos), cada segundo ocupa ~2px, tornando impossível posicionar o corte com precisão. O playhead (linha branca) não é arrastável e só aparece dentro da janela de seleção.
+O erro `"pedido_videos_slot_position_check"` ocorre porque:
 
-## Solução
+1. O banco de dados tem uma constraint: `slot_position >= 1 AND slot_position <= 4`
+2. O produto "Horizontal" define `max_videos_por_pedido: 4`
+3. **MAS** o código inicializa `maxVideos` com valor **10** (padrão) antes de carregar o produto do banco
+4. Isso faz a UI mostrar 10 slots (incluindo slots 5-10), e quando o usuário tenta fazer upload no slot 5+, o banco rejeita
 
-### 1. Zoom na Timeline (`TrimmerTimeline.tsx`)
+O usuário tentou fazer upload no **slot 8** ("Vídeo 8" na screenshot), que viola a constraint.
 
-Adicionar controles de zoom (🔍+ e 🔍-) acima da timeline:
-- Slider ou botões que controlam um `zoomLevel` (1x a 10x)
-- A timeline fica dentro de um container com `overflow-x: auto` e scroll horizontal
-- Largura interna = `trackWidth * zoomLevel`, expandindo os thumbnails proporcionalmente
-- Ao dar zoom, auto-scroll para centralizar a janela de seleção visível
-- Pinch-to-zoom em mobile via `onWheel` com Ctrl
+## Correção
 
-### 2. Playhead Arrastável e Visível Sempre
+### 1. `src/hooks/useOrderVideoManagement.tsx`
+- Mudar o valor padrão de `maxVideos` de **10** para **4** (linha 27)
+- Isso garante que mesmo antes do produto carregar, a UI só mostra 4 slots
 
-Atualmente o playhead só aparece se `currentTime >= startTime && currentTime <= endTime`. Mudar para:
-- Playhead **sempre visível** em toda a timeline (não só dentro da janela)
-- Playhead **arrastável** — o usuário pode clicar/arrastar a linha branca para navegar no vídeo
-- Ao arrastar, chama `onSeek(time)` que faz `video.currentTime = time` para preview em tempo real
-- Playhead acompanha a reprodução real do vídeo (já funciona via `currentTime`)
+### 2. `src/services/videoSlotService.ts`
+- Mudar o valor padrão de `maxSlots` de **10** para **4** (linha 5)
+- Adicionar validação: `const safeMaxSlots = Math.min(maxSlots, 4)` para nunca ultrapassar o limite do banco
 
-### 3. Ajustes no Modal (`VideoTrimmerModal.tsx`)
+### 3. `src/services/videoUploadService.ts`
+- Adicionar validação antes do upsert (antes da linha 242): se `slotPosition > 4`, rejeitar com mensagem clara ao invés de deixar o banco retornar erro críptico
 
-- Importar ícones `ZoomIn`, `ZoomOut` do lucide
-- Passar `zoomLevel` e `setZoomLevel` para `TrimmerTimeline`
-- A seção da timeline recebe `overflow-x-auto` para permitir scroll quando zoom > 1x
-
-## Arquivos Alterados
-
-| Arquivo | Mudança |
-|---------|---------|
-| `src/components/video-trimmer/TrimmerTimeline.tsx` | Zoom state, container scrollável, playhead arrastável sempre visível, botões zoom |
-| `src/components/video-trimmer/VideoTrimmerModal.tsx` | Ajustar container da timeline para suportar scroll horizontal |
-
-## O que NÃO muda
-- `useVideoTrimmer.ts` (lógica de corte, thumbnails, processamento)
-- UI do modal (header, preview de vídeo, botões de ação)
-- Lógica de upload e envio para AWS
-- Nenhuma outra funcionalidade do sistema
+## Impacto
+- Apenas corrige o bug de slots excedendo o limite
+- Nenhuma mudança de UI, funcionalidade ou workflow existente
 
