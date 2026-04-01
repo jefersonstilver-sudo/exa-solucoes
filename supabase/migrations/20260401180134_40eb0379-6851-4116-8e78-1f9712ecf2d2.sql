@@ -1,1 +1,0 @@
-UPDATE proposals SET status = 'enviada' WHERE id = '41856389-5de8-4c0e-b5dc-e14d49d1d4e7' AND status = 'rascunho' AND number LIKE 'EXA%'

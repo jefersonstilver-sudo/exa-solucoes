@@ -1,77 +1,30 @@
 
 
-# Plano: Resolver Preview Branco + Aplicar Correções Pendentes
+# Plano: Eliminar Dados Fictícios do Relatório de Campanha
 
-## Diagnóstico
+## Problema
 
-O preview está branco sem erros no console. Os erros visíveis (`ERR_BLOCKED_BY_CLIENT`) são apenas trackers bloqueados (PostHog, Facebook, TikTok, LinkedIn) — não afetam a aplicação.
+A função `calculateDisplayHours` (linha 145-178 de `useVideoReportData.ts`) gera valores fictícios quando não existem logs reais de playback. Ela assume 245 exibições/dia/tela, produzindo "40m50s" para um vídeo que tocou menos de 1 minuto na realidade.
 
-A causa provável é um estado de build corrompido/travado do Vite. As edições anteriores declararam ter aplicado mudanças mas **nenhuma das 3 correções planejadas está presente no código**:
-- Query de prédios: ainda usa `['ativo', 'interno']` (linha 480)
-- Grid dinâmico: ainda usa `` grid-cols-${...} `` (linha 932)
-- Auto-título: não foi adicionado
+A condição na linha 340-342 usa logs reais **quando existem**, mas o fallback na linha 344-353 inventa números.
 
-## Correções a aplicar
+## Solução
 
-### 1. Forçar rebuild limpo
-Adicionar um comentário trivial no `main.tsx` para forçar o Vite a recompilar o entry point.
+Eliminar a função `calculateDisplayHours` e o fallback fictício. Quando não há logs reais (`videoLogs.length === 0`), `horasExibidas = 0`.
 
-### 2. `src/pages/admin/proposals/NovaPropostaPage.tsx`
+### Arquivo: `src/hooks/useVideoReportData.ts`
 
-**a) Alinhar query de prédios com loja pública** (linha 480):
-```typescript
-// ANTES:
-.in('status', ['ativo', 'interno'])
-// DEPOIS:
-.in('status', ['ativo', 'interno', 'instalação', 'instalacao'])
-```
+1. **Linhas 336-354**: Substituir o bloco condicional:
+   - Se `videoLogs.length > 0`: manter cálculo real (soma de `duration_seconds`)
+   - Se `videoLogs.length === 0`: `horasExibidas = 0` (sem estimativa)
 
-**b) Adicionar auto-título com `useEffect`** (após linha 215):
-```typescript
-// Regex para detectar título automático
-const AUTO_TITLE_REGEX = /^(Horizontal|Vertical Premium) \d+ prédios? - \d+ Meses$/i;
+2. **Linhas 145-178**: Remover a função `calculateDisplayHours` (não será mais usada)
 
-useEffect(() => {
-  if (isEditMode) return;
-  const count = selectedBuildingsData.length;
-  if (count === 0) return;
-  const tipoLabel = tipoProduto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal';
-  const newTitle = `${tipoLabel} ${count} prédios - ${durationMonths} Meses`;
-  if (!tituloProposta || AUTO_TITLE_REGEX.test(tituloProposta)) {
-    setTituloProposta(newTitle);
-  }
-}, [selectedBuildingsData.length, durationMonths, tipoProduto, isEditMode]);
-```
+3. **Linhas 430-445**: Ajustar o cálculo de `totalExibicoes` que também usa estimativas fictícias (`totalTelas * 245 * diasAtivos`) — usar apenas COUNT real dos logs
 
-**c) Adicionar badge de contagem** ao lado do campo título (linha ~2559):
-```typescript
-Título da Proposta (opcional)
-<Badge variant="secondary" className="text-[10px]">
-  {selectedBuildingsData.length} prédios selecionados
-</Badge>
-```
-
-### 3. `src/pages/admin/proposals/PropostasPage.tsx`
-
-**Corrigir grid dinâmico do Tailwind** (linha 932):
-```typescript
-// ANTES:
-<div className={`grid grid-cols-${Math.min(sellersData.length, 3)} gap-2`}>
-// DEPOIS:
-<div className={`grid gap-2 ${
-  sellersData.length === 1 ? 'grid-cols-1' :
-  sellersData.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
-}`}>
-```
-
-## Arquivos a editar
-- `src/main.tsx` — trigger rebuild
-- `src/pages/admin/proposals/NovaPropostaPage.tsx` — query + auto-título + badge
-- `src/pages/admin/proposals/PropostasPage.tsx` — fix grid Tailwind
+4. **Adicionar badge "Sem dados"**: No `VideoListItem.tsx`, quando `horasExibidas === 0` e o vídeo está ativo/exibindo, mostrar "aguardando dados" em vez de "0s" para que o anunciante saiba que dados reais virão
 
 ## Impacto
-- Preview volta a funcionar
-- Proposta passa a mostrar prédios alinhados com loja pública
-- Título se auto-sincroniza com contagem real de prédios
-- Grid de vendedores renderiza corretamente
+- Apenas a seção de relatórios do anunciante
+- Nenhuma mudança de UI, funcionalidade ou workflow fora do relatório
 

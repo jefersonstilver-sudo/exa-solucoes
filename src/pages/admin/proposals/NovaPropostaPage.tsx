@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package, Copy, Image as ImageIcon, AlertTriangle, Trophy, Info, Layers, Save } from 'lucide-react';
+import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X, Search, Bell, CalendarIcon, Rocket, Crown, Lock, RefreshCw, Package, Copy, Image as ImageIcon, AlertTriangle, Trophy, Info, Layers } from 'lucide-react';
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
@@ -477,7 +477,7 @@ const NovaPropostaPage = () => {
       const {
         data,
         error
-      } = await supabase.from('buildings').select('id, nome, bairro, endereco, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, preco_trimestral, preco_semestral, preco_anual, publico_estimado, imagem_principal, status').in('status', ['ativo', 'interno', 'instalação', 'instalacao']).order('nome');
+      } = await supabase.from('buildings').select('id, nome, bairro, endereco, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, preco_trimestral, preco_semestral, preco_anual, publico_estimado, imagem_principal, status').in('status', ['ativo', 'interno']).order('nome');
       if (error) throw error;
       return data as Building[];
     }
@@ -844,21 +844,6 @@ const NovaPropostaPage = () => {
     const selectedManual = manualBuildings.filter(b => selectedBuildings.includes(b.id));
     return [...dbBuildings, ...selectedManual];
   }, [buildings, manualBuildings, selectedBuildings]);
-
-  // Auto-título sincronizado com seleção de prédios
-  const AUTO_TITLE_REGEX = /^(Horizontal|Vertical Premium) \d+ prédios? - \d+ Meses$/i;
-
-  useEffect(() => {
-    if (isEditMode) return;
-    const count = selectedBuildingsData.length;
-    if (count === 0) return;
-    const tipoLabel = tipoProduto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal';
-    const newTitle = `${tipoLabel} ${count} prédio${count > 1 ? 's' : ''} - ${durationMonths} Meses`;
-    if (!tituloProposta || AUTO_TITLE_REGEX.test(tituloProposta)) {
-      setTituloProposta(newTitle);
-    }
-  }, [selectedBuildingsData.length, durationMonths, tipoProduto, isEditMode]);
-
   // Telas dos prédios selecionados atualmente
   const totalPanelsInstalled = useMemo(() => {
     return selectedBuildingsData.reduce((sum, b) => sum + (b.quantidade_telas || (b as any).numero_elevadores || 0), 0);
@@ -1646,49 +1631,19 @@ Parcelas:
           console.log('🚀 [PUBLICAR] Convertendo rascunho para proposta:', proposalNumber);
         }
         
-        // ATOMIC UPSERT - Garante que status='enviada' é gravado atomicamente
-        const upsertPayload = {
-          id: editProposalId,
-          ...proposalData,
-          number: proposalNumber,
-          status: 'enviada' as const,
-          sent_at: existingProposal?.sent_at || new Date().toISOString(),
-        };
-        console.log('📤 [PUBLISH] Upsert payload:', { id: editProposalId, status: 'enviada', number: proposalNumber, fieldCount: Object.keys(upsertPayload).length });
-        
-        const { data: upsertData, error: upsertError } = await supabase
+        const { data, error } = await supabase
           .from('proposals')
-          .upsert(upsertPayload, { onConflict: 'id' })
-          .select('id, status, number')
-          .maybeSingle();
-        
-        if (upsertError) {
-          console.error('❌ [PUBLISH] Erro no upsert:', upsertError);
-          throw upsertError;
-        }
-        
-        // Verificação explícita pós-upsert
-        if (!upsertData || upsertData.status !== 'enviada') {
-          console.error('❌ [PUBLISH] Status NÃO atualizou! Retorno:', upsertData);
-          throw new Error(`Falha ao publicar: status retornado = "${upsertData?.status}" (esperado: "enviada")`);
-        }
-        
-        console.log('✅ [PUBLISH] Upsert OK:', upsertData);
-        
-        // Buscar dados completos da proposta para uso posterior (WhatsApp, Email, etc.)
-        const { data: fullProposal, error: fetchError } = await supabase
-          .from('proposals')
-          .select('*')
+          .update({
+            ...proposalData,
+            number: proposalNumber,
+            status: 'enviada',
+            sent_at: existingProposal?.sent_at || new Date().toISOString(),
+          })
           .eq('id', editProposalId)
-          .maybeSingle();
-        
-        if (fetchError || !fullProposal) {
-          console.error('❌ [PUBLISH] Erro ao buscar proposta completa:', fetchError);
-          throw fetchError || new Error('Proposta não encontrada após upsert');
-        }
-        
-        proposal = fullProposal;
-        console.log('✅ [PUBLISH] Proposta completa:', { id: proposal.id, number: proposal.number, status: proposal.status });
+          .select()
+          .single();
+        if (error) throw error;
+        proposal = data;
         
         // Log de edição/publicação
         const wasRascunho = existingProposal?.number?.startsWith('RASCUNHO-');
@@ -1959,7 +1914,6 @@ Parcelas:
         expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to 
           ? customDateRange.to.toISOString() 
           : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
-        
       };
 
       if (isEditMode && editProposalId) {
@@ -2008,105 +1962,6 @@ Parcelas:
       setIsSavingDraft(false);
     }
   };
-
-  // ============================================
-  // FUNÇÃO SALVAR EDIÇÕES (sem reenviar proposta)
-  // ============================================
-  const [isSavingEdits, setIsSavingEdits] = useState(false);
-  const handleSaveEdits = async () => {
-    if (isSavingEdits || !editProposalId) return;
-    setIsSavingEdits(true);
-    
-    try {
-      const fullName = `${clientData.firstName} ${clientData.lastName}`.trim();
-      const buildingsData = selectedBuildingsData.map(b => ({
-        building_id: b.id,
-        building_name: b.nome,
-        building_bairro: b.bairro,
-        building_endereco: b.endereco,
-        quantidade_telas: b.quantidade_telas || 0,
-        numero_elevadores: b.numero_elevadores || 0,
-        preco_base: b.preco_base || 0,
-        preco_utilizado: b.preco_base || 0,
-        visualizacoes_mes: b.visualizacoes_mes || 0,
-        imagem_principal: b.imagem_principal || null,
-        is_manual: !!(b as any).is_manual
-      }));
-
-      const editData = {
-        // NÃO altera status nem number
-        client_name: fullName || 'Sem nome',
-        client_first_name: clientData.firstName || null,
-        client_last_name: clientData.lastName || null,
-        client_company_name: clientData.companyName || null,
-        client_country: clientData.country || 'BR',
-        client_cnpj: clientData.document || null,
-        client_email: clientData.email || null,
-        client_phone: clientData.phoneFullNumber || clientData.phone || null,
-        client_address: clientData.address || null,
-        client_latitude: clientData.latitude || null,
-        client_longitude: clientData.longitude || null,
-        client_logo_url: clientLogoUrl || null,
-        selected_buildings: buildingsData as unknown as Json,
-        total_panels: totalPanels,
-        total_impressions_month: totalImpressionsAdjusted,
-        duration_months: isCustomDays ? 0 : durationMonths,
-        fidel_monthly_value: modalidadeProposta === 'permuta' ? 0 : (parseFloat(fidelValue) || 0),
-        cash_total_value: modalidadeProposta === 'permuta' ? 0 : (isCustomPayment ? customTotal : cashTotal),
-        discount_percent: discountPercent,
-        payment_type: isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
-        is_custom_days: isCustomDays,
-        custom_days: isCustomDays ? customDays : null,
-        custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
-          installment: idx + 1,
-          due_date: formatDateForInput(p.dueDate),
-          amount: parseFloat(p.amount) || 0
-        })) as unknown as Json : null,
-        tipo_produto: tipoProduto,
-        quantidade_posicoes: quantidadePosicoes,
-        titulo: tituloProposta || null,
-        modalidade_proposta: modalidadeProposta,
-        itens_permuta: modalidadeProposta === 'permuta' ? itensPermuta as unknown as Json : [],
-        valor_total_permuta: modalidadeProposta === 'permuta' ? valorTotalPermuta : 0,
-        ocultar_valores_publico: modalidadeProposta === 'permuta' ? ocultarValoresPublico : false,
-        descricao_contrapartida: modalidadeProposta === 'permuta' ? descricaoContrapartida : null,
-        metodo_pagamento_alternativo: modalidadeProposta === 'permuta' ? 'permuta' : null,
-        valor_referencia_monetaria: modalidadeProposta === 'permuta' ? valorReferenciaMonetaria : null,
-        cobranca_futura: cobrancaFutura,
-        exigir_contrato: exigirContrato,
-        venda_futura: vendaFutura,
-        predios_contratados: vendaFutura ? prediosContratados : selectedBuildingsData.length,
-        exclusividade_segmento: oferecerExclusividade,
-        segmento_exclusivo: oferecerExclusividade ? segmentoExclusivo : null,
-        exclusividade_percentual: oferecerExclusividade ? exclusividadePercentual : null,
-        travamento_preco_ativo: travamentoPrecoAtivo,
-        travamento_preco_valor: travamentoPrecoAtivo ? travamentoPrecoValor : null,
-        travamento_telas_limite: travamentoPrecoAtivo ? travamentoTelasLimite : null,
-        multa_rescisao_ativa: multaRescisaoAtiva,
-        multa_rescisao_percentual: multaRescisaoAtiva ? multaRescisaoPercentual : null,
-        multa_rescisao_exa_ativa: multaRescisaoExaAtiva,
-        multa_rescisao_exa_percentual: multaRescisaoExaAtiva ? multaRescisaoExaPercentual : null,
-        cc_emails: ccEmails.length > 0 ? ccEmails : null,
-        expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to 
-          ? customDateRange.to.toISOString() 
-          : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
-      };
-
-      const { error } = await supabase.from('proposals').update(editData).eq('id', editProposalId);
-      if (error) throw error;
-      
-      toast.success('Alterações salvas com sucesso!');
-      setLastSavedAt(new Date());
-      queryClient.invalidateQueries({ queryKey: ['proposals'] });
-      queryClient.invalidateQueries({ queryKey: ['proposal-for-edit', editProposalId] });
-    } catch (error) {
-      console.error('Erro ao salvar edições:', error);
-      toast.error('Erro ao salvar alterações');
-    } finally {
-      setIsSavingEdits(false);
-    }
-  };
-
 
   const handleOpenSendDialog = () => {
     // GUARD: Em modo edição, verificar se dados carregaram completamente
@@ -2572,9 +2427,6 @@ Parcelas:
             <Label className="text-xs flex items-center gap-1.5">
               <FileText className="h-3 w-3" />
               Título da Proposta (opcional)
-              <Badge variant="secondary" className="text-[10px] ml-1">
-                {selectedBuildingsData.length} prédios selecionados
-              </Badge>
             </Label>
             <Input
               placeholder="Ex: Campanha Black Friday 2026, Parceria Institucional..."
@@ -4282,27 +4134,6 @@ Parcelas:
             </Button>
           )}
           
-          {/* Botão Salvar Alterações - aparece apenas ao editar proposta já publicada */}
-          {isEditMode && dataLoaded && existingProposal?.status !== 'rascunho' && !existingProposal?.number?.startsWith('RASCUNHO-') && (
-            <Button 
-              variant="outline"
-              onClick={handleSaveEdits}
-              disabled={
-                selectedBuildings.length === 0 || 
-                isSavingEdits ||
-                !dataLoaded || isLoadingProposal
-              }
-              className="h-11 gap-2 border-green-300 text-green-700 hover:bg-green-50"
-            >
-              {isSavingEdits ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              Salvar
-            </Button>
-          )}
-          
           {/* Botão Publicar Proposta */}
           <Button 
             onClick={handleOpenSendDialog} 
@@ -4311,6 +4142,7 @@ Parcelas:
               (modalidadeProposta === 'permuta' 
                 ? itensPermuta.length === 0 
                 : (isCustomPayment ? customTotal <= 0 : !fidelValue)) ||
+              // GUARD: Desabilitar em modo edição até carregar completamente
               (isEditMode && (!dataLoaded || isLoadingProposal))
             } 
             className="flex-1 h-11 gap-2"
