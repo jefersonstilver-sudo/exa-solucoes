@@ -1,0 +1,3 @@
+ALTER TABLE public.video_playback_logs DROP CONSTRAINT IF EXISTS video_playback_logs_building_id_fkey;
+ALTER TABLE public.video_playback_logs DROP CONSTRAINT IF EXISTS video_playback_logs_video_id_fkey;
+ALTER TABLE public.video_playback_logs DROP CONSTRAINT IF EXISTS video_playback_logs_pedido_id_fkey;
