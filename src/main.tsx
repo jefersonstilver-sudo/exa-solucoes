@@ -6,7 +6,7 @@ import './styles/responsive-optimizations.css'
 import './modules/monitoramento-ia/styles/theme.css'
 import { ThemeProvider } from './components/ui/theme-provider'
 import './utils/debugHelpers'
-// rebuild-trigger-v3
+// rebuild-trigger-v4
 import { APP_VERSION } from './config/version'
 
 console.log(`🚀 Starting application v${APP_VERSION}...`);
