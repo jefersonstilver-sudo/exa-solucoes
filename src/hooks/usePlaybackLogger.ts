@@ -9,13 +9,15 @@ interface PlaybackEntry {
   started_at: string;
 }
 
-const BATCH_INTERVAL_MS = 30 * 1000; // 30 seconds - flush frequently for real-time reporting
-const MAX_BUFFER_SIZE = 10;
+const FLUSH_INTERVAL_MS = 30 * 1000; // 30 seconds
+const DELTA_INTERVAL_MS = 30 * 1000; // send incremental delta every 30s
 
 export const usePlaybackLogger = (buildingId: string) => {
   const bufferRef = useRef<PlaybackEntry[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const deltaTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const videoStartRef = useRef<number | null>(null);
+  const lastDeltaSentRef = useRef<number | null>(null);
   const currentVideoRef = useRef<{ video_id: string; pedido_id?: string } | null>(null);
 
   const flushBuffer = useCallback(async () => {
@@ -39,50 +41,114 @@ export const usePlaybackLogger = (buildingId: string) => {
     }
   }, []);
 
-  // Start 5-minute interval
-  useEffect(() => {
-    timerRef.current = setInterval(flushBuffer, BATCH_INTERVAL_MS);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      // Attempt final flush on unmount
-      if (bufferRef.current.length > 0) {
-        const logs = [...bufferRef.current];
-        bufferRef.current = [];
-        // Fire and forget
-        supabase.functions.invoke('log-video-playback', { body: { logs } }).catch(() => {});
-      }
-    };
-  }, [flushBuffer]);
-
-  const onVideoStart = useCallback((videoId: string, pedidoId?: string) => {
-    videoStartRef.current = Date.now();
-    currentVideoRef.current = { video_id: videoId, pedido_id: pedidoId };
-  }, []);
-
-  const onVideoEnd = useCallback(() => {
+  // Push a delta entry for the currently playing video
+  const pushDelta = useCallback(() => {
     if (!videoStartRef.current || !currentVideoRef.current || !buildingId) return;
 
-    const durationMs = Date.now() - videoStartRef.current;
-    const durationSeconds = Math.round(durationMs / 1000);
+    const now = Date.now();
+    const fromTime = lastDeltaSentRef.current || videoStartRef.current;
+    const deltaSeconds = Math.round((now - fromTime) / 1000);
 
-    if (durationSeconds < 1) return; // Skip negligible playbacks
+    if (deltaSeconds < 1) return;
 
     const entry: PlaybackEntry = {
       video_id: currentVideoRef.current.video_id,
       building_id: buildingId,
       pedido_id: currentVideoRef.current.pedido_id,
-      duration_seconds: durationSeconds,
-      started_at: new Date(videoStartRef.current).toISOString(),
+      duration_seconds: deltaSeconds,
+      started_at: new Date(fromTime).toISOString(),
     };
 
     bufferRef.current.push(entry);
+    lastDeltaSentRef.current = now;
+  }, [buildingId]);
 
+  // Flush periodic buffer
+  useEffect(() => {
+    timerRef.current = setInterval(flushBuffer, FLUSH_INTERVAL_MS);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [flushBuffer]);
+
+  // Send incremental deltas every 30s while a video is playing
+  useEffect(() => {
+    deltaTimerRef.current = setInterval(() => {
+      pushDelta();
+      flushBuffer();
+    }, DELTA_INTERVAL_MS);
+    return () => {
+      if (deltaTimerRef.current) clearInterval(deltaTimerRef.current);
+    };
+  }, [pushDelta, flushBuffer]);
+
+  // Flush on visibilitychange and pagehide
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        pushDelta();
+        // Use sendBeacon-style fire-and-forget
+        if (bufferRef.current.length > 0) {
+          const logs = [...bufferRef.current];
+          bufferRef.current = [];
+          supabase.functions.invoke('log-video-playback', { body: { logs } }).catch(() => {});
+        }
+      }
+    };
+
+    const handlePageHide = () => {
+      pushDelta();
+      if (bufferRef.current.length > 0) {
+        const logs = [...bufferRef.current];
+        bufferRef.current = [];
+        supabase.functions.invoke('log-video-playback', { body: { logs } }).catch(() => {});
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHide);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
+    };
+  }, [pushDelta]);
+
+  // Unmount: flush remaining
+  useEffect(() => {
+    return () => {
+      pushDelta();
+      if (bufferRef.current.length > 0) {
+        const logs = [...bufferRef.current];
+        bufferRef.current = [];
+        supabase.functions.invoke('log-video-playback', { body: { logs } }).catch(() => {});
+      }
+    };
+  }, [pushDelta]);
+
+  const onVideoStart = useCallback((videoId: string, pedidoId?: string) => {
+    // Flush previous video's remaining time
+    if (videoStartRef.current && currentVideoRef.current) {
+      pushDelta();
+      flushBuffer();
+    }
+
+    videoStartRef.current = Date.now();
+    lastDeltaSentRef.current = null;
+    currentVideoRef.current = { video_id: videoId, pedido_id: pedidoId };
+  }, [pushDelta, flushBuffer]);
+
+  const onVideoEnd = useCallback(() => {
+    if (!videoStartRef.current || !currentVideoRef.current || !buildingId) return;
+
+    pushDelta();
+    
     videoStartRef.current = null;
+    lastDeltaSentRef.current = null;
     currentVideoRef.current = null;
 
-    // Flush immediately after each video ends for real-time accuracy
     flushBuffer();
-  }, [buildingId, flushBuffer]);
+  }, [buildingId, pushDelta, flushBuffer]);
 
   return { onVideoStart, onVideoEnd };
 };
