@@ -166,8 +166,13 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
               <p className="text-2xl font-bold text-[#9C1E1E]">{campaign.totalHoras.toFixed(1)}h</p>
             </div>
             <div className="bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl p-4 border border-border/40">
-              <p className="text-xs text-muted-foreground mb-1">Prédios</p>
-              <p className="text-2xl font-bold text-[#9C1E1E]">{campaign.predios.length}</p>
+              <p className="text-xs text-muted-foreground mb-1">Prédios com Exibição</p>
+              <p className="text-2xl font-bold text-[#9C1E1E]">
+                {campaign.isRealData ? campaign.prediosComExibicaoReal : campaign.predios.length}
+              </p>
+              {campaign.isRealData && (
+                <p className="text-xs text-muted-foreground">de {campaign.predios.length} contratados</p>
+              )}
             </div>
             <div className="bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl p-4 border border-border/40">
               <p className="text-xs text-muted-foreground mb-1">Telas</p>
