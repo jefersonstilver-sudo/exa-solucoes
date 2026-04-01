@@ -394,9 +394,9 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           const uniqueBuildings = new Set(pedidoLogs.map((l: any) => l.building_id));
           prediosComExibicaoReal = uniqueBuildings.size;
         } else {
-          // Fallback: estimativa (dados anteriores à implementação)
-          totalExibicoesCalc = totalTelas * 245 * Math.max(1, diasAtivos);
-          totalHorasCalc = videoInfos.reduce((sum, v) => sum + v.horasExibidas, 0);
+          // Sem logs reais = 0 (sem estimativas fictícias)
+          totalExibicoesCalc = 0;
+          totalHorasCalc = 0;
           prediosComExibicaoReal = 0;
         }
 
