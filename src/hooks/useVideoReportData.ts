@@ -409,16 +409,37 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           });
         }
 
-        const totalExibicoesEstimadas = totalTelas * 245 * Math.max(1, diasAtivos);
-        const totalHoras = videoInfos.reduce((sum, v) => sum + v.horasExibidas, 0);
+        // Buscar dados REAIS de playback para este pedido
+        const pedidoLogs = playbackLogs.filter(l => 
+          videosFromPedido.some(pv => pv.video_id === l.video_id)
+        );
+        const hasRealData = pedidoLogs.length > 0;
+
+        // Métricas reais ou estimadas
+        let totalExibicoesCalc: number;
+        let totalHorasCalc: number;
+        let prediosComExibicaoReal = 0;
+
+        if (hasRealData) {
+          totalExibicoesCalc = pedidoLogs.length;
+          totalHorasCalc = pedidoLogs.reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600;
+          const uniqueBuildings = new Set(pedidoLogs.map((l: any) => l.building_id));
+          prediosComExibicaoReal = uniqueBuildings.size;
+        } else {
+          // Fallback: estimativa (dados anteriores à implementação)
+          totalExibicoesCalc = totalTelas * 245 * Math.max(1, diasAtivos);
+          totalHorasCalc = videoInfos.reduce((sum, v) => sum + v.horasExibidas, 0);
+          prediosComExibicaoReal = 0;
+        }
 
         buildingInfos.forEach(b => uniqueBuildingsSet.add(b.id));
-        totalExhibitions += totalExibicoesEstimadas;
+        totalExhibitions += totalExibicoesCalc;
         totalVideosAtivos += videoInfos.filter(v => v.isActive && v.selectedForDisplay && v.approvalStatus === 'approved').length;
         totalVideosExibidos += videoInfos.length;
 
         campaignReports.push({
           pedidoId: pedido.id,
+          nomePedido: (pedido as any).nome_pedido || `Pedido #${pedido.id.substring(0, 8)}`,
           clientName: clientData?.email?.split('@')[0] || 'Cliente',
           clientEmail: clientData?.email || 'Email não encontrado',
           dataInicio: pedido.data_inicio,
@@ -430,8 +451,10 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           videos: videoInfos,
           predios: buildingInfos,
           totalTelas,
-          totalExibicoes: totalExibicoesEstimadas,
-          totalHoras,
+          totalExibicoes: totalExibicoesCalc,
+          totalHoras: totalHorasCalc,
+          prediosComExibicaoReal,
+          isRealData: hasRealData,
           chartData: {
             videoTimeline,
           },
