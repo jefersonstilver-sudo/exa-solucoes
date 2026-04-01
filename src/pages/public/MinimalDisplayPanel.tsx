@@ -17,6 +17,7 @@ interface MinimalVideo {
   video_url: string;
   video_duracao: number | null;
   slot_position: number;
+  pedido_id?: string;
 }
 
 /**
@@ -66,7 +67,8 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
       video_id: v.video_id,
       video_url: v.video_url,
       video_duracao: v.video_duracao,
-      slot_position: 0
+      slot_position: 0,
+      pedido_id: v.pedido_id
     })),
     [activeVideos]
   );
@@ -208,7 +210,7 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
         autoPlay
         muted
         playsInline
-        onPlay={() => onVideoStart(currentVideo.video_id)}
+        onPlay={() => onVideoStart(currentVideo.video_id, currentVideo.pedido_id)}
         onEnded={handleVideoEnd}
         onError={handleVideoEnd}
       />

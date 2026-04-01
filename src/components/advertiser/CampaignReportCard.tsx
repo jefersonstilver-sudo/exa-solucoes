@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, Download, Calendar, MapPin, TrendingUp } from 'lucide-react';
+import { ChevronDown, Download, Calendar, MapPin, TrendingUp, Monitor, Smartphone } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -96,10 +96,21 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
       <div className="bg-gradient-to-br from-background via-background to-accent/5 border-b border-border/40 p-6">
         <div className="flex items-start justify-between mb-4">
           <CollapsibleTrigger className="flex-1 text-left">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
               <h3 className="text-xl font-semibold text-gray-900">
                 {campaign.nomePedido}
               </h3>
+              {campaign.tipoProduto?.toLowerCase().includes('vertical') ? (
+                <Badge className="bg-purple-100 text-purple-800 border-purple-300 text-sm font-semibold px-3 py-1 gap-1.5">
+                  <Smartphone className="w-4 h-4" />
+                  Vertical Premium
+                </Badge>
+              ) : (
+                <Badge className="bg-blue-100 text-blue-800 border-blue-300 text-sm font-semibold px-3 py-1 gap-1.5">
+                  <Monitor className="w-4 h-4" />
+                  Horizontal
+                </Badge>
+              )}
               <Badge className="bg-green-100 text-green-800 border-green-200">
                 {campaign.status}
               </Badge>

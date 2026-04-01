@@ -43,6 +43,7 @@ export interface VideoTimelinePoint {
 export interface CampaignReport {
   pedidoId: string;
   nomePedido: string;
+  tipoProduto: string;
   clientName: string;
   clientEmail: string;
   dataInicio: string;
@@ -324,23 +325,33 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
         // Métricas do pedido
         const totalTelas = buildingInfos.reduce((sum, b) => sum + b.quantidadeTelas, 0);
 
-        // Processar vídeos com cálculo REAL de horas
+        // Processar vídeos com cálculo REAL de horas (usando logs quando disponíveis)
         const videoInfos: VideoInfo[] = videosFromPedido.map(pv => {
           const duracaoSegundos = pv.videos?.duracao || 30;
           const isActive = pv.is_active ?? true;
           const selectedForDisplay = pv.selected_for_display ?? true;
           const approvalStatus = pv.approval_status || 'pending';
           const scheduleRules = schedulesByVideoId.get(pv.video_id) || [];
-          
-          const horasExibidas = calculateDisplayHours(
-            isActive,
-            selectedForDisplay,
-            approvalStatus,
-            scheduleRules,
-            totalTelas,
-            duracaoSegundos,
-            Math.max(1, diasAtivos)
-          );
+
+          // Tentar usar dados reais de playback para este vídeo
+          const videoLogs = playbackLogs.filter(l => l.video_id === pv.video_id);
+          let horasExibidas: number;
+
+          if (videoLogs.length > 0) {
+            // Dados reais: somar duração registrada
+            horasExibidas = videoLogs.reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600;
+          } else {
+            // Fallback: estimativa antiga
+            horasExibidas = calculateDisplayHours(
+              isActive,
+              selectedForDisplay,
+              approvalStatus,
+              scheduleRules,
+              totalTelas,
+              duracaoSegundos,
+              Math.max(1, diasAtivos)
+            );
+          }
 
           const scheduleInfo = formatScheduleInfo(isActive, selectedForDisplay, scheduleRules);
 
@@ -440,6 +451,7 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
         campaignReports.push({
           pedidoId: pedido.id,
           nomePedido: (pedido as any).nome_pedido || `Pedido #${pedido.id.substring(0, 8)}`,
+          tipoProduto: (pedido as any).tipo_produto || 'horizontal',
           clientName: clientData?.email?.split('@')[0] || 'Cliente',
           clientEmail: clientData?.email || 'Email não encontrado',
           dataInicio: pedido.data_inicio,
