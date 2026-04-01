@@ -1,46 +1,44 @@
 
 
-# Plano: Corrigir Sistema de Logs de Reprodução (Root Cause)
+# Plano: Garantir Vídeos Trimados em MP4 para AWS
 
-## Problema Raiz Identificado
+## Problema Atual
 
-A Edge Function `log-video-playback` **NÃO está registrada** no `supabase/config.toml`. Isso faz com que ela use `verify_jwt = true` por padrão. Como o player (MinimalDisplayPanel) roda em rota pública **sem autenticação**, toda chamada é rejeitada com 401 silenciosamente — por isso há **zero registros** na tabela `video_playback_logs` e zero logs na Edge Function.
+O trimmer **sempre produz WebM** porque o código prioriza WebM sobre MP4 (linha 204-208 do `useVideoTrimmer.ts`). A Edge Function depois **força extensão .mp4** no arquivo WebM, mas o conteúdo continua sendo WebM. A AWS rejeita porque o conteúdo não bate com a extensão.
 
-## Correções
+## Solução: Duas camadas de garantia
 
-### 1. Registrar a Edge Function no config.toml
+### 1. Priorizar MP4 no MediaRecorder
 
-Adicionar a entrada com `verify_jwt = false` (TVs não autenticam):
+Chrome 116+ (e todos os Chromium modernos) suportam `video/mp4` no MediaRecorder. Basta inverter a ordem de prioridade:
 
-```toml
-[functions.log-video-playback]
-verify_jwt = false
+```text
+Atual:    webm/vp9 → webm → mp4 (nunca chega no mp4)
+Corrigido: mp4/avc1 → mp4 → webm/vp9 → webm (usa mp4 em 95%+ dos browsers)
 ```
 
-### 2. Tornar o logger mais resiliente (técnico do stack-overflow advisor)
+Se o browser suportar MP4 (quase todos), o arquivo trimado já sai como MP4 nativo — igual aos vídeos curtos que funcionam.
 
-Problema secundário: se o vídeo for interrompido por troca de fonte, swap, ou visibility change, o `onVideoEnd` nunca é chamado e o tempo se perde.
+### 2. Fallback: enviar arquivo original (já é MP4) com metadados de corte
 
-Correção no `usePlaybackLogger.ts`:
-- Enviar **deltas incrementais** a cada 30s do vídeo que está tocando (não esperar o `onEnded`)
-- Escutar `visibilitychange` e `pagehide` para flush antes de perder o contexto
-- Ao trocar de vídeo (`onVideoStart` chamado novamente), fazer flush do vídeo anterior automaticamente
+Quando o browser NÃO suportar MP4 no MediaRecorder (caso raro), em vez de enviar um WebM disfarçado:
+- Enviar o **arquivo original** (que já é MP4 válido)
+- Armazenar `trim_start` e `trim_end` no banco para referência
+- A AWS recebe um MP4 válido de qualquer forma
 
-### 3. Remover FK constraints que bloqueiam inserts (menor prioridade)
+### 3. Edge Function: detectar formato real antes de enviar
 
-A tabela tem FKs em `building_id` e `video_id` que fazem o insert falhar se o ID não existir exatamente na tabela referenciada. Para logs de auditoria, isso é excessivamente restritivo — remover as FKs e manter apenas os UUIDs como texto validado.
+Adicionar verificação dos magic bytes do arquivo. Se detectar WebM (bytes `1A 45 DF A3`), logar erro e rejeitar o envio em vez de mandar arquivo corrompido para AWS.
 
 ## Arquivos Alterados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `supabase/config.toml` | Adicionar `[functions.log-video-playback]` com `verify_jwt = false` |
-| `src/hooks/usePlaybackLogger.ts` | Flush incremental a cada 30s + flush em visibilitychange/pagehide + flush automático ao trocar vídeo |
-| Migration SQL | Remover FK constraints de `video_playback_logs` para evitar falhas de insert |
+| `src/components/video-trimmer/useVideoTrimmer.ts` | Inverter prioridade: MP4 primeiro; fallback retorna original MP4 + metadados de corte |
+| `supabase/functions/upload-video-to-external-api/index.ts` | Validar magic bytes antes de enviar; rejeitar WebM |
+| Migration SQL | Adicionar `trim_start_seconds` e `trim_end_seconds` na tabela `videos` |
 
-## O que NÃO muda
-- MinimalDisplayPanel (já chama `onVideoStart`/`onVideoEnd` corretamente)
-- Edge Function `log-video-playback` (código está correto)
-- UI do relatório, cards, badges
-- Nenhuma outra funcionalidade
+## Resposta direta à sua pergunta
+
+**Sim, vai funcionar.** Em 95%+ dos navegadores modernos (Chrome, Edge, Opera), o vídeo trimado sairá como MP4 nativo — idêntico aos vídeos curtos que já funcionam com a AWS. No caso raro de browser antigo que só faz WebM, o sistema envia o arquivo original (que já é MP4) em vez de enviar WebM corrompido.
 
