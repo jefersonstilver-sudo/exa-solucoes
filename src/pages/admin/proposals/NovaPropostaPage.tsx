@@ -2267,6 +2267,7 @@ Parcelas:
   };
 
 
+  const handleOpenSendDialog = () => {
     // GUARD: Em modo edição, verificar se dados carregaram completamente
     if (isEditMode && (!dataLoaded || isLoadingProposal)) {
       toast.error('Aguarde o carregamento completo da proposta');
