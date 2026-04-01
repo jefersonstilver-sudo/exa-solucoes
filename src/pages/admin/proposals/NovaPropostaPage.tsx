@@ -2061,6 +2061,211 @@ Parcelas:
       setIsSavingEdits(false);
     }
   };
+  // ============================================
+  // FUNÇÃO PUBLICAR RASCUNHO DIRETAMENTE (sem dialog de envio)
+  // ============================================
+  const [isPublishingDraft, setIsPublishingDraft] = useState(false);
+  const handlePublishDraft = async () => {
+    if (isPublishingDraft || !editProposalId) return;
+    
+    // Validações básicas
+    if (!clientData.firstName.trim()) {
+      toast.error('Preencha o primeiro nome do cliente');
+      return;
+    }
+    if (!clientData.lastName.trim()) {
+      toast.error('Preencha o sobrenome do cliente');
+      return;
+    }
+    if (selectedBuildings.length === 0) {
+      toast.error('Selecione ao menos um prédio');
+      return;
+    }
+    if (modalidadeProposta === 'permuta') {
+      if (itensPermuta.length === 0) {
+        toast.error('Adicione ao menos um item de permuta');
+        return;
+      }
+    } else if (isCustomPayment) {
+      if (customTotal <= 0) {
+        toast.error('O total das parcelas deve ser maior que zero');
+        return;
+      }
+    } else {
+      if (!fidelValue || parseFloat(fidelValue) <= 0) {
+        toast.error('Preencha o valor mensal fidelidade');
+        return;
+      }
+    }
+    if (!clientData.phone && !clientData.email) {
+      toast.error('Preencha ao menos um contato (WhatsApp ou E-mail)');
+      return;
+    }
+    
+    setIsPublishingDraft(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const fullName = `${clientData.firstName.trim()} ${clientData.lastName.trim()}`;
+      const buildingsData = selectedBuildingsData.map(b => ({
+        building_id: b.id,
+        building_name: b.nome,
+        bairro: (b as any).bairro || 'N/A',
+        endereco: b.endereco,
+        quantidade_telas: b.quantidade_telas || (b as any).numero_elevadores || 0,
+        visualizacoes_mes: b.visualizacoes_mes,
+        preco_base: (b as any).preco_base || 0,
+        publico_estimado: b.publico_estimado,
+        is_manual: (b as any).is_manual || false
+      }));
+      
+      // Gerar número EXA se necessário
+      let proposalNumber = existingProposal?.number;
+      if (!proposalNumber || proposalNumber.startsWith('RASCUNHO-')) {
+        const year = new Date().getFullYear();
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        proposalNumber = `EXA-${year}-${randomNum}`;
+      }
+
+      const proposalData = {
+        client_name: fullName,
+        client_first_name: clientData.firstName.trim(),
+        client_last_name: clientData.lastName.trim(),
+        client_company_name: clientData.companyName || null,
+        client_country: clientData.country || 'BR',
+        client_cnpj: clientData.document || null,
+        client_phone: clientData.phoneFullNumber || clientData.phone || null,
+        client_email: clientData.email || null,
+        selected_buildings: buildingsData as unknown as Json,
+        total_panels: totalPanels,
+        total_impressions_month: totalImpressionsAdjusted,
+        quantidade_posicoes: quantidadePosicoes,
+        fidel_monthly_value: modalidadeProposta === 'permuta' ? 0 : (isCustomDays ? calculateDaysPrice : isCustomPayment ? customTotal / customInstallments.length : fidelMonthly),
+        cash_total_value: modalidadeProposta === 'permuta' ? 0 : (isCustomDays ? calculateDaysPrice : isCustomPayment ? customTotal : cashTotal),
+        discount_percent: isCustomDays ? -10 : discountPercent,
+        duration_months: isCustomDays ? 0 : durationMonths,
+        created_by: selectedSellerId || user?.id,
+        seller_name: selectedSeller?.nome || currentUser?.nome || selectedSeller?.email || 'Vendedor',
+        seller_phone: selectedSeller?.telefone || currentUser?.telefone || null,
+        seller_email: selectedSeller?.email || currentUser?.email || null,
+        payment_type: isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
+        tipo_produto: tipoProduto,
+        client_address: clientData.address || null,
+        client_latitude: clientData.latitude || null,
+        client_longitude: clientData.longitude || null,
+        custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
+          installment: idx + 1,
+          due_date: formatDateForInput(p.dueDate),
+          amount: parseFloat(p.amount) || 0
+        })) as unknown as Json : null,
+        cobranca_futura: cobrancaFutura,
+        data_inicio_cobranca: null,
+        exigir_contrato: exigirContrato,
+        custom_days: isCustomDays ? customDays : null,
+        is_custom_days: isCustomDays,
+        custom_days_start_date: isCustomDays && customDaysStartDate ? format(customDaysStartDate, 'yyyy-MM-dd') : null,
+        custom_days_end_date: isCustomDays && customDaysEndDate ? format(customDaysEndDate, 'yyyy-MM-dd') : null,
+        cc_emails: ccEmails.length > 0 ? ccEmails : null,
+        venda_futura: vendaFutura,
+        predios_contratados: vendaFutura ? prediosContratados : selectedBuildingsData.length,
+        predios_instalados_no_fechamento: vendaFutura ? buildings.length : selectedBuildingsData.length,
+        predios_pendentes: vendaFutura ? Math.max(0, prediosContratados - buildings.length) : 0,
+        cortesia_inicio: vendaFutura && prediosContratados > buildings.length ? new Date().toISOString().split('T')[0] : null,
+        meses_cortesia: 0,
+        titulo: tituloProposta.trim() || null,
+        exclusividade_segmento: oferecerExclusividade,
+        segmento_exclusivo: oferecerExclusividade ? segmentoExclusivo : null,
+        exclusividade_percentual: oferecerExclusividade ? exclusividadePercentual : null,
+        exclusividade_valor_extra: oferecerExclusividade ? exclusividadeValorCalculado : null,
+        exclusividade_disponivel: exclusividadeDisponivel ?? true,
+        cliente_escolheu_exclusividade: null,
+        travamento_preco_ativo: travamentoPrecoAtivo,
+        travamento_preco_valor: travamentoPrecoAtivo ? travamentoPrecoValor : null,
+        travamento_telas_atuais: travamentoPrecoAtivo ? totalPanels : null,
+        travamento_telas_limite: travamentoPrecoAtivo ? travamentoTelasLimite : null,
+        travamento_preco_por_tela: travamentoPrecoAtivo && totalPanels > 0 
+          ? (travamentoModoCalculo === 'automatico' ? valorMensalEfetivo / totalPanels : travamentoPrecoManual)
+          : null,
+        travamento_modo_calculo: travamentoPrecoAtivo ? travamentoModoCalculo : null,
+        multa_rescisao_ativa: multaRescisaoAtiva,
+        multa_rescisao_percentual: multaRescisaoAtiva ? multaRescisaoPercentual : null,
+        multa_rescisao_exa_ativa: multaRescisaoExaAtiva,
+        multa_rescisao_exa_percentual: multaRescisaoExaAtiva ? multaRescisaoExaPercentual : null,
+        modalidade_proposta: modalidadeProposta,
+        itens_permuta: modalidadeProposta === 'permuta' ? itensPermuta : [],
+        valor_total_permuta: modalidadeProposta === 'permuta' ? valorTotalPermuta : 0,
+        ocultar_valores_publico: modalidadeProposta === 'permuta' ? ocultarValoresPublico : false,
+        descricao_contrapartida: modalidadeProposta === 'permuta' ? descricaoContrapartida : null,
+        metodo_pagamento_alternativo: modalidadeProposta === 'permuta' ? 'permuta' : null,
+        valor_referencia_monetaria: modalidadeProposta === 'permuta' ? valorReferenciaMonetaria : null,
+        client_logo_url: clientLogoUrl,
+        expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to ? customDateRange.to.toISOString() : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
+        // Publicar: mudar status e definir número
+        number: proposalNumber,
+        status: 'enviada',
+        sent_at: existingProposal?.sent_at || new Date().toISOString(),
+      };
+
+      const { data, error } = await supabase
+        .from('proposals')
+        .update(proposalData)
+        .eq('id', editProposalId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Log de publicação
+      await supabase.from('proposal_logs').insert({
+        proposal_id: data.id,
+        action: 'publicada',
+        details: {
+          edited_by: user?.id,
+          buildings_count: selectedBuildings.length,
+          was_draft: true,
+          published_directly: true
+        }
+      });
+      
+      // Criar contato no CRM
+      try {
+        const contactResult = await createContactFromProposal({
+          clientName: fullName,
+          clientFirstName: clientData.firstName.trim(),
+          clientLastName: clientData.lastName.trim(),
+          clientCompanyName: clientData.companyName || undefined,
+          clientCnpj: clientData.document || undefined,
+          clientPhone: clientData.phoneFullNumber || clientData.phone || undefined,
+          clientEmail: clientData.email || undefined,
+          clientAddress: clientData.address || undefined,
+          createdBy: selectedSellerId || user?.id
+        });
+        if (contactResult.success) {
+          console.log(`📇 Contato ${contactResult.isNew ? 'criado' : 'atualizado'}`);
+        }
+      } catch (contactErr) {
+        console.error('⚠️ Erro ao criar contato (não crítico):', contactErr);
+      }
+      
+      // Copiar link para clipboard
+      const proposalUrl = `${window.location.origin}/proposta/${data.id}`;
+      navigator.clipboard.writeText(proposalUrl).then(() => {
+        toast.success(`Proposta ${data.number} publicada! Link copiado.`);
+      }).catch(() => {
+        toast.success(`Proposta ${data.number} publicada com sucesso!`);
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['proposals'] });
+      queryClient.invalidateQueries({ queryKey: ['proposal-for-edit', editProposalId] });
+      navigate(buildPath('propostas'));
+    } catch (error) {
+      console.error('Erro ao publicar proposta:', error);
+      toast.error('Erro ao publicar proposta. Tente novamente.');
+    } finally {
+      setIsPublishingDraft(false);
+    }
+  };
+
 
   const handleOpenSendDialog = () => {
     // GUARD: Em modo edição, verificar se dados carregaram completamente
@@ -4256,23 +4461,34 @@ Parcelas:
           
           {/* Botão Publicar Proposta */}
           <Button 
-            onClick={handleOpenSendDialog} 
+            onClick={
+              isEditMode && dataLoaded && (existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-'))
+                ? handlePublishDraft
+                : handleOpenSendDialog
+            } 
             disabled={
               selectedBuildings.length === 0 || 
               (modalidadeProposta === 'permuta' 
                 ? itensPermuta.length === 0 
                 : (isCustomPayment ? customTotal <= 0 : !fidelValue)) ||
               // GUARD: Desabilitar em modo edição até carregar completamente
-              (isEditMode && (!dataLoaded || isLoadingProposal))
+              (isEditMode && (!dataLoaded || isLoadingProposal)) ||
+              isPublishingDraft
             } 
             className="flex-1 h-11 gap-2"
           >
-            <Send className="h-4 w-4" />
+            {isPublishingDraft ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
             {isEditMode && (!dataLoaded || isLoadingProposal) 
               ? 'Carregando...' 
-              : isEditMode && dataLoaded && existingProposal?.status !== 'rascunho' && !existingProposal?.number?.startsWith('RASCUNHO-')
-                ? 'Salvar Alterações'
-                : 'Publicar'}
+              : isPublishingDraft
+                ? 'Publicando...'
+                : isEditMode && dataLoaded && existingProposal?.status !== 'rascunho' && !existingProposal?.number?.startsWith('RASCUNHO-')
+                  ? 'Salvar Alterações'
+                  : 'Publicar'}
           </Button>
         </div>
       </div>
