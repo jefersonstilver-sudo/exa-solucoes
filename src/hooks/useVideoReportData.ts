@@ -306,16 +306,8 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
             // Dados reais: somar duração registrada
             horasExibidas = videoLogs.reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600;
           } else {
-            // Fallback: estimativa antiga
-            horasExibidas = calculateDisplayHours(
-              isActive,
-              selectedForDisplay,
-              approvalStatus,
-              scheduleRules,
-              totalTelas,
-              duracaoSegundos,
-              Math.max(1, diasAtivos)
-            );
+            // Sem logs reais = 0 horas (sem estimativas fictícias)
+            horasExibidas = 0;
           }
 
           const scheduleInfo = formatScheduleInfo(isActive, selectedForDisplay, scheduleRules);
