@@ -214,6 +214,20 @@ const NovaPropostaPage = () => {
   // Estado para título da proposta
   const [tituloProposta, setTituloProposta] = useState('');
 
+  // Auto-título sincronizado com seleção de prédios
+  const AUTO_TITLE_REGEX = /^(Horizontal|Vertical Premium) \d+ prédios? - \d+ Meses$/i;
+
+  useEffect(() => {
+    if (isEditMode) return;
+    const count = selectedBuildingsData.length;
+    if (count === 0) return;
+    const tipoLabel = tipoProduto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal';
+    const newTitle = `${tipoLabel} ${count} prédio${count > 1 ? 's' : ''} - ${durationMonths} Meses`;
+    if (!tituloProposta || AUTO_TITLE_REGEX.test(tituloProposta)) {
+      setTituloProposta(newTitle);
+    }
+  }, [selectedBuildingsData.length, durationMonths, tipoProduto, isEditMode]);
+
   // Estados para novos toggles: Cobrança Futura e Exigir Contrato
   const [cobrancaFutura, setCobrancaFutura] = useState(false);
   const [exigirContrato, setExigirContrato] = useState(true);
