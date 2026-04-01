@@ -218,10 +218,27 @@ serve(async (req) => {
       sizeMB: (arrayBuffer.byteLength / (1024 * 1024)).toFixed(2)
     });
     
-    // Verificar assinatura do arquivo (primeiros bytes para validar que é MP4)
+    // Verificar assinatura do arquivo (magic bytes) para validar formato REAL
     const uint8Array = new Uint8Array(arrayBuffer);
     const firstBytes = Array.from(uint8Array.slice(0, 12)).map(b => b.toString(16).padStart(2, '0')).join(' ');
     console.log('🔍 [UPLOAD_EXTERNAL_API] Assinatura do arquivo (primeiros 12 bytes):', firstBytes);
+    
+    // Detectar formato real pelos magic bytes
+    // WebM: começa com 1A 45 DF A3 (EBML header)
+    // MP4: geralmente tem "ftyp" nos bytes 4-7 (66 74 79 70)
+    const isWebm = uint8Array[0] === 0x1A && uint8Array[1] === 0x45 && uint8Array[2] === 0xDF && uint8Array[3] === 0xA3;
+    const isMp4 = uint8Array[4] === 0x66 && uint8Array[5] === 0x74 && uint8Array[6] === 0x79 && uint8Array[7] === 0x70;
+    
+    console.log('🔍 [UPLOAD_EXTERNAL_API] Formato detectado:', { isWebm, isMp4 });
+    
+    if (isWebm) {
+      console.error('❌ [UPLOAD_EXTERNAL_API] ARQUIVO É WEBM! Rejeitando envio para AWS - arquivo WebM não é compatível');
+      throw new Error('Arquivo de vídeo está em formato WebM, não MP4. O vídeo precisa ser re-enviado em formato MP4.');
+    }
+    
+    if (!isMp4) {
+      console.warn('⚠️ [UPLOAD_EXTERNAL_API] Formato não reconhecido como MP4 padrão, mas tentando envio mesmo assim');
+    }
     
     // Verificar últimos bytes para confirmar integridade
     const lastBytes = Array.from(uint8Array.slice(-8)).map(b => b.toString(16).padStart(2, '0')).join(' ');
@@ -234,7 +251,7 @@ serve(async (req) => {
       console.log('⚠️ [UPLOAD_EXTERNAL_API] Adicionando extensão .mp4 ao arquivo:', finalFileName);
     }
     
-    // CRÍTICO: Criar Blob com tipo explícito video/mp4 a partir do ArrayBuffer COMPLETO
+    // Criar Blob com tipo explícito video/mp4 a partir do ArrayBuffer COMPLETO
     const videoFile = new Blob([arrayBuffer], { type: 'video/mp4' });
     
     console.log('✅ [UPLOAD_EXTERNAL_API] Arquivo MP4 preparado:', {
