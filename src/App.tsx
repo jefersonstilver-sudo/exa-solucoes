@@ -310,7 +310,7 @@ const AppContent = () => {
           {/* CHECKOUT FLOW - Redirect antigo checkout para novo fluxo */}
           <Route path="/checkout" element={<Navigate to="/selecionar-plano" replace />} />
           <Route path="/checkout/cupom" element={<Suspense fallback={<GlobalLoadingPage />}><CheckoutCoupon /></Suspense>} />
-          <Route path="/checkout/resumo" element={<CheckoutSummary />} />
+          <Route path="/checkout/resumo" element={<Suspense fallback={<GlobalLoadingPage />}><CheckoutSummary /></Suspense>} />
           <Route path="/checkout/fidelidade" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando contrato..." />}>
               {React.createElement(lazy(() => import('./pages/CheckoutFidelidade')))}
