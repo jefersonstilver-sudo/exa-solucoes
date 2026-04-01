@@ -224,43 +224,45 @@ const PropostasPage = () => {
     }
   });
 
-  // IDs fixos dos 3 vendedores
-  const SELLER_IDS = {
-    brunoDantas: '6390fcd3-3eaa-4f57-9a7b-b3466a306ee8',
-    jefersonStilver: '7cca6d1b-ca4f-4190-a7fe-5148e7dc2308',
-    eduardoComercial: 'c9ff75c5-a051-4b6d-a278-cdd5a2306820'
-  };
-
-  // Query para stats dos 3 vendedores fixos
+  // Query dinâmica: vendedores que criaram propostas nos últimos 30 dias
   const { data: sellersData } = useQuery({
-    queryKey: ['sellers-stats-fixed'],
+    queryKey: ['sellers-stats-dynamic'],
     queryFn: async () => {
-      const sellerIds = Object.values(SELLER_IDS);
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      // Buscar nome dos usuários
+      // Buscar propostas dos últimos 30 dias (não rascunho)
+      const { data: recentProposals } = await supabase
+        .from('proposals')
+        .select('id, created_by, status, cash_total_value, created_at')
+        .neq('status', 'rascunho')
+        .gte('created_at', thirtyDaysAgo.toISOString());
+
+      if (!recentProposals?.length) return [];
+
+      // Extrair IDs únicos de vendedores
+      const uniqueSellerIds = [...new Set(recentProposals.map(p => p.created_by).filter(Boolean))] as string[];
+
+      if (!uniqueSellerIds.length) return [];
+
+      // Buscar nomes dos vendedores
       const { data: users } = await supabase
         .from('users')
         .select('id, nome, email')
-        .in('id', sellerIds);
-
-      // Buscar propostas por vendedor
-      const { data: proposalsData } = await supabase
-        .from('proposals')
-        .select('id, created_by, status, cash_total_value')
-        .in('created_by', sellerIds);
+        .in('id', uniqueSellerIds);
 
       // Calcular stats por vendedor
-      const calculateStats = (userId: string) => {
+      return uniqueSellerIds.map(userId => {
         const user = users?.find(u => u.id === userId);
-        const sellerProposals = proposalsData?.filter(p => p.created_by === userId) || [];
-        
-        const enviadas = sellerProposals.filter(p => 
+        const sellerProposals = recentProposals.filter(p => p.created_by === userId);
+
+        const enviadas = sellerProposals.filter(p =>
           ['enviada', 'atualizada', 'visualizada', 'visualizando'].includes(p.status)
         ).length;
-        const pendentes = sellerProposals.filter(p => 
+        const pendentes = sellerProposals.filter(p =>
           ['pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status)
         ).length;
-        const aceitas = sellerProposals.filter(p => 
+        const aceitas = sellerProposals.filter(p =>
           ['aceita', 'paga', 'convertida'].includes(p.status)
         ).length;
         const valorTotal = sellerProposals
@@ -275,13 +277,7 @@ const PropostasPage = () => {
           aceitas,
           valorTotal
         };
-      };
-
-      return {
-        brunoDantas: calculateStats(SELLER_IDS.brunoDantas),
-        jefersonStilver: calculateStats(SELLER_IDS.jefersonStilver),
-        eduardoComercial: calculateStats(SELLER_IDS.eduardoComercial)
-      };
+      }).sort((a, b) => b.valorTotal - a.valorTotal || b.enviadas - a.enviadas);
     }
   });
 
@@ -931,89 +927,49 @@ const PropostasPage = () => {
           </Card>
         </div>
 
-        {/* Stats Grid - Linha 2: Cards de Vendedores */}
-        <div className="grid grid-cols-3 gap-2">
-          {/* Bruno Dantas */}
-          <Card className="p-2 bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200/50">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
-                <span className="text-[10px] text-white font-bold">B</span>
-              </div>
-              <span className="text-[10px] font-medium text-purple-800 truncate">Bruno</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1 text-center text-[9px]">
-              <div>
-                <div className="text-muted-foreground">Env</div>
-                <div className="font-bold text-blue-600">{sellersData?.brunoDantas?.enviadas || 0}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Pend</div>
-                <div className="font-bold text-purple-600">{sellersData?.brunoDantas?.pendentes || 0}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Ace</div>
-                <div className="font-bold text-green-600">{sellersData?.brunoDantas?.aceitas || 0}</div>
-              </div>
-            </div>
-            <div className="text-[10px] font-semibold text-center mt-1 text-purple-700">
-              {formatCurrencyCompact(sellersData?.brunoDantas?.valorTotal || 0)}
-            </div>
-          </Card>
+        {/* Stats Grid - Linha 2: Cards de Vendedores (dinâmico) */}
+        {sellersData && sellersData.length > 0 && (
+          <div className={`grid grid-cols-${Math.min(sellersData.length, 3)} gap-2`}>
+            {sellersData.map((seller, index) => {
+              const colors = [
+                { from: 'from-blue-50', to: 'to-blue-100/50', border: 'border-blue-200/50', bg: 'bg-blue-500', text: 'text-blue-800', value: 'text-blue-700' },
+                { from: 'from-purple-50', to: 'to-purple-100/50', border: 'border-purple-200/50', bg: 'bg-purple-500', text: 'text-purple-800', value: 'text-purple-700' },
+                { from: 'from-emerald-50', to: 'to-emerald-100/50', border: 'border-emerald-200/50', bg: 'bg-emerald-500', text: 'text-emerald-800', value: 'text-emerald-700' },
+                { from: 'from-amber-50', to: 'to-amber-100/50', border: 'border-amber-200/50', bg: 'bg-amber-500', text: 'text-amber-800', value: 'text-amber-700' },
+              ];
+              const color = colors[index % colors.length];
+              const initial = seller.nome.charAt(0).toUpperCase();
 
-          {/* Jeferson Stilver */}
-          <Card className="p-2 bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200/50">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
-                <span className="text-[10px] text-white font-bold">J</span>
-              </div>
-              <span className="text-[10px] font-medium text-blue-800 truncate">Jeferson</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1 text-center text-[9px]">
-              <div>
-                <div className="text-muted-foreground">Env</div>
-                <div className="font-bold text-blue-600">{sellersData?.jefersonStilver?.enviadas || 0}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Pend</div>
-                <div className="font-bold text-purple-600">{sellersData?.jefersonStilver?.pendentes || 0}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Ace</div>
-                <div className="font-bold text-green-600">{sellersData?.jefersonStilver?.aceitas || 0}</div>
-              </div>
-            </div>
-            <div className="text-[10px] font-semibold text-center mt-1 text-blue-700">
-              {formatCurrencyCompact(sellersData?.jefersonStilver?.valorTotal || 0)}
-            </div>
-          </Card>
-
-          {/* Eduardo Comercial */}
-          <Card className="p-2 bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200/50">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
-                <span className="text-[10px] text-white font-bold">E</span>
-              </div>
-              <span className="text-[10px] font-medium text-emerald-800 truncate">Eduardo</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1 text-center text-[9px]">
-              <div>
-                <div className="text-muted-foreground">Env</div>
-                <div className="font-bold text-blue-600">{sellersData?.eduardoComercial?.enviadas || 0}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Pend</div>
-                <div className="font-bold text-purple-600">{sellersData?.eduardoComercial?.pendentes || 0}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Ace</div>
-                <div className="font-bold text-green-600">{sellersData?.eduardoComercial?.aceitas || 0}</div>
-              </div>
-            </div>
-            <div className="text-[10px] font-semibold text-center mt-1 text-emerald-700">
-              {formatCurrencyCompact(sellersData?.eduardoComercial?.valorTotal || 0)}
-            </div>
-          </Card>
-        </div>
+              return (
+                <Card key={seller.id} className={`p-2 bg-gradient-to-br ${color.from} ${color.to} ${color.border}`}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <div className={`w-5 h-5 rounded-full ${color.bg} flex items-center justify-center`}>
+                      <span className="text-[10px] text-white font-bold">{initial}</span>
+                    </div>
+                    <span className={`text-[10px] font-medium ${color.text} truncate`}>{seller.nome.split(' ')[0]}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 text-center text-[9px]">
+                    <div>
+                      <div className="text-muted-foreground">Env</div>
+                      <div className="font-bold text-blue-600">{seller.enviadas}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Pend</div>
+                      <div className="font-bold text-purple-600">{seller.pendentes}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Ace</div>
+                      <div className="font-bold text-green-600">{seller.aceitas}</div>
+                    </div>
+                  </div>
+                  <div className={`text-[10px] font-semibold text-center mt-1 ${color.value}`}>
+                    {formatCurrencyCompact(seller.valorTotal)}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
         {/* Seller Stats Toggle */}
         <SellerStatsPanel
