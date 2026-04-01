@@ -9,8 +9,8 @@ interface PlaybackEntry {
   started_at: string;
 }
 
-const BATCH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-const MAX_BUFFER_SIZE = 50;
+const BATCH_INTERVAL_MS = 30 * 1000; // 30 seconds - flush frequently for real-time reporting
+const MAX_BUFFER_SIZE = 10;
 
 export const usePlaybackLogger = (buildingId: string) => {
   const bufferRef = useRef<PlaybackEntry[]>([]);
