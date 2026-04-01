@@ -17,6 +17,7 @@ interface MinimalVideo {
   video_url: string;
   video_duracao: number | null;
   slot_position: number;
+  pedido_id?: string;
 }
 
 /**
