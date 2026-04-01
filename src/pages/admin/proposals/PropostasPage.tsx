@@ -224,43 +224,45 @@ const PropostasPage = () => {
     }
   });
 
-  // IDs fixos dos 3 vendedores
-  const SELLER_IDS = {
-    brunoDantas: '6390fcd3-3eaa-4f57-9a7b-b3466a306ee8',
-    jefersonStilver: '7cca6d1b-ca4f-4190-a7fe-5148e7dc2308',
-    eduardoComercial: 'c9ff75c5-a051-4b6d-a278-cdd5a2306820'
-  };
-
-  // Query para stats dos 3 vendedores fixos
+  // Query dinâmica: vendedores que criaram propostas nos últimos 30 dias
   const { data: sellersData } = useQuery({
-    queryKey: ['sellers-stats-fixed'],
+    queryKey: ['sellers-stats-dynamic'],
     queryFn: async () => {
-      const sellerIds = Object.values(SELLER_IDS);
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      // Buscar nome dos usuários
+      // Buscar propostas dos últimos 30 dias (não rascunho)
+      const { data: recentProposals } = await supabase
+        .from('proposals')
+        .select('id, created_by, status, cash_total_value, created_at')
+        .neq('status', 'rascunho')
+        .gte('created_at', thirtyDaysAgo.toISOString());
+
+      if (!recentProposals?.length) return [];
+
+      // Extrair IDs únicos de vendedores
+      const uniqueSellerIds = [...new Set(recentProposals.map(p => p.created_by).filter(Boolean))] as string[];
+
+      if (!uniqueSellerIds.length) return [];
+
+      // Buscar nomes dos vendedores
       const { data: users } = await supabase
         .from('users')
         .select('id, nome, email')
-        .in('id', sellerIds);
-
-      // Buscar propostas por vendedor
-      const { data: proposalsData } = await supabase
-        .from('proposals')
-        .select('id, created_by, status, cash_total_value')
-        .in('created_by', sellerIds);
+        .in('id', uniqueSellerIds);
 
       // Calcular stats por vendedor
-      const calculateStats = (userId: string) => {
+      return uniqueSellerIds.map(userId => {
         const user = users?.find(u => u.id === userId);
-        const sellerProposals = proposalsData?.filter(p => p.created_by === userId) || [];
-        
-        const enviadas = sellerProposals.filter(p => 
+        const sellerProposals = recentProposals.filter(p => p.created_by === userId);
+
+        const enviadas = sellerProposals.filter(p =>
           ['enviada', 'atualizada', 'visualizada', 'visualizando'].includes(p.status)
         ).length;
-        const pendentes = sellerProposals.filter(p => 
+        const pendentes = sellerProposals.filter(p =>
           ['pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status)
         ).length;
-        const aceitas = sellerProposals.filter(p => 
+        const aceitas = sellerProposals.filter(p =>
           ['aceita', 'paga', 'convertida'].includes(p.status)
         ).length;
         const valorTotal = sellerProposals
@@ -275,13 +277,7 @@ const PropostasPage = () => {
           aceitas,
           valorTotal
         };
-      };
-
-      return {
-        brunoDantas: calculateStats(SELLER_IDS.brunoDantas),
-        jefersonStilver: calculateStats(SELLER_IDS.jefersonStilver),
-        eduardoComercial: calculateStats(SELLER_IDS.eduardoComercial)
-      };
+      }).sort((a, b) => b.valorTotal - a.valorTotal || b.enviadas - a.enviadas);
     }
   });
 

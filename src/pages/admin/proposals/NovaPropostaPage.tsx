@@ -1631,6 +1631,7 @@ Parcelas:
           console.log('🚀 [PUBLICAR] Convertendo rascunho para proposta:', proposalNumber);
         }
         
+        console.log('📤 [PUBLISH] Enviando update para proposta:', editProposalId, { number: proposalNumber, status: 'enviada' });
         const { data, error } = await supabase
           .from('proposals')
           .update({
@@ -1642,8 +1643,12 @@ Parcelas:
           .eq('id', editProposalId)
           .select()
           .single();
-        if (error) throw error;
+        if (error) {
+          console.error('❌ [PUBLISH] Erro no update:', error);
+          throw error;
+        }
         proposal = data;
+        console.log('✅ [PUBLISH] Proposta atualizada com sucesso:', { id: proposal.id, number: proposal.number, status: proposal.status });
         
         // Log de edição/publicação
         const wasRascunho = existingProposal?.number?.startsWith('RASCUNHO-');
