@@ -844,6 +844,21 @@ const NovaPropostaPage = () => {
     const selectedManual = manualBuildings.filter(b => selectedBuildings.includes(b.id));
     return [...dbBuildings, ...selectedManual];
   }, [buildings, manualBuildings, selectedBuildings]);
+
+  // Auto-título sincronizado com seleção de prédios
+  const AUTO_TITLE_REGEX = /^(Horizontal|Vertical Premium) \d+ prédios? - \d+ Meses$/i;
+
+  useEffect(() => {
+    if (isEditMode) return;
+    const count = selectedBuildingsData.length;
+    if (count === 0) return;
+    const tipoLabel = tipoProduto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal';
+    const newTitle = `${tipoLabel} ${count} prédio${count > 1 ? 's' : ''} - ${durationMonths} Meses`;
+    if (!tituloProposta || AUTO_TITLE_REGEX.test(tituloProposta)) {
+      setTituloProposta(newTitle);
+    }
+  }, [selectedBuildingsData.length, durationMonths, tipoProduto, isEditMode]);
+
   // Telas dos prédios selecionados atualmente
   const totalPanelsInstalled = useMemo(() => {
     return selectedBuildingsData.reduce((sum, b) => sum + (b.quantidade_telas || (b as any).numero_elevadores || 0), 0);
