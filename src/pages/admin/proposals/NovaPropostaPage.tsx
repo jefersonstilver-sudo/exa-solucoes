@@ -1964,6 +1964,104 @@ Parcelas:
     }
   };
 
+  // ============================================
+  // FUNÇÃO SALVAR EDIÇÕES (sem reenviar proposta)
+  // ============================================
+  const [isSavingEdits, setIsSavingEdits] = useState(false);
+  const handleSaveEdits = async () => {
+    if (isSavingEdits || !editProposalId) return;
+    setIsSavingEdits(true);
+    
+    try {
+      const fullName = `${clientData.firstName} ${clientData.lastName}`.trim();
+      const buildingsData = selectedBuildingsData.map(b => ({
+        building_id: b.id,
+        building_name: b.nome,
+        building_bairro: b.bairro,
+        building_endereco: b.endereco,
+        quantidade_telas: b.quantidade_telas || 0,
+        numero_elevadores: b.numero_elevadores || 0,
+        preco_base: b.preco_base || 0,
+        preco_utilizado: b.preco_base || 0,
+        visualizacoes_mes: b.visualizacoes_mes || 0,
+        imagem_principal: b.imagem_principal || null,
+        is_manual: !!(b as any).is_manual
+      }));
+
+      const editData = {
+        // NÃO altera status nem number
+        client_name: fullName || 'Sem nome',
+        client_first_name: clientData.firstName || null,
+        client_last_name: clientData.lastName || null,
+        client_company_name: clientData.companyName || null,
+        client_country: clientData.country || 'BR',
+        client_cnpj: clientData.document || null,
+        client_email: clientData.email || null,
+        client_phone: clientData.phoneFullNumber || clientData.phone || null,
+        client_address: clientData.address || null,
+        client_latitude: clientData.latitude || null,
+        client_longitude: clientData.longitude || null,
+        client_logo_url: clientLogoUrl || null,
+        selected_buildings: buildingsData as unknown as Json,
+        total_panels: totalPanels,
+        total_impressions_month: totalImpressionsAdjusted,
+        duration_months: isCustomDays ? 0 : durationMonths,
+        fidel_monthly_value: modalidadeProposta === 'permuta' ? 0 : (parseFloat(fidelValue) || 0),
+        cash_total_value: modalidadeProposta === 'permuta' ? 0 : (isCustomPayment ? customTotal : cashTotal),
+        discount_percent: discountPercent,
+        payment_type: isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
+        is_custom_days: isCustomDays,
+        custom_days: isCustomDays ? customDays : null,
+        custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
+          installment: idx + 1,
+          due_date: formatDateForInput(p.dueDate),
+          amount: parseFloat(p.amount) || 0
+        })) as unknown as Json : null,
+        tipo_produto: tipoProduto,
+        quantidade_posicoes: quantidadePosicoes,
+        titulo: tituloProposta || null,
+        modalidade_proposta: modalidadeProposta,
+        itens_permuta: modalidadeProposta === 'permuta' ? itensPermuta as unknown as Json : [],
+        valor_total_permuta: modalidadeProposta === 'permuta' ? valorTotalPermuta : 0,
+        ocultar_valores_publico: modalidadeProposta === 'permuta' ? ocultarValoresPublico : false,
+        descricao_contrapartida: modalidadeProposta === 'permuta' ? descricaoContrapartida : null,
+        metodo_pagamento_alternativo: modalidadeProposta === 'permuta' ? 'permuta' : null,
+        valor_referencia_monetaria: modalidadeProposta === 'permuta' ? valorReferenciaMonetaria : null,
+        cobranca_futura: cobrancaFutura,
+        exigir_contrato: exigirContrato,
+        venda_futura: vendaFutura,
+        predios_contratados: vendaFutura ? prediosContratados : selectedBuildingsData.length,
+        exclusividade_segmento: oferecerExclusividade,
+        segmento_exclusivo: oferecerExclusividade ? segmentoExclusivo : null,
+        exclusividade_percentual: oferecerExclusividade ? exclusividadePercentual : null,
+        travamento_preco_ativo: travamentoPrecoAtivo,
+        travamento_preco_valor: travamentoPrecoAtivo ? travamentoPrecoValor : null,
+        travamento_telas_limite: travamentoPrecoAtivo ? travamentoTelasLimite : null,
+        multa_rescisao_ativa: multaRescisaoAtiva,
+        multa_rescisao_percentual: multaRescisaoAtiva ? multaRescisaoPercentual : null,
+        multa_rescisao_exa_ativa: multaRescisaoExaAtiva,
+        multa_rescisao_exa_percentual: multaRescisaoExaAtiva ? multaRescisaoExaPercentual : null,
+        cc_emails: ccEmails.length > 0 ? ccEmails : null,
+        expires_at: validityHours === 0 ? null : validityHours === -1 && customDateRange?.to 
+          ? customDateRange.to.toISOString() 
+          : new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
+      };
+
+      const { error } = await supabase.from('proposals').update(editData).eq('id', editProposalId);
+      if (error) throw error;
+      
+      toast.success('Alterações salvas com sucesso!');
+      setLastSavedAt(new Date());
+      queryClient.invalidateQueries({ queryKey: ['proposals'] });
+      queryClient.invalidateQueries({ queryKey: ['proposal-for-edit', editProposalId] });
+    } catch (error) {
+      console.error('Erro ao salvar edições:', error);
+      toast.error('Erro ao salvar alterações');
+    } finally {
+      setIsSavingEdits(false);
+    }
+  };
+
   const handleOpenSendDialog = () => {
     // GUARD: Em modo edição, verificar se dados carregaram completamente
     if (isEditMode && (!dataLoaded || isLoadingProposal)) {
