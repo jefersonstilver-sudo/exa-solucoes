@@ -2547,11 +2547,20 @@ Parcelas:
                     </div>
                   </div>)}
 
-                {/* Prédios do Banco de Dados */}
-                {buildings.map(building => <div key={building.id} onClick={() => toggleBuilding(building.id)} className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${selectedBuildings.includes(building.id) ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200 bg-white'}`}>
+                {/* Prédios do Banco de Dados (internos por último) */}
+                {[...buildings].sort((a, b) => {
+                  if (a.status === 'interno' && b.status !== 'interno') return 1;
+                  if (a.status !== 'interno' && b.status === 'interno') return -1;
+                  return 0;
+                }).map(building => <div key={building.id} onClick={() => toggleBuilding(building.id)} className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${selectedBuildings.includes(building.id) ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200 bg-white'}`}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">{building.nome}</div>
+                        <div className="font-medium text-sm truncate flex items-center gap-1.5">
+                          {building.nome}
+                          {building.status === 'interno' && (
+                            <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Interno</span>
+                          )}
+                        </div>
                         <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                           <MapPin className="h-3 w-3 flex-shrink-0" />
                           <span className="truncate">{building.bairro} • {building.endereco}</span>
