@@ -27,6 +27,20 @@ export const VideoListItem = ({
 }: VideoListItemProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [videoError, setVideoError] = useState(false);
+
+  // Format display time: show h/min/s depending on magnitude
+  const formatDisplayTime = (hours: number): string => {
+    const totalSeconds = Math.round(hours * 3600);
+    if (totalSeconds < 60) {
+      return `${totalSeconds}s`;
+    }
+    if (totalSeconds < 3600) {
+      const min = Math.floor(totalSeconds / 60);
+      const sec = totalSeconds % 60;
+      return sec > 0 ? `${min}m${sec}s` : `${min}min`;
+    }
+    return `${hours.toFixed(1)}h`;
+  };
   
   const isDisplaying = isActive && selectedForDisplay && approvalStatus === 'approved';
 
@@ -154,13 +168,13 @@ export const VideoListItem = ({
         </div>
       </div>
 
-      {/* Horas exibidas */}
+      {/* Tempo real exibido */}
       <div className="text-right flex-shrink-0">
         <p className={cn(
           "text-2xl font-bold",
           isDisplaying ? "text-[#9C1E1E]" : "text-muted-foreground"
         )}>
-          {horasExibidas.toFixed(1)}h
+          {formatDisplayTime(horasExibidas)}
         </p>
         <p className="text-xs text-muted-foreground">
           {isDisplaying ? 'total exibido' : 'sem exibição'}

@@ -9,8 +9,8 @@ interface PlaybackEntry {
   started_at: string;
 }
 
-const BATCH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-const MAX_BUFFER_SIZE = 50;
+const BATCH_INTERVAL_MS = 30 * 1000; // 30 seconds - flush frequently for real-time reporting
+const MAX_BUFFER_SIZE = 10;
 
 export const usePlaybackLogger = (buildingId: string) => {
   const bufferRef = useRef<PlaybackEntry[]>([]);
@@ -67,21 +67,21 @@ export const usePlaybackLogger = (buildingId: string) => {
 
     if (durationSeconds < 1) return; // Skip negligible playbacks
 
-    bufferRef.current.push({
+    const entry: PlaybackEntry = {
       video_id: currentVideoRef.current.video_id,
       building_id: buildingId,
       pedido_id: currentVideoRef.current.pedido_id,
       duration_seconds: durationSeconds,
       started_at: new Date(videoStartRef.current).toISOString(),
-    });
+    };
+
+    bufferRef.current.push(entry);
 
     videoStartRef.current = null;
     currentVideoRef.current = null;
 
-    // Auto-flush if buffer is full
-    if (bufferRef.current.length >= MAX_BUFFER_SIZE) {
-      flushBuffer();
-    }
+    // Flush immediately after each video ends for real-time accuracy
+    flushBuffer();
   }, [buildingId, flushBuffer]);
 
   return { onVideoStart, onVideoEnd };

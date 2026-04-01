@@ -41,6 +41,19 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
     return num.toString();
   };
 
+  const formatDisplayTime = (hours: number): string => {
+    const totalSeconds = Math.round(hours * 3600);
+    if (totalSeconds < 60) {
+      return `${totalSeconds}s`;
+    }
+    if (totalSeconds < 3600) {
+      const min = Math.floor(totalSeconds / 60);
+      const sec = totalSeconds % 60;
+      return sec > 0 ? `${min}m${sec}s` : `${min}min`;
+    }
+    return `${hours.toFixed(1)}h`;
+  };
+
   const handleDownloadPDF = async () => {
     setIsDownloading(true);
     try {
@@ -173,8 +186,8 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
               <p className="text-2xl font-bold text-[#9C1E1E]">{formatNumber(campaign.totalExibicoes)}</p>
             </div>
             <div className="bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl p-4 border border-border/40">
-              <p className="text-xs text-muted-foreground mb-1">Horas Totais</p>
-              <p className="text-2xl font-bold text-[#9C1E1E]">{campaign.totalHoras.toFixed(1)}h</p>
+              <p className="text-xs text-muted-foreground mb-1">Tempo Total</p>
+              <p className="text-2xl font-bold text-[#9C1E1E]">{formatDisplayTime(campaign.totalHoras)}</p>
             </div>
             <div className="bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl p-4 border border-border/40">
               <p className="text-xs text-muted-foreground mb-1">Prédios com Exibição</p>
