@@ -1,49 +1,46 @@
 
 
-# Plano: Corrigir Logs de Reprodução + Badge de Tipo de Produto
+# Plano: Corrigir Sistema de Logs de Reprodução (Root Cause)
 
-## Problemas Identificados
+## Problema Raiz Identificado
 
-1. **Player não envia `pedido_id` nos logs** — `onVideoStart(currentVideo.video_id)` é chamado sem `pedido_id`, mesmo que `activeVideos` tenha esse campo. Resultado: logs na tabela ficam sem `pedido_id`, e o relatório não consegue associar reproduções a pedidos.
-
-2. **Horas individuais por vídeo ainda usam fórmula estimada** — O relatório usa dados reais apenas para os totais do pedido (`totalHoras`, `totalExibicoes`), mas cada `VideoInfo.horasExibidas` continua vindo de `calculateDisplayHours()` (fórmula fictícia com "245 exibições/dia").
-
-3. **Falta badge de tipo de produto** — Os cards do relatório não mostram se o pedido é Horizontal ou Vertical Premium. O campo `tipo_produto` existe na tabela `pedidos`.
+A Edge Function `log-video-playback` **NÃO está registrada** no `supabase/config.toml`. Isso faz com que ela use `verify_jwt = true` por padrão. Como o player (MinimalDisplayPanel) roda em rota pública **sem autenticação**, toda chamada é rejeitada com 401 silenciosamente — por isso há **zero registros** na tabela `video_playback_logs` e zero logs na Edge Function.
 
 ## Correções
 
-### 1. Player: passar `pedido_id` no log (`MinimalDisplayPanel.tsx`)
+### 1. Registrar a Edge Function no config.toml
 
-- Na linha `onPlay`, o `currentVideo` já tem `video_id` via `formattedActiveVideos`, mas `pedido_id` não é propagado.
-- Adicionar `pedido_id` ao tipo `MinimalVideo` local e propagar de `activeVideos`.
-- Alterar chamada: `onVideoStart(currentVideo.video_id, currentVideo.pedido_id)`.
+Adicionar a entrada com `verify_jwt = false` (TVs não autenticam):
 
-### 2. Relatório: usar logs reais por vídeo (`useVideoReportData.ts`)
+```toml
+[functions.log-video-playback]
+verify_jwt = false
+```
 
-- Ao calcular `horasExibidas` de cada vídeo, buscar do array `playbackLogs` filtrado por `video_id` em vez de chamar `calculateDisplayHours()`.
-- Se não houver logs para o vídeo, manter 0 (dado real = zero reproduções registradas) ou estimativa com flag.
-- O gráfico de evolução (`videoTimeline`) também deve usar dados reais agrupados por dia quando disponíveis.
+### 2. Tornar o logger mais resiliente (técnico do stack-overflow advisor)
 
-### 3. Adicionar `tipo_produto` ao relatório
+Problema secundário: se o vídeo for interrompido por troca de fonte, swap, ou visibility change, o `onVideoEnd` nunca é chamado e o tempo se perde.
 
-**`useVideoReportData.ts`**:
-- Adicionar `tipoProduto: string` ao tipo `CampaignReport`.
-- Buscar `tipo_produto` do pedido (já vem do `select('*')`).
+Correção no `usePlaybackLogger.ts`:
+- Enviar **deltas incrementais** a cada 30s do vídeo que está tocando (não esperar o `onEnded`)
+- Escutar `visibilitychange` e `pagehide` para flush antes de perder o contexto
+- Ao trocar de vídeo (`onVideoStart` chamado novamente), fazer flush do vídeo anterior automaticamente
 
-**`CampaignReportCard.tsx`**:
-- Exibir badge visível ao lado do nome: `🖼️ Horizontal` (azul) ou `📺 Vertical` (roxo), usando o mesmo padrão visual já usado em `PropostasPage.tsx`.
+### 3. Remover FK constraints que bloqueiam inserts (menor prioridade)
+
+A tabela tem FKs em `building_id` e `video_id` que fazem o insert falhar se o ID não existir exatamente na tabela referenciada. Para logs de auditoria, isso é excessivamente restritivo — remover as FKs e manter apenas os UUIDs como texto validado.
 
 ## Arquivos Alterados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/public/MinimalDisplayPanel.tsx` | Propagar `pedido_id` para `onVideoStart` |
-| `src/hooks/useVideoReportData.ts` | Horas por vídeo via logs reais + `tipoProduto` no tipo |
-| `src/components/advertiser/CampaignReportCard.tsx` | Badge de tipo de produto (Horizontal/Vertical) |
+| `supabase/config.toml` | Adicionar `[functions.log-video-playback]` com `verify_jwt = false` |
+| `src/hooks/usePlaybackLogger.ts` | Flush incremental a cada 30s + flush em visibilitychange/pagehide + flush automático ao trocar vídeo |
+| Migration SQL | Remover FK constraints de `video_playback_logs` para evitar falhas de insert |
 
 ## O que NÃO muda
-- Tabela `video_playback_logs` (já existe)
-- Edge Function `log-video-playback` (já aceita `pedido_id`)
-- Hook `usePlaybackLogger` (já aceita `pedido_id` como parâmetro)
-- Layout geral, sistema de aprovação, outras páginas
+- MinimalDisplayPanel (já chama `onVideoStart`/`onVideoEnd` corretamente)
+- Edge Function `log-video-playback` (código está correto)
+- UI do relatório, cards, badges
+- Nenhuma outra funcionalidade
 
