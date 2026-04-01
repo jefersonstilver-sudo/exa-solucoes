@@ -140,6 +140,9 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
   }, []);
 
   const handleVideoEnd = useCallback(() => {
+    // Log playback completion
+    onVideoEnd();
+    
     const nextIndex = (currentIndex + 1) % videos.length;
     
     if (nextIndex === 0 && hasPendingUpdates) {
