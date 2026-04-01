@@ -193,6 +193,15 @@ export const uploadVideo = async (
     // Usar título fornecido ou nome do arquivo como fallback
     const finalVideoName = videoTitle || file.name;
 
+    // Extrair metadados de corte se existirem (fallback WebM → original MP4)
+    const trimStart = (file as any)?._trimStart ?? null;
+    const trimEnd = (file as any)?._trimEnd ?? null;
+    const wasTrimFallback = (file as any)?._wasFallbackFromWebm ?? false;
+    
+    if (wasTrimFallback) {
+      console.log('📐 [UPLOAD] Vídeo com metadados de corte (fallback WebM→MP4):', { trimStart, trimEnd });
+    }
+
     // Criar registro do vídeo
     const videoData = {
       client_id: userId,
@@ -206,7 +215,9 @@ export const uploadVideo = async (
       altura: validation.metadata.height,
       tamanho_arquivo: validation.metadata.size,
       formato: validation.metadata.format,
-      tem_audio: false
+      tem_audio: false,
+      trim_start_seconds: trimStart,
+      trim_end_seconds: trimEnd,
     };
 
     console.log('💾 Criando registro de vídeo:', videoData);
