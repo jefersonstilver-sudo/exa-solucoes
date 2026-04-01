@@ -4461,23 +4461,34 @@ Parcelas:
           
           {/* Botão Publicar Proposta */}
           <Button 
-            onClick={handleOpenSendDialog} 
+            onClick={
+              isEditMode && dataLoaded && (existingProposal?.status === 'rascunho' || existingProposal?.number?.startsWith('RASCUNHO-'))
+                ? handlePublishDraft
+                : handleOpenSendDialog
+            } 
             disabled={
               selectedBuildings.length === 0 || 
               (modalidadeProposta === 'permuta' 
                 ? itensPermuta.length === 0 
                 : (isCustomPayment ? customTotal <= 0 : !fidelValue)) ||
               // GUARD: Desabilitar em modo edição até carregar completamente
-              (isEditMode && (!dataLoaded || isLoadingProposal))
+              (isEditMode && (!dataLoaded || isLoadingProposal)) ||
+              isPublishingDraft
             } 
             className="flex-1 h-11 gap-2"
           >
-            <Send className="h-4 w-4" />
+            {isPublishingDraft ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
             {isEditMode && (!dataLoaded || isLoadingProposal) 
               ? 'Carregando...' 
-              : isEditMode && dataLoaded && existingProposal?.status !== 'rascunho' && !existingProposal?.number?.startsWith('RASCUNHO-')
-                ? 'Salvar Alterações'
-                : 'Publicar'}
+              : isPublishingDraft
+                ? 'Publicando...'
+                : isEditMode && dataLoaded && existingProposal?.status !== 'rascunho' && !existingProposal?.number?.startsWith('RASCUNHO-')
+                  ? 'Salvar Alterações'
+                  : 'Publicar'}
           </Button>
         </div>
       </div>
