@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Play, User, RefreshCw, Download, Eye, UserCheck, Shield, Calendar, DollarSign } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CheckCircle, Play, User, RefreshCw, Eye, Calendar, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import PeriodSelector from './PeriodSelector';
 import VideoStatusIndicator from './VideoStatusIndicator';
 import VideoAdminActions from './VideoAdminActions';
+import { VideoPlayer } from '@/components/video-management/VideoPlayer';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 
 interface ApprovedVideo {
   pedido_video_id: string;
   video_id: string;
   video_name: string;
+  video_url?: string;
   slot_position: number;
   approved_at: string;
   pedido_id: string;
@@ -80,7 +81,6 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
         const [year, month] = selectedPeriod.split('-').map(Number);
         const monthStart = new Date(year, month - 1, 1);
         const monthEnd = new Date(year, month, 0);
-        
         startDate = monthStart.toISOString().split('T')[0];
         endDate = monthEnd.toISOString().split('T')[0];
       }
@@ -109,6 +109,7 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
         pedido_video_id: item.pedido_video_id,
         video_id: item.video_id,
         video_name: item.video_name || 'Vídeo sem nome',
+        video_url: item.video_url || undefined,
         slot_position: item.slot_position,
         approved_at: item.approved_at,
         pedido_id: item.pedido_id,
@@ -139,29 +140,21 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
   const fetchVideoStatuses = async (videos: ApprovedVideo[]) => {
     try {
       setStatusLoading(true);
-      
       const statusPromises = videos.map(async (video) => {
         const { data, error } = await supabase.rpc('get_video_current_status', {
           p_video_id: video.video_id
         });
-        
         if (error) {
           console.error(`Erro ao buscar status do vídeo ${video.video_id}:`, error);
           return null;
         }
-        
-        return {
-          video_id: video.video_id,
-          status: data
-        };
+        return { video_id: video.video_id, status: data };
       });
       
       const statuses = await Promise.all(statusPromises);
-      
       const videosWithStatus = videos.map(video => {
         const statusData = statuses.find(s => s?.video_id === video.video_id);
         const status = statusData?.status;
-        
         return {
           ...video,
           status: status && typeof status === 'object' && !Array.isArray(status) ? {
@@ -178,7 +171,6 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
           } : undefined
         };
       });
-      
       setApprovedVideos(videosWithStatus);
     } catch (error) {
       console.error('Erro ao buscar status dos vídeos:', error);
@@ -198,34 +190,20 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const formatDateShort = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit'
+      day: '2-digit', month: '2-digit', year: 'numeric'
     });
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
   if (loadingVideos || loading) {
     return (
-      <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-6 shadow-sm">
-        <div className="flex items-center justify-center">
-          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-          <span className="ml-3 text-foreground text-sm">
+      <div className="bg-white/80 backdrop-blur-xl border border-white/50 rounded-2xl p-8 shadow-sm">
+        <div className="flex items-center justify-center gap-3">
+          <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
+          <span className="text-muted-foreground text-sm">
             {statusLoading ? 'Carregando status...' : 'Carregando vídeos aprovados...'}
           </span>
         </div>
@@ -233,286 +211,147 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
     );
   }
 
-  // Mobile Layout
-  if (isMobile) {
-    return (
-      <div className="space-y-3">
-        {/* Period Selector - Compact */}
-        <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-2 shadow-sm">
-          <PeriodSelector
-            selectedPeriod={selectedPeriod}
-            onPeriodChange={setSelectedPeriod}
-            customStartDate={customStartDate}
-            customEndDate={customEndDate}
-            onCustomStartDateChange={setCustomStartDate}
-            onCustomEndDateChange={setCustomEndDate}
-          />
-        </div>
-
-        {approvedVideos.length === 0 ? (
-          <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-6 text-center shadow-sm">
-            <CheckCircle className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
-            <h3 className="text-sm font-medium text-foreground mb-1">
-              Nenhum vídeo aprovado
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Selecione um período diferente
-            </p>
-          </div>
-        ) : (
-          approvedVideos.map((video) => (
-            <div 
-              key={video.pedido_video_id} 
-              className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-3 shadow-sm space-y-2"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Play className="h-3.5 w-3.5 text-emerald-600" />
-                  <span className="text-sm font-medium text-foreground truncate max-w-[180px]">
-                    {video.video_name}
-                  </span>
-                </div>
-                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[9px] px-1.5">
-                  Slot {video.slot_position}
-                </Badge>
-              </div>
-
-              {/* Client & Value */}
-              <div className="flex items-center justify-between text-[10px]">
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <User className="h-3 w-3" />
-                  {video.client_name?.split('@')[0] || video.client_email?.split('@')[0]}
-                </span>
-                <span className="text-emerald-600 font-semibold">{formatCurrency(video.valor_total)}</span>
-              </div>
-
-              {/* Approval Info */}
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3 text-emerald-500" />
-                  Por: {video.approver_name?.split('@')[0]}
-                </span>
-                <span>{formatDateShort(video.approved_at)}</span>
-              </div>
-
-              {/* Status */}
-              {video.status && (
-                <div className="pt-1">
-                  <VideoStatusIndicator status={video.status} />
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-2 pt-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 h-8 text-[10px]"
-                  onClick={() => {
-                    window.open(`/admin/video-preview/${video.video_id}`, '_blank');
-                  }}
-                >
-                  <Eye className="h-3 w-3 mr-1" />
-                  Ver
-                </Button>
-                
-                {video.status && (
-                  <VideoAdminActions
-                    video={{
-                      pedido_video_id: video.pedido_video_id,
-                      video_id: video.video_id,
-                      video_name: video.video_name,
-                      pedido_id: video.pedido_id
-                    }}
-                    status={video.status}
-                    onActionComplete={handleActionComplete}
-                  />
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    );
-  }
-
-  // Desktop Layout
-  return (
-    <div className="space-y-6">
-      <PeriodSelector
-        selectedPeriod={selectedPeriod}
-        onPeriodChange={setSelectedPeriod}
-        customStartDate={customStartDate}
-        customEndDate={customEndDate}
-        onCustomStartDateChange={setCustomStartDate}
-        onCustomEndDateChange={setCustomEndDate}
-      />
-      
-      <Card className="bg-card border">
-        <CardHeader className="border-b">
-          <CardTitle className="flex items-center text-foreground">
-            <Shield className="h-5 w-5 mr-2 text-emerald-600" />
-            Vídeos Aprovados no Período ({approvedVideos.length})
-            <Badge variant="outline" className="ml-2">
-              Auditoria Segura
-            </Badge>
-          </CardTitle>
-          <CardDescription>
-            Lista de vídeos aprovados no período selecionado com trilha de auditoria completa
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-6">
-          {approvedVideos.length === 0 ? (
-            <div className="text-center py-12">
-              <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-medium text-foreground mb-2">
-                Nenhum vídeo aprovado no período selecionado
-              </h3>
-              <p className="text-muted-foreground">
-                Selecione um período diferente ou aguarde novos vídeos aprovados
-              </p>
-            </div>
+  const renderVideoCard = (video: ApprovedVideo) => (
+    <div
+      key={video.pedido_video_id}
+      className="bg-white/80 backdrop-blur-xl border border-white/40 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
+    >
+      <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'}`}>
+        {/* Video Preview */}
+        <div className={`${isMobile ? 'w-full' : 'w-[280px] min-w-[280px]'} bg-black/5`}>
+          {video.video_url ? (
+            <VideoPlayer
+              src={video.video_url}
+              title={video.video_name}
+              className={`${isMobile ? 'aspect-video' : 'h-full min-h-[180px]'}`}
+              muted
+              controls
+            />
           ) : (
-            <div className="grid gap-6">
-              {approvedVideos.map((video) => (
-                <Card key={video.pedido_video_id} className="bg-card border hover:shadow-md transition-shadow duration-200">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                          <Play className="h-5 w-5 text-emerald-600" />
-                          {video.video_name}
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-                            Slot {video.slot_position}
-                          </Badge>
-                        </CardTitle>
-                        
-                        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">Cliente:</span>
-                              <span className="text-foreground">{video.client_name}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">@</span>
-                              <span>{video.client_email}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-emerald-500" />
-                              <span className="font-medium">Aprovado por:</span>
-                              <span className="text-foreground">{video.approver_name}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">@</span>
-                              <span>{video.approver_email}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <DollarSign className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">Valor:</span>
-                              <span className="text-foreground">{formatCurrency(video.valor_total)}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">Período:</span>
-                              <span className="text-foreground">{video.plano_meses} meses</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">Aprovado em:</span>
-                              <span className="text-foreground">{formatDate(video.approved_at)}</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {video.data_inicio && video.data_fim && (
-                          <div className="mt-3 p-3 bg-muted/30 border rounded-lg">
-                            <div className="flex items-center gap-2 text-sm text-foreground">
-                              <Calendar className="h-4 w-4" />
-                              <span className="font-medium">Período de Exibição:</span>
-                              <span>{formatDate(video.data_inicio)} até {formatDate(video.data_fim)}</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-col gap-4 ml-4">
-                        <div className="flex flex-col gap-2">
-                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                            Status Atual
-                          </span>
-                          {video.status ? (
-                            <VideoStatusIndicator status={video.status} />
-                          ) : (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <RefreshCw className="h-4 w-4 animate-spin" />
-                              Carregando status...
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                            Visualização
-                          </span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="bg-background text-foreground border hover:bg-accent"
-                            onClick={() => {
-                              window.open(`/admin/video-preview/${video.video_id}`, '_blank');
-                            }}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            Visualizar
-                          </Button>
-                          
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="bg-background text-foreground border hover:bg-accent"
-                            onClick={() => {
-                              const link = document.createElement('a');
-                              link.href = `/admin/download-video/${video.video_id}`;
-                              link.download = `${video.video_name}.mp4`;
-                              link.click();
-                            }}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                          </Button>
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                            Ações Admin
-                          </span>
-                          {video.status && (
-                            <VideoAdminActions
-                              video={{
-                                pedido_video_id: video.pedido_video_id,
-                                video_id: video.video_id,
-                                video_name: video.video_name,
-                                pedido_id: video.pedido_id
-                              }}
-                              status={video.status}
-                              onActionComplete={handleActionComplete}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
+            <div className={`flex items-center justify-center ${isMobile ? 'aspect-video' : 'h-full min-h-[180px]'} bg-muted/30`}>
+              <div className="text-center">
+                <Play className="h-8 w-8 mx-auto text-muted-foreground/40 mb-1" />
+                <span className="text-xs text-muted-foreground/60">Sem preview</span>
+              </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 p-4 flex flex-col justify-between gap-3">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-foreground truncate">
+                {video.video_name}
+              </h3>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0">
+                  Slot {video.slot_position}
+                </Badge>
+                {video.status && <VideoStatusIndicator status={video.status} />}
+              </div>
+            </div>
+            <span className="text-sm font-bold text-emerald-600 whitespace-nowrap">
+              {formatCurrency(video.valor_total)}
+            </span>
+          </div>
+
+          {/* Details Grid */}
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-x-6 gap-y-1.5 text-xs text-muted-foreground`}>
+            <div className="flex items-center gap-1.5">
+              <User className="h-3 w-3 shrink-0" />
+              <span className="truncate">{video.client_name?.split('@')[0] || video.client_email?.split('@')[0]}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle className="h-3 w-3 text-emerald-500 shrink-0" />
+              <span className="truncate">Por: {video.approver_name?.split('@')[0]}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Calendar className="h-3 w-3 shrink-0" />
+              <span>{video.plano_meses} meses</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Calendar className="h-3 w-3 shrink-0" />
+              <span>Aprovado: {formatDate(video.approved_at)}</span>
+            </div>
+            {video.data_inicio && video.data_fim && (
+              <div className="flex items-center gap-1.5 col-span-2">
+                <DollarSign className="h-3 w-3 shrink-0" />
+                <span>Exibição: {formatDate(video.data_inicio)} → {formatDate(video.data_fim)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 pt-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-[11px] px-2.5"
+              onClick={() => window.open(`/admin/video-preview/${video.video_id}`, '_blank')}
+            >
+              <Eye className="h-3 w-3 mr-1" />
+              Visualizar
+            </Button>
+            {video.status && (
+              <VideoAdminActions
+                video={{
+                  pedido_video_id: video.pedido_video_id,
+                  video_id: video.video_id,
+                  video_name: video.video_name,
+                  pedido_id: video.pedido_id
+                }}
+                status={video.status}
+                onActionComplete={handleActionComplete}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Period Selector */}
+      <div className="bg-white/80 backdrop-blur-xl border border-white/40 rounded-2xl p-3 shadow-sm">
+        <PeriodSelector
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          onCustomStartDateChange={setCustomStartDate}
+          onCustomEndDateChange={setCustomEndDate}
+        />
+      </div>
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <CheckCircle className="h-4 w-4 text-emerald-600" />
+          <span className="text-sm font-semibold text-foreground">
+            Aprovados ({approvedVideos.length})
+          </span>
+        </div>
+        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => fetchApprovedVideos()}>
+          <RefreshCw className="h-3 w-3 mr-1" />
+          Atualizar
+        </Button>
+      </div>
+
+      {/* Videos */}
+      {approvedVideos.length === 0 ? (
+        <div className="bg-white/80 backdrop-blur-xl border border-white/40 rounded-2xl p-10 text-center shadow-sm">
+          <CheckCircle className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
+          <h3 className="text-sm font-medium text-foreground mb-1">Nenhum vídeo aprovado</h3>
+          <p className="text-xs text-muted-foreground">Selecione um período diferente</p>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {approvedVideos.map(renderVideoCard)}
+        </div>
+      )}
     </div>
   );
 };
