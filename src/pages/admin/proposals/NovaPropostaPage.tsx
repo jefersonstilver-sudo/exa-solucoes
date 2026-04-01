@@ -213,6 +213,7 @@ const NovaPropostaPage = () => {
 
   // Estado para título da proposta
   const [tituloProposta, setTituloProposta] = useState('');
+  const autoTitleRegex = /^(Horizontal|Vertical Premium)\s+\d+\s+prédios?\s*-\s*\d+\s*Meses?$/i;
 
   // Estados para novos toggles: Cobrança Futura e Exigir Contrato
   const [cobrancaFutura, setCobrancaFutura] = useState(false);
