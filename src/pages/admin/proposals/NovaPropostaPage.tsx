@@ -868,7 +868,20 @@ const NovaPropostaPage = () => {
     return selectedBuildingsData.reduce((sum, b) => sum + (b.publico_estimado || 0), 0);
   }, [selectedBuildingsData]);
 
-  // Calcular máximo de posições disponíveis baseado nos prédios selecionados
+  // Auto-sincronizar título com contagem real de prédios
+  useEffect(() => {
+    if (isEditMode) return; // Não auto-gerar ao editar proposta existente
+    const count = selectedBuildingsData.length;
+    if (count === 0) return;
+    const tipoLabel = tipoProduto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal';
+    const newAutoTitle = `${tipoLabel} ${count} prédios - ${durationMonths} Meses`;
+    
+    if (!tituloProposta || autoTitleRegex.test(tituloProposta)) {
+      setTituloProposta(newAutoTitle);
+    }
+  }, [selectedBuildingsData.length, durationMonths, tipoProduto]);
+
+
   const maxPosicoes = useMemo(() => {
     const maxPorProduto = tipoProduto === 'vertical_premium' 
       ? (specifications?.vertical.maxClientesPainel ?? 3)
