@@ -186,8 +186,8 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
               <p className="text-2xl font-bold text-[#9C1E1E]">{formatNumber(campaign.totalExibicoes)}</p>
             </div>
             <div className="bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl p-4 border border-border/40">
-              <p className="text-xs text-muted-foreground mb-1">Horas Totais</p>
-              <p className="text-2xl font-bold text-[#9C1E1E]">{campaign.totalHoras.toFixed(1)}h</p>
+              <p className="text-xs text-muted-foreground mb-1">Tempo Total</p>
+              <p className="text-2xl font-bold text-[#9C1E1E]">{formatDisplayTime(campaign.totalHoras)}</p>
             </div>
             <div className="bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl p-4 border border-border/40">
               <p className="text-xs text-muted-foreground mb-1">Prédios com Exibição</p>
