@@ -451,6 +451,7 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
         campaignReports.push({
           pedidoId: pedido.id,
           nomePedido: (pedido as any).nome_pedido || `Pedido #${pedido.id.substring(0, 8)}`,
+          tipoProduto: (pedido as any).tipo_produto || 'horizontal',
           clientName: clientData?.email?.split('@')[0] || 'Cliente',
           clientEmail: clientData?.email || 'Email não encontrado',
           dataInicio: pedido.data_inicio,
