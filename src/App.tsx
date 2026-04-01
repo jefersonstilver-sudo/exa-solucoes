@@ -519,7 +519,7 @@ const AppContent = () => {
           } />
 
           {/* Página de teste de links */}
-          <Route path="/test-links" element={<TestLinks />} />
+          <Route path="/test-links" element={<Suspense fallback={<GlobalLoadingPage />}><TestLinks /></Suspense>} />
 
           {/* Redirects para rotas antigas do Monitoramento IA - agora integrado no AdminRoutes */}
           <Route path="/admin/monitoramento-ia" element={<Navigate to="/admin/paineis-exa" replace />} />
