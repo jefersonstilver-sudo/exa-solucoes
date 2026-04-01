@@ -480,8 +480,8 @@ const AppContent = () => {
                 <MyVideos />
               </Suspense>
             } />
-            <Route path="editor-video" element={<VideoEditorDashboard />} />
-            <Route path="editor-video/:projectId" element={<VideoEditorPage />} />
+            <Route path="editor-video" element={<Suspense fallback={<GlobalLoadingPage />}><VideoEditorDashboard /></Suspense>} />
+            <Route path="editor-video/:projectId" element={<Suspense fallback={<GlobalLoadingPage />}><VideoEditorPage /></Suspense>} />
             <Route path="perfil" element={
               <Suspense fallback={<GlobalLoadingPage message="Carregando perfil..." />}>
                 <AdvertiserSettings />
