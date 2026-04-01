@@ -509,7 +509,7 @@ const AppContent = () => {
           <Route path="/verificacao-2fa" element={<TwoFactorVerificationPage />} />
 
           {/* Rota pública de escolha de benefício prestadores */}
-          <Route path="/presente" element={<ProviderBenefitChoice />} />
+          <Route path="/presente" element={<Suspense fallback={<GlobalLoadingPage />}><ProviderBenefitChoice /></Suspense>} />
           
           {/* Página pública de proposta comercial */}
           <Route path="/proposta" element={
