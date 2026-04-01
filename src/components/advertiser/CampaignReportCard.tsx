@@ -98,11 +98,20 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
           <CollapsibleTrigger className="flex-1 text-left">
             <div className="flex items-center gap-3 mb-2">
               <h3 className="text-xl font-semibold text-gray-900">
-                Pedido #{campaign.pedidoId.substring(0, 8)}
+                {campaign.nomePedido}
               </h3>
               <Badge className="bg-green-100 text-green-800 border-green-200">
                 {campaign.status}
               </Badge>
+              {campaign.isRealData ? (
+                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">
+                  Dados Reais
+                </Badge>
+              ) : (
+                <Badge className="bg-amber-100 text-amber-800 border-amber-200">
+                  Estimativa
+                </Badge>
+              )}
               <ChevronDown
                 className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${
                 isOpen ? 'rotate-180' : ''}`
