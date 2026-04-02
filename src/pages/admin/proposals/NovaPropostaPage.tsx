@@ -324,9 +324,10 @@ const NovaPropostaPage = () => {
   const handleVerticalPremiumToggle = () => {
     const newTipoProduto = tipoProduto === 'vertical_premium' ? 'horizontal' : 'vertical_premium';
     if (newTipoProduto === 'vertical_premium') {
-      // Selecionar TODOS os prédios automaticamente
-      setSelectedBuildings(buildings.map(b => b.id));
-      toast.success('Vertical Premium: Todos os prédios selecionados automaticamente');
+      // Selecionar apenas prédios da loja pública (ativo + instalação)
+      const publicBuildings = buildings.filter(b => ['ativo', 'instalacao', 'instalação'].includes(b.status));
+      setSelectedBuildings(publicBuildings.map(b => b.id));
+      toast.success('Vertical Premium: Todos os prédios da loja selecionados automaticamente');
     } else {
       setSelectedBuildings([]);
     }

@@ -448,11 +448,9 @@ const PropostaPublicaPage = () => {
 
               return {
                 ...b,
-                // Se não tem building_id, não é um prédio válido para proposta pública.
-                // Mantemos 0 para ser filtrado posteriormente.
-                quantidade_telas: hasBuildingId
-                  ? (currentData?.quantidade_telas ?? b.quantidade_telas ?? 1)
-                  : 0,
+                // Enriquecer com dados atuais do banco, mas NUNCA remover item da proposta.
+                // Fallback para o valor salvo na proposta, depois para 1.
+                quantidade_telas: currentData?.quantidade_telas ?? b.quantidade_telas ?? 1,
                 visualizacoes_mes: hasBuildingId
                   ? (currentData?.visualizacoes_mes ?? b.visualizacoes_mes ?? 0)
                   : 0,
