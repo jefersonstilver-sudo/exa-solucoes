@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
@@ -11,7 +11,9 @@ import { APP_VERSION } from './config/version'
 console.log(`🚀 Starting application v${APP_VERSION}...`);
 
 // Safety guard: if React hasn't rendered in 15s, show emergency fallback
-const renderTimeout = setTimeout(() => {
+let renderTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+renderTimeoutId = setTimeout(() => {
   const root = document.getElementById('root');
   if (root && !root.hasChildNodes()) {
     console.error('⏰ React failed to render within 15s');
@@ -26,6 +28,23 @@ const renderTimeout = setTimeout(() => {
   }
 }, 15000);
 
+// Expose for cleanup from inside React
+(window as any).__clearRenderTimeout = () => {
+  if (renderTimeoutId) {
+    clearTimeout(renderTimeoutId);
+    renderTimeoutId = null;
+  }
+};
+
+/** Wrapper that clears the safety timeout once React actually mounts */
+function BootGuard({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    (window as any).__clearRenderTimeout?.();
+    console.log(`✅ React app v${APP_VERSION} mounted successfully`);
+  }, []);
+  return <>{children}</>;
+}
+
 try {
   const rootElement = document.getElementById('root');
   if (!rootElement) {
@@ -37,13 +56,12 @@ try {
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
       <ThemeProvider defaultTheme="light">
-        <App />
+        <BootGuard>
+          <App />
+        </BootGuard>
       </ThemeProvider>
     </React.StrictMode>,
   );
-  
-  clearTimeout(renderTimeout);
-  console.log(`✅ React app v${APP_VERSION} rendered successfully`);
 } catch (error) {
   console.error('❌ Critical error initializing app:', error);
   
