@@ -1631,11 +1631,11 @@ const PropostaPublicaPage = () => {
     );
   }
 
-  // Use enriched building data - FILTRAR prédios inválidos (sem telas)
+  // Use enriched building data - A proposta salva é a fonte de verdade absoluta
   const allBuildings = enrichedBuildings.length > 0 ? enrichedBuildings : (proposal.selected_buildings || []);
-  // Correção: só exibir prédios válidos (com building_id) e com telas > 0.
-  // Isso remove itens "soltos" (ex: "Sala Jeff") que não estão atribuídos a um prédio.
-  const buildings = allBuildings.filter((b: any) => Boolean(b?.building_id) && (b.quantidade_telas ?? 0) > 0);
+  // CORREÇÃO CRÍTICA: Só filtrar por building_id (itens sem ID são lixo de dados).
+  // NÃO filtrar por quantidade_telas — prédios com 0 telas fazem parte da proposta salva.
+  const buildings = allBuildings.filter((b: any) => Boolean(b?.building_id));
   const totalPanels = realTotalPanels || proposal.total_panels || buildings.reduce((sum: number, b: any) => sum + (b.quantidade_telas || 1), 0);
   const totalImpressions = proposal.total_impressions_month || buildings.reduce((sum: number, b: any) => sum + (b.visualizacoes_mes || 0), 0);
   const fidelTotal = proposal.fidel_monthly_value * proposal.duration_months;
