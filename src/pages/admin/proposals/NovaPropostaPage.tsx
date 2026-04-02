@@ -2487,9 +2487,9 @@ Parcelas:
 
           {/* Botões Selecionar Todos / Limpar */}
           <div className="flex gap-2 mb-3">
-            <Button variant="outline" size="sm" onClick={selectAll} disabled={isLoadingBuildings || selectedBuildings.length === buildings.length || tipoProduto === 'vertical_premium'} className="text-xs h-8">
+            <Button variant="outline" size="sm" onClick={selectAll} disabled={isLoadingBuildings || selectedBuildings.length === buildings.filter(b => ['ativo', 'instalacao', 'instalação'].includes(b.status)).length || tipoProduto === 'vertical_premium'} className="text-xs h-8">
               <CheckCircle className="h-3 w-3 mr-1" />
-              Selecionar Todos ({buildings.length})
+              Selecionar Todos ({buildings.filter(b => ['ativo', 'instalacao', 'instalação'].includes(b.status)).length})
             </Button>
             <Button variant="ghost" size="sm" onClick={clearSelection} disabled={selectedBuildings.length === 0 || tipoProduto === 'vertical_premium'} className="text-xs h-8">
               Limpar Seleção
