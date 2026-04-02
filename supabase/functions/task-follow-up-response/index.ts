@@ -322,38 +322,20 @@ serve(async (req) => {
           await sendReply(`❌ *Compromisso cancelado!*\n\n"${task.titulo}" foi cancelado.\nJustificativa enviada ao gestor.`);
           await notifyCreatorOfAction(`❌ Compromisso *cancelado*.\n📝 Justificativa: ${justificativa}`, phone);
 
-          const { data: ceoUsers } = await supabase
-            .from('users')
-            .select('telefone')
-            .eq('role', 'ceo');
+          // Notify only task_read_receipts contacts (no CEO fallback, no directors broadcast)
+          const { data: cancelReceipts } = await supabase
+            .from('task_read_receipts')
+            .select('contact_phone, contact_name')
+            .eq('task_id', task.id);
 
-          if (ceoUsers) {
-            for (const ceo of ceoUsers) {
-              if (!ceo.telefone) continue;
+          if (cancelReceipts) {
+            for (const c of cancelReceipts) {
+              if (!c.contact_phone || c.contact_phone.replace(/\D/g, '').includes(phone.slice(-8))) continue;
               await supabase.functions.invoke('zapi-send-message', {
                 body: {
                   agentKey: 'exa_alert',
-                  phone: ceo.telefone,
-                  message: `⚠️ *Compromisso cancelado*\n\n📋 "${task.titulo}"\n📝 Justificativa: ${justificativa}\n👤 Cancelado por: ${respondentName}`,
-                  skipSplit: true
-                }
-              });
-            }
-          }
-
-          const { data: contacts } = await supabase
-            .from('exa_alerts_directors')
-            .select('telefone')
-            .eq('ativo', true);
-
-          if (contacts) {
-            for (const c of contacts) {
-              if (!c.telefone || c.telefone.replace(/\D/g, '').includes(phone.slice(-8))) continue;
-              await supabase.functions.invoke('zapi-send-message', {
-                body: {
-                  agentKey: 'exa_alert',
-                  phone: c.telefone,
-                  message: `❌ A tarefa *"${task.titulo}"* foi *cancelada*.`,
+                  phone: c.contact_phone,
+                  message: `❌ A tarefa *"${task.titulo}"* foi *cancelada*.\n📝 Justificativa: ${justificativa}`,
                   skipSplit: true
                 }
               });
