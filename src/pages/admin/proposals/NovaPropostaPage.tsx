@@ -828,9 +828,10 @@ const NovaPropostaPage = () => {
     setSelectedBuildings(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
   };
 
-  // Selecionar todos
+  // Selecionar todos — apenas prédios da loja pública (ativo + instalação), não internos
   const selectAll = () => {
-    setSelectedBuildings(buildings.map(b => b.id));
+    const publicBuildings = buildings.filter(b => ['ativo', 'instalacao', 'instalação'].includes(b.status));
+    setSelectedBuildings(publicBuildings.map(b => b.id));
   };
 
   // Limpar seleção
