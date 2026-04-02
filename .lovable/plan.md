@@ -1,27 +1,50 @@
 
 
-# Diagnóstico: Tela Branca
+# Plano: Corrigir Contagem de Prédios na Proposta + Tela Branca
 
-## Análise
+## Diagnóstico dos Prédios
 
-Revisei todos os arquivos alterados recentemente:
+Auditoria completa no banco de dados revelou a causa raiz:
 
-- `src/hooks/useVideoReportData.ts` — função `calculateDisplayHours` removida e não é mais referenciada em nenhum lugar ✅
-- `src/components/advertiser/VideoListItem.tsx` — badge "aguardando dados" adicionado corretamente ✅
-- `src/pages/admin/proposals/NovaPropostaPage.tsx` — query com `.in('status', [...])` e interface `Building` com `status?` ✅
-- `src/services/videoSlotService.ts` — default 4 e `safeMaxSlots` ✅
-- `src/services/videoUploadService.ts` — validação de slot_position ✅
-- `src/components/video-trimmer/TrimmerTimeline.tsx` — zoom e playhead ✅
+```text
+LOJA PÚBLICA (get_buildings_for_public_store):
+  → WHERE status IN ('ativo', 'instalação', 'instalacao')
+  → 11 ativos + 3 instalacao = 14 prédios ✅
 
-**Nenhum erro de sintaxe, import quebrado, ou referência a função removida foi encontrado.**
+SELETOR DA PROPOSTA (NovaPropostaPage.tsx linha 480):
+  → .in('status', ['ativo', 'interno'])
+  → 11 ativos + 3 internos = 14 prédios
+  → MAS são os 14 ERRADOS! Inclui internos (0 telas) em vez de instalacao
 
-## Causa Provável
+PROPOSTA PÚBLICA (PropostaPublicaPage.tsx linha 1638):
+  → Filtra: quantidade_telas > 0
+  → 3 prédios internos têm 0 telas → são removidos
+  → Resultado: apenas 11 prédios aparecem na proposta do cliente
+```
 
-A tela branca é causada por um **problema transitório do Vite HMR** (Hot Module Replacement) após múltiplas edições rápidas em sequência. O dev server ficou desatualizado.
+Os 3 prédios `instalacao` (Bella Vita, Cheverny, Miró) que aparecem na loja **nunca entram na proposta** porque o seletor não os busca. Os 3 `interno` (COMERCIAL TABLET, ENTRADA, SALA REUNIÃO) entram no seletor mas são filtrados na proposta pública por terem 0 telas.
 
-## Solução
+## Correção 1: Seletor de Prédios na Proposta
 
-**Recarregar o preview** — basta clicar no botão de reload no preview (ou pressionar F5 na janela de preview). Não há nenhum código corrompido para corrigir.
+**Arquivo: `src/pages/admin/proposals/NovaPropostaPage.tsx` (linha 480)**
 
-Se o problema persistir após recarregar, o próximo passo seria verificar os logs do dev server para identificar se há um erro de compilação específico do Vite.
+Alterar a query para incluir `instalacao` e `instalação`:
+```
+.in('status', ['ativo', 'interno', 'instalacao', 'instalação'])
+```
+
+Isso garantirá que os mesmos 14 prédios da loja estejam disponíveis + os internos para uso administrativo.
+
+## Correção 2: Tela Branca
+
+O preview está em branco sem erros no console — comportamento típico de problema transitório do dev server (503 proxy). Para mitigar:
+
+**Arquivo: `src/main.tsx`**
+
+O `clearTimeout(renderTimeout)` na linha 45 é chamado sincronamente após `ReactDOM.createRoot().render()`, mas o render do React é assíncrono. O timeout é limpo antes dos componentes montarem. Corrigir para limpar o timeout apenas quando o app realmente renderizar, movendo o `clearTimeout` para dentro do componente App via useEffect.
+
+## Arquivos a Editar
+
+1. `src/pages/admin/proposals/NovaPropostaPage.tsx` — adicionar `'instalacao', 'instalação'` à query de prédios
+2. `src/main.tsx` — mover clearTimeout para garantir que o fallback funcione corretamente quando o render demora
 
