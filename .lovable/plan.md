@@ -1,64 +1,83 @@
 
-Objetivo: fazer o link público espelhar exatamente a proposta salva, sem mexer em fluxos não relacionados.
 
-Diagnóstico confirmado
-- Não é erro de banco/RLS: a proposta `be6c216d-0097-465a-ab11-6da308309fd2` está salva com `selected_buildings = 14`.
-- O problema é de composição + renderização:
-  - a proposta auditada contém 11 prédios `ativo` + 3 `interno` (`COMERCIAL TABLET`, `ENTRADA`, `SALA REUNIÃO`);
-  - ela não contém os 3 prédios `instalacao` da loja (`Bella Vita`, `Condomínio Cheverny`, `Residencial Miró`);
-  - no link público, `PropostaPublicaPage.tsx` remove qualquer item com `quantidade_telas <= 0`, então os 3 internos somem e restam 11.
-- Ou seja: hoje o link público não usa a proposta salva como fonte final de verdade.
+# Auditoria Completa: Destinatários de Compromissos via ZAPI
 
-Plano de correção
-1. Tornar o link público 100% fiel à proposta salva
-- Em `src/pages/public/PropostaPublicaPage.tsx`, parar de excluir prédios por `quantidade_telas > 0`.
-- Usar `selected_buildings` salvo na proposta como base oficial para:
-  - contagem de prédios;
-  - cards “Locais Contratados”;
-  - metadados e resumo;
-  - PDF/export.
-- Manter o “enriquecimento” com dados atuais do banco apenas para completar imagem/endereço/métricas, nunca para remover item.
-- Se um prédio não vier mais do banco, continuar exibindo o item salvo com fallback dos dados persistidos na proposta.
+## Diagnóstico Confirmado
 
-2. Corrigir o editor para selecionar exatamente os prédios da loja pública
-- Em `src/pages/admin/proposals/NovaPropostaPage.tsx`, separar:
-  - prédios elegíveis da loja pública: `ativo`, `instalacao`, `instalação`;
-  - prédios `interno`: continuam visíveis para uso administrativo manual.
-- Ajustar `Selecionar Todos` para marcar apenas os prédios da loja pública.
-- Ajustar o auto-select do `vertical_premium` para também usar apenas os prédios da loja pública.
-- Atualizar os contadores/badges do editor para refletirem esse conjunto correto.
+A auditoria revelou que **pessoas que NÃO foram selecionadas para um compromisso específico estão recebendo notificações** porque várias edge functions usam a tabela `exa_alerts_directors` como fallback/merge indiscriminado.
 
-3. Eliminar divergência entre número exibido e lista renderizada
-- Garantir que o número de prédios mostrado no topo, no badge de “Locais Contratados” e no grid use a mesma coleção normalizada.
-- Garantir a mesma regra no PDF para não haver diferença entre proposta online e material exportado.
+### Evidência concreta do banco de dados
 
-4. Tratar propostas já afetadas
-- Auditar propostas salvas no período anterior que carregaram internos no lugar de prédios de instalação.
-- Corrigir apenas os registros comprovadamente afetados por esse fluxo antigo, sem mexer em propostas que incluíram internos de propósito.
-- Isso é correção de dados, não mudança de schema.
-
-Arquivos principais
-- `src/pages/public/PropostaPublicaPage.tsx`
-- `src/pages/admin/proposals/NovaPropostaPage.tsx`
-- `src/components/public/proposal/ProposalBuildingCard.tsx` (se precisar preservar `0 tela` sem cair no fallback visual de `1`)
-- `src/components/proposals/ProposalPDFExporter.tsx`
-
-Detalhes técnicos
 ```text
-Banco atual:
-- ativo = 11
-- instalacao = 3
-- interno = 3 (todos com quantidade_telas = 0)
+TABELA exa_alerts_directors (13 contatos ativos):
+  Alencar Lima, Beatriz, Blenda Pessoal, Blenda TRABALHO,
+  JEFERSON, Jeniffer Aireliza, joao, jonathan kaizen, kAIZEN,
+  Marcio Abrasel, Melo, Pamela Via laser, Rockuy
 
-Erro atual no link público:
-- allBuildings.filter((b) => Boolean(b?.building_id) && (b.quantidade_telas ?? 0) > 0)
+CASO REAL — Tarefa "Reunião MAGNO BANCO EBW" (13331d49):
+  → Criada com 2 contatos selecionados (Jefferson Silver + Blenda TRABALHO)
+  → Quando ALTERADA: task-notify-change enviou para 14 contatos!
+  → Motivo: a função faz merge de receipts + TODOS os directors ativos
 
-Efeito:
-- proposta salva com 14 itens
-- link público renderiza só 11
-
-Resultado esperado após a implementação:
-- se a proposta salva tiver 14, o link público mostra 14;
-- “Selecionar Todos” no editor passa a selecionar exatamente os 14 da loja pública;
-- internos continuam disponíveis apenas por seleção manual administrativa.
+CASO REAL — Tarefa "Apresentação ABRASEL" (a0f9b72a):  
+  → Criada com 6 contatos selecionados (Jeferson, Jeniffer, Beatriz, Blenda×2, Marcio)
+  → Se for alterada/cancelada → iria para TODOS os 13 directors ativos
+  → Marcio recebeu corretamente porque FOI selecionado nesta tarefa
 ```
+
+### Causa raiz — 5 edge functions com lógica errada
+
+| Edge Function | Comportamento atual | Problema |
+|---|---|---|
+| `task-notify-created` | Usa `specific_contacts` do frontend | OK — respeita seleção |
+| `task-notify-change` | Merge `task_read_receipts` + TODOS `exa_alerts_directors` | Envia para quem NÃO foi selecionado |
+| `task-notify-cancelled` | Merge `task_read_receipts` + TODOS `exa_alerts_directors` | Envia para quem NÃO foi selecionado |
+| `task-follow-up-cron` | Escalação vai para TODOS `exa_alerts_directors` | Envia para quem NÃO foi selecionado |
+| `task-follow-up-response` | Broadcasts de conclusão/reagendamento/cancelamento vão para TODOS `exa_alerts_directors` | Envia para quem NÃO foi selecionado |
+| `task-reminder-scheduler` | Fallback: se não há `task_read_receipts`, usa TODOS `exa_alerts_directors` | Envia para quem NÃO foi selecionado |
+| `task-daily-report` | Envia para TODOS `exa_alerts_directors` | OK — é relatório global configurado separadamente |
+
+### Resumo diário — está correto
+O resumo diário (`agenda_resumo_diario`) está configurado para enviar apenas para JEFERSON às 08:09. Isso está funcionando corretamente e NÃO será alterado.
+
+## Plano de Correção
+
+**Princípio**: `task_read_receipts` é a fonte de verdade de quem deve receber notificações sobre cada tarefa. Nenhuma função deve fazer fallback para `exa_alerts_directors` em notificações por tarefa.
+
+### 1. Corrigir `task-notify-change`
+- Remover o merge com `exa_alerts_directors` (linhas 91-115)
+- Usar APENAS `task_read_receipts` para determinar destinatários
+- Se não houver receipts, não enviar (a tarefa nunca foi notificada antes)
+
+### 2. Corrigir `task-notify-cancelled`
+- Remover o merge com `exa_alerts_directors` (linhas 57-81)
+- Usar APENAS `task_read_receipts` para determinar destinatários
+
+### 3. Corrigir `task-reminder-scheduler`
+- Na função `getRecipients` (linhas 453-468): remover o fallback para `alertContacts`
+- Se não há `task_read_receipts` para uma tarefa, não enviar lembrete (significa que ninguém foi notificado sobre ela)
+
+### 4. Corrigir `task-follow-up-cron`
+- Na fase de escalação (linhas 213-267): escalar APENAS para contatos que estão em `task_read_receipts` da tarefa, não para todos os directors
+
+### 5. Corrigir `task-follow-up-response`
+- Ao confirmar conclusão (linhas 216-233): notificar apenas contatos dos `task_read_receipts`, não todos os directors
+- Ao confirmar reagendamento (linhas 277-297): idem
+- Ao confirmar cancelamento (linhas 342-358): idem
+- Remover a busca de CEO users (linhas 323-339) que recebem cancelamentos indiscriminadamente
+
+### O que NÃO será alterado
+- `task-notify-created`: já funciona corretamente com `specific_contacts`
+- `task-daily-report`: relatório global com configuração própria
+- Tabela `exa_alerts_directors`: permanece intacta, continua útil para relatórios globais e como fonte de contatos no frontend
+- UI de criação/edição de tarefas (CreateTaskModal, EditTaskModal): já permite seleção granular de destinatários
+- Nenhuma interface existente será modificada
+
+## Arquivos a editar
+
+1. `supabase/functions/task-notify-change/index.ts`
+2. `supabase/functions/task-notify-cancelled/index.ts`
+3. `supabase/functions/task-reminder-scheduler/index.ts`
+4. `supabase/functions/task-follow-up-cron/index.ts`
+5. `supabase/functions/task-follow-up-response/index.ts`
+
