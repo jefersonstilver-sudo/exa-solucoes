@@ -211,11 +211,6 @@ serve(async (req) => {
       .lt('sent_at', thirtyMinAgo.toISOString());
 
     if (staleNotifs && staleNotifs.length > 0) {
-      const { data: contacts } = await supabase
-        .from('exa_alerts_directors')
-        .select('id, nome, telefone')
-        .eq('ativo', true);
-
       for (const notif of staleNotifs) {
         const { data: escalTask } = await supabase
           .from('tasks')
@@ -224,6 +219,12 @@ serve(async (req) => {
           .single();
 
         if (!escalTask) continue;
+
+        // Get escalation recipients ONLY from task_read_receipts
+        const { data: receipts } = await supabase
+          .from('task_read_receipts')
+          .select('contact_phone, contact_name')
+          .eq('task_id', notif.task_id);
 
         const taskTime = escalTask.horario_limite || escalTask.horario_inicio || '';
         const message = `⚠️ *Escalação - Tarefa sem resposta*\n\n` +
@@ -241,22 +242,23 @@ serve(async (req) => {
 
         const creatorPhone = creator?.telefone?.replace(/\D/g, '');
 
-        if (contacts) {
-          for (const contact of contacts) {
-            if (!contact.telefone) continue;
-            if (creatorPhone && contact.telefone.replace(/\D/g, '').includes(creatorPhone.slice(-8))) continue;
+        if (receipts) {
+          for (const receipt of receipts) {
+            if (!receipt.contact_phone) continue;
+            // Skip creator (already received follow-up)
+            if (creatorPhone && receipt.contact_phone.replace(/\D/g, '').includes(creatorPhone.slice(-8))) continue;
 
             try {
               await supabase.functions.invoke('zapi-send-message', {
                 body: {
                   agentKey: 'exa_alert',
-                  phone: contact.telefone,
+                  phone: receipt.contact_phone,
                   message,
                   skipSplit: true
                 }
               });
             } catch (err) {
-              console.error(`[TASK-FOLLOWUP] ❌ Escalation failed for ${contact.nome}:`, err);
+              console.error(`[TASK-FOLLOWUP] ❌ Escalation failed for ${receipt.contact_name}:`, err);
             }
           }
         }
@@ -271,7 +273,7 @@ serve(async (req) => {
           task_id: notif.task_id,
           status_anterior: escalTask.status || 'pendente',
           status_novo: escalTask.status || 'pendente',
-          motivo: `Sem resposta após 30min — escalado para diretores às ${now.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`,
+          motivo: `Sem resposta após 30min — escalado para participantes da tarefa às ${now.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`,
           alterado_por: null,
         });
 

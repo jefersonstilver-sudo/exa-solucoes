@@ -213,18 +213,19 @@ serve(async (req) => {
           await sendReply(`✅ *Tarefa concluída!*\n\n"${task.titulo}" foi marcada como concluída com sucesso.`);
           await notifyCreatorOfAction('✅ Tarefa marcada como *concluída*.', phone);
 
-          const { data: contacts } = await supabase
-            .from('exa_alerts_directors')
-            .select('telefone')
-            .eq('ativo', true);
+          // Notify only task_read_receipts contacts (not all directors)
+          const { data: taskReceipts } = await supabase
+            .from('task_read_receipts')
+            .select('contact_phone, contact_name')
+            .eq('task_id', task.id);
 
-          if (contacts) {
-            for (const c of contacts) {
-              if (!c.telefone || c.telefone.replace(/\D/g, '').includes(phone.slice(-8))) continue;
+          if (taskReceipts) {
+            for (const c of taskReceipts) {
+              if (!c.contact_phone || c.contact_phone.replace(/\D/g, '').includes(phone.slice(-8))) continue;
               await supabase.functions.invoke('zapi-send-message', {
                 body: {
                   agentKey: 'exa_alert',
-                  phone: c.telefone,
+                  phone: c.contact_phone,
                   message: `✅ A tarefa *"${task.titulo}"* foi marcada como *concluída*.`,
                   skipSplit: true
                 }

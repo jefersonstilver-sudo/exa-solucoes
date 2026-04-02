@@ -450,7 +450,8 @@ serve(async (req) => {
 
 // === Helper Functions ===
 
-async function getRecipients(supabase: any, taskId: string, alertContacts: any[] | null) {
+async function getRecipients(supabase: any, taskId: string, _alertContacts: any[] | null) {
+  // Use ONLY task_read_receipts — no fallback to exa_alerts_directors
   const { data: receipts } = await supabase
     .from('task_read_receipts')
     .select('contact_phone, contact_name')
@@ -462,9 +463,7 @@ async function getRecipients(supabase: any, taskId: string, alertContacts: any[]
       .filter((r: any) => r.contact_phone)
       .map((r: any) => ({ nome: r.contact_name || 'Contato', telefone: r.contact_phone }));
   }
-  if (recipients.length === 0 && alertContacts) {
-    recipients = alertContacts.filter(c => c.telefone).map(c => ({ nome: c.nome, telefone: c.telefone }));
-  }
+  // No fallback — if no receipts exist, nobody was notified about this task
   return recipients;
 }
 

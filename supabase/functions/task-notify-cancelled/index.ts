@@ -47,20 +47,13 @@ serve(async (req) => {
 
     console.log('[TASK-CANCEL] 📤 Notifying cancellation:', titulo, '| task_id:', task_id);
 
-    // 1. Buscar contatos que já foram notificados (task_read_receipts)
+    // Buscar contatos APENAS de task_read_receipts (notificados anteriormente para esta tarefa)
     const { data: receipts } = await supabase
       .from('task_read_receipts')
       .select('contact_phone, contact_name')
-      .eq('task_id', task_id)
-      .eq('status', 'sent');
+      .eq('task_id', task_id);
 
-    // 2. Também buscar exa_alerts_directors (sempre, não apenas como fallback)
-    const { data: dbContacts } = await supabase
-      .from('exa_alerts_directors')
-      .select('nome, telefone')
-      .eq('ativo', true);
-
-    // 3. Merge ambas as listas, deduplicando por telefone
+    // Usar APENAS task_read_receipts — sem merge com exa_alerts_directors
     const seen = new Set<string>();
     let contacts: { nome: string; telefone: string }[] = [];
 
@@ -72,15 +65,7 @@ serve(async (req) => {
       }
     }
 
-    if (dbContacts) {
-      for (const d of dbContacts) {
-        if (!d.telefone || seen.has(d.telefone)) continue;
-        seen.add(d.telefone);
-        contacts.push({ nome: d.nome || 'Diretor', telefone: d.telefone });
-      }
-    }
-
-    console.log(`[TASK-CANCEL] 📋 Merged contacts: ${contacts.length} (receipts: ${receipts?.length || 0}, directors: ${dbContacts?.length || 0})`);
+    console.log(`[TASK-CANCEL] 📋 Recipients from task_read_receipts only: ${contacts.length}`);
 
     if (contacts.length === 0) {
       console.log('[TASK-CANCEL] ⚠️ No contacts to notify');

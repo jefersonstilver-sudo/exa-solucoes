@@ -82,19 +82,13 @@ serve(async (req) => {
       return t.length >= 5 ? t.slice(0, 5) : t;
     };
 
-    // Get contacts from task_read_receipts (previously notified)
+    // Get contacts ONLY from task_read_receipts (previously notified for this specific task)
     const { data: receipts } = await supabase
       .from('task_read_receipts')
       .select('contact_phone, contact_name')
       .eq('task_id', task_id);
 
-    // Also get exa_alerts_directors (always, not just as fallback)
-    const { data: dbContacts } = await supabase
-      .from('exa_alerts_directors')
-      .select('nome, telefone')
-      .eq('ativo', true);
-
-    // Merge both lists, deduplicating by phone
+    // Use ONLY task_read_receipts — no merge with exa_alerts_directors
     const seen = new Set<string>();
     let contacts: { nome: string; telefone: string }[] = [];
 
@@ -106,15 +100,7 @@ serve(async (req) => {
       }
     }
 
-    if (dbContacts) {
-      for (const d of dbContacts) {
-        if (!d.telefone || seen.has(d.telefone)) continue;
-        seen.add(d.telefone);
-        contacts.push({ nome: d.nome || 'Diretor', telefone: d.telefone });
-      }
-    }
-
-    console.log(`[TASK-CHANGE] 📋 Merged contacts: ${contacts.length} (receipts: ${receipts?.length || 0}, directors: ${dbContacts?.length || 0})`);
+    console.log(`[TASK-CHANGE] 📋 Recipients from task_read_receipts only: ${contacts.length}`);
 
     if (contacts.length === 0) {
       console.log('[TASK-CHANGE] ⚠️ No contacts to notify');
