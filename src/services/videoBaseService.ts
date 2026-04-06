@@ -365,6 +365,30 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
       console.log('🔔 [SET_BASE_VIDEO] Chamando notifyExternalAPI...');
       const notifyResult = await notifyExternalAPI(currentSlot.pedido_id, currentSlot.video_id, previousVideoId);
       console.log('✅ [SET_BASE_VIDEO] API externa notificada com sucesso:', notifyResult);
+
+      // 🔄 AUTO-SYNC: Ensure all buildings have the video
+      try {
+        console.log('🔄 [SET_BASE_VIDEO] Auto-sync: sincronizando todos os prédios...');
+        const { data: orderData } = await supabase
+          .from('pedidos')
+          .select('lista_predios')
+          .eq('id', currentSlot.pedido_id)
+          .single();
+
+        const buildingIds: string[] = orderData?.lista_predios || [];
+        if (buildingIds.length > 0) {
+          const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-buildings-external-api', {
+            body: { pedido_id: currentSlot.pedido_id, action: 'add', building_ids: buildingIds }
+          });
+          if (syncError) {
+            console.error('⚠️ [SET_BASE_VIDEO] Auto-sync erro:', syncError);
+          } else {
+            console.log('✅ [SET_BASE_VIDEO] Auto-sync concluído:', syncData);
+          }
+        }
+      } catch (autoSyncErr: any) {
+        console.error('⚠️ [SET_BASE_VIDEO] Auto-sync exceção:', autoSyncErr.message);
+      }
     } catch (err: any) {
       console.error('❌ [SET_BASE_VIDEO] ERRO CRÍTICO ao notificar API externa:', err);
       console.error('❌ [SET_BASE_VIDEO] Erro detalhado:', {
