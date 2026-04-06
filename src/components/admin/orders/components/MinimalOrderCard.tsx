@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-import { Eye, Clock, Building, User, Calendar, Monitor, Smartphone, Video, Crown } from 'lucide-react';
+import { Eye, Clock, Building, User, Calendar, Monitor, Smartphone, Video, Crown, RefreshCw } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { formatCurrency } from '@/utils/formatters';
 import { formatDistanceToNow, format, differenceInDays, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -37,6 +39,43 @@ const getStatusConfig = (status: string, type: 'order' | 'attempt') => {
     className: config.className,
     icon: config.icon
   };
+};
+
+const SyncApiButton: React.FC<{ orderId: string; buildingIds: string[] }> = ({ orderId, buildingIds }) => {
+  const [syncing, setSyncing] = useState(false);
+  
+  const handleSync = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-buildings-external-api', {
+        body: { pedido_id: orderId, action: 'add', building_ids: buildingIds }
+      });
+      if (error) throw error;
+      if (!data?.success) {
+        toast.error('Sincronização parcial com a API AWS.');
+      } else {
+        toast.success(`Sincronizado! ${data.synced} vídeo(s) → ${data.buildings} prédio(s)`);
+      }
+    } catch (err: any) {
+      toast.error(`Erro ao sincronizar: ${err.message}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleSync}
+      disabled={syncing}
+      className="h-8 px-2 text-xs"
+      title="Sincronizar com API AWS"
+    >
+      <RefreshCw className={`h-3.5 w-3.5 ${syncing ? 'animate-spin' : ''}`} />
+    </Button>
+  );
 };
 
 export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
@@ -226,18 +265,23 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
           </div>
         </div>
         
-        {/* Ação */}
-        {item.type === 'order' && onViewOrderDetails && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => onViewOrderDetails(item.id)}
-            className="h-8 px-3 text-xs"
-          >
-            <Eye className="h-3.5 w-3.5 mr-1" />
-            Ver
-          </Button>
-        )}
+        {/* Ações */}
+        <div className="flex items-center gap-1.5">
+          {item.type === 'order' && isSuperAdmin && panelList && panelList.length > 0 && (
+            <SyncApiButton orderId={item.id} buildingIds={panelList} />
+          )}
+          {item.type === 'order' && onViewOrderDetails && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => onViewOrderDetails(item.id)}
+              className="h-8 px-3 text-xs"
+            >
+              <Eye className="h-3.5 w-3.5 mr-1" />
+              Ver
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
