@@ -3,8 +3,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
   Eye, Edit, Image, MapPin, Monitor, Video, Play, Hash, Link2, 
-  MoreHorizontal, Trash2, ExternalLink, List
+  MoreHorizontal, Trash2, ExternalLink, List, RefreshCw
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { syncBuildingWithExternalAPI } from '@/services/buildingSyncService';
 import {
   DropdownMenu,
   DropdownMenuContent,
