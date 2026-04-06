@@ -1,50 +1,43 @@
 
 
-# Correção: Auto-sync AWS para vídeos Master com base existente
+# Plano: Limpar registros órfãos de agendamento e prevenir futuros
 
 ## Problema
-Quando um vídeo é enviado para um pedido Master que já possui vídeo base, o bloco `else` (linha 343-345 de `videoUploadService.ts`) apenas loga "mantendo apenas como aprovado" sem chamar a API externa. O vídeo fica aprovado no banco mas nunca chega na AWS.
 
-## Correção
+O pedido `20b6e44d-e593-4c73-a74b-099d7e68e152` tem 3 registros órfãos na tabela `campaign_video_schedules` referenciando vídeos antigos ("Video 2", "video 3", "Video 4") que já foram removidos do `pedido_videos`. Esses registros geram falsos conflitos ao tentar agendar os vídeos atuais (KAMMER 1-4).
 
-**Arquivo**: `src/services/videoUploadService.ts` (linhas 343-345)
+**Dados encontrados no banco:**
 
-Substituir:
-```typescript
-} else {
-  console.log('👑 [MASTER] Vídeo base já existe — mantendo apenas como aprovado');
-}
-```
+| Tabela | Vídeos |
+|--------|--------|
+| `pedido_videos` (atual) | KAMMER 1, kammer 2, KAMMER 3, KAMMER 4 |
+| `campaign_video_schedules` (órfão) | Video 2, video 3, Video 4 |
 
-Por:
-```typescript
-} else {
-  console.log('👑 [MASTER] Vídeo base já existe — mantendo apenas como aprovado');
-  
-  try {
-    const { data: orderSync } = await supabase
-      .from('pedidos')
-      .select('lista_predios')
-      .eq('id', orderId)
-      .single();
+A validação de conflitos (`videoScheduleValidationService.ts`) cruza os dados de `campaign_video_schedules` e encontra esses registros antigos como se fossem ativos.
 
-    const buildingIds: string[] = orderSync?.lista_predios || [];
-    if (buildingIds.length > 0) {
-      console.log('🔄 [MASTER] Auto-sync prédios:', buildingIds);
-      const { error: syncErr } = await supabase.functions.invoke('sync-buildings-external-api', {
-        body: { pedido_id: orderId, action: 'add', building_ids: buildingIds }
-      });
-      if (syncErr) {
-        console.error('⚠️ [MASTER] Auto-sync erro:', syncErr);
-      } else {
-        console.log('✅ [MASTER] Auto-sync prédios concluído');
-      }
-    }
-  } catch (syncErr: any) {
-    console.error('⚠️ [MASTER] Auto-sync exceção:', syncErr.message);
-  }
-}
-```
+## Solução (2 partes)
 
-Nenhum outro arquivo é alterado. A lógica replica exatamente o que já existe na aprovação manual e no `setBaseVideo`.
+### Parte 1: Limpeza imediata via migration
+
+Executar SQL para deletar os registros órfãos:
+- Deletar `campaign_schedule_rules` cujo `campaign_video_schedule_id` pertence a schedules de vídeos que não existem mais em `pedido_videos` deste pedido.
+- Deletar `campaign_video_schedules` órfãos.
+- Deletar `campaigns_advanced` que ficarem sem schedules.
+
+### Parte 2: Prevenção — Limpar schedules ao remover vídeo
+
+Modificar o fluxo de remoção de vídeo (`removeVideo` em `useVideoManagement` ou serviço correspondente) para também deletar registros relacionados nas tabelas `campaign_video_schedules` e `campaign_schedule_rules` quando um vídeo é removido do pedido.
+
+Alternativamente, adicionar uma validação no `videoScheduleValidationService.ts` para filtrar conflitos apenas de vídeos que ainda existem em `pedido_videos`.
+
+## Arquivos
+
+| Arquivo | Ação |
+|---------|------|
+| Migration SQL | **Criar** — limpar registros órfãos existentes |
+| `src/services/videoScheduleValidationService.ts` | **Editar** — filtrar conflitos apenas para vídeos presentes em `pedido_videos` |
+
+## Detalhes técnicos
+
+Na função `validateScheduleConflicts` (linha ~270-310), ao buscar regras existentes via `campaign_schedule_rules`, adicionar um filtro para garantir que o `video_id` do `campaign_video_schedules` esteja presente na lista de `pedido_videos` aprovados do pedido. Isso evita falsos conflitos de vídeos que já foram removidos.
 
