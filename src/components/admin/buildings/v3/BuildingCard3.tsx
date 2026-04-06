@@ -267,6 +267,17 @@ const BuildingCard3: React.FC<BuildingCard3Props> = ({
                 </Button>
               )}
 
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSyncAPI}
+                disabled={syncing}
+                className="h-7 px-2 text-xs text-blue-600 hover:bg-blue-50"
+              >
+                <RefreshCw className={`h-3 w-3 mr-1 ${syncing ? 'animate-spin' : ''}`} />
+                {syncing ? 'Sync...' : 'Sync API'}
+              </Button>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0 ml-auto">
