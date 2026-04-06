@@ -342,6 +342,30 @@ export const uploadVideo = async (
             }
           } else {
             console.log('👑 [MASTER] Vídeo base já existe — mantendo apenas como aprovado');
+            
+            // 🔄 AUTO-SYNC: Sincronizar prédios com API externa mesmo com base existente
+            try {
+              const { data: orderSync } = await supabase
+                .from('pedidos')
+                .select('lista_predios')
+                .eq('id', orderId)
+                .single();
+
+              const buildingIds: string[] = orderSync?.lista_predios || [];
+              if (buildingIds.length > 0) {
+                console.log('🔄 [MASTER] Auto-sync prédios:', buildingIds);
+                const { error: syncErr } = await supabase.functions.invoke('sync-buildings-external-api', {
+                  body: { pedido_id: orderId, action: 'add', building_ids: buildingIds }
+                });
+                if (syncErr) {
+                  console.error('⚠️ [MASTER] Auto-sync erro:', syncErr);
+                } else {
+                  console.log('✅ [MASTER] Auto-sync prédios concluído');
+                }
+              }
+            } catch (syncErr: any) {
+              console.error('⚠️ [MASTER] Auto-sync exceção:', syncErr.message);
+            }
           }
         }
       } catch (masterError) {
