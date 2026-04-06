@@ -3,8 +3,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
   Eye, Edit, Image, MapPin, Monitor, Video, Play, Hash, Link2, 
-  MoreHorizontal, Trash2, ExternalLink, List
+  MoreHorizontal, Trash2, ExternalLink, List, RefreshCw
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { syncBuildingWithExternalAPI } from '@/services/buildingSyncService';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +44,26 @@ const BuildingCard3: React.FC<BuildingCard3Props> = ({
   videoCount = 0
 }) => {
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncAPI = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSyncing(true);
+    try {
+      const result = await syncBuildingWithExternalAPI(building.id);
+      if (result.totalOrders === 0) {
+        toast.info('Nenhum pedido ativo encontrado para este prédio');
+      } else if (result.failed === 0) {
+        toast.success(`Sync concluído! ${result.synced} pedido(s) sincronizado(s)`);
+      } else {
+        toast.warning(`Sync parcial: ${result.synced} OK, ${result.failed} erro(s)`);
+      }
+    } catch (err: any) {
+      toast.error(`Erro ao sincronizar: ${err.message}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const getImageUrl = (path: string) => {
     if (!path) return null;
@@ -244,6 +266,17 @@ const BuildingCard3: React.FC<BuildingCard3Props> = ({
                   Playlist
                 </Button>
               )}
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSyncAPI}
+                disabled={syncing}
+                className="h-7 px-2 text-xs text-blue-600 hover:bg-blue-50"
+              >
+                <RefreshCw className={`h-3 w-3 mr-1 ${syncing ? 'animate-spin' : ''}`} />
+                {syncing ? 'Sync...' : 'Sync API'}
+              </Button>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
