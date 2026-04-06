@@ -1,83 +1,69 @@
 
 
-# Auditoria Completa: Destinatários de Compromissos via ZAPI
+# Plano: Pedido Master (Auto-Aprovação de Vídeos)
 
-## Diagnóstico Confirmado
+## Resumo
 
-A auditoria revelou que **pessoas que NÃO foram selecionadas para um compromisso específico estão recebendo notificações** porque várias edge functions usam a tabela `exa_alerts_directors` como fallback/merge indiscriminado.
+Adicionar uma flag `is_master` na tabela `pedidos`. Quando ativada pelo admin, vídeos enviados para esse pedido são automaticamente aprovados (sem passar pela fila de aprovação). Um emblema dourado "MASTER" será exibido no relatório do pedido e na lista de pedidos.
 
-### Evidência concreta do banco de dados
+## Arquitetura
 
 ```text
-TABELA exa_alerts_directors (13 contatos ativos):
-  Alencar Lima, Beatriz, Blenda Pessoal, Blenda TRABALHO,
-  JEFERSON, Jeniffer Aireliza, joao, jonathan kaizen, kAIZEN,
-  Marcio Abrasel, Melo, Pamela Via laser, Rockuy
+[Admin clica "Ativar Master"] 
+    → Edge Function toggle-pedido-master
+    → UPDATE pedidos SET is_master = true
+    → Log em user_activity_logs
 
-CASO REAL — Tarefa "Reunião MAGNO BANCO EBW" (13331d49):
-  → Criada com 2 contatos selecionados (Jefferson Silver + Blenda TRABALHO)
-  → Quando ALTERADA: task-notify-change enviou para 14 contatos!
-  → Motivo: a função faz merge de receipts + TODOS os directors ativos
-
-CASO REAL — Tarefa "Apresentação ABRASEL" (a0f9b72a):  
-  → Criada com 6 contatos selecionados (Jeferson, Jeniffer, Beatriz, Blenda×2, Marcio)
-  → Se for alterada/cancelada → iria para TODOS os 13 directors ativos
-  → Marcio recebeu corretamente porque FOI selecionado nesta tarefa
+[Cliente faz upload de vídeo]
+    → videoUploadService.ts verifica pedido.is_master
+    → Se master: approval_status = 'approved' (em vez de 'pending')
+    → Vídeo já fica disponível sem aprovação manual
 ```
 
-### Causa raiz — 5 edge functions com lógica errada
+## Etapas
 
-| Edge Function | Comportamento atual | Problema |
-|---|---|---|
-| `task-notify-created` | Usa `specific_contacts` do frontend | OK — respeita seleção |
-| `task-notify-change` | Merge `task_read_receipts` + TODOS `exa_alerts_directors` | Envia para quem NÃO foi selecionado |
-| `task-notify-cancelled` | Merge `task_read_receipts` + TODOS `exa_alerts_directors` | Envia para quem NÃO foi selecionado |
-| `task-follow-up-cron` | Escalação vai para TODOS `exa_alerts_directors` | Envia para quem NÃO foi selecionado |
-| `task-follow-up-response` | Broadcasts de conclusão/reagendamento/cancelamento vão para TODOS `exa_alerts_directors` | Envia para quem NÃO foi selecionado |
-| `task-reminder-scheduler` | Fallback: se não há `task_read_receipts`, usa TODOS `exa_alerts_directors` | Envia para quem NÃO foi selecionado |
-| `task-daily-report` | Envia para TODOS `exa_alerts_directors` | OK — é relatório global configurado separadamente |
+### 1. Migração SQL
+- Adicionar coluna `is_master BOOLEAN DEFAULT FALSE` na tabela `pedidos`
+- Sem RLS adicional necessária (tabela já possui políticas de admin)
 
-### Resumo diário — está correto
-O resumo diário (`agenda_resumo_diario`) está configurado para enviar apenas para JEFERSON às 08:09. Isso está funcionando corretamente e NÃO será alterado.
+### 2. Edge Function `toggle-pedido-master`
+- Recebe `{ pedido_id, is_master }` 
+- Valida JWT e verifica role admin via `has_role`
+- Faz UPDATE em `pedidos.is_master`
+- Registra ação em `user_activity_logs`
+- Retorna o estado atualizado
 
-## Plano de Correção
+### 3. Upload Service (`src/services/videoUploadService.ts`)
+- Antes do upsert em `pedido_videos`, consultar `pedidos.is_master`
+- Se `is_master === true`: usar `approval_status: 'approved'` no insert
+- Caso contrário: manter `approval_status: 'pending'` (comportamento atual)
 
-**Princípio**: `task_read_receipts` é a fonte de verdade de quem deve receber notificações sobre cada tarefa. Nenhuma função deve fazer fallback para `exa_alerts_directors` em notificações por tarefa.
+### 4. Hook `useRealOrderDetails.ts`
+- Incluir `is_master` na query do pedido e expor no retorno
 
-### 1. Corrigir `task-notify-change`
-- Remover o merge com `exa_alerts_directors` (linhas 91-115)
-- Usar APENAS `task_read_receipts` para determinar destinatários
-- Se não houver receipts, não enviar (a tarefa nunca foi notificada antes)
+### 5. UI — Botão Toggle + Emblema (`ProfessionalOrderReport.tsx`)
+- Na seção de header (após o badge de status), adicionar:
+  - Emblema dourado "MASTER" quando `is_master === true`
+  - Botão toggle "Ativar/Desativar Master" na seção de informações do pedido
+  - Ícone de coroa/escudo dourado para diferenciação visual
+- O toggle chama a Edge Function e atualiza via `refetch`
 
-### 2. Corrigir `task-notify-cancelled`
-- Remover o merge com `exa_alerts_directors` (linhas 57-81)
-- Usar APENAS `task_read_receipts` para determinar destinatários
+### 6. Interface `OrderData`
+- Adicionar `is_master?: boolean` nas interfaces de `ProfessionalOrderReport.tsx` e `useRealOrderDetails.ts`
 
-### 3. Corrigir `task-reminder-scheduler`
-- Na função `getRecipients` (linhas 453-468): remover o fallback para `alertContacts`
-- Se não há `task_read_receipts` para uma tarefa, não enviar lembrete (significa que ninguém foi notificado sobre ela)
+## Arquivos afetados
 
-### 4. Corrigir `task-follow-up-cron`
-- Na fase de escalação (linhas 213-267): escalar APENAS para contatos que estão em `task_read_receipts` da tarefa, não para todos os directors
+| Arquivo | Alteração |
+|---|---|
+| **Migração SQL** (nova) | `ALTER TABLE pedidos ADD COLUMN is_master` |
+| `supabase/functions/toggle-pedido-master/index.ts` | Nova Edge Function |
+| `src/services/videoUploadService.ts` | Checar `is_master` antes do upsert |
+| `src/hooks/useRealOrderDetails.ts` | Expor `is_master` na query |
+| `src/components/admin/orders/ProfessionalOrderReport.tsx` | Badge + botão toggle |
 
-### 5. Corrigir `task-follow-up-response`
-- Ao confirmar conclusão (linhas 216-233): notificar apenas contatos dos `task_read_receipts`, não todos os directors
-- Ao confirmar reagendamento (linhas 277-297): idem
-- Ao confirmar cancelamento (linhas 342-358): idem
-- Remover a busca de CEO users (linhas 323-339) que recebem cancelamentos indiscriminadamente
-
-### O que NÃO será alterado
-- `task-notify-created`: já funciona corretamente com `specific_contacts`
-- `task-daily-report`: relatório global com configuração própria
-- Tabela `exa_alerts_directors`: permanece intacta, continua útil para relatórios globais e como fonte de contatos no frontend
-- UI de criação/edição de tarefas (CreateTaskModal, EditTaskModal): já permite seleção granular de destinatários
-- Nenhuma interface existente será modificada
-
-## Arquivos a editar
-
-1. `supabase/functions/task-notify-change/index.ts`
-2. `supabase/functions/task-notify-cancelled/index.ts`
-3. `supabase/functions/task-reminder-scheduler/index.ts`
-4. `supabase/functions/task-follow-up-cron/index.ts`
-5. `supabase/functions/task-follow-up-response/index.ts`
+## O que NÃO será alterado
+- Fluxo de aprovação manual existente
+- Páginas de aprovação (`RealPendingVideosSection`, etc.)
+- UI do cliente/anunciante
+- Qualquer outra interface ou funcionalidade existente
 
