@@ -136,6 +136,15 @@ const OrdersCompactHeader: React.FC<OrdersCompactHeaderProps> = ({
                 <Wrench className="h-4 w-4 mr-2 text-amber-600" />
                 <span className="text-amber-600 font-medium">Reconciliar Pagamentos</span>
               </DropdownMenuItem>
+              {isSuperAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setAuditModalOpen(true)}>
+                    <ShieldCheck className="h-4 w-4 mr-2 text-blue-600" />
+                    <span className="text-blue-600 font-medium">Auditoria Geral API</span>
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         
