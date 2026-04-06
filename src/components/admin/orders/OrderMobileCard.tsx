@@ -31,6 +31,41 @@ interface OrderMobileCardProps {
   installments?: Installment[];
 }
 
+const SyncApiButtonMobile: React.FC<{ orderId: string; buildingIds: string[] }> = ({ orderId, buildingIds }) => {
+  const [syncing, setSyncing] = useState(false);
+  const handleSync = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-buildings-external-api', {
+        body: { pedido_id: orderId, action: 'add', building_ids: buildingIds }
+      });
+      if (error) throw error;
+      if (!data?.success) {
+        toast.error('Sincronização parcial com a API AWS.');
+      } else {
+        toast.success(`Sincronizado! ${data.synced} vídeo(s) → ${data.buildings} prédio(s)`);
+      }
+    } catch (err: any) {
+      toast.error(`Erro ao sincronizar: ${err.message}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleSync}
+      disabled={syncing}
+      className="w-full h-9 text-xs"
+    >
+      <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${syncing ? 'animate-spin' : ''}`} />
+      {syncing ? 'Sincronizando...' : 'Sincronizar API AWS'}
+    </Button>
+  );
+};
+
 export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
   order,
   onViewDetails,
