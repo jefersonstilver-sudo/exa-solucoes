@@ -34,6 +34,8 @@ import {
 import { useNotificationSound, SOUND_OPTIONS } from '@/hooks/useNotificationSound';
 import { useOrdersReconciliationComplete } from '@/hooks/useOrdersReconciliationComplete';
 import ReconciliationModal from './ReconciliationModal';
+import AuditSyncModal from './AuditSyncModal';
+import { useAuth } from '@/hooks/useAuth';
 
 interface OrdersCompactHeaderProps {
   onRefresh: () => void;
