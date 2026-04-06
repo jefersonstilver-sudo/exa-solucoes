@@ -1,60 +1,90 @@
 
 
-# Diagnóstico e Plano: Sincronização AWS + Botão "Sincronizar API"
+# Plano: Sincronização Automática Completa + Auditoria Master AWS
 
-## Problemas Encontrados
+## Resumo
 
-### 1. Programação hardcoded só com dias úteis na `sync-buildings-external-api`
-A Edge Function `sync-buildings-external-api` (linhas 142-148) envia a programação hardcoded **apenas segunda a sexta**, ignorando sábado e domingo:
+Garantir que TODOS os prédios de cada pedido recebam o vídeo correto na API AWS, com sincronização automática em tempo real a cada ação crítica, botão de auditoria global no header, cron job a cada 2 horas, e tabela de logs completa.
+
+## O que será feito
+
+### 1. Tabela de logs de auditoria (Migration SQL)
+Criar tabela `api_sync_logs` com campos completos:
+- `id`, `pedido_id`, `building_id`, `video_name`, `action` (add/remove/audit)
+- `status` (success/error/skipped), `source` (manual/auto/cron/audit)
+- `executed_by` (user_id, nullable para cron), `aws_response` (JSONB com resposta raw)
+- `error_message`, `created_at`
+- RLS: somente super_admin pode ler
+
+### 2. Edge Function: `audit-sync-all-active-orders`
+Nova Edge Function que:
+- Busca todos os pedidos com status IN ('ativo', 'video_aprovado')
+- Para pedidos com `is_master = true`, também inclui prédios dos sub-pedidos vinculados
+- Para cada pedido, busca vídeos aprovados e `lista_predios`
+- Chama `sync-buildings-external-api` (action: 'add') para cada pedido
+- Se o prédio já tem o vídeo, a API AWS ignora silenciosamente (sem erro)
+- Registra resultado completo na tabela `api_sync_logs`
+- Retorna relatório: `{ total_orders, synced, failed, details[] }`
+
+### 3. Cron Job: auditoria automática a cada 2 horas
+- Usar `pg_cron` + `pg_net` para chamar `audit-sync-all-active-orders` a cada 2 horas
+- Source registrado como 'cron' nos logs
+
+### 4. Auto-sync no Frontend (após cada ação crítica)
+Adicionar chamada automática ao `sync-buildings-external-api` após:
+
+**a) `setBaseVideo`** (em `src/services/videoBaseService.ts`):
+- Após a notificação via `sync-video-status-to-aws` ser bem-sucedida, adicionar uma chamada extra para `sync-buildings-external-api` com action='add' e TODOS os prédios do pedido
+- Isso garante que o vídeo novo seja enviado para todos os prédios
+
+**b) Aprovação de vídeo** (em `src/components/admin/approvals/RealPendingVideosSection.tsx`):
+- Após o `auto-activate-first-video` retornar sucesso, chamar `sync-buildings-external-api` com todos os prédios
+- Para vídeos subsequentes (não o primeiro), também disparar sync
+
+**c) `addBuildings`** (em `src/hooks/useOrderBuildingsManagement.ts`):
+- Já chama `sync-buildings-external-api` — apenas adicionar logging na tabela `api_sync_logs`
+
+**d) `removeBuilding`** (em `src/hooks/useOrderBuildingsManagement.ts`):
+- Já chama com action='remove' — adicionar logging e garantir remoção na AWS
+
+### 5. Botão "Auditoria Geral API" no Header
+Adicionar no `OrdersCompactHeader.tsx`:
+- Novo item no DropdownMenu: "Auditoria Geral API" (ícone ShieldCheck, cor azul)
+- Visível apenas para super_admin (verificar role do usuário)
+- Ao clicar, abre `AuditSyncModal.tsx`
+
+### 6. Modal de Auditoria (`AuditSyncModal.tsx`)
+Novo componente com:
+- Botão "Iniciar Auditoria" para confirmar
+- Progress bar em tempo real durante a execução
+- Lista de resultados: pedidos processados, prédios sincronizados, erros
+- Ícones de status (check verde / X vermelho) por pedido
+- Botão para fechar após conclusão
+
+## Arquivos a criar/modificar
+
+| Arquivo | Ação |
+|---------|------|
+| Migration SQL | **Criar** — tabela `api_sync_logs` + RLS |
+| `supabase/functions/audit-sync-all-active-orders/index.ts` | **Criar** |
+| `src/components/admin/orders/AuditSyncModal.tsx` | **Criar** |
+| `src/components/admin/orders/OrdersCompactHeader.tsx` | **Editar** — adicionar item "Auditoria Geral API" |
+| `src/services/videoBaseService.ts` | **Editar** — adicionar sync completo após setBaseVideo |
+| `src/components/admin/approvals/RealPendingVideosSection.tsx` | **Editar** — adicionar sync após aprovação |
+| `src/hooks/useOrderBuildingsManagement.ts` | **Editar** — adicionar logging de sync |
+| SQL Insert (pg_cron) | **Executar** — cron job a cada 2 horas |
+
+## Detalhes técnicos
+
+### Fluxo do auto-sync (frontend)
+```text
+Ação do admin (ex: setBaseVideo)
+  → RPC no banco (safe_set_base_video)
+  → sync-video-status-to-aws (PATCH ativo/batch)
+  → sync-buildings-external-api (POST add-to-specific-buildings) ← NOVO
+  → Log na tabela api_sync_logs ← NOVO
 ```
-programacao: {
-  segunda: [{ inicio: "00:00", fim: "23:59" }],
-  terca: [{ inicio: "00:00", fim: "23:59" }],
-  quarta: [{ inicio: "00:00", fim: "23:59" }],
-  quinta: [{ inicio: "00:00", fim: "23:59" }],
-  sexta: [{ inicio: "00:00", fim: "23:59" }]
-  // ❌ FALTA: sabado e domingo
-}
-```
-Enquanto a `upload-video-to-external-api` usa `getDefaultSchedule()` que envia **todos os 7 dias** corretamente (usando o `dayMap` com domingo a sábado). Essa inconsistência faz com que vídeos sincronizados via `sync-buildings` percam a programação de fim de semana.
 
-### 2. Nomes de dias com acento vs sem acento
-Na `upload-video-to-external-api`, o `dayMap` usa `'terça'` e `'sábado'` (com acentos), enquanto na `sync-buildings-external-api` usa `'terca'` e `'sexta'` (sem acentos). Se a API AWS espera um formato específico, essa diferença pode causar conflitos.
-
-### 3. Botão "Sincronizar API" não existe
-Não há nenhum botão de resincronização na lista de pedidos admin (`MinimalOrderCard`). O hook `useOrderBuildingsManagement.ts` tem a função `resyncVideoStatus` pronta, mas não é chamada em nenhum componente da lista.
-
-## Plano de Correção
-
-### Arquivo 1: `supabase/functions/sync-buildings-external-api/index.ts`
-- Substituir o bloco hardcoded de `programacao` (linhas 142-148) por uma programação completa de 7 dias, incluindo sábado e domingo
-- Padronizar os nomes dos dias para o mesmo formato usado pela `upload-video-to-external-api` (com acentos: `terça`, `sábado`)
-
-### Arquivo 2: `src/components/admin/orders/components/MinimalOrderCard.tsx`
-- Adicionar um botão "Sincronizar API" (ícone `RefreshCw`) ao lado do botão "Ver", visível apenas para pedidos com status ativo
-- O botão invocará `supabase.functions.invoke('sync-buildings-external-api', { body: { pedido_id, action: 'add', building_ids: lista_predios } })`
-- Mostrar toast de sucesso/erro
-- Spinner durante a operação
-
-### Arquivo 3: `src/components/admin/orders/OrderMobileCard.tsx`
-- Adicionar o mesmo botão "Sincronizar API" na versão mobile do card
-
-### Detalhes técnicos da programação corrigida
-```typescript
-// sync-buildings-external-api - bloco corrigido
-programacao: {
-  domingo: [{ inicio: "00:00", fim: "23:59" }],
-  segunda: [{ inicio: "00:00", fim: "23:59" }],
-  terça: [{ inicio: "00:00", fim: "23:59" }],
-  quarta: [{ inicio: "00:00", fim: "23:59" }],
-  quinta: [{ inicio: "00:00", fim: "23:59" }],
-  sexta: [{ inicio: "00:00", fim: "23:59" }],
-  sábado: [{ inicio: "00:00", fim: "23:59" }]
-}
-```
-
-### Arquivos modificados
-1. `supabase/functions/sync-buildings-external-api/index.ts` — corrigir programação
-2. `src/components/admin/orders/components/MinimalOrderCard.tsx` — adicionar botão sync
-3. `src/components/admin/orders/OrderMobileCard.tsx` — adicionar botão sync mobile
+### Pedidos Master
+Para pedidos com `is_master = true`, a Edge Function de auditoria buscará pedidos filhos e incluirá seus `lista_predios` na sincronização, garantindo cobertura total.
 
