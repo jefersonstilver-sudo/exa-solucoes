@@ -564,6 +564,8 @@ const OrderDetails = () => {
         isOpen={isSuccessOpen}
         onClose={hideSuccess}
         videoName={videoName}
+        isMasterApproved={isMasterApproved}
+        isBaseActivated={isBaseActivated}
       />
 
       {/* Modal de Conflito de Horário */}
