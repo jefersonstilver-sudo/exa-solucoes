@@ -85,7 +85,7 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
       const securityCheck = await validateVideoUploadPermission(orderId);
       if (!securityCheck.canUpload) {
         toast.error(`Upload bloqueado: ${securityCheck.reason}`);
-        return;
+        return { success: false };
       }
 
       setUploading(true);
@@ -109,6 +109,8 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
         const slots = await loadVideoSlots(orderId);
         setVideoSlots(slots);
       }
+      
+      return result;
 
     } catch (error) {
       console.error('Erro no upload:', error);
