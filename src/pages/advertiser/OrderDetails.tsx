@@ -109,6 +109,8 @@ const OrderDetails = () => {
     refreshSlots,
     isSuccessOpen,
     videoName,
+    isMasterApproved,
+    isBaseActivated,
     hideSuccess,
     conflictModal,
     tipoProduto
