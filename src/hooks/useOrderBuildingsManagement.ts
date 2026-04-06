@@ -36,11 +36,32 @@ export const useOrderBuildingsManagement = () => {
       if (syncError) {
         console.error('⚠️ [BUILDINGS] Erro ao sincronizar com AWS:', syncError);
         toast.error('Prédios adicionados no banco, mas houve erro na sincronização AWS.');
+        // Log error
+        await supabase.from('api_sync_logs' as any).insert(
+          buildingIds.map((bid: string) => ({
+            pedido_id: orderId, building_id: bid, action: 'add',
+            status: 'error', source: 'auto', error_message: syncError.message
+          }))
+        );
       } else if (!data?.success) {
         console.error('⚠️ [BUILDINGS] AWS retornou erro:', data);
         toast.error('Prédios salvos, mas sincronização AWS parcial.');
+        await supabase.from('api_sync_logs' as any).insert(
+          buildingIds.map((bid: string) => ({
+            pedido_id: orderId, building_id: bid, action: 'add',
+            status: 'error', source: 'auto', aws_response: data,
+            error_message: data?.error || 'Partial sync'
+          }))
+        );
       } else {
         toast.success(`${buildingIds.length} prédio(s) adicionado(s) com sucesso!`);
+        // Log success
+        await supabase.from('api_sync_logs' as any).insert(
+          buildingIds.map((bid: string) => ({
+            pedido_id: orderId, building_id: bid, action: 'add',
+            status: 'success', source: 'auto', aws_response: data
+          }))
+        );
       }
 
       return true;
@@ -84,8 +105,16 @@ export const useOrderBuildingsManagement = () => {
       if (syncError) {
         console.error('⚠️ [BUILDINGS] Erro ao sincronizar remoção com AWS:', syncError);
         toast.error('Prédio removido do banco, mas houve erro na sincronização AWS.');
+        await supabase.from('api_sync_logs' as any).insert({
+          pedido_id: orderId, building_id: buildingId, action: 'remove',
+          status: 'error', source: 'auto', error_message: syncError.message
+        });
       } else {
         toast.success('Prédio removido com sucesso!');
+        await supabase.from('api_sync_logs' as any).insert({
+          pedido_id: orderId, building_id: buildingId, action: 'remove',
+          status: 'success', source: 'auto', aws_response: data
+        });
       }
 
       return true;
