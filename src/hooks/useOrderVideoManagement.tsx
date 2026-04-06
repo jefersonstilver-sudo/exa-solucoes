@@ -153,10 +153,12 @@ export const useOrderVideoManagement = (orderId: string) => {
     });
     
     try {
-      await baseHook.handleUpload(slotPosition, file, videoTitle || file.name);
+      const result = await baseHook.handleUpload(slotPosition, file, videoTitle || file.name);
       
-      console.log('✅ [useOrderVideoManagement] Upload concluído com sucesso');
+      console.log('✅ [useOrderVideoManagement] Upload concluído com sucesso', result);
       setVideoName(videoTitle || file.name);
+      setIsMasterApproved(result?.isMasterApproved || false);
+      setIsBaseActivated(result?.isBaseActivated || false);
       setIsSuccessOpen(true);
       
       // Refresh automático após upload
