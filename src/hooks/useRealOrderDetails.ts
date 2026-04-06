@@ -40,6 +40,7 @@ interface OrderWithClient {
   tipo_pagamento?: string;
   metodo_pagamento?: string;
   is_fidelidade?: boolean;
+  is_master?: boolean;
   dia_vencimento?: number;
   parcela_atual?: number;
   total_parcelas?: number;
@@ -123,6 +124,7 @@ export const useRealOrderDetails = (orderId: string) => {
             tipo_produto,
             tipo_pagamento,
             metodo_pagamento,
+            is_master,
             is_fidelidade,
             dia_vencimento,
             parcela_atual,
@@ -202,6 +204,8 @@ export const useRealOrderDetails = (orderId: string) => {
           cupom_id: order.cupom_id,
           termos_aceitos: order.termos_aceitos || !!termoData,
           transaction_id: order.transaction_id,
+          // Master
+          is_master: order.is_master || false,
           // Campos fidelidade
           tipo_pagamento: order.tipo_pagamento,
           metodo_pagamento: order.metodo_pagamento,
