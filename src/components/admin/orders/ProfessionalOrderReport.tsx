@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload, Key, Loader2, Send, Monitor, Smartphone, Plus, Trash2, ChevronDown, Building, Download } from 'lucide-react';
+import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload, Key, Loader2, Send, Monitor, Smartphone, Plus, Trash2, ChevronDown, Building, Download, Crown } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import exaLogo from '@/assets/exa-logo.png';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,7 @@ interface OrderData {
   device_info?: any;
   expires_at?: string;
   nome_pedido?: string;
+  is_master?: boolean;
   // Campos de fidelidade
   tipo_pagamento?: string;
   metodo_pagamento?: string;
