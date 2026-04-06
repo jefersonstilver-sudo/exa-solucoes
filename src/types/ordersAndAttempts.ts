@@ -36,6 +36,7 @@ export interface OrderOrAttempt {
   hasPaidInstallment?: boolean;
   tipo_produto?: string;
   nome_pedido?: string;
+  is_master?: boolean;
 }
 
 export interface OrdersStats {

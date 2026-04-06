@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Eye, Building, DollarSign, Calendar, User, Mail, Phone, Shield, ShieldOff, Clock, MessageCircle, AlertTriangle, FileText, Copy, ExternalLink, Info } from 'lucide-react';
+import { Eye, Building, DollarSign, Calendar, User, Mail, Phone, Shield, ShieldOff, Clock, MessageCircle, AlertTriangle, FileText, Copy, ExternalLink, Info, Crown } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -183,6 +183,12 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
                 <Badge className={`${getStatusColor(item.status, item.correct_status)} text-xs px-1.5 py-0`}>
                   {getStatusText(item.status, item.correct_status, item.video_status)}
                 </Badge>
+                {item.is_master && (
+                  <Badge className="bg-gradient-to-r from-amber-200 to-yellow-300 text-amber-950 border-amber-400 text-xs px-1.5 py-0 font-bold">
+                    <Crown className="h-3 w-3 mr-0.5" />
+                    MASTER
+                  </Badge>
+                )}
                 {(item.is_fidelidade || item.metodo_pagamento === 'personalizado' || (item.total_parcelas && item.total_parcelas > 1)) && (
                   <Badge className="bg-purple-100 text-purple-800 border-purple-300 text-xs px-1.5 py-0">
                     🔄 Assinatura {item.total_parcelas && item.total_parcelas > 1 ? `(${item.total_parcelas}x)` : ''}
