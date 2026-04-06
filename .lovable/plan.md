@@ -1,42 +1,58 @@
 
+Diagnóstico confirmado
 
-# Plano: Correção do Fluxo Master + Badge na Lista de Pedidos
+- O pedido `96a25761...` está com `is_master = true` no banco.
+- A Edge Function `toggle-pedido-master` funcionou: os logs confirmam a ativação do MASTER.
+- O badge não aparece em todos os cards porque hoje ele só existe no `EnhancedOrderCard`. A tela admin usa principalmente `MinimalOrderCard` e no mobile usa `OrderMobileCard`, ambos sem badge.
+- Na área do anunciante, o hook `useUserOrdersAndAttempts.ts` não propaga `is_master` para o card, e `AdvertiserOrderCard.tsx` também não renderiza esse badge.
+- O problema do upload é real: no mesmo pedido existe um vídeo novo salvo como `pending`, mesmo com o pedido marcado como master.
+- O preview do vídeo em exibição parece estar saudável neste momento: os logs mostram a RPC `get_current_display_video` retornando o vídeo atual e o replay mostra o player iniciando. Então eu não mudaria essa parte agora para não mexer em fluxo que já parece correto.
 
-## Problema 1: Vídeo Master não segue pipeline completo
+Plano de correção
 
-Quando um pedido Master recebe um upload, o vídeo é salvo com `approval_status: 'approved'` mas com `selected_for_display: false` e `is_active: false`. Isso significa que o vídeo fica "aprovado" mas **nunca entra em exibição** — ele não passa pelo `setBaseVideo` que é o responsável por ativá-lo, sincronizar com a API externa (AWS) e colocá-lo nos painéis.
+1. Corrigir a propagação do campo `is_master`
+- `src/hooks/useUserOrdersAndAttempts.ts`
+  - adicionar `is_master` no tipo `UserCompleteOrder`;
+  - mapear `order.is_master` em `processedOrders`.
 
-**Correção**: Após o upsert no `pedido_videos`, se o pedido é Master, verificar quantos vídeos ativos existem. Se for o primeiro (ou único) vídeo aprovado, chamar automaticamente o `setBaseVideo` para ativá-lo — exatamente como acontece no fluxo manual quando o admin aprova e o anunciante clica em "Definir como principal".
+2. Exibir o badge MASTER em todos os cards certos
+- `src/components/advertiser/orders/AdvertiserOrderCard.tsx`: adicionar badge dourado MASTER ao lado dos badges de produto/status.
+- `src/components/admin/orders/components/MinimalOrderCard.tsx`: adicionar o mesmo badge.
+- `src/components/admin/orders/OrderMobileCard.tsx`: adicionar o mesmo badge no card mobile.
+- `EnhancedOrderCard.tsx` já está certo, então só manter.
 
-### Arquivo: `src/services/videoUploadService.ts`
-- Após o upsert bem-sucedido (linha ~291), adicionar lógica condicional:
-  - Se `approvalStatus === 'approved'` (Master):
-    - Buscar o `id` do `pedido_videos` recém-criado
-    - Verificar se já existe outro vídeo com `is_base_video: true` no pedido
-    - Se NÃO existe base video → chamar `setBaseVideo(pedidoVideoId)` do `videoBaseService`
-    - Isso automaticamente: marca como base, seleciona para exibição, ativa, e sincroniza com API externa
-  - Se JÁ existe base video → apenas deixar como aprovado (comportamento normal — anunciante escolhe manualmente)
+3. Tornar a autoaprovação master realmente confiável
+- `src/services/videoUploadService.ts`
+  - reforçar a leitura de `pedidos.is_master`;
+  - após o upsert, validar o estado salvo em `pedido_videos`;
+  - se o pedido for master e o slot vier `pending`, corrigir explicitamente para `approved`;
+  - manter a regra de fluxo normal:
+    - se não existe vídeo base, chamar `setBaseVideo`;
+    - se já existe vídeo base, deixar o novo vídeo apenas aprovado, sem trocar automaticamente o vídeo em exibição.
+- Hardening direto do bug: adicionar uma salvaguarda no banco para que vídeo de pedido master não consiga persistir como `pending`, mesmo se outro caminho de upload passar fora do fluxo esperado.
 
-## Problema 2: Badge MASTER ausente na lista de pedidos
+4. Corrigir a mensagem errada depois do upload
+- Hoje o popup de sucesso sempre fala como se o vídeo tivesse ido para aprovação manual.
+- `src/hooks/useOrderVideoManagement.tsx` + `src/components/video-management/VideoActivationSuccessPopup.tsx`
+  - passar o resultado real do upload;
+  - para pedido master mostrar “aprovado automaticamente”;
+  - se ele também virar base/ativo, mostrar que já entrou em exibição;
+  - para pedido normal, manter o texto atual de análise/aprovação.
 
-O componente `EnhancedOrderCard` (card de cada pedido na lista admin) não recebe nem exibe `is_master`. O tipo `OrderOrAttempt` não tem o campo.
+5. Validação final
+- Admin: conferir badge MASTER no modo minimal, detailed e mobile.
+- Anunciante: conferir badge MASTER no card da campanha.
+- Upload em pedido master com base já existente: novo vídeo deve ficar `approved` imediatamente e não mostrar mensagem de aprovação manual.
+- Upload em pedido master sem base: deve seguir o fluxo completo e entrar em exibição.
+- Upload em pedido não-master: deve continuar exigindo aprovação normalmente.
 
-### Arquivos afetados:
+Arquivos principais
 
-1. **`src/types/ordersAndAttempts.ts`**
-   - Adicionar `is_master?: boolean` à interface `OrderOrAttempt`
-
-2. **`src/hooks/useOrdersAndAttempts.ts`** (ou equivalente que faz a query)
-   - Incluir `is_master` no SELECT da query de pedidos
-
-3. **`src/components/admin/orders/components/EnhancedOrderCard.tsx`**
-   - Após o badge de status (linha ~185), adicionar badge MASTER dourado com ícone Crown quando `item.is_master === true`
-   - Mesmo visual do `ProfessionalOrderReport`: gradiente amber/yellow, texto amber-950, ícone Crown
-
-## O que NÃO será alterado
-- Fluxo de aprovação manual existente
-- `setBaseVideo` / `videoBaseService` (apenas chamado, não modificado)
-- `ProfessionalOrderReport` (já tem badge MASTER funcionando)
-- UI do cliente/anunciante
-- Edge Functions existentes
-
+- `src/hooks/useUserOrdersAndAttempts.ts`
+- `src/components/advertiser/orders/AdvertiserOrderCard.tsx`
+- `src/components/admin/orders/components/MinimalOrderCard.tsx`
+- `src/components/admin/orders/OrderMobileCard.tsx`
+- `src/services/videoUploadService.ts`
+- `src/hooks/useOrderVideoManagement.tsx`
+- `src/components/video-management/VideoActivationSuccessPopup.tsx`
+- migração SQL pequena para blindar a regra master no banco
