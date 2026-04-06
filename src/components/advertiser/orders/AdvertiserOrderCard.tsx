@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Repeat, Monitor, Smartphone, Clock } from 'lucide-react';
+import { Loader2, Repeat, Monitor, Smartphone, Clock, Crown } from 'lucide-react';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
@@ -200,6 +200,12 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
                     Horizontal
                   </Badge>
                 )
+              )}
+              {item.type === 'order' && item.is_master && (
+                <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 border-amber-600 text-amber-950 text-[10px] px-1.5 py-0 font-bold">
+                  <Crown className="h-2.5 w-2.5 mr-0.5" />
+                  MASTER
+                </Badge>
               )}
               {item.type === 'order' && item.is_fidelidade && (
                 <Badge className="bg-purple-600 border-purple-700 text-white text-[10px] px-1.5 py-0">
