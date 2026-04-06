@@ -43,7 +43,26 @@ const BuildingCard3: React.FC<BuildingCard3Props> = ({
   onDelete,
   videoCount = 0
 }) => {
-  const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncAPI = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSyncing(true);
+    try {
+      const result = await syncBuildingWithExternalAPI(building.id);
+      if (result.totalOrders === 0) {
+        toast.info('Nenhum pedido ativo encontrado para este prédio');
+      } else if (result.failed === 0) {
+        toast.success(`Sync concluído! ${result.synced} pedido(s) sincronizado(s)`);
+      } else {
+        toast.warning(`Sync parcial: ${result.synced} OK, ${result.failed} erro(s)`);
+      }
+    } catch (err: any) {
+      toast.error(`Erro ao sincronizar: ${err.message}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const getImageUrl = (path: string) => {
     if (!path) return null;
