@@ -41,6 +41,43 @@ const getStatusConfig = (status: string, type: 'order' | 'attempt') => {
   };
 };
 
+const SyncApiButton: React.FC<{ orderId: string; buildingIds: string[] }> = ({ orderId, buildingIds }) => {
+  const [syncing, setSyncing] = useState(false);
+  
+  const handleSync = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-buildings-external-api', {
+        body: { pedido_id: orderId, action: 'add', building_ids: buildingIds }
+      });
+      if (error) throw error;
+      if (!data?.success) {
+        toast.error('Sincronização parcial com a API AWS.');
+      } else {
+        toast.success(`Sincronizado! ${data.synced} vídeo(s) → ${data.buildings} prédio(s)`);
+      }
+    } catch (err: any) {
+      toast.error(`Erro ao sincronizar: ${err.message}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleSync}
+      disabled={syncing}
+      className="h-8 px-2 text-xs"
+      title="Sincronizar com API AWS"
+    >
+      <RefreshCw className={`h-3.5 w-3.5 ${syncing ? 'animate-spin' : ''}`} />
+    </Button>
+  );
+};
+
 export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
   item,
   isSelected,
