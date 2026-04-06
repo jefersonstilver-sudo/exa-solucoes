@@ -43,6 +43,7 @@ const BuildingCard3: React.FC<BuildingCard3Props> = ({
   onDelete,
   videoCount = 0
 }) => {
+  const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
   const handleSyncAPI = async (e: React.MouseEvent) => {
