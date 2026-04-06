@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload, Key, Loader2, Send, Monitor, Smartphone, Plus, Trash2, ChevronDown, Building, Download } from 'lucide-react';
+import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload, Key, Loader2, Send, Monitor, Smartphone, Plus, Trash2, ChevronDown, Building, Download, Crown } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import exaLogo from '@/assets/exa-logo.png';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,7 @@ interface OrderData {
   device_info?: any;
   expires_at?: string;
   nome_pedido?: string;
+  is_master?: boolean;
   // Campos de fidelidade
   tipo_pagamento?: string;
   metodo_pagamento?: string;
@@ -102,6 +103,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   const [sendingPasswordReset, setSendingPasswordReset] = useState(false);
   const [showAddBuildingDialog, setShowAddBuildingDialog] = useState(false);
   const [removingBuildingId, setRemovingBuildingId] = useState<string | null>(null);
+  const [togglingMaster, setTogglingMaster] = useState(false);
   
   // RPC como fonte da verdade para vídeo em exibição
   const { currentVideo } = useCurrentVideoDisplay({ orderId: order.id, enabled: !!order.id });
@@ -111,6 +113,26 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
     isFixing
   } = useFixAuditData();
   const { addBuildings, removeBuilding, loading: buildingsLoading } = useOrderBuildingsManagement();
+
+  const handleToggleMaster = async () => {
+    setTogglingMaster(true);
+    try {
+      const newValue = !order.is_master;
+      const { data, error } = await supabase.functions.invoke('toggle-pedido-master', {
+        body: { pedido_id: order.id, is_master: newValue }
+      });
+
+      if (error) throw error;
+
+      toast.success(newValue ? '👑 Pedido marcado como MASTER' : 'Modo MASTER desativado');
+      onBuildingChanged?.();
+    } catch (err: any) {
+      console.error('Erro ao alternar Master:', err);
+      toast.error(err.message || 'Erro ao alternar modo Master');
+    } finally {
+      setTogglingMaster(false);
+    }
+  };
 
   const handleResyncVideo = async (pedidoVideoId: string) => {
     setResyncingVideoId(pedidoVideoId);
@@ -305,6 +327,12 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               {statusConfig.icon}
               <span className="hidden sm:inline">{statusConfig.label}</span>
             </div>
+            {order.is_master && (
+              <div className="bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 px-2 lg:px-3 py-1 lg:py-1.5 rounded text-[10px] lg:text-xs font-bold flex items-center gap-1 lg:gap-1.5 shadow-md animate-pulse">
+                <Crown className="h-3.5 w-3.5" />
+                <span>MASTER</span>
+              </div>
+            )}
             <div className="text-white/70 text-right hidden sm:block">
               <p className="text-[10px]">Emitido em</p>
               <p className="font-medium text-[10px] lg:text-xs">{emittedAt}</p>
@@ -358,10 +386,37 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               <div>
                 <p className="text-gray-500 mb-1">Término da Vigência</p>
                 <p className="font-semibold text-gray-900">{formatSimpleDate(order.data_fim)}</p>
+            </div>
+            
+            {/* Master Toggle */}
+            <div className="col-span-1 sm:col-span-2 lg:col-span-5 pt-3 mt-3 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-500 mb-1">Pedido Master</p>
+                  <p className="text-[10px] text-gray-400">Vídeos enviados são aprovados automaticamente</p>
+                </div>
+                <Button
+                  onClick={handleToggleMaster}
+                  disabled={togglingMaster}
+                  variant={order.is_master ? "default" : "outline"}
+                  size="sm"
+                  className={order.is_master 
+                    ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-amber-950 font-bold text-xs shadow-md" 
+                    : "border-gray-300 text-gray-600 text-xs"
+                  }
+                >
+                  {togglingMaster ? (
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <Crown className="h-3.5 w-3.5 mr-1.5" />
+                  )}
+                  {order.is_master ? 'MASTER Ativo' : 'Ativar Master'}
+                </Button>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
         {/* SEÇÃO: DADOS DO CLIENTE */}
         <section className="border border-gray-200 rounded">

@@ -241,6 +241,23 @@ export const uploadVideo = async (
       throw new Error(`Posição de slot inválida (${slotPosition}). O máximo permitido é 4 vídeos por pedido.`);
     }
 
+    // PEDIDO MASTER: verificar se vídeo deve ser auto-aprovado
+    let approvalStatus: 'pending' | 'approved' = 'pending';
+    try {
+      const { data: pedidoCheck } = await supabase
+        .from('pedidos')
+        .select('is_master')
+        .eq('id', orderId)
+        .single();
+
+      if (pedidoCheck?.is_master) {
+        approvalStatus = 'approved';
+        console.log('👑 [MASTER] Pedido Master detectado — vídeo auto-aprovado');
+      }
+    } catch (e) {
+      console.warn('⚠️ Erro ao verificar is_master, usando pending:', e);
+    }
+
     // Usar UPSERT para evitar race conditions em uploads simultâneos
     // Isso substitui a entrada existente OU cria uma nova automaticamente
     console.log('💾 Salvando/atualizando slot com UPSERT');
@@ -250,13 +267,13 @@ export const uploadVideo = async (
         pedido_id: orderId,
         video_id: videoRecord.id,
         slot_position: slotPosition,
-        approval_status: 'pending',
+        approval_status: approvalStatus,
         selected_for_display: false,
         is_active: false,
         updated_at: new Date().toISOString()
       }, {
-        onConflict: 'pedido_id,slot_position', // Unique constraint columns
-        ignoreDuplicates: false // Always update on conflict
+        onConflict: 'pedido_id,slot_position',
+        ignoreDuplicates: false
       });
 
     if (slotError) {

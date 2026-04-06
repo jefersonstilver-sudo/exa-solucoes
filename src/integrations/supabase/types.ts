@@ -10238,6 +10238,7 @@ export type Database = {
           id: string
           ip_origem: string | null
           is_fidelidade: boolean | null
+          is_master: boolean
           is_subscription: boolean | null
           is_test_order: boolean | null
           lista_paineis: string[] | null
@@ -10300,6 +10301,7 @@ export type Database = {
           id?: string
           ip_origem?: string | null
           is_fidelidade?: boolean | null
+          is_master?: boolean
           is_subscription?: boolean | null
           is_test_order?: boolean | null
           lista_paineis?: string[] | null
@@ -10362,6 +10364,7 @@ export type Database = {
           id?: string
           ip_origem?: string | null
           is_fidelidade?: boolean | null
+          is_master?: boolean
           is_subscription?: boolean | null
           is_test_order?: boolean | null
           lista_paineis?: string[] | null
