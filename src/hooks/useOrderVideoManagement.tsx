@@ -31,7 +31,8 @@ export const useOrderVideoManagement = (orderId: string) => {
   // Estados de popup de sucesso
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [videoName, setVideoName] = useState('');
-  
+  const [isMasterApproved, setIsMasterApproved] = useState(false);
+  const [isBaseActivated, setIsBaseActivated] = useState(false);
   // Estados de modal de conflito
   const [conflictModal, setConflictModal] = useState<ConflictModalState>({
     isOpen: false,
@@ -152,10 +153,12 @@ export const useOrderVideoManagement = (orderId: string) => {
     });
     
     try {
-      await baseHook.handleUpload(slotPosition, file, videoTitle || file.name);
+      const result = await baseHook.handleUpload(slotPosition, file, videoTitle || file.name);
       
-      console.log('✅ [useOrderVideoManagement] Upload concluído com sucesso');
+      console.log('✅ [useOrderVideoManagement] Upload concluído com sucesso', result);
       setVideoName(videoTitle || file.name);
+      setIsMasterApproved(result?.isMasterApproved || false);
+      setIsBaseActivated(result?.isBaseActivated || false);
       setIsSuccessOpen(true);
       
       // Refresh automático após upload
@@ -296,6 +299,8 @@ export const useOrderVideoManagement = (orderId: string) => {
   const hideSuccess = () => {
     console.log('✅ [useOrderVideoManagement] Fechando popup de sucesso');
     setIsSuccessOpen(false);
+    setIsMasterApproved(false);
+    setIsBaseActivated(false);
   };
 
   return {
@@ -321,6 +326,8 @@ export const useOrderVideoManagement = (orderId: string) => {
     // Estados de UI
     isSuccessOpen,
     videoName,
+    isMasterApproved,
+    isBaseActivated,
     hideSuccess,
     conflictModal,
     

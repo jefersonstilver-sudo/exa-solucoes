@@ -109,6 +109,8 @@ const OrderDetails = () => {
     refreshSlots,
     isSuccessOpen,
     videoName,
+    isMasterApproved,
+    isBaseActivated,
     hideSuccess,
     conflictModal,
     tipoProduto
@@ -564,6 +566,8 @@ const OrderDetails = () => {
         isOpen={isSuccessOpen}
         onClose={hideSuccess}
         videoName={videoName}
+        isMasterApproved={isMasterApproved}
+        isBaseActivated={isBaseActivated}
       />
 
       {/* Modal de Conflito de Horário */}

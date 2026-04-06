@@ -16,7 +16,7 @@ interface VideoManagementCardProps {
   uploadProgress: {
     [key: number]: number;
   };
-  onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: any[]) => Promise<void>;
+  onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: any[]) => Promise<any>;
   onActivate: (slotId: string) => Promise<void>;
   onRemove: (slotId: string) => Promise<void>;
   onDownload: (videoUrl: string, fileName: string) => void;

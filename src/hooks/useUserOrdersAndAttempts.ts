@@ -33,6 +33,7 @@ export interface UserCompleteOrder {
   total_telas?: number;
   tipo_produto?: string;
   grupo_id?: string | null;
+  is_master?: boolean;
   type: 'order';
   videos?: {
     id: string;
@@ -196,6 +197,7 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
           total_telas: totals.telas,
           tipo_produto: order.tipo_produto || 'horizontal',
           grupo_id: order.grupo_id || null,
+          is_master: order.is_master || false,
           type: 'order' as const,
           videos: videosData[order.id] || []
         };

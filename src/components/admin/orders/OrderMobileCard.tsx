@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, DollarSign, Calendar, Building2, Phone, Mail, Check, Clock, CreditCard, FileText, AlertCircle } from 'lucide-react';
+import { User, DollarSign, Calendar, Building2, Phone, Mail, Check, Clock, CreditCard, FileText, AlertCircle, Crown } from 'lucide-react';
 import { CollapsibleCard } from '@/components/admin/shared/CollapsibleCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -147,6 +147,12 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
           )}
           <span className="text-xs text-muted-foreground">#{order.id.substring(0, 8)}</span>
           <CouponBadge couponCode={order.coupon_code} couponCategory={order.coupon_category} size="sm" />
+          {order.is_master && (
+            <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 border-amber-600 text-amber-950 text-[10px] px-1.5 py-0 font-bold border-0">
+              <Crown className="h-2.5 w-2.5 mr-0.5" />
+              MASTER
+            </Badge>
+          )}
           {isCustomPayment && (
             <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0 border-0">
               <CreditCard className="h-2.5 w-2.5 mr-0.5" />

@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-import { Eye, Clock, Building, User, Calendar, Monitor, Smartphone, Video } from 'lucide-react';
+import { Eye, Clock, Building, User, Calendar, Monitor, Smartphone, Video, Crown } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import { formatDistanceToNow, format, differenceInDays, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -142,6 +142,12 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
                 Horizontal
               </Badge>
             )
+          )}
+          {item.is_master && (
+            <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 border-amber-600 text-amber-950 text-[10px] px-1.5 py-0 font-bold">
+              <Crown className="h-2.5 w-2.5 mr-0.5" />
+              MASTER
+            </Badge>
           )}
           <Badge className={`${statusConfig.className} text-xs font-medium`}>
             {statusConfig.icon} {statusConfig.label}
