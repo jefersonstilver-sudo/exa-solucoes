@@ -227,9 +227,17 @@ export const validateBeforeSave = async (
       };
     }
 
-    // Buscar todas as regras ativas de TODOS os vídeos do pedido (exceto o atual)
-    console.log('📡 [VALIDATION] Buscando regras existentes no Supabase...');
+    // Buscar vídeos ativos no pedido para filtrar órfãos
+    console.log('📡 [VALIDATION] Buscando vídeos ativos do pedido e regras existentes...');
     
+    const { data: activePedidoVideos } = await supabase
+      .from('pedido_videos')
+      .select('video_id')
+      .eq('pedido_id', orderId);
+
+    const activeVideoIds = (activePedidoVideos || []).map(pv => pv.video_id).filter(Boolean);
+    console.log('📋 [VALIDATION] Vídeos ativos no pedido:', activeVideoIds.length);
+
     const { data: existingRules, error } = await supabase
       .from('campaign_schedule_rules')
       .select(`
@@ -253,6 +261,7 @@ export const validateBeforeSave = async (
       `)
       .eq('campaign_video_schedules.campaigns_advanced.pedido_id', orderId)
       .neq('campaign_video_schedules.video_id', videoId)
+      .in('campaign_video_schedules.video_id', activeVideoIds.length > 0 ? activeVideoIds : ['00000000-0000-0000-0000-000000000000'])
       .eq('is_active', true);
 
     if (error) {
