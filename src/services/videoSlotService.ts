@@ -2,8 +2,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { VideoSlot } from '@/types/videoManagement';
 
-export const loadVideoSlots = async (orderId: string, maxSlots: number = 4): Promise<VideoSlot[]> => {
-  const safeMaxSlots = Math.min(maxSlots, 4);
+export const loadVideoSlots = async (orderId: string, maxSlots: number = 10): Promise<VideoSlot[]> => {
+  const safeMaxSlots = Math.min(maxSlots, 10);
   if (!orderId) return [];
 
   console.log('🔍 [VIDEO_SLOTS] Carregando slots para pedido:', orderId);

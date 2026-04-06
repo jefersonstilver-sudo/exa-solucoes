@@ -237,8 +237,8 @@ export const uploadVideo = async (
     onProgress?.(95);
 
     // Validar slot_position antes de enviar ao banco
-    if (slotPosition < 1 || slotPosition > 4) {
-      throw new Error(`Posição de slot inválida (${slotPosition}). O máximo permitido é 4 vídeos por pedido.`);
+    if (slotPosition < 1 || slotPosition > 10) {
+      throw new Error(`Posição de slot inválida (${slotPosition}). O máximo permitido é 10 vídeos por pedido.`);
     }
 
     // PEDIDO MASTER: verificar se vídeo deve ser auto-aprovado
