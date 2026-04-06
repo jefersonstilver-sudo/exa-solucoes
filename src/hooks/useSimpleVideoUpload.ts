@@ -124,7 +124,7 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
       setUploadStatus('uploading');
       setUploadProgress(0);
 
-      const success = await uploadVideo(
+      const result = await uploadVideo(
         1, // slot position for order confirmation
         videoFile,
         userId,
@@ -135,7 +135,7 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
         }
       );
 
-      if (success) {
+      if (result.success) {
         console.log('Upload concluído com sucesso');
         setUploadStatus('success');
         toast.success('Vídeo enviado com sucesso!');
@@ -190,7 +190,7 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
       setUploading(true);
       setUploadProgress(0);
 
-      const success = await uploadVideo(
+      const result = await uploadVideo(
         slotPosition,
         file,
         userId,
@@ -201,7 +201,7 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
         }
       );
 
-      if (success) {
+      if (result.success) {
         console.log('Upload de vídeo bem-sucedido');
         toast.success('Vídeo enviado com sucesso!');
         return true;

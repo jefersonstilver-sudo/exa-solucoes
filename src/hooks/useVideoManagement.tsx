@@ -91,7 +91,7 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
       setUploading(true);
       setUploadProgress(prev => ({ ...prev, [slotPosition]: 0 }));
 
-      const success = await uploadVideo(
+      const result = await uploadVideo(
         slotPosition,
         file,
         userId,
@@ -104,7 +104,7 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
         tipoProduto
       );
 
-      if (success) {
+      if (result.success) {
         // Recarregar slots após upload bem-sucedido
         const slots = await loadVideoSlots(orderId);
         setVideoSlots(slots);
