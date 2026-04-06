@@ -386,10 +386,37 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               <div>
                 <p className="text-gray-500 mb-1">Término da Vigência</p>
                 <p className="font-semibold text-gray-900">{formatSimpleDate(order.data_fim)}</p>
+            </div>
+            
+            {/* Master Toggle */}
+            <div className="col-span-1 sm:col-span-2 lg:col-span-5 pt-3 mt-3 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-500 mb-1">Pedido Master</p>
+                  <p className="text-[10px] text-gray-400">Vídeos enviados são aprovados automaticamente</p>
+                </div>
+                <Button
+                  onClick={handleToggleMaster}
+                  disabled={togglingMaster}
+                  variant={order.is_master ? "default" : "outline"}
+                  size="sm"
+                  className={order.is_master 
+                    ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-amber-950 font-bold text-xs shadow-md" 
+                    : "border-gray-300 text-gray-600 text-xs"
+                  }
+                >
+                  {togglingMaster ? (
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <Crown className="h-3.5 w-3.5 mr-1.5" />
+                  )}
+                  {order.is_master ? 'MASTER Ativo' : 'Ativar Master'}
+                </Button>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
         {/* SEÇÃO: DADOS DO CLIENTE */}
         <section className="border border-gray-200 rounded">
