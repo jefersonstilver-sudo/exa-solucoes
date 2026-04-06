@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, DollarSign, Calendar, Building2, Phone, Mail, Check, Clock, CreditCard, FileText, AlertCircle, Crown } from 'lucide-react';
+import { User, DollarSign, Calendar, Building2, Phone, Mail, Check, Clock, CreditCard, FileText, AlertCircle, Crown, RefreshCw } from 'lucide-react';
 import { CollapsibleCard } from '@/components/admin/shared/CollapsibleCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useLongPress } from '@/hooks/useLongPress';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Installment {
   installment: number;
@@ -307,6 +309,9 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
 
       {/* Actions */}
       <div className="pt-3 border-t space-y-2">
+        {order.lista_predios?.length > 0 && (
+          <SyncApiButtonMobile orderId={order.id} buildingIds={order.lista_predios} />
+        )}
         <Button
           onClick={() => onViewDetails(order.id)}
           className="w-full bg-[#9C1E1E] hover:bg-[#7A1818] text-white h-9 text-sm font-medium"
