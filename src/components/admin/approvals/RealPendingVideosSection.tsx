@@ -239,6 +239,30 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
           console.error('💥 [APPROVE] Exceção ao tentar ativar primeiro vídeo:', activationErr);
           toast.warning('Vídeo aprovado, mas houve problema na ativação automática.');
         }
+
+        // 🔄 AUTO-SYNC: Ensure all buildings receive the video after approval
+        try {
+          console.log('🔄 [APPROVE] Auto-sync: sincronizando todos os prédios do pedido...');
+          const { data: orderForSync } = await supabase
+            .from('pedidos')
+            .select('lista_predios')
+            .eq('id', videoData.pedido_id)
+            .single();
+
+          const buildingIds: string[] = orderForSync?.lista_predios || [];
+          if (buildingIds.length > 0) {
+            const { data: syncResult, error: syncErr } = await supabase.functions.invoke('sync-buildings-external-api', {
+              body: { pedido_id: videoData.pedido_id, action: 'add', building_ids: buildingIds }
+            });
+            if (syncErr) {
+              console.error('⚠️ [APPROVE] Auto-sync erro:', syncErr);
+            } else {
+              console.log('✅ [APPROVE] Auto-sync concluído:', syncResult);
+            }
+          }
+        } catch (syncException: any) {
+          console.error('⚠️ [APPROVE] Auto-sync exceção:', syncException.message);
+        }
       }
 
       if (videoData?.pedido_id) {

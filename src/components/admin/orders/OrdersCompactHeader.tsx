@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { RefreshCw, Volume2, VolumeX, Play, Wrench, Settings2 } from 'lucide-react';
+import { RefreshCw, Volume2, VolumeX, Play, Wrench, Settings2, ShieldCheck } from 'lucide-react';
 import { OrderPeriodFilter, PeriodFilter } from './OrderPeriodFilter';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -34,6 +34,8 @@ import {
 import { useNotificationSound, SOUND_OPTIONS } from '@/hooks/useNotificationSound';
 import { useOrdersReconciliationComplete } from '@/hooks/useOrdersReconciliationComplete';
 import ReconciliationModal from './ReconciliationModal';
+import AuditSyncModal from './AuditSyncModal';
+import { useAuth } from '@/hooks/useAuth';
 
 interface OrdersCompactHeaderProps {
   onRefresh: () => void;
@@ -52,7 +54,10 @@ const OrdersCompactHeader: React.FC<OrdersCompactHeaderProps> = ({
 }) => {
   const { enabled, volume, soundType, toggleSound, setVolume, setSoundType, playPreview } = useNotificationSound();
   const { runReconciliation, isReconciling, result, clearResult } = useOrdersReconciliationComplete();
+  const { userProfile } = useAuth();
   const [reconciliationModalOpen, setReconciliationModalOpen] = useState(false);
+  const [auditModalOpen, setAuditModalOpen] = useState(false);
+  const isSuperAdmin = userProfile?.role === 'super_admin';
 
   const handleReconcile = async () => {
     await runReconciliation();
@@ -131,6 +136,15 @@ const OrdersCompactHeader: React.FC<OrdersCompactHeaderProps> = ({
                 <Wrench className="h-4 w-4 mr-2 text-amber-600" />
                 <span className="text-amber-600 font-medium">Reconciliar Pagamentos</span>
               </DropdownMenuItem>
+              {isSuperAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setAuditModalOpen(true)}>
+                    <ShieldCheck className="h-4 w-4 mr-2 text-blue-600" />
+                    <span className="text-blue-600 font-medium">Auditoria Geral API</span>
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         
@@ -235,6 +249,12 @@ const OrdersCompactHeader: React.FC<OrdersCompactHeaderProps> = ({
         isReconciling={isReconciling}
         onReconcile={handleReconcile}
         onRefresh={onRefresh}
+      />
+
+      {/* Audit Sync Modal */}
+      <AuditSyncModal
+        open={auditModalOpen}
+        onOpenChange={setAuditModalOpen}
       />
     </>
   );

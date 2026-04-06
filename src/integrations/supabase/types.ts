@@ -712,6 +712,56 @@ export type Database = {
         }
         Relationships: []
       }
+      api_sync_logs: {
+        Row: {
+          action: string
+          aws_response: Json | null
+          building_id: string | null
+          created_at: string
+          error_message: string | null
+          executed_by: string | null
+          id: string
+          pedido_id: string | null
+          source: string
+          status: string
+          video_name: string | null
+        }
+        Insert: {
+          action: string
+          aws_response?: Json | null
+          building_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          executed_by?: string | null
+          id?: string
+          pedido_id?: string | null
+          source: string
+          status: string
+          video_name?: string | null
+        }
+        Update: {
+          action?: string
+          aws_response?: Json | null
+          building_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          executed_by?: string | null
+          id?: string
+          pedido_id?: string | null
+          source?: string
+          status?: string
+          video_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_sync_logs_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       aportes_socios: {
         Row: {
           comprovante_url: string | null
