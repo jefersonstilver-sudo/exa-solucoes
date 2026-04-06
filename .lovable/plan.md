@@ -1,31 +1,50 @@
 
 
-# Plano: Botao "Sincronizar API" no BuildingCard3
+# Correção: Auto-sync AWS para vídeos Master com base existente
 
 ## Problema
-O predio SALA REUNIAO nao recebeu os videos na API externa (AWS). Nao existe botao para forcar sync diretamente pela tela de predios — so existe na tela de pedidos.
+Quando um vídeo é enviado para um pedido Master que já possui vídeo base, o bloco `else` (linha 343-345 de `videoUploadService.ts`) apenas loga "mantendo apenas como aprovado" sem chamar a API externa. O vídeo fica aprovado no banco mas nunca chega na AWS.
 
-## Solucao
-Adicionar um botao "Sync API" em cada BuildingCard3 que busca TODOS os pedidos ativos que incluem aquele predio na `lista_predios` e dispara `sync-buildings-external-api` para cada um.
+## Correção
 
-## Implementacao
+**Arquivo**: `src/services/videoUploadService.ts` (linhas 343-345)
 
-### 1. Criar servico `buildingSyncService.ts`
-Nova funcao `syncBuildingWithExternalAPI(buildingId)`:
-- Consulta `pedidos` onde `lista_predios` contem o `buildingId` e status IN ('ativo', 'video_aprovado')
-- Para cada pedido encontrado, chama `sync-buildings-external-api` com `{ pedido_id, action: 'add', building_ids: [buildingId] }`
-- Retorna resumo: quantos pedidos sincronizados, quantos falharam
+Substituir:
+```typescript
+} else {
+  console.log('👑 [MASTER] Vídeo base já existe — mantendo apenas como aprovado');
+}
+```
 
-### 2. Editar `BuildingCard3.tsx`
-- Importar `RefreshCw` icon e o novo servico
-- Adicionar botao "Sync API" na area de acoes (ao lado de Playlist), visivel para todos os admins
-- Estado local `syncing` para loading spinner
-- Toast com resultado (sucesso/erro)
+Por:
+```typescript
+} else {
+  console.log('👑 [MASTER] Vídeo base já existe — mantendo apenas como aprovado');
+  
+  try {
+    const { data: orderSync } = await supabase
+      .from('pedidos')
+      .select('lista_predios')
+      .eq('id', orderId)
+      .single();
 
-### Arquivos
+    const buildingIds: string[] = orderSync?.lista_predios || [];
+    if (buildingIds.length > 0) {
+      console.log('🔄 [MASTER] Auto-sync prédios:', buildingIds);
+      const { error: syncErr } = await supabase.functions.invoke('sync-buildings-external-api', {
+        body: { pedido_id: orderId, action: 'add', building_ids: buildingIds }
+      });
+      if (syncErr) {
+        console.error('⚠️ [MASTER] Auto-sync erro:', syncErr);
+      } else {
+        console.log('✅ [MASTER] Auto-sync prédios concluído');
+      }
+    }
+  } catch (syncErr: any) {
+    console.error('⚠️ [MASTER] Auto-sync exceção:', syncErr.message);
+  }
+}
+```
 
-| Arquivo | Acao |
-|---------|------|
-| `src/services/buildingSyncService.ts` | **Criar** |
-| `src/components/admin/buildings/v3/BuildingCard3.tsx` | **Editar** — adicionar botao Sync API |
+Nenhum outro arquivo é alterado. A lógica replica exatamente o que já existe na aprovação manual e no `setBaseVideo`.
 
