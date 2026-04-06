@@ -140,11 +140,13 @@ Deno.serve(async (req) => {
             ativo: currentDisplayVideoId ? (pv.video_id === currentDisplayVideoId) : (pv.selected_for_display === true),
             isPlus: isVertical,
             programacao: {
+              domingo: [{ inicio: "00:00", fim: "23:59" }],
               segunda: [{ inicio: "00:00", fim: "23:59" }],
-              terca: [{ inicio: "00:00", fim: "23:59" }],
+              terça: [{ inicio: "00:00", fim: "23:59" }],
               quarta: [{ inicio: "00:00", fim: "23:59" }],
               quinta: [{ inicio: "00:00", fim: "23:59" }],
-              sexta: [{ inicio: "00:00", fim: "23:59" }]
+              sexta: [{ inicio: "00:00", fim: "23:59" }],
+              sábado: [{ inicio: "00:00", fim: "23:59" }]
             }
           }
         } catch (dlError: any) {

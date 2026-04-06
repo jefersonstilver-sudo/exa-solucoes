@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-import { Eye, Clock, Building, User, Calendar, Monitor, Smartphone, Video, Crown } from 'lucide-react';
+import { Eye, Clock, Building, User, Calendar, Monitor, Smartphone, Video, Crown, RefreshCw } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { formatCurrency } from '@/utils/formatters';
 import { formatDistanceToNow, format, differenceInDays, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -226,18 +228,23 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
           </div>
         </div>
         
-        {/* Ação */}
-        {item.type === 'order' && onViewOrderDetails && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => onViewOrderDetails(item.id)}
-            className="h-8 px-3 text-xs"
-          >
-            <Eye className="h-3.5 w-3.5 mr-1" />
-            Ver
-          </Button>
-        )}
+        {/* Ações */}
+        <div className="flex items-center gap-1.5">
+          {item.type === 'order' && isSuperAdmin && panelList && panelList.length > 0 && (
+            <SyncApiButton orderId={item.id} buildingIds={panelList} />
+          )}
+          {item.type === 'order' && onViewOrderDetails && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => onViewOrderDetails(item.id)}
+              className="h-8 px-3 text-xs"
+            >
+              <Eye className="h-3.5 w-3.5 mr-1" />
+              Ver
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
