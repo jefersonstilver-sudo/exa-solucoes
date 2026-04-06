@@ -1,69 +1,42 @@
 
 
-# Plano: Pedido Master (Auto-Aprovação de Vídeos)
+# Plano: Correção do Fluxo Master + Badge na Lista de Pedidos
 
-## Resumo
+## Problema 1: Vídeo Master não segue pipeline completo
 
-Adicionar uma flag `is_master` na tabela `pedidos`. Quando ativada pelo admin, vídeos enviados para esse pedido são automaticamente aprovados (sem passar pela fila de aprovação). Um emblema dourado "MASTER" será exibido no relatório do pedido e na lista de pedidos.
+Quando um pedido Master recebe um upload, o vídeo é salvo com `approval_status: 'approved'` mas com `selected_for_display: false` e `is_active: false`. Isso significa que o vídeo fica "aprovado" mas **nunca entra em exibição** — ele não passa pelo `setBaseVideo` que é o responsável por ativá-lo, sincronizar com a API externa (AWS) e colocá-lo nos painéis.
 
-## Arquitetura
+**Correção**: Após o upsert no `pedido_videos`, se o pedido é Master, verificar quantos vídeos ativos existem. Se for o primeiro (ou único) vídeo aprovado, chamar automaticamente o `setBaseVideo` para ativá-lo — exatamente como acontece no fluxo manual quando o admin aprova e o anunciante clica em "Definir como principal".
 
-```text
-[Admin clica "Ativar Master"] 
-    → Edge Function toggle-pedido-master
-    → UPDATE pedidos SET is_master = true
-    → Log em user_activity_logs
+### Arquivo: `src/services/videoUploadService.ts`
+- Após o upsert bem-sucedido (linha ~291), adicionar lógica condicional:
+  - Se `approvalStatus === 'approved'` (Master):
+    - Buscar o `id` do `pedido_videos` recém-criado
+    - Verificar se já existe outro vídeo com `is_base_video: true` no pedido
+    - Se NÃO existe base video → chamar `setBaseVideo(pedidoVideoId)` do `videoBaseService`
+    - Isso automaticamente: marca como base, seleciona para exibição, ativa, e sincroniza com API externa
+  - Se JÁ existe base video → apenas deixar como aprovado (comportamento normal — anunciante escolhe manualmente)
 
-[Cliente faz upload de vídeo]
-    → videoUploadService.ts verifica pedido.is_master
-    → Se master: approval_status = 'approved' (em vez de 'pending')
-    → Vídeo já fica disponível sem aprovação manual
-```
+## Problema 2: Badge MASTER ausente na lista de pedidos
 
-## Etapas
+O componente `EnhancedOrderCard` (card de cada pedido na lista admin) não recebe nem exibe `is_master`. O tipo `OrderOrAttempt` não tem o campo.
 
-### 1. Migração SQL
-- Adicionar coluna `is_master BOOLEAN DEFAULT FALSE` na tabela `pedidos`
-- Sem RLS adicional necessária (tabela já possui políticas de admin)
+### Arquivos afetados:
 
-### 2. Edge Function `toggle-pedido-master`
-- Recebe `{ pedido_id, is_master }` 
-- Valida JWT e verifica role admin via `has_role`
-- Faz UPDATE em `pedidos.is_master`
-- Registra ação em `user_activity_logs`
-- Retorna o estado atualizado
+1. **`src/types/ordersAndAttempts.ts`**
+   - Adicionar `is_master?: boolean` à interface `OrderOrAttempt`
 
-### 3. Upload Service (`src/services/videoUploadService.ts`)
-- Antes do upsert em `pedido_videos`, consultar `pedidos.is_master`
-- Se `is_master === true`: usar `approval_status: 'approved'` no insert
-- Caso contrário: manter `approval_status: 'pending'` (comportamento atual)
+2. **`src/hooks/useOrdersAndAttempts.ts`** (ou equivalente que faz a query)
+   - Incluir `is_master` no SELECT da query de pedidos
 
-### 4. Hook `useRealOrderDetails.ts`
-- Incluir `is_master` na query do pedido e expor no retorno
-
-### 5. UI — Botão Toggle + Emblema (`ProfessionalOrderReport.tsx`)
-- Na seção de header (após o badge de status), adicionar:
-  - Emblema dourado "MASTER" quando `is_master === true`
-  - Botão toggle "Ativar/Desativar Master" na seção de informações do pedido
-  - Ícone de coroa/escudo dourado para diferenciação visual
-- O toggle chama a Edge Function e atualiza via `refetch`
-
-### 6. Interface `OrderData`
-- Adicionar `is_master?: boolean` nas interfaces de `ProfessionalOrderReport.tsx` e `useRealOrderDetails.ts`
-
-## Arquivos afetados
-
-| Arquivo | Alteração |
-|---|---|
-| **Migração SQL** (nova) | `ALTER TABLE pedidos ADD COLUMN is_master` |
-| `supabase/functions/toggle-pedido-master/index.ts` | Nova Edge Function |
-| `src/services/videoUploadService.ts` | Checar `is_master` antes do upsert |
-| `src/hooks/useRealOrderDetails.ts` | Expor `is_master` na query |
-| `src/components/admin/orders/ProfessionalOrderReport.tsx` | Badge + botão toggle |
+3. **`src/components/admin/orders/components/EnhancedOrderCard.tsx`**
+   - Após o badge de status (linha ~185), adicionar badge MASTER dourado com ícone Crown quando `item.is_master === true`
+   - Mesmo visual do `ProfessionalOrderReport`: gradiente amber/yellow, texto amber-950, ícone Crown
 
 ## O que NÃO será alterado
 - Fluxo de aprovação manual existente
-- Páginas de aprovação (`RealPendingVideosSection`, etc.)
+- `setBaseVideo` / `videoBaseService` (apenas chamado, não modificado)
+- `ProfessionalOrderReport` (já tem badge MASTER funcionando)
 - UI do cliente/anunciante
-- Qualquer outra interface ou funcionalidade existente
+- Edge Functions existentes
 
