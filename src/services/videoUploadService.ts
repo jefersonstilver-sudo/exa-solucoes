@@ -68,7 +68,7 @@ export const uploadVideo = async (
     if (!securityValidation?.canUpload) {
       uploadSession.logPhaseFailure('SECURITY', securityStart, securityValidation?.reason || 'Validação negada');
       toast.error(`Upload não permitido: ${securityValidation?.reason || 'Erro de validação'}`);
-      return false;
+      return { success: false };
     }
 
     uploadSession.logPhaseSuccess('SECURITY', securityStart, { cached: !!uploadCache.get(securityCacheKey) });
@@ -78,7 +78,7 @@ export const uploadVideo = async (
     if (videoTitle) {
       if (videoTitle.length < 3 || videoTitle.length > 50) {
         toast.error('Título deve ter entre 3 e 50 caracteres');
-        return false;
+        return { success: false };
       }
     }
 
@@ -115,7 +115,7 @@ export const uploadVideo = async (
       uploadSession.logPhaseFailure('VALIDATION', validationStart, validation.errors.join(', '), { errors: validation.errors });
       console.error('❌ Validação falhou:', validation.errors);
       toast.error(validation.errors.join(', '));
-      return false;
+      return { success: false };
     }
 
     uploadSession.logPhaseSuccess('VALIDATION', validationStart, { metadata: validation.metadata });
@@ -289,7 +289,7 @@ export const uploadVideo = async (
       // Verificar se é erro de segurança do trigger
       if (slotError.message?.includes('não permitido para pedidos não pagos')) {
         toast.error('Upload não permitido: pedido não foi pago');
-        return false;
+        return { success: false };
       }
       
       throw new Error(`Erro ao salvar no slot: ${slotError.message}`);
