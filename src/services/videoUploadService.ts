@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { setBaseVideo } from '@/services/videoBaseService';
 import { 
   validateVideoFile, 
   uploadVideoToStorage,
@@ -289,6 +290,43 @@ export const uploadVideo = async (
     }
 
     console.log('✅ Slot salvo/atualizado com sucesso');
+
+    // MASTER: Ativar pipeline completo (setBaseVideo) se não há vídeo base ainda
+    if (approvalStatus === 'approved') {
+      try {
+        // Buscar o pedido_videos recém-criado
+        const { data: newSlot } = await supabase
+          .from('pedido_videos')
+          .select('id')
+          .eq('pedido_id', orderId)
+          .eq('slot_position', slotPosition)
+          .single();
+
+        if (newSlot) {
+          // Verificar se já existe um vídeo base no pedido
+          const { data: existingBase } = await supabase
+            .from('pedido_videos')
+            .select('id')
+            .eq('pedido_id', orderId)
+            .eq('is_base_video', true)
+            .maybeSingle();
+
+          if (!existingBase) {
+            console.log('👑 [MASTER] Nenhum vídeo base encontrado — ativando pipeline completo via setBaseVideo');
+            const result = await setBaseVideo(newSlot.id);
+            if (result.success) {
+              console.log('✅ [MASTER] Pipeline completo ativado com sucesso');
+            } else {
+              console.warn('⚠️ [MASTER] setBaseVideo retornou falha:', result);
+            }
+          } else {
+            console.log('👑 [MASTER] Vídeo base já existe — mantendo apenas como aprovado');
+          }
+        }
+      } catch (masterError) {
+        console.warn('⚠️ [MASTER] Erro ao tentar ativar pipeline automático:', masterError);
+      }
+    }
 
 
     // Salvar regras de agendamento se fornecidas

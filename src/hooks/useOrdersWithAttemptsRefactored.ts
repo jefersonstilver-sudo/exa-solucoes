@@ -39,12 +39,13 @@ export const useOrdersWithAttemptsRefactored = () => {
         throw pedidosError;
       }
       
-      // Buscar tipo_produto de cada pedido (não disponível na RPC)
+      // Buscar tipo_produto e is_master de cada pedido (não disponível na RPC)
       const pedidoIds = (pedidosComClientes || []).map((p: any) => p.id);
-      const { data: pedidosTipoProduto } = pedidoIds.length > 0 
-        ? await supabase.from('pedidos').select('id, tipo_produto').in('id', pedidoIds)
+      const { data: pedidosExtra } = pedidoIds.length > 0 
+        ? await supabase.from('pedidos').select('id, tipo_produto, is_master').in('id', pedidoIds)
         : { data: [] };
-      const tipoProdutoMap = new Map((pedidosTipoProduto || []).map((p: any) => [p.id, p.tipo_produto]));
+      const tipoProdutoMap = new Map((pedidosExtra || []).map((p: any) => [p.id, p.tipo_produto]));
+      const isMasterMap = new Map((pedidosExtra || []).map((p: any) => [p.id, p.is_master]));
       
       // Buscar IDs de pedidos que têm vídeos
       const { data: pedidosComVideo } = await supabase
@@ -91,7 +92,8 @@ export const useOrdersWithAttemptsRefactored = () => {
         hasPaidInstallment: pedidoIdsComPagamento.has(pedido.id),
         tipo_produto: tipoProdutoMap.get(pedido.id) || 'horizontal',
         nome_pedido: pedido.nome_pedido,
-        lista_predios: pedido.lista_predios
+        lista_predios: pedido.lista_predios,
+        is_master: isMasterMap.get(pedido.id) || false
       }));
       
       const tentativasFormatadas = formatAttemptsData(tentativasComEmails);
