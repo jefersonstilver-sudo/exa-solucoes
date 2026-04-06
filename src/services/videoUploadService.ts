@@ -13,6 +13,12 @@ import type { ScheduleConflict } from './videoScheduleValidationService';
 import { uploadCache, getCacheKey } from './videoUploadCacheService';
 import { UploadSession } from './videoUploadLogsService';
 
+export interface UploadResult {
+  success: boolean;
+  isMasterApproved?: boolean;
+  isBaseActivated?: boolean;
+}
+
 export const uploadVideo = async (
   slotPosition: number,
   file: File,
@@ -22,7 +28,7 @@ export const uploadVideo = async (
   videoTitle?: string,
   scheduleRules?: any[],
   tipoProduto?: string
-): Promise<boolean> => {
+): Promise<UploadResult> => {
   // Criar sessão de logs estruturados
   const uploadSession = new UploadSession(orderId, userId);
   
@@ -291,18 +297,32 @@ export const uploadVideo = async (
 
     console.log('✅ Slot salvo/atualizado com sucesso');
 
-    // MASTER: Ativar pipeline completo (setBaseVideo) se não há vídeo base ainda
+    // MASTER: Verificar e forçar status approved + ativar pipeline
+    let isMasterApproved = false;
+    let isBaseActivated = false;
+    
     if (approvalStatus === 'approved') {
+      isMasterApproved = true;
+      
       try {
         // Buscar o pedido_videos recém-criado
         const { data: newSlot } = await supabase
           .from('pedido_videos')
-          .select('id')
+          .select('id, approval_status')
           .eq('pedido_id', orderId)
           .eq('slot_position', slotPosition)
           .single();
 
         if (newSlot) {
+          // Hardening: se por qualquer razão o upsert salvou como pending, forçar approved
+          if (newSlot.approval_status !== 'approved') {
+            console.warn('⚠️ [MASTER] Status veio como', newSlot.approval_status, '— forçando approved');
+            await supabase
+              .from('pedido_videos')
+              .update({ approval_status: 'approved', updated_at: new Date().toISOString() })
+              .eq('id', newSlot.id);
+          }
+          
           // Verificar se já existe um vídeo base no pedido
           const { data: existingBase } = await supabase
             .from('pedido_videos')
@@ -315,6 +335,7 @@ export const uploadVideo = async (
             console.log('👑 [MASTER] Nenhum vídeo base encontrado — ativando pipeline completo via setBaseVideo');
             const result = await setBaseVideo(newSlot.id);
             if (result.success) {
+              isBaseActivated = true;
               console.log('✅ [MASTER] Pipeline completo ativado com sucesso');
             } else {
               console.warn('⚠️ [MASTER] setBaseVideo retornou falha:', result);
@@ -327,7 +348,6 @@ export const uploadVideo = async (
         console.warn('⚠️ [MASTER] Erro ao tentar ativar pipeline automático:', masterError);
       }
     }
-
 
     // Salvar regras de agendamento se fornecidas
     if (scheduleRules && scheduleRules.length > 0) {
@@ -463,7 +483,7 @@ export const uploadVideo = async (
     } catch (e) {
       console.warn('⚠️ [Cache] Falha ao invalidar cache pós-upload:', e);
     }
-    return true;
+    return { success: true, isMasterApproved, isBaseActivated };
 
   } catch (error) {
     console.error('💥 Erro no upload:', error);
@@ -482,6 +502,6 @@ export const uploadVideo = async (
       toast.error(`Erro ao fazer upload do vídeo: ${errorMessage}`);
     }
     
-    return false;
+    return { success: false };
   }
 };
