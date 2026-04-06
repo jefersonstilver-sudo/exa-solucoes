@@ -250,6 +250,12 @@ const OrdersCompactHeader: React.FC<OrdersCompactHeaderProps> = ({
         onReconcile={handleReconcile}
         onRefresh={onRefresh}
       />
+
+      {/* Audit Sync Modal */}
+      <AuditSyncModal
+        open={auditModalOpen}
+        onOpenChange={setAuditModalOpen}
+      />
     </>
   );
 };
