@@ -54,7 +54,10 @@ const OrdersCompactHeader: React.FC<OrdersCompactHeaderProps> = ({
 }) => {
   const { enabled, volume, soundType, toggleSound, setVolume, setSoundType, playPreview } = useNotificationSound();
   const { runReconciliation, isReconciling, result, clearResult } = useOrdersReconciliationComplete();
+  const { userProfile } = useAuth();
   const [reconciliationModalOpen, setReconciliationModalOpen] = useState(false);
+  const [auditModalOpen, setAuditModalOpen] = useState(false);
+  const isSuperAdmin = userProfile?.role === 'super_admin';
 
   const handleReconcile = async () => {
     await runReconciliation();
