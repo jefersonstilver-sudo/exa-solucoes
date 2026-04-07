@@ -663,16 +663,23 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
     try {
       const idsToSend = contactIds || selectedReminderContacts;
       
-      // If we have event contacts from receipts, use them; otherwise fallback to allSelectableContacts
-      let selectedPhones: { nome: string; telefone: string }[];
-      if (eventRegisteredContacts.length > 0) {
-        selectedPhones = eventRegisteredContacts
-          .filter(c => idsToSend.includes(c.id))
-          .map(c => ({ nome: c.name, telefone: c.phone }));
-      } else {
-        selectedPhones = allSelectableContacts
+      // Try matching in event receipts first
+      let selectedPhones: { nome: string; telefone: string }[] = eventRegisteredContacts
+        .filter(c => idsToSend.includes(c.id))
+        .map(c => ({ nome: c.name, telefone: c.phone }));
+
+      // Fallback: also check allSelectableContacts for pending contacts (compositeId)
+      if (selectedPhones.length === 0 || selectedPhones.length < idsToSend.length) {
+        const fromSelectable = allSelectableContacts
           .filter(c => idsToSend.includes(c.compositeId))
           .map(c => ({ nome: c.nome, telefone: c.telefone }));
+        
+        const existingPhones = new Set(selectedPhones.map(p => p.telefone.replace(/\D/g, '')));
+        for (const sp of fromSelectable) {
+          if (!existingPhones.has(sp.telefone.replace(/\D/g, ''))) {
+            selectedPhones.push(sp);
+          }
+        }
       }
 
       if (selectedPhones.length === 0) {
