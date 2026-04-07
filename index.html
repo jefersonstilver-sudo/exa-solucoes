@@ -101,10 +101,10 @@
             caches.keys().then(function(names) {
               return Promise.all(names.map(function(n) { return caches.delete(n); }));
             }).then(function() {
-              window.location.reload(true);
+              window.location.href = window.location.pathname + '?_cb=' + Date.now();
             });
           } else {
-            window.location.reload(true);
+            window.location.href = window.location.pathname + '?_cb=' + Date.now();
           }
           return;
         }

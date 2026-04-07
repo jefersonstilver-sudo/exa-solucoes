@@ -122,7 +122,7 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: true, // Refresh when window focuses
       refetchOnReconnect: true,
-      refetchOnMount: true, // Always check on mount
+      refetchOnMount: 'always', // Always refetch on mount to ensure fresh data
     },
   },
 });
