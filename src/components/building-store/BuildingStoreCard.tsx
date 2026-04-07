@@ -65,7 +65,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
       >
         <CardContent className="p-0 flex flex-col h-full">
           {/* Imagem no topo - Aspect ratio 16:10 */}
-          <div className="relative w-full aspect-[16/10] flex-shrink-0">
+          <div className="relative w-full h-44 overflow-hidden flex-shrink-0">
             <BuildingCardImage building={building} mode="fill" />
           </div>
 

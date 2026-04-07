@@ -21,12 +21,12 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building, mode = 
   const distance = businessLocation ? calculateDistanceToBuilding(businessLocation, building as any) : null;
 
   return (
-    <div className={mode === 'fill' ? "relative w-full h-full" : "relative w-full aspect-[16/10]"}>
+    <div className={mode === 'fill' ? "relative w-full h-full overflow-hidden" : "relative w-full aspect-[16/10] overflow-hidden"}>
       {primaryImage ? (
         <img
           src={primaryImage}
           alt={building.nome}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-center"
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-gray-100">
