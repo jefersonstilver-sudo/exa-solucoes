@@ -30,6 +30,7 @@ export const ClientLogoUploadModal = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
   const [processedUrl, setProcessedUrl] = useState<string | null>(null);
+  const [processedPreviewUrl, setProcessedPreviewUrl] = useState<string | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<SelectedVariant>('css-optimized');
   const [processingState, setProcessingState] = useState<ProcessingState>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export const ClientLogoUploadModal = ({
   const [uploadedOriginal, setUploadedOriginal] = useState(false);
   const [aiProgress, setAiProgress] = useState(0);
   const [aiStatusMessage, setAiStatusMessage] = useState('');
-  const progressIntervalRef = useRef<number | null>(null);
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const AI_STATUS_MESSAGES = [
     'Analisando tipo de logo...',
@@ -57,7 +58,7 @@ export const ClientLogoUploadModal = ({
       let step = 0;
       let progress = 0;
 
-      progressIntervalRef.current = setInterval(() => {
+      progressIntervalRef.current = window.setInterval(() => {
         progress += Math.random() * 8 + 2; // 2-10% per tick
         if (progress > 90) progress = 90;
         setAiProgress(Math.round(progress));
@@ -88,6 +89,8 @@ export const ClientLogoUploadModal = ({
     setPreviewUrl(null);
     setOriginalUrl(null);
     setProcessedUrl(null);
+    setProcessedPreviewUrl(null);
+    setProcessedPreviewUrl(null);
     setSelectedVariant('css-optimized');
     setProcessingState('idle');
     setErrorMessage(null);
@@ -96,6 +99,8 @@ export const ClientLogoUploadModal = ({
     setCssImageError(false);
     setProcessedImageError(false);
     setUploadedOriginal(false);
+    setAiProgress(0);
+    setAiStatusMessage('');
   };
 
   const handleClose = () => {
@@ -244,19 +249,23 @@ export const ClientLogoUploadModal = ({
       if (!data?.success) throw new Error(data?.error || 'Falha ao processar logo');
 
       const cacheBuster = `?v=${Date.now()}`;
-      if (!uploadedOriginal) {
-        setOriginalUrl(data.originalUrl ? data.originalUrl + cacheBuster : null);
+      if (!uploadedOriginal && data.originalUrl) {
+        setOriginalUrl(`${data.originalUrl}${cacheBuster}`);
         setUploadedOriginal(true);
       }
-      setProcessedUrl(data.processedUrl ? data.processedUrl + cacheBuster : null);
-      setProcessingState('done');
-      
-      if (data.processed && data.processedUrl) {
-        setSelectedVariant('ai-processed');
-        toast.success('Logo processada com IA com sucesso!');
-      } else {
-        toast.info('IA não retornou imagem processada. Use Original ou CSS.');
+
+      if (!data.processed || !data.processedUrl) {
+        setProcessingState('error');
+        setErrorMessage(data.message || 'A IA não conseguiu concluir o tratamento da logo.');
+        toast.error(data.message || 'A IA não conseguiu concluir o tratamento da logo.');
+        return;
       }
+
+      setProcessedUrl(data.processedUrl);
+      setProcessedPreviewUrl(data.processedPreviewUrl || data.processedUrl);
+      setProcessingState('done');
+      setSelectedVariant('ai-processed');
+      toast.success('Logo processada com IA com sucesso!');
     } catch (error: any) {
       console.error('Error:', error);
       setProcessingState('error');
@@ -473,7 +482,7 @@ export const ClientLogoUploadModal = ({
                     {processedUrl && !processedImageError ? (
                       <>
                         <img 
-                          src={processedUrl} 
+                          src={processedPreviewUrl || processedUrl} 
                           alt="Processada IA" 
                           className="max-w-full max-h-full object-contain"
                           onError={() => setProcessedImageError(true)}

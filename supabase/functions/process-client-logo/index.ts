@@ -41,13 +41,6 @@ serve(async (req) => {
   try {
     const { imageBase64, fileName, onlyUploadOriginal = false } = await req.json();
 
-    console.log('[PROCESS-CLIENT-LOGO] 🎨 Iniciando:', {
-      fileName,
-      imageSize: imageBase64?.length || 0,
-      onlyUploadOriginal,
-      timestamp: new Date().toISOString()
-    });
-
     if (!imageBase64) {
       throw new Error('imageBase64 is required');
     }
@@ -56,149 +49,191 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Preparar dados do original
-    const originalBase64 = imageBase64.startsWith('data:') 
-      ? imageBase64.split(',')[1] 
-      : imageBase64;
-    const originalData = Uint8Array.from(atob(originalBase64), c => c.charCodeAt(0));
-
-    const sanitizedFileName = (fileName || 'logo.png')
-      .toLowerCase()
-      .replace(/[^a-z0-9._-]/g, '_')
-      .replace(/_+/g, '_');
-    
+    const originalImage = parseImageData(imageBase64);
+    const sanitizedFileName = sanitizeFileName(fileName || 'logo.png', originalImage.mimeType);
     const timestamp = Date.now();
     const originalPath = `proposal-client-logos/original/${timestamp}_${sanitizedFileName}`;
-    
-    // 1. Upload do original
+
+    console.log('[PROCESS-CLIENT-LOGO] 🎨 Iniciando:', {
+      fileName,
+      imageSize: imageBase64?.length || 0,
+      onlyUploadOriginal,
+      hasOpenAI: !!Deno.env.get('OPENAI_API_KEY'),
+      hasLovable: !!Deno.env.get('LOVABLE_API_KEY'),
+      timestamp: new Date().toISOString()
+    });
+
     const { error: originalUploadError } = await supabase.storage
       .from('arquivos')
-      .upload(originalPath, originalData, {
-        contentType: 'image/png',
+      .upload(originalPath, originalImage.bytes, {
+        contentType: originalImage.mimeType,
         cacheControl: '3600',
         upsert: false
       });
 
     if (originalUploadError) {
-      console.error('[PROCESS-CLIENT-LOGO] ❌ Upload original error:', originalUploadError);
       throw new Error(`Upload original failed: ${originalUploadError.message}`);
     }
 
-    const { data: originalUrlData } = supabase.storage
-      .from('arquivos')
-      .getPublicUrl(originalPath);
-
-    const originalUrl = originalUrlData.publicUrl;
-    console.log('[PROCESS-CLIENT-LOGO] ✅ Original uploaded');
+    const originalUrl = getStorageUrl(supabase, 'arquivos', originalPath);
+    const originalPreviewUrl = await createSignedPreviewUrl(supabase, 'arquivos', originalPath, originalUrl);
 
     if (onlyUploadOriginal) {
-      return new Response(
-        JSON.stringify({ success: true, originalUrl, processedUrl: null, processed: false }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonResponse({
+        success: true,
+        originalUrl,
+        originalPreviewUrl,
+        processedUrl: null,
+        processedPreviewUrl: null,
+        processed: false
+      });
     }
 
-    // 2. Processar com IA - Tentar OpenAI primeiro, depois Lovable Gateway como fallback
-    const imageDataUrl = imageBase64.startsWith('data:') ? imageBase64 : `data:image/png;base64,${imageBase64}`;
-
-    // Attempt 1: OpenAI GPT-4o
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     let processedImageUrl: string | null = null;
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
     if (OPENAI_API_KEY) {
-      console.log('[PROCESS-CLIENT-LOGO] 🤖 Tentativa 1: OpenAI GPT-4o...');
-      processedImageUrl = await callOpenAI(OPENAI_API_KEY, DETAILED_PROMPT, imageDataUrl);
-    } else {
-      console.log('[PROCESS-CLIENT-LOGO] ⚠️ OPENAI_API_KEY not configured, skipping OpenAI');
+      console.log('[PROCESS-CLIENT-LOGO] 🤖 Tentativa 1: OpenAI gpt-image-1...');
+      processedImageUrl = await callOpenAI(OPENAI_API_KEY, DETAILED_PROMPT, originalImage.bytes, originalImage.mimeType, sanitizedFileName);
     }
 
-    // Attempt 2: Lovable AI Gateway (fallback)
-    if (!processedImageUrl) {
-      const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-      if (LOVABLE_API_KEY) {
-        console.log('[PROCESS-CLIENT-LOGO] 🔄 Tentativa 2: Lovable Gateway gemini-2.5-flash...');
-        processedImageUrl = await callLovableGateway(LOVABLE_API_KEY, SIMPLE_PROMPT, imageDataUrl);
-      } else {
-        console.log('[PROCESS-CLIENT-LOGO] ⚠️ LOVABLE_API_KEY not configured');
-      }
+    if (!processedImageUrl && LOVABLE_API_KEY) {
+      console.log('[PROCESS-CLIENT-LOGO] 🔄 Tentativa 2: Lovable Gateway gemini-2.5-flash-image...');
+      processedImageUrl = await callLovableGateway(LOVABLE_API_KEY, SIMPLE_PROMPT, originalImage.dataUrl);
     }
 
     if (!processedImageUrl) {
-      console.log('[PROCESS-CLIENT-LOGO] ⚠️ Todas as tentativas falharam');
-      return new Response(
-        JSON.stringify({ 
-          success: true, originalUrl, processedUrl: null, processed: false,
-          message: 'AI could not process the image after all attempts'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonResponse({
+        success: true,
+        originalUrl,
+        originalPreviewUrl,
+        processedUrl: null,
+        processedPreviewUrl: null,
+        processed: false,
+        message: 'A IA não conseguiu concluir o tratamento da logo.'
+      });
     }
 
-    // 3. Upload da imagem processada
-    const processedBase64 = processedImageUrl.split(',')[1];
-    const processedData = Uint8Array.from(atob(processedBase64), c => c.charCodeAt(0));
-    const processedPath = `proposal-client-logos/processed/${timestamp}_${sanitizedFileName}`;
+    const processedImage = parseImageData(processedImageUrl, 'image/png');
+    const processedPath = `proposal-client-logos/processed/${timestamp}_${sanitizedFileName.replace(/\.(png|jpg|jpeg|webp)$/i, '.png')}`;
 
     const { error: processedUploadError } = await supabase.storage
       .from('arquivos')
-      .upload(processedPath, processedData, {
+      .upload(processedPath, processedImage.bytes, {
         contentType: 'image/png',
         cacheControl: '3600',
         upsert: false
       });
 
     if (processedUploadError) {
-      console.error('[PROCESS-CLIENT-LOGO] ❌ Upload processed error:', processedUploadError);
-      return new Response(
-        JSON.stringify({ success: true, originalUrl, processedUrl: null, processed: false, error: processedUploadError.message }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error(`Upload processed failed: ${processedUploadError.message}`);
     }
 
-    const { data: processedUrlData } = supabase.storage
-      .from('arquivos')
-      .getPublicUrl(processedPath);
+    const processedUrl = getStorageUrl(supabase, 'arquivos', processedPath);
+    const processedPreviewUrl = await createSignedPreviewUrl(supabase, 'arquivos', processedPath, processedUrl);
 
     console.log('[PROCESS-CLIENT-LOGO] ✅ Logo processada com sucesso');
 
-    return new Response(
-      JSON.stringify({ success: true, originalUrl, processedUrl: processedUrlData.publicUrl, processed: true }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
+    return jsonResponse({
+      success: true,
+      originalUrl,
+      originalPreviewUrl,
+      processedUrl,
+      processedPreviewUrl,
+      processed: true
+    });
   } catch (error) {
     console.error('[PROCESS-CLIENT-LOGO] 💥 Error:', error);
-    return new Response(
-      JSON.stringify({ success: false, error: error.message || 'Unknown error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return jsonResponse({ success: false, error: error.message || 'Unknown error' }, 500);
   }
 });
 
-// OpenAI GPT-4o - image input via chat completions
-async function callOpenAI(apiKey: string, prompt: string, imageDataUrl: string): Promise<string | null> {
+function jsonResponse(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+function getStorageUrl(supabase: ReturnType<typeof createClient>, bucket: string, path: string) {
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function createSignedPreviewUrl(
+  supabase: ReturnType<typeof createClient>,
+  bucket: string,
+  path: string,
+  fallbackUrl: string
+) {
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 60);
+  if (data?.signedUrl && !error) return data.signedUrl;
+  return fallbackUrl;
+}
+
+function sanitizeFileName(fileName: string, mimeType: string) {
+  const extension = extensionFromMimeType(mimeType);
+  const normalized = fileName
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/\.(png|jpg|jpeg|webp)$/i, '');
+
+  return `${normalized}.${extension}`;
+}
+
+function extensionFromMimeType(mimeType: string) {
+  if (mimeType.includes('jpeg') || mimeType.includes('jpg')) return 'jpg';
+  if (mimeType.includes('webp')) return 'webp';
+  return 'png';
+}
+
+function parseImageData(input: string, fallbackMimeType = 'image/png') {
+  const match = input.match(/^data:(.*?);base64,(.*)$/);
+  const mimeType = match?.[1] || fallbackMimeType;
+  const base64 = match?.[2] || input;
+  const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
+  return {
+    mimeType,
+    bytes,
+    dataUrl: match ? input : `data:${mimeType};base64,${base64}`
+  };
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function callOpenAI(
+  apiKey: string,
+  prompt: string,
+  imageBytes: Uint8Array,
+  mimeType: string,
+  fileName: string,
+): Promise<string | null> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 50000); // 50s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 50000);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const formData = new FormData();
+    formData.append('model', 'gpt-image-1');
+    formData.append('prompt', prompt);
+    formData.append('output_format', 'png');
+    formData.append('image', new Blob([imageBytes], { type: mimeType }), fileName);
+
+    const response = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            { type: 'image_url', image_url: { url: imageDataUrl, detail: 'high' } }
-          ]
-        }],
-        max_tokens: 4096
-      }),
-      signal: controller.signal
+      body: formData,
+      signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
@@ -210,14 +245,20 @@ async function callOpenAI(apiKey: string, prompt: string, imageDataUrl: string):
     }
 
     const result = await response.json();
-    const content = result.choices?.[0]?.message?.content;
+    const b64Json = result?.data?.[0]?.b64_json;
+    if (b64Json) {
+      console.log('[PROCESS-CLIENT-LOGO] ✅ OpenAI returned valid image');
+      return `data:image/png;base64,${b64Json}`;
+    }
 
-    // GPT-4o retorna texto descritivo, não imagem direta via chat completions
-    // Precisamos usar a API de images/generations para gerar a versão processada
-    // Como GPT-4o chat não retorna imagem editada, vamos usar DALL-E 3 approach:
-    // Na verdade, GPT-4o com image output não é suportado via /chat/completions padrão
-    // Vamos usar a Lovable Gateway que suporta modalities: ['image', 'text']
-    console.log('[PROCESS-CLIENT-LOGO] ⚠️ OpenAI chat completions não suporta output de imagem, usando fallback');
+    const imageUrl = result?.data?.[0]?.url;
+    if (imageUrl) {
+      const imageResponse = await fetch(imageUrl, { signal: controller.signal });
+      if (!imageResponse.ok) return null;
+      const imageBuffer = new Uint8Array(await imageResponse.arrayBuffer());
+      return `data:image/png;base64,${bytesToBase64(imageBuffer)}`;
+    }
+
     return null;
   } catch (err) {
     if (err.name === 'AbortError') {
@@ -229,11 +270,10 @@ async function callOpenAI(apiKey: string, prompt: string, imageDataUrl: string):
   }
 }
 
-// Lovable AI Gateway - supports image output via modalities
 async function callLovableGateway(apiKey: string, prompt: string, imageDataUrl: string): Promise<string | null> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 50000); // 50s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 50000);
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -265,13 +305,12 @@ async function callLovableGateway(apiKey: string, prompt: string, imageDataUrl: 
 
     const aiResult = await response.json();
     const imageUrl = aiResult.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    
+
     if (imageUrl && imageUrl.startsWith('data:')) {
       console.log('[PROCESS-CLIENT-LOGO] ✅ Gateway returned valid image');
       return imageUrl;
     }
-    
-    console.log('[PROCESS-CLIENT-LOGO] ⚠️ Gateway did not return valid image');
+
     return null;
   } catch (err) {
     if (err.name === 'AbortError') {
