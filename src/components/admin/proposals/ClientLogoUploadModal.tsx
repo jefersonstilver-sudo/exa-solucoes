@@ -38,6 +38,51 @@ export const ClientLogoUploadModal = ({
   const [cssImageError, setCssImageError] = useState(false);
   const [processedImageError, setProcessedImageError] = useState(false);
   const [uploadedOriginal, setUploadedOriginal] = useState(false);
+  const [aiProgress, setAiProgress] = useState(0);
+  const [aiStatusMessage, setAiStatusMessage] = useState('');
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const AI_STATUS_MESSAGES = [
+    'Analisando tipo de logo...',
+    'Removendo fundo da imagem...',
+    'Ajustando cores e contraste...',
+    'Otimizando para alta qualidade...',
+    'Quase pronto, finalizando...',
+  ];
+
+  // Animated progress effect during AI processing
+  useEffect(() => {
+    if (processingState === 'processing') {
+      setAiProgress(0);
+      setAiStatusMessage(AI_STATUS_MESSAGES[0]);
+      let step = 0;
+      let progress = 0;
+
+      progressIntervalRef.current = setInterval(() => {
+        progress += Math.random() * 8 + 2; // 2-10% per tick
+        if (progress > 90) progress = 90;
+        setAiProgress(Math.round(progress));
+
+        const msgIndex = Math.min(Math.floor(progress / 20), AI_STATUS_MESSAGES.length - 1);
+        if (msgIndex !== step) {
+          step = msgIndex;
+          setAiStatusMessage(AI_STATUS_MESSAGES[step]);
+        }
+      }, 800);
+
+      return () => {
+        if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      };
+    } else if (processingState === 'done' && aiProgress > 0) {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      setAiProgress(100);
+      setAiStatusMessage('Logo otimizada com sucesso!');
+    } else if (processingState === 'error') {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      setAiProgress(0);
+      setAiStatusMessage('');
+    }
+  }, [processingState]);
 
   const resetState = () => {
     setSelectedFile(null);
