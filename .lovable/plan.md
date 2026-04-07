@@ -1,47 +1,46 @@
 
 
-# Fix: Notificação de Reagendamento com Horários Completos
+# Fix: Envio Manual de Lembrete para Contatos Pendentes
 
-## Problema
-Quando um compromisso é alterado (ex: horário limite muda de 18:00 para 19:00), a notificação mostra apenas o campo que mudou ("⏰ Limite: 18:00 → 19:00"), sem mostrar o horário de início. Isso confunde os destinatários, que não sabem o horário completo da reunião.
+## Problema Raiz
+
+Na função `handleSendReminder` (linha 660-682 do `EditTaskModal.tsx`), quando já existem receipts (contatos já notificados), o código entra no branch `eventRegisteredContacts.length > 0` e tenta buscar o contato pelo ID do receipt. Mas os contatos pendentes ("Aguardando envio") passam um `compositeId` (ex: `alert:xxx`), que nunca será encontrado na lista de `eventRegisteredContacts` (que usa IDs de receipt). Resultado: `selectedPhones` fica vazio e a mensagem "Selecione ao menos um contato" aparece.
 
 ## Solução
-Alterar a Edge Function `task-notify-change` para **sempre** exibir o bloco completo de horários (início e fim), independente de qual campo mudou, e destacar visualmente o que foi alterado.
 
-### Formato atual (confuso):
+### Arquivo: `src/components/admin/agenda/EditTaskModal.tsx`
+
+**Alteração na função `handleSendReminder` (linhas 660-676):**
+
+Modificar a lógica para verificar **ambas** as listas. Se o ID passado não for encontrado em `eventRegisteredContacts`, buscar em `allSelectableContacts` como fallback:
+
 ```
-📅 Data: Terça-feira, 07/04/2026
-⏰ Limite: 18:00 → 19:00
+const idsToSend = contactIds || selectedReminderContacts;
+
+// Try matching in event receipts first
+let selectedPhones = eventRegisteredContacts
+  .filter(c => idsToSend.includes(c.id))
+  .map(c => ({ nome: c.name, telefone: c.phone }));
+
+// Fallback: also check allSelectableContacts for pending contacts (compositeId)
+if (selectedPhones.length === 0 || selectedPhones.length < idsToSend.length) {
+  const fromSelectable = allSelectableContacts
+    .filter(c => idsToSend.includes(c.compositeId))
+    .map(c => ({ nome: c.nome, telefone: c.telefone }));
+  
+  // Merge without duplicates by phone
+  const existingPhones = new Set(selectedPhones.map(p => p.telefone.replace(/\D/g, '')));
+  for (const sp of fromSelectable) {
+    if (!existingPhones.has(sp.telefone.replace(/\D/g, ''))) {
+      selectedPhones.push(sp);
+    }
+  }
+}
 ```
 
-### Formato novo (claro):
-```
-📅 Data: Terça-feira, 07/04/2026
-🕐 Início: 17:00
-⏰ Término: ~18:00~ → *19:00*
-```
-
-Ou se só o início mudou:
-```
-📅 Data: Terça-feira, 07/04/2026
-🕐 Início: ~17:00~ → *17:30*
-⏰ Término: 19:00
-```
-
-## Alteração Técnica
-
-### Arquivo: `supabase/functions/task-notify-change/index.ts`
-
-**Linhas 126-135** — Substituir a lógica que mostra apenas os campos alterados por uma lógica que:
-
-1. Sempre mostra **ambos** os horários (início e término)
-2. Usa strikethrough + bold apenas no campo que foi alterado
-3. Busca os valores atuais do banco (`taskData.horario_inicio`, `taskData.horario_limite`) como fallback para exibir o horário que não mudou
-4. Renomear "Limite" para "Término" para clareza
-
-Lógica resumida:
-- Se `horario_inicio` mudou → mostrar `🕐 Início: ~antigo~ → *novo*` + `⏰ Término: valor_atual`
-- Se `horario_limite` mudou → mostrar `🕐 Início: valor_atual` + `⏰ Término: ~antigo~ → *novo*`
-- Se ambos mudaram → ambos com strikethrough
-- Se nenhum mudou mas existem valores → mostrar ambos fixos
+Isso garante que:
+- Contatos já notificados (com receipt) continuam funcionando pelo ID do receipt
+- Contatos pendentes ("Aguardando envio") são encontrados pelo `compositeId` no fallback
+- O botão de envio individual (ícone de avião) para cada contato pendente funciona corretamente
+- O botão "Enviar Lembrete" geral com popover de seleção também funciona para ambos os tipos
 
