@@ -500,6 +500,17 @@ const OrderDetails = () => {
           />
         )}
 
+        {/* Status do Contrato - Colapsável e RETRAÍDO */}
+        <CollapsibleContractStatus
+          orderId={orderDetails.id}
+          orderDetails={orderDetails}
+        />
+
+        {/* Locais Selecionados - Colapsável e RETRAÍDO */}
+        {hasLocationData && displayBuildingIds.length > 0 && (
+          <CollapsibleBuildingsSection listaPredios={displayBuildingIds} />
+        )}
+
         {/* 4. Parcelas (apenas para pedidos fidelidade) */}
         {orderDetails.is_fidelidade && orderDetails.total_parcelas && (
           <OrderInstallmentsSection
