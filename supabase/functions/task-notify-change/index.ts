@@ -123,15 +123,31 @@ serve(async (req) => {
       message += `📅 Data: *${fmtDateBR(newDate)}*\n`;
     }
 
-    if (changes?.horario_inicio_anterior !== undefined && changes?.horario_inicio_novo !== undefined && changes.horario_inicio_anterior !== changes.horario_inicio_novo) {
-      const from = fmtTime(changes.horario_inicio_anterior) || 'Sem horário';
-      const to = fmtTime(changes.horario_inicio_novo) || 'Sem horário';
-      message += `🕐 Início: ~${from}~ → *${to}*\n`;
-    }
-    if (changes?.horario_limite_anterior !== undefined && changes?.horario_limite_novo !== undefined && changes.horario_limite_anterior !== changes.horario_limite_novo) {
-      const from = fmtTime(changes.horario_limite_anterior) || 'Sem limite';
-      const to = fmtTime(changes.horario_limite_novo) || 'Sem limite';
-      message += `⏰ Limite: ~${from}~ → *${to}*\n`;
+    // Always show BOTH start and end times for full context
+    const inicioChanged = changes?.horario_inicio_anterior !== undefined && changes?.horario_inicio_novo !== undefined && changes.horario_inicio_anterior !== changes.horario_inicio_novo;
+    const limiteChanged = changes?.horario_limite_anterior !== undefined && changes?.horario_limite_novo !== undefined && changes.horario_limite_anterior !== changes.horario_limite_novo;
+
+    // Resolve current values for start and end
+    const currentInicio = fmtTime(changes?.horario_inicio_novo || taskData?.horario_inicio);
+    const currentTermino = fmtTime(changes?.horario_limite_novo || taskData?.horario_limite);
+
+    if (inicioChanged || limiteChanged || currentInicio || currentTermino) {
+      // Show Início
+      if (currentInicio || inicioChanged) {
+        if (inicioChanged) {
+          message += `🕐 Início: ~${fmtTime(changes.horario_inicio_anterior) || 'Sem horário'}~ → *${fmtTime(changes.horario_inicio_novo) || 'Sem horário'}*\n`;
+        } else if (currentInicio) {
+          message += `🕐 Início: ${currentInicio}\n`;
+        }
+      }
+      // Show Término
+      if (currentTermino || limiteChanged) {
+        if (limiteChanged) {
+          message += `⏰ Término: ~${fmtTime(changes.horario_limite_anterior) || 'Sem horário'}~ → *${fmtTime(changes.horario_limite_novo) || 'Sem horário'}*\n`;
+        } else if (currentTermino) {
+          message += `⏰ Término: ${currentTermino}\n`;
+        }
+      }
     }
 
     if (criador_nome) {
