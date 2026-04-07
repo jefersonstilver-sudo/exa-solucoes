@@ -6,46 +6,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const DETAILED_PROMPT = `You are a professional logo processing expert. Analyze and process this logo image with extreme precision:
+const DETAILED_PROMPT = `Você é um especialista em tratamento profissional de logos para uso digital e branding.
 
-## STEP 1 - BACKGROUND ANALYSIS
-Identify the background type:
-- Solid color (white, colored, dark)
-- Gradient (linear, radial, complex)
-- Textured or patterned
-- Photographic/complex scene
-- Already transparent
+1. REMOVER O FUNDO COMPLETAMENTE
+- Fundo 100% transparente (sem resíduos, sem sombras, sem pixels)
+- NÃO pode sobrar borda branca, azul ou qualquer cor
+- PNG com transparência real (alpha)
 
-## STEP 2 - PRECISE BACKGROUND REMOVAL
-- Remove ALL background pixels completely
-- Preserve every detail of the logo: fine edges, thin lines, small text, subtle shadows
-- Handle anti-aliased edges carefully - keep smooth transitions
-- If the logo has semi-transparent elements, preserve them
-- Clean up any halo or fringe artifacts around edges
+2. CONVERTER PARA MONOCROMÁTICA - SEMPRE EM CORES CLARAS PARA CONTRASTE
+- CASO 1 — LOGO COM ELEMENTOS VISUAIS (ícones, desenhos, símbolos, mascotes):
+  Converter para tons de CINZA CLARO (grayscale profissional), preservar contraste e profundidade
+- CASO 2 — LOGO APENAS TEXTO:
+  Converter para BRANCO puro (#FFFFFF), sem cinza, sem degradê
 
-## STEP 3 - COLOR CONVERSION TO WHITE/GRAY
-Convert the entire logo to a white and light gray color scheme:
-- Main logo elements: PURE WHITE (#FFFFFF)
-- Secondary details, outlines, shadows: light gray (#E0E0E0 to #F0F0F0)
-- Preserve the visual hierarchy and depth of the original design
-- If the logo has gradients, convert them to white-to-light-gray gradients
-- Text in the logo must be crisp white
+3. QUALIDADE
+- Melhorar nitidez, corrigir serrilhados (anti-aliasing)
+- Manter proporção original, NÃO distorcer tipografia
 
-## STEP 4 - QUALITY & CLEANUP
-- Remove any artifacts, noise, or irregular edges
-- Ensure clean, professional borders on all elements
-- Maintain original proportions - DO NOT stretch or distort
-- Center the logo with adequate padding (about 5-8% on each side)
-- Output as high-quality PNG with transparent background
+4. CASOS ESPECIAIS
+- Fundo complexo (gradiente, imagem, textura) → remover completamente
+- Sombra, glow, reflexo → remover
+- Múltiplas cores → adaptar para branco ou cinza conforme regra 2
 
-## CRITICAL RULES:
-- The final image MUST have a TRANSPARENT background
-- ALL logo elements must be WHITE or VERY LIGHT GRAY only
-- NO other colors are allowed in the output
-- Preserve ALL fine details, text, and design elements
-- The logo will be displayed on dark red backgrounds (#6B1515) in professional documents`;
+Entregar logo limpa, profissional, monocromática em cores claras, sem fundo, pronta para uso imediato.
+NÃO explicar o processo. NÃO perguntar nada. Apenas entregar o arquivo pronto.`;
 
-const SIMPLE_PROMPT = `Remove the background from this logo image completely (make it transparent). Then convert ALL colors in the logo to pure white (#FFFFFF). Output a white logo on transparent background. Keep all details and proportions intact.`;
+const SIMPLE_PROMPT = `Remove the background completely (transparent PNG). Convert logo to light monochrome: if it has icons/symbols/mascots use light grayscale tones, if text-only use pure white #FFFFFF. The logo must always be in LIGHT colors for contrast on dark backgrounds. Remove all shadows, glows, reflections. Keep proportions and details intact. Just deliver the result, no explanation.`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -124,14 +110,14 @@ serve(async (req) => {
 
     const imageDataUrl = imageBase64.startsWith('data:') ? imageBase64 : `data:image/png;base64,${imageBase64}`;
 
-    // Attempt 1: Detailed prompt
-    console.log('[PROCESS-CLIENT-LOGO] 🤖 Tentativa 1: prompt detalhado...');
-    let processedImageUrl = await callAI(LOVABLE_API_KEY, DETAILED_PROMPT, imageDataUrl);
+    // Attempt 1: Detailed prompt with pro model
+    console.log('[PROCESS-CLIENT-LOGO] 🤖 Tentativa 1: prompt detalhado (pro)...');
+    let processedImageUrl = await callAI(LOVABLE_API_KEY, DETAILED_PROMPT, imageDataUrl, 'google/gemini-3-pro-image-preview');
 
-    // Attempt 2: Simple prompt (retry)
+    // Attempt 2: Simple prompt with flash model (fallback)
     if (!processedImageUrl) {
-      console.log('[PROCESS-CLIENT-LOGO] 🔄 Tentativa 2: prompt simplificado...');
-      processedImageUrl = await callAI(LOVABLE_API_KEY, SIMPLE_PROMPT, imageDataUrl);
+      console.log('[PROCESS-CLIENT-LOGO] 🔄 Tentativa 2: prompt simplificado (flash)...');
+      processedImageUrl = await callAI(LOVABLE_API_KEY, SIMPLE_PROMPT, imageDataUrl, 'google/gemini-2.5-flash-image');
     }
 
     if (!processedImageUrl) {
@@ -186,8 +172,9 @@ serve(async (req) => {
   }
 });
 
-async function callAI(apiKey: string, prompt: string, imageDataUrl: string): Promise<string | null> {
+async function callAI(apiKey: string, prompt: string, imageDataUrl: string, model: string = 'google/gemini-2.5-flash-image'): Promise<string | null> {
   try {
+    console.log(`[PROCESS-CLIENT-LOGO] 🤖 Usando modelo: ${model}`);
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -195,7 +182,7 @@ async function callAI(apiKey: string, prompt: string, imageDataUrl: string): Pro
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-image',
+        model,
         messages: [{
           role: 'user',
           content: [
