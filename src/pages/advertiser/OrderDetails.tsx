@@ -454,18 +454,7 @@ const OrderDetails = () => {
           />
         )}
 
-        {/* 1. Status do Contrato - Colapsável e RETRAÍDO */}
-        <CollapsibleContractStatus
-          orderId={orderDetails.id}
-          orderDetails={orderDetails}
-        />
-
-        {/* 2. Locais Selecionados - Colapsável e RETRAÍDO */}
-        {hasLocationData && displayBuildingIds.length > 0 && (
-          <CollapsibleBuildingsSection listaPredios={displayBuildingIds} />
-        )}
-
-        {/* 3. PRIORIDADE: Gestão de Vídeos - SEMPRE VISÍVEL */}
+        {/* 1. PRIORIDADE: Gestão de Vídeos - SEMPRE VISÍVEL */}
         {contractStatus.isExpired ? (
           <div className="bg-muted/30 p-4 sm:p-6 rounded-lg border-2 border-dashed">
             <div className="text-center">
@@ -509,6 +498,17 @@ const OrderDetails = () => {
             orderId={id || ''}
             tipoProduto={tipoProduto}
           />
+        )}
+
+        {/* Status do Contrato - Colapsável e RETRAÍDO */}
+        <CollapsibleContractStatus
+          orderId={orderDetails.id}
+          orderDetails={orderDetails}
+        />
+
+        {/* Locais Selecionados - Colapsável e RETRAÍDO */}
+        {hasLocationData && displayBuildingIds.length > 0 && (
+          <CollapsibleBuildingsSection listaPredios={displayBuildingIds} />
         )}
 
         {/* 4. Parcelas (apenas para pedidos fidelidade) */}
