@@ -132,7 +132,7 @@ export function ModernAdminSidebar() {
       icon: Sunrise,
       items: [
         {
-          title: 'Central de Tarefas',
+          title: 'Agenda',
           href: buildPath('tarefas'),
           icon: Sunrise,
           moduleKey: MODULE_KEYS.minha_manha
