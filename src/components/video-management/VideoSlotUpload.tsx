@@ -257,21 +257,13 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="video/*" className="hidden" id={`file-upload-${slotPosition}`} />
       
       <div className="space-y-3 sm:space-y-3">
-        <div className="flex items-center gap-3 lg:flex-col">
-          <Video className={`h-8 w-8 sm:h-10 sm:w-10 shrink-0 lg:mx-auto lg:mb-2 ${selectedFile ? 'text-green-500' : 'text-muted-foreground'}`} />
-          <div className="flex-1 text-left lg:text-center">
-            <p className={`text-sm sm:text-sm font-medium leading-tight ${selectedFile ? 'text-green-700' : 'text-muted-foreground'}`}>
-              {selectedFile ? '✓ Vídeo pronto para envio!' : `Envie aqui seu vídeo ${isVertical ? 'vertical' : 'horizontal'}!`}
-            </p>
-          </div>
-        </div>
-        
         <VideoTitleInput title={videoTitle} onTitleChange={setVideoTitle} error={titleError} placeholder={`Título do vídeo ${slotPosition}`} />
         
         <label htmlFor={`file-upload-${slotPosition}`}>
           <Button asChild variant="outline" className="w-full cursor-pointer h-10 sm:h-9 text-sm sm:text-xs px-3 rounded-xl sm:rounded-md" disabled={uploading || isUploading}>
-            <span>
-              {selectedFile ? selectedFile.name.length > 25 ? selectedFile.name.substring(0, 25) + '...' : selectedFile.name : 'Selecionar Arquivo'}
+            <span className="flex items-center justify-center gap-2">
+              <Video className="h-4 w-4" />
+              {selectedFile ? selectedFile.name.length > 25 ? selectedFile.name.substring(0, 25) + '...' : selectedFile.name : 'Selecionar Vídeo'}
             </span>
           </Button>
         </label>
