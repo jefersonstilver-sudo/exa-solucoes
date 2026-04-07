@@ -199,8 +199,21 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
           </div>)}
       </div>;
   };
-  const cardElement = <Card className={cardClasses}>
-      <CardContent className="p-3 sm:p-3 md:p-4 max-w-full overflow-hidden">
+  const cardElement = <Card className={`${cardClasses} overflow-hidden relative`}>
+      {/* Blurred background video - decorative ambient effect */}
+      {slot.video_data?.url && (
+        <video
+          src={slot.video_data.url}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="none"
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover blur-xl opacity-30 scale-110 pointer-events-none z-0"
+        />
+      )}
+      <CardContent className="p-3 sm:p-3 md:p-4 max-w-full overflow-hidden relative z-10">
         {/* Header do Slot */}
         <div className="mb-2 sm:mb-2 space-y-1.5">
           {/* Linha 1: Título do Slot + Status */}
