@@ -1,46 +1,50 @@
 
 
-# Fix: Envio Manual de Lembrete para Contatos Pendentes
+# Fix: Atualizar Prompt de Otimização de Logo com IA
 
-## Problema Raiz
-
-Na função `handleSendReminder` (linha 660-682 do `EditTaskModal.tsx`), quando já existem receipts (contatos já notificados), o código entra no branch `eventRegisteredContacts.length > 0` e tenta buscar o contato pelo ID do receipt. Mas os contatos pendentes ("Aguardando envio") passam um `compositeId` (ex: `alert:xxx`), que nunca será encontrado na lista de `eventRegisteredContacts` (que usa IDs de receipt). Resultado: `selectedPhones` fica vazio e a mensagem "Selecione ao menos um contato" aparece.
+## Problema
+O prompt atual na Edge Function `process-client-logo` não segue as instruções corretas do agente GPT. Falta a regra de que logos sempre devem estar em cores claras para contraste, e a distinção entre logos com elementos visuais (cinza) vs logos só-texto (branco puro) não está clara o suficiente.
 
 ## Solução
 
-### Arquivo: `src/components/admin/agenda/EditTaskModal.tsx`
+### Arquivo: `supabase/functions/process-client-logo/index.ts`
 
-**Alteração na função `handleSendReminder` (linhas 660-676):**
-
-Modificar a lógica para verificar **ambas** as listas. Se o ID passado não for encontrado em `eventRegisteredContacts`, buscar em `allSelectableContacts` como fallback:
+**Substituir `DETAILED_PROMPT` (linhas 9-46)** pelo prompt atualizado do usuário:
 
 ```
-const idsToSend = contactIds || selectedReminderContacts;
+Você é um especialista em tratamento profissional de logos para uso digital e branding.
 
-// Try matching in event receipts first
-let selectedPhones = eventRegisteredContacts
-  .filter(c => idsToSend.includes(c.id))
-  .map(c => ({ nome: c.name, telefone: c.phone }));
+1. REMOVER O FUNDO COMPLETAMENTE
+- Fundo 100% transparente (sem resíduos, sem sombras, sem pixels)
+- NÃO pode sobrar borda branca, azul ou qualquer cor
+- PNG com transparência real (alpha)
 
-// Fallback: also check allSelectableContacts for pending contacts (compositeId)
-if (selectedPhones.length === 0 || selectedPhones.length < idsToSend.length) {
-  const fromSelectable = allSelectableContacts
-    .filter(c => idsToSend.includes(c.compositeId))
-    .map(c => ({ nome: c.nome, telefone: c.telefone }));
-  
-  // Merge without duplicates by phone
-  const existingPhones = new Set(selectedPhones.map(p => p.telefone.replace(/\D/g, '')));
-  for (const sp of fromSelectable) {
-    if (!existingPhones.has(sp.telefone.replace(/\D/g, ''))) {
-      selectedPhones.push(sp);
-    }
-  }
-}
+2. CONVERTER PARA MONOCROMÁTICA - SEMPRE EM CORES CLARAS PARA CONTRASTE
+- CASO 1 — LOGO COM ELEMENTOS VISUAIS (ícones, desenhos, símbolos, mascotes):
+  Converter para tons de CINZA CLARO (grayscale profissional), preservar contraste e profundidade
+- CASO 2 — LOGO APENAS TEXTO:
+  Converter para BRANCO puro (#FFFFFF), sem cinza, sem degradê
+
+3. QUALIDADE
+- Melhorar nitidez, corrigir serrilhados (anti-aliasing)
+- Manter proporção original, NÃO distorcer tipografia
+
+4. CASOS ESPECIAIS
+- Fundo complexo (gradiente, imagem, textura) → remover completamente
+- Sombra, glow, reflexo → remover
+- Múltiplas cores → adaptar para branco ou cinza conforme regra 2
+
+Entregar logo limpa, profissional, monocromática em cores claras, sem fundo, pronta para uso imediato.
+NÃO explicar o processo. NÃO perguntar nada. Apenas entregar o arquivo pronto.
 ```
 
-Isso garante que:
-- Contatos já notificados (com receipt) continuam funcionando pelo ID do receipt
-- Contatos pendentes ("Aguardando envio") são encontrados pelo `compositeId` no fallback
-- O botão de envio individual (ícone de avião) para cada contato pendente funciona corretamente
-- O botão "Enviar Lembrete" geral com popover de seleção também funciona para ambos os tipos
+**Substituir `SIMPLE_PROMPT` (linha 48):**
+
+```
+Remove the background completely (transparent PNG). Convert logo to light monochrome: if it has icons/symbols/mascots use light grayscale tones, if text-only use pure white #FFFFFF. The logo must always be in LIGHT colors for contrast on dark backgrounds. Remove all shadows, glows, reflections. Keep proportions and details intact. Just deliver the result, no explanation.
+```
+
+**Upgrade do modelo (linha 198):** Trocar `google/gemini-2.5-flash-image` para `google/gemini-3-pro-image-preview` na tentativa 1 (melhor qualidade para processamento de imagem). Manter `google/gemini-2.5-flash-image` como fallback na tentativa 2.
+
+Isso requer adicionar um parâmetro `model` na função `callAI` e passar modelos diferentes para cada tentativa.
 
