@@ -110,14 +110,14 @@ serve(async (req) => {
 
     const imageDataUrl = imageBase64.startsWith('data:') ? imageBase64 : `data:image/png;base64,${imageBase64}`;
 
-    // Attempt 1: Detailed prompt
-    console.log('[PROCESS-CLIENT-LOGO] 🤖 Tentativa 1: prompt detalhado...');
-    let processedImageUrl = await callAI(LOVABLE_API_KEY, DETAILED_PROMPT, imageDataUrl);
+    // Attempt 1: Detailed prompt with pro model
+    console.log('[PROCESS-CLIENT-LOGO] 🤖 Tentativa 1: prompt detalhado (pro)...');
+    let processedImageUrl = await callAI(LOVABLE_API_KEY, DETAILED_PROMPT, imageDataUrl, 'google/gemini-3-pro-image-preview');
 
-    // Attempt 2: Simple prompt (retry)
+    // Attempt 2: Simple prompt with flash model (fallback)
     if (!processedImageUrl) {
-      console.log('[PROCESS-CLIENT-LOGO] 🔄 Tentativa 2: prompt simplificado...');
-      processedImageUrl = await callAI(LOVABLE_API_KEY, SIMPLE_PROMPT, imageDataUrl);
+      console.log('[PROCESS-CLIENT-LOGO] 🔄 Tentativa 2: prompt simplificado (flash)...');
+      processedImageUrl = await callAI(LOVABLE_API_KEY, SIMPLE_PROMPT, imageDataUrl, 'google/gemini-2.5-flash-image');
     }
 
     if (!processedImageUrl) {
