@@ -1,73 +1,30 @@
 
 
-# Plano: Eliminar Cache Stale no Safari e Chrome
+# Correção: Cards com tamanho uniforme no mobile (imagens cortadas)
 
-## Diagnóstico do Problema
+## Problema
+No mobile, cards com fotos verticais ficam com tamanhos diferentes dos cards com fotos horizontais. A imagem deveria ser cortada (`object-cover`) para manter proporção uniforme, mas o container interno com `h-full` não herda corretamente a altura do `aspect-ratio` do pai em alguns navegadores (especialmente Safari/iPhone).
 
-O sistema atual tem **3 camadas de cache-busting**, mas todas falham no mesmo cenário:
+## Solução
 
-1. **Meta tags `Cache-Control`** no HTML → Ignoradas por CDNs e pela maioria dos navegadores modernos para decisões reais de cache HTTP
-2. **BUILD_ID no `index.html`** → Só funciona SE o navegador já baixou o HTML novo. Se o HTML está cacheado, o script antigo roda com o BUILD_ID antigo e nunca detecta mudança
-3. **`useForceCacheClear`** → Limpa Service Workers e Caches API, mas não resolve o cache HTTP do navegador para o próprio `index.html`
+**Arquivo**: `src/components/building-store/card/BuildingCardImage.tsx`
 
-**Causa raiz**: O Safari (especialmente com `apple-mobile-web-app-capable`) e o Chrome cacheam agressivamente o `index.html`. Como o HTML cacheado contém o BUILD_ID antigo, o mecanismo de detecção nunca dispara.
+1. Quando `mode="fill"`, forçar o container interno a também usar `aspect-[16/10]` com `overflow-hidden`, em vez de depender de `h-full` que falha no Safari
+2. Adicionar `object-center` na `<img>` para centralizar o corte em fotos verticais
 
-## Solução: Version Check via Edge Function
+**Arquivo**: `src/components/building-store/BuildingStoreCard.tsx`
 
-Criar um endpoint server-side que retorna a versão atual do build. Na montagem do app, comparar com a versão embutida no código. Se divergir, forçar reload limpo.
+1. No layout mobile, garantir que o container da imagem use altura fixa (`h-48`) em vez de apenas `aspect-[16/10]`, que é mais confiável cross-browser no iPhone
+2. Adicionar `overflow-hidden` explícito no container da imagem
 
-```text
-┌──────────────┐     GET /version      ┌─────────────────────┐
-│  App mounts  │ ──────────────────►   │  Edge Function      │
-│  (React)     │                       │  returns latest      │
-│              │ ◄──────────────────   │  BUILD_TIMESTAMP     │
-│  Compare:    │     { version: X }    │  from DB/config      │
-│  local != X  │                       └─────────────────────┘
-│  → reload()  │
-└──────────────┘
-```
+### Mudanças específicas
 
-## Arquivos e Mudanças
+**BuildingCardImage.tsx** (linha 24):
+- Trocar `"relative w-full h-full"` por `"relative w-full h-full overflow-hidden"`
+- Na `<img>`, adicionar `object-center` para corte centralizado
 
-### 1. Criar Edge Function `get-app-version`
-- Retorna a versão mais recente do build
-- Usa uma tabela `app_config` (ou hardcoded no deploy) para armazenar a versão atual
-- Headers `Cache-Control: no-store` para nunca cachear a resposta
+**BuildingStoreCard.tsx** (linha 68, bloco mobile):
+- Trocar `aspect-[16/10]` por `h-44` (altura fixa ~176px) + `overflow-hidden` no container da imagem, garantindo uniformidade absoluta independente da proporção da foto original
 
-### 2. Criar migration: tabela `app_config`
-- Tabela simples com chave `current_version` e valor (timestamp do build)
-- Atualizada automaticamente via hook pós-deploy ou manualmente
-
-### 3. Modificar `src/hooks/useForceCacheClear.ts`
-- Na montagem, chamar a Edge Function `get-app-version`
-- Comparar o timestamp retornado com `__BUILD_TIMESTAMP__` embutido no JS
-- Se diferente: limpar caches + `window.location.reload(true)`
-- Incluir proteção contra loop infinito (max 1 reload por sessão via `sessionStorage`)
-
-### 4. Atualizar `index.html` — Cache Bust Script
-- Melhorar o script inline para também adicionar `?_t=timestamp` ao forçar reload, evitando que o navegador sirva o HTML do disco
-- Substituir `window.location.reload(true)` por `window.location.href = '/?_cb=' + Date.now()` que força bypass de cache HTTP
-
-### 5. React Query — Garantir dados frescos
-- O `staleTime: 1min` atual é adequado
-- Adicionar `refetchOnMount: 'always'` no default do QueryClient para garantir que dados do banco sejam sempre verificados ao montar componentes
-
-## Proteção Anti-Loop
-
-Para evitar reload infinito caso algo dê errado:
-- `sessionStorage.setItem('cache-reload-count', count)`
-- Máximo 1 reload por sessão
-- Se já recarregou, apenas loga warning no console
-
-## Compatibilidade
-
-- **Safari iOS**: O `window.location.href = url + '?_cb=...'` força o Safari a buscar HTML novo do servidor
-- **Chrome**: Content-hashed assets do Vite já funcionam; o problema é só o HTML
-- **Safari desktop**: Mesmo tratamento do iOS
-
-## Impacto
-
-- Nenhuma alteração de UI
-- Nenhuma funcionalidade existente é modificada
-- Apenas adiciona verificação de versão no boot do app
+Nenhuma outra funcionalidade ou UI é alterada.
 
