@@ -200,32 +200,30 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
       </div>;
   };
   const cardElement = <Card className={cardClasses}>
-      <CardContent className="p-1 sm:p-3 md:p-4 max-w-full overflow-hidden">
-        {/* Header do Slot - Melhorado para Mobile */}
-        <div className="mb-0.5 sm:mb-2 space-y-0.5">
-          {/* Linha 1: Título do Slot + Status Icons */}
+      <CardContent className="p-3 sm:p-3 md:p-4 max-w-full overflow-hidden">
+        {/* Header do Slot */}
+        <div className="mb-2 sm:mb-2 space-y-1.5">
+          {/* Linha 1: Título do Slot + Status */}
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-[9px] sm:text-base text-gray-900">Slot {slot.slot_position}</h3>
-            <div className="flex items-center gap-0.5">
+            <h3 className="font-semibold text-base sm:text-base text-foreground">Slot {slot.slot_position}</h3>
+            <div className="flex items-center gap-1.5">
               {slot.video_data && getStatusIcon(slot.approval_status)}
-              {/* Badges dos status - Ultra Compacto Mobile */}
-              {slot.approval_status === 'rejected' && <Badge variant="destructive" className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2">✗</Badge>}
-              {slot.approval_status === 'pending' && slot.video_data && <Badge className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2 bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-100">Enviado</Badge>}
-              {slot.approval_status === 'pending' && !slot.video_data && <Badge variant="secondary" className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2">⏱</Badge>}
+              {slot.approval_status === 'rejected' && <Badge variant="destructive" className="text-xs py-0.5 px-2">Rejeitado</Badge>}
+              {slot.approval_status === 'pending' && slot.video_data && <Badge className="text-xs py-0.5 px-2 bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-100">Enviado</Badge>}
+              {slot.approval_status === 'pending' && !slot.video_data && <Badge variant="secondary" className="text-xs py-0.5 px-2">Aguardando</Badge>}
             </div>
           </div>
           
           {/* Linha 2: Badges e Botões (quando há vídeo aprovado) */}
           {slot.video_data && slot.approval_status === 'approved' && (
-            <div className="flex items-center flex-wrap gap-0.5 sm:gap-1">
+            <div className="flex items-center flex-wrap gap-1.5 sm:gap-1">
               {/* Badge Vídeo Principal */}
               {slot.is_base_video && <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center space-x-0.5 bg-slate-100 border border-slate-300 text-slate-700 px-0.5 py-0.5 sm:px-2 sm:py-1 rounded text-[7px] sm:text-xs font-medium cursor-help">
-                        <Star className="h-1.5 w-1.5 sm:h-3 sm:w-3" />
-                        <span className="hidden sm:inline">Principal</span>
-                        <span className="sm:hidden">★</span>
+                      <div className="flex items-center space-x-1 bg-slate-100 border border-slate-300 text-slate-700 px-2 py-1 sm:px-2 sm:py-1 rounded-lg text-xs sm:text-xs font-medium cursor-help">
+                        <Star className="h-3 w-3 sm:h-3 sm:w-3" />
+                        <span>Principal</span>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-xs bg-slate-900 text-white p-3">
@@ -238,20 +236,18 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                 </TooltipProvider>}
               
               {/* Badge "ATIVO" para vídeo principal */}
-              {slot.is_base_video && !hasAnyScheduledActiveNow && <div className="flex items-center space-x-0.5 bg-green-50 border border-green-300 text-green-700 px-0.5 py-0.5 sm:px-1.5 sm:py-0.5 rounded text-[7px] sm:text-xs font-medium">
-                  <Tv className="h-1.5 w-1.5 sm:h-3 sm:w-3" />
-                  <span className="hidden sm:inline">ATIVO</span>
-                  <span className="sm:hidden">▶</span>
+              {slot.is_base_video && !hasAnyScheduledActiveNow && <div className="flex items-center space-x-1 bg-green-50 border border-green-300 text-green-700 px-2 py-1 sm:px-1.5 sm:py-0.5 rounded-lg text-xs sm:text-xs font-medium">
+                  <Tv className="h-3 w-3 sm:h-3 sm:w-3" />
+                  <span>ATIVO</span>
                 </div>}
               
               {/* Badge "EM EXIBIÇÃO" para vídeos agendados ativos */}
               {!slot.is_base_video && hasActiveSchedule && isScheduledActiveNow() && <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center space-x-0.5 sm:space-x-1 bg-green-50 border border-green-300 text-green-700 px-0.5 py-0.5 sm:px-2.5 sm:py-1.5 rounded text-[7px] sm:text-xs font-semibold cursor-help animate-pulse">
-                        <Tv className="h-1.5 w-1.5 sm:h-3.5 sm:w-3.5" />
-                        <span className="hidden sm:inline">EM EXIBIÇÃO</span>
-                        <span className="sm:hidden">▶</span>
+                      <div className="flex items-center space-x-1 bg-green-50 border border-green-300 text-green-700 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-xs sm:text-xs font-semibold cursor-help animate-pulse">
+                        <Tv className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <span>EM EXIBIÇÃO</span>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-xs bg-green-900 text-white p-3">
@@ -321,11 +317,11 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                             videoLogger.logUserClick('set_base_video_no_callback', 'Callback não disponível', errorData);
                           }
                         }} 
-                        className="text-[7px] sm:text-xs px-1 sm:px-2 py-0.5 h-4 sm:h-7 border-gray-300 text-gray-600 hover:bg-gray-50" 
+                        className="text-xs sm:text-xs px-2.5 sm:px-2 py-1 h-9 sm:h-7 border-gray-300 text-gray-600 hover:bg-gray-50 rounded-lg" 
                         title={hasActiveSchedule ? "Os agendamentos serão removidos" : "Clique para definir como vídeo principal"}
                       >
-                        <span className="hidden sm:inline">Definir Principal</span>
-                        <span className="sm:hidden">★</span>
+                        <Star className="h-3 w-3 mr-1" />
+                        Definir Principal
                       </Button>
                     </TooltipTrigger>
                     {hasActiveSchedule && <TooltipContent>
@@ -338,7 +334,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
           )}
           
           {/* Aviso para vídeos bloqueados */}
-          {isBlocked && <span className="text-[9px] sm:text-xs text-gray-500 bg-gray-200 px-1 py-0.5 sm:px-2 sm:py-1 rounded inline-block">
+          {isBlocked && <span className="text-xs sm:text-xs text-muted-foreground bg-muted px-2 py-1 sm:px-2 sm:py-1 rounded-lg inline-block">
               Não Selecionável
             </span>}
         </div>
@@ -354,14 +350,14 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
         {slot.video_data ? (
           <div className="space-y-2 sm:space-y-4">
-            {/* Mobile: Layout Ultra Compacto SEM PREVIEW */}
+            {/* Mobile: Layout Limpo */}
             <div className="lg:hidden">
-              <div className="flex items-center justify-between gap-1.5 bg-gray-50/50 rounded-md p-1.5">
+              <div className="flex items-center justify-between gap-2 bg-muted/30 rounded-xl p-3">
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-[11px] truncate text-gray-900" title={slot.video_data.nome}>
-                    {slot.video_data.nome}
+                  <h4 className="font-medium text-sm truncate text-foreground" title={slot.video_data.nome}>
+                    🎬 {slot.video_data.nome}
                   </h4>
-                  <div className="flex items-center gap-1 text-[9px] text-gray-600 mt-0.5">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                     <span>{formatDuration(slot.video_data.duracao)}</span>
                     <span>•</span>
                     <span className="truncate">{slot.video_data.orientacao}</span>
@@ -370,10 +366,10 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-shrink-0 h-6 px-1.5 text-[9px]"
+                  className="flex-shrink-0 h-9 px-3 text-sm rounded-lg"
                   onClick={() => window.open(slot.video_data!.url, '_blank')}
                 >
-                  <svg className="w-2.5 h-2.5 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -383,19 +379,18 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
               {/* Motivo de Rejeição - Mobile Compacto */}
               {slot.approval_status === 'rejected' && slot.rejection_reason && (
-                <div className="bg-red-50 border border-red-200 rounded-md p-1 mt-1">
-                  <p className="text-red-800 text-[9px]">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-2.5 mt-2">
+                  <p className="text-red-800 text-xs">
                     <strong>Motivo:</strong> {slot.rejection_reason}
                   </p>
                 </div>
               )}
 
-              {/* Aviso para vídeos não aprovados - Mobile Compacto */}
               {isBlocked && (
-                <div className="bg-gray-50 border border-gray-200 rounded-md p-1 mt-1">
-                  <div className="flex items-center gap-1">
-                    <Lock className="h-2.5 w-2.5 text-gray-500 flex-shrink-0" />
-                    <p className="text-gray-700 text-[9px]">
+                <div className="bg-muted/50 border border-border rounded-xl p-2.5 mt-2">
+                  <div className="flex items-center gap-1.5">
+                    <Lock className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    <p className="text-muted-foreground text-xs">
                       {slot.approval_status === 'pending' ? 'Aguardando aprovação' : 'Vídeo rejeitado'}
                     </p>
                   </div>

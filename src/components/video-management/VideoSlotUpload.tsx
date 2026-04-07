@@ -253,40 +253,39 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         </Button>
       </div>;
   }
-  return <div className={`rounded-lg p-2 sm:p-4 text-center transition-all duration-300 ${selectedFile ? 'border-2 border-green-400 bg-green-50/60 shadow-md' : 'border border-gray-200 bg-white/50'}`}>
+  return <div className={`rounded-xl p-3 sm:p-4 text-center transition-all duration-300 ${selectedFile ? 'border-2 border-green-400 bg-green-50/60 shadow-md' : 'border border-border bg-background/50'}`}>
       <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="video/*" className="hidden" id={`file-upload-${slotPosition}`} />
       
-      <div className="space-y-1 sm:space-y-3">
-        <div className="flex items-center gap-2 lg:flex-col">
-          <Video className={`h-4 w-4 sm:h-10 sm:w-10 shrink-0 lg:mx-auto lg:mb-2 ${selectedFile ? 'text-green-500' : 'text-gray-400'}`} />
+      <div className="space-y-3 sm:space-y-3">
+        <div className="flex items-center gap-3 lg:flex-col">
+          <Video className={`h-8 w-8 sm:h-10 sm:w-10 shrink-0 lg:mx-auto lg:mb-2 ${selectedFile ? 'text-green-500' : 'text-muted-foreground'}`} />
           <div className="flex-1 text-left lg:text-center">
-            <p className={`text-[10px] sm:text-sm font-medium leading-tight ${selectedFile ? 'text-green-700' : 'text-gray-600'}`}>
+            <p className={`text-sm sm:text-sm font-medium leading-tight ${selectedFile ? 'text-green-700' : 'text-muted-foreground'}`}>
               {selectedFile ? '✓ Vídeo pronto para envio!' : `Envie aqui seu vídeo ${isVertical ? 'vertical' : 'horizontal'}!`}
             </p>
-            
           </div>
         </div>
         
         <VideoTitleInput title={videoTitle} onTitleChange={setVideoTitle} error={titleError} placeholder={`Título do vídeo ${slotPosition}`} />
         
         <label htmlFor={`file-upload-${slotPosition}`}>
-          <Button asChild variant="outline" className="w-full cursor-pointer h-6 sm:h-9 text-[9px] sm:text-xs px-2" disabled={uploading || isUploading}>
+          <Button asChild variant="outline" className="w-full cursor-pointer h-10 sm:h-9 text-sm sm:text-xs px-3 rounded-xl sm:rounded-md" disabled={uploading || isUploading}>
             <span>
-              {selectedFile ? selectedFile.name.length > 15 ? selectedFile.name.substring(0, 15) + '...' : selectedFile.name : 'Selecionar Arquivo'}
+              {selectedFile ? selectedFile.name.length > 25 ? selectedFile.name.substring(0, 25) + '...' : selectedFile.name : 'Selecionar Arquivo'}
             </span>
           </Button>
         </label>
         
-        {selectedFile && <div className="text-[9px] sm:text-xs text-green-800 bg-green-100 p-1 sm:p-2 rounded border border-green-300">
+        {selectedFile && <div className="text-xs sm:text-xs text-green-800 bg-green-100 p-2.5 sm:p-2 rounded-xl sm:rounded border border-green-300">
             <div className="truncate"><strong>Arquivo:</strong> {selectedFile.name}</div>
-            <div><strong>Tam:</strong> {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</div>
+            <div><strong>Tamanho:</strong> {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</div>
           </div>}
       </div>
 
       {/* Botão principal - Upload direto */}
-      <Button onClick={handleDirectUpload} disabled={!canUpload} className="w-full mt-1.5 sm:mt-3 h-6 sm:h-9 text-[10px] sm:text-sm">
+      <Button onClick={handleDirectUpload} disabled={!canUpload} className="w-full mt-3 sm:mt-3 h-11 sm:h-9 text-sm sm:text-sm rounded-xl sm:rounded-md">
         {uploading || isUploading ? <>
-            <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1" />
+            <Loader2 className="h-4 w-4 sm:h-4 sm:w-4 animate-spin mr-1.5" />
             Enviando...
           </> : 'Enviar Vídeo'}
       </Button>
