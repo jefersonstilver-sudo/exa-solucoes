@@ -512,6 +512,17 @@ export const ClientLogoUploadModal = ({
                         </div>
                         <p className="text-[9px] text-white/50">Designer IA trabalhando...</p>
                       </div>
+                    ) : processingState === 'error' ? (
+                      <div className="text-white/80 text-center p-4">
+                        <AlertCircle className="h-10 w-10 mx-auto mb-2 text-red-300" />
+                        <p className="text-xs">{errorMessage || 'Erro'}</p>
+                      </div>
+                    ) : (
+                      <div className="text-white/60 text-center p-4">
+                        <Wand2 className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                        <p className="text-xs">Clique em "Otimizar com IA"</p>
+                      </div>
+                    )}
                   </div>
                   <p className="text-[11px] text-slate-500 text-center">IA remove fundo e converte</p>
                 </div>
