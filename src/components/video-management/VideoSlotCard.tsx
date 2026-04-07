@@ -188,7 +188,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   };
   const isBlocked = slot.video_data && slot.approval_status !== 'approved';
   const isPendingWithVideo = slot.video_data && slot.approval_status === 'pending';
-  const cardClasses = `transition-all duration-200 rounded-xl animate-fade-in ${slot.is_base_video ? 'border-2 border-yellow-500 bg-yellow-50/50 shadow-lg' : hasActiveSchedule && isScheduledActiveNow() ? 'border-2 border-green-500 bg-green-50/50 shadow-md' : hasActiveSchedule ? 'border border-blue-400 bg-blue-50/50 shadow-sm' : isPendingWithVideo ? 'border-2 border-amber-400 bg-amber-50/60 shadow-md' : isBlocked ? 'border border-gray-300 bg-gray-50 opacity-75' : 'bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm hover:shadow-md'}`;
+  const cardClasses = `transition-all duration-200 rounded-xl animate-fade-in ${slot.is_base_video ? 'border-2 border-yellow-500 bg-yellow-50/50 shadow-lg' : hasActiveSchedule && isScheduledActiveNow() ? 'border-2 border-green-500 bg-green-50/50 shadow-md' : hasActiveSchedule ? 'border border-blue-400 bg-blue-50/50 shadow-sm' : isPendingWithVideo ? 'border-2 border-amber-400 bg-amber-50/60 shadow-md' : isBlocked ? 'border border-gray-300 bg-gray-50 opacity-75' : 'bg-[#F2ECE9]/60 backdrop-blur-sm border border-[#F2ECE9] shadow-sm hover:shadow-md'}`;
   const getScheduleTooltipContent = () => {
     if (!hasActiveSchedule || !slot.schedule_rules) return null;
     return <div className="p-2 space-y-2">
