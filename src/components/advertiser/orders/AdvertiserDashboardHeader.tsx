@@ -64,15 +64,6 @@ export const AdvertiserDashboardHeader: React.FC<AdvertiserDashboardHeaderProps>
         </div>
       </div>
 
-      {/* No logo placeholder */}
-      {!logoUrl && !imgError && (
-        <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border bg-muted/30">
-          <ImagePlus className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-          <p className="text-[11px] sm:text-xs text-muted-foreground">
-            Adicione a logo da sua empresa para melhorar a identificação da sua conta.
-          </p>
-        </div>
-      )}
     </div>
   );
 };
