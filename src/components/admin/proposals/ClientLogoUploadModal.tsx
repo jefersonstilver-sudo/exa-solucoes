@@ -491,21 +491,27 @@ export const ClientLogoUploadModal = ({
                         <p className="text-xs">Erro ao carregar</p>
                       </div>
                     ) : isProcessing ? (
-                      <div className="text-white text-center p-4">
-                        <Loader2 className="h-10 w-10 mx-auto mb-2 animate-spin" />
-                        <p className="text-sm font-medium">{getProcessingMessage()}</p>
+                      <div className="text-white text-center p-3 w-full space-y-3">
+                        <div className="relative">
+                          <Wand2 className="h-8 w-8 mx-auto text-white animate-pulse" />
+                          <div className="absolute inset-0 h-8 w-8 mx-auto rounded-full bg-white/10 animate-ping" style={{ animationDuration: '2s' }} />
+                        </div>
+                        <div className="space-y-1.5 w-full px-1">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-white/70 font-medium">{aiStatusMessage}</span>
+                            <span className="text-white font-bold">{aiProgress}%</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-white/60 via-white to-white/60 rounded-full transition-all duration-500 ease-out relative"
+                              style={{ width: `${aiProgress}%` }}
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-[9px] text-white/50">Designer IA trabalhando...</p>
                       </div>
-                    ) : processingState === 'error' ? (
-                      <div className="text-white/80 text-center p-4">
-                        <AlertCircle className="h-10 w-10 mx-auto mb-2 text-red-300" />
-                        <p className="text-xs">{errorMessage || 'Erro'}</p>
-                      </div>
-                    ) : (
-                      <div className="text-white/60 text-center p-4">
-                        <Wand2 className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                        <p className="text-xs">Clique em "Otimizar com IA"</p>
-                      </div>
-                    )}
                   </div>
                   <p className="text-[11px] text-slate-500 text-center">IA remove fundo e converte</p>
                 </div>
