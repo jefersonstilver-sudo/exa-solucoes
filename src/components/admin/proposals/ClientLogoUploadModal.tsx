@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Upload, X, Loader2, Sparkles, Check, AlertCircle, Image as ImageIcon, Wand2 } from 'lucide-react';
+import { Upload, X, Loader2, Sparkles, Check, AlertCircle, Image as ImageIcon, Wand2, CheckCircle2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -37,6 +38,51 @@ export const ClientLogoUploadModal = ({
   const [cssImageError, setCssImageError] = useState(false);
   const [processedImageError, setProcessedImageError] = useState(false);
   const [uploadedOriginal, setUploadedOriginal] = useState(false);
+  const [aiProgress, setAiProgress] = useState(0);
+  const [aiStatusMessage, setAiStatusMessage] = useState('');
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const AI_STATUS_MESSAGES = [
+    'Analisando tipo de logo...',
+    'Removendo fundo da imagem...',
+    'Ajustando cores e contraste...',
+    'Otimizando para alta qualidade...',
+    'Quase pronto, finalizando...',
+  ];
+
+  // Animated progress effect during AI processing
+  useEffect(() => {
+    if (processingState === 'processing') {
+      setAiProgress(0);
+      setAiStatusMessage(AI_STATUS_MESSAGES[0]);
+      let step = 0;
+      let progress = 0;
+
+      progressIntervalRef.current = setInterval(() => {
+        progress += Math.random() * 8 + 2; // 2-10% per tick
+        if (progress > 90) progress = 90;
+        setAiProgress(Math.round(progress));
+
+        const msgIndex = Math.min(Math.floor(progress / 20), AI_STATUS_MESSAGES.length - 1);
+        if (msgIndex !== step) {
+          step = msgIndex;
+          setAiStatusMessage(AI_STATUS_MESSAGES[step]);
+        }
+      }, 800);
+
+      return () => {
+        if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      };
+    } else if (processingState === 'done' && aiProgress > 0) {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      setAiProgress(100);
+      setAiStatusMessage('Logo otimizada com sucesso!');
+    } else if (processingState === 'error') {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      setAiProgress(0);
+      setAiStatusMessage('');
+    }
+  }, [processingState]);
 
   const resetState = () => {
     setSelectedFile(null);
@@ -445,9 +491,26 @@ export const ClientLogoUploadModal = ({
                         <p className="text-xs">Erro ao carregar</p>
                       </div>
                     ) : isProcessing ? (
-                      <div className="text-white text-center p-4">
-                        <Loader2 className="h-10 w-10 mx-auto mb-2 animate-spin" />
-                        <p className="text-sm font-medium">{getProcessingMessage()}</p>
+                      <div className="text-white text-center p-3 w-full space-y-3">
+                        <div className="relative">
+                          <Wand2 className="h-8 w-8 mx-auto text-white animate-pulse" />
+                          <div className="absolute inset-0 h-8 w-8 mx-auto rounded-full bg-white/10 animate-ping" style={{ animationDuration: '2s' }} />
+                        </div>
+                        <div className="space-y-1.5 w-full px-1">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-white/70 font-medium">{aiStatusMessage}</span>
+                            <span className="text-white font-bold">{aiProgress}%</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-white/60 via-white to-white/60 rounded-full transition-all duration-500 ease-out relative"
+                              style={{ width: `${aiProgress}%` }}
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-[9px] text-white/50">Designer IA trabalhando...</p>
                       </div>
                     ) : processingState === 'error' ? (
                       <div className="text-white/80 text-center p-4">
