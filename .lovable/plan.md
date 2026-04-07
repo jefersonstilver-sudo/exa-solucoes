@@ -1,28 +1,42 @@
 
 
-# Fix: Remove redundant header and clean up mobile order detail page
+# Background Blurred Video on Slot Cards
 
-## Problem
-On mobile, "Detalhes do Pedido" appears 3 times:
-1. In the sticky top header bar
-2. As a large `<h1>` below it  
-3. Inside the `OrderNameEdit` card
+## What
+Add a looping, muted, blurred video playing as background behind each video slot card that has an uploaded video. This creates a visually rich, ambient effect — the video content subtly fills the card background while remaining non-distracting thanks to heavy blur and reduced opacity.
 
-The `OrderNameEdit` card button is also misaligned and the whole top section feels cluttered.
+## How
 
-## Changes
+### File: `src/components/video-management/VideoSlotCard.tsx`
 
-### 1. `src/pages/advertiser/OrderDetails.tsx` (lines 440-453)
-- **Remove** the redundant `<div className="mb-3">` block that renders the `<h1>Detalhes do Pedido</h1>` and `#ID` — the sticky mobile header already shows the title, and the `OrderNameEdit` card already shows the order name/ID
-- This eliminates the double title on mobile
+1. **Add a `<video>` element** as the first child inside the `<Card>`, positioned `absolute inset-0` with:
+   - `autoPlay`, `muted`, `loop`, `playsInline`
+   - `object-cover` to fill the card
+   - CSS: `blur-xl opacity-30 scale-110` (blur hides edges, scale prevents blur white-fringe)
+   - `pointer-events-none` and `z-0`
+   - `rounded-xl overflow-hidden` on the Card to clip the blurred video
 
-### 2. `src/components/order/OrderNameEdit.tsx`
-- Make the card more compact and Apple-like on mobile:
-  - Remove the `border-l-4 border-l-indexa-purple` heavy left border, use a subtle `border border-gray-200 rounded-xl shadow-sm` instead
-  - Reduce padding to `p-3` on mobile
-  - Make the layout a clean single row: name on left, small edit icon button on right (no text label, just the pencil icon with proper 44px touch target)
-  - Show the `#ID` as a small `text-xs text-muted-foreground` under the name
-  - When editing: full-width input with inline save/cancel buttons below, properly sized for touch
+2. **Condition**: Only render when `slot.video_data?.url` exists
 
-These two changes remove all redundancy and create a clean, minimal top section.
+3. **Wrap `<CardContent>`** with `relative z-10` so all content sits above the blurred background
+
+4. **Performance**: Use `preload="none"` so it only loads when visible; add `loading="lazy"` behavior. The video is purely decorative.
+
+```text
+┌──────────────────────────────┐
+│ ░░░ blurred video bg ░░░░░░ │
+│ ░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│   ┌─ z-10 content ────────┐ │
+│   │ Slot 1    ✅ Aprovado  │ │
+│   │ 🎬 apice teste        │ │
+│   │ 10s · horizontal      │ │
+│   │ [Ver] [📅] [ℹ] [🗑]   │ │
+│   │ ★ Principal · ▶ ATIVO │ │
+│   └────────────────────────┘ │
+└──────────────────────────────┘
+```
+
+### What stays the same
+- All functionality, data flow, actions, and desktop layout untouched
+- Only visual enhancement — no logic changes
 
