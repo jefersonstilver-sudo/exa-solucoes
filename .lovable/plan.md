@@ -1,43 +1,73 @@
 
 
-# Plano: Limpar registros órfãos de agendamento e prevenir futuros
+# Plano: Eliminar Cache Stale no Safari e Chrome
 
-## Problema
+## Diagnóstico do Problema
 
-O pedido `20b6e44d-e593-4c73-a74b-099d7e68e152` tem 3 registros órfãos na tabela `campaign_video_schedules` referenciando vídeos antigos ("Video 2", "video 3", "Video 4") que já foram removidos do `pedido_videos`. Esses registros geram falsos conflitos ao tentar agendar os vídeos atuais (KAMMER 1-4).
+O sistema atual tem **3 camadas de cache-busting**, mas todas falham no mesmo cenário:
 
-**Dados encontrados no banco:**
+1. **Meta tags `Cache-Control`** no HTML → Ignoradas por CDNs e pela maioria dos navegadores modernos para decisões reais de cache HTTP
+2. **BUILD_ID no `index.html`** → Só funciona SE o navegador já baixou o HTML novo. Se o HTML está cacheado, o script antigo roda com o BUILD_ID antigo e nunca detecta mudança
+3. **`useForceCacheClear`** → Limpa Service Workers e Caches API, mas não resolve o cache HTTP do navegador para o próprio `index.html`
 
-| Tabela | Vídeos |
-|--------|--------|
-| `pedido_videos` (atual) | KAMMER 1, kammer 2, KAMMER 3, KAMMER 4 |
-| `campaign_video_schedules` (órfão) | Video 2, video 3, Video 4 |
+**Causa raiz**: O Safari (especialmente com `apple-mobile-web-app-capable`) e o Chrome cacheam agressivamente o `index.html`. Como o HTML cacheado contém o BUILD_ID antigo, o mecanismo de detecção nunca dispara.
 
-A validação de conflitos (`videoScheduleValidationService.ts`) cruza os dados de `campaign_video_schedules` e encontra esses registros antigos como se fossem ativos.
+## Solução: Version Check via Edge Function
 
-## Solução (2 partes)
+Criar um endpoint server-side que retorna a versão atual do build. Na montagem do app, comparar com a versão embutida no código. Se divergir, forçar reload limpo.
 
-### Parte 1: Limpeza imediata via migration
+```text
+┌──────────────┐     GET /version      ┌─────────────────────┐
+│  App mounts  │ ──────────────────►   │  Edge Function      │
+│  (React)     │                       │  returns latest      │
+│              │ ◄──────────────────   │  BUILD_TIMESTAMP     │
+│  Compare:    │     { version: X }    │  from DB/config      │
+│  local != X  │                       └─────────────────────┘
+│  → reload()  │
+└──────────────┘
+```
 
-Executar SQL para deletar os registros órfãos:
-- Deletar `campaign_schedule_rules` cujo `campaign_video_schedule_id` pertence a schedules de vídeos que não existem mais em `pedido_videos` deste pedido.
-- Deletar `campaign_video_schedules` órfãos.
-- Deletar `campaigns_advanced` que ficarem sem schedules.
+## Arquivos e Mudanças
 
-### Parte 2: Prevenção — Limpar schedules ao remover vídeo
+### 1. Criar Edge Function `get-app-version`
+- Retorna a versão mais recente do build
+- Usa uma tabela `app_config` (ou hardcoded no deploy) para armazenar a versão atual
+- Headers `Cache-Control: no-store` para nunca cachear a resposta
 
-Modificar o fluxo de remoção de vídeo (`removeVideo` em `useVideoManagement` ou serviço correspondente) para também deletar registros relacionados nas tabelas `campaign_video_schedules` e `campaign_schedule_rules` quando um vídeo é removido do pedido.
+### 2. Criar migration: tabela `app_config`
+- Tabela simples com chave `current_version` e valor (timestamp do build)
+- Atualizada automaticamente via hook pós-deploy ou manualmente
 
-Alternativamente, adicionar uma validação no `videoScheduleValidationService.ts` para filtrar conflitos apenas de vídeos que ainda existem em `pedido_videos`.
+### 3. Modificar `src/hooks/useForceCacheClear.ts`
+- Na montagem, chamar a Edge Function `get-app-version`
+- Comparar o timestamp retornado com `__BUILD_TIMESTAMP__` embutido no JS
+- Se diferente: limpar caches + `window.location.reload(true)`
+- Incluir proteção contra loop infinito (max 1 reload por sessão via `sessionStorage`)
 
-## Arquivos
+### 4. Atualizar `index.html` — Cache Bust Script
+- Melhorar o script inline para também adicionar `?_t=timestamp` ao forçar reload, evitando que o navegador sirva o HTML do disco
+- Substituir `window.location.reload(true)` por `window.location.href = '/?_cb=' + Date.now()` que força bypass de cache HTTP
 
-| Arquivo | Ação |
-|---------|------|
-| Migration SQL | **Criar** — limpar registros órfãos existentes |
-| `src/services/videoScheduleValidationService.ts` | **Editar** — filtrar conflitos apenas para vídeos presentes em `pedido_videos` |
+### 5. React Query — Garantir dados frescos
+- O `staleTime: 1min` atual é adequado
+- Adicionar `refetchOnMount: 'always'` no default do QueryClient para garantir que dados do banco sejam sempre verificados ao montar componentes
 
-## Detalhes técnicos
+## Proteção Anti-Loop
 
-Na função `validateScheduleConflicts` (linha ~270-310), ao buscar regras existentes via `campaign_schedule_rules`, adicionar um filtro para garantir que o `video_id` do `campaign_video_schedules` esteja presente na lista de `pedido_videos` aprovados do pedido. Isso evita falsos conflitos de vídeos que já foram removidos.
+Para evitar reload infinito caso algo dê errado:
+- `sessionStorage.setItem('cache-reload-count', count)`
+- Máximo 1 reload por sessão
+- Se já recarregou, apenas loga warning no console
+
+## Compatibilidade
+
+- **Safari iOS**: O `window.location.href = url + '?_cb=...'` força o Safari a buscar HTML novo do servidor
+- **Chrome**: Content-hashed assets do Vite já funcionam; o problema é só o HTML
+- **Safari desktop**: Mesmo tratamento do iOS
+
+## Impacto
+
+- Nenhuma alteração de UI
+- Nenhuma funcionalidade existente é modificada
+- Apenas adiciona verificação de versão no boot do app
 
