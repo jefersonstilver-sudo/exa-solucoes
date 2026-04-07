@@ -210,7 +210,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
           playsInline
           preload="none"
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover blur-xl opacity-30 scale-110 pointer-events-none z-0"
+          className="absolute inset-0 w-full h-full object-cover blur-md opacity-30 scale-110 pointer-events-none z-0"
         />
       )}
       <CardContent className="p-3 sm:p-3 md:p-4 max-w-full overflow-hidden relative z-10">
