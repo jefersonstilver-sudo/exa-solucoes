@@ -1,50 +1,54 @@
 
 
-# Fix: Atualizar Prompt de Otimização de Logo com IA
+# Fix: Logo IA - Usar OpenAI + UX de Progresso Moderna
 
-## Problema
-O prompt atual na Edge Function `process-client-logo` não segue as instruções corretas do agente GPT. Falta a regra de que logos sempre devem estar em cores claras para contraste, e a distinção entre logos com elementos visuais (cinza) vs logos só-texto (branco puro) não está clara o suficiente.
+## Por que estava usando Gemini?
+
+A Edge Function `process-client-logo` estava usando modelos Gemini (via Lovable AI Gateway) para processamento de imagem. Porém, vocês já têm a `OPENAI_API_KEY` configurada e funcionando em várias outras Edge Functions do projeto. O GPT-4o da OpenAI suporta edição de imagens via a API de Images (`/v1/images/edits`) — e é exatamente o que o agente GPT de vocês já faz com sucesso.
 
 ## Solução
 
-### Arquivo: `supabase/functions/process-client-logo/index.ts`
+### 1. Edge Function - Trocar para OpenAI API direta
 
-**Substituir `DETAILED_PROMPT` (linhas 9-46)** pelo prompt atualizado do usuário:
+**Arquivo: `supabase/functions/process-client-logo/index.ts`**
 
+- Usar `OPENAI_API_KEY` (já configurada) em vez de `LOVABLE_API_KEY`
+- Chamar a API de chat completions da OpenAI (`https://api.openai.com/v1/chat/completions`) com o modelo `gpt-4o` que suporta image input + output
+- Manter os mesmos prompts já atualizados (remoção de fundo, cores claras, etc.)
+- Adicionar AbortController com timeout de 55s para evitar timeout da Edge Function
+- Fallback: se OpenAI falhar, tentar Lovable AI Gateway como backup
+- Tratar erros 429/402 com mensagens claras
+
+### 2. UX de Progresso Imersiva - "Designer Trabalhando"
+
+**Arquivo: `src/components/admin/proposals/ClientLogoUploadModal.tsx`**
+
+Substituir o spinner genérico (Loader2 + texto estático) no Card 3 "Otimizada (IA)" por:
+
+- **Barra de progresso animada** (componente `Progress` já existente) que avança de 0% → ~90% durante processamento (~15-20s estimado), pulando para 100% ao concluir
+- **Mensagens rotativas** a cada 3s para feedback visual:
+  - "Analisando tipo de logo..."
+  - "Removendo fundo da imagem..."
+  - "Ajustando cores e contraste..."
+  - "Otimizando para alta qualidade..."
+  - "Quase pronto, finalizando..."
+- **Animação visual**: ícone Wand2 com efeito pulse + gradiente shimmer no card
+- **Ao concluir**: barra pula para 100% com ícone de check verde
+- **Em caso de erro**: timeout claro com mensagem e botão "Tentar Novamente"
+
+### Detalhes Técnicos
+
+**Edge Function - Nova lógica:**
 ```
-Você é um especialista em tratamento profissional de logos para uso digital e branding.
-
-1. REMOVER O FUNDO COMPLETAMENTE
-- Fundo 100% transparente (sem resíduos, sem sombras, sem pixels)
-- NÃO pode sobrar borda branca, azul ou qualquer cor
-- PNG com transparência real (alpha)
-
-2. CONVERTER PARA MONOCROMÁTICA - SEMPRE EM CORES CLARAS PARA CONTRASTE
-- CASO 1 — LOGO COM ELEMENTOS VISUAIS (ícones, desenhos, símbolos, mascotes):
-  Converter para tons de CINZA CLARO (grayscale profissional), preservar contraste e profundidade
-- CASO 2 — LOGO APENAS TEXTO:
-  Converter para BRANCO puro (#FFFFFF), sem cinza, sem degradê
-
-3. QUALIDADE
-- Melhorar nitidez, corrigir serrilhados (anti-aliasing)
-- Manter proporção original, NÃO distorcer tipografia
-
-4. CASOS ESPECIAIS
-- Fundo complexo (gradiente, imagem, textura) → remover completamente
-- Sombra, glow, reflexo → remover
-- Múltiplas cores → adaptar para branco ou cinza conforme regra 2
-
-Entregar logo limpa, profissional, monocromática em cores claras, sem fundo, pronta para uso imediato.
-NÃO explicar o processo. NÃO perguntar nada. Apenas entregar o arquivo pronto.
+Tentativa 1: OpenAI GPT-4o (via OPENAI_API_KEY direta) — timeout 50s
+Tentativa 2: Lovable AI Gateway gemini-2.5-flash-image (fallback) — timeout 50s
 ```
 
-**Substituir `SIMPLE_PROMPT` (linha 48):**
-
+**Cliente - Novos states:**
+```typescript
+const [aiProgress, setAiProgress] = useState(0);
+const [aiStatusMessage, setAiStatusMessage] = useState('');
 ```
-Remove the background completely (transparent PNG). Convert logo to light monochrome: if it has icons/symbols/mascots use light grayscale tones, if text-only use pure white #FFFFFF. The logo must always be in LIGHT colors for contrast on dark backgrounds. Remove all shadows, glows, reflections. Keep proportions and details intact. Just deliver the result, no explanation.
-```
 
-**Upgrade do modelo (linha 198):** Trocar `google/gemini-2.5-flash-image` para `google/gemini-3-pro-image-preview` na tentativa 1 (melhor qualidade para processamento de imagem). Manter `google/gemini-2.5-flash-image` como fallback na tentativa 2.
-
-Isso requer adicionar um parâmetro `model` na função `callAI` e passar modelos diferentes para cada tentativa.
+useEffect com setInterval para animar progresso e rotacionar mensagens enquanto `processingState === 'processing'`.
 
