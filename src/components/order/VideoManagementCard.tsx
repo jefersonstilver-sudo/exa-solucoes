@@ -87,11 +87,11 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
               <Video className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <span className="text-sm sm:text-lg font-semibold">Gestão de Vídeos</span>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                  {uploadAllowed 
-                    ? `${videoSlots.filter(s => s.video_id).length} / ${videoSlots.length} slots utilizados · máx. ${maxDuracaoLabel}, ${orientacaoLabel}, 100MB`
-                    : "Upload disponível apenas para pedidos pagos"}
-                </p>
+                {!uploadAllowed && (
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                    Upload disponível apenas para pedidos pagos
+                  </p>
+                )}
               </div>
             </div>
             <Button 
@@ -124,6 +124,10 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
             
             {instructionsExpanded && (
               <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2 text-[10px] sm:text-xs text-muted-foreground">
+                <p className="flex items-start gap-1.5">
+                  <span className="text-blue-600 mt-0.5 font-semibold">•</span>
+                  <span>{videoSlots.filter(s => s.video_id).length} / {videoSlots.length} slots utilizados</span>
+                </p>
                 <p className="flex items-start gap-1.5">
                   <span className="text-blue-600 mt-0.5 font-semibold">•</span>
                   <span>Envie até {videoSlots.length} vídeo{videoSlots.length !== 1 ? 's' : ''} (máx. {maxDuracaoLabel}, {orientacaoLabel}, 100MB)</span>
