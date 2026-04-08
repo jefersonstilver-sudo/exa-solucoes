@@ -1,33 +1,58 @@
 
 
-# Adicionar campo de Link da Reunião e Local com Google Autocomplete no CreateTaskModal
+# Adicionar Link do Google Maps na Notificação WhatsApp
 
-## O que será feito
+## Contexto
 
-Dois novos campos visíveis no formulário de criação de tarefa, logo após o seletor de Prédio (linha ~898):
+A notificação WhatsApp mostra o local do evento como texto puro (ex: "📍 Local: Av. Jorge Schimmelpfeng, 232 - Centro, Foz do Iguaçu, PR"). O usuário quer que inclua um link clicável para abrir direto no Google Maps.
 
-### 1. Campo "Local do Evento" com Google Places Autocomplete
-- Usa o componente `AddressAutocomplete` já existente (o mesmo da busca de prédios)
-- Ao digitar "Hotel Viale", o Google sugere automaticamente o endereço completo
-- Ao selecionar, preenche `localEvento` com o endereço formatado
-- Visível para **todos os tipos de evento** (não apenas reunião)
-- Ícone `MapPin` no label
+## Solução
 
-### 2. Campo "Link da Reunião"
-- Input simples para colar link do Google Meet, Zoom, Teams, etc.
-- Visível apenas quando `tipoEvento === 'reuniao'` (faz sentido contextual)
-- Ícone `Video` no label
-- Placeholder: "https://meet.google.com/..."
+Modificar as 4 Edge Functions que enviam notificações com `local_evento` para:
+1. Mostrar o nome/endereço completo do local
+2. Adicionar um link do Google Maps logo abaixo (`https://www.google.com/maps/search/?api=1&query=ENDEREÇO_ENCODED`)
 
-## Alterações técnicas
+### Formato atual:
+```
+📍 Local: Av. Jorge Schimmelpfeng, 232 - Centro, Foz do Iguaçu, PR
+```
 
-**Arquivo: `src/components/admin/agenda/CreateTaskModal.tsx`**
+### Formato novo:
+```
+📍 Local: Av. Jorge Schimmelpfeng, 232 - Centro, Foz do Iguaçu, PR
+🗺️ Ver no Maps: https://www.google.com/maps/search/?api=1&query=Av.+Jorge+Schimmelpfeng+232+Centro+Foz+do+Iguaçu+PR
+```
 
-1. Importar `AddressAutocomplete` de `@/components/ui/address-autocomplete`
-2. Após o `BuildingSelector` (linha ~898), adicionar:
-   - Bloco "Local do Evento" com `<AddressAutocomplete>` ligado ao state `localEvento` / `setLocalEvento`
-   - Bloco "Link da Reunião" (condicional a `tipoEvento === 'reuniao'`) com `<Input>` ligado a `linkReuniao` / `setLinkReuniao`
-3. Os states `localEvento` e `linkReuniao` já existem (linhas 139-140) e já são salvos no banco (`local_evento`, `link_reuniao`) — nenhuma mudança no fluxo de persistência
+O link usa `encodeURIComponent(local_evento)` para gerar a URL — funciona em qualquer dispositivo e abre direto no Google Maps.
 
-Nenhuma outra funcionalidade ou interface será alterada.
+## Arquivos a modificar
+
+1. **`supabase/functions/task-notify-created/index.ts`** (linha 98-100) — notificação de tarefa criada
+2. **`supabase/functions/task-notify-change/index.ts`** — notificação de alteração
+3. **`supabase/functions/task-notify-cancelled/index.ts`** — notificação de cancelamento
+4. **`supabase/functions/task-reminder-scheduler/index.ts`** (linhas 150, 493) — lembretes diários
+5. **`supabase/functions/zapi-webhook/index.ts`** (linhas 384, 779) — confirmação de recebimento
+
+Em cada arquivo, onde aparece:
+```typescript
+if (params.local_evento) {
+  message += `📍 Local: ${params.local_evento}\n`;
+}
+```
+
+Trocar por:
+```typescript
+if (params.local_evento) {
+  message += `📍 Local: ${params.local_evento}\n`;
+  message += `🗺️ Ver no Maps: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(params.local_evento)}\n`;
+}
+```
+
+Mesma lógica para as variações (`t.local_evento`, `taskData?.local_evento`, `finalLocal`, etc.) em cada função.
+
+## Impacto
+
+- Nenhuma mudança na UI ou no fluxo de criação de tarefas
+- Apenas o texto da mensagem WhatsApp é enriquecido com o link
+- O link funciona em qualquer celular — abre o Google Maps app ou o navegador
 
