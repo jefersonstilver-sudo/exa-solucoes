@@ -408,6 +408,8 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
   return {
     videoSlots,
     uploading,
+    converting,
+    conversionProgress,
     uploadProgress,
     handleUpload,
     handleActivate,
