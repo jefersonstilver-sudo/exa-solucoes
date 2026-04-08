@@ -5,7 +5,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { uploadVideo } from '@/services/videoUploadService';
 import { validateVideoFile, ensureVideosBucket } from '@/services/videoStorageService';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
-import { needsConversion, convertMovToMp4, ConversionProgress } from '@/services/videoConversionService';
 
 interface UseSimpleVideoUploadProps {
   orderId?: string | null;
@@ -15,8 +14,7 @@ interface UseSimpleVideoUploadProps {
 export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadProps = {}) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'validating' | 'converting' | 'uploading' | 'processing' | 'success' | 'error'>('idle');
-  const [conversionProgress, setConversionProgress] = useState<number>(0);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'validating' | 'uploading' | 'processing' | 'success' | 'error'>('idle');
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const [videoOrientation, setVideoOrientation] = useState<'landscape' | 'portrait' | 'unknown'>('unknown');
@@ -38,7 +36,7 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
   };
 
   const processFile = async (file: File) => {
-    console.log('Processando arquivo:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
+    console.log('Processando arquivo:', file.name, 'Tamanho:', file.size);
     setVideoFile(file);
     setUploadStatus('validating');
     setVideoError(null);
@@ -49,37 +47,12 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
         throw new Error('Erro ao preparar storage de vídeos');
       }
 
-      // Converter MOV (iPhone) para MP4 se necessário
-      let fileToProcess = file;
-      if (needsConversion(file)) {
-        console.log('🔄 Detectado vídeo MOV/QuickTime, iniciando conversão para MP4...');
-        setUploadStatus('converting');
-        setConversionProgress(0);
-        
-        try {
-          fileToProcess = await convertMovToMp4(file, (progress) => {
-            setConversionProgress(progress.progress);
-          });
-          console.log('✅ Conversão concluída:', fileToProcess.name, fileToProcess.size);
-          setVideoFile(fileToProcess);
-          toast.success('Vídeo convertido para formato MP4!');
-        } catch (conversionError) {
-          console.error('❌ Erro na conversão:', conversionError);
-          const errorMsg = conversionError instanceof Error ? conversionError.message : 'Erro ao converter vídeo';
-          setVideoError(errorMsg);
-          setUploadStatus('error');
-          return;
-        }
-        
-        setUploadStatus('validating');
-      }
-
-      const validation = await validateVideoFile(fileToProcess);
+      const validation = await validateVideoFile(file);
       
       // If needs trimming, open trimmer modal
       if (validation.needsTrimming && validation.maxDuration) {
         console.log('✂️ Vídeo excede duração, abrindo trimmer');
-        setTrimmerFile(fileToProcess);
+        setTrimmerFile(file);
         setTrimmerMaxDuration(validation.maxDuration);
         setShowTrimmer(true);
         setUploadStatus('idle');
@@ -258,7 +231,6 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
     videoRef,
     fileInputRef,
     uploadStatus,
-    conversionProgress,
     videoFile,
     videoDuration,
     videoOrientation,

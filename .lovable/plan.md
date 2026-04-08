@@ -1,54 +1,70 @@
 
 
-# Auditoria e Correção do Pipeline de Conversão MOV → MP4
+# Fix: Cache Persistente no iPhone/Safari
 
-## Problemas Identificados (3 bugs críticos)
+## Problema
 
-### Bug 1: Som tocando durante conversão
-**Causa raiz**: Na linha 117 de `videoConversionService.ts`:
+O Safari (especialmente no modo PWA/standalone do iPhone) é extremamente agressivo com cache. Ele cacheia o próprio `index.html`, então:
+1. O script inline de BUILD_ID nunca vê a versão nova (porque o HTML inteiro é cacheado)
+2. O hook React `useForceCacheClear` só roda se o JS carregar — mas o JS também está cacheado
+3. `window.location.href = url` com query param **não força** bypass de cache no Safari como faz no Chrome
+
+## Solução
+
+### 1. Verificação de versão no index.html via fetch direto à Edge Function
+
+**Arquivo: `index.html`**
+
+Adicionar um script inline **antes** do carregamento do app que:
+- Faz `fetch` direto para a Edge Function `get-app-version` com `cache: 'no-store'`
+- Compara a versão do servidor com o `BUILD_ID` local (já injetado pelo Vite)
+- Se divergir: limpa caches, limpa localStorage de versão, e usa `location.replace()` com timestamp único
+- Guarda flag em `sessionStorage` para evitar loop infinito
+- Isso funciona **antes** do React montar, pegando até o caso onde o JS bundle está cacheado
+
+### 2. Forçar no-cache no fetch do hook React (fallback)
+
+**Arquivo: `src/hooks/useForceCacheClear.ts`**
+
+- Adicionar headers `Cache-Control: no-cache` e `Pragma: no-cache` na chamada à Edge Function
+- Trocar `window.location.href` por `window.location.replace()` (Safari respeita melhor)
+
+### 3. Meta tag adicional para Safari
+
+**Arquivo: `index.html`**
+
+- Adicionar `<meta name="apple-mobile-web-app-capable" content="yes">` (já existe)
+- Adicionar header HTTP equivalente via tag: não funciona em meta, mas o script inline com fetch resolve
+
+## Detalhes Técnicos
+
+**Script inline no index.html** (antes do `<script type="module" src="/src/main.tsx">`):
+```javascript
+(function() {
+  var BUILD_ID = '__BUILD_ID__';
+  if (sessionStorage.getItem('v-check-done')) return;
+  
+  fetch('https://[SUPABASE_URL]/functions/v1/get-app-version', {
+    cache: 'no-store',
+    headers: { 'Cache-Control': 'no-cache' }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.version && d.version !== '0' && d.version !== BUILD_ID) {
+      sessionStorage.setItem('v-check-done', '1');
+      if ('caches' in window) {
+        caches.keys().then(function(n) {
+          Promise.all(n.map(function(k) { return caches.delete(k); }))
+            .then(function() { location.replace('/?_r=' + Date.now()); });
+        });
+      } else {
+        location.replace('/?_r=' + Date.now());
+      }
+    }
+  })
+  .catch(function() {});
+})();
 ```
-source.connect(audioContext.destination);
-```
-Isso conecta o áudio diretamente à saída de som do navegador (alto-falantes). Embora `video.muted = true` esteja definido, o `createMediaElementSource` bypassa o controle de mute do elemento — o áudio flui pelo AudioContext diretamente para os alto-falantes.
 
-**Correção**: Remover a linha `source.connect(audioContext.destination)`. O áudio deve ser roteado APENAS para o `MediaStreamDestination` (para captura), nunca para o `audioContext.destination` (alto-falantes).
-
-### Bug 2: Slot ficou vazio (conversão falhou silenciosamente)
-**Causa raiz**: Quando `video.muted = true` é combinado com `createMediaElementSource`, alguns browsers (especialmente Safari no iPhone) podem não produzir dados de áudio pelo AudioContext, causando conflito. Além disso, se o `video.play()` falhar silenciosamente (autoplay policy), a conversão produz um arquivo vazio (0 frames). O erro é capturado no `catch` do hook mas o slot já pode ter sido parcialmente manipulado.
-
-**Correção**: 
-- Adicionar validação do arquivo convertido (tamanho mínimo e contagem de frames)
-- Melhorar o tratamento de erro para garantir que arquivos vazios/corrompidos nunca prossigam ao upload
-
-### Bug 3: Pedido Master não reconhecido
-**Causa raiz**: Este não é um bug separado — como a conversão falhou, o upload nunca chegou ao `videoUploadService.ts` onde a lógica Master (linha 260) é executada. Se a conversão tivesse funcionado, o auto-approve teria sido acionado normalmente.
-
-## Mudanças Técnicas
-
-### Arquivo: `src/services/videoConversionService.ts`
-
-1. **Remover conexão ao alto-falante** (linha 117):
-   - Deletar `source.connect(audioContext.destination)`
-   - Manter apenas `source.connect(destination)` para captura silenciosa
-
-2. **Adicionar validação do arquivo convertido**:
-   - Após `mediaRecorder.onstop`, verificar se `mp4Blob.size > 1000` (pelo menos 1KB)
-   - Verificar se `frameCount > 0`
-   - Se inválido, rejeitar a Promise com mensagem clara
-
-3. **Fechar o AudioContext após uso**:
-   - Chamar `audioContext.close()` no cleanup para liberar recursos
-
-4. **Adicionar log de diagnóstico mais claro**:
-   - Logar se `video.play()` resolveu com sucesso
-   - Logar frameCount periodicamente durante a conversão
-
-### Arquivo: `src/hooks/useVideoManagement.tsx`
-
-Nenhuma mudança necessária — o tratamento de erro já está correto. Se a conversão falhar, o catch mostra toast e retorna `{ success: false }`.
-
-### Arquivos NÃO alterados
-- Nenhuma mudança em UI, layout, ou funcionalidades existentes
-- Nenhuma mudança em banco de dados
-- Nenhuma mudança no fluxo Master (já funciona corretamente quando o upload acontece)
+Este script roda **antes** de qualquer JS bundled, então mesmo que o Safari tenha cacheado o bundle antigo, a verificação acontece e força o reload com versão nova.
 

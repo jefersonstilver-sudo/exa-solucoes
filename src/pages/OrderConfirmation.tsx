@@ -41,7 +41,6 @@ const OrderConfirmation: React.FC = () => {
     fileInputRef,
     uploadStatus,
     uploadProgress,
-    conversionProgress,
     videoFile,
     videoDuration,
     videoOrientation,
@@ -128,7 +127,6 @@ const OrderConfirmation: React.FC = () => {
                 videoOrientation={videoOrientation}
                 videoError={videoError}
                 uploadProgress={uploadProgress}
-                conversionProgress={conversionProgress}
                 handleReset={handleReset}
                 startUpload={startUpload}
                 handleContinue={handleContinue}
