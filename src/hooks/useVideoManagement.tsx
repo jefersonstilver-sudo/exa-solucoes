@@ -91,6 +91,31 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
         return { success: false };
       }
 
+      let fileToUpload = file;
+
+      // Conversão MOV → MP4 se necessário
+      if (needsConversion(file)) {
+        console.log('🔄 [useVideoManagement] Arquivo MOV detectado, iniciando conversão...');
+        setConverting(true);
+        setConversionProgress(0);
+        
+        try {
+          fileToUpload = await convertMovToMp4(file, (progress: ConversionProgress) => {
+            setConversionProgress(progress.progress);
+          });
+          console.log('✅ [useVideoManagement] Conversão concluída:', fileToUpload.name);
+        } catch (conversionError: any) {
+          console.error('❌ [useVideoManagement] Erro na conversão:', conversionError);
+          toast.error(conversionError.message || 'Erro ao converter vídeo do iPhone');
+          setConverting(false);
+          setConversionProgress(0);
+          return { success: false };
+        } finally {
+          setConverting(false);
+          setConversionProgress(0);
+        }
+      }
+
       setUploading(true);
       setUploadProgress(prev => ({ ...prev, [slotPosition]: 0 }));
 
