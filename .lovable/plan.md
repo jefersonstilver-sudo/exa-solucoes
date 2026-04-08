@@ -1,70 +1,59 @@
 
 
-# Fix: Cache Persistente no iPhone/Safari
+# Conversão Automática de MOV (iPhone) para MP4
 
 ## Problema
+Vídeos de iPhone são gravados em formato `.mov` (QuickTime/HEVC). A edge function atual apenas renomeia o arquivo para `.mp4` sem converter de verdade — o conteúdo continua sendo MOV/HEVC, o que pode causar incompatibilidade na API externa AWS.
 
-O Safari (especialmente no modo PWA/standalone do iPhone) é extremamente agressivo com cache. Ele cacheia o próprio `index.html`, então:
-1. O script inline de BUILD_ID nunca vê a versão nova (porque o HTML inteiro é cacheado)
-2. O hook React `useForceCacheClear` só roda se o JS carregar — mas o JS também está cacheado
-3. `window.location.href = url` com query param **não força** bypass de cache no Safari como faz no Chrome
+## Abordagem: Conversão no Lado do Cliente (Browser)
 
-## Solução
+Não é possível rodar FFmpeg em Edge Functions (Deno). A solução mais prática é converter no browser antes do upload para o Supabase Storage, usando a **MediaRecorder API** — a mesma técnica já usada no trimmer.
 
-### 1. Verificação de versão no index.html via fetch direto à Edge Function
+### Fluxo Proposto
 
-**Arquivo: `index.html`**
-
-Adicionar um script inline **antes** do carregamento do app que:
-- Faz `fetch` direto para a Edge Function `get-app-version` com `cache: 'no-store'`
-- Compara a versão do servidor com o `BUILD_ID` local (já injetado pelo Vite)
-- Se divergir: limpa caches, limpa localStorage de versão, e usa `location.replace()` com timestamp único
-- Guarda flag em `sessionStorage` para evitar loop infinito
-- Isso funciona **antes** do React montar, pegando até o caso onde o JS bundle está cacheado
-
-### 2. Forçar no-cache no fetch do hook React (fallback)
-
-**Arquivo: `src/hooks/useForceCacheClear.ts`**
-
-- Adicionar headers `Cache-Control: no-cache` e `Pragma: no-cache` na chamada à Edge Function
-- Trocar `window.location.href` por `window.location.replace()` (Safari respeita melhor)
-
-### 3. Meta tag adicional para Safari
-
-**Arquivo: `index.html`**
-
-- Adicionar `<meta name="apple-mobile-web-app-capable" content="yes">` (já existe)
-- Adicionar header HTTP equivalente via tag: não funciona em meta, mas o script inline com fetch resolve
-
-## Detalhes Técnicos
-
-**Script inline no index.html** (antes do `<script type="module" src="/src/main.tsx">`):
-```javascript
-(function() {
-  var BUILD_ID = '__BUILD_ID__';
-  if (sessionStorage.getItem('v-check-done')) return;
-  
-  fetch('https://[SUPABASE_URL]/functions/v1/get-app-version', {
-    cache: 'no-store',
-    headers: { 'Cache-Control': 'no-cache' }
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(d) {
-    if (d.version && d.version !== '0' && d.version !== BUILD_ID) {
-      sessionStorage.setItem('v-check-done', '1');
-      if ('caches' in window) {
-        caches.keys().then(function(n) {
-          Promise.all(n.map(function(k) { return caches.delete(k); }))
-            .then(function() { location.replace('/?_r=' + Date.now()); });
-        });
-      } else {
-        location.replace('/?_r=' + Date.now());
-      }
-    }
-  })
-  .catch(function() {});
-})();
+```text
+iPhone .mov upload
+       │
+       ▼
+ Detecta formato .mov?
+       │
+  Sim ─┤── Não ──▶ segue normal
+       │
+       ▼
+ Converte via MediaRecorder
+ (playback + re-encode para MP4)
+       │
+       ▼
+ Upload do .mp4 convertido
 ```
 
-Este script roda **antes** de qualquer JS bundled, então mesmo que o Safari tenha cacheado o bundle antigo, a verificação acontece e força o reload com versão nova.
+## Mudanças Técnicas
+
+### 1. Criar serviço de conversão (`src/services/videoConversionService.ts`)
+- Função `convertMovToMp4(file: File, onProgress?: (p: number) => void): Promise<File>`
+- Usa `<video>` + `<canvas>` + `MediaRecorder` (mesma técnica do trimmer)
+- Prioriza `video/mp4;codecs=avc1` no MediaRecorder
+- Se browser não suporta MP4 nativo no MediaRecorder (ex: Firefox antigo), exibe aviso pedindo para usar Chrome/Safari
+- Preserva áudio capturando via `captureStream()`
+- Retorna arquivo `.mp4` real com codec H.264
+
+### 2. Integrar conversão no hook `useSimpleVideoUpload.ts`
+- Na função `processFile()`, após validação, verificar se `file.type === 'video/quicktime'` ou extensão `.mov`
+- Se sim, chamar `convertMovToMp4()` com callback de progresso
+- Exibir status "Convertendo vídeo para formato compatível..." durante conversão
+- Substituir o arquivo original pelo convertido antes de prosseguir
+
+### 3. Adicionar estado de conversão na UI (`UploadStatus.tsx`)
+- Novo status `'converting'` no fluxo de upload
+- Mostrar barra de progresso com texto "Convertendo vídeo de iPhone para formato compatível..."
+
+### 4. Atualizar Edge Function (melhoria secundária)
+- Na `upload-video-to-external-api`, adicionar detecção de formato QuickTime/MOV pelos magic bytes (bytes 4-7: `66 74 79 70 71 74` = "ftypqt")
+- Logar warning se receber MOV em vez de MP4 (não bloquear, pois o client já deveria ter convertido)
+
+## Limitações e Considerações
+- A conversão no browser funciona bem para vídeos curtos (10-15s) que é o caso de uso
+- Vídeos HEVC do iPhone serão re-encodados para H.264, que é universalmente compatível
+- Tempo de conversão: ~5-10 segundos para um vídeo de 10s no celular
+- Chrome 116+ suporta MP4 nativo no MediaRecorder; Safari também suporta
 
