@@ -81,11 +81,16 @@ export const convertMovToMp4 = (
     let safetyTimeoutId: ReturnType<typeof setTimeout> | null = null;
     let frameCount = 0;
 
+    let audioContextRef: AudioContext | null = null;
+
     const cleanup = () => {
       if (drawIntervalId) clearInterval(drawIntervalId);
       if (safetyTimeoutId) clearTimeout(safetyTimeoutId);
       if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         try { mediaRecorder.stop(); } catch (_) {}
+      }
+      if (audioContextRef) {
+        try { audioContextRef.close(); } catch (_) {}
       }
       video.pause();
       video.removeAttribute('src');
@@ -111,15 +116,16 @@ export const convertMovToMp4 = (
       // Tentar capturar áudio do vídeo
       try {
         const audioContext = new AudioContext();
+        audioContextRef = audioContext;
         const source = audioContext.createMediaElementSource(video);
         const destination = audioContext.createMediaStreamDestination();
         source.connect(destination);
-        source.connect(audioContext.destination);
+        // NÃO conectar a audioContext.destination — isso tocaria som nos alto-falantes
         
         destination.stream.getAudioTracks().forEach(track => {
           canvasStream.addTrack(track);
         });
-        console.log('🔊 [CONVERSION] Áudio capturado');
+        console.log('🔊 [CONVERSION] Áudio capturado (silencioso)');
       } catch (audioErr) {
         console.warn('⚠️ [CONVERSION] Sem áudio capturado:', audioErr);
       }
@@ -148,6 +154,20 @@ export const convertMovToMp4 = (
           fileName: mp4FileName,
           totalFrames: frameCount
         });
+
+        // Validar arquivo convertido
+        if (mp4Blob.size < 1000) {
+          console.error('❌ [CONVERSION] Arquivo convertido muito pequeno:', mp4Blob.size, 'bytes');
+          cleanup();
+          reject(new Error('A conversão falhou — arquivo resultante está vazio ou corrompido. Tente novamente.'));
+          return;
+        }
+        if (frameCount === 0) {
+          console.error('❌ [CONVERSION] Nenhum frame foi capturado durante a conversão');
+          cleanup();
+          reject(new Error('A conversão falhou — nenhum frame foi capturado. Tente novamente.'));
+          return;
+        }
 
         onProgress?.({ stage: 'finalizing', progress: 100 });
         cleanup();
