@@ -33,6 +33,7 @@ import { Calendar as CalendarIcon, Loader2, Plus, Clock, Bell, BellRing, Users, 
 import { useEventTypes } from '@/hooks/agenda/useEventTypes';
 import EventTypeManagerModal from './EventTypeManagerModal';
 import BuildingSelector from './BuildingSelector';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -896,6 +897,41 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
         selectedBuildingId={selectedBuildingId}
         onSelectBuilding={setSelectedBuildingId}
       />
+
+      {/* === Local do Evento com Google Places Autocomplete === */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-1.5">
+          <MapPin className="h-3.5 w-3.5 text-primary" />
+          Local do Evento
+        </Label>
+        <AddressAutocomplete
+          value={localEvento}
+          onChange={setLocalEvento}
+          onPlaceSelect={(place) => {
+            setLocalEvento(place.address);
+          }}
+          onClear={() => setLocalEvento('')}
+          placeholder="Buscar local (ex: Hotel Viale, Shopping JL...)"
+          className="h-11"
+        />
+      </div>
+
+      {/* === Link da Reunião (apenas para reuniões) === */}
+      {tipoEvento === 'reuniao' && (
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1.5">
+            <Video className="h-3.5 w-3.5 text-primary" />
+            Link da Reunião
+          </Label>
+          <Input
+            value={linkReuniao}
+            onChange={(e) => setLinkReuniao(e.target.value)}
+            placeholder="https://meet.google.com/..."
+            className="h-11"
+            type="url"
+          />
+        </div>
+      )}
 
       {/* Título da Tarefa */}
       <div className="space-y-2">
