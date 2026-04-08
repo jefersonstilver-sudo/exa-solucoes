@@ -8,6 +8,7 @@ import { VideoSlot } from '@/types/videoManagement';
 import { loadVideoSlots } from '@/services/videoSlotService';
 import { setBaseVideo } from '@/services/videoBaseService';
 import { deleteVideoWithExternalAPI } from '@/services/videoDeleteHelper';
+import { needsConversion, convertMovToMp4, ConversionProgress } from '@/services/videoConversionService';
 
 interface UseVideoManagementProps {
   orderId: string;
@@ -19,6 +20,8 @@ interface UseVideoManagementProps {
 export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }: UseVideoManagementProps) => {
   const [videoSlots, setVideoSlots] = useState<VideoSlot[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [converting, setConverting] = useState(false);
+  const [conversionProgress, setConversionProgress] = useState(0);
   const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -88,12 +91,37 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
         return { success: false };
       }
 
+      let fileToUpload = file;
+
+      // Conversão MOV → MP4 se necessário
+      if (needsConversion(file)) {
+        console.log('🔄 [useVideoManagement] Arquivo MOV detectado, iniciando conversão...');
+        setConverting(true);
+        setConversionProgress(0);
+        
+        try {
+          fileToUpload = await convertMovToMp4(file, (progress: ConversionProgress) => {
+            setConversionProgress(progress.progress);
+          });
+          console.log('✅ [useVideoManagement] Conversão concluída:', fileToUpload.name);
+        } catch (conversionError: any) {
+          console.error('❌ [useVideoManagement] Erro na conversão:', conversionError);
+          toast.error(conversionError.message || 'Erro ao converter vídeo do iPhone');
+          setConverting(false);
+          setConversionProgress(0);
+          return { success: false };
+        } finally {
+          setConverting(false);
+          setConversionProgress(0);
+        }
+      }
+
       setUploading(true);
       setUploadProgress(prev => ({ ...prev, [slotPosition]: 0 }));
 
       const result = await uploadVideo(
         slotPosition,
-        file,
+        fileToUpload,
         userId,
         orderId,
         (progress) => {
@@ -380,6 +408,8 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
   return {
     videoSlots,
     uploading,
+    converting,
+    conversionProgress,
     uploadProgress,
     handleUpload,
     handleActivate,
