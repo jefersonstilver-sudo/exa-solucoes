@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { uploadVideo } from '@/services/videoUploadService';
 import { validateVideoFile, ensureVideosBucket } from '@/services/videoStorageService';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
+import { needsConversion, convertMovToMp4, ConversionProgress } from '@/services/videoConversionService';
 
 interface UseSimpleVideoUploadProps {
   orderId?: string | null;
