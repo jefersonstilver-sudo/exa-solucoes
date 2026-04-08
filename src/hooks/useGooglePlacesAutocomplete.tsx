@@ -27,7 +27,7 @@ export function useGooglePlacesAutocomplete(options: UseGooglePlacesAutocomplete
   const {
     debounceMs = 300,
     componentRestrictions = { country: 'br' },
-    types = ['address'],
+    types = ['establishment', 'geocode'],
   } = options;
 
   // Initialize Google Maps API
@@ -57,9 +57,10 @@ export function useGooglePlacesAutocomplete(options: UseGooglePlacesAutocomplete
       input: input.trim(),
       componentRestrictions,
       types,
-      // Bias results towards Foz do Iguaçu
-      location: new google.maps.LatLng(-25.5478, -54.5882),
-      radius: 50000, // 50km radius
+      locationBias: {
+        center: { lat: -25.5478, lng: -54.5882 },
+        radius: 50000,
+      } as google.maps.places.LocationBias,
     };
 
     autocompleteService.current.getPlacePredictions(request, (predictions, status) => {
