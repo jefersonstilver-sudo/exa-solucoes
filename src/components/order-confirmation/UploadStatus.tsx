@@ -30,6 +30,7 @@ const UploadStatus: React.FC<UploadStatusProps> = ({
   videoOrientation,
   videoError,
   uploadProgress,
+  conversionProgress = 0,
   handleReset,
   startUpload,
   handleContinue,
