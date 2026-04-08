@@ -155,7 +155,10 @@ serve(async (req) => {
     }
 
     // Append extra info
-    if (finalLocal) message += `\n📍 ${finalLocal}`;
+    if (finalLocal) {
+      message += `\n📍 ${finalLocal}`;
+      message += `\n🗺️ Ver no Maps: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalLocal)}`;
+    }
     if (finalLink) message += `\n🔗 ${finalLink}`;
     if (finalDescricao) message += `\n📝 ${finalDescricao}`;
 

@@ -147,7 +147,10 @@ serve(async (req) => {
               const icon = evMap[t.tipo_evento || '']?.icon || '📋';
               const time = t.horario_inicio || '--:--';
               msg += `${num} *${time}* — ${icon} ${t.titulo}\n`;
-              if (t.local_evento) msg += `   📍 ${t.local_evento}\n`;
+              if (t.local_evento) {
+                msg += `   📍 ${t.local_evento}\n`;
+                msg += `   🗺️ Ver no Maps: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t.local_evento)}\n`;
+              }
               if (t.link_reuniao) msg += `   🔗 ${t.link_reuniao}\n`;
               if (t.descricao) msg += `   📝 ${t.descricao}\n`;
               if (t.prioridade && (t.prioridade === 'emergencia' || t.prioridade === 'alta')) {
@@ -490,7 +493,10 @@ function buildMessage(task: any, minutesBefore: number, typeMap: Record<string, 
   message += `${eventIcon} *${task.titulo}*\n`;
   message += `📅 ${fmtDateBR(task.data_prevista)} às ${task.horario_inicio}\n`;
   message += `📁 ${eventLabel}\n`;
-  if (task.local_evento) message += `📍 ${task.local_evento}\n`;
+  if (task.local_evento) {
+    message += `📍 ${task.local_evento}\n`;
+    message += `🗺️ Ver no Maps: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(task.local_evento)}\n`;
+  }
   if (task.link_reuniao) message += `🔗 ${task.link_reuniao}\n`;
   if (task.descricao) message += `\n📝 ${task.descricao}\n`;
   if (task.prioridade) {
