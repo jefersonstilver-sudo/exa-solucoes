@@ -69,17 +69,21 @@ export const convertMovToMp4 = (
       return;
     }
 
-    video.muted = false;
+    video.muted = true; // Necessário para autoplay confiável
     video.playsInline = true;
     video.preload = 'auto';
+    video.playbackRate = 1.0; // Garantir velocidade consistente
 
     const url = URL.createObjectURL(file);
     const chunks: Blob[] = [];
     let mediaRecorder: MediaRecorder | null = null;
-    let animationFrameId: number | null = null;
+    let drawIntervalId: ReturnType<typeof setInterval> | null = null;
+    let safetyTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let frameCount = 0;
 
     const cleanup = () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (drawIntervalId) clearInterval(drawIntervalId);
+      if (safetyTimeoutId) clearTimeout(safetyTimeoutId);
       if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         try { mediaRecorder.stop(); } catch (_) {}
       }
@@ -101,7 +105,7 @@ export const convertMovToMp4 = (
 
       onProgress?.({ stage: 'loading', progress: 20 });
 
-      // Capturar stream do canvas + áudio do vídeo
+      // Capturar stream do canvas
       const canvasStream = canvas.captureStream(30); // 30 FPS
       
       // Tentar capturar áudio do vídeo
@@ -110,9 +114,8 @@ export const convertMovToMp4 = (
         const source = audioContext.createMediaElementSource(video);
         const destination = audioContext.createMediaStreamDestination();
         source.connect(destination);
-        source.connect(audioContext.destination); // manter playback audível
+        source.connect(audioContext.destination);
         
-        // Adicionar track de áudio ao stream
         destination.stream.getAudioTracks().forEach(track => {
           canvasStream.addTrack(track);
         });
@@ -123,7 +126,7 @@ export const convertMovToMp4 = (
 
       mediaRecorder = new MediaRecorder(canvasStream, {
         mimeType: supportedMimeType,
-        videoBitsPerSecond: 5_000_000 // 5 Mbps
+        videoBitsPerSecond: 8_000_000 // 8 Mbps para qualidade de iPhone
       });
 
       mediaRecorder.ondataavailable = (e) => {
@@ -142,7 +145,8 @@ export const convertMovToMp4 = (
         console.log('✅ [CONVERSION] Conversão concluída:', {
           originalSize: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
           convertedSize: (mp4File.size / (1024 * 1024)).toFixed(2) + ' MB',
-          fileName: mp4FileName
+          fileName: mp4FileName,
+          totalFrames: frameCount
         });
 
         onProgress?.({ stage: 'finalizing', progress: 100 });
@@ -156,29 +160,29 @@ export const convertMovToMp4 = (
         reject(new Error('Erro durante a conversão do vídeo'));
       };
 
-      // Iniciar gravação
-      mediaRecorder.start(100); // chunks a cada 100ms
+      // Iniciar gravação com chunks menores para captura mais granular
+      mediaRecorder.start(50); // chunks a cada 50ms
       onProgress?.({ stage: 'converting', progress: 30 });
 
-      // Renderizar frames no canvas
+      // Usar setInterval em vez de requestAnimationFrame
+      // rAF é throttled em abas em background, setInterval mantém captura consistente
       const drawFrame = () => {
         if (video.paused || video.ended) return;
         
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        frameCount++;
         
         // Calcular progresso (30% a 85% durante a conversão)
         if (video.duration && video.duration > 0) {
           const conversionProgress = 30 + (video.currentTime / video.duration) * 55;
           onProgress?.({ stage: 'converting', progress: Math.round(conversionProgress) });
         }
-        
-        animationFrameId = requestAnimationFrame(drawFrame);
       };
 
       // Quando o vídeo terminar, parar gravação
       video.onended = () => {
-        console.log('🔄 [CONVERSION] Vídeo finalizado, parando gravação');
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        console.log('🔄 [CONVERSION] Vídeo finalizado, parando gravação. Frames:', frameCount);
+        if (drawIntervalId) clearInterval(drawIntervalId);
         
         // Pequeno delay para garantir que o último frame foi capturado
         setTimeout(() => {
@@ -188,10 +192,20 @@ export const convertMovToMp4 = (
         }, 200);
       };
 
+      // Safety timeout: duração do vídeo + 10s de margem
+      const safetyMs = (video.duration + 10) * 1000;
+      safetyTimeoutId = setTimeout(() => {
+        console.warn('⚠️ [CONVERSION] Safety timeout atingido após', safetyMs / 1000, 's. Frames:', frameCount);
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+          mediaRecorder.stop();
+        }
+      }, safetyMs);
+
       // Iniciar playback
       video.play().then(() => {
         console.log('▶️ [CONVERSION] Playback iniciado');
-        drawFrame();
+        // ~30fps via setInterval (33ms) — funciona mesmo em abas em background
+        drawIntervalId = setInterval(drawFrame, 33);
       }).catch(err => {
         console.error('❌ [CONVERSION] Erro ao iniciar playback:', err);
         cleanup();
