@@ -20,6 +20,8 @@ interface UseVideoManagementProps {
 export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }: UseVideoManagementProps) => {
   const [videoSlots, setVideoSlots] = useState<VideoSlot[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [converting, setConverting] = useState(false);
+  const [conversionProgress, setConversionProgress] = useState(0);
   const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
