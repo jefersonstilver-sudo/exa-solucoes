@@ -40,7 +40,7 @@ export const ClientLogoUploadModal = ({
   const [uploadedOriginal, setUploadedOriginal] = useState(false);
   const [aiProgress, setAiProgress] = useState(0);
   const [aiStatusMessage, setAiStatusMessage] = useState('');
-  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const progressIntervalRef = useRef<number | null>(null);
 
   const AI_STATUS_MESSAGES = [
     'Analisando tipo de logo...',
