@@ -229,11 +229,18 @@ serve(async (req) => {
     const isWebm = uint8Array[0] === 0x1A && uint8Array[1] === 0x45 && uint8Array[2] === 0xDF && uint8Array[3] === 0xA3;
     const isMp4 = uint8Array[4] === 0x66 && uint8Array[5] === 0x74 && uint8Array[6] === 0x79 && uint8Array[7] === 0x70;
     
-    console.log('🔍 [UPLOAD_EXTERNAL_API] Formato detectado:', { isWebm, isMp4 });
+    // Detectar QuickTime/MOV: ftyp seguido de "qt  " (71 74 20 20) nos bytes 8-11
+    const isQuickTime = isMp4 && uint8Array[8] === 0x71 && uint8Array[9] === 0x74 && uint8Array[10] === 0x20 && uint8Array[11] === 0x20;
+    
+    console.log('🔍 [UPLOAD_EXTERNAL_API] Formato detectado:', { isWebm, isMp4, isQuickTime });
     
     if (isWebm) {
       console.error('❌ [UPLOAD_EXTERNAL_API] ARQUIVO É WEBM! Rejeitando envio para AWS - arquivo WebM não é compatível');
       throw new Error('Arquivo de vídeo está em formato WebM, não MP4. O vídeo precisa ser re-enviado em formato MP4.');
+    }
+    
+    if (isQuickTime) {
+      console.warn('⚠️ [UPLOAD_EXTERNAL_API] ARQUIVO É QuickTime/MOV! O cliente deveria ter convertido para MP4 antes do upload. Tentando envio mesmo assim, mas pode haver incompatibilidade na API externa.');
     }
     
     if (!isMp4) {
