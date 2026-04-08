@@ -1,39 +1,54 @@
 
 
-# Correção da Qualidade de Conversão MOV → MP4
+# Auditoria e Correção do Pipeline de Conversão MOV → MP4
 
-## Problema
-A conversão atual usa `requestAnimationFrame` para desenhar frames no canvas durante playback em tempo real. Isso causa **drops de frames** quando:
-- A aba do browser está em segundo plano (rAF é throttled)
-- CPU está ocupada com outras tarefas
-- O framerate do canvas não acompanha o vídeo
+## Problemas Identificados (3 bugs críticos)
 
-O resultado é um MP4 com frames faltando → vídeo "travado/laggy".
+### Bug 1: Som tocando durante conversão
+**Causa raiz**: Na linha 117 de `videoConversionService.ts`:
+```
+source.connect(audioContext.destination);
+```
+Isso conecta o áudio diretamente à saída de som do navegador (alto-falantes). Embora `video.muted = true` esteja definido, o `createMediaElementSource` bypassa o controle de mute do elemento — o áudio flui pelo AudioContext diretamente para os alto-falantes.
 
-## Solução
+**Correção**: Remover a linha `source.connect(audioContext.destination)`. O áudio deve ser roteado APENAS para o `MediaStreamDestination` (para captura), nunca para o `audioContext.destination` (alto-falantes).
+
+### Bug 2: Slot ficou vazio (conversão falhou silenciosamente)
+**Causa raiz**: Quando `video.muted = true` é combinado com `createMediaElementSource`, alguns browsers (especialmente Safari no iPhone) podem não produzir dados de áudio pelo AudioContext, causando conflito. Além disso, se o `video.play()` falhar silenciosamente (autoplay policy), a conversão produz um arquivo vazio (0 frames). O erro é capturado no `catch` do hook mas o slot já pode ter sido parcialmente manipulado.
+
+**Correção**: 
+- Adicionar validação do arquivo convertido (tamanho mínimo e contagem de frames)
+- Melhorar o tratamento de erro para garantir que arquivos vazios/corrompidos nunca prossigam ao upload
+
+### Bug 3: Pedido Master não reconhecido
+**Causa raiz**: Este não é um bug separado — como a conversão falhou, o upload nunca chegou ao `videoUploadService.ts` onde a lógica Master (linha 260) é executada. Se a conversão tivesse funcionado, o auto-approve teria sido acionado normalmente.
+
+## Mudanças Técnicas
 
 ### Arquivo: `src/services/videoConversionService.ts`
 
-Reescrever a lógica de captura de frames para ser mais robusta:
+1. **Remover conexão ao alto-falante** (linha 117):
+   - Deletar `source.connect(audioContext.destination)`
+   - Manter apenas `source.connect(destination)` para captura silenciosa
 
-1. **Usar `setInterval` em vez de `requestAnimationFrame`** — rAF é pausado em abas em background; setInterval com intervalo de ~33ms (30fps) mantém a captura consistente
-2. **Aumentar bitrate de 5Mbps → 8Mbps** — vídeos de iPhone são gravados em alta qualidade; 5Mbps pode gerar artefatos de compressão
-3. **Adicionar `video.playbackRate = 1.0` explícito** — garantir que o playback não acelere/desacelere
-4. **Chunks menores no MediaRecorder** — mudar de `start(100)` para `start(50)` para captura mais granular
-5. **Garantir que o vídeo está muted durante conversão** — evitar problemas de autoplay policy que podem pausar o vídeo silenciosamente
-6. **Adicionar safety check de frames** — verificar se frames estão sendo desenhados e logar warnings se houver gaps
+2. **Adicionar validação do arquivo convertido**:
+   - Após `mediaRecorder.onstop`, verificar se `mp4Blob.size > 1000` (pelo menos 1KB)
+   - Verificar se `frameCount > 0`
+   - Se inválido, rejeitar a Promise com mensagem clara
 
-### Mudanças específicas:
-- `videoBitsPerSecond`: 5_000_000 → 8_000_000
-- `captureStream(30)` → `captureStream(30)` (manter, mas usar setInterval para drawing)
-- Substituir `requestAnimationFrame(drawFrame)` por `setInterval(drawFrame, 33)`
-- Adicionar `video.muted = true` antes do playback de conversão (necessário para autoplay confiável)
-- Adicionar contador de frames para diagnóstico
-- Timeout de segurança proporcional à duração do vídeo
+3. **Fechar o AudioContext após uso**:
+   - Chamar `audioContext.close()` no cleanup para liberar recursos
 
-### Sem alterações em:
-- UI existente
-- Hook `useVideoManagement.tsx`
-- Hook `useSimpleVideoUpload.ts`
-- Nenhum outro componente ou funcionalidade
+4. **Adicionar log de diagnóstico mais claro**:
+   - Logar se `video.play()` resolveu com sucesso
+   - Logar frameCount periodicamente durante a conversão
+
+### Arquivo: `src/hooks/useVideoManagement.tsx`
+
+Nenhuma mudança necessária — o tratamento de erro já está correto. Se a conversão falhar, o catch mostra toast e retorna `{ success: false }`.
+
+### Arquivos NÃO alterados
+- Nenhuma mudança em UI, layout, ou funcionalidades existentes
+- Nenhuma mudança em banco de dados
+- Nenhuma mudança no fluxo Master (já funciona corretamente quando o upload acontece)
 
