@@ -15,7 +15,8 @@ interface UseSimpleVideoUploadProps {
 export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadProps = {}) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'validating' | 'uploading' | 'processing' | 'success' | 'error'>('idle');
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'validating' | 'converting' | 'uploading' | 'processing' | 'success' | 'error'>('idle');
+  const [conversionProgress, setConversionProgress] = useState<number>(0);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const [videoOrientation, setVideoOrientation] = useState<'landscape' | 'portrait' | 'unknown'>('unknown');
