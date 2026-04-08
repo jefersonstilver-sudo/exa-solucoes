@@ -8,6 +8,7 @@ import { VideoSlot } from '@/types/videoManagement';
 import { loadVideoSlots } from '@/services/videoSlotService';
 import { setBaseVideo } from '@/services/videoBaseService';
 import { deleteVideoWithExternalAPI } from '@/services/videoDeleteHelper';
+import { needsConversion, convertMovToMp4, ConversionProgress } from '@/services/videoConversionService';
 
 interface UseVideoManagementProps {
   orderId: string;
