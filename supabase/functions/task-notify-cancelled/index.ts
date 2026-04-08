@@ -89,6 +89,7 @@ serve(async (req) => {
     }
     if (local_evento) {
       message += `📍 Local: ${local_evento}\n`;
+      message += `🗺️ Ver no Maps: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(local_evento)}\n`;
     }
     if (link_reuniao) {
       message += `🔗 Link: ${link_reuniao}\n`;

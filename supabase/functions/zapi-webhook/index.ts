@@ -381,7 +381,10 @@ serve(async (req) => {
             receiptMsg += `📅 ${d}/${m}/${y}${timeStr}\n`;
           }
           if (buildingName) receiptMsg += `🏢 ${buildingName}\n`;
-          if (taskData?.local_evento) receiptMsg += `📍 ${taskData.local_evento}\n`;
+          if (taskData?.local_evento) {
+            receiptMsg += `📍 ${taskData.local_evento}\n`;
+            receiptMsg += `🗺️ Ver no Maps: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(taskData.local_evento)}\n`;
+          }
           if (taskData?.link_reuniao) receiptMsg += `🔗 ${taskData.link_reuniao}\n`;
           if (taskData?.descricao) receiptMsg += `📝 ${taskData.descricao}\n`;
           receiptMsg += `👤 Criado por: ${creatorName}\n`;
@@ -776,7 +779,10 @@ serve(async (req) => {
             receiptMsg += `📅 ${d}/${m}/${y}${timeStr}\n`;
           }
           if (buildingName) receiptMsg += `🏢 ${buildingName}\n`;
-          if (taskData?.local_evento) receiptMsg += `📍 ${taskData.local_evento}\n`;
+          if (taskData?.local_evento) {
+            receiptMsg += `📍 ${taskData.local_evento}\n`;
+            receiptMsg += `🗺️ Ver no Maps: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(taskData.local_evento)}\n`;
+          }
           if (taskData?.link_reuniao) receiptMsg += `🔗 ${taskData.link_reuniao}\n`;
           if (taskData?.descricao) receiptMsg += `📝 ${taskData.descricao}\n`;
           receiptMsg += `👤 Criado por: ${creatorName}\n`;

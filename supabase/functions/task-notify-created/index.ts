@@ -97,6 +97,7 @@ function buildRichMessage(params: {
   // Local (para reuniões)
   if (params.local_evento) {
     message += `📍 Local: ${params.local_evento}\n`;
+    message += `🗺️ Ver no Maps: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(params.local_evento)}\n`;
   }
   
   // Prédio (para instalação/manutenção/vistoria)
