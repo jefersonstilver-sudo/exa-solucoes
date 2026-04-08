@@ -1,29 +1,39 @@
 
 
-# Aplicar Conversão MOV→MP4 no Hook de Gestão de Vídeos
+# Correção da Qualidade de Conversão MOV → MP4
 
 ## Problema
-A conversão MOV→MP4 foi implementada apenas no `useSimpleVideoUpload.ts` (tela de confirmação de pedido). O hook `useVideoManagement.tsx` (usado na tela de gestão de vídeos em `src/pages/advertiser/OrderDetails.tsx`) **não aplica a conversão**, fazendo com que vídeos de iPhone continuem sendo enviados como `.mov` para a API externa.
+A conversão atual usa `requestAnimationFrame` para desenhar frames no canvas durante playback em tempo real. Isso causa **drops de frames** quando:
+- A aba do browser está em segundo plano (rAF é throttled)
+- CPU está ocupada com outras tarefas
+- O framerate do canvas não acompanha o vídeo
 
-O vídeo "Kkk" foi enviado por esse fluxo, confirmado pelo formato `video/quicktime` e URL `IMG_6642.mov` no storage.
+O resultado é um MP4 com frames faltando → vídeo "travado/laggy".
 
 ## Solução
 
-### Arquivo: `src/hooks/useVideoManagement.tsx`
+### Arquivo: `src/services/videoConversionService.ts`
 
-Na função `handleUpload`, adicionar a mesma lógica de conversão já usada no `useSimpleVideoUpload`:
+Reescrever a lógica de captura de frames para ser mais robusta:
 
-1. Importar `needsConversion` e `convertMovToMp4` de `videoConversionService`
-2. Antes de chamar `uploadVideo()`, verificar se o arquivo precisa de conversão
-3. Se sim, converter usando `convertMovToMp4()` e usar o arquivo convertido no upload
-4. Adicionar um estado `converting` e progresso de conversão para que a UI possa exibir feedback
+1. **Usar `setInterval` em vez de `requestAnimationFrame`** — rAF é pausado em abas em background; setInterval com intervalo de ~33ms (30fps) mantém a captura consistente
+2. **Aumentar bitrate de 5Mbps → 8Mbps** — vídeos de iPhone são gravados em alta qualidade; 5Mbps pode gerar artefatos de compressão
+3. **Adicionar `video.playbackRate = 1.0` explícito** — garantir que o playback não acelere/desacelere
+4. **Chunks menores no MediaRecorder** — mudar de `start(100)` para `start(50)` para captura mais granular
+5. **Garantir que o vídeo está muted durante conversão** — evitar problemas de autoplay policy que podem pausar o vídeo silenciosamente
+6. **Adicionar safety check de frames** — verificar se frames estão sendo desenhados e logar warnings se houver gaps
 
-### Arquivo: `src/pages/advertiser/OrderDetails.tsx`
+### Mudanças específicas:
+- `videoBitsPerSecond`: 5_000_000 → 8_000_000
+- `captureStream(30)` → `captureStream(30)` (manter, mas usar setInterval para drawing)
+- Substituir `requestAnimationFrame(drawFrame)` por `setInterval(drawFrame, 33)`
+- Adicionar `video.muted = true` antes do playback de conversão (necessário para autoplay confiável)
+- Adicionar contador de frames para diagnóstico
+- Timeout de segurança proporcional à duração do vídeo
 
-Verificar se a UI de upload nessa página precisa exibir estado de conversão (barra de progresso "Convertendo..."). Se o componente de upload já suporta callbacks de status, conectar o estado de conversão.
-
-### Escopo
-- Apenas adicionar conversão no fluxo de upload existente
-- Nenhuma mudança na UI existente além do feedback de conversão
-- Nenhuma mudança em banco de dados
+### Sem alterações em:
+- UI existente
+- Hook `useVideoManagement.tsx`
+- Hook `useSimpleVideoUpload.ts`
+- Nenhum outro componente ou funcionalidade
 
