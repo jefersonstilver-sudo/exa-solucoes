@@ -121,7 +121,7 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
 
       const result = await uploadVideo(
         slotPosition,
-        file,
+        fileToUpload,
         userId,
         orderId,
         (progress) => {
