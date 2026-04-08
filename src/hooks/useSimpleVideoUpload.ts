@@ -258,6 +258,7 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
     videoRef,
     fileInputRef,
     uploadStatus,
+    conversionProgress,
     videoFile,
     videoDuration,
     videoOrientation,

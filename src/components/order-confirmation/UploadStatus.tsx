@@ -11,6 +11,7 @@ type UploadStatusProps = {
   videoOrientation: 'landscape' | 'portrait' | 'unknown';
   videoError: string | null;
   uploadProgress: number;
+  conversionProgress?: number;
   handleReset: () => void;
   startUpload: () => void;
   handleContinue: () => void;
