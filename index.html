@@ -114,6 +114,36 @@
       })();
     </script>
     
+    <!-- 🍎 SAFARI/iOS PRE-LOAD VERSION CHECK - runs before React bundle -->
+    <script>
+      (function() {
+        var BUILD_ID = '__BUILD_ID__';
+        if (sessionStorage.getItem('v-check-done')) return;
+        fetch('https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/get-app-version', {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.version && d.version !== '0' && d.version !== BUILD_ID) {
+            console.log('[PRE-LOAD] New version: ' + d.version + ' (local: ' + BUILD_ID + '). Forcing reload...');
+            sessionStorage.setItem('v-check-done', '1');
+            localStorage.removeItem('html-build-id');
+            localStorage.removeItem('app-version');
+            if ('caches' in window) {
+              caches.keys().then(function(n) {
+                Promise.all(n.map(function(k) { return caches.delete(k); }))
+                  .then(function() { location.replace('/?_r=' + Date.now()); });
+              });
+            } else {
+              location.replace('/?_r=' + Date.now());
+            }
+          }
+        })
+        .catch(function() {});
+      })();
+    </script>
+    
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
