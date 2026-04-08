@@ -38,7 +38,7 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
   };
 
   const processFile = async (file: File) => {
-    console.log('Processando arquivo:', file.name, 'Tamanho:', file.size);
+    console.log('Processando arquivo:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
     setVideoFile(file);
     setUploadStatus('validating');
     setVideoError(null);
@@ -49,12 +49,37 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
         throw new Error('Erro ao preparar storage de vídeos');
       }
 
-      const validation = await validateVideoFile(file);
+      // Converter MOV (iPhone) para MP4 se necessário
+      let fileToProcess = file;
+      if (needsConversion(file)) {
+        console.log('🔄 Detectado vídeo MOV/QuickTime, iniciando conversão para MP4...');
+        setUploadStatus('converting');
+        setConversionProgress(0);
+        
+        try {
+          fileToProcess = await convertMovToMp4(file, (progress) => {
+            setConversionProgress(progress.progress);
+          });
+          console.log('✅ Conversão concluída:', fileToProcess.name, fileToProcess.size);
+          setVideoFile(fileToProcess);
+          toast.success('Vídeo convertido para formato MP4!');
+        } catch (conversionError) {
+          console.error('❌ Erro na conversão:', conversionError);
+          const errorMsg = conversionError instanceof Error ? conversionError.message : 'Erro ao converter vídeo';
+          setVideoError(errorMsg);
+          setUploadStatus('error');
+          return;
+        }
+        
+        setUploadStatus('validating');
+      }
+
+      const validation = await validateVideoFile(fileToProcess);
       
       // If needs trimming, open trimmer modal
       if (validation.needsTrimming && validation.maxDuration) {
         console.log('✂️ Vídeo excede duração, abrindo trimmer');
-        setTrimmerFile(file);
+        setTrimmerFile(fileToProcess);
         setTrimmerMaxDuration(validation.maxDuration);
         setShowTrimmer(true);
         setUploadStatus('idle');

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 
 type UploadStatusProps = {
-  uploadStatus: 'idle' | 'validating' | 'uploading' | 'processing' | 'success' | 'error';
+  uploadStatus: 'idle' | 'validating' | 'converting' | 'uploading' | 'processing' | 'success' | 'error';
   videoFile: File | null;
   videoDuration: number | null;
   videoOrientation: 'landscape' | 'portrait' | 'unknown';
