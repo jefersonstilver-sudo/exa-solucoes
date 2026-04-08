@@ -66,6 +66,28 @@ const UploadStatus: React.FC<UploadStatusProps> = ({
             Ir para o Dashboard
           </Button>
         </motion.div>
+      ) : uploadStatus === 'converting' ? (
+        <motion.div
+          key="converting"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="rounded-lg p-8 bg-blue-50 border border-blue-200 text-center"
+        >
+          <RefreshCw className="mx-auto h-12 w-12 text-blue-600 animate-spin mb-4" />
+          <h3 className="text-lg font-medium text-gray-800 mb-2">
+            Convertendo vídeo de iPhone para formato compatível...
+          </h3>
+          
+          <div className="w-full mb-4">
+            <Progress value={conversionProgress} className="h-2" />
+            <p className="mt-1 text-sm text-gray-600">{conversionProgress}%</p>
+          </div>
+          
+          <p className="text-gray-600">
+            Seu vídeo está sendo convertido de MOV para MP4. Isso pode levar alguns segundos.
+          </p>
+        </motion.div>
       ) : uploadStatus === 'uploading' || uploadStatus === 'processing' ? (
         <motion.div
           key="uploading"
