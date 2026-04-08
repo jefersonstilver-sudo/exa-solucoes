@@ -56,6 +56,10 @@ export const useForceCacheClear = () => {
 
       const { data, error } = await supabase.functions.invoke('get-app-version', {
         method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
       });
 
       if (error) {
@@ -80,10 +84,10 @@ export const useForceCacheClear = () => {
           await Promise.all(names.map((n) => caches.delete(n)));
         }
 
-        // Force browser to bypass cache by navigating with unique query param
+        // Force browser to bypass cache — location.replace works better on Safari/iOS
         const url = new URL(window.location.href);
         url.searchParams.set('_cb', String(Date.now()));
-        window.location.href = url.toString();
+        window.location.replace(url.toString());
         return;
       }
 
