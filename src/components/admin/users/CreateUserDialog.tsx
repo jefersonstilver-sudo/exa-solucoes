@@ -339,9 +339,10 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
             duration: 6000,
           });
         } catch (clipboardError) {
-        toast.info('ℹ️ Senha temporária gerada — oriente o usuário a definir uma nova senha no primeiro acesso.', {
-          duration: 8000,
-        });
+          toast.info('ℹ️ Senha temporária gerada — oriente o usuário a definir uma nova senha no primeiro acesso.', {
+            duration: 8000,
+          });
+        }
       }
 
       // Limpar formulário

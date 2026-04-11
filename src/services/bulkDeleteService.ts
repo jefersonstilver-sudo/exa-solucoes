@@ -136,9 +136,7 @@ export const superAdminBulkDeletePedidos = async (
     }
 
     // FASE 2.5: Cancelamento de boletos (migrado para ASAAS)
-    try {
-      // Não bloqueia a deleção, apenas loga o erro
-    }
+    // FASE 2.5: Cancelamento de boletos (migrado para ASAAS) — não bloqueia a deleção
 
     // ✅ FASE 3: Deletar do banco
     console.log(`\n🗑️ [${getTimestamp()}] FASE 3: Deletando do banco Supabase...`);
