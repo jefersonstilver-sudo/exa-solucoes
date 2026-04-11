@@ -4,7 +4,7 @@ import { Resend } from "npm:resend@2.0.0";
 import { createProposalAcceptedEmail } from "../_shared/email-templates/proposal-accepted.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://examidia.com.br',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
