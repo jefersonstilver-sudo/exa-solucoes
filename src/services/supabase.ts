@@ -126,19 +126,24 @@ export const getAllPedidos = async () => {
   const adminRoles = ['admin', 'super_admin', 'admin_departamental', 'comercial'];
   const isAdmin = profile && adminRoles.includes(profile.role);
 
-  const query = supabase
-    .from('pedidos')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(500);
-
-  if (!isAdmin) {
-    query.eq('user_id', user.id);
+  if (isAdmin) {
+    const { data, error } = await supabase
+      .from('pedidos')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    return data || [];
+  } else {
+    const { data, error } = await supabase
+      .from('pedidos')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    return data || [];
   }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return data || [];
 };
 
 /**
