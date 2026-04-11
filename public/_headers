@@ -1,7 +1,6 @@
 /*
-  X-Frame-Options: SAMEORIGIN
   X-Content-Type-Options: nosniff
   X-XSS-Protection: 1; mode=block
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co https://www.googletagmanager.com https://maps.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in https://examidia.com.br https://*.examidia.com.br; connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://api.asaas.com https://maps.googleapis.com https://viacep.com.br https://brasilapi.com.br https://receitaws.com.br; frame-ancestors 'self'; base-uri 'self'; form-action 'self';
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co https://www.googletagmanager.com https://maps.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in https://examidia.com.br https://*.examidia.com.br; connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://api.asaas.com https://maps.googleapis.com https://viacep.com.br https://brasilapi.com.br https://receitaws.com.br; frame-ancestors 'self' https://*.lovable.app https://*.lovableproject.com;base-uri 'self'; form-action 'self';
