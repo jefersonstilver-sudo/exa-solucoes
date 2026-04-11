@@ -1,58 +1,51 @@
 
 
-# Adicionar Link do Google Maps na Notificação WhatsApp
+# Fix Build Errors Blocking Preview
 
-## Contexto
+## Problem
+Three files have syntax/parse errors preventing the build from completing.
 
-A notificação WhatsApp mostra o local do evento como texto puro (ex: "📍 Local: Av. Jorge Schimmelpfeng, 232 - Centro, Foz do Iguaçu, PR"). O usuário quer que inclua um link clicável para abrir direto no Google Maps.
+## Fixes
 
-## Solução
+### 1. `src/components/admin/users/CreateUserDialog.tsx`
+The inner `try/catch` for clipboard (lines 336-345) is missing a closing brace. The `catch` block at line 341 uses wrong indentation and the `if` block starting at line 335 is never properly closed before the outer code resumes.
 
-Modificar as 4 Edge Functions que enviam notificações com `local_evento` para:
-1. Mostrar o nome/endereço completo do local
-2. Adicionar um link do Google Maps logo abaixo (`https://www.google.com/maps/search/?api=1&query=ENDEREÇO_ENCODED`)
+**Fix**: Add the missing `}` to close the inner `catch` block (after line 344), then add another `}` to close the `if (!functionData.emailSent)` block (after line 345).
 
-### Formato atual:
-```
-📍 Local: Av. Jorge Schimmelpfeng, 232 - Centro, Foz do Iguaçu, PR
-```
-
-### Formato novo:
-```
-📍 Local: Av. Jorge Schimmelpfeng, 232 - Centro, Foz do Iguaçu, PR
-🗺️ Ver no Maps: https://www.google.com/maps/search/?api=1&query=Av.+Jorge+Schimmelpfeng+232+Centro+Foz+do+Iguaçu+PR
-```
-
-O link usa `encodeURIComponent(local_evento)` para gerar a URL — funciona em qualquer dispositivo e abre direto no Google Maps.
-
-## Arquivos a modificar
-
-1. **`supabase/functions/task-notify-created/index.ts`** (linha 98-100) — notificação de tarefa criada
-2. **`supabase/functions/task-notify-change/index.ts`** — notificação de alteração
-3. **`supabase/functions/task-notify-cancelled/index.ts`** — notificação de cancelamento
-4. **`supabase/functions/task-reminder-scheduler/index.ts`** (linhas 150, 493) — lembretes diários
-5. **`supabase/functions/zapi-webhook/index.ts`** (linhas 384, 779) — confirmação de recebimento
-
-Em cada arquivo, onde aparece:
+Current (broken):
 ```typescript
-if (params.local_evento) {
-  message += `📍 Local: ${params.local_evento}\n`;
-}
+      if (!functionData.emailSent && senhaRetornada) {
+        try {
+          await navigator.clipboard.writeText(...);
+          toast.info('📋 ...');
+        } catch (clipboardError) {
+        toast.info('ℹ️ ...');
+      }
+      // code continues without closing the if block
 ```
 
-Trocar por:
+Fixed:
 ```typescript
-if (params.local_evento) {
-  message += `📍 Local: ${params.local_evento}\n`;
-  message += `🗺️ Ver no Maps: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(params.local_evento)}\n`;
-}
+      if (!functionData.emailSent && senhaRetornada) {
+        try {
+          await navigator.clipboard.writeText(...);
+          toast.info('📋 ...');
+        } catch (clipboardError) {
+          toast.info('ℹ️ ...');
+        }
+      }
 ```
 
-Mesma lógica para as variações (`t.local_evento`, `taskData?.local_evento`, `finalLocal`, etc.) em cada função.
+### 2. `src/services/bulkDeleteService.ts`
+Lines 139-141 have a `try` block with no `catch` or `finally`.
 
-## Impacto
+**Fix**: Remove the empty try block entirely (it's a no-op comment placeholder).
 
-- Nenhuma mudança na UI ou no fluxo de criação de tarefas
-- Apenas o texto da mensagem WhatsApp é enriquecido com o link
-- O link funciona em qualquer celular — abre o Google Maps app ou o navegador
+### 3. `supabase/functions/_shared/anydesk-sync-cron.ts`
+Line 8 has SQL `--` comment syntax inside a JSDoc block that Deno's parser chokes on.
+
+**Fix**: Replace `--` with `//` or remove the SQL comment from the JSDoc block to avoid parse errors.
+
+## Impact
+These are pure syntax fixes. No UI, functionality, or workflow changes.
 
