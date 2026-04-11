@@ -117,7 +117,9 @@ export const getAllPedidos = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Não autenticado');
 
-  const { data: profile } = await supabase
+  const client: any = supabase;
+
+  const { data: profile } = await client
     .from('users')
     .select('role')
     .eq('id', user.id)
@@ -127,24 +129,25 @@ export const getAllPedidos = async () => {
   const isAdmin = profile && adminRoles.includes(profile.role);
 
   if (isAdmin) {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('pedidos')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(500);
-    if (error) throw error;
-    return data || [];
-  } else {
-    const query: any = supabase
-      .from('pedidos')
-      .select('*');
-    const { data, error } = await query
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(500);
+
     if (error) throw error;
     return data || [];
   }
+
+  const { data, error } = await client
+    .from('pedidos')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(500);
+
+  if (error) throw error;
+  return data || [];
 };
 
 /**
