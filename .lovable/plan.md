@@ -1,51 +1,59 @@
 
 
-# Fix Build Errors Blocking Preview
+# Fix TS2589 Build Error and Restore Preview
 
 ## Problem
-Three files have syntax/parse errors preventing the build from completing.
+The build fails with `TS2589: Type instantiation is excessively deep` at `src/services/supabase.ts` line 136. This prevents the preview from loading (connection refused = dev server crashed during build).
 
-## Fixes
+The CORS issue mentioned has already been reverted on GitHub. The remaining blocker is this TypeScript error.
 
-### 1. `src/components/admin/users/CreateUserDialog.tsx`
-The inner `try/catch` for clipboard (lines 336-345) is missing a closing brace. The `catch` block at line 341 uses wrong indentation and the `if` block starting at line 335 is never properly closed before the outer code resumes.
+## Root Cause
+Line 136: `query.eq('user_id', user.id)` — TypeScript cannot resolve the deeply nested generic types when chaining `.eq()` on a query variable that was built with `.from().select().order().limit()`. This is a known Supabase SDK type depth issue.
 
-**Fix**: Add the missing `}` to close the inner `catch` block (after line 344), then add another `}` to close the `if (!functionData.emailSent)` block (after line 345).
+## Fix
+Cast the query builder to `any` before calling `.eq()`, or restructure to avoid the chained variable approach:
 
-Current (broken):
+**In `src/services/supabase.ts` (lines 120-141)**, replace the current `getAllPedidos` implementation to use two separate query paths instead of conditionally chaining on a shared variable:
+
 ```typescript
-      if (!functionData.emailSent && senhaRetornada) {
-        try {
-          await navigator.clipboard.writeText(...);
-          toast.info('📋 ...');
-        } catch (clipboardError) {
-        toast.info('ℹ️ ...');
-      }
-      // code continues without closing the if block
+export const getAllPedidos = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Não autenticado');
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  const adminRoles = ['admin', 'super_admin', 'admin_departamental', 'comercial'];
+  const isAdmin = profile && adminRoles.includes(profile.role);
+
+  if (isAdmin) {
+    const { data, error } = await supabase
+      .from('pedidos')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    return data || [];
+  } else {
+    const { data, error } = await supabase
+      .from('pedidos')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    return data || [];
+  }
+};
 ```
 
-Fixed:
-```typescript
-      if (!functionData.emailSent && senhaRetornada) {
-        try {
-          await navigator.clipboard.writeText(...);
-          toast.info('📋 ...');
-        } catch (clipboardError) {
-          toast.info('ℹ️ ...');
-        }
-      }
-```
-
-### 2. `src/services/bulkDeleteService.ts`
-Lines 139-141 have a `try` block with no `catch` or `finally`.
-
-**Fix**: Remove the empty try block entirely (it's a no-op comment placeholder).
-
-### 3. `supabase/functions/_shared/anydesk-sync-cron.ts`
-Line 8 has SQL `--` comment syntax inside a JSDoc block that Deno's parser chokes on.
-
-**Fix**: Replace `--` with `//` or remove the SQL comment from the JSDoc block to avoid parse errors.
+This avoids the intermediate `query` variable that causes the infinite type instantiation.
 
 ## Impact
-These are pure syntax fixes. No UI, functionality, or workflow changes.
+- Fixes the only remaining build error
+- No UI or functionality changes
+- Preview will load once the build succeeds
 
