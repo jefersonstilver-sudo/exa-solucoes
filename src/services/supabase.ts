@@ -135,10 +135,10 @@ export const getAllPedidos = async () => {
     if (error) throw error;
     return data || [];
   } else {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase
       .from('pedidos')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', user.id) as any)
       .order('created_at', { ascending: false })
       .limit(500);
     if (error) throw error;
