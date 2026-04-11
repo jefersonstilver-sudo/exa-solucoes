@@ -39,7 +39,7 @@ const BalanceHeroSection: React.FC<BalanceHeroSectionProps> = ({
     <Card className="p-6 bg-card border border-border">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Saldo Mercado Pago</h2>
+          <h2 className="text-lg font-semibold text-foreground">Saldo ASAAS</h2>
           <div className="flex items-center gap-2 mt-1">
             {lastUpdated && (
               <p className="text-xs text-muted-foreground">

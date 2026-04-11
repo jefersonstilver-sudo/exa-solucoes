@@ -173,15 +173,8 @@ export function CreateClientFromProposalModal({
         }
       }
 
-      // Log da criação
-      console.log('✅ Conta cliente criada:', { userId, email: emailOverride, proposal: selectedProposal.id });
-
-      // Copiar credenciais
-      const credentials = `🔐 CREDENCIAIS DE ACESSO EXA\n\nEmail: ${emailOverride}\nSenha: ${password}\n\n⚠️ Altere a senha no primeiro acesso!`;
-      await navigator.clipboard.writeText(credentials);
-
       toast.success('Conta criada com sucesso!', {
-        description: 'Credenciais copiadas para a área de transferência'
+        description: 'As credenciais foram enviadas por email ao cliente.'
       });
 
       onSuccess();

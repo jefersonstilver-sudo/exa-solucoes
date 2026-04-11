@@ -73,7 +73,7 @@ const CreditCardCheckoutModal: React.FC<CreditCardCheckoutModalProps> = ({
               transition={{ delay: 0.3, duration: 0.5 }}
               className="text-blue-100 text-center text-sm"
             >
-              Pagamento processado via Mercado Pago
+              Pagamento processado com segurança via ASAAS
             </motion.p>
           </motion.div>
         </div>
@@ -165,7 +165,7 @@ const CreditCardCheckoutModal: React.FC<CreditCardCheckoutModalProps> = ({
             className="text-center"
           >
             <p className="text-xs text-gray-500">
-              Ao continuar, você será redirecionado para o ambiente seguro do Mercado Pago
+              Ao continuar, você será redirecionado para o ambiente seguro de pagamento
             </p>
           </motion.div>
         </div>

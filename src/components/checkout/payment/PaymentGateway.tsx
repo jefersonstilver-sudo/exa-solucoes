@@ -208,8 +208,8 @@ const PaymentGateway = ({
         <div className="bg-muted/50 p-4 rounded-lg border border-border">
           <h3 className="font-semibold text-foreground mb-2">Informações do Pagamento</h3>
           <div className="space-y-2 text-sm text-muted-foreground">
-            <p>• <strong>PIX</strong>: Processado via Mercado Pago (desconto de 5%)</p>
-            <p>• <strong>Cartão</strong>: Processado via Mercado Pago (parcelamento disponível)</p>
+            <p>• <strong>PIX</strong>: Processado via ASAAS (desconto de 5%)</p>
+            <p>• <strong>Cartão</strong>: Processado via ASAAS (parcelamento disponível)</p>
             <p>• Pagamentos 100% seguros e criptografados</p>
             <p>• Você receberá confirmação por email</p>
           </div>

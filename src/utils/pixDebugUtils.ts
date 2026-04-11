@@ -101,7 +101,7 @@ export const pixDebugUtils = {
       const recommendations: string[] = [];
 
       // Testar se a edge function está respondendo
-      const { data, error } = await supabase.functions.invoke('mercadopago-webhook', {
+      const { data, error } = await supabase.functions.invoke('asaas-webhook', {
         body: {
           type: 'test',
           action: 'connectivity_test',

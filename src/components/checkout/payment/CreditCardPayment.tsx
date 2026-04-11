@@ -24,7 +24,7 @@ const CreditCardPayment = ({
         <div>
           <h3 className="text-lg font-medium text-foreground">Pagamento com Cartão de Crédito</h3>
           <p className="text-sm text-muted-foreground">
-            Você será redirecionado para o checkout seguro do Mercado Pago
+            Você será redirecionado para o checkout seguro
           </p>
         </div>
       </div>
@@ -59,7 +59,7 @@ const CreditCardPayment = ({
         <div className="space-y-2 text-center">
           <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
             <Lock className="h-4 w-4" />
-            <span>Checkout seguro via Mercado Pago</span>
+            <span>Checkout seguro via ASAAS</span>
           </div>
         </div>
       </div>

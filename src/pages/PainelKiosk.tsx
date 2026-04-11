@@ -59,7 +59,6 @@ const PainelKiosk = () => {
     reconnectAttempted.current = true;
     
     const tryAutoReconnect = async () => {
-      console.log('[PAINEL-KIOSK] useEffect executando - token:', token, 'fingerprint:', deviceFingerprint?.substring(0, 16));
       
       // Se tem token na URL, tentar carregar painel
       if (token) {
@@ -128,7 +127,6 @@ const PainelKiosk = () => {
   }, [deviceFingerprint, token]);
 
   const carregarPainel = async (painelToken: string) => {
-    console.log('[PAINEL-KIOSK] Carregando painel com token:', painelToken);
     try {
       const { data: painelDB, error } = await supabase
         .from('painels')
@@ -136,7 +134,6 @@ const PainelKiosk = () => {
         .eq('token_acesso', painelToken)
         .maybeSingle();
 
-      console.log('[PAINEL-KIOSK] Query result:', { painelDB, error });
 
       if (error || !painelDB) {
         console.error('[PAINEL-KIOSK] Painel não encontrado:', error);

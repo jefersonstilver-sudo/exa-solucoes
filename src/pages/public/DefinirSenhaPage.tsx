@@ -36,13 +36,6 @@ const DefinirSenhaPage = () => {
         const errorDescription = params.get('error_description');
         const error = params.get('error');
 
-        console.log('🔐 [DEFINIR SENHA] Validando sessão...', { 
-          hasHash: !!hash, 
-          hasAccessToken: !!accessToken,
-          errorCode,
-          errorDescription,
-          error 
-        });
 
         // Check for error in URL (Supabase redirects with error if token invalid)
         if (errorCode || error || errorDescription?.toLowerCase().includes('expired')) {

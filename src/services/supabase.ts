@@ -111,15 +111,32 @@ export const logUserAction = async (
 };
 
 /**
- * Fetches all orders without filtering by user
+ * Fetches orders — admins see all, clients see only their own
  */
 export const getAllPedidos = async () => {
-  const { data, error } = await supabase
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Não autenticado');
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  const adminRoles = ['admin', 'super_admin', 'admin_departamental', 'comercial'];
+  const isAdmin = profile && adminRoles.includes(profile.role);
+
+  const query = supabase
     .from('pedidos')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(500); // Limitar a 500 pedidos mais recentes
-    
+    .limit(500);
+
+  if (!isAdmin) {
+    query.eq('user_id', user.id);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return data || [];
 };

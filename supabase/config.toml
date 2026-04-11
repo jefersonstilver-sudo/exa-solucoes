@@ -136,17 +136,11 @@ verify_jwt = false
 [functions.process-payment]
 verify_jwt = true
 
-[functions.mercadopago-webhook]
-verify_jwt = false
-
 [functions.asaas-webhook]
 verify_jwt = false
 
 [functions.process-card-payment]
 verify_jwt = true
-
-[functions.mercadopago-card-webhook]
-verify_jwt = false
 
 [functions.create-cortesia-order]
 verify_jwt = true
@@ -394,13 +388,7 @@ verify_jwt = true
 [functions.consultar-cnpj]
 verify_jwt = false
 
-[functions.cancel-mercadopago-payment]
-verify_jwt = false
-
 [functions.create-subscription-payment]
-verify_jwt = false
-
-[functions.mercadopago-subscription-webhook]
 verify_jwt = false
 
 [functions.notify-proposal-event]
@@ -468,7 +456,7 @@ schedule = "*/2 * * * *"
 verify_jwt = false
 
 [functions.admin-update-user]
-verify_jwt = false
+verify_jwt = true
 
 [functions.create-contract-from-proposal]
 verify_jwt = false
@@ -543,15 +531,6 @@ schedule = "0 15 * * 1-5"
 [[cron]]
 function_name = "daily-commercial-alerts"
 schedule = "0 18 * * 1-5"
-
-[functions.get-mercadopago-balance]
-verify_jwt = true
-
-[functions.search-mercadopago-payments]
-verify_jwt = true
-
-[functions.audit-orders-vs-mercadopago]
-verify_jwt = true
 
 [functions.sync-device-building-status]
 verify_jwt = false

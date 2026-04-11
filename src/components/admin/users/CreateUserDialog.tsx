@@ -313,11 +313,10 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       const roleLabel = selectedRoleType?.display_name || role;
 
       // Usar senha retornada pela Edge Function
-      const senhaRetornada = functionData.password || 'exa2025';
+      const senhaRetornada = functionData.password || '';
 
       // Verificar se o email foi enviado
       if (!functionData.emailSent) {
-        console.warn('⚠️ Email não foi enviado ao usuário');
         setEmailError('RESEND_API_KEY não configurada! Configure em: https://resend.com/api-keys');
         toast.warning('⚠️ Conta criada mas email não enviado', {
           description: 'Configure o RESEND_API_KEY para enviar emails automaticamente',
@@ -328,22 +327,19 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       }
 
       toast.success(`✅ Conta criada com sucesso!`, {
-        description: `${nomeCompleto} - ${email}`,
+        description: `${nomeCompleto} — as credenciais foram enviadas por email.`,
         duration: 6000,
       });
 
-      const credentials = `Nome: ${nomeCompleto}\nEmail: ${email}\nSenha: ${senhaRetornada}\nTipo: ${roleLabel}`;
-      
-      // Tentar copiar para clipboard (pode falhar em ambientes de preview)
-      try {
-        await navigator.clipboard.writeText(credentials);
-        toast.info('📋 Credenciais copiadas para área de transferência', {
-          duration: 4000,
-        });
-      } catch (clipboardError) {
-        console.warn('⚠️ Não foi possível copiar para clipboard (normal em preview):', clipboardError);
-        toast.info('ℹ️ Anote as credenciais', {
-          description: `Senha: ${senhaRetornada}`,
+      // Só copia para clipboard se o email não foi enviado (fallback seguro)
+      if (!functionData.emailSent && senhaRetornada) {
+        try {
+          await navigator.clipboard.writeText(`Email: ${email}\nSenha temporária: ${senhaRetornada}`);
+          toast.info('📋 Credenciais copiadas — compartilhe com segurança e oriente a trocar a senha.', {
+            duration: 6000,
+          });
+        } catch (clipboardError) {
+        toast.info('ℹ️ Senha temporária gerada — oriente o usuário a definir uma nova senha no primeiro acesso.', {
           duration: 8000,
         });
       }

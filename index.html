@@ -9,7 +9,6 @@
         var h = window.location.hostname;
         var p = window.location.pathname;
         if ((h === 'sistema.examidia.com.br' || h.indexOf('sistema.') === 0) && p.indexOf('/sistema') !== 0) {
-          console.log('[SUBDOMAIN] Redirecionando para /sistema/login');
           window.location.replace('/sistema/login');
         }
       })();
@@ -37,6 +36,11 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
+
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     
     <!-- Favicons para todos os dispositivos -->
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
@@ -95,7 +99,6 @@
         var key = 'html-build-id';
         var stored = localStorage.getItem(key);
         if (stored && stored !== BUILD_ID) {
-          console.log('[CACHE-BUST] New build detected: ' + BUILD_ID + ' (was ' + stored + '). Reloading...');
           localStorage.setItem(key, BUILD_ID);
           if ('caches' in window) {
             caches.keys().then(function(names) {

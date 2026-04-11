@@ -22,16 +22,9 @@ const CreditCardPaymentButton: React.FC<CreditCardPaymentButtonProps> = ({
     setIsProcessing(true);
     
     try {
-      console.log('💳 Iniciando pagamento com cartão de crédito:', {
-        amount: totalAmount,
-        timestamp: new Date().toISOString()
-      });
-      
       await onPaymentInitiate();
-      
-      toast.success('Redirecionando para checkout...', {
-        description: 'Você será levado para o MercadoPago'
-      });
+
+      toast.success('Redirecionando para checkout seguro...');
       
     } catch (error: any) {
       console.error('Erro no pagamento com cartão:', error);

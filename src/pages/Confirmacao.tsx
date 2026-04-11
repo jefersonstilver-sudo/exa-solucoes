@@ -96,12 +96,6 @@ export default function Confirmacao() {
         const refresh_token = hashParams.get('refresh_token');
         const type = hashParams.get('type');
         
-        console.log('🔍 [CONFIRMACAO] Tokens encontrados:', {
-          hasAccessToken: !!access_token,
-          hasRefreshToken: !!refresh_token,
-          type,
-          hashLength: hash.length
-        });
         
         if (!access_token || !refresh_token) {
           console.error('❌ [CONFIRMACAO] Tokens não encontrados');

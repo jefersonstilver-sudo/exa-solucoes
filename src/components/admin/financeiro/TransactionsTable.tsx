@@ -93,7 +93,7 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({ data = [], loadin
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
             <List className="h-5 w-5 text-primary" />
-            Transações Mercado Pago
+            Transações ASAAS
           </CardTitle>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading}>

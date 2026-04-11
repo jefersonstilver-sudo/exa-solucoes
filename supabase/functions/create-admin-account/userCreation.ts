@@ -27,7 +27,12 @@ export const createAdminUser = async (
     }
   );
 
-  const defaultPassword = 'exa2025';
+  // Senha segura aleatória — nunca usar senha fixa em código
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%&*';
+  const defaultPassword = Array.from(
+    { length: 16 },
+    () => chars[Math.floor(Math.random() * chars.length)]
+  ).join('');
   const maxRetries = 3;
   let attempt = 0;
   let newUser = null;
