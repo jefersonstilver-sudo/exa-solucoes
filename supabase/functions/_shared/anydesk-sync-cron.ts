@@ -5,7 +5,7 @@
  * 1. Via pg_cron (recomendado):
  *    SELECT cron.schedule(
  *      'anydesk-sync',
- *      '*/4 * * * * *',  -- A cada 4 segundos
+ *      '*/4 * * * * *',  // A cada 4 segundos
  *      $$ SELECT net.http_post(
  *        url := 'https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/sync-anydesk',
  *        headers := jsonb_build_object(
