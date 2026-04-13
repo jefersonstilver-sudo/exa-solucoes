@@ -514,9 +514,10 @@ const MonitorDashboard = () => {
     const channel = supabase
       .channel('monitor_public_devices')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, () => loadDevices())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'device_groups' }, () => loadGroups())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [loadDevices]);
+  }, [loadDevices, loadGroups]);
 
   const sortedDevices = useMemo(() => {
     return [...devices].sort((a, b) => {

@@ -554,7 +554,6 @@ export const PaineisPage = () => {
           onClose={() => {
             setIsDetailModalOpen(false);
             setSelectedDevice(null);
-            // Refresh imediato dos badges ao fechar modal
             refetchIncidentStatus();
           }}
           onDeleted={() => {
@@ -563,10 +562,15 @@ export const PaineisPage = () => {
           onIncidentUpdate={() => {
             refetchIncidentStatus();
           }}
+          onGroupChanged={() => {
+            refresh();
+          }}
           theme={theme}
           periodEventsCount={periodEventsMap.get(selectedDevice.id) || 0}
           periodOfflineCount={periodEventsMap.get(selectedDevice.id) || 0}
           periodLabel={getPeriodLabel(period)}
+          deviceGroups={deviceGroups}
+          moveDeviceToGroup={moveDeviceToGroup}
         />
       )}
       

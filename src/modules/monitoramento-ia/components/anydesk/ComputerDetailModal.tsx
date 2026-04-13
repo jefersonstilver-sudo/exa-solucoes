@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConnectionTimeline } from "./ConnectionTimeline";
@@ -7,7 +8,7 @@ import { AssignBuildingDialog } from "./AssignBuildingDialog";
 import { SelectElevatorCompanyDialog } from "./SelectElevatorCompanyDialog";
 import { OfflineIncidentCard } from "./OfflineIncidentCard";
 import { IncidentHistoryTab } from "./IncidentHistoryTab";
-import { Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell, Building2, Link2, Unlink, Trash2, FileWarning } from "lucide-react";
+import { Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell, Building2, Link2, Unlink, Trash2, FileWarning, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,10 +28,13 @@ interface ComputerDetailModalProps {
   onClose: () => void;
   onDeleted?: () => void;
   onIncidentUpdate?: () => void;
+  onGroupChanged?: () => void;
   theme: 'dark' | 'light';
   periodEventsCount?: number;
   periodOfflineCount?: number;
   periodLabel?: string;
+  deviceGroups?: { id: string; nome: string; cor: string; ordem: number }[];
+  moveDeviceToGroup?: (deviceId: string, groupId: string | null) => Promise<void>;
 }
 
 interface AlertConfig {
@@ -44,10 +48,13 @@ export const ComputerDetailModal = ({
   onClose,
   onDeleted,
   onIncidentUpdate,
+  onGroupChanged,
   theme,
   periodEventsCount,
   periodOfflineCount,
-  periodLabel = 'no período'
+  periodLabel = 'no período',
+  deviceGroups = [],
+  moveDeviceToGroup,
 }: ComputerDetailModalProps) => {
   const [alertConfig, setAlertConfig] = useState<AlertConfig>({
     alerts_enabled: true,
@@ -444,6 +451,67 @@ export const ComputerDetailModal = ({
                     <Building2 className="h-4 w-4 mr-2" />
                     {assignedBuilding ? 'Alterar Prédio' : 'Atribuir Prédio'}
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* CARD 4.5: GRUPO DO PAINEL */}
+            <Card className="bg-module-card border-module shadow-sm md:col-span-3">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
+                  <Layers className="h-4 w-4 text-module-accent" />
+                  Grupo do Painel
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center"
+                      style={{
+                        backgroundColor: deviceGroups.find(g => g.id === computer?.device_group_id)?.cor
+                          ? `${deviceGroups.find(g => g.id === computer?.device_group_id)!.cor}20`
+                          : 'rgb(243 244 246)',
+                      }}
+                    >
+                      <Layers
+                        className="h-5 w-5"
+                        style={{
+                          color: deviceGroups.find(g => g.id === computer?.device_group_id)?.cor || '#9CA3AF',
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-module-primary">
+                        {deviceGroups.find(g => g.id === computer?.device_group_id)?.nome || 'Sem grupo'}
+                      </p>
+                      <p className="text-xs text-module-secondary">Categoria de organização</p>
+                    </div>
+                  </div>
+                  <Select
+                    value={computer?.device_group_id || '__none__'}
+                    onValueChange={async (val) => {
+                      if (moveDeviceToGroup && computer?.id) {
+                        await moveDeviceToGroup(computer.id, val === '__none__' ? null : val);
+                        onGroupChanged?.();
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-[180px] h-9 bg-module-secondary border-module text-module-primary">
+                      <SelectValue placeholder="Selecionar grupo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Sem grupo</SelectItem>
+                      {deviceGroups.map((g) => (
+                        <SelectItem key={g.id} value={g.id}>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: g.cor }} />
+                            {g.nome}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>
