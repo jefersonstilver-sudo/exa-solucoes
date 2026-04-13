@@ -1,0 +1,1 @@
+CREATE POLICY "Anon users can read devices" ON public.devices FOR SELECT TO anon USING (true);
