@@ -512,6 +512,64 @@ export const AlertaPainelOfflineCard = () => {
     }
   };
 
+  // ========== SILENCED DEVICES MANAGEMENT ==========
+  const openSilenceDialog = async () => {
+    // Load all devices for selection
+    const { data } = await supabase
+      .from('devices')
+      .select('id, name')
+      .order('name', { ascending: true });
+    
+    const silencedIds = new Set(silencedDevices.map(d => d.device_id));
+    const available = (data || []).filter((d: any) => !silencedIds.has(d.id));
+    setAllDevicesForSilence(available.map((d: any) => ({ id: d.id, name: d.name || d.id })));
+    setSelectedToSilence(new Set());
+    setSilenceSearch('');
+    setShowSilenceDialog(true);
+  };
+
+  const silenceSelectedDevices = async () => {
+    if (selectedToSilence.size === 0) return;
+    setSavingSilence(true);
+    try {
+      const rows = Array.from(selectedToSilence).map(device_id => ({
+        device_id,
+        alerts_enabled: false,
+        updated_at: new Date().toISOString()
+      }));
+      
+      const { error } = await supabase
+        .from('device_alert_configs')
+        .upsert(rows, { onConflict: 'device_id' });
+
+      if (error) throw error;
+      setShowSilenceDialog(false);
+      loadData();
+      toast.success(`${selectedToSilence.size} painel(is) silenciado(s)`);
+    } catch (error) {
+      console.error('Error silencing devices:', error);
+      toast.error('Erro ao silenciar painéis');
+    } finally {
+      setSavingSilence(false);
+    }
+  };
+
+  const unsilenceDevice = async (deviceId: string) => {
+    try {
+      const { error } = await supabase
+        .from('device_alert_configs')
+        .update({ alerts_enabled: true, updated_at: new Date().toISOString() })
+        .eq('device_id', deviceId);
+
+      if (error) throw error;
+      loadData();
+      toast.success('Painel reativado para notificações');
+    } catch (error) {
+      console.error('Error unsilencing device:', error);
+      toast.error('Erro ao reativar painel');
+    }
+  };
+
   // ========== RECIPIENT MANAGEMENT ==========
   const isUserAlreadyRecipient = (userId: string): boolean => {
     const user = adminUsers.find(u => u.id === userId);
