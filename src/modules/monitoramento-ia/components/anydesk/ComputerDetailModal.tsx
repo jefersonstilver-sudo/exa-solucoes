@@ -7,7 +7,7 @@ import { AssignBuildingDialog } from "./AssignBuildingDialog";
 import { SelectElevatorCompanyDialog } from "./SelectElevatorCompanyDialog";
 import { OfflineIncidentCard } from "./OfflineIncidentCard";
 import { IncidentHistoryTab } from "./IncidentHistoryTab";
-import { Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell, Building2, Link2, Unlink, Trash2, FileWarning } from "lucide-react";
+import { Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell, Building2, Link2, Unlink, Trash2, FileWarning, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,10 +27,13 @@ interface ComputerDetailModalProps {
   onClose: () => void;
   onDeleted?: () => void;
   onIncidentUpdate?: () => void;
+  onGroupChanged?: () => void;
   theme: 'dark' | 'light';
   periodEventsCount?: number;
   periodOfflineCount?: number;
   periodLabel?: string;
+  deviceGroups?: { id: string; nome: string; cor: string; ordem: number }[];
+  moveDeviceToGroup?: (deviceId: string, groupId: string | null) => Promise<void>;
 }
 
 interface AlertConfig {
