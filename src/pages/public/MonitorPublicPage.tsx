@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Wifi, WifiOff, Zap, Lock, Eye, EyeOff, AlertTriangle, X, CheckCircle2, Clock, User, Pencil, Settings } from 'lucide-react';
+import { Wifi, WifiOff, Zap, Lock, Eye, EyeOff, AlertTriangle, X, CheckCircle2, Clock, User, Pencil, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
