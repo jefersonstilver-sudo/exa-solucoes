@@ -655,18 +655,46 @@ const MonitorDashboard = () => {
               </div>
             </div>
           ) : (
-            <div
-              className={cn('grid auto-rows-fr mx-auto', isMobile ? 'gap-2' : 'gap-4')}
-              style={{ gridTemplateColumns: `repeat(${gridConfig.cols}, minmax(0, 1fr))` }}
-            >
-              {sortedDevices.map((device) => (
-                <MonitorCard
-                  key={device.id}
-                  device={device}
-                  compact={gridConfig.compact}
-                  onClick={() => setSelectedDevice(device)}
-                />
-              ))}
+            <div className="space-y-4">
+              {groupedDevices.map(({ group, devices: groupDevs }) => {
+                const groupKey = group?.id || '__ungrouped__';
+                const isCollapsed = collapsedGroups.has(groupKey);
+                return (
+                  <div key={groupKey}>
+                    {/* Group Header */}
+                    <button
+                      onClick={() => setCollapsedGroups(prev => {
+                        const next = new Set(prev);
+                        if (next.has(groupKey)) next.delete(groupKey);
+                        else next.add(groupKey);
+                        return next;
+                      })}
+                      className="flex items-center gap-2 w-full px-4 py-2 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm mb-3 hover:bg-white/10 transition-colors"
+                      style={{ borderLeftColor: group?.cor || '#6B7280', borderLeftWidth: '4px' }}
+                    >
+                      {isCollapsed ? <ChevronDown className="w-4 h-4 text-white/50" /> : <ChevronUp className="w-4 h-4 text-white/50" />}
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: group?.cor || '#6B7280' }} />
+                      <span className="font-semibold text-sm text-white">{group?.nome || 'Sem grupo'}</span>
+                      <span className="text-xs text-white/40 ml-1">({groupDevs.length})</span>
+                    </button>
+                    {!isCollapsed && (
+                      <div
+                        className={cn('grid auto-rows-fr', isMobile ? 'gap-2' : 'gap-4')}
+                        style={{ gridTemplateColumns: `repeat(${gridConfig.cols}, minmax(0, 1fr))` }}
+                      >
+                        {groupDevs.map((device) => (
+                          <MonitorCard
+                            key={device.id}
+                            device={device}
+                            compact={gridConfig.compact}
+                            onClick={() => setSelectedDevice(device)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </main>
