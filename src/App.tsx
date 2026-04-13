@@ -73,6 +73,7 @@ const BuildingDisplayCommercial = lazy(() => import('./pages/public/BuildingDisp
 const PublicBuildingDisplay = lazy(() => import('./pages/public/PublicBuildingDisplay'));
 const BuildingDisplayEmbed = lazy(() => import('./pages/public/BuildingDisplayEmbed'));
 const PainelAguardandoVinculo = lazy(() => import('./pages/public/PainelAguardandoVinculo'));
+const MonitorPublicPage = lazy(() => import('./pages/public/MonitorPublicPage'));
 
 // Blog pages
 const BlogIndex = lazy(() => import('./pages/blog/Index'));
@@ -223,6 +224,13 @@ const AppContent = () => {
           <Route path="/portrasdamarca" element={
             <Suspense fallback={<GlobalLoadingPage message="" />}>
               {React.createElement(lazy(() => import('./pages/PortrasDaMarca')))}
+            </Suspense>
+          } />
+          
+          {/* MONITOR PÚBLICO - Página de monitoramento com senha */}
+          <Route path="/monitor" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando monitor..." />}>
+              <MonitorPublicPage />
             </Suspense>
           } />
           
