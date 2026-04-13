@@ -150,6 +150,22 @@ export const PaineisPage = () => {
     });
   };
 
+  // Sort devices based on current sort selection
+  const sortedDevices = useMemo(() => {
+    return [...devices].sort((a, b) => {
+      if (sort.field === 'offline_count') {
+        const eventsA = periodEventsMap.get(a.id) || 0;
+        const eventsB = periodEventsMap.get(b.id) || 0;
+        return sort.order === 'desc' ? eventsB - eventsA : eventsA - eventsB;
+      }
+      if (a.status === 'offline' && b.status !== 'offline') return -1;
+      if (a.status !== 'offline' && b.status === 'offline') return 1;
+      const eventsA = periodEventsMap.get(a.id) || 0;
+      const eventsB = periodEventsMap.get(b.id) || 0;
+      return eventsB - eventsA;
+    });
+  }, [devices, periodEventsMap, sort]);
+
   // Group devices by device_group_id
   const groupedDevices = useMemo(() => {
     const grouped = new Map<string | null, typeof sortedDevices>();
@@ -158,7 +174,6 @@ export const PaineisPage = () => {
       if (!grouped.has(gid)) grouped.set(gid, []);
       grouped.get(gid)!.push(device);
     }
-    // Sort: groups in order first, then ungrouped at end
     const result: { group: typeof deviceGroups[0] | null; devices: typeof sortedDevices }[] = [];
     for (const g of deviceGroups) {
       if (grouped.has(g.id)) {
@@ -170,27 +185,6 @@ export const PaineisPage = () => {
     }
     return result;
   }, [sortedDevices, deviceGroups]);
-
-  // Sort devices based on current sort selection
-  const sortedDevices = useMemo(() => {
-    return [...devices].sort((a, b) => {
-      // If sorting by offline_count, use period events
-      if (sort.field === 'offline_count') {
-        const eventsA = periodEventsMap.get(a.id) || 0;
-        const eventsB = periodEventsMap.get(b.id) || 0;
-        return sort.order === 'desc' ? eventsB - eventsA : eventsA - eventsB;
-      }
-      
-      // Otherwise, offline devices always first for default view
-      if (a.status === 'offline' && b.status !== 'offline') return -1;
-      if (a.status !== 'offline' && b.status === 'offline') return 1;
-      
-      // Among same status, sort by period events count (more events first) as secondary
-      const eventsA = periodEventsMap.get(a.id) || 0;
-      const eventsB = periodEventsMap.get(b.id) || 0;
-      return eventsB - eventsA;
-    });
-  }, [devices, periodEventsMap, sort]);
 
   const handleRefresh = () => {
     refresh();
