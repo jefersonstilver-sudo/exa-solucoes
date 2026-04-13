@@ -320,6 +320,14 @@ export const PaineisPage = () => {
               >
                 <MapPin className="w-4 h-4" />
               </button>
+              {/* Botão Gerenciar Grupos */}
+              <button
+                onClick={() => setGroupManagerOpen(true)}
+                title="Gerenciar Grupos de Painéis"
+                className="p-2 lg:p-2.5 bg-muted hover:bg-muted/80 text-foreground rounded-lg transition-colors border border-border"
+              >
+                <Layers className="w-4 h-4" />
+              </button>
               {/* Botão Configurar Horário de Funcionamento */}
               <button
                 onClick={() => setConfigHorarioOpen(true)}
