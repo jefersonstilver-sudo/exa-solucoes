@@ -1,0 +1,1 @@
+CREATE POLICY "Anon users can insert device_offline_incidents" ON public.device_offline_incidents FOR INSERT TO anon WITH CHECK (true);

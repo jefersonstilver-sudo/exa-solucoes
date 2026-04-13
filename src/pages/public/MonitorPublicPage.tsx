@@ -1,10 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Wifi, WifiOff, Zap, Lock, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Wifi, WifiOff, Zap, Lock, Eye, EyeOff, AlertTriangle, X, CheckCircle2, Clock, User, Pencil, Settings } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { Device, fetchDevices } from '@/modules/monitoramento-ia/utils/devices';
+import { DeviceIncident, useIncidentCategories } from '@/modules/monitoramento-ia/hooks/useDeviceIncidents';
+import { toast } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
 
 const MONITOR_PASSWORD = 'Exa3029@#';
 const SESSION_KEY = 'exa_monitor_auth';
@@ -30,8 +33,272 @@ const useRealtimeCounter = (lastOnline: string | null) => {
   return elapsed;
 };
 
+// ─── Device Incident Detail Modal ───
+const DeviceIncidentModal = ({ device, onClose }: { device: Device; onClose: () => void }) => {
+  const { categories } = useIncidentCategories();
+  const [incident, setIncident] = useState<DeviceIncident | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [causa, setCausa] = useState('');
+  const [resolucao, setResolucao] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const isOnline = device.status === 'online';
+
+  const fetchIncident = useCallback(async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('device_offline_incidents')
+        .select('*, category:incident_categories(*)')
+        .eq('device_id', device.id)
+        .in('status', ['pendente', 'causa_registrada'])
+        .is('resolved_at', null)
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+
+      if (data) {
+        setIncident(data);
+      } else if (!isOnline) {
+        // Create incident on demand
+        const { data: newIncident, error: insertError } = await (supabase as any)
+          .from('device_offline_incidents')
+          .insert([{ device_id: device.id, started_at: new Date().toISOString(), status: 'pendente' }])
+          .select('*, category:incident_categories(*)')
+          .single();
+        if (!insertError && newIncident) setIncident(newIncident);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar incidente:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [device.id, isOnline]);
+
+  useEffect(() => { fetchIncident(); }, [fetchIncident]);
+
+  const handleSave = async () => {
+    if (!incident || !selectedCategoryId || !causa.trim()) return;
+    setSaving(true);
+    try {
+      const { error } = await (supabase as any)
+        .from('device_offline_incidents')
+        .update({
+          category_id: selectedCategoryId,
+          causa: causa.trim(),
+          resolucao: resolucao.trim() || null,
+          registrado_por_nome: 'Monitor Público',
+          registrado_em: new Date().toISOString(),
+          status: 'causa_registrada',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', incident.id);
+      if (error) throw error;
+      toast.success('Causa registrada!');
+      await fetchIncident();
+      setIsEditing(false);
+      setCausa('');
+      setResolucao('');
+      setSelectedCategoryId('');
+    } catch (err) {
+      toast.error('Erro ao registrar causa');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleStartEdit = () => {
+    if (!incident) return;
+    setSelectedCategoryId(incident.category_id || '');
+    setCausa(incident.causa || '');
+    setResolucao(incident.resolucao || '');
+    setIsEditing(true);
+  };
+
+  const displayName = (device.comments || device.name).split(' - ')[0].trim();
+  const isPending = !incident || incident.status === 'pendente';
+  const hasCause = incident?.status === 'causa_registrada';
+  const showForm = isPending || isEditing;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="relative w-full max-w-lg mx-4 rounded-2xl bg-gray-900 border border-white/10 shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className={cn(
+          'px-6 py-4 border-b flex items-center justify-between',
+          isOnline ? 'border-green-500/30 bg-green-950/50' : 'border-red-500/30 bg-red-950/50'
+        )}>
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              'w-3 h-3 rounded-full',
+              isOnline ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse'
+            )} />
+            <div>
+              <h2 className="text-white font-bold text-lg">{displayName}</h2>
+              <p className="text-white/50 text-xs">{device.provider || 'Sem provedor'} • ID: {device.anydesk_client_id}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-white/40 hover:text-white transition-colors p-1">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 max-h-[70vh] overflow-y-auto">
+          {isOnline ? (
+            <div className="text-center py-8">
+              <Wifi className="w-12 h-12 text-green-400 mx-auto mb-3" />
+              <p className="text-green-400 font-bold text-lg">Painel Online</p>
+              <p className="text-white/50 text-sm mt-1">
+                {device.last_online_at
+                  ? `Última atividade: ${formatDistanceToNow(new Date(device.last_online_at), { addSuffix: true, locale: ptBR })}`
+                  : 'Funcionando normalmente'}
+              </p>
+            </div>
+          ) : loading ? (
+            <div className="text-center py-8">
+              <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-white/50 text-sm">Carregando incidente...</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Status badge */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className={cn('w-4 h-4', isPending ? 'text-red-400' : 'text-amber-400')} />
+                  <span className={cn('text-sm font-bold', isPending ? 'text-red-400' : 'text-amber-400')}>
+                    {isPending ? '⚠️ Causa Pendente' : '📋 Causa Registrada'}
+                  </span>
+                </div>
+                {incident && (
+                  <span className="text-xs text-white/40 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Offline há {formatDistanceToNow(new Date(incident.started_at), { locale: ptBR })}
+                  </span>
+                )}
+              </div>
+
+              {hasCause && !isEditing ? (
+                /* View mode */
+                <div className="space-y-3">
+                  {incident?.category && (
+                    <span
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border"
+                      style={{
+                        backgroundColor: `${incident.category.color}20`,
+                        color: incident.category.color,
+                        borderColor: `${incident.category.color}40`,
+                      }}
+                    >
+                      {incident.category.icon} {incident.category.label}
+                    </span>
+                  )}
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <p className="text-xs font-semibold text-amber-400 mb-1">Causa:</p>
+                    <p className="text-sm text-white">{incident?.causa}</p>
+                  </div>
+                  {incident?.resolucao && (
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                      <p className="text-xs font-semibold text-amber-400 mb-1">Resolução:</p>
+                      <p className="text-sm text-white">{incident.resolucao}</p>
+                    </div>
+                  )}
+                  {incident?.registrado_por_nome && (
+                    <div className="flex items-center gap-2 text-xs text-white/40">
+                      <User className="w-3 h-3" />
+                      <span>
+                        por <strong className="text-white/60">{incident.registrado_por_nome}</strong>
+                        {incident.registrado_em && ` em ${format(new Date(incident.registrado_em), "dd/MM 'às' HH:mm", { locale: ptBR })}`}
+                      </span>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleStartEdit}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-amber-400 border border-amber-400/30 hover:bg-amber-400/10 transition-colors"
+                  >
+                    <Pencil className="w-3 h-3" /> Editar Causa
+                  </button>
+                </div>
+              ) : (
+                /* Form mode */
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-semibold text-red-400 mb-2 block">Categoria</label>
+                    <div className="flex flex-wrap gap-2">
+                      {categories.map((cat) => (
+                        <button
+                          key={cat.id}
+                          onClick={() => setSelectedCategoryId(cat.id)}
+                          className={cn(
+                            'px-3 py-1.5 rounded-full text-xs font-medium border transition-all',
+                            selectedCategoryId === cat.id ? 'ring-2 ring-offset-1 ring-offset-gray-900 scale-105' : 'opacity-70 hover:opacity-100'
+                          )}
+                          style={{
+                            backgroundColor: selectedCategoryId === cat.id ? `${cat.color}30` : `${cat.color}15`,
+                            color: cat.color,
+                            borderColor: selectedCategoryId === cat.id ? cat.color : `${cat.color}40`,
+                          }}
+                        >
+                          {cat.icon} {cat.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-red-400 mb-1 block">Causa da Queda *</label>
+                    <textarea
+                      placeholder="Descreva o motivo..."
+                      value={causa}
+                      onChange={(e) => setCausa(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-red-500/50 min-h-[60px] resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-white/50 mb-1 block">Resolução (opcional)</label>
+                    <textarea
+                      placeholder="O que está sendo feito..."
+                      value={resolucao}
+                      onChange={(e) => setResolucao(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-red-500/50 min-h-[60px] resize-none"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    {isEditing && (
+                      <button
+                        onClick={() => { setIsEditing(false); setCausa(''); setResolucao(''); setSelectedCategoryId(''); }}
+                        className="flex-1 h-10 rounded-xl border border-white/10 text-white/60 text-sm font-medium hover:bg-white/5 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                    )}
+                    <button
+                      onClick={handleSave}
+                      disabled={saving || !incident || !selectedCategoryId || !causa.trim()}
+                      className={cn(
+                        'h-10 rounded-xl text-white text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40',
+                        isEditing ? 'flex-1 bg-amber-600 hover:bg-amber-700' : 'w-full bg-[#9C1E1E] hover:bg-[#B40D1A]'
+                      )}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      {saving ? 'Salvando...' : isEditing ? 'Atualizar' : 'Registrar Causa'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Monitor Card ───
-const MonitorCard = ({ device, compact }: { device: Device; compact: boolean }) => {
+const MonitorCard = ({ device, compact, onClick }: { device: Device; compact: boolean; onClick: () => void }) => {
   const displayName = (device.comments || device.name).split(' - ')[0].trim();
   const provider = device.provider || 'Sem provedor';
   const elapsed = useRealtimeCounter(device.last_online_at);
@@ -47,23 +314,21 @@ const MonitorCard = ({ device, compact }: { device: Device; compact: boolean }) 
 
   return (
     <div
+      onClick={onClick}
       className={cn(
-        'relative overflow-hidden rounded-2xl h-full transition-all duration-300',
+        'relative overflow-hidden rounded-2xl h-full transition-all duration-300 cursor-pointer',
         isOnline
-          ? 'bg-green-950/90 border-2 border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.2)]'
-          : 'bg-red-950/90 border-2 border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.4)] animate-pulse'
+          ? 'bg-green-950/90 border-2 border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.2)] hover:border-green-400'
+          : 'bg-red-950/90 border-2 border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.4)] animate-pulse hover:border-red-400'
       )}
       style={{ backgroundColor: isOnline ? 'rgba(5,46,22,0.9)' : 'rgba(69,10,10,0.9)' }}
     >
-      {/* LED */}
-      <div
-        className={cn(
-          'absolute top-3 right-3 w-4 h-4 rounded-full shadow-lg',
-          isOnline
-            ? 'bg-green-500 shadow-[0_0_16px_rgba(34,197,94,1)] animate-pulse'
-            : 'bg-red-500 shadow-[0_0_20px_rgba(239,68,68,1)] animate-ping'
-        )}
-      />
+      <div className={cn(
+        'absolute top-3 right-3 w-4 h-4 rounded-full shadow-lg',
+        isOnline
+          ? 'bg-green-500 shadow-[0_0_16px_rgba(34,197,94,1)] animate-pulse'
+          : 'bg-red-500 shadow-[0_0_20px_rgba(239,68,68,1)] animate-ping'
+      )} />
 
       <div className="p-5 h-full flex flex-col justify-between">
         <div className="space-y-2 flex-1">
@@ -73,12 +338,6 @@ const MonitorCard = ({ device, compact }: { device: Device; compact: boolean }) 
           <p className={cn('font-semibold', compact ? 'text-xs' : 'text-sm', getProviderColor(provider))}>
             {provider}
           </p>
-          {!compact && device.total_events !== undefined && (
-            <div className="flex items-center gap-1 bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-md w-fit mt-3">
-              <Zap className="w-3.5 h-3.5" />
-              <span className="text-sm font-semibold">{device.total_events}</span>
-            </div>
-          )}
         </div>
         <div className="mt-4 pt-3 border-t border-white/10">
           <div className="flex justify-between items-center gap-2">
@@ -123,7 +382,6 @@ const LoginScreen = ({ onAuth }: { onAuth: () => void }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black relative overflow-hidden">
-      {/* Background glow */}
       <div className="absolute inset-0">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#9C1E1E]/10 rounded-full blur-[120px]" />
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-gray-950 via-black to-gray-900" />
@@ -138,7 +396,6 @@ const LoginScreen = ({ onAuth }: { onAuth: () => void }) => {
           shake && 'animate-[shake_0.5s_ease-in-out]'
         )}
       >
-        {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#9C1E1E] via-[#180A0A] to-[#0B0B0B] flex items-center justify-center mb-4 shadow-[0_0_40px_rgba(156,30,30,0.4)]">
             <span className="text-white text-3xl font-black tracking-tighter">EXA</span>
@@ -188,7 +445,6 @@ const LoginScreen = ({ onAuth }: { onAuth: () => void }) => {
         <p className="text-center text-[10px] text-white/20 mt-6">EXA Soluções — Monitoramento em Tempo Real</p>
       </div>
 
-      {/* Shake keyframe */}
       <style>{`
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
@@ -208,14 +464,13 @@ const MonitorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isPortrait, setIsPortrait] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
 
-  // Clock
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
 
-  // Orientation
   useEffect(() => {
     const check = () => setIsPortrait(window.innerHeight > window.innerWidth);
     check();
@@ -223,7 +478,6 @@ const MonitorDashboard = () => {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Fetch devices
   const loadDevices = useCallback(async () => {
     try {
       const { devices: data } = await fetchDevices(0, 500);
@@ -235,25 +489,20 @@ const MonitorDashboard = () => {
     }
   }, []);
 
-  // Initial load + polling
   useEffect(() => {
     loadDevices();
     const id = setInterval(loadDevices, POLLING_MS);
     return () => clearInterval(id);
   }, [loadDevices]);
 
-  // Realtime subscription
   useEffect(() => {
     const channel = supabase
       .channel('monitor_public_devices')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, () => {
-        loadDevices();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, () => loadDevices())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [loadDevices]);
 
-  // Sort: offline first
   const sortedDevices = useMemo(() => {
     return [...devices].sort((a, b) => {
       if (a.status === 'offline' && b.status !== 'offline') return -1;
@@ -265,7 +514,6 @@ const MonitorDashboard = () => {
   const onlineCount = useMemo(() => devices.filter((d) => d.status === 'online').length, [devices]);
   const offlineCount = devices.length - onlineCount;
 
-  // Grid config
   const gridConfig = useMemo(() => {
     const count = devices.length;
     const isMobile = window.innerWidth < 1024;
@@ -298,13 +546,10 @@ const MonitorDashboard = () => {
       <div className="absolute inset-0 bg-gradient-to-br from-gray-950 via-black to-gray-900" />
 
       <div className="relative z-10 flex flex-col h-full">
-        {/* Header */}
-        <header
-          className={cn(
-            'shrink-0 flex items-center bg-gradient-to-r from-white/5 to-transparent backdrop-blur-xl border-b border-white/10',
-            isMobile ? 'px-3 py-2' : 'px-8 py-5'
-          )}
-        >
+        <header className={cn(
+          'shrink-0 flex items-center bg-gradient-to-r from-white/5 to-transparent backdrop-blur-xl border-b border-white/10',
+          isMobile ? 'px-3 py-2' : 'px-8 py-5'
+        )}>
           {isMobile ? (
             <div className="flex items-center justify-between w-full gap-3">
               <div className="flex items-center gap-3">
@@ -326,7 +571,6 @@ const MonitorDashboard = () => {
             </div>
           ) : (
             <>
-              {/* EXA Logo */}
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#9C1E1E] via-[#180A0A] to-[#0B0B0B] flex items-center justify-center shadow-[0_0_30px_rgba(156,30,30,0.3)]">
                   <span className="text-white text-lg font-black tracking-tighter">EXA</span>
@@ -371,7 +615,6 @@ const MonitorDashboard = () => {
           )}
         </header>
 
-        {/* Grid */}
         <main className={cn('flex-1 overflow-auto', isMobile ? 'p-2' : 'p-6')}>
           {devices.length === 0 ? (
             <div className="flex items-center justify-center h-full">
@@ -386,12 +629,25 @@ const MonitorDashboard = () => {
               style={{ gridTemplateColumns: `repeat(${gridConfig.cols}, minmax(0, 1fr))` }}
             >
               {sortedDevices.map((device) => (
-                <MonitorCard key={device.id} device={device} compact={gridConfig.compact} />
+                <MonitorCard
+                  key={device.id}
+                  device={device}
+                  compact={gridConfig.compact}
+                  onClick={() => setSelectedDevice(device)}
+                />
               ))}
             </div>
           )}
         </main>
       </div>
+
+      {/* Device Detail Modal */}
+      {selectedDevice && (
+        <DeviceIncidentModal
+          device={selectedDevice}
+          onClose={() => setSelectedDevice(null)}
+        />
+      )}
     </div>
   );
 };
@@ -400,8 +656,12 @@ const MonitorDashboard = () => {
 const MonitorPublicPage = () => {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem(SESSION_KEY) === 'true');
 
-  if (!authed) return <LoginScreen onAuth={() => setAuthed(true)} />;
-  return <MonitorDashboard />;
+  return (
+    <>
+      <Toaster position="top-right" />
+      {!authed ? <LoginScreen onAuth={() => setAuthed(true)} /> : <MonitorDashboard />}
+    </>
+  );
 };
 
 export default MonitorPublicPage;
