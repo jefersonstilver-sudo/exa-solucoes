@@ -10,6 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -31,7 +32,10 @@ import {
   Smile,
   Send,
   Loader2,
-  StopCircle
+  StopCircle,
+  VolumeX,
+  X,
+  Search
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -82,6 +86,13 @@ interface Confirmation {
   confirmed_at: string;
   alert_number?: number;
   incident_number?: number;
+}
+
+interface SilencedDevice {
+  config_id: string;
+  device_id: string;
+  device_name: string;
+  building_name?: string;
 }
 
 // Format phone for display
@@ -146,6 +157,15 @@ export const AlertaPainelOfflineCard = () => {
   const [newRecipientName, setNewRecipientName] = useState('');
   const [newRecipientPhone, setNewRecipientPhone] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
+
+  // Silenced devices
+  const [isSilencedOpen, setIsSilencedOpen] = useState(false);
+  const [silencedDevices, setSilencedDevices] = useState<SilencedDevice[]>([]);
+  const [showSilenceDialog, setShowSilenceDialog] = useState(false);
+  const [allDevicesForSilence, setAllDevicesForSilence] = useState<{ id: string; name: string; building_name?: string }[]>([]);
+  const [selectedToSilence, setSelectedToSilence] = useState<Set<string>>(new Set());
+  const [silenceSearch, setSilenceSearch] = useState('');
+  const [savingSilence, setSavingSilence] = useState(false);
 
   // Button dialog
   const [showButtonDialog, setShowButtonDialog] = useState(false);
@@ -252,6 +272,19 @@ export const AlertaPainelOfflineCard = () => {
         .order('confirmed_at', { ascending: false })
         .limit(20);
       setConfirmations(confirmData || []);
+
+      // Load silenced devices (alerts_enabled = false)
+      const { data: silencedData } = await supabase
+        .from('device_alert_configs')
+        .select('id, device_id, alerts_enabled, devices(name)')
+        .eq('alerts_enabled', false);
+      
+      const silenced: SilencedDevice[] = (silencedData || []).map((item: any) => ({
+        config_id: item.id,
+        device_id: item.device_id,
+        device_name: item.devices?.name || item.device_id,
+      }));
+      setSilencedDevices(silenced);
     } catch (error) {
       console.error('Error loading offline alert data:', error);
       toast.error('Erro ao carregar configurações');
@@ -476,6 +509,64 @@ export const AlertaPainelOfflineCard = () => {
       toast.error('Erro ao enviar alerta de teste');
     } finally {
       setSendingTestRuleId(null);
+    }
+  };
+
+  // ========== SILENCED DEVICES MANAGEMENT ==========
+  const openSilenceDialog = async () => {
+    // Load all devices for selection
+    const { data } = await supabase
+      .from('devices')
+      .select('id, name')
+      .order('name', { ascending: true });
+    
+    const silencedIds = new Set(silencedDevices.map(d => d.device_id));
+    const available = (data || []).filter((d: any) => !silencedIds.has(d.id));
+    setAllDevicesForSilence(available.map((d: any) => ({ id: d.id, name: d.name || d.id })));
+    setSelectedToSilence(new Set());
+    setSilenceSearch('');
+    setShowSilenceDialog(true);
+  };
+
+  const silenceSelectedDevices = async () => {
+    if (selectedToSilence.size === 0) return;
+    setSavingSilence(true);
+    try {
+      const rows = Array.from(selectedToSilence).map(device_id => ({
+        device_id,
+        alerts_enabled: false,
+        updated_at: new Date().toISOString()
+      }));
+      
+      const { error } = await supabase
+        .from('device_alert_configs')
+        .upsert(rows, { onConflict: 'device_id' });
+
+      if (error) throw error;
+      setShowSilenceDialog(false);
+      loadData();
+      toast.success(`${selectedToSilence.size} painel(is) silenciado(s)`);
+    } catch (error) {
+      console.error('Error silencing devices:', error);
+      toast.error('Erro ao silenciar painéis');
+    } finally {
+      setSavingSilence(false);
+    }
+  };
+
+  const unsilenceDevice = async (deviceId: string) => {
+    try {
+      const { error } = await supabase
+        .from('device_alert_configs')
+        .update({ alerts_enabled: true, updated_at: new Date().toISOString() })
+        .eq('device_id', deviceId);
+
+      if (error) throw error;
+      loadData();
+      toast.success('Painel reativado para notificações');
+    } catch (error) {
+      console.error('Error unsilencing device:', error);
+      toast.error('Erro ao reativar painel');
     }
   };
 
@@ -947,6 +1038,81 @@ export const AlertaPainelOfflineCard = () => {
                     </CollapsibleContent>
                   </Collapsible>
 
+                  {/* SILENCED DEVICES SECTION */}
+                  <Collapsible open={isSilencedOpen} onOpenChange={setIsSilencedOpen}>
+                    <CollapsibleTrigger 
+                      className="flex items-center justify-between w-full p-4 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-2">
+                        <VolumeX className="h-4 w-4 text-purple-600" />
+                        <span className="font-semibold text-sm">Painéis Silenciados</span>
+                        <Badge variant="secondary" className="text-xs bg-purple-500/20">
+                          {silencedDevices.length}
+                        </Badge>
+                      </div>
+                      {isSilencedOpen ? (
+                        <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent className="mt-4 space-y-3">
+                      <p className="text-xs text-muted-foreground">
+                        Painéis silenciados continuam no monitor, mas não enviam notificações WhatsApp.
+                      </p>
+
+                      {silencedDevices.length > 0 && (
+                        <div className="space-y-2">
+                          <AnimatePresence>
+                            {silencedDevices.map((device) => (
+                              <motion.div
+                                key={device.device_id}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 10 }}
+                                className="flex items-center justify-between p-3 bg-purple-500/5 border border-purple-500/20 rounded-lg"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <VolumeX className="h-4 w-4 text-purple-500" />
+                                  <div>
+                                    <p className="text-sm font-medium">{device.device_name}</p>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                  onClick={() => unsilenceDevice(device.device_id)}
+                                  title="Reativar notificações"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </motion.div>
+                            ))}
+                          </AnimatePresence>
+                        </div>
+                      )}
+
+                      {silencedDevices.length === 0 && (
+                        <div className="text-center py-4 text-muted-foreground">
+                          <VolumeX className="h-6 w-6 mx-auto mb-1 opacity-40" />
+                          <p className="text-xs">Nenhum painel silenciado</p>
+                        </div>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        className="w-full border-dashed border-purple-500/50 text-purple-600 hover:bg-purple-500/10"
+                        onClick={openSilenceDialog}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Silenciar Painéis
+                      </Button>
+                    </CollapsibleContent>
+                  </Collapsible>
+
                   {/* CONFIRMATIONS SECTION - Who clicked the buttons */}
                   <Collapsible open={isConfirmationsOpen} onOpenChange={setIsConfirmationsOpen}>
                     <CollapsibleTrigger 
@@ -1206,6 +1372,87 @@ export const AlertaPainelOfflineCard = () => {
               className="bg-gradient-to-r from-amber-500 to-orange-600"
             >
               {saving ? 'Salvando...' : (editingRule ? 'Atualizar' : 'Criar Regra')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Silence Dialog */}
+      <Dialog open={showSilenceDialog} onOpenChange={setShowSilenceDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <VolumeX className="h-5 w-5 text-purple-600" />
+              Silenciar Painéis
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar painel..."
+                value={silenceSearch}
+                onChange={(e) => setSilenceSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            <div className="max-h-[300px] overflow-y-auto space-y-1 border rounded-lg p-2">
+              {allDevicesForSilence
+                .filter(d => d.name.toLowerCase().includes(silenceSearch.toLowerCase()))
+                .map((device) => (
+                  <label
+                    key={device.id}
+                    className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
+                  >
+                    <Checkbox
+                      checked={selectedToSilence.has(device.id)}
+                      onCheckedChange={(checked) => {
+                        setSelectedToSilence(prev => {
+                          const next = new Set(prev);
+                          if (checked) next.add(device.id);
+                          else next.delete(device.id);
+                          return next;
+                        });
+                      }}
+                    />
+                    <div className="flex items-center gap-2">
+                      <Monitor className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{device.name}</span>
+                    </div>
+                  </label>
+                ))}
+
+              {allDevicesForSilence.filter(d => d.name.toLowerCase().includes(silenceSearch.toLowerCase())).length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  {allDevicesForSilence.length === 0 ? 'Todos os painéis já estão silenciados' : 'Nenhum painel encontrado'}
+                </p>
+              )}
+            </div>
+
+            {selectedToSilence.size > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {selectedToSilence.size} painel(is) selecionado(s)
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSilenceDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={silenceSelectedDevices} 
+              disabled={selectedToSilence.size === 0 || savingSilence}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {savingSilence ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <VolumeX className="h-4 w-4 mr-2" />
+              )}
+              Silenciar {selectedToSilence.size > 0 ? `(${selectedToSilence.size})` : ''}
             </Button>
           </DialogFooter>
         </DialogContent>
