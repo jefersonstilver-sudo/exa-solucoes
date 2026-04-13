@@ -494,6 +494,7 @@ export const ComputerDetailModal = ({
                       if (moveDeviceToGroup && computer?.id) {
                         await moveDeviceToGroup(computer.id, val === '__none__' ? null : val);
                         onGroupChanged?.();
+                        onClose();
                       }
                     }}
                   >
