@@ -88,6 +88,13 @@ interface Confirmation {
   incident_number?: number;
 }
 
+interface SilencedDevice {
+  config_id: string;
+  device_id: string;
+  device_name: string;
+  building_name?: string;
+}
+
 // Format phone for display
 const formatPhoneDisplay = (phone: string): string => {
   const numbers = phone.replace(/\D/g, '');
