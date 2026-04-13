@@ -5803,6 +5803,30 @@ export type Database = {
           },
         ]
       }
+      device_groups: {
+        Row: {
+          cor: string
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+        }
+        Relationships: []
+      }
       device_offline_incidents: {
         Row: {
           auto_resolved: boolean | null
@@ -5880,6 +5904,7 @@ export type Database = {
           created_at: string | null
           deleted_at: string | null
           deleted_by: string | null
+          device_group_id: string | null
           empresa_elevador_id: string | null
           id: string
           is_active: boolean | null
@@ -5903,6 +5928,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          device_group_id?: string | null
           empresa_elevador_id?: string | null
           id?: string
           is_active?: boolean | null
@@ -5926,6 +5952,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          device_group_id?: string | null
           empresa_elevador_id?: string | null
           id?: string
           is_active?: boolean | null
@@ -5945,6 +5972,13 @@ export type Database = {
             columns: ["building_id"]
             isOneToOne: false
             referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devices_device_group_id_fkey"
+            columns: ["device_group_id"]
+            isOneToOne: false
+            referencedRelation: "device_groups"
             referencedColumns: ["id"]
           },
           {

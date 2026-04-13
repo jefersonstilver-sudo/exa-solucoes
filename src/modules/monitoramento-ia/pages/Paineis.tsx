@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, Maximize2, Clock, MapPin, Link2 } from 'lucide-react';
+import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, ChevronUp, Maximize2, Clock, MapPin, Link2, Layers } from 'lucide-react';
 import {
   Device,
   calculateDeviceStats,
@@ -29,6 +29,8 @@ import { MobileHeader } from '../components/MobileHeader';
 import { PeriodSelector, PeriodType } from '../components/PeriodSelector';
 import { ConfigHorarioDialog } from '@/components/admin/paineis-exa/ConfigHorarioDialog';
 import { PaineisMapModal } from '../components/paineis/PaineisMapModal';
+import { useDeviceGroups } from '@/hooks/useDeviceGroups';
+import { DeviceGroupManager } from '@/components/monitor/DeviceGroupManager';
 
 // Compact Stat Icon Component for mobile
 const CompactStatIcon = ({ icon: Icon, value, color, label }: { 
@@ -133,30 +135,56 @@ export const PaineisPage = () => {
   const [statsOpen, setStatsOpen] = useState(false);
   const [configHorarioOpen, setConfigHorarioOpen] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
-  
+  const [groupManagerOpen, setGroupManagerOpen] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   // Hook de alertas offline
   const { offlineDevices, activeAlerts, dismissAlert } = useOfflineAlerts();
+  const { groups: deviceGroups, createGroup, updateGroup, deleteGroup, moveDeviceToGroup } = useDeviceGroups();
+
+  const toggleGroupCollapse = (groupId: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+  };
 
   // Sort devices based on current sort selection
   const sortedDevices = useMemo(() => {
     return [...devices].sort((a, b) => {
-      // If sorting by offline_count, use period events
       if (sort.field === 'offline_count') {
         const eventsA = periodEventsMap.get(a.id) || 0;
         const eventsB = periodEventsMap.get(b.id) || 0;
         return sort.order === 'desc' ? eventsB - eventsA : eventsA - eventsB;
       }
-      
-      // Otherwise, offline devices always first for default view
       if (a.status === 'offline' && b.status !== 'offline') return -1;
       if (a.status !== 'offline' && b.status === 'offline') return 1;
-      
-      // Among same status, sort by period events count (more events first) as secondary
       const eventsA = periodEventsMap.get(a.id) || 0;
       const eventsB = periodEventsMap.get(b.id) || 0;
       return eventsB - eventsA;
     });
   }, [devices, periodEventsMap, sort]);
+
+  // Group devices by device_group_id
+  const groupedDevices = useMemo(() => {
+    const grouped = new Map<string | null, typeof sortedDevices>();
+    for (const device of sortedDevices) {
+      const gid = (device as any).device_group_id || null;
+      if (!grouped.has(gid)) grouped.set(gid, []);
+      grouped.get(gid)!.push(device);
+    }
+    const result: { group: typeof deviceGroups[0] | null; devices: typeof sortedDevices }[] = [];
+    for (const g of deviceGroups) {
+      if (grouped.has(g.id)) {
+        result.push({ group: g, devices: grouped.get(g.id)! });
+      }
+    }
+    if (grouped.has(null)) {
+      result.push({ group: null, devices: grouped.get(null)! });
+    }
+    return result;
+  }, [sortedDevices, deviceGroups]);
 
   const handleRefresh = () => {
     refresh();
@@ -291,6 +319,14 @@ export const PaineisPage = () => {
                 className="p-2 lg:p-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-lg transition-all shadow-sm"
               >
                 <MapPin className="w-4 h-4" />
+              </button>
+              {/* Botão Gerenciar Grupos */}
+              <button
+                onClick={() => setGroupManagerOpen(true)}
+                title="Gerenciar Grupos de Painéis"
+                className="p-2 lg:p-2.5 bg-muted hover:bg-muted/80 text-foreground rounded-lg transition-colors border border-border"
+              >
+                <Layers className="w-4 h-4" />
               </button>
               {/* Botão Configurar Horário de Funcionamento */}
               <button
@@ -430,22 +466,45 @@ export const PaineisPage = () => {
       ) : (
         <>
           {/* Visualização: Cards (2 cols mobile) ou Tabela (responsiva) */}
-          {viewMode === 'cards' ? (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6 items-stretch">
-              {sortedDevices.map((device) => (
-                <PanelCard
-                  key={device.id}
-                  device={device}
-                  periodEventsCount={periodEventsMap.get(device.id) || 0}
-                  periodLabel={getPeriodLabel(period)}
-                  incidentStatus={incidentStatusMap.get(device.id) || null}
-                  incidentData={pendingIncidentsMap[device.id] || null}
-                  onClick={() => {
-                    setSelectedDevice(device);
-                    setIsDetailModalOpen(true);
-                  }}
-                />
-              ))}
+           {viewMode === 'cards' ? (
+            <div className="space-y-4">
+              {groupedDevices.map(({ group, devices: groupDevs }) => {
+                const groupKey = group?.id || '__ungrouped__';
+                const isCollapsed = collapsedGroups.has(groupKey);
+                return (
+                  <div key={groupKey}>
+                    {/* Group Header */}
+                    <button
+                      onClick={() => toggleGroupCollapse(groupKey)}
+                      className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border transition-all hover:bg-muted/40 mb-2"
+                      style={{ borderLeftColor: group?.cor || '#6B7280', borderLeftWidth: '4px' }}
+                    >
+                      {isCollapsed ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: group?.cor || '#6B7280' }} />
+                      <span className="font-semibold text-sm text-foreground">{group?.nome || 'Sem grupo'}</span>
+                      <span className="text-xs text-muted-foreground ml-1">({groupDevs.length})</span>
+                    </button>
+                    {!isCollapsed && (
+                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6 items-stretch">
+                        {groupDevs.map((device) => (
+                          <PanelCard
+                            key={device.id}
+                            device={device}
+                            periodEventsCount={periodEventsMap.get(device.id) || 0}
+                            periodLabel={getPeriodLabel(period)}
+                            incidentStatus={incidentStatusMap.get(device.id) || null}
+                            incidentData={pendingIncidentsMap[device.id] || null}
+                            onClick={() => {
+                              setSelectedDevice(device);
+                              setIsDetailModalOpen(true);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <PanelsListView
@@ -537,6 +596,16 @@ export const PaineisPage = () => {
         open={configHorarioOpen}
         onOpenChange={setConfigHorarioOpen}
         paineis={devices}
+      />
+
+      {/* Dialog Gerenciar Grupos */}
+      <DeviceGroupManager
+        open={groupManagerOpen}
+        onOpenChange={setGroupManagerOpen}
+        groups={deviceGroups}
+        onCreateGroup={createGroup}
+        onUpdateGroup={updateGroup}
+        onDeleteGroup={deleteGroup}
       />
 
       {/* Modal do Mapa */}

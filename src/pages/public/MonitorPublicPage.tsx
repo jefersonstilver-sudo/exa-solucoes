@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Wifi, WifiOff, Zap, Lock, Eye, EyeOff, AlertTriangle, X, CheckCircle2, Clock, User, Pencil, Settings } from 'lucide-react';
+import { Wifi, WifiOff, Zap, Lock, Eye, EyeOff, AlertTriangle, X, CheckCircle2, Clock, User, Pencil, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -461,10 +461,12 @@ const LoginScreen = ({ onAuth }: { onAuth: () => void }) => {
 // ─── Monitor Dashboard ───
 const MonitorDashboard = () => {
   const [devices, setDevices] = useState<Device[]>([]);
+  const [groups, setGroups] = useState<{ id: string; nome: string; cor: string; ordem: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isPortrait, setIsPortrait] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -489,11 +491,24 @@ const MonitorDashboard = () => {
     }
   }, []);
 
+  const loadGroups = useCallback(async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('device_groups')
+        .select('*')
+        .order('ordem', { ascending: true });
+      if (!error && data) setGroups(data);
+    } catch (err) {
+      console.error('[MonitorPublic] Erro ao buscar grupos:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadDevices();
+    loadGroups();
     const id = setInterval(loadDevices, POLLING_MS);
     return () => clearInterval(id);
-  }, [loadDevices]);
+  }, [loadDevices, loadGroups]);
 
   useEffect(() => {
     const channel = supabase
@@ -510,6 +525,22 @@ const MonitorDashboard = () => {
       return 0;
     });
   }, [devices]);
+
+  // Group devices
+  const groupedDevices = useMemo(() => {
+    const grouped = new Map<string | null, Device[]>();
+    for (const device of sortedDevices) {
+      const gid = (device as any).device_group_id || null;
+      if (!grouped.has(gid)) grouped.set(gid, []);
+      grouped.get(gid)!.push(device);
+    }
+    const result: { group: typeof groups[0] | null; devices: Device[] }[] = [];
+    for (const g of groups) {
+      if (grouped.has(g.id)) result.push({ group: g, devices: grouped.get(g.id)! });
+    }
+    if (grouped.has(null)) result.push({ group: null, devices: grouped.get(null)! });
+    return result;
+  }, [sortedDevices, groups]);
 
   const onlineCount = useMemo(() => devices.filter((d) => d.status === 'online').length, [devices]);
   const offlineCount = devices.length - onlineCount;
@@ -624,18 +655,46 @@ const MonitorDashboard = () => {
               </div>
             </div>
           ) : (
-            <div
-              className={cn('grid auto-rows-fr mx-auto', isMobile ? 'gap-2' : 'gap-4')}
-              style={{ gridTemplateColumns: `repeat(${gridConfig.cols}, minmax(0, 1fr))` }}
-            >
-              {sortedDevices.map((device) => (
-                <MonitorCard
-                  key={device.id}
-                  device={device}
-                  compact={gridConfig.compact}
-                  onClick={() => setSelectedDevice(device)}
-                />
-              ))}
+            <div className="space-y-4">
+              {groupedDevices.map(({ group, devices: groupDevs }) => {
+                const groupKey = group?.id || '__ungrouped__';
+                const isCollapsed = collapsedGroups.has(groupKey);
+                return (
+                  <div key={groupKey}>
+                    {/* Group Header */}
+                    <button
+                      onClick={() => setCollapsedGroups(prev => {
+                        const next = new Set(prev);
+                        if (next.has(groupKey)) next.delete(groupKey);
+                        else next.add(groupKey);
+                        return next;
+                      })}
+                      className="flex items-center gap-2 w-full px-4 py-2 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm mb-3 hover:bg-white/10 transition-colors"
+                      style={{ borderLeftColor: group?.cor || '#6B7280', borderLeftWidth: '4px' }}
+                    >
+                      {isCollapsed ? <ChevronDown className="w-4 h-4 text-white/50" /> : <ChevronUp className="w-4 h-4 text-white/50" />}
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: group?.cor || '#6B7280' }} />
+                      <span className="font-semibold text-sm text-white">{group?.nome || 'Sem grupo'}</span>
+                      <span className="text-xs text-white/40 ml-1">({groupDevs.length})</span>
+                    </button>
+                    {!isCollapsed && (
+                      <div
+                        className={cn('grid auto-rows-fr', isMobile ? 'gap-2' : 'gap-4')}
+                        style={{ gridTemplateColumns: `repeat(${gridConfig.cols}, minmax(0, 1fr))` }}
+                      >
+                        {groupDevs.map((device) => (
+                          <MonitorCard
+                            key={device.id}
+                            device={device}
+                            compact={gridConfig.compact}
+                            onClick={() => setSelectedDevice(device)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </main>

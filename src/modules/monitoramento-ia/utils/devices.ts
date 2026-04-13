@@ -16,6 +16,7 @@ export interface Device {
   offline_count?: number;
   building_id?: string | null;
   empresa_elevador_id?: string | null;
+  device_group_id?: string | null;
   metadata?: {
     torre?: string;
     elevador?: string;
