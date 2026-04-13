@@ -139,6 +139,37 @@ export const PaineisPage = () => {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   // Hook de alertas offline
   const { offlineDevices, activeAlerts, dismissAlert } = useOfflineAlerts();
+  const { groups: deviceGroups, createGroup, updateGroup, deleteGroup, moveDeviceToGroup } = useDeviceGroups();
+
+  const toggleGroupCollapse = (groupId: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+  };
+
+  // Group devices by device_group_id
+  const groupedDevices = useMemo(() => {
+    const grouped = new Map<string | null, typeof sortedDevices>();
+    for (const device of sortedDevices) {
+      const gid = (device as any).device_group_id || null;
+      if (!grouped.has(gid)) grouped.set(gid, []);
+      grouped.get(gid)!.push(device);
+    }
+    // Sort: groups in order first, then ungrouped at end
+    const result: { group: typeof deviceGroups[0] | null; devices: typeof sortedDevices }[] = [];
+    for (const g of deviceGroups) {
+      if (grouped.has(g.id)) {
+        result.push({ group: g, devices: grouped.get(g.id)! });
+      }
+    }
+    if (grouped.has(null)) {
+      result.push({ group: null, devices: grouped.get(null)! });
+    }
+    return result;
+  }, [sortedDevices, deviceGroups]);
 
   // Sort devices based on current sort selection
   const sortedDevices = useMemo(() => {
