@@ -272,6 +272,19 @@ export const AlertaPainelOfflineCard = () => {
         .order('confirmed_at', { ascending: false })
         .limit(20);
       setConfirmations(confirmData || []);
+
+      // Load silenced devices (alerts_enabled = false)
+      const { data: silencedData } = await supabase
+        .from('device_alert_configs')
+        .select('id, device_id, alerts_enabled, devices(name)')
+        .eq('alerts_enabled', false);
+      
+      const silenced: SilencedDevice[] = (silencedData || []).map((item: any) => ({
+        config_id: item.id,
+        device_id: item.device_id,
+        device_name: item.devices?.name || item.device_id,
+      }));
+      setSilencedDevices(silenced);
     } catch (error) {
       console.error('Error loading offline alert data:', error);
       toast.error('Erro ao carregar configurações');
