@@ -47,10 +47,13 @@ export const ComputerDetailModal = ({
   onClose,
   onDeleted,
   onIncidentUpdate,
+  onGroupChanged,
   theme,
   periodEventsCount,
   periodOfflineCount,
-  periodLabel = 'no período'
+  periodLabel = 'no período',
+  deviceGroups = [],
+  moveDeviceToGroup,
 }: ComputerDetailModalProps) => {
   const [alertConfig, setAlertConfig] = useState<AlertConfig>({
     alerts_enabled: true,
