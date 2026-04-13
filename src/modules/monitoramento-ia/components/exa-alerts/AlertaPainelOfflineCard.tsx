@@ -158,6 +158,15 @@ export const AlertaPainelOfflineCard = () => {
   const [newRecipientPhone, setNewRecipientPhone] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
 
+  // Silenced devices
+  const [isSilencedOpen, setIsSilencedOpen] = useState(false);
+  const [silencedDevices, setSilencedDevices] = useState<SilencedDevice[]>([]);
+  const [showSilenceDialog, setShowSilenceDialog] = useState(false);
+  const [allDevicesForSilence, setAllDevicesForSilence] = useState<{ id: string; name: string; building_name?: string }[]>([]);
+  const [selectedToSilence, setSelectedToSilence] = useState<Set<string>>(new Set());
+  const [silenceSearch, setSilenceSearch] = useState('');
+  const [savingSilence, setSavingSilence] = useState(false);
+
   // Button dialog
   const [showButtonDialog, setShowButtonDialog] = useState(false);
   const [editingButton, setEditingButton] = useState<ConfirmButton | null>(null);
