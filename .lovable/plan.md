@@ -1,67 +1,44 @@
 
 
-# Grupos de Dispositivos para Painéis
+# Redesign do DeviceGroupManager + Atribuição de Grupo nos Painéis
 
-## O que será feito
+## Problemas identificados
+1. **DeviceGroupManager** tem visual básico/genérico — precisa de glassmorphism premium EXA
+2. **Não é possível atribuir um painel a um grupo** — falta um seletor de grupo no ComputerDetailModal (ao lado do "Prédio Atribuído" e "Empresa de Elevador")
+3. **Página não atualiza em tempo real** quando um grupo é criado/editado — o hook já tem Realtime, mas o `device_group_id` nos devices precisa de refresh automático
 
-Criar um sistema de grupos para organizar os dispositivos (painéis) tanto na página admin quanto na página pública `/monitor`. Cada device poderá pertencer a um grupo (ex: "Internos", "Foz do Iguaçu", "Curitiba"). Os grupos serão colapsáveis e visualmente separados.
+## Plano
 
-## Arquitetura
+### 1. Redesign do `DeviceGroupManager.tsx` — visual premium glassmorphism
+- Fundo do dialog com `backdrop-blur-2xl`, bordas translúcidas (`border-white/20`), sombras profundas
+- Seção "Novo Grupo" com card glassmorphism (`bg-white/80 backdrop-blur-xl`)
+- Botões de cor maiores (w-8 h-8) com ring de seleção premium e animação de scale
+- Lista de grupos com hover suave, ícones refinados, e transições fluidas
+- Botão "Criar" em vermelho EXA (`bg-[#9C1E1E]`)
+- Animação ao criar/editar grupo (fade-in nos itens)
 
-```text
-Nova tabela: device_groups
-  - id (uuid, PK)
-  - nome (text)
-  - cor (text, hex color)
-  - ordem (integer)
-  - created_at (timestamptz)
+### 2. Card "Grupo" no `ComputerDetailModal.tsx`
+- Adicionar um novo Card (CARD entre Prédio e Empresa de Elevador) com ícone Layers
+- Select dropdown listando todos os `device_groups` + opção "Sem grupo"
+- Ao selecionar, chama `moveDeviceToGroup(deviceId, groupId)` e atualiza imediatamente
+- Visual idêntico aos cards existentes (bg-module-card, border-module)
 
-Coluna nova em devices:
-  - device_group_id (uuid, FK → device_groups.id, nullable)
-```
+### 3. Atualização em tempo real na `Paineis.tsx`
+- Após `moveDeviceToGroup`, chamar `refresh()` para atualizar a lista
+- O hook `useDeviceGroups` já tem Realtime — os grupos já atualizam sozinhos
+- Adicionar subscription Realtime na tabela `devices` filtrando mudanças em `device_group_id` para reagrupar automaticamente
 
-## Arquivos a criar/modificar
+### 4. Atualização em tempo real no `MonitorPublicPage.tsx`
+- Buscar `device_groups` com polling junto dos devices (já implementado)
+- Garantir que mudanças de grupo reflitam sem reload
 
-### 1. Migration SQL (NOVA)
-- Criar tabela `device_groups` com RLS habilitado
-- Políticas: authenticated pode CRUD, anon pode SELECT (para /monitor)
-- Adicionar coluna `device_group_id` na tabela `devices` com FK
-- Política anon SELECT já existe em devices
-
-### 2. `src/hooks/useDeviceGroups.ts` (NOVO)
-- Hook CRUD para device_groups (similar ao `useOrderGroups.ts`)
-- Funções: fetchGroups, createGroup, updateGroup, deleteGroup, moveDeviceToGroup
-- Realtime subscription na tabela device_groups
-
-### 3. `src/components/monitor/DeviceGroupManager.tsx` (NOVO)
-- Dialog para criar/editar/excluir grupos (reutiliza padrão do `CreateGroupDialog`)
-- Botão "Gerenciar Grupos" no header da página Painéis
-- Lista de grupos com cor, nome, e opções de editar/excluir
-
-### 4. `src/modules/monitoramento-ia/pages/Paineis.tsx` (MODIFICAR)
-- Adicionar botão "Grupos" no header (ao lado dos botões existentes)
-- Agrupar `sortedDevices` por `device_group_id` usando os grupos carregados
-- Renderizar cada grupo como seção colapsável com header colorido (similar ao `OrderGroupHeader`)
-- Seção "Sem grupo" para devices sem grupo atribuído
-- No card de cada device, permitir mover para grupo via menu contextual
-
-### 5. `src/pages/public/MonitorPublicPage.tsx` (MODIFICAR)
-- Buscar `device_groups` junto com devices
-- Agrupar e renderizar por grupo no MonitorDashboard
-- Cada grupo tem header com nome e cor, seção colapsável
-- Manter o visual dark premium existente
-
-### 6. `src/modules/monitoramento-ia/utils/devices.ts` (MODIFICAR)
-- Adicionar `device_group_id` ao interface `Device`
-- Incluir campo no select da `fetchDevices`
-
-## Design Visual
-
-- **Admin (Paineis)**: Grupos como seções colapsáveis com borda lateral colorida (igual pedido_grupos). Botão de configuração abre dialog para CRUD de grupos. Menu no card do device para mover entre grupos.
-- **Monitor Público**: Grupos como seções com título em branco/cinza sobre fundo escuro, separador sutil. Mantém visual premium dark.
+## Arquivos a modificar
+- `src/components/monitor/DeviceGroupManager.tsx` — redesign completo premium
+- `src/modules/monitoramento-ia/components/anydesk/ComputerDetailModal.tsx` — adicionar card de seleção de grupo
+- `src/modules/monitoramento-ia/pages/Paineis.tsx` — passar `refresh` para o modal e reagir a mudanças de grupo
+- `src/pages/public/MonitorPublicPage.tsx` — garantir agrupamento reativo
 
 ## Impacto
-- Nenhuma alteração em funcionalidades existentes
-- Devices sem grupo continuam aparecendo normalmente na seção "Sem grupo"
-- Compatível com ambas as páginas (admin + público)
+- Apenas componentes relacionados a grupos de dispositivos
+- Nenhuma funcionalidade existente alterada
 
