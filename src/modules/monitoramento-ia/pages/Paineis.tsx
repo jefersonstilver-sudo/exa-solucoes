@@ -466,22 +466,45 @@ export const PaineisPage = () => {
       ) : (
         <>
           {/* Visualização: Cards (2 cols mobile) ou Tabela (responsiva) */}
-          {viewMode === 'cards' ? (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6 items-stretch">
-              {sortedDevices.map((device) => (
-                <PanelCard
-                  key={device.id}
-                  device={device}
-                  periodEventsCount={periodEventsMap.get(device.id) || 0}
-                  periodLabel={getPeriodLabel(period)}
-                  incidentStatus={incidentStatusMap.get(device.id) || null}
-                  incidentData={pendingIncidentsMap[device.id] || null}
-                  onClick={() => {
-                    setSelectedDevice(device);
-                    setIsDetailModalOpen(true);
-                  }}
-                />
-              ))}
+           {viewMode === 'cards' ? (
+            <div className="space-y-4">
+              {groupedDevices.map(({ group, devices: groupDevs }) => {
+                const groupKey = group?.id || '__ungrouped__';
+                const isCollapsed = collapsedGroups.has(groupKey);
+                return (
+                  <div key={groupKey}>
+                    {/* Group Header */}
+                    <button
+                      onClick={() => toggleGroupCollapse(groupKey)}
+                      className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border transition-all hover:bg-muted/40 mb-2"
+                      style={{ borderLeftColor: group?.cor || '#6B7280', borderLeftWidth: '4px' }}
+                    >
+                      {isCollapsed ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: group?.cor || '#6B7280' }} />
+                      <span className="font-semibold text-sm text-foreground">{group?.nome || 'Sem grupo'}</span>
+                      <span className="text-xs text-muted-foreground ml-1">({groupDevs.length})</span>
+                    </button>
+                    {!isCollapsed && (
+                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6 items-stretch">
+                        {groupDevs.map((device) => (
+                          <PanelCard
+                            key={device.id}
+                            device={device}
+                            periodEventsCount={periodEventsMap.get(device.id) || 0}
+                            periodLabel={getPeriodLabel(period)}
+                            incidentStatus={incidentStatusMap.get(device.id) || null}
+                            incidentData={pendingIncidentsMap[device.id] || null}
+                            onClick={() => {
+                              setSelectedDevice(device);
+                              setIsDetailModalOpen(true);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <PanelsListView
