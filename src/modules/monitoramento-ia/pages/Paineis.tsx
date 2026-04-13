@@ -135,7 +135,8 @@ export const PaineisPage = () => {
   const [statsOpen, setStatsOpen] = useState(false);
   const [configHorarioOpen, setConfigHorarioOpen] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
-  
+  const [groupManagerOpen, setGroupManagerOpen] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   // Hook de alertas offline
   const { offlineDevices, activeAlerts, dismissAlert } = useOfflineAlerts();
 
