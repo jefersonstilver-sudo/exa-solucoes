@@ -1376,6 +1376,87 @@ export const AlertaPainelOfflineCard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Silence Dialog */}
+      <Dialog open={showSilenceDialog} onOpenChange={setShowSilenceDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <VolumeX className="h-5 w-5 text-purple-600" />
+              Silenciar Painéis
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar painel..."
+                value={silenceSearch}
+                onChange={(e) => setSilenceSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            <div className="max-h-[300px] overflow-y-auto space-y-1 border rounded-lg p-2">
+              {allDevicesForSilence
+                .filter(d => d.name.toLowerCase().includes(silenceSearch.toLowerCase()))
+                .map((device) => (
+                  <label
+                    key={device.id}
+                    className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
+                  >
+                    <Checkbox
+                      checked={selectedToSilence.has(device.id)}
+                      onCheckedChange={(checked) => {
+                        setSelectedToSilence(prev => {
+                          const next = new Set(prev);
+                          if (checked) next.add(device.id);
+                          else next.delete(device.id);
+                          return next;
+                        });
+                      }}
+                    />
+                    <div className="flex items-center gap-2">
+                      <Monitor className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{device.name}</span>
+                    </div>
+                  </label>
+                ))}
+
+              {allDevicesForSilence.filter(d => d.name.toLowerCase().includes(silenceSearch.toLowerCase())).length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  {allDevicesForSilence.length === 0 ? 'Todos os painéis já estão silenciados' : 'Nenhum painel encontrado'}
+                </p>
+              )}
+            </div>
+
+            {selectedToSilence.size > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {selectedToSilence.size} painel(is) selecionado(s)
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSilenceDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={silenceSelectedDevices} 
+              disabled={selectedToSilence.size === 0 || savingSilence}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {savingSilence ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <VolumeX className="h-4 w-4 mr-2" />
+              )}
+              Silenciar {selectedToSilence.size > 0 ? `(${selectedToSilence.size})` : ''}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
