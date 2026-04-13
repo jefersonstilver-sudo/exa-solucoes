@@ -461,10 +461,12 @@ const LoginScreen = ({ onAuth }: { onAuth: () => void }) => {
 // ─── Monitor Dashboard ───
 const MonitorDashboard = () => {
   const [devices, setDevices] = useState<Device[]>([]);
+  const [groups, setGroups] = useState<{ id: string; nome: string; cor: string; ordem: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isPortrait, setIsPortrait] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -489,11 +491,24 @@ const MonitorDashboard = () => {
     }
   }, []);
 
+  const loadGroups = useCallback(async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('device_groups')
+        .select('*')
+        .order('ordem', { ascending: true });
+      if (!error && data) setGroups(data);
+    } catch (err) {
+      console.error('[MonitorPublic] Erro ao buscar grupos:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadDevices();
+    loadGroups();
     const id = setInterval(loadDevices, POLLING_MS);
     return () => clearInterval(id);
-  }, [loadDevices]);
+  }, [loadDevices, loadGroups]);
 
   useEffect(() => {
     const channel = supabase
@@ -510,6 +525,22 @@ const MonitorDashboard = () => {
       return 0;
     });
   }, [devices]);
+
+  // Group devices
+  const groupedDevices = useMemo(() => {
+    const grouped = new Map<string | null, Device[]>();
+    for (const device of sortedDevices) {
+      const gid = (device as any).device_group_id || null;
+      if (!grouped.has(gid)) grouped.set(gid, []);
+      grouped.get(gid)!.push(device);
+    }
+    const result: { group: typeof groups[0] | null; devices: Device[] }[] = [];
+    for (const g of groups) {
+      if (grouped.has(g.id)) result.push({ group: g, devices: grouped.get(g.id)! });
+    }
+    if (grouped.has(null)) result.push({ group: null, devices: grouped.get(null)! });
+    return result;
+  }, [sortedDevices, groups]);
 
   const onlineCount = useMemo(() => devices.filter((d) => d.status === 'online').length, [devices]);
   const offlineCount = devices.length - onlineCount;
