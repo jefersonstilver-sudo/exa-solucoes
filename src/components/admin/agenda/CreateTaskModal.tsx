@@ -758,6 +758,22 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
 
       <EventTypeManagerModal open={eventTypeManagerOpen} onOpenChange={setEventTypeManagerOpen} />
 
+      {/* Título da Tarefa - Em destaque no topo */}
+      <div className="space-y-2 p-3 rounded-xl bg-primary/5 border border-primary/15">
+        <Label htmlFor="titulo" className="flex items-center gap-1.5 text-sm font-semibold">
+          <FileText className="h-3.5 w-3.5 text-primary" />
+          Título *
+        </Label>
+        <Input
+          id="titulo"
+          value={titulo}
+          onChange={(e) => setTitulo(e.target.value)}
+          placeholder={tipoEvento === 'reuniao' ? 'Assunto da reunião' : tipoEvento === 'compromisso' ? 'Descrição do compromisso' : tipoEvento === 'aviso' ? 'Título do aviso' : 'O que precisa ser feito?'}
+          className="h-12 text-base font-medium border-primary/20 focus-visible:ring-primary/30"
+          autoFocus
+        />
+      </div>
+
       {/* Subtipo Reunião */}
       {tipoEvento === 'reuniao' && (
         <div className="space-y-2">
@@ -933,18 +949,7 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
         </div>
       )}
 
-      {/* Título da Tarefa */}
-      <div className="space-y-2">
-        <Label htmlFor="titulo">Título *</Label>
-        <Input
-          id="titulo"
-          value={titulo}
-          onChange={(e) => setTitulo(e.target.value)}
-          placeholder={tipoEvento === 'reuniao' ? 'Assunto da reunião' : tipoEvento === 'compromisso' ? 'Descrição do compromisso' : tipoEvento === 'aviso' ? 'Título do aviso' : 'O que precisa ser feito?'}
-          className="h-11"
-          autoFocus
-        />
-      </div>
+      {/* Título movido para o topo do formulário */}
 
       {/* Datas e Hora */}
       <div className="space-y-2">
