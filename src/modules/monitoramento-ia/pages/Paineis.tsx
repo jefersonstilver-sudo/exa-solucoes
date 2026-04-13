@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, Maximize2, Clock, MapPin } from 'lucide-react';
+import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, Maximize2, Clock, MapPin, Link2 } from 'lucide-react';
 import {
   Device,
   calculateDeviceStats,
