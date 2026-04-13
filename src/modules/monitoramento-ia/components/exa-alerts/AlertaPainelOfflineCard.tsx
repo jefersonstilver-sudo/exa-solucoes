@@ -1038,6 +1038,81 @@ export const AlertaPainelOfflineCard = () => {
                     </CollapsibleContent>
                   </Collapsible>
 
+                  {/* SILENCED DEVICES SECTION */}
+                  <Collapsible open={isSilencedOpen} onOpenChange={setIsSilencedOpen}>
+                    <CollapsibleTrigger 
+                      className="flex items-center justify-between w-full p-4 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-2">
+                        <VolumeX className="h-4 w-4 text-purple-600" />
+                        <span className="font-semibold text-sm">Painéis Silenciados</span>
+                        <Badge variant="secondary" className="text-xs bg-purple-500/20">
+                          {silencedDevices.length}
+                        </Badge>
+                      </div>
+                      {isSilencedOpen ? (
+                        <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent className="mt-4 space-y-3">
+                      <p className="text-xs text-muted-foreground">
+                        Painéis silenciados continuam no monitor, mas não enviam notificações WhatsApp.
+                      </p>
+
+                      {silencedDevices.length > 0 && (
+                        <div className="space-y-2">
+                          <AnimatePresence>
+                            {silencedDevices.map((device) => (
+                              <motion.div
+                                key={device.device_id}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 10 }}
+                                className="flex items-center justify-between p-3 bg-purple-500/5 border border-purple-500/20 rounded-lg"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <VolumeX className="h-4 w-4 text-purple-500" />
+                                  <div>
+                                    <p className="text-sm font-medium">{device.device_name}</p>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                  onClick={() => unsilenceDevice(device.device_id)}
+                                  title="Reativar notificações"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </motion.div>
+                            ))}
+                          </AnimatePresence>
+                        </div>
+                      )}
+
+                      {silencedDevices.length === 0 && (
+                        <div className="text-center py-4 text-muted-foreground">
+                          <VolumeX className="h-6 w-6 mx-auto mb-1 opacity-40" />
+                          <p className="text-xs">Nenhum painel silenciado</p>
+                        </div>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        className="w-full border-dashed border-purple-500/50 text-purple-600 hover:bg-purple-500/10"
+                        onClick={openSilenceDialog}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Silenciar Painéis
+                      </Button>
+                    </CollapsibleContent>
+                  </Collapsible>
+
                   {/* CONFIRMATIONS SECTION - Who clicked the buttons */}
                   <Collapsible open={isConfirmationsOpen} onOpenChange={setIsConfirmationsOpen}>
                     <CollapsibleTrigger 
