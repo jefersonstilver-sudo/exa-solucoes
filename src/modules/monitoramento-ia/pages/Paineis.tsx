@@ -598,6 +598,16 @@ export const PaineisPage = () => {
         paineis={devices}
       />
 
+      {/* Dialog Gerenciar Grupos */}
+      <DeviceGroupManager
+        open={groupManagerOpen}
+        onOpenChange={setGroupManagerOpen}
+        groups={deviceGroups}
+        onCreateGroup={createGroup}
+        onUpdateGroup={updateGroup}
+        onDeleteGroup={deleteGroup}
+      />
+
       {/* Modal do Mapa */}
       <AnimatePresence>
         {isMapOpen && (
