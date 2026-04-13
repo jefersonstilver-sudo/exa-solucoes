@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, Maximize2, Clock, MapPin, Link2 } from 'lucide-react';
+import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, ChevronUp, Maximize2, Clock, MapPin, Link2, Layers } from 'lucide-react';
 import {
   Device,
   calculateDeviceStats,
@@ -29,6 +29,8 @@ import { MobileHeader } from '../components/MobileHeader';
 import { PeriodSelector, PeriodType } from '../components/PeriodSelector';
 import { ConfigHorarioDialog } from '@/components/admin/paineis-exa/ConfigHorarioDialog';
 import { PaineisMapModal } from '../components/paineis/PaineisMapModal';
+import { useDeviceGroups } from '@/hooks/useDeviceGroups';
+import { DeviceGroupManager } from '@/components/monitor/DeviceGroupManager';
 
 // Compact Stat Icon Component for mobile
 const CompactStatIcon = ({ icon: Icon, value, color, label }: { 
