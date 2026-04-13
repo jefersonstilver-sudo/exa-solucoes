@@ -394,13 +394,26 @@ export const PaineisPage = () => {
         </div>
         <div className="flex items-center justify-between gap-2">
           <ViewToggle view={viewMode} onViewChange={setViewMode} />
-          <button
-            onClick={() => setIsFullscreen(true)}
-            className="p-2.5 lg:p-3 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors shadow-sm"
-            title="Modo Monitor (Tela Cheia)"
-          >
-            <Maximize2 className="w-4 h-4 lg:w-5 lg:h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const url = generatePublicUrl('/monitor');
+                navigator.clipboard.writeText(url);
+                toast.success('Link copiado!', { description: url });
+              }}
+              className="p-2.5 lg:p-3 bg-muted hover:bg-muted/80 text-foreground rounded-lg transition-colors border border-border shadow-sm"
+              title="Copiar link do Monitor Público"
+            >
+              <Link2 className="w-4 h-4 lg:w-5 lg:h-5" />
+            </button>
+            <button
+              onClick={() => setIsFullscreen(true)}
+              className="p-2.5 lg:p-3 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors shadow-sm"
+              title="Modo Monitor (Tela Cheia)"
+            >
+              <Maximize2 className="w-4 h-4 lg:w-5 lg:h-5" />
+            </button>
+          </div>
         </div>
       </div>
 
