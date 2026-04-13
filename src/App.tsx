@@ -227,6 +227,13 @@ const AppContent = () => {
             </Suspense>
           } />
           
+          {/* MONITOR PÚBLICO - Página de monitoramento com senha */}
+          <Route path="/monitor" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando monitor..." />}>
+              <MonitorPublicPage />
+            </Suspense>
+          } />
+          
           {/* ROTAS PÚBLICAS DE EXIBIÇÃO - Novo padrão com nome+código */}
           
           {/* Relatório Público VAR - Sem autenticação */}
