@@ -1070,21 +1070,21 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                 <div className="space-y-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5"><MapPin className="h-3 w-3" /> Local / Endereço</Label>
-                    <Input value={localEvento} onChange={(e) => setLocalEvento(e.target.value)} placeholder="Endereço, sala, link Google Maps..." className="h-9" disabled={localEvento === 'Escritório Indexa'} />
-                    {/* Checkbox Escritório Indexa */}
+                    <Input value={localEvento} onChange={(e) => setLocalEvento(e.target.value)} placeholder="Endereço, sala, link Google Maps..." className="h-9" disabled={localEvento === 'Escritório EXA MÍDIA'} />
+                    {/* Checkbox Escritório EXA MÍDIA */}
                     <label
                       className={cn(
                         "flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-all",
-                        localEvento === 'Escritório Indexa'
+                        localEvento === 'Escritório EXA MÍDIA'
                           ? "bg-primary/15 border-primary/40 shadow-sm"
                           : "bg-primary/5 border-primary/20 hover:bg-primary/10"
                       )}
                     >
                       <Checkbox
-                        checked={localEvento === 'Escritório Indexa'}
+                        checked={localEvento === 'Escritório EXA MÍDIA'}
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setLocalEvento('Escritório Indexa');
+                            setLocalEvento('Escritório EXA MÍDIA');
                           } else {
                             setLocalEvento('');
                           }
@@ -1092,8 +1092,8 @@ const EditTaskModal = ({ open, onOpenChange, task }: EditTaskModalProps) => {
                         className="h-5 w-5"
                       />
                       <div>
-                        <span className="font-semibold text-sm text-primary">📍 Local no Escritório Indexa</span>
-                        <p className="text-xs text-muted-foreground mt-0.5">Rua Bartolomeu de Gusmão, 901 — Foz do Iguaçu</p>
+                        <span className="font-semibold text-sm text-primary">📍 Local no Escritório EXA MÍDIA</span>
+                        <p className="text-xs text-muted-foreground mt-0.5">Av. Paraná, 974 - Sala 03, Andar 03 - Centro, Foz do Iguaçu - PR</p>
                       </div>
                     </label>
                   </div>
