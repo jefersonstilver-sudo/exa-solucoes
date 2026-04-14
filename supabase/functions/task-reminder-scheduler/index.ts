@@ -149,7 +149,10 @@ serve(async (req) => {
               msg += `${num} *${time}* — ${icon} ${t.titulo}\n`;
               if (t.local_evento) {
                 msg += `   📍 ${t.local_evento}\n`;
-                msg += `   🗺️ Ver no Maps: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t.local_evento)}\n`;
+                const ml = t.local_evento === 'Escritório Indexa'
+                  ? 'https://maps.app.goo.gl/g5zDXfK66siRq6W76'
+                  : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t.local_evento)}`;
+                msg += `   🗺️ Ver no Maps: ${ml}\n`;
               }
               if (t.link_reuniao) msg += `   🔗 ${t.link_reuniao}\n`;
               if (t.descricao) msg += `   📝 ${t.descricao}\n`;
@@ -495,7 +498,10 @@ function buildMessage(task: any, minutesBefore: number, typeMap: Record<string, 
   message += `📁 ${eventLabel}\n`;
   if (task.local_evento) {
     message += `📍 ${task.local_evento}\n`;
-    message += `🗺️ Ver no Maps: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(task.local_evento)}\n`;
+    const mapsLink = task.local_evento === 'Escritório Indexa'
+      ? 'https://maps.app.goo.gl/g5zDXfK66siRq6W76'
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(task.local_evento)}`;
+    message += `🗺️ Ver no Maps: ${mapsLink}\n`;
   }
   if (task.link_reuniao) message += `🔗 ${task.link_reuniao}\n`;
   if (task.descricao) message += `\n📝 ${task.descricao}\n`;

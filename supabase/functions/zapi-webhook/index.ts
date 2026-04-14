@@ -383,7 +383,10 @@ serve(async (req) => {
           if (buildingName) receiptMsg += `🏢 ${buildingName}\n`;
           if (taskData?.local_evento) {
             receiptMsg += `📍 ${taskData.local_evento}\n`;
-            receiptMsg += `🗺️ Ver no Maps: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(taskData.local_evento)}\n`;
+            const mapsLink1 = taskData.local_evento === 'Escritório Indexa'
+              ? 'https://maps.app.goo.gl/g5zDXfK66siRq6W76'
+              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(taskData.local_evento)}`;
+            receiptMsg += `🗺️ Ver no Maps: ${mapsLink1}\n`;
           }
           if (taskData?.link_reuniao) receiptMsg += `🔗 ${taskData.link_reuniao}\n`;
           if (taskData?.descricao) receiptMsg += `📝 ${taskData.descricao}\n`;
@@ -781,7 +784,10 @@ serve(async (req) => {
           if (buildingName) receiptMsg += `🏢 ${buildingName}\n`;
           if (taskData?.local_evento) {
             receiptMsg += `📍 ${taskData.local_evento}\n`;
-            receiptMsg += `🗺️ Ver no Maps: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(taskData.local_evento)}\n`;
+            const mapsLink2 = taskData.local_evento === 'Escritório Indexa'
+              ? 'https://maps.app.goo.gl/g5zDXfK66siRq6W76'
+              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(taskData.local_evento)}`;
+            receiptMsg += `🗺️ Ver no Maps: ${mapsLink2}\n`;
           }
           if (taskData?.link_reuniao) receiptMsg += `🔗 ${taskData.link_reuniao}\n`;
           if (taskData?.descricao) receiptMsg += `📝 ${taskData.descricao}\n`;
