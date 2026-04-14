@@ -472,6 +472,7 @@ const MonitorDashboard = () => {
   const [isPortrait, setIsPortrait] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const { incidentStatusMap } = useDeviceIncidentStatus(devices);
 
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -694,6 +695,7 @@ const MonitorDashboard = () => {
                             device={device}
                             compact={gridConfig.compact}
                             onClick={() => setSelectedDevice(device)}
+                            hasCauseDefined={incidentStatusMap.get(device.id) === 'causa_registrada'}
                           />
                         ))}
                       </div>
