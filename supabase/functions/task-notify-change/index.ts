@@ -157,7 +157,7 @@ serve(async (req) => {
     // Append extra info
     if (finalLocal) {
       message += `\n📍 ${finalLocal}`;
-      const mapsLink = finalLocal === 'Escritório Indexa'
+      const mapsLink = finalLocal === 'Escritório EXA MÍDIA'
         ? 'https://maps.app.goo.gl/g5zDXfK66siRq6W76'
         : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalLocal)}`;
       message += `\n🗺️ Ver no Maps: ${mapsLink}`;

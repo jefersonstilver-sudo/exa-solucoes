@@ -929,22 +929,22 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
           onClear={() => { setLocalEvento(''); }}
           placeholder="Buscar local (ex: Hotel Viale, Shopping JL...)"
           className="h-11"
-          disabled={localEvento === 'Escritório Indexa'}
+          disabled={localEvento === 'Escritório EXA MÍDIA'}
         />
-        {/* Checkbox Escritório Indexa */}
+        {/* Checkbox Escritório EXA MÍDIA */}
         <label
           className={cn(
             "flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-all",
-            localEvento === 'Escritório Indexa'
+            localEvento === 'Escritório EXA MÍDIA'
               ? "bg-primary/15 border-primary/40 shadow-sm"
               : "bg-primary/5 border-primary/20 hover:bg-primary/10"
           )}
         >
           <Checkbox
-            checked={localEvento === 'Escritório Indexa'}
+            checked={localEvento === 'Escritório EXA MÍDIA'}
             onCheckedChange={(checked) => {
               if (checked) {
-                setLocalEvento('Escritório Indexa');
+                setLocalEvento('Escritório EXA MÍDIA');
               } else {
                 setLocalEvento('');
               }
@@ -952,8 +952,8 @@ const CreateTaskModal = ({ open, onOpenChange }: CreateTaskModalProps) => {
             className="h-5 w-5"
           />
           <div>
-            <span className="font-semibold text-sm text-primary">📍 Local no Escritório Indexa</span>
-            <p className="text-xs text-muted-foreground mt-0.5">Rua Bartolomeu de Gusmão, 901 — Foz do Iguaçu</p>
+            <span className="font-semibold text-sm text-primary">📍 Local no Escritório EXA MÍDIA</span>
+            <p className="text-xs text-muted-foreground mt-0.5">Av. Paraná, 974 - Sala 03, Andar 03 - Centro, Foz do Iguaçu - PR</p>
           </div>
         </label>
       </div>

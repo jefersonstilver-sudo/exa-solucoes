@@ -97,7 +97,7 @@ function buildRichMessage(params: {
   // Local (para reuniões)
   if (params.local_evento) {
     message += `📍 Local: ${params.local_evento}\n`;
-    const mapsLink = params.local_evento === 'Escritório Indexa'
+    const mapsLink = params.local_evento === 'Escritório EXA MÍDIA'
       ? 'https://maps.app.goo.gl/g5zDXfK66siRq6W76'
       : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(params.local_evento)}`;
     message += `🗺️ Ver no Maps: ${mapsLink}\n`;

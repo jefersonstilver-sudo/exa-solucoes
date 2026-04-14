@@ -89,7 +89,7 @@ serve(async (req) => {
     }
     if (local_evento) {
       message += `📍 Local: ${local_evento}\n`;
-      const mapsLink = local_evento === 'Escritório Indexa'
+      const mapsLink = local_evento === 'Escritório EXA MÍDIA'
         ? 'https://maps.app.goo.gl/g5zDXfK66siRq6W76'
         : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(local_evento)}`;
       message += `🗺️ Ver no Maps: ${mapsLink}\n`;
