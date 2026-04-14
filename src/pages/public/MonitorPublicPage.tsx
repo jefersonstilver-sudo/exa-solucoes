@@ -299,7 +299,7 @@ const DeviceIncidentModal = ({ device, onClose }: { device: Device; onClose: () 
 };
 
 // ─── Monitor Card ───
-const MonitorCard = ({ device, compact, onClick }: { device: Device; compact: boolean; onClick: () => void }) => {
+const MonitorCard = ({ device, compact, onClick, hasCauseDefined }: { device: Device; compact: boolean; onClick: () => void; hasCauseDefined: boolean }) => {
   const displayName = (device.comments || device.name).split(' - ')[0].trim();
   const provider = device.provider || 'Sem provedor';
   const elapsed = useRealtimeCounter(device.last_online_at);
@@ -313,6 +313,8 @@ const MonitorCard = ({ device, compact, onClick }: { device: Device; compact: bo
     return 'text-white/90';
   };
 
+  const showYellowArc = !isOnline && hasCauseDefined;
+
   return (
     <div
       onClick={onClick}
@@ -320,7 +322,9 @@ const MonitorCard = ({ device, compact, onClick }: { device: Device; compact: bo
         'relative overflow-hidden rounded-2xl h-full transition-all duration-300 cursor-pointer',
         isOnline
           ? 'bg-green-950/90 border-2 border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.2)] hover:border-green-400'
-          : 'bg-red-950/90 border-2 border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.4)] animate-pulse hover:border-red-400'
+          : showYellowArc
+            ? 'bg-red-950/90 border-2 border-amber-400/60 shadow-[0_0_20px_rgba(251,191,36,0.25)] hover:border-amber-300'
+            : 'bg-red-950/90 border-2 border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.4)] animate-pulse hover:border-red-400'
       )}
       style={{ backgroundColor: isOnline ? 'rgba(5,46,22,0.9)' : 'rgba(69,10,10,0.9)' }}
     >
