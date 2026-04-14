@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { Device, fetchDevices } from '@/modules/monitoramento-ia/utils/devices';
 import { DeviceIncident, useIncidentCategories } from '@/modules/monitoramento-ia/hooks/useDeviceIncidents';
+import { useDeviceIncidentStatus } from '@/modules/monitoramento-ia/hooks/useDeviceIncidentStatus';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
 
