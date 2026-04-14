@@ -1,37 +1,50 @@
 
 
-# Painéis Silenciosos — Silenciar Notificações WhatsApp por Dispositivo
-
-## Contexto
-Já existe a tabela `device_alert_configs` com o campo `alerts_enabled` (boolean), e a edge function `monitor-panels` já ignora devices com `alerts_enabled = false`. Falta apenas a **interface** para gerenciar isso dentro do card "Alerta Painel Offline".
+# Checkbox "Escritório Indexa" no Local do Evento
 
 ## O que será feito
 
-Adicionar uma nova seção colapsável **"Painéis Silenciados"** dentro do `AlertaPainelOfflineCard.tsx`, abaixo das regras e destinatários. Essa seção:
-
-1. **Lista os painéis atualmente silenciados** (onde `alerts_enabled = false` na `device_alert_configs`)
-2. **Botão "+" abre um Dialog** com a lista de todos os devices ativos, permitindo selecionar um ou mais painéis para silenciar (multi-select com checkboxes)
-3. **Permite remover o silêncio** clicando no X ao lado de cada painel silenciado
-4. Os painéis silenciados continuam aparecendo normalmente no monitor interno e no `/monitor` público — apenas as notificações WhatsApp são suprimidas
+Adicionar um checkbox destacado abaixo do campo "Local do Evento" em ambos os modais (criar e editar tarefa). Quando marcado, preenche automaticamente o local com "Escritório Indexa" e garante que o link fixo `https://maps.app.goo.gl/g5zDXfK66siRq6W76` seja enviado nas notificações WhatsApp. Visível em **todos os tipos de evento** (não apenas reunião).
 
 ## Arquivos a modificar
 
-### `src/modules/monitoramento-ia/components/exa-alerts/AlertaPainelOfflineCard.tsx`
-- Adicionar estado: `silencedDevices`, `allDevices`, `showSilenceDialog`, `selectedToSilence`
-- No `loadData()`: buscar `device_alert_configs` onde `alerts_enabled = false` + join com `devices` para nome
-- Buscar todos os devices ativos para o dialog de seleção
-- Nova seção colapsável "Painéis Silenciados" com ícone `VolumeX`:
-  - Lista de painéis silenciados com badge e botão de remover
-  - Botão "+" para abrir dialog
-- Dialog de seleção:
-  - Lista de devices com checkbox, nome e condomínio
-  - Busca/filtro por texto
-  - Botão "Silenciar Selecionados"
-  - Ao confirmar: faz upsert em `device_alert_configs` com `alerts_enabled: false`
-- Ao remover silêncio: atualiza `alerts_enabled: true` na `device_alert_configs`
+### 1. `src/components/admin/agenda/CreateTaskModal.tsx`
+- Adicionar estado `isIndexa` (boolean, default false)
+- Abaixo do `AddressAutocomplete`, inserir checkbox estilizado com label em destaque:
+  - Checkbox + "📍 Local no Escritório Indexa" com fundo highlight (`bg-primary/10 border border-primary/30 rounded-lg p-3`)
+  - Quando marcado: seta `localEvento = "Escritório Indexa"` e desabilita o campo de endereço
+  - Quando desmarcado: limpa `localEvento` e reabilita o campo
+- Ao carregar, se `localEvento === "Escritório Indexa"`, marca o checkbox automaticamente
+
+### 2. `src/components/admin/agenda/EditTaskModal.tsx`
+- Mesma lógica: checkbox "Escritório Indexa" abaixo do campo Local/Endereço
+- Ao carregar task, se `local_evento === "Escritório Indexa"`, marca checkbox
+
+### 3. Edge Functions (notificações WhatsApp)
+Nos 4 arquivos que geram links de Maps a partir de `local_evento`:
+- `supabase/functions/task-notify-created/index.ts`
+- `supabase/functions/task-notify-change/index.ts`
+- `supabase/functions/task-reminder-scheduler/index.ts`
+- `supabase/functions/zapi-webhook/index.ts`
+
+Adicionar verificação: se `local_evento === "Escritório Indexa"`, usar o link fixo `https://maps.app.goo.gl/g5zDXfK66siRq6W76` em vez do link auto-gerado `https://www.google.com/maps/search/?api=1&query=...`.
+
+## Exemplo visual do checkbox
+
+```text
+┌─────────────────────────────────────────┐
+│ 📍 Local do Evento                     │
+│ [  Buscar local (ex: Hotel Viale...)  ] │
+│                                         │
+│ ┌─────────────────────────────────────┐ │
+│ │ ☑ 📍 Local no Escritório Indexa    │ │
+│ │    Rua ..., Foz do Iguaçu          │ │
+│ └─────────────────────────────────────┘ │
+└─────────────────────────────────────────┘
+```
 
 ## Impacto
-- Apenas o componente `AlertaPainelOfflineCard.tsx` será modificado
-- Nenhuma migration necessária (tabela já existe)
-- A edge function já respeita o `alerts_enabled` — zero alteração no backend
+- Nenhuma alteração em funcionalidades existentes
+- Nenhuma migration necessária
+- Checkbox visível em todos os tipos de evento
 
