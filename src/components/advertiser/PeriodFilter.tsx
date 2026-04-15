@@ -2,18 +2,12 @@ import React, { useState } from 'react';
 import { Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { format, subDays } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export interface DateRange {
@@ -23,121 +17,118 @@ export interface DateRange {
 
 interface PeriodFilterProps {
   onPeriodChange: (range: DateRange) => void;
-  defaultPeriod?: 'today' | '10d' | '15d' | '30d';
+  defaultPeriod?: 'today' | '7d' | '15d' | '30d';
 }
+
+const quickPeriods = [
+  { id: 'today', label: 'Hoje', days: 0 },
+  { id: '7d', label: '7 dias', days: 7 },
+  { id: '15d', label: '15 dias', days: 15 },
+  { id: '30d', label: '30 dias', days: 30 },
+] as const;
 
 export const PeriodFilter = ({ onPeriodChange, defaultPeriod = '30d' }: PeriodFilterProps) => {
   const [selectedPeriod, setSelectedPeriod] = useState<string>(defaultPeriod);
-  const [customRange, setCustomRange] = useState<DateRange | null>(null);
-  const [isCustomOpen, setIsCustomOpen] = useState(false);
+  const [customStart, setCustomStart] = useState<Date | undefined>();
+  const [customEnd, setCustomEnd] = useState<Date | undefined>();
+  const [isOpen, setIsOpen] = useState(false);
 
-  const periods = [
-    { id: 'today', label: 'Hoje', days: 0 },
-    { id: '10d', label: 'Últimos 10 dias', days: 10 },
-    { id: '15d', label: 'Últimos 15 dias', days: 15 },
-    { id: '30d', label: 'Últimos 30 dias', days: 30 },
-  ];
-
-  const handlePeriodSelect = (periodId: string, days: number) => {
+  const applyPeriod = (periodId: string, days: number) => {
     setSelectedPeriod(periodId);
-    const end = new Date();
-    const start = subDays(end, days);
-    onPeriodChange({ start, end });
+    if (days === 0) {
+      onPeriodChange({ start: startOfDay(new Date()), end: endOfDay(new Date()) });
+    } else {
+      onPeriodChange({ start: startOfDay(subDays(new Date(), days)), end: endOfDay(new Date()) });
+    }
+    setIsOpen(false);
   };
 
-  const handleCustomRangeApply = () => {
-    if (customRange) {
+  const applyCustomRange = () => {
+    if (customStart && customEnd) {
       setSelectedPeriod('custom');
-      onPeriodChange(customRange);
-      setIsCustomOpen(false);
+      onPeriodChange({ start: startOfDay(customStart), end: endOfDay(customEnd) });
+      setIsOpen(false);
     }
   };
 
-  const getCurrentLabel = () => {
-    if (selectedPeriod === 'custom' && customRange) {
-      return `${format(customRange.start, 'dd/MM/yy', { locale: ptBR })} - ${format(customRange.end, 'dd/MM/yy', { locale: ptBR })}`;
+  const getLabel = () => {
+    if (selectedPeriod === 'custom' && customStart && customEnd) {
+      return `${format(customStart, 'dd/MM/yy', { locale: ptBR })} - ${format(customEnd, 'dd/MM/yy', { locale: ptBR })}`;
     }
-    return periods.find(p => p.id === selectedPeriod)?.label || 'Selecionar período';
+    const found = quickPeriods.find(p => p.id === selectedPeriod);
+    if (found) {
+      return found.id === 'today' ? 'Hoje' : `Últimos ${found.days} dias`;
+    }
+    return 'Selecionar período';
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            className="bg-background hover:bg-accent border-border/40 shadow-sm"
-          >
-            <Calendar className="w-4 h-4 mr-2 text-[#9C1E1E]" />
-            {getCurrentLabel()}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          {periods.map((period) => (
-            <DropdownMenuItem
-              key={period.id}
-              onClick={() => handlePeriodSelect(period.id, period.days)}
-              className={selectedPeriod === period.id ? 'bg-accent' : ''}
-            >
-              {period.label}
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuItem onClick={() => setIsCustomOpen(true)}>
-            Período Personalizado
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className="bg-background hover:bg-accent border-border/40 shadow-sm"
+        >
+          <Calendar className="w-4 h-4 mr-2 text-[#9C1E1E]" />
+          {getLabel()}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-4" align="end">
+        <div className="space-y-4">
+          {/* Quick select buttons */}
+          <div className="flex flex-wrap gap-2">
+            {quickPeriods.map((p) => (
+              <Button
+                key={p.id}
+                variant={selectedPeriod === p.id ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => applyPeriod(p.id, p.days)}
+                className={selectedPeriod === p.id ? 'bg-[#9C1E1E] hover:bg-[#7A1717] text-white' : ''}
+              >
+                {p.label}
+              </Button>
+            ))}
+          </div>
 
-      <Popover open={isCustomOpen} onOpenChange={setIsCustomOpen}>
-        <PopoverTrigger asChild>
-          <div />
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="end">
-          <div className="p-4 space-y-4">
-            <h4 className="font-medium text-sm">Selecione o período</h4>
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground">Data Início</label>
-              <CalendarComponent
-                mode="single"
-                selected={customRange?.start}
-                onSelect={(date) => {
-                  if (date) {
-                    setCustomRange(prev => ({
-                      start: date,
-                      end: prev?.end || new Date()
-                    }));
-                  }
-                }}
-                locale={ptBR}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground">Data Fim</label>
-              <CalendarComponent
-                mode="single"
-                selected={customRange?.end}
-                onSelect={(date) => {
-                  if (date) {
-                    setCustomRange(prev => ({
-                      start: prev?.start || subDays(date, 30),
-                      end: date
-                    }));
-                  }
-                }}
-                disabled={(date) => customRange?.start ? date < customRange.start : false}
-                locale={ptBR}
-              />
+          {/* Separator */}
+          <div className="border-t border-border" />
+
+          {/* Custom range */}
+          <div>
+            <h4 className="text-sm font-medium mb-3">Período personalizado</h4>
+            <div className="flex gap-4">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Início</label>
+                <CalendarComponent
+                  mode="single"
+                  selected={customStart}
+                  onSelect={setCustomStart}
+                  locale={ptBR}
+                  className="pointer-events-auto"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Fim</label>
+                <CalendarComponent
+                  mode="single"
+                  selected={customEnd}
+                  onSelect={setCustomEnd}
+                  disabled={(date) => customStart ? date < customStart : false}
+                  locale={ptBR}
+                  className="pointer-events-auto"
+                />
+              </div>
             </div>
             <Button
-              onClick={handleCustomRangeApply}
-              disabled={!customRange?.start || !customRange?.end}
-              className="w-full bg-[#9C1E1E] hover:bg-[#7A1717]"
+              onClick={applyCustomRange}
+              disabled={!customStart || !customEnd}
+              className="w-full mt-3 bg-[#9C1E1E] hover:bg-[#7A1717]"
             >
               Aplicar
             </Button>
           </div>
-        </PopoverContent>
-      </Popover>
-    </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };

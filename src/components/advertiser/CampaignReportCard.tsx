@@ -145,14 +145,13 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
                 } />
               
             </div>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                {formatDate(campaign.dataInicio)} → {formatDate(campaign.dataFim)}
+                Contrato: {formatDate(campaign.dataInicio)} → {formatDate(campaign.dataFim)}
               </span>
-              <span className="flex items-center gap-1">
-                <TrendingUp className="w-4 h-4" />
-                {campaign.diasAtivos} dias ativos
+              <span className="text-xs bg-accent/50 px-2 py-0.5 rounded-full">
+                Período analisado: {campaign.diasAtivos} {campaign.diasAtivos === 1 ? 'dia' : 'dias'}
               </span>
             </div>
           </CollapsibleTrigger>
