@@ -19,6 +19,7 @@ export interface CampaignPDFData {
     duracao: number;
     horasExibidas: number;
     approvalStatus: string;
+    scheduleInfo?: string;
   }[];
   predios: {
     nome: string;
