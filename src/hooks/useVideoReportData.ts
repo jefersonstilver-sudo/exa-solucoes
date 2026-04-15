@@ -112,33 +112,29 @@ const formatScheduleInfo = (
   selectedForDisplay: boolean, 
   rules: ScheduleRule[]
 ): string => {
-  if (!isActive || !selectedForDisplay) {
-    return 'Inativo';
+  const activeRules = (rules || []).filter(r => r.is_active);
+  
+  // Se tem regras de agendamento ativas, mostrar o agendamento independente de is_active
+  if (activeRules.length > 0) {
+    const rule = activeRules[0];
+    
+    if (rule.is_all_day) {
+      const days = rule.days_of_week?.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ');
+      return `Agendado: ${days} (dia todo)`;
+    }
+    
+    if (rule.start_time && rule.end_time) {
+      const days = rule.days_of_week?.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ');
+      return `Agendado: ${days} ${rule.start_time.substring(0, 5)}-${rule.end_time.substring(0, 5)}`;
+    }
   }
   
-  if (!rules || rules.length === 0) {
+  // Sem regras de agendamento
+  if (isActive && selectedForDisplay) {
     return '24/7';
   }
   
-  const activeRules = rules.filter(r => r.is_active);
-  if (activeRules.length === 0) {
-    return '24/7';
-  }
-  
-  // Pegar primeira regra para mostrar
-  const rule = activeRules[0];
-  
-  if (rule.is_all_day) {
-    const days = rule.days_of_week?.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ');
-    return `Agendado: ${days} (dia todo)`;
-  }
-  
-  if (rule.start_time && rule.end_time) {
-    const days = rule.days_of_week?.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ');
-    return `Agendado: ${days} ${rule.start_time.substring(0, 5)}-${rule.end_time.substring(0, 5)}`;
-  }
-  
-  return '24/7';
+  return 'Inativo';
 };
 
 
@@ -306,14 +302,12 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           const allPedidoIdsForBuilding = (allPedidosForBuilding || []).map(p => p.id);
 
           if (allPedidoIdsForBuilding.length > 0) {
-            // Buscar todos os vídeos ativos/aprovados/em exibição neste prédio
+            // Buscar todos os vídeos aprovados neste prédio (ativos OU com agendamento)
             const { data: allActiveVideos } = await supabase
               .from('pedido_videos')
-              .select('video_id, videos(duracao)')
+              .select('video_id, is_active, selected_for_display, videos(duracao)')
               .in('pedido_id', allPedidoIdsForBuilding)
-              .eq('approval_status', 'approved')
-              .eq('selected_for_display', true)
-              .eq('is_active', true);
+              .eq('approval_status', 'approved');
 
             const totalCycleDuration = (allActiveVideos || []).reduce(
               (sum, v) => sum + ((v.videos as any)?.duracao || 10), 0
