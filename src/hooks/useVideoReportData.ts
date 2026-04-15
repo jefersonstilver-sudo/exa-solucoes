@@ -286,7 +286,7 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           ? new Date(Math.min(dataMaxima.getTime(), dateRange.end.getTime()))
           : dataMaxima;
         
-        const diasAtivos = Math.max(0, Math.floor((filteredEnd.getTime() - filteredStart.getTime()) / (1000 * 60 * 60 * 24)));
+        const diasAtivos = Math.max(1, Math.floor((filteredEnd.getTime() - filteredStart.getTime()) / (1000 * 60 * 60 * 24)));
         const diasRestantes = Math.max(0, Math.floor((dataFim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)));
         const totalDias = Math.floor((dataFim.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24));
         const progress = totalDias > 0 ? Math.min(100, (diasAtivos / totalDias) * 100) : 0;
