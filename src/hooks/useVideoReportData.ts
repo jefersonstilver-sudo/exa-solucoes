@@ -112,33 +112,29 @@ const formatScheduleInfo = (
   selectedForDisplay: boolean, 
   rules: ScheduleRule[]
 ): string => {
-  if (!isActive || !selectedForDisplay) {
-    return 'Inativo';
+  const activeRules = (rules || []).filter(r => r.is_active);
+  
+  // Se tem regras de agendamento ativas, mostrar o agendamento independente de is_active
+  if (activeRules.length > 0) {
+    const rule = activeRules[0];
+    
+    if (rule.is_all_day) {
+      const days = rule.days_of_week?.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ');
+      return `Agendado: ${days} (dia todo)`;
+    }
+    
+    if (rule.start_time && rule.end_time) {
+      const days = rule.days_of_week?.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ');
+      return `Agendado: ${days} ${rule.start_time.substring(0, 5)}-${rule.end_time.substring(0, 5)}`;
+    }
   }
   
-  if (!rules || rules.length === 0) {
+  // Sem regras de agendamento
+  if (isActive && selectedForDisplay) {
     return '24/7';
   }
   
-  const activeRules = rules.filter(r => r.is_active);
-  if (activeRules.length === 0) {
-    return '24/7';
-  }
-  
-  // Pegar primeira regra para mostrar
-  const rule = activeRules[0];
-  
-  if (rule.is_all_day) {
-    const days = rule.days_of_week?.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ');
-    return `Agendado: ${days} (dia todo)`;
-  }
-  
-  if (rule.start_time && rule.end_time) {
-    const days = rule.days_of_week?.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ');
-    return `Agendado: ${days} ${rule.start_time.substring(0, 5)}-${rule.end_time.substring(0, 5)}`;
-  }
-  
-  return '24/7';
+  return 'Inativo';
 };
 
 
@@ -306,16 +302,22 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           const allPedidoIdsForBuilding = (allPedidosForBuilding || []).map(p => p.id);
 
           if (allPedidoIdsForBuilding.length > 0) {
-            // Buscar todos os vídeos ativos/aprovados/em exibição neste prédio
+            // Buscar todos os vídeos aprovados neste prédio (ativos OU com agendamento)
             const { data: allActiveVideos } = await supabase
               .from('pedido_videos')
-              .select('video_id, videos(duracao)')
+              .select('video_id, is_active, selected_for_display, videos(duracao)')
               .in('pedido_id', allPedidoIdsForBuilding)
-              .eq('approval_status', 'approved')
-              .eq('selected_for_display', true)
-              .eq('is_active', true);
+              .eq('approval_status', 'approved');
 
-            const totalCycleDuration = (allActiveVideos || []).reduce(
+            // Filtrar: apenas vídeos ativos+selecionados OU com agendamento ativo
+            const relevantVideos = (allActiveVideos || []).filter(v => {
+              const isActiveAndSelected = v.is_active && v.selected_for_display;
+              const hasSchedule = schedulesByVideoId.has(v.video_id) && 
+                (schedulesByVideoId.get(v.video_id) || []).some(r => r.is_active);
+              return isActiveAndSelected || hasSchedule;
+            });
+
+            const totalCycleDuration = relevantVideos.reduce(
               (sum, v) => sum + ((v.videos as any)?.duracao || 10), 0
             );
 
@@ -340,10 +342,13 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           const videoLogs = playbackLogs.filter(l => l.video_id === pv.video_id);
           let horasExibidas: number;
 
+          const hasActiveSchedule = scheduleRules.some(r => r.is_active);
+          const isShowingOrScheduled = (isActive && selectedForDisplay) || hasActiveSchedule;
+
           if (videoLogs.length > 0) {
             // Dados reais: somar duração registrada
             horasExibidas = videoLogs.reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600;
-          } else if (isActive && selectedForDisplay && approvalStatus === 'approved') {
+          } else if (isShowingOrScheduled && approvalStatus === 'approved') {
             // ⚡ ESTIMATIVA: Calcular baseado no status do sistema
             const approvedAt = pv.approved_at ? new Date(pv.approved_at) : dataInicio;
             const effectiveStart = new Date(Math.max(approvedAt.getTime(), dataInicio.getTime()));
@@ -402,7 +407,11 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
         // Calcular horas por dia para cada vídeo
         const horasPorDiaPorVideo = new Map<string, number>();
         videoInfos.forEach(video => {
-          if (!video.isActive || !video.selectedForDisplay || video.approvalStatus !== 'approved') {
+          const videoScheduleRules = schedulesByVideoId.get(video.id) || [];
+          const hasActiveSchedule = videoScheduleRules.some(r => r.is_active);
+          const isShowingOrScheduled = (video.isActive && video.selectedForDisplay) || hasActiveSchedule;
+          
+          if (!isShowingOrScheduled || video.approvalStatus !== 'approved') {
             horasPorDiaPorVideo.set(video.id, 0);
           } else {
             const diasParaCalculo = Math.max(1, diasAtivos);
@@ -462,7 +471,10 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           // Calcular exibições estimadas: para cada prédio, quantas vezes o ciclo completo rodou
           let estimatedExhibitions = 0;
           for (const video of videoInfos) {
-            if (!video.isActive || !video.selectedForDisplay || video.approvalStatus !== 'approved') continue;
+            const videoSchedRules = schedulesByVideoId.get(video.id) || [];
+            const hasActiveScheduleForVideo = videoSchedRules.some(r => r.is_active);
+            const isShowingOrScheduledForVideo = (video.isActive && video.selectedForDisplay) || hasActiveScheduleForVideo;
+            if (!isShowingOrScheduledForVideo || video.approvalStatus !== 'approved') continue;
             
             const pv = videosFromPedido.find(p => (p.videos?.id || p.video_id) === video.id);
             const approvedAt = pv?.approved_at ? new Date(pv.approved_at) : dataInicio;
@@ -493,7 +505,11 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
 
         buildingInfos.forEach(b => uniqueBuildingsSet.add(b.id));
         totalExhibitions += totalExibicoesCalc;
-        totalVideosAtivos += videoInfos.filter(v => v.isActive && v.selectedForDisplay && v.approvalStatus === 'approved').length;
+        totalVideosAtivos += videoInfos.filter(v => {
+          const vRules = schedulesByVideoId.get(v.id) || [];
+          const vHasSchedule = vRules.some(r => r.is_active);
+          return ((v.isActive && v.selectedForDisplay) || vHasSchedule) && v.approvalStatus === 'approved';
+        }).length;
         totalVideosExibidos += videoInfos.length;
 
         campaignReports.push({
