@@ -309,7 +309,15 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
               .in('pedido_id', allPedidoIdsForBuilding)
               .eq('approval_status', 'approved');
 
-            const totalCycleDuration = (allActiveVideos || []).reduce(
+            // Filtrar: apenas vídeos ativos+selecionados OU com agendamento ativo
+            const relevantVideos = (allActiveVideos || []).filter(v => {
+              const isActiveAndSelected = v.is_active && v.selected_for_display;
+              const hasSchedule = schedulesByVideoId.has(v.video_id) && 
+                (schedulesByVideoId.get(v.video_id) || []).some(r => r.is_active);
+              return isActiveAndSelected || hasSchedule;
+            });
+
+            const totalCycleDuration = relevantVideos.reduce(
               (sum, v) => sum + ((v.videos as any)?.duracao || 10), 0
             );
 
@@ -334,10 +342,13 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           const videoLogs = playbackLogs.filter(l => l.video_id === pv.video_id);
           let horasExibidas: number;
 
+          const hasActiveSchedule = scheduleRules.some(r => r.is_active);
+          const isShowingOrScheduled = (isActive && selectedForDisplay) || hasActiveSchedule;
+
           if (videoLogs.length > 0) {
             // Dados reais: somar duração registrada
             horasExibidas = videoLogs.reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600;
-          } else if (isActive && selectedForDisplay && approvalStatus === 'approved') {
+          } else if (isShowingOrScheduled && approvalStatus === 'approved') {
             // ⚡ ESTIMATIVA: Calcular baseado no status do sistema
             const approvedAt = pv.approved_at ? new Date(pv.approved_at) : dataInicio;
             const effectiveStart = new Date(Math.max(approvedAt.getTime(), dataInicio.getTime()));
