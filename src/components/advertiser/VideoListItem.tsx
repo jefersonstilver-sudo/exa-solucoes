@@ -42,7 +42,8 @@ export const VideoListItem = ({
     return `${hours.toFixed(1)}h`;
   };
   
-  const isDisplaying = isActive && selectedForDisplay && approvalStatus === 'approved';
+  const isDisplaying = (isActive && selectedForDisplay && approvalStatus === 'approved') 
+    || (approvalStatus === 'approved' && scheduleInfo !== undefined && scheduleInfo.startsWith('Agendado'));
 
   const getStatusBadge = (status: string) => {
     switch (status) {

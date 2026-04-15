@@ -96,7 +96,10 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
   };
 
   // Contar vídeos ativos vs inativos
-  const videosAtivos = campaign.videos.filter((v) => v.isActive && v.selectedForDisplay && v.approvalStatus === 'approved').length;
+  const videosAtivos = campaign.videos.filter((v) => 
+    (v.isActive && v.selectedForDisplay && v.approvalStatus === 'approved') ||
+    (v.approvalStatus === 'approved' && v.scheduleInfo?.startsWith('Agendado'))
+  ).length;
   const videosInativos = campaign.videos.length - videosAtivos;
 
   return (
