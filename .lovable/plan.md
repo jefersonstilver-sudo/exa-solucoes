@@ -1,63 +1,65 @@
 
 
-# Auditoria Completa: Sincronizar Relatório com Programação do Pedido
+# Auditoria Completa: Sincronizar Portal de Relatórios com Filtro de Período
 
 ## Problemas Identificados
 
-### 1. Badge "Não exibindo" em vídeos agendados (VideoListItem.tsx)
-**Linha 45**: `isDisplaying = isActive && selectedForDisplay && approvalStatus === 'approved'`
-Vídeos com schedule (kammer 2, 3, 4) têm `is_active=false`, então mostram "Não exibindo" + "sem exibição" — mesmo tendo horas calculadas (227.7h, 130.2h, 113.9h).
+### 1. Filtro de período NÃO afeta as estimativas de horas
+O `dateRange.start` é ignorado no cálculo de estimativa (linha 370 do `useVideoReportData.ts`). O `effectiveStart` usa `approvedAt` ou `data_inicio`, mas nunca respeita `dateRange.start`. Mudar de "Últimos 30 dias" para "Últimos 10 dias" não muda nada nos números — o filtro é decorativo para estimativas.
 
-### 2. Contagem "1 em exibição · 3 inativos" errada (CampaignReportCard.tsx)
-**Linha 99**: `videosAtivos` usa mesma lógica `isActive && selectedForDisplay` — deveria contar vídeos agendados como ativos.
+### 2. Timeline (gráfico) ignora o dateRange completamente
+A linha 461 itera de `dataInicio` até `dataMaxima` (min de hoje e data_fim), sem considerar o período selecionado. O gráfico sempre mostra desde o início da campanha, independente do filtro.
 
-### 3. KAMMER 1 com horas infladas (useVideoReportData.ts)
-KAMMER 1 não tem regras de agendamento → `scheduleFactor = 1` (24/7). Mas o cálculo do ciclo usa um `totalCycleDuration` fixo que inclui todos os vídeos agendados. Na realidade, KAMMER 1 divide a playlist com vídeos diferentes em dias diferentes:
-- Seg/Sex: sozinho (ciclo = 15s, share = 100%)
-- Ter/Sáb: com kammer 2 (ciclo = 30s, share = 50%)
-- Dom/Qua: com KAMMER 3 (ciclo = 30s, share = 50%)
-- Qui: com KAMMER 4 (ciclo = 30s, share = 50%)
+### 3. Exibições estimadas ignoram dateRange
+Linhas 518-520: `activeSeconds` é calculado de `effectiveStart` até `hoje`, sem clampar ao intervalo do filtro.
 
-O cálculo atual assume um ciclo fixo, inflando ou deflando as horas.
+### 4. Botões de zoom do gráfico são decorativos
+Os botões "1 Semana", "1 Mês", "Todo Período" alteram o state `zoomLevel`, mas esse state nunca é usado para filtrar os dados. O `Brush` faz o zoom manual, mas os botões não o controlam.
 
-### 4. PDF não mostra informação de agendamento
-A tabela de vídeos no PDF mostra apenas Nome/Duração/Horas/Status. Não indica se é 24/7 ou agendado.
+### 5. Card de resumo "Vídeos Totais Exibidos" confuso
+Mostra a contagem total de vídeos (incluindo inativos), não filtra por período.
 
 ## Solução
 
-### Arquivo 1: `src/components/advertiser/VideoListItem.tsx`
-- **Linha 45**: Mudar `isDisplaying` para incluir vídeos com schedule:
-  ```
-  const isDisplaying = (isActive && selectedForDisplay && approvalStatus === 'approved') 
-    || (approvalStatus === 'approved' && scheduleInfo?.startsWith('Agendado'));
-  ```
-- Isso corrige automaticamente o badge (mostrará "Agendado: Ter, Sáb" em vez de "Não exibindo") e o label "total exibido" em vez de "sem exibição"
+### Arquivo 1: `src/hooks/useVideoReportData.ts`
+- **Clampar effectiveStart ao dateRange.start** — `effectiveStart = max(approvedAt, dataInicio, dateRange.start)`
+- **Clampar effectiveEnd ao dateRange.end** — já existe parcialmente, garantir consistência
+- **Filtrar timeline pelo dateRange** — o loop do gráfico deve iterar de `max(dataInicio, dateRange.start)` até `min(hoje, dataFim, dateRange.end)`
+- **Filtrar exibições estimadas pelo dateRange** — aplicar o mesmo clamping no cálculo de exhibitions (linhas 518-520)
+- **Recalcular diasAtivos com base no dateRange** — para que o label "X dias ativos" reflita o período selecionado
 
-### Arquivo 2: `src/components/advertiser/CampaignReportCard.tsx`
-- **Linha 99**: Incluir vídeos agendados na contagem de ativos:
-  ```
-  const videosAtivos = campaign.videos.filter(v => 
-    (v.isActive && v.selectedForDisplay && v.approvalStatus === 'approved') ||
-    (v.approvalStatus === 'approved' && v.scheduleInfo?.startsWith('Agendado'))
-  ).length;
-  ```
+### Arquivo 2: `src/components/advertiser/CampaignPerformanceChart.tsx`
+- **Conectar botões de zoom aos dados** — filtrar `chartData` baseado em `zoomLevel`: "1 Semana" mostra últimos 7 pontos, "1 Mês" últimos 30, "Todo Período" mostra tudo
+- **Remover Brush redundante** — ou manter Brush mas sincronizar com os botões via `startIndex`/`endIndex`
 
-### Arquivo 3: `src/hooks/useVideoReportData.ts`
-- **Refatorar cálculo de horas para considerar composição diária da playlist**: Em vez de usar um `totalCycleDuration` fixo por prédio, calcular por dia da semana quais vídeos estão ativos naquele dia, determinar o ciclo daquele dia, e somar as horas proporcionalmente.
-- Lógica:
-  - Para cada dia da semana (0-6), determinar quais vídeos rodam (24/7 + agendados para aquele dia)
-  - Calcular ciclo daquele dia = soma das durações dos vídeos ativos naquele dia
-  - Share do vídeo naquele dia = duração_video / ciclo_dia
-  - Horas por dia = 24h × share × num_telas (se all_day) ou horas_agendadas × share × num_telas
-  - Total = soma dos 7 dias × (semanas_ativas)
+### Arquivo 3: `src/components/advertiser/CampaignSummaryStats.tsx`
+- Renomear "Vídeos Totais Exibidos" para "Vídeos na Campanha" para evitar confusão
 
-### Arquivo 4: `src/components/advertiser/CampaignPDFExporter.tsx`
-- Adicionar coluna "Programação" na tabela de vídeos do PDF, mostrando scheduleInfo (24/7 ou Agendado: dias)
-- Atualizar interface `CampaignPDFData.videos` para incluir `scheduleInfo`
-- Atualizar `CampaignReportCard.tsx` para passar `scheduleInfo` no pdfData
+## Detalhes Técnicos
+
+### Clamping do dateRange na estimativa
+```text
+effectiveStart = max(approvedAt, dataInicio, dateRange.start)
+effectiveEnd = min(hoje, dataFim, dateRange.end)
+totalActiveMs = max(0, effectiveEnd - effectiveStart)
+```
+
+### Timeline filtrada
+```text
+loopStart = max(dataInicio, dateRange.start)
+loopEnd = min(hoje, dataFim, dateRange.end)
+for (date = loopStart; date <= loopEnd; date++)
+```
+
+### Zoom funcional no gráfico
+```text
+filteredData = zoomLevel === '1w' ? chartData.slice(-7)
+             : zoomLevel === '1m' ? chartData.slice(-30)
+             : chartData
+```
 
 ## Impacto
-- 4 arquivos modificados
+- 3 arquivos modificados
 - Nenhuma migration
-- A lógica de estimativa fica mais precisa e sincronizada com a programação semanal real
+- O filtro de período passa a funcionar de verdade em todos os números, gráfico e PDF
 
