@@ -33,7 +33,7 @@ export const CampaignSummaryStats = ({ summary }: CampaignSummaryStatsProps) => 
         iconColor="text-[#9C1E1E]"
       />
       <AppleMetricCard
-        title="Vídeos Totais Exibidos"
+        title="Vídeos na Campanha"
         value={summary.totalVideosExibidos}
         icon={PlayCircle}
         iconColor="text-[#9C1E1E]"
