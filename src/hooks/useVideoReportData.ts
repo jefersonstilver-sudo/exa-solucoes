@@ -519,20 +519,32 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
             const effectiveStart = new Date(Math.max(approvedAt.getTime(), dataInicio.getTime()));
             const activeSeconds = Math.max(0, (hoje.getTime() - effectiveStart.getTime()) / 1000);
 
-            // Fator de agendamento
-            const scheduleRules = schedulesByVideoId.get(video.id) || [];
-            const activeRules = scheduleRules.filter(r => r.is_active);
+            const activeRulesForExh = videoSchedRules.filter(r => r.is_active);
             let scheduleFactor = 1;
-            if (activeRules.length > 0) {
-              const scheduledMinutesPerWeek = calculateScheduledMinutesPerWeek(activeRules);
+            if (activeRulesForExh.length > 0) {
+              const scheduledMinutesPerWeek = calculateScheduledMinutesPerWeek(activeRulesForExh);
               scheduleFactor = scheduledMinutesPerWeek / (7 * 24 * 60);
             }
 
             for (const building of buildingInfos) {
-              const playlistInfo = buildingPlaylistInfo.get(building.id);
-              if (!playlistInfo || playlistInfo.totalCycleDuration <= 0) continue;
+              const dailyMap = buildingDailyPlaylist.get(building.id);
+              if (!dailyMap) continue;
               
-              const exhibitions = Math.floor((activeSeconds * scheduleFactor) / playlistInfo.totalCycleDuration) * playlistInfo.screenCount;
+              // Calcular ciclo médio ponderado por dia
+              let totalCycleWeighted = 0;
+              let daysActive = 0;
+              for (let day = 0; day < 7; day++) {
+                const dayData = dailyMap.get(day)!;
+                const isInDay = dayData.videos.some(v => v.videoId === video.id);
+                if (isInDay && dayData.totalCycle > 0) {
+                  totalCycleWeighted += dayData.totalCycle;
+                  daysActive++;
+                }
+              }
+              if (daysActive === 0) continue;
+              const avgCycle = totalCycleWeighted / daysActive;
+              
+              const exhibitions = Math.floor((activeSeconds * scheduleFactor) / avgCycle) * building.quantidadeTelas;
               estimatedExhibitions += exhibitions;
             }
           }
