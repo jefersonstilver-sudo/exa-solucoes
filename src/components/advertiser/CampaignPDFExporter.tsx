@@ -280,10 +280,11 @@ export class CampaignPDFExporter {
 
     // Lista de Vídeos
     this.drawSection('VÍDEOS DA CAMPANHA');
-    const videoHeaders = ['Nome do Vídeo', 'Duração', 'Horas Exibidas', 'Status'];
+    const videoHeaders = ['Nome do Vídeo', 'Duração', 'Programação', 'Horas Exibidas', 'Status'];
     const videoRows = data.videos.map(v => [
       v.nome,
       `${v.duracao}s`,
+      v.scheduleInfo || '24/7',
       `${v.horasExibidas.toFixed(1)}h`,
       v.approvalStatus === 'approved' ? 'Aprovado' : v.approvalStatus === 'pending' ? 'Pendente' : 'Rejeitado'
     ]);
