@@ -1,65 +1,55 @@
 
 
-# Auditoria Completa: Sincronizar Portal de Relatórios com Filtro de Período
+# Reconstruir Filtro de Período e Exibição de Datas
 
 ## Problemas Identificados
 
-### 1. Filtro de período NÃO afeta as estimativas de horas
-O `dateRange.start` é ignorado no cálculo de estimativa (linha 370 do `useVideoReportData.ts`). O `effectiveStart` usa `approvedAt` ou `data_inicio`, mas nunca respeita `dateRange.start`. Mudar de "Últimos 30 dias" para "Últimos 10 dias" não muda nada nos números — o filtro é decorativo para estimativas.
+### 1. PeriodFilter com trigger invisível
+O componente `PeriodFilter.tsx` usa um `<div />` vazio como `PopoverTrigger` para o calendário personalizado (linha 92-93). Isso é hacky e pode falhar — o popover não tem elemento visual para ancorar. O fluxo depende de estado (`isCustomOpen`) setado a partir do dropdown, o que é frágil.
 
-### 2. Timeline (gráfico) ignora o dateRange completamente
-A linha 461 itera de `dataInicio` até `dataMaxima` (min de hoje e data_fim), sem considerar o período selecionado. O gráfico sempre mostra desde o início da campanha, independente do filtro.
+### 2. Datas no CampaignReportCard mostram o contrato inteiro
+A linha 151 mostra `dataInicio → dataFim` do pedido (ex: "30 mar 2026 → 30 mar 2027"), mas o "dias ativos" ao lado é calculado com base no filtro de período (15 dias). Isso confunde — o usuário vê 1 ano de contrato mas "15 dias ativos".
 
-### 3. Exibições estimadas ignoram dateRange
-Linhas 518-520: `activeSeconds` é calculado de `effectiveStart` até `hoje`, sem clampar ao intervalo do filtro.
-
-### 4. Botões de zoom do gráfico são decorativos
-Os botões "1 Semana", "1 Mês", "Todo Período" alteram o state `zoomLevel`, mas esse state nunca é usado para filtrar os dados. O `Brush` faz o zoom manual, mas os botões não o controlam.
-
-### 5. Card de resumo "Vídeos Totais Exibidos" confuso
-Mostra a contagem total de vídeos (incluindo inativos), não filtra por período.
+### 3. O filtro "Hoje" calcula `subDays(0)` = mesma data
+Na PeriodFilter, "Hoje" usa `days: 0`, então `start = end = new Date()`. Isso pode causar 0 dias ativos.
 
 ## Solução
 
-### Arquivo 1: `src/hooks/useVideoReportData.ts`
-- **Clampar effectiveStart ao dateRange.start** — `effectiveStart = max(approvedAt, dataInicio, dateRange.start)`
-- **Clampar effectiveEnd ao dateRange.end** — já existe parcialmente, garantir consistência
-- **Filtrar timeline pelo dateRange** — o loop do gráfico deve iterar de `max(dataInicio, dateRange.start)` até `min(hoje, dataFim, dateRange.end)`
-- **Filtrar exibições estimadas pelo dateRange** — aplicar o mesmo clamping no cálculo de exhibitions (linhas 518-520)
-- **Recalcular diasAtivos com base no dateRange** — para que o label "X dias ativos" reflita o período selecionado
+### Arquivo 1: `src/components/advertiser/PeriodFilter.tsx` — Reconstruir
+Substituir a abordagem DropdownMenu + Popover separado por um componente unificado usando apenas `Popover` com calendários integrados:
 
-### Arquivo 2: `src/components/advertiser/CampaignPerformanceChart.tsx`
-- **Conectar botões de zoom aos dados** — filtrar `chartData` baseado em `zoomLevel`: "1 Semana" mostra últimos 7 pontos, "1 Mês" últimos 30, "Todo Período" mostra tudo
-- **Remover Brush redundante** — ou manter Brush mas sincronizar com os botões via `startIndex`/`endIndex`
+- Botão principal mostra o período selecionado (ex: "Últimos 30 dias" ou "01/04 - 15/04")
+- Ao clicar, abre popover com:
+  - Botões rápidos: Hoje, 7 dias, 15 dias, 30 dias
+  - Seção de período personalizado com dois calendários (início/fim) lado a lado
+  - Botão "Aplicar" para o período personalizado
+- "Hoje" corrigido para usar `startOfDay` até `endOfDay`
+- Design alinhado com EXA (vermelho `#9C1E1E`, sem componentes verdes)
 
-### Arquivo 3: `src/components/advertiser/CampaignSummaryStats.tsx`
-- Renomear "Vídeos Totais Exibidos" para "Vídeos na Campanha" para evitar confusão
+### Arquivo 2: `src/components/advertiser/CampaignReportCard.tsx` — Corrigir exibição de datas
+- Linha 148-157: Mostrar **duas informações** separadas:
+  - "Contrato: 30/03/2026 → 30/03/2027" — período do contrato completo
+  - "Período analisado: X dias" — refletindo o filtro selecionado
+- Isso elimina a confusão entre o contrato e o período filtrado
+
+### Arquivo 3: `src/hooks/useVideoReportData.ts` — Ajuste menor
+- Garantir que `diasAtivos` nunca seja 0 quando `filteredStart === filteredEnd` (caso "Hoje") — usar `Math.max(1, ...)` para pelo menos 1 dia
 
 ## Detalhes Técnicos
 
-### Clamping do dateRange na estimativa
+### Nova estrutura do PeriodFilter
 ```text
-effectiveStart = max(approvedAt, dataInicio, dateRange.start)
-effectiveEnd = min(hoje, dataFim, dateRange.end)
-totalActiveMs = max(0, effectiveEnd - effectiveStart)
+Popover
+├── Trigger: Button com ícone Calendar + label
+└── Content
+    ├── Botões rápidos (Hoje, 7d, 15d, 30d)
+    ├── Separador
+    ├── Calendário Início + Calendário Fim (lado a lado)
+    └── Botão "Aplicar" (desabilitado sem ambas datas)
 ```
 
-### Timeline filtrada
-```text
-loopStart = max(dataInicio, dateRange.start)
-loopEnd = min(hoje, dataFim, dateRange.end)
-for (date = loopStart; date <= loopEnd; date++)
-```
-
-### Zoom funcional no gráfico
-```text
-filteredData = zoomLevel === '1w' ? chartData.slice(-7)
-             : zoomLevel === '1m' ? chartData.slice(-30)
-             : chartData
-```
-
-## Impacto
+### Impacto
 - 3 arquivos modificados
 - Nenhuma migration
-- O filtro de período passa a funcionar de verdade em todos os números, gráfico e PDF
+- Nenhuma mudança em funcionalidades existentes fora do relatório
 
