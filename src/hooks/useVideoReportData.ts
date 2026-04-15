@@ -278,7 +278,15 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
         // Data máxima do gráfico (hoje ou data_fim)
         const dataMaxima = min([hoje, dataFim]);
         
-        const diasAtivos = Math.max(0, Math.floor((hoje.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24)));
+        // Clampar ao dateRange para métricas filtradas
+        const filteredStart = dateRange?.start 
+          ? new Date(Math.max(dataInicio.getTime(), dateRange.start.getTime()))
+          : dataInicio;
+        const filteredEnd = dateRange?.end 
+          ? new Date(Math.min(dataMaxima.getTime(), dateRange.end.getTime()))
+          : dataMaxima;
+        
+        const diasAtivos = Math.max(0, Math.floor((filteredEnd.getTime() - filteredStart.getTime()) / (1000 * 60 * 60 * 24)));
         const diasRestantes = Math.max(0, Math.floor((dataFim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)));
         const totalDias = Math.floor((dataFim.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24));
         const progress = totalDias > 0 ? Math.min(100, (diasAtivos / totalDias) * 100) : 0;
@@ -367,8 +375,16 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
             horasExibidas = videoLogs.reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600;
           } else if (isShowingOrScheduled && approvalStatus === 'approved') {
             const approvedAt = pv.approved_at ? new Date(pv.approved_at) : dataInicio;
-            const effectiveStart = new Date(Math.max(approvedAt.getTime(), dataInicio.getTime()));
-            const effectiveEnd = dateRange?.end ? new Date(Math.min(hoje.getTime(), dateRange.end.getTime())) : hoje;
+            const effectiveStart = new Date(Math.max(
+              approvedAt.getTime(), 
+              dataInicio.getTime(),
+              dateRange?.start ? dateRange.start.getTime() : 0
+            ));
+            const effectiveEnd = new Date(Math.min(
+              hoje.getTime(), 
+              dataFim.getTime(),
+              dateRange?.end ? dateRange.end.getTime() : hoje.getTime()
+            ));
             const totalActiveMs = Math.max(0, effectiveEnd.getTime() - effectiveStart.getTime());
             const totalWeeks = totalActiveMs / (7 * 24 * 60 * 60 * 1000);
 
@@ -458,7 +474,15 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           acumuladoPorVideo.set(video.id, 0);
         });
         
-        for (let date = new Date(dataInicio); date <= dataMaxima; date.setDate(date.getDate() + 1)) {
+        // Iterar apenas no período filtrado
+        const timelineStart = dateRange?.start 
+          ? new Date(Math.max(dataInicio.getTime(), dateRange.start.getTime()))
+          : dataInicio;
+        const timelineEnd = dateRange?.end 
+          ? new Date(Math.min(dataMaxima.getTime(), dateRange.end.getTime()))
+          : dataMaxima;
+        
+        for (let date = new Date(timelineStart); date <= timelineEnd; date.setDate(date.getDate() + 1)) {
           const dateStr = date.toISOString().split('T')[0];
           
           const videosAtivos = videoInfos.map(video => {
@@ -516,8 +540,17 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
             
             const pv = videosFromPedido.find(p => (p.videos?.id || p.video_id) === video.id);
             const approvedAt = pv?.approved_at ? new Date(pv.approved_at) : dataInicio;
-            const effectiveStart = new Date(Math.max(approvedAt.getTime(), dataInicio.getTime()));
-            const activeSeconds = Math.max(0, (hoje.getTime() - effectiveStart.getTime()) / 1000);
+            const effectiveStartExh = new Date(Math.max(
+              approvedAt.getTime(), 
+              dataInicio.getTime(),
+              dateRange?.start ? dateRange.start.getTime() : 0
+            ));
+            const effectiveEndExh = new Date(Math.min(
+              hoje.getTime(),
+              dataFim.getTime(),
+              dateRange?.end ? dateRange.end.getTime() : hoje.getTime()
+            ));
+            const activeSeconds = Math.max(0, (effectiveEndExh.getTime() - effectiveStartExh.getTime()) / 1000);
 
             const activeRulesForExh = videoSchedRules.filter(r => r.is_active);
             let scheduleFactor = 1;

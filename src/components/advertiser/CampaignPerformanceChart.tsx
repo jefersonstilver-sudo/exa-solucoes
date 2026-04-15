@@ -8,7 +8,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-  Brush,
 } from 'recharts';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -45,6 +44,13 @@ export const CampaignPerformanceChart = ({ data }: CampaignPerformanceChartProps
 
     return dataPoint;
   });
+
+  // Aplicar zoom funcional nos dados
+  const filteredChartData = zoomLevel === '1w' 
+    ? chartData.slice(-7) 
+    : zoomLevel === '1m' 
+      ? chartData.slice(-30) 
+      : chartData;
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length && label) {
@@ -116,7 +122,7 @@ export const CampaignPerformanceChart = ({ data }: CampaignPerformanceChartProps
 
       <div className="w-full h-[400px]" id="campaign-chart">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+          <LineChart data={filteredChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             
             <XAxis
@@ -155,13 +161,6 @@ export const CampaignPerformanceChart = ({ data }: CampaignPerformanceChartProps
                 activeDot={{ r: 5, strokeWidth: 0 }}
               />
             ))}
-            
-            <Brush
-              dataKey="dataFormatada"
-              height={30}
-              stroke="#9C1E1E"
-              fill="#FEF2F2"
-            />
           </LineChart>
         </ResponsiveContainer>
       </div>
