@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { min } from 'date-fns';
 
 export interface DateRange {
   start: Date;
@@ -16,6 +15,7 @@ export interface BuildingInfo {
   quantidadeTelas: number;
   publicoEstimado: number;
   codigoPredio: string;
+  visualizacoesMes: number;
 }
 
 export interface VideoInfo {
@@ -28,7 +28,7 @@ export interface VideoInfo {
   exibicoes: number;
   isActive: boolean;
   selectedForDisplay: boolean;
-  scheduleInfo: string; // "24/7", "Agendado: Sex 13:00-13:02", "Inativo"
+  scheduleInfo: string;
 }
 
 export interface VideoTimelinePoint {
@@ -83,96 +83,72 @@ interface ScheduleRule {
   is_active: boolean;
 }
 
-// Calcular minutos de exibição por semana baseado nas regras de agendamento
-const calculateScheduledMinutesPerWeek = (rules: ScheduleRule[]): number => {
-  if (!rules || rules.length === 0) return 0;
-  
-  let totalMinutesPerWeek = 0;
-  
-  for (const rule of rules) {
-    if (!rule.is_active) continue;
-    
-    if (rule.is_all_day) {
-      // 24 horas * 60 min * dias da semana
-      totalMinutesPerWeek += 24 * 60 * (rule.days_of_week?.length || 0);
-    } else if (rule.start_time && rule.end_time) {
-      // Calcular duração do período
-      const [startH, startM] = rule.start_time.split(':').map(Number);
-      const [endH, endM] = rule.end_time.split(':').map(Number);
-      const durationMinutes = (endH * 60 + endM) - (startH * 60 + startM);
-      
-      if (durationMinutes > 0) {
-        totalMinutesPerWeek += durationMinutes * (rule.days_of_week?.length || 0);
-      }
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/** Fraction of a day (0-1) covered by a set of schedule rules for a given dayOfWeek */
+const scheduleCoverageForDay = (rules: ScheduleRule[], dayOfWeek: number): number => {
+  const activeRules = (rules || []).filter(r => r.is_active);
+  if (activeRules.length === 0) return 0;
+
+  let coveredMinutes = 0;
+  for (const rule of activeRules) {
+    if (!(rule.days_of_week || []).includes(dayOfWeek)) continue;
+    if (rule.is_all_day) return 1; // full day
+    if (rule.start_time && rule.end_time) {
+      const [sh, sm] = rule.start_time.split(':').map(Number);
+      const [eh, em] = rule.end_time.split(':').map(Number);
+      coveredMinutes += Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
     }
   }
-  
-  return totalMinutesPerWeek;
+  return Math.min(1, coveredMinutes / 1440);
 };
 
-// Formatar descrição do agendamento
+/** Format schedule info label */
 const formatScheduleInfo = (
-  isActive: boolean, 
-  selectedForDisplay: boolean, 
+  isActive: boolean,
+  selectedForDisplay: boolean,
   rules: ScheduleRule[],
   allPedidoRules?: { videoId: string; rules: ScheduleRule[] }[]
 ): string => {
   const activeRules = (rules || []).filter(r => r.is_active);
-  
-  // Se tem regras de agendamento ativas, mostrar o agendamento independente de is_active
+
   if (activeRules.length > 0) {
     const rule = activeRules[0];
-    
     if (rule.is_all_day) {
       const days = rule.days_of_week?.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ');
       return `Agendado: ${days} (dia todo)`;
     }
-    
     if (rule.start_time && rule.end_time) {
       const days = rule.days_of_week?.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ');
       return `Agendado: ${days} ${rule.start_time.substring(0, 5)}-${rule.end_time.substring(0, 5)}`;
     }
   }
-  
-  // Sem regras de agendamento — é vídeo base (fallback)
+
   if (isActive && selectedForDisplay) {
-    // Calcular dias de fallback baseado nos agendamentos de outros vídeos do mesmo pedido
     if (allPedidoRules && allPedidoRules.length > 0) {
       const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
       const daysWithAllDaySchedule = new Set<number>();
-      
       for (const vr of allPedidoRules) {
         for (const rule of vr.rules) {
           if (!rule.is_active) continue;
-          if (rule.is_all_day) {
-            rule.days_of_week.forEach(d => daysWithAllDaySchedule.add(d));
-          }
+          if (rule.is_all_day) rule.days_of_week.forEach(d => daysWithAllDaySchedule.add(d));
         }
       }
-      
-      // Dias livres (sem cobertura dia todo) = dias do fallback
       const fallbackDays: number[] = [];
       for (let d = 0; d < 7; d++) {
-        if (!daysWithAllDaySchedule.has(d)) {
-          fallbackDays.push(d);
-        }
+        if (!daysWithAllDaySchedule.has(d)) fallbackDays.push(d);
       }
-      
-      if (fallbackDays.length === 7) {
-        return '24/7';
-      }
-      if (fallbackDays.length === 0) {
-        return 'Inativo';
-      }
+      if (fallbackDays.length === 7) return '24/7';
+      if (fallbackDays.length === 0) return 'Inativo';
       return `Base: ${fallbackDays.map(d => dayNames[d]).join(', ')}`;
     }
-    
     return '24/7';
   }
-  
+
   return 'Inativo';
 };
 
+// ─── Main hook ──────────────────────────────────────────────────────────────
 
 export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => {
   const [campaigns, setCampaigns] = useState<CampaignReport[]>([]);
@@ -184,6 +160,7 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchData = async () => {
     if (!clientId) {
@@ -195,9 +172,9 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
     setError(null);
 
     try {
-      console.log('📊 [CAMPAIGN REPORT] Iniciando busca de dados para cliente:', clientId);
+      console.log('📊 [CAMPAIGN REPORT] Iniciando busca para cliente:', clientId);
 
-      // Buscar pedidos ativos do cliente
+      // 1) Fetch active orders
       const { data: pedidos, error: pedidosError } = await supabase
         .from('pedidos')
         .select('*')
@@ -213,84 +190,69 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
 
       const pedidoIds = pedidos.map(p => p.id);
 
-      // Buscar vídeos dos pedidos com status
+      // 2) Fetch videos
       const { data: pedidoVideos, error: videosError } = await supabase
         .from('pedido_videos')
-        .select(`
-          *,
-          videos (
-            id,
-            nome,
-            url,
-            duracao
-          )
-        `)
+        .select(`*, videos (id, nome, url, duracao)`)
         .in('pedido_id', pedidoIds);
-
       if (videosError) throw videosError;
 
-      // Buscar agendamentos de vídeos
+      // 3) Fetch schedules
       const videoIds = (pedidoVideos || []).map(pv => pv.video_id).filter(Boolean);
-      
       const { data: scheduleData } = await supabase
         .from('campaign_video_schedules')
-        .select(`
-          video_id,
-          campaign_schedule_rules (
-            days_of_week,
-            start_time,
-            end_time,
-            is_all_day,
-            is_active
-          )
-        `)
+        .select(`video_id, campaign_schedule_rules (days_of_week, start_time, end_time, is_all_day, is_active)`)
         .in('video_id', videoIds);
 
-      // Mapear agendamentos por video_id
       const schedulesByVideoId = new Map<string, ScheduleRule[]>();
-      (scheduleData || []).forEach(schedule => {
-        const rules = schedule.campaign_schedule_rules as ScheduleRule[] | null;
-        if (rules && rules.length > 0) {
-          schedulesByVideoId.set(schedule.video_id, rules);
-        }
+      (scheduleData || []).forEach(s => {
+        const rules = s.campaign_schedule_rules as ScheduleRule[] | null;
+        if (rules && rules.length > 0) schedulesByVideoId.set(s.video_id, rules);
       });
 
-      // Buscar dados do cliente
+      // 4) Fetch exhibition config (for fallback calculation)
+      const { data: configData } = await supabase
+        .from('configuracoes_exibicao')
+        .select('horas_operacao_dia, dias_mes')
+        .limit(1)
+        .single();
+
+      const horasOperacaoDia = configData?.horas_operacao_dia || 18;
+      const diasMes = configData?.dias_mes || 30;
+
+      // 5) Fetch product info to get duracao_video_segundos and max_clientes_por_painel
+      const { data: produtos } = await supabase
+        .from('produtos_exa')
+        .select('codigo, duracao_video_segundos, max_clientes_por_painel')
+        .eq('ativo', true);
+
+      const produtoMap = new Map<string, { duracao: number; maxClientes: number }>();
+      (produtos || []).forEach(p => {
+        produtoMap.set(p.codigo, {
+          duracao: p.duracao_video_segundos || 10,
+          maxClientes: p.max_clientes_por_painel || 10,
+        });
+      });
+
+      // 6) Client info
       const { data: clientData } = await supabase
         .from('users')
         .select('email')
         .eq('id', clientId)
         .single();
 
-      // Processar dados por PEDIDO (campanha)
+      // ─── Process each order ───────────────────────────────────────────
       const campaignReports: CampaignReport[] = [];
       const uniqueBuildingsSet = new Set<string>();
       let totalExhibitions = 0;
       let totalVideosAtivos = 0;
       let totalVideosExibidos = 0;
 
-      // Buscar logs reais de playback para todos os vídeos do cliente
-      const allVideoIds = (pedidoVideos || []).map(pv => pv.video_id).filter(Boolean);
-      const allPedidoIds = pedidos.map(p => p.id);
-      
-      let playbackLogs: any[] = [];
-      if (allVideoIds.length > 0) {
-        const { data: logs } = await supabase
-          .from('video_playback_logs')
-          .select('video_id, building_id, pedido_id, duration_seconds, started_at')
-          .in('video_id', allVideoIds)
-          .gte('started_at', dateRange?.start?.toISOString() || new Date(0).toISOString())
-          .lte('started_at', dateRange?.end?.toISOString() || new Date().toISOString());
-        playbackLogs = logs || [];
-      }
-
       for (const pedido of pedidos) {
         const videosFromPedido = (pedidoVideos || []).filter(pv => pv.pedido_id === pedido.id);
         if (videosFromPedido.length === 0) continue;
 
         const listaPredios = pedido.lista_predios || [];
-        
-        // Buscar dados dos prédios
         const { data: buildings } = await supabase
           .from('buildings')
           .select('*')
@@ -304,249 +266,185 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           quantidadeTelas: b.quantidade_telas || 1,
           publicoEstimado: b.publico_estimado || 100,
           codigoPredio: b.codigo_predio || '',
+          visualizacoesMes: b.visualizacoes_mes || 0,
         }));
 
-        // Cálculos de tempo
+        // Time calculations — include TODAY
         const dataInicio = new Date(pedido.data_inicio);
         const dataFim = new Date(pedido.data_fim);
         const hoje = new Date();
-        const ontem = new Date(hoje);
-        ontem.setDate(ontem.getDate() - 1);
-        ontem.setHours(23, 59, 59, 999);
-        
-        // Data máxima do gráfico (ontem ou data_fim — dados só existem até ontem)
-        const dataMaxima = min([ontem, dataFim]);
-        
-        // Clampar ao dateRange para métricas filtradas
-        const filteredStart = dateRange?.start 
+        hoje.setHours(23, 59, 59, 999);
+
+        const dataMaxima = new Date(Math.min(hoje.getTime(), dataFim.getTime()));
+
+        const filteredStart = dateRange?.start
           ? new Date(Math.max(dataInicio.getTime(), dateRange.start.getTime()))
           : dataInicio;
-        const filteredEnd = dateRange?.end 
+        const filteredEnd = dateRange?.end
           ? new Date(Math.min(dataMaxima.getTime(), dateRange.end.getTime()))
           : dataMaxima;
-        
-        const diasAtivos = Math.max(1, Math.floor((filteredEnd.getTime() - filteredStart.getTime()) / (1000 * 60 * 60 * 24)));
-        const diasRestantes = Math.max(0, Math.floor((dataFim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)));
-        const totalDias = Math.floor((dataFim.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24));
-        const progress = totalDias > 0 ? Math.min(100, (diasAtivos / totalDias) * 100) : 0;
 
-        // Métricas do pedido
+        const diasAtivos = Math.max(1, Math.floor((filteredEnd.getTime() - filteredStart.getTime()) / (1000 * 60 * 60 * 24)));
+        const diasRestantes = Math.max(0, Math.floor((dataFim.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
+        const totalDias = Math.max(1, Math.floor((dataFim.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24)));
+        const progress = Math.min(100, (diasAtivos / totalDias) * 100);
+
         const totalTelas = buildingInfos.reduce((sum, b) => sum + b.quantidadeTelas, 0);
 
-        // ⚡ ESTIMATIVA: Buscar TODOS os vídeos aprovados em cada prédio para calcular composição diária
-        // Estrutura: buildingId -> dayOfWeek -> { videos com duração, totalCycleDuration }
-        const buildingDailyPlaylist = new Map<string, Map<number, { videos: { videoId: string; duracao: number }[]; totalCycle: number }>>();
-        
-        for (const building of buildingInfos) {
-          const { data: allPedidosForBuilding } = await supabase
-            .from('pedidos')
-            .select('id')
-            .contains('lista_predios', [building.id])
-            .in('status', ['ativo', 'video_aprovado', 'video_enviado'])
-            .gte('data_fim', new Date().toISOString().split('T')[0]);
+        // ─── Determine product type for this order ──────────────────────
+        const tipoProduto: string = (pedido as any).tipo_produto || 'horizontal';
+        const produtoCodigo = tipoProduto.toLowerCase().includes('vertical') ? 'vertical_premium' : 'horizontal';
+        const produto = produtoMap.get(produtoCodigo) || { duracao: 10, maxClientes: 10 };
 
-          const allPedidoIdsForBuilding = (allPedidosForBuilding || []).map(p => p.id);
+        // ─── Calculate daily exhibitions per building (operational) ─────
+        // Formula: exhibitions_per_day_per_screen = (horas_operacao * 3600) / (duracao_video * max_clientes)
+        // This is the number of times ONE video plays per day on ONE screen
+        const exibicoesPorDiaPorTela = Math.floor(
+          (horasOperacaoDia * 3600) / (produto.duracao * produto.maxClientes)
+        );
 
-          // Inicializar 7 dias da semana
-          const dailyMap = new Map<number, { videos: { videoId: string; duracao: number }[]; totalCycle: number }>();
-          for (let day = 0; day < 7; day++) {
-            dailyMap.set(day, { videos: [], totalCycle: 0 });
-          }
+        // ─── Determine which videos are "eligible" (approved + active or scheduled) ──
+        const eligibleVideos: {
+          videoId: string;
+          nome: string;
+          duracao: number;
+          isBase: boolean;
+          rules: ScheduleRule[];
+          approvalStatus: string;
+          isActive: boolean;
+          selectedForDisplay: boolean;
+        }[] = [];
 
-          if (allPedidoIdsForBuilding.length > 0) {
-            const { data: allActiveVideos } = await supabase
-              .from('pedido_videos')
-              .select('video_id, is_active, selected_for_display, videos(duracao)')
-              .in('pedido_id', allPedidoIdsForBuilding)
-              .eq('approval_status', 'approved');
+        for (const pv of videosFromPedido) {
+          const rules = schedulesByVideoId.get(pv.video_id) || [];
+          const activeRules = rules.filter(r => r.is_active);
+          const isBase = (pv.is_active && pv.selected_for_display && activeRules.length === 0);
 
-            for (const v of (allActiveVideos || [])) {
-              const dur = (v.videos as any)?.duracao || 10;
-              const isActiveAndSelected = v.is_active && v.selected_for_display;
-              const vRules = schedulesByVideoId.get(v.video_id) || [];
-              const activeVRules = vRules.filter(r => r.is_active);
-              const hasSchedule = activeVRules.length > 0;
-
-              if (!isActiveAndSelected && !hasSchedule) continue;
-
-              if (hasSchedule) {
-                // Adicionar vídeo apenas nos dias agendados
-                const scheduledDays = new Set<number>();
-                for (const rule of activeVRules) {
-                  for (const d of (rule.days_of_week || [])) {
-                    scheduledDays.add(d);
-                  }
-                }
-                for (const day of scheduledDays) {
-                  const dayData = dailyMap.get(day)!;
-                  dayData.videos.push({ videoId: v.video_id, duracao: dur });
-                  dayData.totalCycle += dur;
-                }
-              } else if (isActiveAndSelected) {
-                // Vídeo base/24/7 — calcular dias com gaps (fallback inteligente)
-                // Coletar dias que têm agendamento dia todo de OUTROS vídeos
-                const daysWithAllDaySchedule = new Set<number>();
-                for (const otherV of (allActiveVideos || [])) {
-                  if (otherV.video_id === v.video_id) continue;
-                  const otherRules = schedulesByVideoId.get(otherV.video_id) || [];
-                  for (const r of otherRules) {
-                    if (!r.is_active) continue;
-                    if (r.is_all_day) {
-                      for (const d of (r.days_of_week || [])) daysWithAllDaySchedule.add(d);
-                    }
-                  }
-                }
-                
-                for (let day = 0; day < 7; day++) {
-                  // Calcular minutos ocupados neste dia por outros vídeos
-                  let scheduledMinutesThisDay = 0;
-                  for (const otherV of (allActiveVideos || [])) {
-                    if (otherV.video_id === v.video_id) continue;
-                    const otherRules = (schedulesByVideoId.get(otherV.video_id) || []).filter(r => r.is_active);
-                    for (const r of otherRules) {
-                      if (!(r.days_of_week || []).includes(day)) continue;
-                      if (r.is_all_day) {
-                        scheduledMinutesThisDay = 1440;
-                        break;
-                      } else if (r.start_time && r.end_time) {
-                        const [sh, sm] = r.start_time.split(':').map(Number);
-                        const [eh, em] = r.end_time.split(':').map(Number);
-                        scheduledMinutesThisDay += Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
-                      }
-                    }
-                    if (scheduledMinutesThisDay >= 1440) break;
-                  }
-                  
-                  const gapMinutes = Math.max(0, 1440 - scheduledMinutesThisDay);
-                  if (gapMinutes > 0) {
-                    const dayData = dailyMap.get(day)!;
-                    dayData.videos.push({ videoId: v.video_id, duracao: dur });
-                    dayData.totalCycle += dur;
-                  }
-                }
-              }
-            }
-          }
-
-          buildingDailyPlaylist.set(building.id, dailyMap);
+          eligibleVideos.push({
+            videoId: pv.videos?.id || pv.video_id,
+            nome: pv.videos?.nome || 'Vídeo sem título',
+            duracao: pv.videos?.duracao || 10,
+            isBase,
+            rules,
+            approvalStatus: pv.approval_status || 'pending',
+            isActive: pv.is_active ?? true,
+            selectedForDisplay: pv.selected_for_display ?? true,
+          });
         }
 
-        // Processar vídeos com cálculo ESTIMADO de horas POR DIA DA SEMANA
+        // ─── Calculate coverage per video per day-of-week ──────────────
+        // coverageMap: videoId -> dayOfWeek -> fraction (0-1)
+        const coverageMap = new Map<string, Map<number, number>>();
+
+        // First pass: scheduled videos
+        for (const v of eligibleVideos) {
+          if (v.approvalStatus !== 'approved') continue;
+          const activeRules = v.rules.filter(r => r.is_active);
+          if (activeRules.length === 0) continue;
+
+          const dayMap = new Map<number, number>();
+          for (let d = 0; d < 7; d++) {
+            dayMap.set(d, scheduleCoverageForDay(activeRules, d));
+          }
+          coverageMap.set(v.videoId, dayMap);
+        }
+
+        // Second pass: base video gets remaining coverage
+        const baseVideo = eligibleVideos.find(v =>
+          v.approvalStatus === 'approved' &&
+          v.isActive &&
+          v.selectedForDisplay &&
+          v.rules.filter(r => r.is_active).length === 0
+        );
+
+        if (baseVideo) {
+          const baseDayMap = new Map<number, number>();
+          for (let d = 0; d < 7; d++) {
+            let scheduledFraction = 0;
+            for (const [, dayMap] of coverageMap) {
+              scheduledFraction += dayMap.get(d) || 0;
+            }
+            baseDayMap.set(d, Math.max(0, 1 - scheduledFraction));
+          }
+          coverageMap.set(baseVideo.videoId, baseDayMap);
+        }
+
+        // ─── Calculate exhibitions per video across filtered period ─────
+        const videoExhibitions = new Map<string, number>();
+        const videoHours = new Map<string, number>();
+
+        // Also for timeline (day-by-day)
+        const videoTimeline: VideoTimelinePoint[] = [];
+        const videoColors = ['#9C1E1E', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
+        let colorIndex = 0;
+        const videoColorMap = new Map<string, string>();
+
+        for (let date = new Date(filteredStart); date <= filteredEnd; date.setDate(date.getDate() + 1)) {
+          const dateStr = date.toISOString().split('T')[0];
+          const dayOfWeek = date.getDay();
+
+          const dayVideoPoints: VideoTimelinePoint['videosAtivos'] = [];
+
+          for (const v of eligibleVideos) {
+            if (!videoColorMap.has(v.videoId)) {
+              videoColorMap.set(v.videoId, videoColors[colorIndex % videoColors.length]);
+              colorIndex++;
+            }
+
+            const coverage = coverageMap.get(v.videoId)?.get(dayOfWeek) || 0;
+            if (coverage <= 0 && v.approvalStatus !== 'approved') continue;
+
+            // Exhibitions for this video on this day = exibicoesPorDiaPorTela * coverage * totalTelas
+            const dayExibicoes = Math.round(exibicoesPorDiaPorTela * coverage * totalTelas);
+            const dayHoras = (dayExibicoes * v.duracao) / 3600;
+
+            videoExhibitions.set(v.videoId, (videoExhibitions.get(v.videoId) || 0) + dayExibicoes);
+            videoHours.set(v.videoId, (videoHours.get(v.videoId) || 0) + dayHoras);
+
+            dayVideoPoints.push({
+              id: v.videoId,
+              nome: v.nome,
+              horasExibidas: dayHoras,
+              exibicoes: dayExibicoes,
+              color: videoColorMap.get(v.videoId)!,
+            });
+          }
+
+          videoTimeline.push({ data: dateStr, videosAtivos: dayVideoPoints });
+        }
+
+        // ─── Build VideoInfo array ──────────────────────────────────────
         const videoInfos: VideoInfo[] = videosFromPedido.map(pv => {
-          const duracaoSegundos = pv.videos?.duracao || 10;
+          const videoId = pv.videos?.id || pv.video_id;
+          const rules = schedulesByVideoId.get(pv.video_id) || [];
           const isActive = pv.is_active ?? true;
           const selectedForDisplay = pv.selected_for_display ?? true;
           const approvalStatus = pv.approval_status || 'pending';
-          const scheduleRules = schedulesByVideoId.get(pv.video_id) || [];
 
-          const videoLogs = playbackLogs.filter(l => l.video_id === pv.video_id);
-          // Multiplicar exibições pelo número de telas dos prédios
-          const exibicoes = videoLogs.length * totalTelas;
-          let horasExibidas: number;
-
-          if (videoLogs.length > 0) {
-            horasExibidas = (videoLogs.reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600) * totalTelas;
-          } else {
-            horasExibidas = 0;
-          }
-
-          // Estimativas removidas — política "só dados reais"
-
-          // Construir allPedidoRules para formatScheduleInfo
           const allPedidoRules = videosFromPedido
             .filter(other => other.video_id !== pv.video_id)
-            .map(other => ({
-              videoId: other.video_id,
-              rules: schedulesByVideoId.get(other.video_id) || []
-            }))
+            .map(other => ({ videoId: other.video_id, rules: schedulesByVideoId.get(other.video_id) || [] }))
             .filter(vr => vr.rules.length > 0);
 
-          const scheduleInfo = formatScheduleInfo(isActive, selectedForDisplay, scheduleRules, allPedidoRules);
+          const scheduleInfo = formatScheduleInfo(isActive, selectedForDisplay, rules, allPedidoRules);
 
           return {
-            id: pv.videos?.id || pv.video_id,
+            id: videoId,
             nome: pv.videos?.nome || 'Vídeo sem título',
             url: pv.videos?.url || '',
-            duracao: duracaoSegundos,
+            duracao: pv.videos?.duracao || 10,
             approvalStatus,
-            horasExibidas,
-            exibicoes,
+            horasExibidas: videoHours.get(videoId) || 0,
+            exibicoes: videoExhibitions.get(videoId) || 0,
             isActive,
             selectedForDisplay,
             scheduleInfo,
           };
         });
 
-        // Gerar timeline de vídeos com EXIBIÇÕES POR DIA
-        const videoTimeline: VideoTimelinePoint[] = [];
-        const videoColors = ['#9C1E1E', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
-        let colorIndex = 0;
-        const videoColorMap = new Map<string, string>();
-        
-        // Iterar apenas no período filtrado — contar exibições por dia por vídeo
-        const timelineStart = dateRange?.start 
-          ? new Date(Math.max(dataInicio.getTime(), dateRange.start.getTime()))
-          : dataInicio;
-        const timelineEnd = dateRange?.end 
-          ? new Date(Math.min(dataMaxima.getTime(), dateRange.end.getTime()))
-          : dataMaxima;
-        
-        for (let date = new Date(timelineStart); date <= timelineEnd; date.setDate(date.getDate() + 1)) {
-          const dateStr = date.toISOString().split('T')[0];
-          
-          const videosAtivos = videoInfos.map(video => {
-            if (!videoColorMap.has(video.id)) {
-              videoColorMap.set(video.id, videoColors[colorIndex % videoColors.length]);
-              colorIndex++;
-            }
-            
-            // Contar exibições reais neste dia para este vídeo (multiplicado por telas)
-            const exibicoesDia = playbackLogs.filter(l => 
-              l.video_id === video.id && 
-              l.started_at?.split('T')[0] === dateStr
-            ).length * totalTelas;
-            
-            const horasDia = (playbackLogs
-              .filter(l => l.video_id === video.id && l.started_at?.split('T')[0] === dateStr)
-              .reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600) * totalTelas;
-            
-            return {
-              id: video.id,
-              nome: video.nome,
-              horasExibidas: horasDia,
-              exibicoes: exibicoesDia,
-              color: videoColorMap.get(video.id)!,
-            };
-          });
-          
-          videoTimeline.push({
-            data: dateStr,
-            videosAtivos,
-          });
-        }
-
-        // Buscar dados REAIS de playback para este pedido
-        const pedidoLogs = playbackLogs.filter(l => 
-          videosFromPedido.some(pv => pv.video_id === l.video_id)
-        );
-        const hasRealData = pedidoLogs.length > 0;
-
-        // Métricas reais ou estimadas
-        let totalExibicoesCalc: number;
-        let totalHorasCalc: number;
-        let prediosComExibicaoReal = 0;
-
-        if (hasRealData) {
-          totalExibicoesCalc = pedidoLogs.length * totalTelas;
-          totalHorasCalc = (pedidoLogs.reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600) * totalTelas;
-          const uniqueBuildings = new Set(pedidoLogs.map((l: any) => l.building_id));
-          prediosComExibicaoReal = uniqueBuildings.size;
-        } else {
-          // Só dados reais — sem logs, tudo zerado
-          totalHorasCalc = 0;
-          totalExibicoesCalc = 0;
-          prediosComExibicaoReal = 0;
-        }
+        // ─── Totals ─────────────────────────────────────────────────────
+        const totalExibicoesCalc = videoInfos.reduce((sum, v) => sum + v.exibicoes, 0);
+        const totalHorasCalc = videoInfos.reduce((sum, v) => sum + v.horasExibidas, 0);
 
         buildingInfos.forEach(b => uniqueBuildingsSet.add(b.id));
         totalExhibitions += totalExibicoesCalc;
@@ -560,7 +458,7 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
         campaignReports.push({
           pedidoId: pedido.id,
           nomePedido: (pedido as any).nome_pedido || `Pedido #${pedido.id.substring(0, 8)}`,
-          tipoProduto: (pedido as any).tipo_produto || 'horizontal',
+          tipoProduto,
           clientName: clientData?.email?.split('@')[0] || 'Cliente',
           clientEmail: clientData?.email || 'Email não encontrado',
           dataInicio: pedido.data_inicio,
@@ -576,11 +474,9 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           totalTelas,
           totalExibicoes: totalExibicoesCalc,
           totalHoras: totalHorasCalc,
-          prediosComExibicaoReal,
-          isRealData: hasRealData,
-          chartData: {
-            videoTimeline,
-          },
+          prediosComExibicaoReal: buildingInfos.length,
+          isRealData: true, // always true now — operational data
+          chartData: { videoTimeline },
         });
       }
 
@@ -604,27 +500,21 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
   };
 
   useEffect(() => {
-    if (clientId) {
-      fetchData();
-    }
+    if (clientId) fetchData();
 
     // Real-time subscriptions
     const channel = supabase
       .channel('campaign-report-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'pedidos' },
-        () => fetchData()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'pedido_videos' },
-        () => fetchData()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedido_videos' }, () => fetchData())
       .subscribe();
+
+    // Refresh every 60s to keep numbers climbing
+    refreshTimerRef.current = setInterval(fetchData, 60_000);
 
     return () => {
       supabase.removeChannel(channel);
+      if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
     };
   }, [clientId, dateRange]);
 
