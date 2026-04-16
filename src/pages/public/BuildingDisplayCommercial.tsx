@@ -16,6 +16,7 @@ import { Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { UpdateIndicator } from '@/components/display/UpdateIndicator';
 import { usePendingPlaylistUpdates } from '@/hooks/usePendingPlaylistUpdates';
+import { usePlaybackLogger } from '@/hooks/usePlaybackLogger';
 
 interface BuildingDisplayCommercialProps {
   buildingId?: string;
@@ -52,6 +53,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   const buildingId = rawBuildingId;
   
   const { videos: activeVideos, loading, isUpdating, refetch } = useBuildingActiveVideos(buildingId);
+  const { onVideoStart, onVideoEnd } = usePlaybackLogger(buildingId);
   
   // 📦 SISTEMA DE PENDING UPDATES - Atualizações só aplicam no fim do ciclo
   const {
