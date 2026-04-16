@@ -136,7 +136,7 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
                 </Badge>
               ) : (
                 <Badge className="bg-amber-100 text-amber-800 border-amber-200">
-                  Estimativa
+                  Dados disponíveis até ontem
                 </Badge>
               )}
               <ChevronDown
@@ -151,7 +151,10 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
                 Contrato: {formatDate(campaign.dataInicio)} → {formatDate(campaign.dataFim)}
               </span>
               <span className="text-xs bg-accent/50 px-2 py-0.5 rounded-full">
-                Período analisado: {campaign.diasAtivos} {campaign.diasAtivos === 1 ? 'dia' : 'dias'}
+                Período: {formatDate(campaign.filteredStartDate)} → {formatDate(campaign.filteredEndDate)} ({campaign.diasAtivos} {campaign.diasAtivos === 1 ? 'dia' : 'dias'})
+              </span>
+              <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                ⏱ Dados disponíveis até ontem (relatórios ficam prontos 24h depois)
               </span>
             </div>
           </CollapsibleTrigger>

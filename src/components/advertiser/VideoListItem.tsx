@@ -171,10 +171,10 @@ export const VideoListItem = ({
 
       {/* Tempo real exibido */}
       <div className="text-right flex-shrink-0">
-        {isDisplaying && horasExibidas === 0 ? (
+      {isDisplaying && horasExibidas === 0 ? (
           <>
             <p className="text-sm font-medium text-muted-foreground">—</p>
-            <p className="text-xs text-muted-foreground">aguardando dados</p>
+            <p className="text-xs text-muted-foreground">Relatório disponível em 24h</p>
           </>
         ) : (
           <>

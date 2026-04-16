@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, FileText } from 'lucide-react';
+import { Loader2, FileText, FlaskConical } from 'lucide-react';
 import { useVideoReportData, DateRange } from '@/hooks/useVideoReportData';
 import { CampaignSummaryStats } from '@/components/advertiser/CampaignSummaryStats';
 import { CampaignReportCard } from '@/components/advertiser/CampaignReportCard';
 import { PeriodFilter } from '@/components/advertiser/PeriodFilter';
 import { Card, CardContent } from '@/components/ui/card';
 import { subDays } from 'date-fns';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const MyVideos = () => {
   const { userProfile } = useAuth();
@@ -27,6 +28,14 @@ const MyVideos = () => {
 
   return (
     <div className="space-y-8">
+      {/* Banner Beta */}
+      <Alert className="bg-amber-50 border-amber-200 text-amber-800">
+        <FlaskConical className="h-4 w-4 text-amber-600" />
+        <AlertDescription className="text-amber-800 text-sm">
+          🧪 Esta página está em fase de testes (Beta). Os dados exibidos podem sofrer ajustes.
+        </AlertDescription>
+      </Alert>
+
       {/* Header com Filtro */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 md:gap-4">
         <div className="flex flex-col space-y-1">
