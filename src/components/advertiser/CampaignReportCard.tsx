@@ -101,12 +101,12 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
     }
   };
 
-  // Contar vídeos ativos vs inativos
-  const videosAtivos = campaign.videos.filter((v) => 
-    (v.isActive && v.selectedForDisplay && v.approvalStatus === 'approved') ||
-    (v.approvalStatus === 'approved' && v.scheduleInfo?.startsWith('Agendado'))
+  // Contar vídeos: 1 em exibição (se houver), restante agendados
+  const currentVideoId = currentVideo?.video_id;
+  const videosAgendados = campaign.videos.filter((v) => 
+    v.approvalStatus === 'approved' && (v.isActive || v.scheduleInfo?.startsWith('Agendado') || v.scheduleInfo?.startsWith('Base:'))
   ).length;
-  const videosInativos = campaign.videos.length - videosAtivos;
+  const videosInativos = campaign.videos.length - videosAgendados;
 
   return (
     <Collapsible
