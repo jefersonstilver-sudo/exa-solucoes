@@ -116,9 +116,15 @@ export const VideoListItem = ({
   };
 
   return (
+    const isScheduled = scheduleInfo?.startsWith('Agendado') || scheduleInfo?.startsWith('Base:');
+    const isBase = scheduleInfo === '24/7' && isDisplaying;
+
+    return (
     <div className={cn(
       "flex items-center gap-4 p-4 bg-background border-b border-border/40 hover:bg-accent/5 transition-colors group",
-      !isDisplaying && "opacity-60 bg-muted/30"
+      !isDisplaying && "opacity-60 bg-muted/30",
+      isScheduled && "border-2 border-blue-400 bg-blue-50/30 dark:bg-blue-950/20",
+      !isScheduled && isBase && "border-2 border-yellow-400 bg-yellow-50/30 dark:bg-yellow-950/20"
     )}>
       {/* Thumbnail com play */}
       <div
