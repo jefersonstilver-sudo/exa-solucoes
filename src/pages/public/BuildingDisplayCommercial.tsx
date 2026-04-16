@@ -30,6 +30,12 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
 
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   
+  const isValidId = rawBuildingId && !rawBuildingId.startsWith(':') && UUID_REGEX.test(rawBuildingId);
+  const buildingId = isValidId ? rawBuildingId : '';
+  
+  const { videos: activeVideos, loading, isUpdating, refetch } = useBuildingActiveVideos(buildingId);
+  const { onVideoStart, onVideoEnd } = usePlaybackLogger(buildingId);
+
   VideoDebugger.logEvent('ROUTING', 'Debug de rota', {
     propBuildingId,
     paramsKeys: Object.keys(params),
@@ -49,11 +55,6 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     VideoDebugger.logEvent('ROUTING', 'ERRO: BuildingId inválido', { rawBuildingId });
     return <Navigate to="/404" replace />;
   }
-
-  const buildingId = rawBuildingId;
-  
-  const { videos: activeVideos, loading, isUpdating, refetch } = useBuildingActiveVideos(buildingId);
-  const { onVideoStart, onVideoEnd } = usePlaybackLogger(buildingId);
   
   // 📦 SISTEMA DE PENDING UPDATES - Atualizações só aplicam no fim do ciclo
   const {
