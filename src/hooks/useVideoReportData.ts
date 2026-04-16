@@ -376,11 +376,46 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
                   dayData.totalCycle += dur;
                 }
               } else if (isActiveAndSelected) {
-                // 24/7 — adicionar em todos os dias
+                // Vídeo base/24/7 — calcular dias com gaps (fallback inteligente)
+                // Coletar dias que têm agendamento dia todo de OUTROS vídeos
+                const daysWithAllDaySchedule = new Set<number>();
+                for (const otherV of (allActiveVideos || [])) {
+                  if (otherV.video_id === v.video_id) continue;
+                  const otherRules = schedulesByVideoId.get(otherV.video_id) || [];
+                  for (const r of otherRules) {
+                    if (!r.is_active) continue;
+                    if (r.is_all_day) {
+                      for (const d of (r.days_of_week || [])) daysWithAllDaySchedule.add(d);
+                    }
+                  }
+                }
+                
                 for (let day = 0; day < 7; day++) {
-                  const dayData = dailyMap.get(day)!;
-                  dayData.videos.push({ videoId: v.video_id, duracao: dur });
-                  dayData.totalCycle += dur;
+                  // Calcular minutos ocupados neste dia por outros vídeos
+                  let scheduledMinutesThisDay = 0;
+                  for (const otherV of (allActiveVideos || [])) {
+                    if (otherV.video_id === v.video_id) continue;
+                    const otherRules = (schedulesByVideoId.get(otherV.video_id) || []).filter(r => r.is_active);
+                    for (const r of otherRules) {
+                      if (!(r.days_of_week || []).includes(day)) continue;
+                      if (r.is_all_day) {
+                        scheduledMinutesThisDay = 1440;
+                        break;
+                      } else if (r.start_time && r.end_time) {
+                        const [sh, sm] = r.start_time.split(':').map(Number);
+                        const [eh, em] = r.end_time.split(':').map(Number);
+                        scheduledMinutesThisDay += Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+                      }
+                    }
+                    if (scheduledMinutesThisDay >= 1440) break;
+                  }
+                  
+                  const gapMinutes = Math.max(0, 1440 - scheduledMinutesThisDay);
+                  if (gapMinutes > 0) {
+                    const dayData = dailyMap.get(day)!;
+                    dayData.videos.push({ videoId: v.video_id, duracao: dur });
+                    dayData.totalCycle += dur;
+                  }
                 }
               }
             }
