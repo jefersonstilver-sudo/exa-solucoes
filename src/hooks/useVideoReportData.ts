@@ -476,14 +476,11 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           };
         });
 
-        // Gerar timeline de vídeos com HORAS ACUMULADAS
+        // Gerar timeline de vídeos com EXIBIÇÕES POR DIA
         const videoTimeline: VideoTimelinePoint[] = [];
         const videoColors = ['#9C1E1E', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
         let colorIndex = 0;
         const videoColorMap = new Map<string, string>();
-        
-        // Mapa para acumular horas progressivamente por vídeo
-        const acumuladoPorVideo = new Map<string, number>();
         
         // Iterar apenas no período filtrado — contar exibições por dia por vídeo
         const timelineStart = dateRange?.start 
