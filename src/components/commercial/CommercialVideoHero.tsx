@@ -14,7 +14,9 @@ interface CommercialVideoHeroProps {
   className?: string;
   onPlaylistEnd?: () => void;
   onPlayingChange?: (playing: boolean) => void;
-  onVideosChange?: (videos: Video[]) => void; // Notifica quando vídeos externos mudarem
+  onVideosChange?: (videos: Video[]) => void;
+  onVideoStarted?: (videoId: string) => void;
+  onVideoEnded?: (videoId: string) => void;
 }
 
 export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
@@ -22,7 +24,9 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   className = '',
   onPlaylistEnd,
   onPlayingChange,
-  onVideosChange
+  onVideosChange,
+  onVideoStarted,
+  onVideoEnded
 }) => {
   // Estados simples
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -33,6 +37,8 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   const onPlayingChangeRef = useRef(onPlayingChange);
   const onPlaylistEndRef = useRef(onPlaylistEnd);
   const onVideosChangeRef = useRef(onVideosChange);
+  const onVideoStartedRef = useRef(onVideoStarted);
+  const onVideoEndedRef = useRef(onVideoEnded);
 
   // ✅ CORREÇÃO 3: Refs para acessar valores atuais sem causar re-render
   const currentIndexRef = useRef(currentIndex);
@@ -43,9 +49,11 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     onPlayingChangeRef.current = onPlayingChange;
     onPlaylistEndRef.current = onPlaylistEnd;
     onVideosChangeRef.current = onVideosChange;
+    onVideoStartedRef.current = onVideoStarted;
+    onVideoEndedRef.current = onVideoEnded;
     currentIndexRef.current = currentIndex;
     videosRef.current = videos;
-  }, [onPlayingChange, onPlaylistEnd, onVideosChange, currentIndex, videos]);
+  }, [onPlayingChange, onPlaylistEnd, onVideosChange, onVideoStarted, onVideoEnded, currentIndex, videos]);
 
   // Hash estável para detectar mudanças na playlist
   const videosHash = useMemo(() => {
@@ -92,12 +100,16 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   }, []); // ✅ SEM dependências
 
   const handlePlaying = useCallback(() => {
+    const currentVideo = videosRef.current[currentIndexRef.current];
     VideoDebugger.logEvent('VIDEO', 'Reproduzindo', {
       index: `${currentIndexRef.current + 1}/${videosRef.current.length}`
     });
     setIsBuffering(false);
     onPlayingChangeRef.current?.(true);
-  }, []); // ✅ SEM dependências
+    if (currentVideo) {
+      onVideoStartedRef.current?.(currentVideo.id);
+    }
+  }, []);
 
   const handleEnded = useCallback(() => {
     const currentVideo = videosRef.current[currentIndexRef.current];
@@ -107,8 +119,10 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     });
     
     onPlayingChangeRef.current?.(false);
+    if (currentVideo) {
+      onVideoEndedRef.current?.(currentVideo.id);
+    }
     
-    // ✅ GARANTIR LOOP INFINITO: Sempre avança para o próximo vídeo
     setCurrentIndex(prev => {
       const nextIndex = (prev + 1) % videosRef.current.length;
       
@@ -120,7 +134,7 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
       VideoDebugger.logEvent('VIDEO', `⏭️ Próximo vídeo: ${nextIndex + 1}/${videosRef.current.length}`);
       return nextIndex;
     });
-  }, []); // ✅ SEM dependências - handler PERMANENTE
+  }, []);
 
   const handleError = useCallback(() => {
     const currentVideo = videosRef.current[currentIndexRef.current];

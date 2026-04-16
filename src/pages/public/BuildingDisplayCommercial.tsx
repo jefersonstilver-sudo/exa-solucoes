@@ -16,6 +16,7 @@ import { Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { UpdateIndicator } from '@/components/display/UpdateIndicator';
 import { usePendingPlaylistUpdates } from '@/hooks/usePendingPlaylistUpdates';
+import { usePlaybackLogger } from '@/hooks/usePlaybackLogger';
 
 interface BuildingDisplayCommercialProps {
   buildingId?: string;
@@ -29,6 +30,12 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
 
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   
+  const isValidId = rawBuildingId && !rawBuildingId.startsWith(':') && UUID_REGEX.test(rawBuildingId);
+  const buildingId = isValidId ? rawBuildingId : '';
+  
+  const { videos: activeVideos, loading, isUpdating, refetch } = useBuildingActiveVideos(buildingId);
+  const { onVideoStart, onVideoEnd } = usePlaybackLogger(buildingId);
+
   VideoDebugger.logEvent('ROUTING', 'Debug de rota', {
     propBuildingId,
     paramsKeys: Object.keys(params),
@@ -48,10 +55,6 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     VideoDebugger.logEvent('ROUTING', 'ERRO: BuildingId inválido', { rawBuildingId });
     return <Navigate to="/404" replace />;
   }
-
-  const buildingId = rawBuildingId;
-  
-  const { videos: activeVideos, loading, isUpdating, refetch } = useBuildingActiveVideos(buildingId);
   
   // 📦 SISTEMA DE PENDING UPDATES - Atualizações só aplicam no fim do ciclo
   const {
@@ -543,6 +546,8 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
                   onPlayingChange={handlePlayingChange}
                   onPlaylistEnd={handlePlaylistEnd}
                   onVideosChange={handleVideosChange}
+                  onVideoStarted={(videoId) => onVideoStart(videoId)}
+                  onVideoEnded={() => onVideoEnd()}
                 />
               ) : (
                 <div className="h-full w-full flex items-center justify-center text-white">

@@ -29,10 +29,10 @@ const MyVideos = () => {
   return (
     <div className="space-y-8">
       {/* Banner Beta */}
-      <Alert className="bg-amber-50 border-amber-200 text-amber-800">
-        <FlaskConical className="h-4 w-4 text-amber-600" />
-        <AlertDescription className="text-amber-800 text-sm">
-          🧪 Esta página está em fase de testes (Beta). Os dados exibidos podem sofrer ajustes.
+      <Alert className="bg-emerald-50 border-emerald-200 text-emerald-800">
+        <FlaskConical className="h-4 w-4 text-emerald-600" />
+        <AlertDescription className="text-emerald-800 text-sm">
+          📊 Os números refletem as exibições operacionais conforme a programação do sistema, multiplicadas pelo número de painéis.
         </AlertDescription>
       </Alert>
 
