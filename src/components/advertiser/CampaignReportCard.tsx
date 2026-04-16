@@ -223,8 +223,10 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
               {campaign.videos.map((video) =>
               <VideoListItem
                 key={video.id}
-                {...video} />
-
+                {...video}
+                totalTelas={campaign.totalTelas}
+                isVertical={campaign.tipoProduto?.toLowerCase().includes('vertical')}
+              />
               )}
             </div>
           </div>
