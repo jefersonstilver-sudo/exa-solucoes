@@ -222,7 +222,7 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
                 Vídeos da Campanha ({campaign.videos.length})
               </h4>
               <p className="text-xs text-muted-foreground mt-1">
-                {videosAtivos} em exibição · {videosInativos} inativos
+                {currentVideoId ? '1 em exibição' : '0 em exibição'} · {videosAgendados} agendados · {videosInativos} inativos
               </p>
             </div>
             <div className="divide-y divide-gray-100">
