@@ -110,7 +110,8 @@ const calculateScheduledMinutesPerWeek = (rules: ScheduleRule[]): number => {
 const formatScheduleInfo = (
   isActive: boolean, 
   selectedForDisplay: boolean, 
-  rules: ScheduleRule[]
+  rules: ScheduleRule[],
+  allPedidoRules?: { videoId: string; rules: ScheduleRule[] }[]
 ): string => {
   const activeRules = (rules || []).filter(r => r.is_active);
   
@@ -129,8 +130,39 @@ const formatScheduleInfo = (
     }
   }
   
-  // Sem regras de agendamento
+  // Sem regras de agendamento — é vídeo base (fallback)
   if (isActive && selectedForDisplay) {
+    // Calcular dias de fallback baseado nos agendamentos de outros vídeos do mesmo pedido
+    if (allPedidoRules && allPedidoRules.length > 0) {
+      const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      const daysWithAllDaySchedule = new Set<number>();
+      
+      for (const vr of allPedidoRules) {
+        for (const rule of vr.rules) {
+          if (!rule.is_active) continue;
+          if (rule.is_all_day) {
+            rule.days_of_week.forEach(d => daysWithAllDaySchedule.add(d));
+          }
+        }
+      }
+      
+      // Dias livres (sem cobertura dia todo) = dias do fallback
+      const fallbackDays: number[] = [];
+      for (let d = 0; d < 7; d++) {
+        if (!daysWithAllDaySchedule.has(d)) {
+          fallbackDays.push(d);
+        }
+      }
+      
+      if (fallbackDays.length === 7) {
+        return '24/7';
+      }
+      if (fallbackDays.length === 0) {
+        return 'Inativo';
+      }
+      return `Base: ${fallbackDays.map(d => dayNames[d]).join(', ')}`;
+    }
+    
     return '24/7';
   }
   
@@ -344,11 +376,46 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
                   dayData.totalCycle += dur;
                 }
               } else if (isActiveAndSelected) {
-                // 24/7 — adicionar em todos os dias
+                // Vídeo base/24/7 — calcular dias com gaps (fallback inteligente)
+                // Coletar dias que têm agendamento dia todo de OUTROS vídeos
+                const daysWithAllDaySchedule = new Set<number>();
+                for (const otherV of (allActiveVideos || [])) {
+                  if (otherV.video_id === v.video_id) continue;
+                  const otherRules = schedulesByVideoId.get(otherV.video_id) || [];
+                  for (const r of otherRules) {
+                    if (!r.is_active) continue;
+                    if (r.is_all_day) {
+                      for (const d of (r.days_of_week || [])) daysWithAllDaySchedule.add(d);
+                    }
+                  }
+                }
+                
                 for (let day = 0; day < 7; day++) {
-                  const dayData = dailyMap.get(day)!;
-                  dayData.videos.push({ videoId: v.video_id, duracao: dur });
-                  dayData.totalCycle += dur;
+                  // Calcular minutos ocupados neste dia por outros vídeos
+                  let scheduledMinutesThisDay = 0;
+                  for (const otherV of (allActiveVideos || [])) {
+                    if (otherV.video_id === v.video_id) continue;
+                    const otherRules = (schedulesByVideoId.get(otherV.video_id) || []).filter(r => r.is_active);
+                    for (const r of otherRules) {
+                      if (!(r.days_of_week || []).includes(day)) continue;
+                      if (r.is_all_day) {
+                        scheduledMinutesThisDay = 1440;
+                        break;
+                      } else if (r.start_time && r.end_time) {
+                        const [sh, sm] = r.start_time.split(':').map(Number);
+                        const [eh, em] = r.end_time.split(':').map(Number);
+                        scheduledMinutesThisDay += Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+                      }
+                    }
+                    if (scheduledMinutesThisDay >= 1440) break;
+                  }
+                  
+                  const gapMinutes = Math.max(0, 1440 - scheduledMinutesThisDay);
+                  if (gapMinutes > 0) {
+                    const dayData = dailyMap.get(day)!;
+                    dayData.videos.push({ videoId: v.video_id, duracao: dur });
+                    dayData.totalCycle += dur;
+                  }
                 }
               }
             }
@@ -373,68 +440,23 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
 
           if (videoLogs.length > 0) {
             horasExibidas = videoLogs.reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600;
-          } else if (isShowingOrScheduled && approvalStatus === 'approved') {
-            const approvedAt = pv.approved_at ? new Date(pv.approved_at) : dataInicio;
-            const effectiveStart = new Date(Math.max(
-              approvedAt.getTime(), 
-              dataInicio.getTime(),
-              dateRange?.start ? dateRange.start.getTime() : 0
-            ));
-            const effectiveEnd = new Date(Math.min(
-              hoje.getTime(), 
-              dataFim.getTime(),
-              dateRange?.end ? dateRange.end.getTime() : hoje.getTime()
-            ));
-            const totalActiveMs = Math.max(0, effectiveEnd.getTime() - effectiveStart.getTime());
-            const totalWeeks = totalActiveMs / (7 * 24 * 60 * 60 * 1000);
-
-            // Calcular horas por semana somando contribuição de cada dia
-            let hoursPerWeek = 0;
-            const activeRules = scheduleRules.filter(r => r.is_active);
-
-            for (const building of buildingInfos) {
-              const dailyMap = buildingDailyPlaylist.get(building.id);
-              if (!dailyMap) continue;
-              const screens = building.quantidadeTelas;
-
-              for (let day = 0; day < 7; day++) {
-                const dayData = dailyMap.get(day)!;
-                if (dayData.totalCycle <= 0) continue;
-                
-                // Verificar se este vídeo roda neste dia
-                const isInDay = dayData.videos.some(v => v.videoId === pv.video_id);
-                if (!isInDay) continue;
-
-                const shareOfRotation = duracaoSegundos / dayData.totalCycle;
-
-                // Horas de exibição neste dia
-                let hoursThisDay = 24; // padrão 24/7
-                if (activeRules.length > 0) {
-                  // Calcular horas agendadas para este dia específico
-                  let minutesThisDay = 0;
-                  for (const rule of activeRules) {
-                    if (!(rule.days_of_week || []).includes(day)) continue;
-                    if (rule.is_all_day) {
-                      minutesThisDay += 24 * 60;
-                    } else if (rule.start_time && rule.end_time) {
-                      const [sh, sm] = rule.start_time.split(':').map(Number);
-                      const [eh, em] = rule.end_time.split(':').map(Number);
-                      minutesThisDay += Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
-                    }
-                  }
-                  hoursThisDay = minutesThisDay / 60;
-                }
-
-                hoursPerWeek += hoursThisDay * shareOfRotation * screens;
-              }
-            }
-
-            horasExibidas = hoursPerWeek * totalWeeks;
           } else {
+            // Só dados reais — sem logs, sem estimativa
             horasExibidas = 0;
           }
 
-          const scheduleInfo = formatScheduleInfo(isActive, selectedForDisplay, scheduleRules);
+          // Estimativas removidas — política "só dados reais"
+
+          // Construir allPedidoRules para formatScheduleInfo
+          const allPedidoRules = videosFromPedido
+            .filter(other => other.video_id !== pv.video_id)
+            .map(other => ({
+              videoId: other.video_id,
+              rules: schedulesByVideoId.get(other.video_id) || []
+            }))
+            .filter(vr => vr.rules.length > 0);
+
+          const scheduleInfo = formatScheduleInfo(isActive, selectedForDisplay, scheduleRules, allPedidoRules);
 
           return {
             id: pv.videos?.id || pv.video_id,
@@ -527,63 +549,10 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           const uniqueBuildings = new Set(pedidoLogs.map((l: any) => l.building_id));
           prediosComExibicaoReal = uniqueBuildings.size;
         } else {
-          // ⚡ ESTIMATIVA: Calcular total de exibições estimadas
-          totalHorasCalc = videoInfos.reduce((sum, v) => sum + v.horasExibidas, 0);
-          
-          // Calcular exibições estimadas: para cada prédio, quantas vezes o ciclo completo rodou
-          let estimatedExhibitions = 0;
-          for (const video of videoInfos) {
-            const videoSchedRules = schedulesByVideoId.get(video.id) || [];
-            const hasActiveScheduleForVideo = videoSchedRules.some(r => r.is_active);
-            const isShowingOrScheduledForVideo = (video.isActive && video.selectedForDisplay) || hasActiveScheduleForVideo;
-            if (!isShowingOrScheduledForVideo || video.approvalStatus !== 'approved') continue;
-            
-            const pv = videosFromPedido.find(p => (p.videos?.id || p.video_id) === video.id);
-            const approvedAt = pv?.approved_at ? new Date(pv.approved_at) : dataInicio;
-            const effectiveStartExh = new Date(Math.max(
-              approvedAt.getTime(), 
-              dataInicio.getTime(),
-              dateRange?.start ? dateRange.start.getTime() : 0
-            ));
-            const effectiveEndExh = new Date(Math.min(
-              hoje.getTime(),
-              dataFim.getTime(),
-              dateRange?.end ? dateRange.end.getTime() : hoje.getTime()
-            ));
-            const activeSeconds = Math.max(0, (effectiveEndExh.getTime() - effectiveStartExh.getTime()) / 1000);
-
-            const activeRulesForExh = videoSchedRules.filter(r => r.is_active);
-            let scheduleFactor = 1;
-            if (activeRulesForExh.length > 0) {
-              const scheduledMinutesPerWeek = calculateScheduledMinutesPerWeek(activeRulesForExh);
-              scheduleFactor = scheduledMinutesPerWeek / (7 * 24 * 60);
-            }
-
-            for (const building of buildingInfos) {
-              const dailyMap = buildingDailyPlaylist.get(building.id);
-              if (!dailyMap) continue;
-              
-              // Calcular ciclo médio ponderado por dia
-              let totalCycleWeighted = 0;
-              let daysActive = 0;
-              for (let day = 0; day < 7; day++) {
-                const dayData = dailyMap.get(day)!;
-                const isInDay = dayData.videos.some(v => v.videoId === video.id);
-                if (isInDay && dayData.totalCycle > 0) {
-                  totalCycleWeighted += dayData.totalCycle;
-                  daysActive++;
-                }
-              }
-              if (daysActive === 0) continue;
-              const avgCycle = totalCycleWeighted / daysActive;
-              
-              const exhibitions = Math.floor((activeSeconds * scheduleFactor) / avgCycle) * building.quantidadeTelas;
-              estimatedExhibitions += exhibitions;
-            }
-          }
-          
-          totalExibicoesCalc = estimatedExhibitions;
-          prediosComExibicaoReal = buildingInfos.length; // todos os prédios contam na estimativa
+          // Só dados reais — sem logs, tudo zerado
+          totalHorasCalc = 0;
+          totalExibicoesCalc = 0;
+          prediosComExibicaoReal = 0;
         }
 
         buildingInfos.forEach(b => uniqueBuildingsSet.add(b.id));
