@@ -546,6 +546,8 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
                   onPlayingChange={handlePlayingChange}
                   onPlaylistEnd={handlePlaylistEnd}
                   onVideosChange={handleVideosChange}
+                  onVideoStarted={(videoId) => onVideoStart(videoId)}
+                  onVideoEnded={() => onVideoEnd()}
                 />
               ) : (
                 <div className="h-full w-full flex items-center justify-center text-white">
