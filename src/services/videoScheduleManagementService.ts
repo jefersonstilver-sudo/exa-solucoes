@@ -184,6 +184,35 @@ async updateVideoScheduleRules(
       }
 
       console.log('✅ [SCHEDULE_MGMT] Regras de programação atualizadas com sucesso');
+
+      // Log scheduling action
+      try {
+        const { data: videoInfo } = await supabase
+          .from('pedido_videos')
+          .select('pedido_id')
+          .eq('video_id', videoId)
+          .single();
+
+        if (videoInfo?.pedido_id) {
+          await supabase.from('video_management_logs').insert({
+            pedido_id: videoInfo.pedido_id,
+            action_type: scheduleRules.length > 0 ? 'schedule_activated' : 'schedule_deactivated',
+            details: {
+              video_id: videoId,
+              rules_count: scheduleRules.length,
+              rules: scheduleRules.map(r => ({
+                days: r.days_of_week,
+                start: r.start_time,
+                end: r.end_time,
+                is_all_day: r.is_all_day,
+              })),
+            },
+          });
+        }
+      } catch (logErr) {
+        console.warn('[SCHEDULE_MGMT] Failed to log action:', logErr);
+      }
+
       toast.success('Programação de vídeo atualizada com sucesso!');
       return true;
 
