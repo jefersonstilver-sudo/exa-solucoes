@@ -37,6 +37,8 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   const onPlayingChangeRef = useRef(onPlayingChange);
   const onPlaylistEndRef = useRef(onPlaylistEnd);
   const onVideosChangeRef = useRef(onVideosChange);
+  const onVideoStartedRef = useRef(onVideoStarted);
+  const onVideoEndedRef = useRef(onVideoEnded);
 
   // ✅ CORREÇÃO 3: Refs para acessar valores atuais sem causar re-render
   const currentIndexRef = useRef(currentIndex);
@@ -47,9 +49,11 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     onPlayingChangeRef.current = onPlayingChange;
     onPlaylistEndRef.current = onPlaylistEnd;
     onVideosChangeRef.current = onVideosChange;
+    onVideoStartedRef.current = onVideoStarted;
+    onVideoEndedRef.current = onVideoEnded;
     currentIndexRef.current = currentIndex;
     videosRef.current = videos;
-  }, [onPlayingChange, onPlaylistEnd, onVideosChange, currentIndex, videos]);
+  }, [onPlayingChange, onPlaylistEnd, onVideosChange, onVideoStarted, onVideoEnded, currentIndex, videos]);
 
   // Hash estável para detectar mudanças na playlist
   const videosHash = useMemo(() => {
