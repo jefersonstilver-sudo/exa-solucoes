@@ -490,6 +490,27 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
                     }
                   }
                   hoursThisDay = minutesThisDay / 60;
+                } else if (isActive && selectedForDisplay) {
+                  // Vídeo base sem schedule próprio — calcular gap disponível neste dia
+                  let scheduledMinutesThisDay = 0;
+                  const allVids = videosFromPedido;
+                  for (const otherPv of allVids) {
+                    if (otherPv.video_id === pv.video_id) continue;
+                    const otherRules = (schedulesByVideoId.get(otherPv.video_id) || []).filter(r => r.is_active);
+                    for (const r of otherRules) {
+                      if (!(r.days_of_week || []).includes(day)) continue;
+                      if (r.is_all_day) {
+                        scheduledMinutesThisDay = 1440;
+                        break;
+                      } else if (r.start_time && r.end_time) {
+                        const [sh2, sm2] = r.start_time.split(':').map(Number);
+                        const [eh2, em2] = r.end_time.split(':').map(Number);
+                        scheduledMinutesThisDay += Math.max(0, (eh2 * 60 + em2) - (sh2 * 60 + sm2));
+                      }
+                    }
+                    if (scheduledMinutesThisDay >= 1440) break;
+                  }
+                  hoursThisDay = Math.max(0, (1440 - scheduledMinutesThisDay)) / 60;
                 }
 
                 hoursPerWeek += hoursThisDay * shareOfRotation * screens;
@@ -501,7 +522,16 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
             horasExibidas = 0;
           }
 
-          const scheduleInfo = formatScheduleInfo(isActive, selectedForDisplay, scheduleRules);
+          // Construir allPedidoRules para formatScheduleInfo
+          const allPedidoRules = videosFromPedido
+            .filter(other => other.video_id !== pv.video_id)
+            .map(other => ({
+              videoId: other.video_id,
+              rules: schedulesByVideoId.get(other.video_id) || []
+            }))
+            .filter(vr => vr.rules.length > 0);
+
+          const scheduleInfo = formatScheduleInfo(isActive, selectedForDisplay, scheduleRules, allPedidoRules);
 
           return {
             id: pv.videos?.id || pv.video_id,
