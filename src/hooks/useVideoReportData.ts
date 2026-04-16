@@ -549,63 +549,10 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           const uniqueBuildings = new Set(pedidoLogs.map((l: any) => l.building_id));
           prediosComExibicaoReal = uniqueBuildings.size;
         } else {
-          // ⚡ ESTIMATIVA: Calcular total de exibições estimadas
-          totalHorasCalc = videoInfos.reduce((sum, v) => sum + v.horasExibidas, 0);
-          
-          // Calcular exibições estimadas: para cada prédio, quantas vezes o ciclo completo rodou
-          let estimatedExhibitions = 0;
-          for (const video of videoInfos) {
-            const videoSchedRules = schedulesByVideoId.get(video.id) || [];
-            const hasActiveScheduleForVideo = videoSchedRules.some(r => r.is_active);
-            const isShowingOrScheduledForVideo = (video.isActive && video.selectedForDisplay) || hasActiveScheduleForVideo;
-            if (!isShowingOrScheduledForVideo || video.approvalStatus !== 'approved') continue;
-            
-            const pv = videosFromPedido.find(p => (p.videos?.id || p.video_id) === video.id);
-            const approvedAt = pv?.approved_at ? new Date(pv.approved_at) : dataInicio;
-            const effectiveStartExh = new Date(Math.max(
-              approvedAt.getTime(), 
-              dataInicio.getTime(),
-              dateRange?.start ? dateRange.start.getTime() : 0
-            ));
-            const effectiveEndExh = new Date(Math.min(
-              hoje.getTime(),
-              dataFim.getTime(),
-              dateRange?.end ? dateRange.end.getTime() : hoje.getTime()
-            ));
-            const activeSeconds = Math.max(0, (effectiveEndExh.getTime() - effectiveStartExh.getTime()) / 1000);
-
-            const activeRulesForExh = videoSchedRules.filter(r => r.is_active);
-            let scheduleFactor = 1;
-            if (activeRulesForExh.length > 0) {
-              const scheduledMinutesPerWeek = calculateScheduledMinutesPerWeek(activeRulesForExh);
-              scheduleFactor = scheduledMinutesPerWeek / (7 * 24 * 60);
-            }
-
-            for (const building of buildingInfos) {
-              const dailyMap = buildingDailyPlaylist.get(building.id);
-              if (!dailyMap) continue;
-              
-              // Calcular ciclo médio ponderado por dia
-              let totalCycleWeighted = 0;
-              let daysActive = 0;
-              for (let day = 0; day < 7; day++) {
-                const dayData = dailyMap.get(day)!;
-                const isInDay = dayData.videos.some(v => v.videoId === video.id);
-                if (isInDay && dayData.totalCycle > 0) {
-                  totalCycleWeighted += dayData.totalCycle;
-                  daysActive++;
-                }
-              }
-              if (daysActive === 0) continue;
-              const avgCycle = totalCycleWeighted / daysActive;
-              
-              const exhibitions = Math.floor((activeSeconds * scheduleFactor) / avgCycle) * building.quantidadeTelas;
-              estimatedExhibitions += exhibitions;
-            }
-          }
-          
-          totalExibicoesCalc = estimatedExhibitions;
-          prediosComExibicaoReal = buildingInfos.length; // todos os prédios contam na estimativa
+          // Só dados reais — sem logs, tudo zerado
+          totalHorasCalc = 0;
+          totalExibicoesCalc = 0;
+          prediosComExibicaoReal = 0;
         }
 
         buildingInfos.forEach(b => uniqueBuildingsSet.add(b.id));
