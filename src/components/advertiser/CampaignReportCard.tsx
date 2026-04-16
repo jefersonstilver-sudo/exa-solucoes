@@ -8,6 +8,7 @@ import { CampaignReport } from '@/hooks/useVideoReportData';
 import { CampaignPerformanceChart } from './CampaignPerformanceChart';
 import { VideoListItem } from './VideoListItem';
 import { CampaignPDFExporter } from './CampaignPDFExporter';
+import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 import { toast } from 'sonner';
 import {
   Collapsible,
@@ -22,6 +23,11 @@ interface CampaignReportCardProps {
 export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  
+  const { currentVideo } = useCurrentVideoDisplay({ 
+    orderId: campaign.pedidoId, 
+    enabled: !!campaign.pedidoId 
+  });
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -95,12 +101,12 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
     }
   };
 
-  // Contar vídeos ativos vs inativos
-  const videosAtivos = campaign.videos.filter((v) => 
-    (v.isActive && v.selectedForDisplay && v.approvalStatus === 'approved') ||
-    (v.approvalStatus === 'approved' && v.scheduleInfo?.startsWith('Agendado'))
+  // Contar vídeos: 1 em exibição (se houver), restante agendados
+  const currentVideoId = currentVideo?.video_id;
+  const videosAgendados = campaign.videos.filter((v) => 
+    v.approvalStatus === 'approved' && (v.isActive || v.scheduleInfo?.startsWith('Agendado') || v.scheduleInfo?.startsWith('Base:'))
   ).length;
-  const videosInativos = campaign.videos.length - videosAtivos;
+  const videosInativos = campaign.videos.length - videosAgendados;
 
   return (
     <Collapsible
@@ -216,7 +222,7 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
                 Vídeos da Campanha ({campaign.videos.length})
               </h4>
               <p className="text-xs text-muted-foreground mt-1">
-                {videosAtivos} em exibição · {videosInativos} inativos
+                {currentVideoId ? '1 em exibição' : '0 em exibição'} · {videosAgendados} agendados · {videosInativos} inativos
               </p>
             </div>
             <div className="divide-y divide-gray-100">
@@ -226,6 +232,7 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
                 {...video}
                 totalTelas={campaign.totalTelas}
                 isVertical={campaign.tipoProduto?.toLowerCase().includes('vertical')}
+                isCurrentlyDisplaying={currentVideo?.video_id === video.id}
               />
               )}
             </div>
