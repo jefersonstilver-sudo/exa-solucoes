@@ -8,6 +8,7 @@ import { CampaignReport } from '@/hooks/useVideoReportData';
 import { CampaignPerformanceChart } from './CampaignPerformanceChart';
 import { VideoListItem } from './VideoListItem';
 import { CampaignPDFExporter } from './CampaignPDFExporter';
+import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 import { toast } from 'sonner';
 import {
   Collapsible,
@@ -22,6 +23,11 @@ interface CampaignReportCardProps {
 export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  
+  const { currentVideo } = useCurrentVideoDisplay({ 
+    orderId: campaign.pedidoId, 
+    enabled: !!campaign.pedidoId 
+  });
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -226,6 +232,7 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
                 {...video}
                 totalTelas={campaign.totalTelas}
                 isVertical={campaign.tipoProduto?.toLowerCase().includes('vertical')}
+                isCurrentlyDisplaying={currentVideo?.video_id === video.id}
               />
               )}
             </div>

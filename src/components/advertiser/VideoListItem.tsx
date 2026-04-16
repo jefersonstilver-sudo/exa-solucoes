@@ -16,6 +16,7 @@ export interface VideoListItemProps {
   scheduleInfo?: string;
   totalTelas?: number;
   isVertical?: boolean;
+  isCurrentlyDisplaying?: boolean;
 }
 
 export const VideoListItem = ({
@@ -30,6 +31,7 @@ export const VideoListItem = ({
   scheduleInfo = '24/7',
   totalTelas = 1,
   isVertical = false,
+  isCurrentlyDisplaying = false,
 }: VideoListItemProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [videoError, setVideoError] = useState(false);
@@ -50,8 +52,15 @@ export const VideoListItem = ({
     return `${hours.toFixed(1)}h`;
   };
   
-  const isDisplaying = (isActive && selectedForDisplay && approvalStatus === 'approved') 
-    || (approvalStatus === 'approved' && scheduleInfo !== undefined && (scheduleInfo.startsWith('Agendado') || scheduleInfo.startsWith('Base:')));
+  // Use the RPC-determined value — only ONE video per order is truly displaying
+  const isDisplaying = isCurrentlyDisplaying;
+  
+  // Whether the video has a schedule (but may not be active right now)
+  const hasSchedule = approvalStatus === 'approved' && (
+    (scheduleInfo?.startsWith('Agendado')) || 
+    (scheduleInfo?.startsWith('Base:')) ||
+    (isActive && selectedForDisplay)
+  );
 
   // Real-time ticker: increment exhibitions live
   // Horizontal: cycle=480s, appears 3 times → every 160s per screen
@@ -80,12 +89,30 @@ export const VideoListItem = ({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
-        return isDisplaying ? (
-          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 animate-pulse">
-            <Radio className="w-3 h-3 mr-1" />
-            Em Exibição
-          </Badge>
-        ) : (
+        if (isDisplaying) {
+          return (
+            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 animate-pulse">
+              <Radio className="w-3 h-3 mr-1" />
+              Em Exibição
+            </Badge>
+          );
+        }
+        if (hasSchedule) {
+          // Has a schedule but not the currently active video
+          const isScheduledType = scheduleInfo?.startsWith('Agendado');
+          return (
+            <Badge className={cn(
+              "hover:bg-opacity-100",
+              isScheduledType 
+                ? "bg-purple-100 text-purple-800 border-purple-200" 
+                : "bg-amber-100 text-amber-800 border-amber-200"
+            )}>
+              <Calendar className="w-3 h-3 mr-1" />
+              {isScheduledType ? 'Agendado' : 'Base'}
+            </Badge>
+          );
+        }
+        return (
           <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-100">
             <CheckCircle className="w-3 h-3 mr-1" />
             Aprovado
@@ -111,7 +138,35 @@ export const VideoListItem = ({
   };
 
   const getScheduleBadge = () => {
-    if (!isDisplaying) {
+    if (isDisplaying) {
+      // Currently playing — show schedule info
+      if (scheduleInfo === '24/7') {
+        return (
+          <Badge className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100 text-[10px]">
+            <Zap className="w-2.5 h-2.5 mr-1" />
+            24/7
+          </Badge>
+        );
+      }
+      return (
+        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100 text-[10px]">
+          <Radio className="w-2.5 h-2.5 mr-1" />
+          {scheduleInfo?.replace('Agendado: ', '').replace('Base: ', '')}
+        </Badge>
+      );
+    }
+    
+    if (hasSchedule && scheduleInfo && scheduleInfo !== '24/7') {
+      // Has schedule but not active now — show days info
+      return (
+        <Badge className="bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-100 text-[10px]">
+          <Calendar className="w-2.5 h-2.5 mr-1" />
+          {scheduleInfo.replace('Agendado: ', '').replace('Base: ', '')}
+        </Badge>
+      );
+    }
+    
+    if (!hasSchedule) {
       return (
         <Badge className="bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-100 text-[10px]">
           <Pause className="w-2.5 h-2.5 mr-1" />
@@ -119,22 +174,8 @@ export const VideoListItem = ({
         </Badge>
       );
     }
-    
-    if (scheduleInfo === '24/7') {
-      return (
-        <Badge className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100 text-[10px]">
-          <Zap className="w-2.5 h-2.5 mr-1" />
-          24/7
-        </Badge>
-      );
-    }
-    
-    return (
-      <Badge className="bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-100 text-[10px]">
-        <Calendar className="w-2.5 h-2.5 mr-1" />
-        {scheduleInfo.replace('Agendado: ', '')}
-      </Badge>
-    );
+
+    return null;
   };
 
   const handleVideoClick = (e: React.MouseEvent) => {
@@ -150,15 +191,14 @@ export const VideoListItem = ({
     }
   };
 
-  const isScheduled = scheduleInfo?.startsWith('Agendado') || scheduleInfo?.startsWith('Base:');
-  const isBase = scheduleInfo === '24/7' && isDisplaying;
+  const isScheduledType = scheduleInfo?.startsWith('Agendado') || scheduleInfo?.startsWith('Base:');
 
   return (
     <div className={cn(
       "flex items-center gap-4 p-4 bg-background border-b border-border/40 hover:bg-accent/5 transition-colors group",
-      !isDisplaying && "opacity-60 bg-muted/30",
-      isScheduled && "border-2 border-blue-400 bg-blue-50/30 dark:bg-blue-950/20",
-      !isScheduled && isBase && "border-2 border-yellow-400 bg-yellow-50/30 dark:bg-yellow-950/20"
+      isDisplaying && "border-l-4 border-l-emerald-500 bg-emerald-50/30",
+      !isDisplaying && hasSchedule && "opacity-80",
+      !isDisplaying && !hasSchedule && "opacity-50 bg-muted/30"
     )}>
       {/* Thumbnail com play */}
       <div
