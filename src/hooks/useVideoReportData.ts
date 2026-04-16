@@ -110,7 +110,8 @@ const calculateScheduledMinutesPerWeek = (rules: ScheduleRule[]): number => {
 const formatScheduleInfo = (
   isActive: boolean, 
   selectedForDisplay: boolean, 
-  rules: ScheduleRule[]
+  rules: ScheduleRule[],
+  allPedidoRules?: { videoId: string; rules: ScheduleRule[] }[]
 ): string => {
   const activeRules = (rules || []).filter(r => r.is_active);
   
@@ -129,8 +130,39 @@ const formatScheduleInfo = (
     }
   }
   
-  // Sem regras de agendamento
+  // Sem regras de agendamento — é vídeo base (fallback)
   if (isActive && selectedForDisplay) {
+    // Calcular dias de fallback baseado nos agendamentos de outros vídeos do mesmo pedido
+    if (allPedidoRules && allPedidoRules.length > 0) {
+      const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      const daysWithAllDaySchedule = new Set<number>();
+      
+      for (const vr of allPedidoRules) {
+        for (const rule of vr.rules) {
+          if (!rule.is_active) continue;
+          if (rule.is_all_day) {
+            rule.days_of_week.forEach(d => daysWithAllDaySchedule.add(d));
+          }
+        }
+      }
+      
+      // Dias livres (sem cobertura dia todo) = dias do fallback
+      const fallbackDays: number[] = [];
+      for (let d = 0; d < 7; d++) {
+        if (!daysWithAllDaySchedule.has(d)) {
+          fallbackDays.push(d);
+        }
+      }
+      
+      if (fallbackDays.length === 7) {
+        return '24/7';
+      }
+      if (fallbackDays.length === 0) {
+        return 'Inativo';
+      }
+      return `Base: ${fallbackDays.map(d => dayNames[d]).join(', ')}`;
+    }
+    
     return '24/7';
   }
   

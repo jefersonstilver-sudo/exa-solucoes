@@ -43,7 +43,7 @@ export const VideoListItem = ({
   };
   
   const isDisplaying = (isActive && selectedForDisplay && approvalStatus === 'approved') 
-    || (approvalStatus === 'approved' && scheduleInfo !== undefined && scheduleInfo.startsWith('Agendado'));
+    || (approvalStatus === 'approved' && scheduleInfo !== undefined && (scheduleInfo.startsWith('Agendado') || scheduleInfo.startsWith('Base:')));
 
   const getStatusBadge = (status: string) => {
     switch (status) {

@@ -101,31 +101,37 @@ export const VideoWeeklySchedule: React.FC<VideoWeeklyScheduleProps> = ({ videoS
   // Obter vídeo base
   const baseVideo = approvedVideos.find(slot => slot.is_base_video);
   
-  // Gerar programação semanal
+  // Gerar programação semanal com lógica de fallback inteligente
   const generateWeeklySchedule = () => {
     const schedule: { [key: number]: any[] } = {};
     
-    // Inicializar cada dia com vídeo base (se existir)
+    // Inicializar dias vazios
     DAYS_OF_WEEK.forEach(day => {
-      schedule[day.value] = baseVideo ? [{
-        type: 'base',
-        video: baseVideo,
-        startTime: '00:00',
-        endTime: '23:59',
-        isAllDay: true,
-        title: baseVideo.video_data?.nome || 'Vídeo Base'
-      }] : [];
+      schedule[day.value] = [];
     });
 
-    // Adicionar vídeos agendados
+    // Fase 1: Coletar blocos agendados por dia
+    const scheduledBlocksByDay = new Map<number, { start: number; end: number; slot: any }[]>();
+    for (let d = 0; d < 7; d++) scheduledBlocksByDay.set(d, []);
+
     approvedVideos.forEach(slot => {
       if (slot.schedule_rules && slot.schedule_rules.length > 0) {
         slot.schedule_rules
           .filter(rule => rule.is_active)
           .forEach(rule => {
             rule.days_of_week.forEach(dayValue => {
-              if (!schedule[dayValue]) schedule[dayValue] = [];
+              const blocks = scheduledBlocksByDay.get(dayValue) || [];
               
+              if (rule.is_all_day) {
+                blocks.push({ start: 0, end: 1440, slot });
+              } else if (rule.start_time && rule.end_time) {
+                const [sh, sm] = rule.start_time.split(':').map(Number);
+                const [eh, em] = rule.end_time.split(':').map(Number);
+                blocks.push({ start: sh * 60 + sm, end: eh * 60 + em, slot });
+              }
+              
+              scheduledBlocksByDay.set(dayValue, blocks);
+
               schedule[dayValue].push({
                 type: 'scheduled',
                 video: slot,
@@ -139,11 +145,65 @@ export const VideoWeeklySchedule: React.FC<VideoWeeklyScheduleProps> = ({ videoS
       }
     });
 
+    // Fase 2: Calcular gaps e adicionar vídeo base apenas nos espaços livres
+    if (baseVideo) {
+      DAYS_OF_WEEK.forEach(day => {
+        const blocks = scheduledBlocksByDay.get(day.value) || [];
+        
+        if (blocks.length === 0) {
+          // Dia totalmente livre → base o dia inteiro
+          schedule[day.value].push({
+            type: 'base',
+            video: baseVideo,
+            startTime: '00:00',
+            endTime: '23:59',
+            isAllDay: true,
+            title: baseVideo.video_data?.nome || 'Vídeo Base'
+          });
+          return;
+        }
+
+        // Verificar se algum bloco cobre o dia inteiro
+        const hasAllDay = blocks.some(b => b.start === 0 && b.end === 1440);
+        if (hasAllDay) return; // Dia totalmente coberto, base NÃO aparece
+
+        // Calcular gaps (janelas livres)
+        const sorted = [...blocks].sort((a, b) => a.start - b.start);
+        const gaps: { start: number; end: number }[] = [];
+        
+        let cursor = 0;
+        for (const block of sorted) {
+          if (block.start > cursor) {
+            gaps.push({ start: cursor, end: block.start });
+          }
+          cursor = Math.max(cursor, block.end);
+        }
+        if (cursor < 1440) {
+          gaps.push({ start: cursor, end: 1440 });
+        }
+
+        // Adicionar base nos gaps
+        for (const gap of gaps) {
+          const startH = Math.floor(gap.start / 60).toString().padStart(2, '0');
+          const startM = (gap.start % 60).toString().padStart(2, '0');
+          const endH = Math.floor(gap.end / 60).toString().padStart(2, '0');
+          const endM = (gap.end % 60).toString().padStart(2, '0');
+          
+          schedule[day.value].push({
+            type: 'base',
+            video: baseVideo,
+            startTime: `${startH}:${startM}`,
+            endTime: `${endH}:${endM}`,
+            isAllDay: false,
+            title: baseVideo.video_data?.nome || 'Vídeo Base'
+          });
+        }
+      });
+    }
+
     // Ordenar por horário em cada dia
     Object.keys(schedule).forEach(day => {
       schedule[parseInt(day)].sort((a, b) => {
-        if (a.type === 'base') return 1; // Base sempre por último
-        if (b.type === 'base') return -1;
         return a.startTime.localeCompare(b.startTime);
       });
     });
