@@ -30,20 +30,24 @@ export const CampaignPerformanceChart = ({ data }: CampaignPerformanceChartProps
     )
   ).map(str => JSON.parse(str));
 
-  // Preparar dados para o gráfico com HORAS
-  const chartData = data.map(point => {
-    const dataPoint: any = {
-      data: point.data,
-      dataFormatada: format(new Date(point.data), 'dd/MM', { locale: ptBR }),
-    };
+  // Preparar dados ACUMULADOS para o gráfico
+  const chartData = (() => {
+    const accumulated: Record<string, number> = {};
+    return data.map(point => {
+      const dataPoint: any = {
+        data: point.data,
+        dataFormatada: format(new Date(point.data), 'dd/MM', { locale: ptBR }),
+      };
 
-    // Adicionar EXIBIÇÕES de cada vídeo
-    point.videosAtivos.forEach(video => {
-      dataPoint[video.id] = video.exibicoes;
+      // Acumular exibições de cada vídeo
+      point.videosAtivos.forEach(video => {
+        accumulated[video.id] = (accumulated[video.id] || 0) + video.exibicoes;
+        dataPoint[video.id] = accumulated[video.id];
+      });
+
+      return dataPoint;
     });
-
-    return dataPoint;
-  });
+  })();
 
   // Aplicar zoom funcional nos dados
   const filteredChartData = zoomLevel === '1w' 
@@ -78,7 +82,7 @@ export const CampaignPerformanceChart = ({ data }: CampaignPerformanceChartProps
                     {video.nome}
                   </span>
                   <span className="font-semibold ml-auto" style={{ color: video.color }}>
-                    {entry.value} exibições
+                    {entry.value?.toLocaleString('pt-BR')} exibições
                   </span>
                 </div>
               );
@@ -135,7 +139,7 @@ export const CampaignPerformanceChart = ({ data }: CampaignPerformanceChartProps
               tick={{ fontSize: 12, fill: '#6B7280' }}
               tickLine={{ stroke: '#e5e7eb' }}
               tickFormatter={(value) => `${value}`}
-              label={{ value: 'Exibições', angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#6B7280' } }}
+              label={{ value: 'Exibições acumuladas', angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#6B7280' } }}
             />
             
             <Tooltip content={<CustomTooltip />} />
