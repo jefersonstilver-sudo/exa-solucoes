@@ -440,11 +440,12 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           const scheduleRules = schedulesByVideoId.get(pv.video_id) || [];
 
           const videoLogs = playbackLogs.filter(l => l.video_id === pv.video_id);
-          const exibicoes = videoLogs.length;
+          // Multiplicar exibições pelo número de telas dos prédios
+          const exibicoes = videoLogs.length * totalTelas;
           let horasExibidas: number;
 
           if (videoLogs.length > 0) {
-            horasExibidas = videoLogs.reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600;
+            horasExibidas = (videoLogs.reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600) * totalTelas;
           } else {
             horasExibidas = 0;
           }
@@ -499,15 +500,15 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
               colorIndex++;
             }
             
-            // Contar exibições reais neste dia para este vídeo
+            // Contar exibições reais neste dia para este vídeo (multiplicado por telas)
             const exibicoesDia = playbackLogs.filter(l => 
               l.video_id === video.id && 
               l.started_at?.split('T')[0] === dateStr
-            ).length;
+            ).length * totalTelas;
             
-            const horasDia = playbackLogs
+            const horasDia = (playbackLogs
               .filter(l => l.video_id === video.id && l.started_at?.split('T')[0] === dateStr)
-              .reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600;
+              .reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600) * totalTelas;
             
             return {
               id: video.id,
@@ -536,8 +537,8 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
         let prediosComExibicaoReal = 0;
 
         if (hasRealData) {
-          totalExibicoesCalc = pedidoLogs.length;
-          totalHorasCalc = pedidoLogs.reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600;
+          totalExibicoesCalc = pedidoLogs.length * totalTelas;
+          totalHorasCalc = (pedidoLogs.reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600) * totalTelas;
           const uniqueBuildings = new Set(pedidoLogs.map((l: any) => l.building_id));
           prediosComExibicaoReal = uniqueBuildings.size;
         } else {

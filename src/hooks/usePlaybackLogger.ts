@@ -9,8 +9,11 @@ interface PlaybackEntry {
   started_at: string;
 }
 
-const FLUSH_INTERVAL_MS = 30 * 1000; // 30 seconds
-const DELTA_INTERVAL_MS = 30 * 1000; // send incremental delta every 30s
+const FLUSH_INTERVAL_MS = 30 * 1000;
+const DELTA_INTERVAL_MS = 30 * 1000;
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export const usePlaybackLogger = (buildingId: string) => {
   const bufferRef = useRef<PlaybackEntry[]>([]);
@@ -26,22 +29,25 @@ export const usePlaybackLogger = (buildingId: string) => {
     const logsToSend = [...bufferRef.current];
     bufferRef.current = [];
 
+    console.log('[PlaybackLogger] 📤 Flushing', logsToSend.length, 'logs:', logsToSend);
+
     try {
       const { error } = await supabase.functions.invoke('log-video-playback', {
         body: { logs: logsToSend },
       });
 
       if (error) {
-        console.error('[PlaybackLogger] Flush failed, re-queuing:', error);
+        console.error('[PlaybackLogger] ❌ Flush failed:', error);
         bufferRef.current = [...logsToSend, ...bufferRef.current];
+      } else {
+        console.log('[PlaybackLogger] ✅ Flush OK —', logsToSend.length, 'logs enviados');
       }
     } catch (err) {
-      console.error('[PlaybackLogger] Network error, re-queuing');
+      console.error('[PlaybackLogger] ❌ Network error on flush:', err);
       bufferRef.current = [...logsToSend, ...bufferRef.current];
     }
   }, []);
 
-  // Push a delta entry for the currently playing video
   const pushDelta = useCallback(() => {
     if (!videoStartRef.current || !currentVideoRef.current || !buildingId) return;
 
@@ -59,9 +65,44 @@ export const usePlaybackLogger = (buildingId: string) => {
       started_at: new Date(fromTime).toISOString(),
     };
 
+    console.log('[PlaybackLogger] 📊 Delta entry:', deltaSeconds, 's for video', currentVideoRef.current.video_id);
     bufferRef.current.push(entry);
     lastDeltaSentRef.current = now;
   }, [buildingId]);
+
+  // Send logs via sendBeacon (more reliable on page hide/unload)
+  const flushViaSendBeacon = useCallback(() => {
+    if (bufferRef.current.length === 0) return;
+    
+    const logs = [...bufferRef.current];
+    bufferRef.current = [];
+
+    const url = `${SUPABASE_URL}/functions/v1/log-video-playback`;
+    const body = JSON.stringify({ logs });
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'apikey': SUPABASE_ANON_KEY,
+    };
+
+    // Try sendBeacon first (most reliable on page exit)
+    if (navigator.sendBeacon) {
+      const blob = new Blob([body], { type: 'application/json' });
+      const sent = navigator.sendBeacon(url, blob);
+      console.log('[PlaybackLogger] 🔔 sendBeacon:', sent ? 'OK' : 'FAILED', '—', logs.length, 'logs');
+      if (!sent) {
+        // Fallback to fetch keepalive
+        fetch(url, { method: 'POST', body, headers, keepalive: true }).catch(err => {
+          console.error('[PlaybackLogger] ❌ Fallback fetch failed:', err);
+        });
+      }
+    } else {
+      fetch(url, { method: 'POST', body, headers, keepalive: true }).catch(err => {
+        console.error('[PlaybackLogger] ❌ Fetch keepalive failed:', err);
+      });
+    }
+  }, []);
 
   // Flush periodic buffer
   useEffect(() => {
@@ -71,7 +112,7 @@ export const usePlaybackLogger = (buildingId: string) => {
     };
   }, [flushBuffer]);
 
-  // Send incremental deltas every 30s while a video is playing
+  // Send incremental deltas every 30s
   useEffect(() => {
     deltaTimerRef.current = setInterval(() => {
       pushDelta();
@@ -82,27 +123,18 @@ export const usePlaybackLogger = (buildingId: string) => {
     };
   }, [pushDelta, flushBuffer]);
 
-  // Flush on visibilitychange and pagehide
+  // Flush on visibilitychange and pagehide via sendBeacon
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         pushDelta();
-        // Use sendBeacon-style fire-and-forget
-        if (bufferRef.current.length > 0) {
-          const logs = [...bufferRef.current];
-          bufferRef.current = [];
-          supabase.functions.invoke('log-video-playback', { body: { logs } }).catch(() => {});
-        }
+        flushViaSendBeacon();
       }
     };
 
     const handlePageHide = () => {
       pushDelta();
-      if (bufferRef.current.length > 0) {
-        const logs = [...bufferRef.current];
-        bufferRef.current = [];
-        supabase.functions.invoke('log-video-playback', { body: { logs } }).catch(() => {});
-      }
+      flushViaSendBeacon();
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -112,21 +144,19 @@ export const usePlaybackLogger = (buildingId: string) => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pagehide', handlePageHide);
     };
-  }, [pushDelta]);
+  }, [pushDelta, flushViaSendBeacon]);
 
   // Unmount: flush remaining
   useEffect(() => {
     return () => {
       pushDelta();
-      if (bufferRef.current.length > 0) {
-        const logs = [...bufferRef.current];
-        bufferRef.current = [];
-        supabase.functions.invoke('log-video-playback', { body: { logs } }).catch(() => {});
-      }
+      flushViaSendBeacon();
     };
-  }, [pushDelta]);
+  }, [pushDelta, flushViaSendBeacon]);
 
   const onVideoStart = useCallback((videoId: string, pedidoId?: string) => {
+    console.log('[PlaybackLogger] 🎬 onVideoStart:', videoId, 'pedido:', pedidoId, 'building:', buildingId);
+    
     // Flush previous video's remaining time
     if (videoStartRef.current && currentVideoRef.current) {
       pushDelta();
@@ -136,11 +166,14 @@ export const usePlaybackLogger = (buildingId: string) => {
     videoStartRef.current = Date.now();
     lastDeltaSentRef.current = null;
     currentVideoRef.current = { video_id: videoId, pedido_id: pedidoId };
-  }, [pushDelta, flushBuffer]);
+  }, [pushDelta, flushBuffer, buildingId]);
 
   const onVideoEnd = useCallback(() => {
     if (!videoStartRef.current || !currentVideoRef.current || !buildingId) return;
 
+    console.log('[PlaybackLogger] 🛑 onVideoEnd:', currentVideoRef.current.video_id);
+
+    // Push delta BEFORE clearing refs
     pushDelta();
     
     videoStartRef.current = null;

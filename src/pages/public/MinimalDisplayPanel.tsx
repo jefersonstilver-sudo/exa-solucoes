@@ -210,9 +210,18 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
         autoPlay
         muted
         playsInline
-        onPlay={() => onVideoStart(currentVideo.video_id, currentVideo.pedido_id)}
-        onEnded={handleVideoEnd}
-        onError={handleVideoEnd}
+        onPlay={() => {
+          console.log('[DisplayPanel] ▶️ onPlay:', currentVideo.video_id, 'pedido:', currentVideo.pedido_id);
+          onVideoStart(currentVideo.video_id, currentVideo.pedido_id);
+        }}
+        onEnded={() => {
+          console.log('[DisplayPanel] ⏹️ onEnded:', currentVideo.video_id);
+          handleVideoEnd();
+        }}
+        onError={(e) => {
+          console.error('[DisplayPanel] ❌ onError:', currentVideo.video_id, e);
+          handleVideoEnd();
+        }}
       />
       
       <div className="fixed bottom-4 right-4 z-50 bg-black/50 text-white px-3 py-2 rounded text-xs">
