@@ -440,7 +440,13 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
 
           if (videoLogs.length > 0) {
             horasExibidas = videoLogs.reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600;
-          } else if (isShowingOrScheduled && approvalStatus === 'approved') {
+          } else {
+            // Só dados reais — sem logs, sem estimativa
+            horasExibidas = 0;
+          }
+
+          // Bloco de estimativa removido — política "só dados reais"
+          if (false) { // mantido como referência, nunca executa
             const approvedAt = pv.approved_at ? new Date(pv.approved_at) : dataInicio;
             const effectiveStart = new Date(Math.max(
               approvedAt.getTime(), 
