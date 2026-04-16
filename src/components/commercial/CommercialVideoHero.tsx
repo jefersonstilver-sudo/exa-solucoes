@@ -100,12 +100,16 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   }, []); // ✅ SEM dependências
 
   const handlePlaying = useCallback(() => {
+    const currentVideo = videosRef.current[currentIndexRef.current];
     VideoDebugger.logEvent('VIDEO', 'Reproduzindo', {
       index: `${currentIndexRef.current + 1}/${videosRef.current.length}`
     });
     setIsBuffering(false);
     onPlayingChangeRef.current?.(true);
-  }, []); // ✅ SEM dependências
+    if (currentVideo) {
+      onVideoStartedRef.current?.(currentVideo.id);
+    }
+  }, []);
 
   const handleEnded = useCallback(() => {
     const currentVideo = videosRef.current[currentIndexRef.current];
@@ -115,8 +119,10 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     });
     
     onPlayingChangeRef.current?.(false);
+    if (currentVideo) {
+      onVideoEndedRef.current?.(currentVideo.id);
+    }
     
-    // ✅ GARANTIR LOOP INFINITO: Sempre avança para o próximo vídeo
     setCurrentIndex(prev => {
       const nextIndex = (prev + 1) % videosRef.current.length;
       
@@ -128,7 +134,7 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
       VideoDebugger.logEvent('VIDEO', `⏭️ Próximo vídeo: ${nextIndex + 1}/${videosRef.current.length}`);
       return nextIndex;
     });
-  }, []); // ✅ SEM dependências - handler PERMANENTE
+  }, []);
 
   const handleError = useCallback(() => {
     const currentVideo = videosRef.current[currentIndexRef.current];
