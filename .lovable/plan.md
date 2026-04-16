@@ -1,55 +1,100 @@
 
 
-# Reconstruir Filtro de Período e Exibição de Datas
+# Vídeo Base como Fallback Inteligente (Com Horários Parciais)
 
-## Problemas Identificados
+## Situação Atual no Banco
 
-### 1. PeriodFilter com trigger invisível
-O componente `PeriodFilter.tsx` usa um `<div />` vazio como `PopoverTrigger` para o calendário personalizado (linha 92-93). Isso é hacky e pode falhar — o popover não tem elemento visual para ancorar. O fluxo depende de estado (`isCustomOpen`) setado a partir do dropdown, o que é frágil.
+```text
+KAMMER 1 → base=true, SEM schedule → aparece TODOS os 7 dias (ERRADO)
+kammer 2 → schedule: Ter(2), Sáb(6) — DIA TODO
+KAMMER 3 → schedule: Dom(0), Qua(3) — DIA TODO
+KAMMER 4 → schedule: Qui(4) — DIA TODO
+```
 
-### 2. Datas no CampaignReportCard mostram o contrato inteiro
-A linha 151 mostra `dataInicio → dataFim` do pedido (ex: "30 mar 2026 → 30 mar 2027"), mas o "dias ativos" ao lado é calculado com base no filtro de período (15 dias). Isso confunde — o usuário vê 1 ano de contrato mas "15 dias ativos".
+## Regra Correta (Confirmada pelo Usuário)
 
-### 3. O filtro "Hoje" calcula `subDays(0)` = mesma data
-Na PeriodFilter, "Hoje" usa `days: 0`, então `start = end = new Date()`. Isso pode causar 0 dias ativos.
+O vídeo base é FALLBACK — ele preenche os ESPAÇOS VAZIOS:
 
-## Solução
+1. **Dia sem nenhum agendamento** → vídeo base toca o dia inteiro (24h)
+2. **Dia com agendamento DIA TODO** → vídeo base NÃO aparece
+3. **Dia com agendamento PARCIAL** (ex: 09h-18h) → vídeo base preenche os horários restantes (00h-09h e 18h-24h)
 
-### Arquivo 1: `src/components/advertiser/PeriodFilter.tsx` — Reconstruir
-Substituir a abordagem DropdownMenu + Popover separado por um componente unificado usando apenas `Popover` com calendários integrados:
+### Resultado esperado para este pedido (todos são dia todo):
 
-- Botão principal mostra o período selecionado (ex: "Últimos 30 dias" ou "01/04 - 15/04")
-- Ao clicar, abre popover com:
-  - Botões rápidos: Hoje, 7 dias, 15 dias, 30 dias
-  - Seção de período personalizado com dois calendários (início/fim) lado a lado
-  - Botão "Aplicar" para o período personalizado
-- "Hoje" corrigido para usar `startOfDay` até `endOfDay`
-- Design alinhado com EXA (vermelho `#9C1E1E`, sem componentes verdes)
+```text
+Dom → KAMMER 3 (dia todo)         ← base NÃO aparece
+Seg → KAMMER 1 (dia todo)         ← ÚNICO dia livre, base preenche
+Ter → kammer 2 (dia todo)         ← base NÃO aparece
+Qua → KAMMER 3 (dia todo)        ← base NÃO aparece
+Qui → KAMMER 4 (dia todo)        ← base NÃO aparece
+Sex → KAMMER 1 (dia todo)        ← ÚNICO dia livre, base preenche
+Sáb → kammer 2 (dia todo)        ← base NÃO aparece
+```
 
-### Arquivo 2: `src/components/advertiser/CampaignReportCard.tsx` — Corrigir exibição de datas
-- Linha 148-157: Mostrar **duas informações** separadas:
-  - "Contrato: 30/03/2026 → 30/03/2027" — período do contrato completo
-  - "Período analisado: X dias" — refletindo o filtro selecionado
-- Isso elimina a confusão entre o contrato e o período filtrado
+### Exemplo hipotético com agendamento parcial:
 
-### Arquivo 3: `src/hooks/useVideoReportData.ts` — Ajuste menor
-- Garantir que `diasAtivos` nunca seja 0 quando `filteredStart === filteredEnd` (caso "Hoje") — usar `Math.max(1, ...)` para pelo menos 1 dia
+```text
+Ter → kammer 2 (09:00-18:00) + KAMMER 1 (00:00-09:00 e 18:00-23:59)
+```
+
+## Mudanças
+
+### Arquivo 1: `src/components/video-management/VideoWeeklySchedule.tsx`
+
+Refatorar `generateWeeklySchedule()` (linhas 105-152):
+
+- **Fase 1**: Processar todos os vídeos agendados, coletando por dia quais horários estão ocupados
+- **Fase 2**: Para cada dia, calcular as janelas livres (gaps)
+- **Fase 3**: Se existem gaps, adicionar vídeo base com os horários corretos das janelas
+- Se um dia inteiro está coberto por agendamentos (is_all_day ou cobertura total), o vídeo base NÃO aparece
+
+### Arquivo 2: `src/hooks/useVideoReportData.ts`
+
+**Linhas 346-353** — Refatorar cálculo do vídeo base no dailyMap:
+- Fase 1: Processar agendados, marcar por dia quantas horas estão ocupadas
+- Fase 2: Para o vídeo base, adicionar apenas nos dias com horas livres
+- Fase 2b: No cálculo de `hoursThisDay` (linha 411), para o vídeo base sem schedule, usar as horas de gap calculadas (24h menos horas ocupadas por agendados)
+
+**Linhas 110-138** — Refatorar `formatScheduleInfo`:
+- Para vídeo base (isActive && selectedForDisplay && sem regras próprias), calcular dias de fallback e mostrar "Base: Seg, Sex" em vez de "24/7"
+- Isso requer passar os scheduleRules de TODOS os vídeos do mesmo pedido para a função
+
+### Arquivo 3: `src/components/advertiser/VideoListItem.tsx`
+
+- Linha 45: Reconhecer `scheduleInfo` que começa com "Base:" como `isDisplaying = true`
 
 ## Detalhes Técnicos
 
-### Nova estrutura do PeriodFilter
+### Algoritmo de gap-filling para a grade semanal
+
 ```text
-Popover
-├── Trigger: Button com ícone Calendar + label
-└── Content
-    ├── Botões rápidos (Hoje, 7d, 15d, 30d)
-    ├── Separador
-    ├── Calendário Início + Calendário Fim (lado a lado)
-    └── Botão "Aplicar" (desabilitado sem ambas datas)
+para cada dia 0-6:
+  scheduledBlocks = []
+  para cada vídeo agendado ativo neste dia:
+    se is_all_day → scheduledBlocks = [{start: 0, end: 1440}]
+    senão → scheduledBlocks.push({start: startMinutes, end: endMinutes})
+  
+  gaps = calcularGaps(scheduledBlocks, 0, 1440)
+  // gaps = [{start: 0, end: 540}, {start: 1080, end: 1440}] ex: antes das 9h e depois das 18h
+  
+  se gaps.length > 0 e baseVideo existe:
+    para cada gap:
+      adicionar baseVideo com startTime=gap.start, endTime=gap.end
 ```
 
-### Impacto
+### Cálculo de horas do vídeo base na estimativa
+
+```text
+para cada dia 0-6:
+  totalScheduledMinutes = soma de minutos de todos os agendamentos do dia
+  gapMinutes = max(0, 1440 - totalScheduledMinutes)
+  se gapMinutes > 0:
+    hoursThisDay = gapMinutes / 60
+    // adicionar vídeo base com hoursThisDay
+```
+
+## Impacto
 - 3 arquivos modificados
 - Nenhuma migration
-- Nenhuma mudança em funcionalidades existentes fora do relatório
+- Lógica de fallback inteligente: vídeo base preenche apenas os espaços vazios
 
