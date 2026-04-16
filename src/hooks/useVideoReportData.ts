@@ -48,6 +48,8 @@ export interface CampaignReport {
   clientEmail: string;
   dataInicio: string;
   dataFim: string;
+  filteredStartDate: string;
+  filteredEndDate: string;
   status: string;
   diasAtivos: number;
   diasRestantes: number;
@@ -572,6 +574,8 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           clientEmail: clientData?.email || 'Email não encontrado',
           dataInicio: pedido.data_inicio,
           dataFim: pedido.data_fim,
+          filteredStartDate: filteredStart.toISOString(),
+          filteredEndDate: filteredEnd.toISOString(),
           status: pedido.status,
           diasAtivos,
           diasRestantes,
