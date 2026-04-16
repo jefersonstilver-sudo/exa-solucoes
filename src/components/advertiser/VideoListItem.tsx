@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Play, CheckCircle, Clock, XCircle, Pause, Calendar, Zap } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, CheckCircle, Clock, XCircle, Pause, Calendar, Zap, Radio } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +14,8 @@ export interface VideoListItemProps {
   isActive?: boolean;
   selectedForDisplay?: boolean;
   scheduleInfo?: string;
+  totalTelas?: number;
+  isVertical?: boolean;
 }
 
 export const VideoListItem = ({
@@ -26,9 +28,13 @@ export const VideoListItem = ({
   isActive = true,
   selectedForDisplay = true,
   scheduleInfo = '24/7',
+  totalTelas = 1,
+  isVertical = false,
 }: VideoListItemProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [liveExibicoes, setLiveExibicoes] = useState(exibicoes);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Format display time: show h/min/s depending on magnitude
   const formatDisplayTime = (hours: number): string => {
@@ -47,10 +53,39 @@ export const VideoListItem = ({
   const isDisplaying = (isActive && selectedForDisplay && approvalStatus === 'approved') 
     || (approvalStatus === 'approved' && scheduleInfo !== undefined && (scheduleInfo.startsWith('Agendado') || scheduleInfo.startsWith('Base:')));
 
+  // Real-time ticker: increment exhibitions live
+  // Horizontal: cycle=480s, appears 3 times → every 160s per screen
+  // Vertical: cycle=480s, appears 1 time → every 480s per screen
+  // With multiple screens: interval = baseInterval / totalTelas
+  useEffect(() => {
+    setLiveExibicoes(exibicoes);
+  }, [exibicoes]);
+
+  useEffect(() => {
+    if (!isDisplaying) return;
+
+    // Seconds between each +1 exhibition for ALL screens combined
+    const baseIntervalSec = isVertical ? 480 : 160; // 480s for vertical, 160s (2m40s) for horizontal
+    const tickMs = Math.max(1000, (baseIntervalSec / Math.max(1, totalTelas)) * 1000);
+
+    intervalRef.current = setInterval(() => {
+      setLiveExibicoes(prev => prev + 1);
+    }, tickMs);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isDisplaying, totalTelas, isVertical]);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
-        return (
+        return isDisplaying ? (
+          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 animate-pulse">
+            <Radio className="w-3 h-3 mr-1" />
+            Em Exibição
+          </Badge>
+        ) : (
           <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-100">
             <CheckCircle className="w-3 h-3 mr-1" />
             Aprovado
@@ -158,6 +193,11 @@ export const VideoListItem = ({
             <Play className="w-8 h-8 text-muted-foreground/30" />
           </div>
         )}
+
+        {/* Live indicator dot */}
+        {isDisplaying && (
+          <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-sm" />
+        )}
       </div>
 
       {/* Info */}
@@ -176,17 +216,23 @@ export const VideoListItem = ({
         </div>
       </div>
 
-      {/* Exibições */}
+      {/* Exibições com contador em tempo real */}
       <div className="text-right flex-shrink-0">
         <p className={cn(
-          "text-2xl font-bold",
+          "text-2xl font-bold tabular-nums",
           isDisplaying ? "text-[#9C1E1E]" : "text-muted-foreground"
         )}>
-          {exibicoes.toLocaleString('pt-BR')}
+          {liveExibicoes.toLocaleString('pt-BR')}
         </p>
         <p className="text-xs text-muted-foreground">
           {isDisplaying ? 'exibições' : 'sem exibição'}
         </p>
+        {isDisplaying && (
+          <p className="text-[10px] text-emerald-600 flex items-center justify-end gap-1 mt-0.5">
+            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse inline-block" />
+            ao vivo
+          </p>
+        )}
       </div>
     </div>
   );
