@@ -1,122 +1,82 @@
 
 
-# Corrigir Métricas: Exibições por Vídeo + Cortar em Ontem
+# Corrigir Pipeline de Logs de Reprodução + Visual de Agendamento
 
-## Dados do Banco (Confirmados)
+## Causa Raiz dos Zeros
 
-```text
-Pedido: 20b6e44d (kammer)
-Período: 2026-03-31 → 2027-03-31
-Logs de reprodução: 0 (nenhum log real em video_playback_logs)
+A edge function `log-video-playback` funciona (testei agora e inseriu com sucesso), os painéis estão online, MAS a edge function **nunca recebeu uma chamada real**. O problema está no `usePlaybackLogger.ts`:
 
-Vídeos:
-- KAMMER 1: base=true, is_active=true, selected=true, SEM schedule
-- kammer 2: schedule Ter/Sáb (dia todo), is_active=false
-- KAMMER 3: schedule Dom/Qua (dia todo), is_active=false  
-- KAMMER 4: schedule Qui (dia todo), is_active=false
-```
-
-## Problemas
-
-1. **Métrica errada**: Mostra "horas exibidas" mas o usuário quer "número de exibições" (count de reproduções de 15s)
-2. **Período inclui hoje**: O filtro vai até hoje, mas dados de hoje não existem ainda. Deve cortar em **ontem**.
-3. **"Relatório disponível em 24h"**: Aparece mesmo quando o pedido está ativo há dias. Deveria aparecer APENAS se o pedido começou hoje. Se começou antes de ontem, deve mostrar 0 exibições com clareza.
-
-## Decisões do Usuário
-- **Período**: Cortar em ontem (hoje não aparece)
-- **Métrica por vídeo**: Exibições (count), não horas
+1. Os `.catch(() => {})` engolem erros silenciosamente — nunca sabemos se falhou
+2. O `flushBuffer` faz `supabase.functions.invoke()` que pode estar falhando por timeout ou erro de rede nos painéis físicos, sem nenhum log
+3. O `onVideoEnd` limpa `currentVideoRef` antes do flush terminar — race condition
 
 ## Mudanças
 
-### Arquivo 1: `src/hooks/useVideoReportData.ts`
+### 1. Corrigir `usePlaybackLogger.ts` — Pipeline de Logging
+- Remover todos os `.catch(() => {})` e substituir por `console.error`
+- Adicionar `console.log` no `onVideoStart` e `flushBuffer` para diagnóstico
+- Corrigir race condition: garantir que o delta é calculado e enfileirado **antes** de limpar os refs
+- Nos handlers de `visibilitychange`/`pagehide`, usar `navigator.sendBeacon` como fallback (mais confiável que `supabase.functions.invoke` em contexto de saída de página)
 
-**Interface VideoInfo** (linha 22-31):
-- Adicionar campo `exibicoes: number` (count de logs por vídeo)
-- Manter `horasExibidas` para uso secundário
+### 2. Multiplicar Exibições por Número de Painéis (`useVideoReportData.ts`)
+- Cada log representa 1 reprodução em 1 painel
+- Se o prédio tem `quantidade_telas > 1`, os logs já devem vir separados por painel
+- MAS se o sistema grava 1 log por building (não por tela), multiplicar:
+  ```
+  exibicoesPorVideo = logsDoVideo.length * totalTelasDosPredios
+  ```
+- Usar `buildingInfos` para somar `quantidade_telas` e multiplicar as métricas totais
 
-**Interface VideoTimelinePoint** (linha 33-41):
-- Adicionar `exibicoes: number` em cada vídeo do ponto do timeline (para o gráfico mostrar exibições)
+### 3. Visual de Vídeo Agendado (`VideoListItem.tsx`)
+- Quando `scheduleInfo` começa com "Agendado", aplicar borda colorida visível:
+  - `border-2 border-blue-400 bg-blue-50/30` para cards agendados
+  - `border-2 border-yellow-400 bg-yellow-50/30` para vídeo base
+- O card fica visualmente distinto dos inativos e dos 24/7
 
-**Corte de período** (linhas 310-321):
-- `dataMaxima`: usar `subDays(hoje, 1)` em vez de `hoje` — dados só existem até ontem
-- Clampar `filteredEnd` ao máximo de ontem
+### 4. Logs de Agendamento (`VideoManagementLogs.tsx`)
+- Já existe a tabela `video_management_logs` e o componente `VideoManagementLogs`
+- Garantir que ações de agendamento (criar, editar, ativar, desativar regra) são registradas
+- Verificar se o hook de schedule update faz `insert` na tabela de logs
 
-**Cálculo de exibições por vídeo** (linhas 437-448):
-- `exibicoes = videoLogs.length` (count de logs)
-- `horasExibidas = soma(duration_seconds) / 3600`
+### 5. Registro de Exibições no Display (`MinimalDisplayPanel.tsx`)
+- Adicionar logging de diagnóstico: `console.log` quando `onPlay` dispara
+- Garantir que `onVideoEnd` chama `onVideoEnd()` do logger corretamente
 
-**Gráfico timeline** (linhas 486-535):
-- Mudar de horas acumuladas para exibições por dia
-- Para cada data no timeline, contar logs reais naquele dia por vídeo
-- Se não há logs, exibições = 0
+## Arquivos Modificados
 
-**Totais da campanha** (linhas 544-558):
-- `totalExibicoesCalc = pedidoLogs.length` (já está correto)
-
-### Arquivo 2: `src/components/advertiser/VideoListItem.tsx`
-
-**Props** (linhas 6-16):
-- Adicionar `exibicoes?: number`
-
-**Métrica à direita** (linhas 173-192):
-- Trocar de `formatDisplayTime(horasExibidas)` para `exibicoes.toLocaleString()`
-- Label: "exibições" em vez de "total exibido"
-- Quando `exibicoes === 0` e `isDisplaying`: mostrar "0" com nota "Relatório disponível em 24h" APENAS se o pedido começou hoje/ontem. Caso contrário, mostrar "0 exibições".
-
-### Arquivo 3: `src/components/advertiser/CampaignPerformanceChart.tsx`
-
-**Y-axis** (linhas 134-139):
-- Trocar label de "Horas de Exibição" para "Exibições"
-- Trocar formatter de `${value}h` para `${value}`
-
-**Tooltip** (linhas 80-84):
-- Trocar de `{entry.value.toFixed(1)}h` para `${entry.value} exibições`
-
-**Data mapping** (linhas 34-46):
-- Usar `video.exibicoes` em vez de `video.horasExibidas` (ou novo campo)
-
-### Arquivo 4: `src/components/advertiser/CampaignReportCard.tsx`
-
-**Métricas resumidas** (linhas 188-210):
-- Manter "Exibições" como está (já usa totalExibicoes)
-- Trocar "Tempo Total" para mostrar exibições se preferir, ou manter como secundário
-
-### Arquivo 5: `src/pages/advertiser/MyVideos.tsx`
-
-**DateRange padrão** (linhas 14-17):
-- `end: subDays(new Date(), 1)` — padrão corta em ontem
+1. **`src/hooks/usePlaybackLogger.ts`** — Corrigir flush silencioso, adicionar console logs, sendBeacon fallback
+2. **`src/hooks/useVideoReportData.ts`** — Multiplicar exibições por `quantidade_telas` dos prédios
+3. **`src/components/advertiser/VideoListItem.tsx`** — Borda colorida para vídeos agendados
+4. **`src/pages/public/MinimalDisplayPanel.tsx`** — Console logs de diagnóstico no player
 
 ## Detalhes Técnicos
 
-### Corte de período em ontem
+### Multiplicação por painéis
 ```text
-// MyVideos.tsx — dateRange padrão
-end: subDays(new Date(), 1)  // ontem
-
-// useVideoReportData.ts — dataMaxima
-const ontem = subDays(hoje, 1);
-const dataMaxima = min([ontem, dataFim]);
+totalTelas = soma(building.quantidade_telas) para cada prédio do pedido
+exibicoesPorVideo = playbackLogs.filter(video_id).length * totalTelas
+totalExibicoes = allLogs.length * totalTelas
 ```
 
-### Exibições por dia no gráfico
+### Visual do card agendado
 ```text
-para cada data no período:
-  para cada vídeo:
-    exibicoes = playbackLogs.filter(l => 
-      l.video_id === video.id && 
-      date(l.started_at) === dateStr
-    ).length
+Agendado:  border-2 border-blue-400 bg-blue-50/50 (contorno azul visível)
+Base:      border-2 border-yellow-400 bg-yellow-50/50 (contorno amarelo)
+24/7:      border padrão (sem destaque extra)
+Inativo:   opacity-60 bg-muted/30 (como está)
 ```
 
-### Métrica no VideoListItem
+### sendBeacon fallback para flush
 ```text
-Antes:  "2.5h" / "total exibido"
-Depois: "1,234" / "exibições"
+// Em pagehide/visibilitychange hidden:
+const url = `${SUPABASE_URL}/functions/v1/log-video-playback`;
+navigator.sendBeacon(url, JSON.stringify({ logs }));
+// Mais confiável que fetch/invoke em contexto de saída
 ```
 
 ## Impacto
-- 5 arquivos modificados
+- 4 arquivos modificados
 - Nenhuma migration
-- Muda a métrica principal de horas para contagem de exibições
-- Período sempre corta em ontem
+- Corrige o pipeline de dados que está impedindo logs reais
+- Adiciona multiplicação por painéis nas métricas
 
