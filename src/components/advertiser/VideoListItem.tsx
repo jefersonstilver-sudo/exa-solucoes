@@ -10,6 +10,7 @@ export interface VideoListItemProps {
   duracao: number;
   approvalStatus: string;
   horasExibidas: number;
+  exibicoes?: number;
   isActive?: boolean;
   selectedForDisplay?: boolean;
   scheduleInfo?: string;
@@ -21,6 +22,7 @@ export const VideoListItem = ({
   duracao,
   approvalStatus,
   horasExibidas,
+  exibicoes = 0,
   isActive = true,
   selectedForDisplay = true,
   scheduleInfo = '24/7',
@@ -169,26 +171,17 @@ export const VideoListItem = ({
         </div>
       </div>
 
-      {/* Tempo real exibido */}
+      {/* Exibições */}
       <div className="text-right flex-shrink-0">
-      {isDisplaying && horasExibidas === 0 ? (
-          <>
-            <p className="text-sm font-medium text-muted-foreground">—</p>
-            <p className="text-xs text-muted-foreground">Relatório disponível em 24h</p>
-          </>
-        ) : (
-          <>
-            <p className={cn(
-              "text-2xl font-bold",
-              isDisplaying ? "text-[#9C1E1E]" : "text-muted-foreground"
-            )}>
-              {formatDisplayTime(horasExibidas)}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {isDisplaying ? 'total exibido' : 'sem exibição'}
-            </p>
-          </>
-        )}
+        <p className={cn(
+          "text-2xl font-bold",
+          isDisplaying ? "text-[#9C1E1E]" : "text-muted-foreground"
+        )}>
+          {exibicoes.toLocaleString('pt-BR')}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {isDisplaying ? 'exibições' : 'sem exibição'}
+        </p>
       </div>
     </div>
   );

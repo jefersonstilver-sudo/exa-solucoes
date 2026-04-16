@@ -37,9 +37,9 @@ export const CampaignPerformanceChart = ({ data }: CampaignPerformanceChartProps
       dataFormatada: format(new Date(point.data), 'dd/MM', { locale: ptBR }),
     };
 
-    // Adicionar HORAS de cada vídeo
+    // Adicionar EXIBIÇÕES de cada vídeo
     point.videosAtivos.forEach(video => {
-      dataPoint[video.id] = video.horasExibidas;
+      dataPoint[video.id] = video.exibicoes;
     });
 
     return dataPoint;
@@ -78,7 +78,7 @@ export const CampaignPerformanceChart = ({ data }: CampaignPerformanceChartProps
                     {video.nome}
                   </span>
                   <span className="font-semibold ml-auto" style={{ color: video.color }}>
-                    {entry.value.toFixed(1)}h
+                    {entry.value} exibições
                   </span>
                 </div>
               );
@@ -134,8 +134,8 @@ export const CampaignPerformanceChart = ({ data }: CampaignPerformanceChartProps
             <YAxis
               tick={{ fontSize: 12, fill: '#6B7280' }}
               tickLine={{ stroke: '#e5e7eb' }}
-              tickFormatter={(value) => `${value.toFixed(0)}h`}
-              label={{ value: 'Horas de Exibição', angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#6B7280' } }}
+              tickFormatter={(value) => `${value}`}
+              label={{ value: 'Exibições', angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#6B7280' } }}
             />
             
             <Tooltip content={<CustomTooltip />} />
