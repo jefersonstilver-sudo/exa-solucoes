@@ -331,6 +331,23 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
       pedido_id: result.pedido_id,
       schedules_removed: result.schedules_removed
     });
+
+    // Log to video_management_logs
+    try {
+      if (pedidoId) {
+        await supabase.from('video_management_logs').insert({
+          pedido_id: pedidoId,
+          action_type: 'set_base_video',
+          details: {
+            new_base_id: result.new_base_id,
+            old_base_id: result.old_base_id,
+            schedules_removed: result.schedules_removed,
+          },
+        });
+      }
+    } catch (logErr) {
+      console.warn('[SET_BASE_VIDEO] Failed to log action:', logErr);
+    }
     
     // 🔔 NOTIFICAR API EXTERNA - Centralizado via notify-video-toggle
     console.log('🔔 [SET_BASE_VIDEO] Iniciando notificação da API externa...');
