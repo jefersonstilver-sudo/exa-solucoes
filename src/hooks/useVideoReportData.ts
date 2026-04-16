@@ -179,7 +179,7 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
         .from('pedidos')
         .select('*')
         .eq('client_id', clientId)
-        .in('status', ['ativo', 'pendente', 'pago_pendente_video']);
+        .in('status', ['ativo', 'pendente', 'pago_pendente_video', 'video_aprovado']);
 
       if (pedidosError) throw pedidosError;
       if (!pedidos || pedidos.length === 0) {
@@ -263,7 +263,7 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           nome: b.nome,
           bairro: b.bairro,
           endereco: b.endereco,
-          quantidadeTelas: b.quantidade_telas || 1,
+          quantidadeTelas: Math.max(1, b.quantidade_telas || 1),
           publicoEstimado: b.publico_estimado || 100,
           codigoPredio: b.codigo_predio || '',
           visualizacoesMes: b.visualizacoes_mes || 0,
@@ -293,15 +293,26 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
 
         // ─── Determine product type for this order ──────────────────────
         const tipoProduto: string = (pedido as any).tipo_produto || 'horizontal';
-        const produtoCodigo = tipoProduto.toLowerCase().includes('vertical') ? 'vertical_premium' : 'horizontal';
-        const produto = produtoMap.get(produtoCodigo) || { duracao: 10, maxClientes: 10 };
+        const isVertical = tipoProduto.toLowerCase().includes('vertical');
+        const produtoCodigo = isVertical ? 'vertical_premium' : 'horizontal';
+        const produto = produtoMap.get(produtoCodigo) || { duracao: 10, maxClientes: isVertical ? 3 : 15 };
 
-        // ─── Calculate daily exhibitions per building (operational) ─────
-        // Formula: exhibitions_per_day_per_screen = (horas_operacao * 3600) / (duracao_video * max_clientes)
-        // This is the number of times ONE video plays per day on ONE screen
-        const exibicoesPorDiaPorTela = Math.floor(
-          (horasOperacaoDia * 3600) / (produto.duracao * produto.maxClientes)
-        );
+        // ─── Calculate daily exhibitions using REAL interleaved cycle ───
+        // Real loop: [15H×10s] + [1V×10s] + [15H×10s] + [1V×10s] + [15H×10s] + [1V×10s]
+        // cycleTime = maxV × (maxH × duracaoH + duracaoV)
+        const prodH = produtoMap.get('horizontal') || { duracao: 10, maxClientes: 15 };
+        const prodV = produtoMap.get('vertical_premium') || { duracao: 10, maxClientes: 3 };
+        
+        const cycleTime = prodV.maxClientes * (prodH.maxClientes * prodH.duracao + prodV.duracao);
+        // e.g. 3 * (15 * 10 + 10) = 480s
+        const cyclesPerDay = Math.floor((horasOperacaoDia * 3600) / cycleTime);
+        // e.g. 75600 / 480 = 157
+        
+        // Horizontal: appears maxV times per cycle (once per round)
+        // Vertical: appears 1 time per cycle
+        const exibicoesPorDiaPorTela = isVertical
+          ? cyclesPerDay * 1        // 157 exibições/dia/tela
+          : cyclesPerDay * prodV.maxClientes; // 157 * 3 = 471 exibições/dia/tela
 
         // ─── Determine which videos are "eligible" (approved + active or scheduled) ──
         const eligibleVideos: {

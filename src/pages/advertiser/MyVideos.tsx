@@ -13,7 +13,7 @@ const MyVideos = () => {
   const { userProfile } = useAuth();
   const [dateRange, setDateRange] = useState<DateRange>({
     start: subDays(new Date(), 30),
-    end: subDays(new Date(), 1),
+    end: new Date(),
   });
   const { campaigns, summary, loading } = useVideoReportData(userProfile?.id, dateRange);
 
