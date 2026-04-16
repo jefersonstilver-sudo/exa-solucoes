@@ -14,7 +14,9 @@ interface CommercialVideoHeroProps {
   className?: string;
   onPlaylistEnd?: () => void;
   onPlayingChange?: (playing: boolean) => void;
-  onVideosChange?: (videos: Video[]) => void; // Notifica quando vídeos externos mudarem
+  onVideosChange?: (videos: Video[]) => void;
+  onVideoStarted?: (videoId: string) => void;
+  onVideoEnded?: (videoId: string) => void;
 }
 
 export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
@@ -22,7 +24,9 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   className = '',
   onPlaylistEnd,
   onPlayingChange,
-  onVideosChange
+  onVideosChange,
+  onVideoStarted,
+  onVideoEnded
 }) => {
   // Estados simples
   const [currentIndex, setCurrentIndex] = useState(0);
