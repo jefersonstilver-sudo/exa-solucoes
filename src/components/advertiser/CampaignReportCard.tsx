@@ -130,15 +130,9 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
               <Badge className="bg-green-100 text-green-800 border-green-200">
                 {campaign.status}
               </Badge>
-              {campaign.isRealData ? (
-                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">
-                  Dados Reais
-                </Badge>
-              ) : (
-                <Badge className="bg-amber-100 text-amber-800 border-amber-200">
-                  Dados disponíveis até ontem
-                </Badge>
-              )}
+              <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">
+                Exibições do Sistema
+              </Badge>
               <ChevronDown
                 className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${
                 isOpen ? 'rotate-180' : ''}`
@@ -153,8 +147,8 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
               <span className="text-xs bg-accent/50 px-2 py-0.5 rounded-full">
                 Período: {formatDate(campaign.filteredStartDate)} → {formatDate(campaign.filteredEndDate)} ({campaign.diasAtivos} {campaign.diasAtivos === 1 ? 'dia' : 'dias'})
               </span>
-              <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                ⏱ Dados disponíveis até ontem (relatórios ficam prontos 24h depois)
+              <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                📊 Exibições calculadas conforme programação do sistema
               </span>
             </div>
           </CollapsibleTrigger>
@@ -195,13 +189,10 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
               <p className="text-2xl font-bold text-[#9C1E1E]">{formatDisplayTime(campaign.totalHoras)}</p>
             </div>
             <div className="bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl p-4 border border-border/40">
-              <p className="text-xs text-muted-foreground mb-1">Prédios com Exibição</p>
+              <p className="text-xs text-muted-foreground mb-1">Prédios Ativos</p>
               <p className="text-2xl font-bold text-[#9C1E1E]">
-                {campaign.isRealData ? campaign.prediosComExibicaoReal : campaign.predios.length}
+                {campaign.predios.length}
               </p>
-              {campaign.isRealData && (
-                <p className="text-xs text-muted-foreground">de {campaign.predios.length} contratados</p>
-              )}
             </div>
             <div className="bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl p-4 border border-border/40">
               <p className="text-xs text-muted-foreground mb-1">Telas</p>
