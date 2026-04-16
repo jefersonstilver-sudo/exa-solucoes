@@ -25,6 +25,7 @@ export interface VideoInfo {
   duracao: number;
   approvalStatus: string;
   horasExibidas: number;
+  exibicoes: number;
   isActive: boolean;
   selectedForDisplay: boolean;
   scheduleInfo: string; // "24/7", "Agendado: Sex 13:00-13:02", "Inativo"
@@ -36,6 +37,7 @@ export interface VideoTimelinePoint {
     id: string;
     nome: string;
     horasExibidas: number;
+    exibicoes: number;
     color: string;
   }[];
 }
@@ -308,9 +310,12 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
         const dataInicio = new Date(pedido.data_inicio);
         const dataFim = new Date(pedido.data_fim);
         const hoje = new Date();
+        const ontem = new Date(hoje);
+        ontem.setDate(ontem.getDate() - 1);
+        ontem.setHours(23, 59, 59, 999);
         
-        // Data máxima do gráfico (hoje ou data_fim)
-        const dataMaxima = min([hoje, dataFim]);
+        // Data máxima do gráfico (ontem ou data_fim — dados só existem até ontem)
+        const dataMaxima = min([ontem, dataFim]);
         
         // Clampar ao dateRange para métricas filtradas
         const filteredStart = dateRange?.start 
@@ -435,15 +440,12 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
           const scheduleRules = schedulesByVideoId.get(pv.video_id) || [];
 
           const videoLogs = playbackLogs.filter(l => l.video_id === pv.video_id);
+          const exibicoes = videoLogs.length;
           let horasExibidas: number;
-
-          const hasActiveSchedule = scheduleRules.some(r => r.is_active);
-          const isShowingOrScheduled = (isActive && selectedForDisplay) || hasActiveSchedule;
 
           if (videoLogs.length > 0) {
             horasExibidas = videoLogs.reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600;
           } else {
-            // Só dados reais — sem logs, sem estimativa
             horasExibidas = 0;
           }
 
@@ -467,38 +469,20 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
             duracao: duracaoSegundos,
             approvalStatus,
             horasExibidas,
+            exibicoes,
             isActive,
             selectedForDisplay,
             scheduleInfo,
           };
         });
 
-        // Gerar timeline de vídeos com HORAS ACUMULADAS
+        // Gerar timeline de vídeos com EXIBIÇÕES POR DIA
         const videoTimeline: VideoTimelinePoint[] = [];
         const videoColors = ['#9C1E1E', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
         let colorIndex = 0;
         const videoColorMap = new Map<string, string>();
         
-        // Mapa para acumular horas progressivamente por vídeo
-        const acumuladoPorVideo = new Map<string, number>();
-        
-        // Calcular horas por dia para cada vídeo
-        const horasPorDiaPorVideo = new Map<string, number>();
-        videoInfos.forEach(video => {
-          const videoScheduleRules = schedulesByVideoId.get(video.id) || [];
-          const hasActiveSchedule = videoScheduleRules.some(r => r.is_active);
-          const isShowingOrScheduled = (video.isActive && video.selectedForDisplay) || hasActiveSchedule;
-          
-          if (!isShowingOrScheduled || video.approvalStatus !== 'approved') {
-            horasPorDiaPorVideo.set(video.id, 0);
-          } else {
-            const diasParaCalculo = Math.max(1, diasAtivos);
-            horasPorDiaPorVideo.set(video.id, video.horasExibidas / diasParaCalculo);
-          }
-          acumuladoPorVideo.set(video.id, 0);
-        });
-        
-        // Iterar apenas no período filtrado
+        // Iterar apenas no período filtrado — contar exibições por dia por vídeo
         const timelineStart = dateRange?.start 
           ? new Date(Math.max(dataInicio.getTime(), dateRange.start.getTime()))
           : dataInicio;
@@ -515,15 +499,21 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
               colorIndex++;
             }
             
-            const horasDia = horasPorDiaPorVideo.get(video.id) || 0;
-            const acumuladoAnterior = acumuladoPorVideo.get(video.id) || 0;
-            const novoAcumulado = acumuladoAnterior + horasDia;
-            acumuladoPorVideo.set(video.id, novoAcumulado);
+            // Contar exibições reais neste dia para este vídeo
+            const exibicoesDia = playbackLogs.filter(l => 
+              l.video_id === video.id && 
+              l.started_at?.split('T')[0] === dateStr
+            ).length;
+            
+            const horasDia = playbackLogs
+              .filter(l => l.video_id === video.id && l.started_at?.split('T')[0] === dateStr)
+              .reduce((sum: number, l: any) => sum + (Number(l.duration_seconds) || 0), 0) / 3600;
             
             return {
               id: video.id,
               nome: video.nome,
-              horasExibidas: novoAcumulado,
+              horasExibidas: horasDia,
+              exibicoes: exibicoesDia,
               color: videoColorMap.get(video.id)!,
             };
           });
