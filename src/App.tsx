@@ -54,6 +54,7 @@ const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
 const TestLinks = lazy(() => import('./pages/TestLinks'));
 const AIReportsPage = lazy(() => import('./pages/admin/monitoramento-ia/AIReportsPage'));
 const AdvertiserInvoices = lazy(() => import('./pages/advertiser/AdvertiserInvoices'));
+const ParanaNutriTalentos = lazy(() => import('./pages/ParanaNutriTalentos'));
 
 // Video Editor Pages
 const VideoEditorDashboard = lazy(() => import('./pages/video-editor/VideoEditorDashboard'));
@@ -537,6 +538,9 @@ const AppContent = () => {
           <Route path="/super_admin/*" element={<Suspense fallback={<GlobalLoadingPage />}><SuperAdminPage /></Suspense>} />
           <Route path="/admin/*" element={<Suspense fallback={<GlobalLoadingPage />}><AdminPage /></Suspense>} />
           
+          {/* Apresentação privada Paraná Nutri Talentos */}
+          <Route path="/parananutritalentos" element={<Suspense fallback={<GlobalLoadingPage />}><ParanaNutriTalentos /></Suspense>} />
+
           {/* Rota catch-all para páginas não encontradas */}
           <Route path="*" element={<Suspense fallback={<GlobalLoadingPage />}><NaoEncontrado /></Suspense>} />
         </Routes>
