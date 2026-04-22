@@ -1,116 +1,107 @@
 
 
-# Adicionar Grupo "NUCS PRONTOS" + Silenciar Alertas WhatsApp por Grupo
+# Reforço dos Bloqueios de Notificação WhatsApp — Prédios Internos
 
-## Cenário atual (verificado no banco)
+## Diagnóstico
 
-- Tabela `device_groups` já existe e hoje tem **2 grupos**: `Predios` (azul) e `Interno` (cinza)
-- **29 dispositivos** no total — **12 estão sem grupo** e **10 sem prédio** (órfãos)
-- Existe `device_alert_configs.alerts_enabled` que silencia alertas **por dispositivo individual**, mas **não existe** silenciamento **por grupo nem por status do prédio (interno)**
-- A edge function `monitor-panels` (linha 372) só checa `alerts_enabled` de cada device — não olha grupo nem `buildings.status='interno'`
-- Painéis órfãos (sem prédio) hoje **disparam alertas WhatsApp normalmente**, gerando ruído
-- Painéis de prédios `interno` (ENTRADA, COMERCIAL TABLET, SALA REUNIÃO) também disparam alertas
+Analisei profundamente o sistema. **A boa notícia:** os 3 bloqueios já existem na edge function `monitor-panels` (linhas 377-396):
 
-## Solução proposta
-
-### 1. Banco — adicionar coluna `silenciar_alertas` em `device_groups`
-
-```sql
-ALTER TABLE device_groups 
-ADD COLUMN silenciar_alertas boolean NOT NULL DEFAULT false;
-```
-
-Permite marcar QUALQUER grupo como "não notifica" — flexível para o futuro.
-
-### 2. Banco — criar grupo "NUCS PRONTOS" (silenciado)
-
-Insert único:
-```
-nome='NUCS PRONTOS', cor='#F59E0B' (âmbar), ordem=2, silenciar_alertas=true
-```
-
-### 3. Edge Function `monitor-panels` — 3 novas regras de bloqueio
-
-No loop de devices (linha ~370), antes de processar alerta, adicionar checks na ordem:
-
-**Bloqueio A — grupo silenciado:**
-```ts
-if (device.device_group_id) {
-  const grupo = deviceGroupsMap.get(device.device_group_id);
-  if (grupo?.silenciar_alertas) {
-    console.log(`🔇 [MONITOR] ${device.name}: grupo "${grupo.nome}" silenciado`);
-    continue;
-  }
-}
-```
-
-**Bloqueio B — prédio interno:**
-```ts
-if (device.buildings?.status === 'interno') {
-  console.log(`🏢 [MONITOR] ${device.name}: prédio interno - sem alerta`);
-  continue;
-}
-```
-
-**Bloqueio C — sem prédio E sem grupo (órfão real):** opcional, suprime ruído de painéis nunca atribuídos.
-```ts
-if (!device.building_id && !device.device_group_id) {
-  console.log(`👻 [MONITOR] ${device.name}: órfão sem grupo - sem alerta`);
-  continue;
-}
-```
-
-Para isso, adicionar no SELECT da query de devices (linha 206): incluir `device_group_id` e `buildings.status`. Carregar `device_groups` uma vez no início.
-
-### 4. UI — Página `Paineis.tsx` (Monitoramento IA)
-
-Já existe agrupamento visual por `device_group_id` (linha 170). Vou:
-
-- Adicionar **botão "Mover para NUCS PRONTOS"** no menu de cada card de painel órfão (sem prédio)
-- No header de cada grupo, mostrar **ícone 🔇 + label "Alertas silenciados"** quando `silenciar_alertas=true`
-- No `DeviceGroupManager.tsx` (modal de gestão), adicionar **toggle "Silenciar alertas WhatsApp"** ao criar/editar grupo
-
-### 5. UI — `useDeviceGroups.ts`
-
-Atualizar `interface DeviceGroup` para incluir `silenciar_alertas: boolean` e expor isso em `createGroup`/`updateGroup`.
-
-### 6. Bulk action — atribuir os 10 órfãos automaticamente (opcional, perguntar)
-
-Migration extra opcional:
-```sql
-UPDATE devices 
-SET device_group_id = '<id-nucs-prontos>'
-WHERE building_id IS NULL AND device_group_id IS NULL;
-```
-
-## Resumo do efeito final
-
-| Situação do painel | Hoje notifica? | Depois notifica? |
+| Bloqueio | Status | Linha |
 |---|---|---|
-| Prédio normal (ativo) | ✅ Sim | ✅ Sim |
-| Prédio interno | ✅ Sim (ruído) | ❌ Não |
-| Grupo "NUCS PRONTOS" | ✅ Sim (ruído) | ❌ Não |
-| Órfão sem grupo | ✅ Sim (ruído) | ❌ Não (opcional) |
-| Silenciado individual (`alerts_enabled=false`) | ❌ Não | ❌ Não |
+| A — Grupo com `silenciar_alertas=true` (NUCS PRONTOS) | ✅ Ativo | 377-384 |
+| B — Prédio com `status='interno'` | ✅ Ativo | 386-390 |
+| C — Órfão (sem prédio + sem grupo) | ✅ Ativo | 392-396 |
+| D — `alerts_enabled=false` individual | ✅ Ativo | 398-405 |
+
+**Nenhuma outra edge function envia WhatsApp de painel offline.** O trigger de banco `handle_device_offline_incident` só cria registros internos, não dispara mensagens.
+
+## Por que o usuário ainda pode estar vendo notificações
+
+Hipóteses possíveis (vou validar todas no reforço):
+
+1. **Prédio classificado errado** — algum painel "interno" pode estar vinculado a um prédio com `status='ativo'` ou `'instalação'` em vez de `'interno'` no banco
+2. **Caches antigos** — a edge function pode ter rodado antes do último deploy dos bloqueios
+3. **Query JOIN frouxa** — se `building_id` aponta para prédio inexistente, `device.buildings` vem `null` e cai no fluxo normal
+4. **Histórico antigo** — alertas que **já foram disparados** antes do bloqueio aparecem no histórico (mas não são reenviados)
+
+## Reforço proposto
+
+### 1. Auditoria do banco (sem alterar nada — só relatório)
+
+Listar quais painéis estão hoje classificados como "internos" pelo nome mas **não** têm `buildings.status='interno'`:
+
+```sql
+SELECT d.name, d.building_id, b.endereco, b.status, dg.nome AS grupo
+FROM devices d
+LEFT JOIN buildings b ON b.id = d.building_id
+LEFT JOIN device_groups dg ON dg.id = d.device_group_id
+WHERE d.name ILIKE '%entrada%' OR d.name ILIKE '%comercial%' 
+   OR d.name ILIKE '%reuni%' OR d.name ILIKE '%interno%'
+   OR d.name ILIKE '%escrit%' OR d.name ILIKE '%recep%';
+```
+
+Mostro o resultado e pergunto: *"esses painéis estão na classificação correta?"*
+
+### 2. Reforçar bloqueio na edge function — defesa em profundidade
+
+Adicionar **camada extra** que bloqueia também por **nome** quando o painel claramente é interno mas o prédio está mal cadastrado:
+
+```ts
+// BLOCK B-2: Safety net — nomes claramente internos
+const NOMES_INTERNOS_PROIBIDOS = ['entrada', 'comercial tablet', 'sala reuniao', 
+  'sala reunião', 'recepcao', 'recepção', 'escritorio', 'escritório', 'interno'];
+const nomeNormalizado = device.name.toLowerCase();
+if (NOMES_INTERNOS_PROIBIDOS.some(n => nomeNormalizado.includes(n)) && !testMode) {
+  console.log(`🛑 [MONITOR] ${device.name}: nome interno detectado - sem alerta`);
+  continue;
+}
+```
+
+Isso garante que **mesmo se o prédio estiver classificado errado**, o painel interno nunca dispare WhatsApp.
+
+### 3. Logs de auditoria visíveis
+
+Adicionar log estruturado em cada bloqueio para facilitar debug futuro:
+```ts
+console.log(JSON.stringify({ 
+  type: 'BLOQUEIO_ALERTA', 
+  device: device.name, 
+  motivo: 'predio_interno',
+  building_id: device.building_id,
+  building_status: device.buildings?.status 
+}));
+```
+
+### 4. UI — mostrar selo "🔇 Sem notificação" em cada card
+
+No `Paineis.tsx`, exibir um **selo discreto** em cada card de painel que **não dispara alerta**, mostrando o motivo:
+
+- 🔇 **NUCS PRONTOS** (grupo silenciado)
+- 🏢 **Interno** (prédio interno)
+- 👻 **Órfão** (sem prédio nem grupo)
+- ⏸️ **Pausado** (alerts_enabled=false)
+- 🛑 **Nome interno** (safety net)
+
+Assim o usuário **vê visualmente** quais painéis nunca dispararão alertas.
+
+### 5. Migration opcional — corrigir prédios mal classificados
+
+Após o resultado da auditoria (item 1), se houver painéis classificados errado, gerar UPDATE para corrigir `buildings.status='interno'`.
+
+## Garantias
+
+- **Não mexo** em: pagamento, propostas, contratos, agendamento, video upload, RLS
+- **Não removo** nenhuma notificação legítima — só adiciono camadas de bloqueio para casos problemáticos
+- O grupo "Predios" continua **enviando alertas normalmente** (`silenciar_alertas=false` por default)
+- Toda notificação bloqueada gera log detalhado para auditoria
+- Z-API jamais será chamado para painéis internos, mesmo se houver erro de cadastro no prédio
 
 ## Arquivos modificados
 
 ```
-supabase/migrations/<novo>.sql          — coluna silenciar_alertas + insert grupo NUCS PRONTOS
-supabase/functions/monitor-panels/index.ts — 3 bloqueios + select expandido
-src/hooks/useDeviceGroups.ts            — campo silenciar_alertas
-src/components/monitor/DeviceGroupManager.tsx — toggle "silenciar alertas"
-src/modules/monitoramento-ia/pages/Paineis.tsx — header com ícone 🔇 + ação rápida
+supabase/functions/monitor-panels/index.ts   — safety net por nome + logs estruturados
+src/modules/monitoramento-ia/pages/Paineis.tsx — selo "sem notificação" em cada card
++ relatório SQL de auditoria (sem migration)
++ migration condicional se houver prédios mal classificados
 ```
-
-## Garantias
-
-- **Não toco** em: fluxo de pagamento, propostas, contratos, agendamento, RLS de outras tabelas, UI fora dos componentes listados
-- Painéis silenciados **continuam visíveis** nos dashboards (interno e `/monitor` público) — só não geram WhatsApp
-- A flag é por **grupo**, então amanhã você pode criar outro grupo ("Manutenção", "Reserva") com a mesma regra sem código novo
-- O grupo "NUCS PRONTOS" pode ser renomeado/recolorido livremente pelo painel admin
-
-## Pergunta antes de executar
-
-Quer que eu **mova automaticamente** os 10 painéis órfãos (sem prédio + sem grupo) para o grupo "NUCS PRONTOS" na própria migration, ou prefere fazer manualmente via interface depois?
 
