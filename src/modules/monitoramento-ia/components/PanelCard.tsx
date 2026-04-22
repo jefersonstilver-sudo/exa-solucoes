@@ -227,6 +227,23 @@ export const PanelCard = ({
     return null;
   };
 
+  // Determina motivo de bloqueio de notificações WhatsApp (defesa em profundidade)
+  const NOMES_INTERNOS = ['entrada', 'comercial tablet', 'sala reuniao', 'sala reunião', 'reuniao', 'reunião', 'recepcao', 'recepção', 'escritorio', 'escritório', 'interno', 'sala jeff'];
+  const nomeNorm = (device.name || '').toLowerCase();
+  const palavraInterna = NOMES_INTERNOS.find(n => nomeNorm.includes(n));
+  let silenceReason: { icon: string; label: string; tooltip: string } | null = null;
+  if (groupSilenced) {
+    silenceReason = { icon: '🔇', label: groupName || 'Grupo silenciado', tooltip: `Grupo "${groupName}" não envia alertas WhatsApp` };
+  } else if (assignedBuildingStatus === 'interno') {
+    silenceReason = { icon: '🏢', label: 'Interno', tooltip: 'Prédio interno — sem alerta WhatsApp' };
+  } else if (palavraInterna) {
+    silenceReason = { icon: '🛑', label: 'Nome interno', tooltip: `Palavra "${palavraInterna}" detectada — bloqueado por safety net` };
+  } else if (!device.building_id && !device.device_group_id) {
+    silenceReason = { icon: '👻', label: 'Órfão', tooltip: 'Sem prédio e sem grupo — sem alerta WhatsApp' };
+  } else if (!device.building_id) {
+    silenceReason = { icon: '👻', label: 'Sem prédio', tooltip: 'Painel sem prédio atribuído — sem alerta WhatsApp' };
+  }
+
   return (
     <div 
       onClick={onClick} 
