@@ -374,6 +374,27 @@ Deno.serve(async (req) => {
       // This is the CRITICAL FIX - we only alert if the device is actually marked offline by sync
       const isDeviceReallyOffline = currentStatus === 'offline';
 
+      // ==================== BLOCK A: Group with silenciar_alertas = true ====================
+      if (device.device_group_id && !testMode) {
+        const grupo = deviceGroupsMap.get(device.device_group_id);
+        if (grupo?.silenciar_alertas) {
+          console.log(`🔇 [MONITOR] ${device.name}: grupo "${grupo.nome}" silenciado - sem alerta`);
+          continue;
+        }
+      }
+
+      // ==================== BLOCK B: Internal building ====================
+      if (device.buildings?.status === 'interno' && !testMode) {
+        console.log(`🏢 [MONITOR] ${device.name}: prédio interno - sem alerta`);
+        continue;
+      }
+
+      // ==================== BLOCK C: Orphan device (no building AND no group) ====================
+      if (!device.building_id && !device.device_group_id && !testMode) {
+        console.log(`👻 [MONITOR] ${device.name}: órfão sem grupo - sem alerta`);
+        continue;
+      }
+
       // CHECK: Device has alerts disabled in device_alert_configs table
       const deviceConfig = alertConfigsMap.get(device.id);
       const alertsEnabledForDevice = deviceConfig?.alerts_enabled;
