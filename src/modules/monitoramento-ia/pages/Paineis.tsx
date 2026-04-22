@@ -500,6 +500,8 @@ export const PaineisPage = () => {
                             periodLabel={getPeriodLabel(period)}
                             incidentStatus={incidentStatusMap.get(device.id) || null}
                             incidentData={pendingIncidentsMap[device.id] || null}
+                            groupSilenced={!!group?.silenciar_alertas}
+                            groupName={group?.nome}
                             onClick={() => {
                               setSelectedDevice(device);
                               setIsDetailModalOpen(true);

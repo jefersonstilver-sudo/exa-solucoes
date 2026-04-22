@@ -3,19 +3,25 @@ import { humanizeDate } from '../utils/formatters';
 import { useRealTimeCounter } from '../hooks/useRealTimeCounter';
 import { Badge } from '@/components/ui/badge';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { Wifi, MapPin, Activity, Building2, Check, Unlink, AlertTriangle, ClipboardCheck, User } from 'lucide-react';
+import { Wifi, MapPin, Activity, Building2, Check, Unlink, AlertTriangle, ClipboardCheck, User, BellOff } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { IncidentStatus } from '../hooks/useDeviceIncidentStatus';
 import { DeviceIncident } from '../hooks/useDeviceIncidents';
 
 interface PanelCardProps {
-  device: Device & { building_id?: string | null; empresa_elevador_id?: string | null };
+  device: Device & {
+    building_id?: string | null;
+    empresa_elevador_id?: string | null;
+    device_group_id?: string | null;
+  };
   onClick: () => void;
   periodEventsCount?: number;
   periodLabel?: string;
   incidentStatus?: IncidentStatus;
   incidentData?: DeviceIncident | null;
+  groupSilenced?: boolean;
+  groupName?: string;
 }
 
 export const PanelCard = ({
@@ -24,11 +30,14 @@ export const PanelCard = ({
   periodEventsCount,
   periodLabel = 'hoje',
   incidentStatus,
-  incidentData
+  incidentData,
+  groupSilenced = false,
+  groupName,
 }: PanelCardProps) => {
   const hasCriticalAlert = (device as any).has_critical_alert === true;
   const offlineCounter = useRealTimeCounter(device.status === 'offline' ? device.last_online_at : null);
   const [assignedBuildingName, setAssignedBuildingName] = useState<string | null>(null);
+  const [assignedBuildingStatus, setAssignedBuildingStatus] = useState<string | null>(null);
   const [elevatorCompanyName, setElevatorCompanyName] = useState<string | null>(null);
 
   // Carregar nome do prédio atribuído e empresa de elevador
@@ -41,12 +50,13 @@ export const PanelCard = ({
 
       const { data, error } = await supabase
         .from('buildings')
-        .select('nome')
+        .select('nome, status')
         .eq('id', device.building_id)
         .single();
 
       if (!error && data) {
         setAssignedBuildingName(data.nome);
+        setAssignedBuildingStatus((data as any).status ?? null);
       }
     };
 
@@ -217,6 +227,23 @@ export const PanelCard = ({
     return null;
   };
 
+  // Determina motivo de bloqueio de notificações WhatsApp (defesa em profundidade)
+  const NOMES_INTERNOS = ['entrada', 'comercial tablet', 'sala reuniao', 'sala reunião', 'reuniao', 'reunião', 'recepcao', 'recepção', 'escritorio', 'escritório', 'interno', 'sala jeff'];
+  const nomeNorm = (device.name || '').toLowerCase();
+  const palavraInterna = NOMES_INTERNOS.find(n => nomeNorm.includes(n));
+  let silenceReason: { icon: string; label: string; tooltip: string } | null = null;
+  if (groupSilenced) {
+    silenceReason = { icon: '🔇', label: groupName || 'Grupo silenciado', tooltip: `Grupo "${groupName}" não envia alertas WhatsApp` };
+  } else if (assignedBuildingStatus === 'interno') {
+    silenceReason = { icon: '🏢', label: 'Interno', tooltip: 'Prédio interno — sem alerta WhatsApp' };
+  } else if (palavraInterna) {
+    silenceReason = { icon: '🛑', label: 'Nome interno', tooltip: `Palavra "${palavraInterna}" detectada — bloqueado por safety net` };
+  } else if (!device.building_id && !device.device_group_id) {
+    silenceReason = { icon: '👻', label: 'Órfão', tooltip: 'Sem prédio e sem grupo — sem alerta WhatsApp' };
+  } else if (!device.building_id) {
+    silenceReason = { icon: '👻', label: 'Sem prédio', tooltip: 'Painel sem prédio atribuído — sem alerta WhatsApp' };
+  }
+
   return (
     <div 
       onClick={onClick} 
@@ -290,6 +317,17 @@ export const PanelCard = ({
 
           {/* Badge de Incidente Offline com HoverCard */}
           {renderIncidentBadge()}
+
+          {/* Badge: alerta WhatsApp silenciado (defesa em profundidade) */}
+          {silenceReason && (
+            <Badge
+              title={silenceReason.tooltip}
+              className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-amber-50 text-amber-700 border-amber-300 px-1.5 sm:px-2 py-0.5"
+            >
+              <BellOff className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+              <span className="truncate max-w-[90px]">{silenceReason.icon} {silenceReason.label}</span>
+            </Badge>
+          )}
         </div>
 
         {/* AnyDesk ID - Secundário e discreto - empurrado para baixo */}
