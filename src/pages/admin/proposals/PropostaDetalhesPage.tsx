@@ -629,11 +629,11 @@ const PropostaDetalhesPage = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <BarChart3 className="h-4 w-4 text-gray-400" />
-                    <span><strong>11.610</strong> exibições/mês por painel</span>
+                    <span><strong>15.060</strong> exibições/mês por painel</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-gray-400" />
-                    <span><strong>{(387 * totalScreens).toLocaleString('pt-BR')}</strong> vezes/dia (total)</span>
+                    <span><strong>{(502 * totalScreens).toLocaleString('pt-BR')}</strong> vezes/dia (total)</span>
                   </div>
                 </div>
                 <p className="text-xs text-gray-400 mt-3 italic flex items-center gap-1.5">

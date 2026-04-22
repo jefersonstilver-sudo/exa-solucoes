@@ -9,7 +9,7 @@ const ResultSummary: React.FC = () => {
           <span className="text-indexa-mint">Resultado:</span> 95% de taxa de atenção
         </p>
         <p className="text-white/80 text-base sm:text-lg">
-          Muito superior a qualquer outra mídia digital
+          Mais de <span className="text-indexa-mint font-semibold">502 exibições por dia</span> por painel — muito superior a qualquer outra mídia digital
         </p>
       </div>
     </div>

@@ -14,7 +14,7 @@ const FAQSection = () => {
     },
     {
       question: "Quantas pessoas vão ver meu anúncio?",
-      answer: "Cada painel tem em média 245 visualizações por dia, atingindo cerca de 22 mil pessoas mensalmente. São moradores, visitantes e funcionários que utilizam os elevadores regularmente."
+      answer: "Cada painel exibe em média 502 vezes por dia (mais de 15.000 exibições por mês), atingindo moradores, visitantes e funcionários que utilizam os elevadores regularmente."
     },
     {
       question: "É seguro investir nessa mídia nova?",

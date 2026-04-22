@@ -1652,9 +1652,11 @@ const PropostaPublicaPage = () => {
     ? Math.ceil((proposal.predios_contratados ?? 0) * 1.35) 
     : totalPanels;
   
-  // Exibições estimadas para venda futura (11.610 por tela/mês)
+  // Exibições estimadas para venda futura — oficial 2026:
+  // Horizontal: 15.060/mês por tela · Vertical Premium: 5.010/mês por tela
+  const exibicoesPorTelaMes = proposal.tipo_produto === 'vertical_premium' ? 5010 : 15060;
   const displayImpressions = isVendaFutura 
-    ? displayPanelsCount * 11610 
+    ? displayPanelsCount * exibicoesPorTelaMes 
     : totalImpressions;
 
   // ==== CÁLCULO DO BREAKDOWN DE PREÇO ====

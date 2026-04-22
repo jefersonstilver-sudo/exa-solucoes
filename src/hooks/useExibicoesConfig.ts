@@ -2,11 +2,11 @@
  * Hook centralizado para configurações de exibição
  * FONTE ÚNICA DE VERDADE para todo o sistema
  * 
- * Baseado no Manual Técnico Oficial v3.0:
- * - Horizontal: 1440×1080 (4:3), 10s, 15 clientes
- * - Vertical: 1080×1920 (9:16), 15s, 3 clientes
- * - 21h operação/dia, 30 dias/mês
- * - ~387 exibições/dia, ~11.610/mês por cliente
+ * Baseado no Manual Técnico Oficial 2026:
+ * - Horizontal: 1440×1080 (4:3), 10s, até 15 marcas — 502 exib/dia · 15.060/mês · 83 min presença/dia
+ * - Vertical Premium: 1080×1920 (9:16), 15s, apenas 3 marcas — 167 exib/dia · 5.010/mês · 42 min tela cheia/dia
+ * - 23h operação/dia, 30 dias/mês
+ * - Ciclo: 165s (15×10s horizontal + 1×15s vertical)
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -85,7 +85,7 @@ const DEFAULT_VERTICAL = {
 };
 
 const DEFAULT_CONFIG: ConfiguracaoGlobal = {
-  horas_operacao_dia: 21,
+  horas_operacao_dia: 23,
   dias_mes: 30
 };
 
@@ -160,16 +160,17 @@ export function useExibicoesConfig() {
     }
   };
 
-  // Calcular métricas de exibição conforme Manual v3.0
+  // Calcular métricas de exibição conforme Manual 2026
+  // Ciclo oficial: 15 horizontais (10s) + 1 vertical (15s) = 165s
   const calcularExibicoes = (): CalculosExibicao => {
-    const tempoHorizontal = especificacoes.horizontal.duracao * especificacoes.horizontal.maxClientes;
-    const tempoVertical = especificacoes.vertical.duracao * especificacoes.vertical.maxClientes;
-    const tempoCicloSegundos = tempoHorizontal + tempoVertical; // 150 + 45 = 195s
+    const tempoHorizontal = especificacoes.horizontal.duracao * especificacoes.horizontal.maxClientes; // 10×15=150
+    const tempoVertical = especificacoes.vertical.duracao; // 1 vertical por ciclo = 15s
+    const tempoCicloSegundos = tempoHorizontal + tempoVertical; // 150 + 15 = 165s
     
-    const segundosPorDia = configuracao.horas_operacao_dia * 3600; // 21h = 75.600s
-    const ciclosPorDia = Math.floor(segundosPorDia / tempoCicloSegundos); // ~387
-    const exibicoesPorDia = ciclosPorDia; // Cada ciclo = 1 exibição por cliente
-    const exibicoesPorMes = exibicoesPorDia * configuracao.dias_mes; // ~11.610
+    const segundosPorDia = configuracao.horas_operacao_dia * 3600; // 23h = 82.800s
+    const ciclosPorDia = Math.floor(segundosPorDia / tempoCicloSegundos); // ~502
+    const exibicoesPorDia = ciclosPorDia; // Cada ciclo = 1 exibição por cliente horizontal
+    const exibicoesPorMes = exibicoesPorDia * configuracao.dias_mes; // ~15.060
 
     return {
       tempoCicloSegundos,
