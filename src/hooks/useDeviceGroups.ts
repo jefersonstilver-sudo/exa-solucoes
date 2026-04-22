@@ -44,12 +44,12 @@ export const useDeviceGroups = () => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchGroups]);
 
-  const createGroup = async (nome: string, cor: string = '#6B7280') => {
+  const createGroup = async (nome: string, cor: string = '#6B7280', silenciar_alertas: boolean = false) => {
     try {
       const maxOrdem = groups.length > 0 ? Math.max(...groups.map(g => g.ordem)) + 1 : 0;
       const { data, error } = await (supabase as any)
         .from('device_groups')
-        .insert({ nome, cor, ordem: maxOrdem })
+        .insert({ nome, cor, ordem: maxOrdem, silenciar_alertas })
         .select()
         .single();
       if (error) throw error;
@@ -62,7 +62,7 @@ export const useDeviceGroups = () => {
     }
   };
 
-  const updateGroup = async (groupId: string, updates: { nome?: string; cor?: string }) => {
+  const updateGroup = async (groupId: string, updates: { nome?: string; cor?: string; silenciar_alertas?: boolean }) => {
     try {
       const { error } = await (supabase as any)
         .from('device_groups')
