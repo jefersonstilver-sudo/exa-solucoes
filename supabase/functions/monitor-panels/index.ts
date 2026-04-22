@@ -203,10 +203,19 @@ Deno.serve(async (req) => {
     // 4. Get all active devices
     const { data: devices, error: devicesError } = await supabase
       .from('devices')
-      .select(`*, buildings:building_id (endereco, bairro, notion_internet)`)
+      .select(`*, device_group_id, buildings:building_id (endereco, bairro, notion_internet, status)`)
       .eq('is_active', true);
 
     if (devicesError) throw devicesError;
+
+    // 4.0.1 Load device groups (for silenciar_alertas check)
+    const { data: deviceGroups } = await supabase
+      .from('device_groups')
+      .select('id, nome, silenciar_alertas');
+
+    const deviceGroupsMap = new Map<string, { id: string; nome: string; silenciar_alertas: boolean }>(
+      (deviceGroups || []).map((g: any) => [g.id, g])
+    );
 
     // 4.1 Get device alert configs (alerts_enabled AND offline_threshold_minutes)
     const { data: alertConfigs } = await supabase
@@ -217,7 +226,7 @@ Deno.serve(async (req) => {
       (alertConfigs || []).map((c: DeviceAlertConfig) => [c.device_id, c])
     );
 
-    console.log(`📊 [MONITOR] Analisando ${devices?.length || 0} devices (${alertConfigs?.length || 0} com config de alertas)...`);
+    console.log(`📊 [MONITOR] Analisando ${devices?.length || 0} devices (${alertConfigs?.length || 0} com config de alertas, ${deviceGroups?.length || 0} grupos)...`);
 
     // ==================== MASS OFFLINE DETECTION ====================
     const totalDevices = devices?.length || 0;
