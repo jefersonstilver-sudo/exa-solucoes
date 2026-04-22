@@ -378,20 +378,59 @@ Deno.serve(async (req) => {
       if (device.device_group_id && !testMode) {
         const grupo = deviceGroupsMap.get(device.device_group_id);
         if (grupo?.silenciar_alertas) {
-          console.log(`🔇 [MONITOR] ${device.name}: grupo "${grupo.nome}" silenciado - sem alerta`);
+          console.log(JSON.stringify({
+            type: 'BLOQUEIO_ALERTA', motivo: 'grupo_silenciado',
+            device: device.name, device_id: device.id, grupo: grupo.nome,
+          }));
           continue;
         }
       }
 
       // ==================== BLOCK B: Internal building ====================
       if (device.buildings?.status === 'interno' && !testMode) {
-        console.log(`🏢 [MONITOR] ${device.name}: prédio interno - sem alerta`);
+        console.log(JSON.stringify({
+          type: 'BLOQUEIO_ALERTA', motivo: 'predio_interno',
+          device: device.name, device_id: device.id,
+          building_id: device.building_id, building_status: device.buildings?.status,
+        }));
+        continue;
+      }
+
+      // ==================== BLOCK B-2: Safety net - internal name keywords ====================
+      // Bloqueia mesmo que o prédio esteja mal classificado no banco
+      const NOMES_INTERNOS_PROIBIDOS = [
+        'entrada', 'comercial tablet', 'sala reuniao', 'sala reunião',
+        'reuniao', 'reunião', 'recepcao', 'recepção',
+        'escritorio', 'escritório', 'interno', 'sala jeff',
+      ];
+      const nomeNormalizado = (device.name || '').toLowerCase().trim();
+      const nomeProibido = NOMES_INTERNOS_PROIBIDOS.find(n => nomeNormalizado.includes(n));
+      if (nomeProibido && !testMode) {
+        console.log(JSON.stringify({
+          type: 'BLOQUEIO_ALERTA', motivo: 'nome_interno_safety_net',
+          device: device.name, device_id: device.id, palavra_detectada: nomeProibido,
+          building_status: device.buildings?.status,
+        }));
         continue;
       }
 
       // ==================== BLOCK C: Orphan device (no building AND no group) ====================
       if (!device.building_id && !device.device_group_id && !testMode) {
-        console.log(`👻 [MONITOR] ${device.name}: órfão sem grupo - sem alerta`);
+        console.log(JSON.stringify({
+          type: 'BLOQUEIO_ALERTA', motivo: 'orfao_sem_grupo',
+          device: device.name, device_id: device.id,
+        }));
+        continue;
+      }
+
+      // ==================== BLOCK D: Device has no building (orphan with group but unassigned) ====================
+      // Painel sem prédio nunca deve disparar alerta — não há contexto para notificar
+      if (!device.building_id && !testMode) {
+        console.log(JSON.stringify({
+          type: 'BLOQUEIO_ALERTA', motivo: 'sem_predio',
+          device: device.name, device_id: device.id,
+          device_group_id: device.device_group_id,
+        }));
         continue;
       }
 
