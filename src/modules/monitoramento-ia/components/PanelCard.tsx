@@ -317,6 +317,17 @@ export const PanelCard = ({
 
           {/* Badge de Incidente Offline com HoverCard */}
           {renderIncidentBadge()}
+
+          {/* Badge: alerta WhatsApp silenciado (defesa em profundidade) */}
+          {silenceReason && (
+            <Badge
+              title={silenceReason.tooltip}
+              className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-amber-50 text-amber-700 border-amber-300 px-1.5 sm:px-2 py-0.5"
+            >
+              <BellOff className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+              <span className="truncate max-w-[90px]">{silenceReason.icon} {silenceReason.label}</span>
+            </Badge>
+          )}
         </div>
 
         {/* AnyDesk ID - Secundário e discreto - empurrado para baixo */}
