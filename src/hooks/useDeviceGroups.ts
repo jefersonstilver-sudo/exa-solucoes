@@ -7,6 +7,7 @@ export interface DeviceGroup {
   nome: string;
   cor: string;
   ordem: number;
+  silenciar_alertas: boolean;
   created_at: string;
 }
 
