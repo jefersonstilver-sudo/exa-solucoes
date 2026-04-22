@@ -3,7 +3,7 @@
 export const planoEssencialSchema = {
   "@type": "Product",
   "name": "Plano Essencial - Anúncio em 1 Prédio",
-  "description": "Publicidade em painel digital 21\" em 1 prédio premium de Foz do Iguaçu. Alcance 500-1.000 moradores por mês com taxa de visualização de 95%.",
+  "description": "Publicidade em painel digital 21\" em 1 prédio premium de Foz do Iguaçu. 502 exibições por dia · 15.060 por mês por painel, com taxa de visualização de 95%.",
   "brand": {
     "@type": "Brand",
     "name": "EXA Publicidade Inteligente"
@@ -29,7 +29,7 @@ export const planoEssencialSchema = {
 export const planoExpansaoSchema = {
   "@type": "Product",
   "name": "Plano Expansão - Anúncio em 3 Prédios",
-  "description": "Publicidade em painéis digitais 21\" em 3 prédios premium de Foz do Iguaçu. Alcance 1.500-3.000 moradores por mês.",
+  "description": "Publicidade em painéis digitais 21\" em 3 prédios premium de Foz do Iguaçu. 502 exibições por dia · 15.060 por mês em cada painel.",
   "brand": {
     "@type": "Brand",
     "name": "EXA Publicidade Inteligente"
@@ -55,7 +55,7 @@ export const planoExpansaoSchema = {
 export const planoPremiumSchema = {
   "@type": "Product",
   "name": "Plano Premium - Anúncio em 6 Prédios",
-  "description": "Publicidade em painéis digitais 21\" em 6 prédios premium de Foz do Iguaçu. Alcance 3.000-6.000 moradores por mês.",
+  "description": "Publicidade em painéis digitais 21\" em 6 prédios premium de Foz do Iguaçu. 502 exibições por dia · 15.060 por mês em cada painel.",
   "brand": {
     "@type": "Brand",
     "name": "EXA Publicidade Inteligente"
@@ -81,7 +81,7 @@ export const planoPremiumSchema = {
 export const planoDominioSchema = {
   "@type": "Product",
   "name": "Plano Domínio - Anúncio em 12 Prédios",
-  "description": "Publicidade em painéis digitais 21\" em 12 prédios premium de Foz do Iguaçu. Alcance 6.000-12.000 moradores por mês.",
+  "description": "Publicidade em painéis digitais 21\" em 12 prédios premium de Foz do Iguaçu. 502 exibições por dia · 15.060 por mês em cada painel.",
   "brand": {
     "@type": "Brand",
     "name": "EXA Publicidade Inteligente"

@@ -1,6 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+/**
+ * Especificações oficiais 2026:
+ * - Horizontal: 502 exib/dia · 15.060/mês · 83 min presença/dia · até 15 marcas
+ * - Vertical Premium: 167 exib/dia · 5.010/mês · 42 min tela cheia/dia · apenas 3 marcas
+ * - Operação: 23h/dia · Ciclo: 165s (15×10s + 1×15s)
+ */
+
 export interface VideoSpecifications {
   horizontal: {
     duracaoSegundos: number;
@@ -10,6 +17,9 @@ export interface VideoSpecifications {
     maxClientesPainel: number;
     maxVideosPorPedido: number;
     ultimaAlteracao: string | null;
+    exibicoesPorDia: number;
+    exibicoesPorMes: number;
+    presencaMinutosDia: number;
   };
   vertical: {
     duracaoSegundos: number;
@@ -19,12 +29,16 @@ export interface VideoSpecifications {
     maxClientesPainel: number;
     maxVideosPorPedido: number;
     ultimaAlteracao: string | null;
+    exibicoesPorDia: number;
+    exibicoesPorMes: number;
+    presencaMinutosDia: number;
   };
   exibicoes: {
     porDia: number;
     porMes: number;
     horasOperacao: number;
     diasMes: number;
+    tempoCicloSegundos: number;
   };
 }
 
@@ -56,42 +70,62 @@ export function useVideoSpecifications() {
       const horizontal = produtos?.find(p => p.codigo === 'horizontal');
       const vertical = produtos?.find(p => p.codigo === 'vertical_premium');
       
-      const horasOperacao = config?.horas_operacao_dia ?? 21;
+      const horasOperacao = config?.horas_operacao_dia ?? 23;
       const diasMes = config?.dias_mes ?? 30;
       const segundosDia = horasOperacao * 3600;
       
-      // Calcular tempo do ciclo
-      const tempoHorizontal = (horizontal?.duracao_video_segundos ?? 10) * (horizontal?.max_clientes_por_painel ?? 15);
-      const tempoVertical = (vertical?.duracao_video_segundos ?? 15) * (vertical?.max_clientes_por_painel ?? 3);
-      const tempoCiclo = tempoHorizontal + tempoVertical || 195;
+      // Ciclo oficial 2026: 15 horizontais (10s) + 1 vertical (15s) = 165s
+      const duracaoHorizontal = horizontal?.duracao_video_segundos ?? 10;
+      const maxHorizontal = horizontal?.max_clientes_por_painel ?? 15;
+      const duracaoVertical = vertical?.duracao_video_segundos ?? 15;
       
-      const ciclosPorDia = Math.floor(segundosDia / tempoCiclo);
-      const exibicoesPorMes = ciclosPorDia * diasMes;
+      const tempoCiclo = (duracaoHorizontal * maxHorizontal) + duracaoVertical || 165;
+      
+      // Por ciclo: cada horizontal aparece 1x; o vertical aparece 1x (mas em 1 a cada 3 ciclos = 1/3)
+      const ciclosPorDia = Math.floor(segundosDia / tempoCiclo); // ~502
+      
+      // Horizontal: 1 exibição por ciclo
+      const exibicoesHorizontalDia = ciclosPorDia; // ~502
+      const exibicoesHorizontalMes = exibicoesHorizontalDia * diasMes; // ~15.060
+      const presencaHorizontalMin = Math.round((exibicoesHorizontalDia * duracaoHorizontal) / 60); // ~83 min
+      
+      // Vertical Premium: divide entre 3 marcas — cada marca tem 1/3 dos ciclos
+      const maxVertical = vertical?.max_clientes_por_painel ?? 3;
+      const exibicoesVerticalDia = Math.floor(ciclosPorDia / maxVertical); // ~167
+      const exibicoesVerticalMes = exibicoesVerticalDia * diasMes; // ~5.010
+      const presencaVerticalMin = Math.round((exibicoesVerticalDia * duracaoVertical) / 60); // ~42 min
       
       return {
         horizontal: {
-          duracaoSegundos: horizontal?.duracao_video_segundos ?? 10,
+          duracaoSegundos: duracaoHorizontal,
           resolucao: horizontal?.resolucao ?? '1440×1080',
           proporcao: (horizontal as any)?.proporcao ?? '4:3',
           formato: horizontal?.formato ?? 'horizontal',
-          maxClientesPainel: horizontal?.max_clientes_por_painel ?? 15,
+          maxClientesPainel: maxHorizontal,
           maxVideosPorPedido: (horizontal as any)?.max_videos_por_pedido ?? 10,
-          ultimaAlteracao: (horizontal as any)?.ultima_alteracao_em ?? null
+          ultimaAlteracao: (horizontal as any)?.ultima_alteracao_em ?? null,
+          exibicoesPorDia: exibicoesHorizontalDia,
+          exibicoesPorMes: exibicoesHorizontalMes,
+          presencaMinutosDia: presencaHorizontalMin,
         },
         vertical: {
-          duracaoSegundos: vertical?.duracao_video_segundos ?? 10,
+          duracaoSegundos: duracaoVertical,
           resolucao: vertical?.resolucao ?? '1080×1920',
           proporcao: (vertical as any)?.proporcao ?? '9:16',
           formato: vertical?.formato ?? 'vertical',
-          maxClientesPainel: vertical?.max_clientes_por_painel ?? 3,
+          maxClientesPainel: maxVertical,
           maxVideosPorPedido: (vertical as any)?.max_videos_por_pedido ?? 10,
-          ultimaAlteracao: (vertical as any)?.ultima_alteracao_em ?? null
+          ultimaAlteracao: (vertical as any)?.ultima_alteracao_em ?? null,
+          exibicoesPorDia: exibicoesVerticalDia,
+          exibicoesPorMes: exibicoesVerticalMes,
+          presencaMinutosDia: presencaVerticalMin,
         },
         exibicoes: {
-          porDia: ciclosPorDia,
-          porMes: exibicoesPorMes,
+          porDia: exibicoesHorizontalDia, // mantém retrocompatibilidade (horizontal é o padrão)
+          porMes: exibicoesHorizontalMes,
           horasOperacao,
-          diasMes
+          diasMes,
+          tempoCicloSegundos: tempoCiclo,
         }
       };
     },

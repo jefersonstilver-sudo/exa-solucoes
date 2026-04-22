@@ -38,23 +38,33 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
   
   const isVertical = tipo === 'vertical_premium';
   
-  // Get specs from hook (dynamic) with safe defaults
+  // Get specs from hook (dynamic) com defaults oficiais 2026 por tipo
   const specs = isVertical 
     ? {
         duracao: specifications?.vertical.duracaoSegundos ?? 15,
         resolucao: specifications?.vertical.resolucao ?? '1080×1920',
         proporcao: specifications?.vertical.proporcao ?? '9:16',
         maxClientes: specifications?.vertical.maxClientesPainel ?? 3,
-        exibicoesMes: specifications?.exibicoes.porMes ?? 11610,
-        exibicoesDia: specifications?.exibicoes.porDia ?? 387,
+        exibicoesMes: specifications?.vertical.exibicoesPorMes ?? 5010,
+        exibicoesDia: specifications?.vertical.exibicoesPorDia ?? 167,
+        presencaMin: specifications?.vertical.presencaMinutosDia ?? 42,
+        marcasLabel: 'apenas',
+        unidadeMarcas: 'marcas',
+        presencaLabel: 'min de tela 100% sua por dia',
+        badge: 'Tela Cheia · Memória Absoluta',
       }
     : {
         duracao: specifications?.horizontal.duracaoSegundos ?? 10,
         resolucao: specifications?.horizontal.resolucao ?? '1440×1080',
         proporcao: specifications?.horizontal.proporcao ?? '4:3',
         maxClientes: specifications?.horizontal.maxClientesPainel ?? 15,
-        exibicoesMes: specifications?.exibicoes.porMes ?? 11610,
-        exibicoesDia: specifications?.exibicoes.porDia ?? 387,
+        exibicoesMes: specifications?.horizontal.exibicoesPorMes ?? 15060,
+        exibicoesDia: specifications?.horizontal.exibicoesPorDia ?? 502,
+        presencaMin: specifications?.horizontal.presencaMinutosDia ?? 83,
+        marcasLabel: 'Até',
+        unidadeMarcas: 'empresas por prédio',
+        presencaLabel: 'min de presença por dia',
+        badge: 'Volume + Frequência',
       };
 
   const productTitle = isVertical ? 'VERTICAL PREMIUM' : 'HORIZONTAL';
@@ -97,6 +107,12 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
             </p>
           </div>
 
+          <div className="mb-3">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#9C1E1E]/10 text-[#9C1E1E] text-[10px] font-semibold uppercase tracking-wider">
+              {specs.badge}
+            </span>
+          </div>
+
           <div className="flex flex-col gap-4 md:gap-5">
             <FeatureItem 
               icon={Clock} 
@@ -105,8 +121,8 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
             />
             <FeatureItem 
               icon={Users} 
-              text="Até" 
-              boldText={`${specs.maxClientes} empresas por prédio`} 
+              text={specs.marcasLabel} 
+              boldText={`${specs.maxClientes} ${specs.unidadeMarcas}`} 
             />
             <FeatureItem 
               icon={Triangle} 
@@ -127,6 +143,11 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
               icon={TrendingUp} 
               text="" 
               boldText={`${(specs.exibicoesDia * totalPanels).toLocaleString('pt-BR')} vezes por dia`} 
+            />
+            <FeatureItem 
+              icon={BarChart3} 
+              text="" 
+              boldText={`${specs.presencaMin} ${specs.presencaLabel}`} 
             />
           </div>
 

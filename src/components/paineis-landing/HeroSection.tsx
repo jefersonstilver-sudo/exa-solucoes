@@ -56,7 +56,7 @@ const HeroSection = () => {
 
             <div className="inline-flex items-center bg-white/10 rounded-full px-4 lg:px-5 py-2 mb-8 border border-white/20">
               <TrendingUp className="w-4 h-4 lg:w-5 lg:h-5 text-indexa-mint mr-2" />
-              <span className="text-white text-sm lg:text-base font-medium">Exibição média: 245 vezes ao dia por painel</span>
+              <span className="text-white text-sm lg:text-base font-medium">Exibição média: 502 vezes ao dia por painel</span>
             </div>
 
             <button

@@ -13,7 +13,7 @@ const reasons = [
   {
     icon: Calendar,
     title: 'Presença Diária',
-    description: 'Cada morador vê a tela todos os dias, gerando 245 exibições diárias por vídeo.',
+    description: 'Cada morador vê a tela todos os dias, gerando 502 exibições diárias por vídeo.',
   },
   {
     icon: Users,

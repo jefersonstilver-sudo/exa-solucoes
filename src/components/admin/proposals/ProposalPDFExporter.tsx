@@ -278,26 +278,30 @@ export class ProposalPDFExporter {
           proporcao: isVertical ? '9:16' : '4:3',
           formato: isVertical ? 'Vertical Premium' : 'Horizontal',
           maxClientes: isVertical ? 3 : 15,
-          exibicoesMes: 11610,
-          exibicoesDia: 387,
+          exibicoesMes: isVertical ? 5010 : 15060,
+          exibicoesDia: isVertical ? 167 : 502,
         };
       }
 
-      const horasOperacao = config?.horas_operacao_dia ?? 21;
+      const horasOperacao = config?.horas_operacao_dia ?? 23;
       const diasMes = config?.dias_mes ?? 30;
       const segundosDia = horasOperacao * 3600;
-      const tempoCiclo = 195;
-      const ciclosPorDia = Math.floor(segundosDia / tempoCiclo);
-      const exibicoesPorMes = ciclosPorDia * diasMes;
+      // Ciclo oficial 2026: 15 horizontais (10s) + 1 vertical (15s) = 165s
+      const tempoCiclo = 165;
+      const ciclosPorDia = Math.floor(segundosDia / tempoCiclo); // ~502
+      const isVerticalProd = tipo === 'vertical_premium';
+      // Vertical é dividido entre 3 marcas → ciclos/3
+      const exibicoesDia = isVerticalProd ? Math.floor(ciclosPorDia / 3) : ciclosPorDia;
+      const exibicoesPorMes = exibicoesDia * diasMes;
 
       return {
-        duracao: produto.duracao_video_segundos ?? (tipo === 'vertical_premium' ? 15 : 10),
-        resolucao: produto.resolucao ?? (tipo === 'vertical_premium' ? '1080x1920' : '1440x1080'),
-        proporcao: (produto as any).proporcao ?? (tipo === 'vertical_premium' ? '9:16' : '4:3'),
-        formato: tipo === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal',
-        maxClientes: produto.max_clientes_por_painel ?? (tipo === 'vertical_premium' ? 3 : 15),
+        duracao: produto.duracao_video_segundos ?? (isVerticalProd ? 15 : 10),
+        resolucao: produto.resolucao ?? (isVerticalProd ? '1080x1920' : '1440x1080'),
+        proporcao: (produto as any).proporcao ?? (isVerticalProd ? '9:16' : '4:3'),
+        formato: isVerticalProd ? 'Vertical Premium' : 'Horizontal',
+        maxClientes: produto.max_clientes_por_painel ?? (isVerticalProd ? 3 : 15),
         exibicoesMes: exibicoesPorMes,
-        exibicoesDia: ciclosPorDia,
+        exibicoesDia: exibicoesDia,
       };
     } catch (err) {
       console.error('Erro ao buscar specs:', err);
@@ -308,8 +312,8 @@ export class ProposalPDFExporter {
         proporcao: isVertical ? '9:16' : '4:3',
         formato: isVertical ? 'Vertical Premium' : 'Horizontal',
         maxClientes: isVertical ? 3 : 15,
-        exibicoesMes: 11610,
-        exibicoesDia: 387,
+        exibicoesMes: isVertical ? 5010 : 15060,
+        exibicoesDia: isVertical ? 167 : 502,
       };
     }
   }

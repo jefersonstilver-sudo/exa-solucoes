@@ -69,9 +69,9 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
     }, 0);
   }, [cartItems]);
 
-  // Calcular número total de exibições (média de 245 por painel por dia * 30 dias)
+  // Total de exibições/mês — padrão oficial 2026 horizontal: 15.060/painel/mês
   const totalExibicoesMes = React.useMemo(() => {
-    return panelCount * 245 * 30;
+    return panelCount * 15060;
   }, [panelCount]);
 
   return (
