@@ -3,19 +3,25 @@ import { humanizeDate } from '../utils/formatters';
 import { useRealTimeCounter } from '../hooks/useRealTimeCounter';
 import { Badge } from '@/components/ui/badge';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { Wifi, MapPin, Activity, Building2, Check, Unlink, AlertTriangle, ClipboardCheck, User } from 'lucide-react';
+import { Wifi, MapPin, Activity, Building2, Check, Unlink, AlertTriangle, ClipboardCheck, User, BellOff } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { IncidentStatus } from '../hooks/useDeviceIncidentStatus';
 import { DeviceIncident } from '../hooks/useDeviceIncidents';
 
 interface PanelCardProps {
-  device: Device & { building_id?: string | null; empresa_elevador_id?: string | null };
+  device: Device & {
+    building_id?: string | null;
+    empresa_elevador_id?: string | null;
+    device_group_id?: string | null;
+  };
   onClick: () => void;
   periodEventsCount?: number;
   periodLabel?: string;
   incidentStatus?: IncidentStatus;
   incidentData?: DeviceIncident | null;
+  groupSilenced?: boolean;
+  groupName?: string;
 }
 
 export const PanelCard = ({
@@ -24,11 +30,14 @@ export const PanelCard = ({
   periodEventsCount,
   periodLabel = 'hoje',
   incidentStatus,
-  incidentData
+  incidentData,
+  groupSilenced = false,
+  groupName,
 }: PanelCardProps) => {
   const hasCriticalAlert = (device as any).has_critical_alert === true;
   const offlineCounter = useRealTimeCounter(device.status === 'offline' ? device.last_online_at : null);
   const [assignedBuildingName, setAssignedBuildingName] = useState<string | null>(null);
+  const [assignedBuildingStatus, setAssignedBuildingStatus] = useState<string | null>(null);
   const [elevatorCompanyName, setElevatorCompanyName] = useState<string | null>(null);
 
   // Carregar nome do prédio atribuído e empresa de elevador
@@ -41,12 +50,13 @@ export const PanelCard = ({
 
       const { data, error } = await supabase
         .from('buildings')
-        .select('nome')
+        .select('nome, status')
         .eq('id', device.building_id)
         .single();
 
       if (!error && data) {
         setAssignedBuildingName(data.nome);
+        setAssignedBuildingStatus((data as any).status ?? null);
       }
     };
 
