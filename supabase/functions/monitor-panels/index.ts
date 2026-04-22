@@ -203,10 +203,19 @@ Deno.serve(async (req) => {
     // 4. Get all active devices
     const { data: devices, error: devicesError } = await supabase
       .from('devices')
-      .select(`*, buildings:building_id (endereco, bairro, notion_internet)`)
+      .select(`*, device_group_id, buildings:building_id (endereco, bairro, notion_internet, status)`)
       .eq('is_active', true);
 
     if (devicesError) throw devicesError;
+
+    // 4.0.1 Load device groups (for silenciar_alertas check)
+    const { data: deviceGroups } = await supabase
+      .from('device_groups')
+      .select('id, nome, silenciar_alertas');
+
+    const deviceGroupsMap = new Map<string, { id: string; nome: string; silenciar_alertas: boolean }>(
+      (deviceGroups || []).map((g: any) => [g.id, g])
+    );
 
     // 4.1 Get device alert configs (alerts_enabled AND offline_threshold_minutes)
     const { data: alertConfigs } = await supabase
@@ -217,7 +226,7 @@ Deno.serve(async (req) => {
       (alertConfigs || []).map((c: DeviceAlertConfig) => [c.device_id, c])
     );
 
-    console.log(`📊 [MONITOR] Analisando ${devices?.length || 0} devices (${alertConfigs?.length || 0} com config de alertas)...`);
+    console.log(`📊 [MONITOR] Analisando ${devices?.length || 0} devices (${alertConfigs?.length || 0} com config de alertas, ${deviceGroups?.length || 0} grupos)...`);
 
     // ==================== MASS OFFLINE DETECTION ====================
     const totalDevices = devices?.length || 0;
@@ -364,6 +373,27 @@ Deno.serve(async (req) => {
       // ==================== FIX #1: ONLY CONSIDER OFFLINE IF device.status === 'offline' ====================
       // This is the CRITICAL FIX - we only alert if the device is actually marked offline by sync
       const isDeviceReallyOffline = currentStatus === 'offline';
+
+      // ==================== BLOCK A: Group with silenciar_alertas = true ====================
+      if (device.device_group_id && !testMode) {
+        const grupo = deviceGroupsMap.get(device.device_group_id);
+        if (grupo?.silenciar_alertas) {
+          console.log(`🔇 [MONITOR] ${device.name}: grupo "${grupo.nome}" silenciado - sem alerta`);
+          continue;
+        }
+      }
+
+      // ==================== BLOCK B: Internal building ====================
+      if (device.buildings?.status === 'interno' && !testMode) {
+        console.log(`🏢 [MONITOR] ${device.name}: prédio interno - sem alerta`);
+        continue;
+      }
+
+      // ==================== BLOCK C: Orphan device (no building AND no group) ====================
+      if (!device.building_id && !device.device_group_id && !testMode) {
+        console.log(`👻 [MONITOR] ${device.name}: órfão sem grupo - sem alerta`);
+        continue;
+      }
 
       // CHECK: Device has alerts disabled in device_alert_configs table
       const deviceConfig = alertConfigsMap.get(device.id);

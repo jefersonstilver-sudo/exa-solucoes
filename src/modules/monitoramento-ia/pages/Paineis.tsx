@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, ChevronUp, Maximize2, Clock, MapPin, Link2, Layers } from 'lucide-react';
+import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, ChevronUp, Maximize2, Clock, MapPin, Link2, Layers, BellOff } from 'lucide-react';
 import {
   Device,
   calculateDeviceStats,
@@ -483,6 +483,12 @@ export const PaineisPage = () => {
                       <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: group?.cor || '#6B7280' }} />
                       <span className="font-semibold text-sm text-foreground">{group?.nome || 'Sem grupo'}</span>
                       <span className="text-xs text-muted-foreground ml-1">({groupDevs.length})</span>
+                      {group?.silenciar_alertas && (
+                        <span title="Alertas WhatsApp silenciados para este grupo" className="ml-2 inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">
+                          <BellOff className="w-3 h-3" />
+                          Sem notificações
+                        </span>
+                      )}
                     </button>
                     {!isCollapsed && (
                       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6 items-stretch">

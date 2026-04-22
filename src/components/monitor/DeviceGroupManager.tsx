@@ -2,21 +2,24 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Pencil, Trash2, Plus, Layers, X, Check } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Pencil, Trash2, Plus, Layers, X, Check, BellOff, Bell } from 'lucide-react';
 import { DeviceGroup } from '@/hooks/useDeviceGroups';
 import { cn } from '@/lib/utils';
 
 const COLOR_OPTIONS = [
   '#EF4444', '#F97316', '#EAB308', '#22C55E', '#3B82F6',
   '#8B5CF6', '#EC4899', '#6B7280', '#14B8A6', '#F43F5E',
+  '#F59E0B',
 ];
 
 interface DeviceGroupManagerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   groups: DeviceGroup[];
-  onCreateGroup: (nome: string, cor: string) => Promise<any>;
-  onUpdateGroup: (id: string, updates: { nome?: string; cor?: string }) => Promise<void>;
+  onCreateGroup: (nome: string, cor: string, silenciar_alertas?: boolean) => Promise<any>;
+  onUpdateGroup: (id: string, updates: { nome?: string; cor?: string; silenciar_alertas?: boolean }) => Promise<void>;
   onDeleteGroup: (id: string) => Promise<void>;
 }
 
@@ -30,17 +33,20 @@ export const DeviceGroupManager: React.FC<DeviceGroupManagerProps> = ({
 }) => {
   const [nome, setNome] = useState('');
   const [cor, setCor] = useState('#6B7280');
+  const [silenciar, setSilenciar] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editNome, setEditNome] = useState('');
   const [editCor, setEditCor] = useState('');
+  const [editSilenciar, setEditSilenciar] = useState(false);
   const [creating, setCreating] = useState(false);
 
   const handleCreate = async () => {
     if (!nome.trim() || creating) return;
     setCreating(true);
-    await onCreateGroup(nome.trim(), cor);
+    await onCreateGroup(nome.trim(), cor, silenciar);
     setNome('');
     setCor('#6B7280');
+    setSilenciar(false);
     setCreating(false);
   };
 
@@ -48,11 +54,12 @@ export const DeviceGroupManager: React.FC<DeviceGroupManagerProps> = ({
     setEditingId(group.id);
     setEditNome(group.nome);
     setEditCor(group.cor);
+    setEditSilenciar(group.silenciar_alertas || false);
   };
 
   const handleSaveEdit = async () => {
     if (!editingId || !editNome.trim()) return;
-    await onUpdateGroup(editingId, { nome: editNome.trim(), cor: editCor });
+    await onUpdateGroup(editingId, { nome: editNome.trim(), cor: editCor, silenciar_alertas: editSilenciar });
     setEditingId(null);
   };
 
@@ -114,6 +121,13 @@ export const DeviceGroupManager: React.FC<DeviceGroupManagerProps> = ({
                   Criar
                 </Button>
               </div>
+              <div className="flex items-center justify-between rounded-xl border border-border/50 bg-background/60 px-3 py-2">
+                <Label htmlFor="silenciar-novo" className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                  {silenciar ? <BellOff className="w-3.5 h-3.5 text-amber-500" /> : <Bell className="w-3.5 h-3.5 text-muted-foreground" />}
+                  Silenciar alertas WhatsApp
+                </Label>
+                <Switch id="silenciar-novo" checked={silenciar} onCheckedChange={setSilenciar} />
+              </div>
             </div>
           </div>
 
@@ -149,7 +163,7 @@ export const DeviceGroupManager: React.FC<DeviceGroupManagerProps> = ({
                         className="bg-background/80 border-border/50 h-10 rounded-xl"
                       />
                       <div className="flex items-center justify-between">
-                        <div className="flex gap-1.5">
+                        <div className="flex gap-1.5 flex-wrap">
                           {COLOR_OPTIONS.map((c) => (
                             <button
                               key={c}
@@ -165,25 +179,32 @@ export const DeviceGroupManager: React.FC<DeviceGroupManagerProps> = ({
                             />
                           ))}
                         </div>
-                        <div className="flex gap-1.5">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setEditingId(null)}
-                            className="h-8 px-3 rounded-lg text-xs"
-                          >
-                            <X className="w-3.5 h-3.5 mr-1" />
-                            Cancelar
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={handleSaveEdit}
-                            className="h-8 px-3 rounded-lg text-xs bg-[#9C1E1E] hover:bg-[#B40D1A] text-white"
-                          >
-                            <Check className="w-3.5 h-3.5 mr-1" />
-                            Salvar
-                          </Button>
-                        </div>
+                      </div>
+                      <div className="flex items-center justify-between rounded-lg border border-border/50 bg-background/60 px-3 py-2">
+                        <Label htmlFor={`silenciar-${group.id}`} className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                          {editSilenciar ? <BellOff className="w-3.5 h-3.5 text-amber-500" /> : <Bell className="w-3.5 h-3.5 text-muted-foreground" />}
+                          Silenciar alertas WhatsApp
+                        </Label>
+                        <Switch id={`silenciar-${group.id}`} checked={editSilenciar} onCheckedChange={setEditSilenciar} />
+                      </div>
+                      <div className="flex justify-end gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditingId(null)}
+                          className="h-8 px-3 rounded-lg text-xs"
+                        >
+                          <X className="w-3.5 h-3.5 mr-1" />
+                          Cancelar
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={handleSaveEdit}
+                          className="h-8 px-3 rounded-lg text-xs bg-[#9C1E1E] hover:bg-[#B40D1A] text-white"
+                        >
+                          <Check className="w-3.5 h-3.5 mr-1" />
+                          Salvar
+                        </Button>
                       </div>
                     </div>
                   ) : (
@@ -192,7 +213,15 @@ export const DeviceGroupManager: React.FC<DeviceGroupManagerProps> = ({
                         className="w-4 h-4 rounded-full flex-shrink-0 shadow-sm"
                         style={{ backgroundColor: group.cor, boxShadow: `0 0 8px ${group.cor}30` }}
                       />
-                      <span className="flex-1 text-sm font-semibold text-foreground truncate">{group.nome}</span>
+                      <span className="flex-1 text-sm font-semibold text-foreground truncate flex items-center gap-2">
+                        {group.nome}
+                        {group.silenciar_alertas && (
+                          <span title="Alertas WhatsApp silenciados" className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">
+                            <BellOff className="w-3 h-3" />
+                            Silenciado
+                          </span>
+                        )}
+                      </span>
                       <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
                           variant="ghost"
