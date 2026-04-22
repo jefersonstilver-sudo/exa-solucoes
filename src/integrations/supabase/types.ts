@@ -5810,6 +5810,7 @@ export type Database = {
           id: string
           nome: string
           ordem: number
+          silenciar_alertas: boolean
         }
         Insert: {
           cor?: string
@@ -5817,6 +5818,7 @@ export type Database = {
           id?: string
           nome: string
           ordem?: number
+          silenciar_alertas?: boolean
         }
         Update: {
           cor?: string
@@ -5824,6 +5826,7 @@ export type Database = {
           id?: string
           nome?: string
           ordem?: number
+          silenciar_alertas?: boolean
         }
         Relationships: []
       }
