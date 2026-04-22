@@ -1,87 +1,116 @@
 
 
-# Análise Profunda Final — Padronização Horizontal vs Vertical
+# Adicionar Grupo "NUCS PRONTOS" + Silenciar Alertas WhatsApp por Grupo
 
-Fiz uma varredura completa antes de executar. Encontrei **mais 8 pontos** que faltavam no plano anterior. Aqui está a versão consolidada e definitiva.
+## Cenário atual (verificado no banco)
 
-## Números oficiais (PDFs 2026)
+- Tabela `device_groups` já existe e hoje tem **2 grupos**: `Predios` (azul) e `Interno` (cinza)
+- **29 dispositivos** no total — **12 estão sem grupo** e **10 sem prédio** (órfãos)
+- Existe `device_alert_configs.alerts_enabled` que silencia alertas **por dispositivo individual**, mas **não existe** silenciamento **por grupo nem por status do prédio (interno)**
+- A edge function `monitor-panels` (linha 372) só checa `alerts_enabled` de cada device — não olha grupo nem `buildings.status='interno'`
+- Painéis órfãos (sem prédio) hoje **disparam alertas WhatsApp normalmente**, gerando ruído
+- Painéis de prédios `interno` (ENTRADA, COMERCIAL TABLET, SALA REUNIÃO) também disparam alertas
 
-| Métrica | Horizontal | Vertical Premium |
+## Solução proposta
+
+### 1. Banco — adicionar coluna `silenciar_alertas` em `device_groups`
+
+```sql
+ALTER TABLE device_groups 
+ADD COLUMN silenciar_alertas boolean NOT NULL DEFAULT false;
+```
+
+Permite marcar QUALQUER grupo como "não notifica" — flexível para o futuro.
+
+### 2. Banco — criar grupo "NUCS PRONTOS" (silenciado)
+
+Insert único:
+```
+nome='NUCS PRONTOS', cor='#F59E0B' (âmbar), ordem=2, silenciar_alertas=true
+```
+
+### 3. Edge Function `monitor-panels` — 3 novas regras de bloqueio
+
+No loop de devices (linha ~370), antes de processar alerta, adicionar checks na ordem:
+
+**Bloqueio A — grupo silenciado:**
+```ts
+if (device.device_group_id) {
+  const grupo = deviceGroupsMap.get(device.device_group_id);
+  if (grupo?.silenciar_alertas) {
+    console.log(`🔇 [MONITOR] ${device.name}: grupo "${grupo.nome}" silenciado`);
+    continue;
+  }
+}
+```
+
+**Bloqueio B — prédio interno:**
+```ts
+if (device.buildings?.status === 'interno') {
+  console.log(`🏢 [MONITOR] ${device.name}: prédio interno - sem alerta`);
+  continue;
+}
+```
+
+**Bloqueio C — sem prédio E sem grupo (órfão real):** opcional, suprime ruído de painéis nunca atribuídos.
+```ts
+if (!device.building_id && !device.device_group_id) {
+  console.log(`👻 [MONITOR] ${device.name}: órfão sem grupo - sem alerta`);
+  continue;
+}
+```
+
+Para isso, adicionar no SELECT da query de devices (linha 206): incluir `device_group_id` e `buildings.status`. Carregar `device_groups` uma vez no início.
+
+### 4. UI — Página `Paineis.tsx` (Monitoramento IA)
+
+Já existe agrupamento visual por `device_group_id` (linha 170). Vou:
+
+- Adicionar **botão "Mover para NUCS PRONTOS"** no menu de cada card de painel órfão (sem prédio)
+- No header de cada grupo, mostrar **ícone 🔇 + label "Alertas silenciados"** quando `silenciar_alertas=true`
+- No `DeviceGroupManager.tsx` (modal de gestão), adicionar **toggle "Silenciar alertas WhatsApp"** ao criar/editar grupo
+
+### 5. UI — `useDeviceGroups.ts`
+
+Atualizar `interface DeviceGroup` para incluir `silenciar_alertas: boolean` e expor isso em `createGroup`/`updateGroup`.
+
+### 6. Bulk action — atribuir os 10 órfãos automaticamente (opcional, perguntar)
+
+Migration extra opcional:
+```sql
+UPDATE devices 
+SET device_group_id = '<id-nucs-prontos>'
+WHERE building_id IS NULL AND device_group_id IS NULL;
+```
+
+## Resumo do efeito final
+
+| Situação do painel | Hoje notifica? | Depois notifica? |
 |---|---|---|
-| Duração | 10s | 15s |
-| Resolução | 1440×1080 | 1080×1920 |
-| Proporção | 4:3 | 9:16 |
-| Marcas/painel | até 15 | apenas 3 |
-| Exibições/dia | **502** | **167** |
-| Exibições/mês | **15.060** | **5.010** |
-| Presença/dia | 83 min | 42 min tela cheia |
-| Operação | 23h/dia | 23h/dia |
-| Ciclo | 165s (15×10s + 1×15s) | 165s |
+| Prédio normal (ativo) | ✅ Sim | ✅ Sim |
+| Prédio interno | ✅ Sim (ruído) | ❌ Não |
+| Grupo "NUCS PRONTOS" | ✅ Sim (ruído) | ❌ Não |
+| Órfão sem grupo | ✅ Sim (ruído) | ❌ Não (opcional) |
+| Silenciado individual (`alerts_enabled=false`) | ❌ Não | ❌ Não |
 
-## Arquivos a modificar — lista COMPLETA
+## Arquivos modificados
 
-### Núcleo de dados (fonte de verdade)
-1. `src/hooks/useExibicoesConfig.ts` — defaults 23h, 502/15.060
-2. `src/hooks/useVideoSpecifications.ts` — defaults por tipo, presença diária, tempo ciclo
-3. **Migration** — `produtos_exa` (durações + max_clientes) + `configuracoes_exibicao.horas_operacao_dia=23`
-
-### Proposta pública
-4. `src/components/public/proposal/TechnicalSpecsGrid.tsx` — números corretos por tipo
-5. `src/components/public/proposal/ProductShowcaseCard.tsx` — diferenciação visual + badges
-6. `src/components/public/proposal/ProposalSummaryText.tsx` — números no texto narrativo
-7. `src/pages/public/PropostaPublicaPage.tsx` — cálculo `displayPanelsCount * (15060|5010)`
-
-### PDF de proposta
-8. `src/components/admin/proposals/ProposalPDFExporter.tsx` — fallbacks por tipo
-
-### Admin
-9. `src/pages/admin/proposals/PropostaDetalhesPage.tsx` — texto fixo
-10. `src/components/admin/orders/create/ProductSelectSection.tsx` — verificar labels (NOVO)
-
-### Landing pages
-11. `src/components/paineis-landing/HeroSection.tsx` — "245 vezes" → "502 exibições"
-12. `src/components/paineis-landing/FAQSection.tsx`
-13. `src/components/paineis-landing/why-it-works/ResultSummary.tsx` — (NOVO, encontrado na varredura)
-14. `src/components/exa/home/PorQueFuncionaSection.tsx`
-15. `src/components/exa/home/NumerosSection.tsx` — verificar `useHomeMetrics` (NOVO)
-16. `src/components/exa/SmartAdvertisingSection.tsx` — KPIs de "Resultados Comprovados" (NOVO)
-17. `src/components/sou-sindico/HeroSection.tsx` — verificar números (NOVO)
-
-### Checkout
-18. `src/components/checkout/PlanSelectionContent.tsx` — `panelCount * 245 * 30` → `* 15060`
-19. `src/components/order-confirmation/VideoRequirements.tsx` — (NOVO, instruções de vídeo)
-20. `src/components/video-management/VideoInstructionsModal.tsx` — (NOVO, instruções)
-
-### SEO / Schema
-21. `src/components/seo/productSchemas.ts` — descrições dos 4 planos
-
-## Diferenciação visual final na proposta
-
-**Card Horizontal:**
 ```
-🕐 10s · 📺 1440×1080 · 📐 4:3
-👥 até 15 marcas · 📈 502 exib/dia · 🎯 15.060/mês
-⏱ 83 min de presença/dia
-Badge: "Volume + Frequência"
-```
-
-**Card Vertical Premium:**
-```
-🕐 15s · 📺 1080×1920 · 📐 9:16
-👥 apenas 3 marcas · 📈 167 exib/dia · 🎯 5.010/mês
-⏱ 42 min tela 100% sua
-Badge: "Tela Cheia · Memória Absoluta"
+supabase/migrations/<novo>.sql          — coluna silenciar_alertas + insert grupo NUCS PRONTOS
+supabase/functions/monitor-panels/index.ts — 3 bloqueios + select expandido
+src/hooks/useDeviceGroups.ts            — campo silenciar_alertas
+src/components/monitor/DeviceGroupManager.tsx — toggle "silenciar alertas"
+src/modules/monitoramento-ia/pages/Paineis.tsx — header com ícone 🔇 + ação rápida
 ```
 
 ## Garantias
 
-- **Não toco** em: pagamento, RLS, contratos, fluxo de etapas, autenticação, video upload, agendamento
-- **Não altero** UI fora dos números/labels listados
-- Defaults antigos continuam como fallback se banco falhar
-- Vertical e Horizontal terão números **claramente diferentes** em todos os pontos
-- Componentes 10/13/15/16/17/19/20 só serão tocados se contiverem números desatualizados (verifico antes de editar — se já estiverem corretos via hook, ficam intactos)
+- **Não toco** em: fluxo de pagamento, propostas, contratos, agendamento, RLS de outras tabelas, UI fora dos componentes listados
+- Painéis silenciados **continuam visíveis** nos dashboards (interno e `/monitor` público) — só não geram WhatsApp
+- A flag é por **grupo**, então amanhã você pode criar outro grupo ("Manutenção", "Reserva") com a mesma regra sem código novo
+- O grupo "NUCS PRONTOS" pode ser renomeado/recolorido livremente pelo painel admin
 
-## Ordem de execução
+## Pergunta antes de executar
 
-1. Migration (banco) → 2. Hooks (fonte) → 3. Proposta pública + PDF → 4. Admin → 5. Landing pages → 6. Checkout → 7. SEO
+Quer que eu **mova automaticamente** os 10 painéis órfãos (sem prédio + sem grupo) para o grupo "NUCS PRONTOS" na própria migration, ou prefere fazer manualmente via interface depois?
 
