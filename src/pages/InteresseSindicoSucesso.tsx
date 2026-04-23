@@ -45,6 +45,14 @@ const InteresseSindicoSucesso: React.FC = () => {
             entrará em contato pelo WhatsApp informado.
           </p>
 
+          <div className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-left flex items-start gap-2">
+            <Mail size={16} className="shrink-0 mt-0.5 text-amber-200" />
+            <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
+              Já enviamos um e-mail de confirmação. <strong className="text-white">Não esqueça de verificar sua caixa de spam</strong> e marcar{' '}
+              <span className="font-mono text-amber-100">contato@examidia.com.br</span> como remetente confiável.
+            </p>
+          </div>
+
           <div className="sif-warning-box mt-6 text-left">
             <AlertTriangle size={20} className="shrink-0" />
             <div>

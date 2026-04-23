@@ -107,6 +107,21 @@ export const SINDICO_CONFIRMACAO_HTML = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTM
           </td>
         </tr>
 
+        <!-- AVISO SPAM -->
+        <tr>
+          <td class="px-res" style="padding:24px 48px 0 48px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFF8E1; border:1px solid #F4D58A; border-radius:10px;">
+              <tr>
+                <td style="padding:14px 18px;">
+                  <p style="margin:0; font-family:'Inter', Arial, sans-serif; font-size:13px; line-height:20px; color:#5C4400;">
+                    📬 <strong style="color:#3D2D00;">Não está vendo nossos próximos contatos?</strong> Verifique sua caixa de <strong>Spam / Lixo Eletrônico</strong> e marque <a href="mailto:contato@examidia.com.br" style="color:#8C1113; text-decoration:none; font-weight:600;">contato@examidia.com.br</a> como <strong>remetente confiável</strong> ou adicione aos seus contatos. Isso garante que aprovação, contratos e comunicações cheguem sem atraso.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
         <!-- PRÓXIMOS PASSOS -->
         <tr>
           <td class="px-res" style="padding:28px 48px 4px 48px;">

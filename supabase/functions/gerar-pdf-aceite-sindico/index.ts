@@ -10,18 +10,26 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// ====== Logo EXA branca embedada (PNG ~415 bytes) — sem dependência de rede ======
-const LOGO_B64 =
-  'iVBORw0KGgoAAAANSUhEUgAAAPAAAABQCAYAAAAnSfh8AAABZklEQVR42u3YP6uIYRjH8etxZJAsBmW0SN4AKSYZJatFeQPkXViYDF7DUcriTzIhZbYZjCwmpdTX8qgnZXbO6fOpp+77uu7pV1fd9zMDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHEjVj+rN5rtbXa2ebM6cqz5UO+v+dvWzOilB+L8D/P0f9WfVpXX9ojq/6T2t7le3JAh7c4DPVO+qG9XjTf1o9Wrt70oQ9uAAr70H1ZfqxKZ2vbq3rj9WR6S4fx0Swb535K838IVN7/jM/JqZY5vatZm5Wb2fmVMzc1mEsPeu0Ber3epK9XSt7VRvN2euVg+lCHtogKvD61/n0+t+t7pWXaoe/fUe/iTF/euwCA7GFXqzfzcz32bm1bIsn9fanZl5PjMvZ+b1n4PLsvyovlZnl2UxyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHCA/AY9he4xVQDINAAAAABJRU5ErkJggg==';
+// ====== Logo EXA oficial — buscada via fetch (URL pública do site) e cacheada em memória ======
+const LOGO_URL =
+  'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Publicidade%20Inteligente%20(800%20x%20800%20px).png';
 
 let LOGO_BYTES: Uint8Array | null = null;
-function getLogoBytes(): Uint8Array {
+async function fetchLogoBytes(): Promise<Uint8Array | null> {
   if (LOGO_BYTES) return LOGO_BYTES;
-  const bin = atob(LOGO_B64);
-  const arr = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-  LOGO_BYTES = arr;
-  return arr;
+  try {
+    const res = await fetch(LOGO_URL);
+    if (!res.ok) {
+      console.warn('[pdf v4] fetch logo falhou', res.status);
+      return null;
+    }
+    const buf = new Uint8Array(await res.arrayBuffer());
+    LOGO_BYTES = buf;
+    return buf;
+  } catch (e) {
+    console.warn('[pdf v4] fetch logo exceção', (e as any)?.message);
+    return null;
+  }
 }
 
 // ====== Cores ======
@@ -206,33 +214,44 @@ function drawHeader(page: any, font: any, fontBold: any, logoImg: any, protocolo
   // Faixa vermelha clara
   page.drawRectangle({ x: 0, y: PH - HEADER_H, width: PW, height: FAIXA_H, color: C.exa });
 
-  // Logo
+  // Logo (oficial — 36px de altura)
   if (logoImg) {
-    const targetH = 22;
+    const targetH = 36;
     const ratio = logoImg.width / logoImg.height;
     const targetW = targetH * ratio;
+    const bandBottom = PH - HEADER_H + FAIXA_H;
+    const bandHeight = HEADER_H - FAIXA_H;
     page.drawImage(logoImg, {
       x: MX,
-      y: PH - HEADER_H + FAIXA_H + (HEADER_H - FAIXA_H - targetH) / 2,
+      y: bandBottom + (bandHeight - targetH) / 2,
       width: targetW,
       height: targetH,
     });
     // Divisor + texto INDEXA MIDIA LTDA
     const divX = MX + targetW + 12;
     page.drawLine({
-      start: { x: divX, y: PH - HEADER_H + FAIXA_H + 18 },
-      end: { x: divX, y: PH - HEADER_H + FAIXA_H + 38 },
+      start: { x: divX, y: bandBottom + 10 },
+      end: { x: divX, y: bandBottom + bandHeight - 10 },
       thickness: 0.8,
       color: rgb(1, 1, 1),
       opacity: 0.35,
     });
     page.drawText(san('INDEXA MÍDIA LTDA'), {
       x: divX + 12,
-      y: PH - HEADER_H + FAIXA_H + 24,
+      y: bandBottom + (bandHeight - 8) / 2,
       size: 8,
       font: fontBold,
       color: C.white,
       opacity: 0.92,
+    });
+  } else {
+    // Fallback texto se a logo não carregar
+    page.drawText(san('EXA MÍDIA'), {
+      x: MX,
+      y: PH - HEADER_H + FAIXA_H + (HEADER_H - FAIXA_H - 14) / 2,
+      size: 16,
+      font: fontBold,
+      color: C.white,
     });
   }
 
@@ -375,7 +394,10 @@ Deno.serve(async (req) => {
 
     let logoImg: any = null;
     try {
-      logoImg = await pdf.embedPng(getLogoBytes());
+      const bytes = await fetchLogoBytes();
+      if (bytes) {
+        logoImg = await pdf.embedPng(bytes);
+      }
     } catch (e) {
       console.warn('[pdf v4] logo embed falhou', e);
     }

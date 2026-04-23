@@ -173,7 +173,34 @@ Deno.serve(async (req) => {
       console.warn('[send-sindico-confirmation] aceite_pdf_url ausente — enviando sem anexo', { id });
     }
 
-    const subject = `${protocolo} · Registro de interesse recebido — EXA Mídia`;
+    const subject = `Registro recebido • Protocolo ${protocolo} • EXA Mídia`;
+
+    // Versão texto plano (melhora pontuação anti-spam — e-mails só-HTML são suspeitos)
+    const textPlain = [
+      `Olá, ${firstName(fullName)}.`,
+      ``,
+      `Recebemos seu registro de interesse em receber painéis digitais da EXA Mídia no ${nomePredio}.`,
+      ``,
+      `Protocolo: ${protocolo}`,
+      `Registrado em: ${dataRegistro}`,
+      `Status: Assinado eletronicamente`,
+      ``,
+      `PRÓXIMOS PASSOS:`,
+      `1. Análise técnica interna pela equipe EXA Mídia.`,
+      `2. Contato pelo WhatsApp informado, caso aprovado.`,
+      `3. Apresentação da proposta e contrato de comodato.`,
+      ``,
+      `IMPORTANTE: Caso não veja nossos próximos contatos, verifique sua caixa de Spam / Lixo Eletrônico e marque contato@examidia.com.br como remetente confiável.`,
+      ``,
+      `O Termo de Registro de Interesse em PDF está anexado a este e-mail.`,
+      ``,
+      `Para revogar este registro ou esclarecer dúvidas: suporte@examidia.com.br`,
+      ``,
+      `—`,
+      `INDEXA MÍDIA LTDA · CNPJ 38.142.638/0001-30`,
+      `Av. Paraná, 974 — Sala 301 · Centro · Foz do Iguaçu/PR`,
+      `www.examidia.com.br`,
+    ].join('\n');
 
     const resendPayload: Record<string, unknown> = {
       from: FROM_EMAIL,
@@ -181,6 +208,16 @@ Deno.serve(async (req) => {
       reply_to: REPLY_TO,
       subject,
       html,
+      text: textPlain,
+      headers: {
+        'List-Unsubscribe': '<mailto:contato@examidia.com.br?subject=Unsubscribe>',
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        'X-Entity-Ref-ID': protocolo,
+      },
+      tags: [
+        { name: 'category', value: 'sindico-confirmation' },
+        { name: 'protocolo', value: protocolo.replace(/[^a-zA-Z0-9_-]/g, '_') },
+      ],
     };
     if (attachments) resendPayload.attachments = attachments;
 
