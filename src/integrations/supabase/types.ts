@@ -12339,6 +12339,7 @@ export type Database = {
           cep: string | null
           created_at: string
           data_contato: string | null
+          elevador_casa_maquinas: string | null
           email: string
           empresa_elevador: string | null
           endereco: string
@@ -12386,6 +12387,7 @@ export type Database = {
           cep?: string | null
           created_at?: string
           data_contato?: string | null
+          elevador_casa_maquinas?: string | null
           email: string
           empresa_elevador?: string | null
           endereco: string
@@ -12433,6 +12435,7 @@ export type Database = {
           cep?: string | null
           created_at?: string
           data_contato?: string | null
+          elevador_casa_maquinas?: string | null
           email?: string
           empresa_elevador?: string | null
           endereco?: string
