@@ -1,89 +1,84 @@
 
 
-# Plano: Trigger de Sincronização Legado ↔ Novo
+# Ajustes Finais Antes da Execução
 
-## Diagnóstico
+## 1. Resposta sobre a logo
 
-Confirmado via query: a tabela tem **7 colunas legadas NOT NULL** que quebrariam o INSERT do formulário público:
+**Linha exata em `src/components/layout/header/HeaderLogo.tsx` (linha 13):**
 
-| Legada (NOT NULL) | Nova (origem) |
+```ts
+const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=…';
+```
+
+**Diagnóstico:** É a logo com cores originais (vermelho/preto sobre transparente) — **não é versão branca pura**. Em fundo preto, o vermelho da logo se mistura com o glow vermelho da página (#EA251D ≈ vermelho da própria logo) e perde legibilidade.
+
+**Solução padrão do projeto** (já usada em `ProviderBenefitChoice.tsx` linha 314, `BenefitPreview.tsx` linha 115, `MobileHeader.tsx` linha 27): aplicar `filter brightness-0 invert` na tag `<img>` para forçar versão 100% branca. Esse é o padrão consolidado do projeto, alinhado com a memory `mem://style/logo-ticker-standard-v4-0-final` ("logos obrigatoriamente em BRANCO via brightness-0 invert").
+
+**Não preciso de URL nova.** Vou reusar `EXA_LOGO_URL` da `HeaderLogo.tsx` + filtro CSS:
+
+```tsx
+<img src={EXA_LOGO_URL} alt="EXA Mídia"
+     className="h-12 w-auto filter brightness-0 invert
+                drop-shadow-[0_0_24px_rgba(234,37,29,0.45)]" />
+```
+
+O `drop-shadow` com `--exa-red` recria o "drop shadow vermelho" do hero do HTML.
+
+## 2. Confirmação variáveis CSS
+
+**Sim, confirmo:** vou adotar variáveis CSS da paleta EXA.
+
+No topo de `src/components/interesse-sindico/styles.css`:
+
+```css
+.exa-theme {
+  --exa-red:   #EA251D;
+  --exa-bordo: #5B090D;
+  --exa-black: #0A0000;
+  --exa-glow:  #FF3A30;
+}
+```
+
+Container raiz da página:
+
+```tsx
+<div className="exa-theme font-inter min-h-screen bg-[var(--exa-black)] text-white">
+```
+
+**Em todos os componentes da pasta `interesse-sindico/`** uso exclusivamente `var(--…)`:
+
+| ❌ Não vou usar | ✅ Vou usar |
 |---|---|
-| `nome_completo` | `sindico_nome` |
-| `endereco` | `endereco_logradouro + numero + bairro + cidade/uf` |
-| `numero_andares` | `quantidade_andares` |
-| `numero_unidades` | `quantidade_unidades_total` |
-| `email` | `sindico_email` |
-| `celular` | `sindico_whatsapp` |
-| `nome_predio` | já vem do formulário ✅ |
+| `bg-[#EA251D]` | `bg-[var(--exa-red)]` |
+| `text-[#0A0000]` | `text-[var(--exa-black)]` |
+| `border-[#EA251D]/20` | `border-[var(--exa-red)]/20` |
+| `from-[#5B090D]` | `from-[var(--exa-bordo)]` |
+| `shadow-[…rgba(234,37,29,0.4)]` | `shadow-[…var(--exa-glow)]/40` (onde Tailwind suportar) ou `rgb(from var(--exa-red) r g b / 0.4)` em CSS puro |
 
-Extra: `responsavel_contato` (uuid, nullable) ↔ `responsavel_id` (uuid).
+Para `box-shadow` complexo com múltiplas camadas (ex: shine do CTA, glow do play button), defino tudo em classes CSS dentro de `styles.css` usando `var(--exa-red)` / `var(--exa-glow)` — o JSX só aplica `className="play-button"`, sem hex inline.
 
-Tipos compatíveis (`responsavel_contato` é uuid — cast direto OK).
+**Ganho:** próximos prompts (formulário, sucesso, admin) podem reusar a mesma classe `exa-theme` no container e herdar a paleta automaticamente.
 
-## Migration única
+## 3. Resto do plano permanece igual
 
-**Função `sync_sindico_legado()`** — `SECURITY DEFINER`, `search_path=public`, exatamente como você passou no script (cobre os 7 NOT NULL + responsável).
+Mantidas todas as decisões do plano anterior aprovado:
 
-**Trigger `trg_sync_sindico_legado`** — `BEFORE INSERT OR UPDATE FOR EACH ROW`.
+- 10 arquivos novos em `src/pages/InteresseSindicoLanding.tsx` + `src/components/interesse-sindico/`
+- 1 edição mínima em `src/routes/PublicRoutes.tsx` (rota pública)
+- `LazyVideoPlayer.tsx` com `preload="none"` + `playsInline` + aspect nativo
+- `framer-motion` para reveal scroll
+- Inter 400-900 importada localmente no `styles.css`
+- Sem `<Layout>`, sem header global, sem rodapé
+- CTA final → `/interessesindico/formulario` (rota próximo prompt)
+- Não toco em `/sou-sindico`, `index.css`, `tailwind.config.ts`, fluxo admin
 
-**Ordem dos triggers BEFORE na tabela** (importante):
-- `trg_sync_sindico_legado` → preenche legadas a partir das novas
-- `trg_validar_sindico` → valida `empresa_elevador` e `status`
-- `update_sindicos_interessados_updated_at` → atualiza timestamp
+## Diferenças vs plano anterior
 
-Postgres executa BEFORE triggers em **ordem alfabética**: `trg_sync_…` roda antes de `trg_validar_…` ✅ (sem conflito).
+| Item | Antes | Agora |
+|---|---|---|
+| Cores | `bg-[#EA251D]` inline | `bg-[var(--exa-red)]` via `.exa-theme` |
+| Logo | URL direta sem filtro | `EXA_LOGO_URL` + `filter brightness-0 invert` + drop-shadow |
+| Reaproveitamento | Específico desta página | Variáveis disponíveis para formulário/sucesso/admin |
 
-## Teste de validação (em transação rollback — não persiste nada)
-
-Executo dentro de `BEGIN; … ROLLBACK;` para garantir que **nenhum dado de teste fica no banco**:
-
-```sql
-BEGIN;
-INSERT INTO sindicos_interessados (
-  sindico_nome, nome_predio, endereco_logradouro, endereco_numero,
-  endereco_bairro, endereco_cidade, endereco_uf, cep,
-  quantidade_andares, quantidade_unidades_total, quantidade_elevadores_sociais,
-  quantidade_blocos, internet_operadoras, empresa_elevador,
-  sindico_cpf, sindico_whatsapp, sindico_email, sindico_mandato_ate,
-  aceite_timestamp, aceite_ip, aceite_user_agent
-) VALUES (
-  'João Teste', 'Edifício Teste', 'Rua Exemplo', '123',
-  'Centro', 'Foz do Iguaçu', 'PR', '85851-000',
-  12, 48, 2, 1,
-  ARRAY['Vivo','Ligga']::text[], 'Atlas',
-  '000.000.000-00', '(45) 99999-9999', 'teste@teste.com', '2027-12-31',
-  NOW(), '127.0.0.1', 'Mozilla Test'
-)
-RETURNING id, nome_completo, endereco, numero_andares, numero_unidades, email, celular;
-ROLLBACK;
-```
-
-Mostro o resultado do RETURNING para você confirmar que o trigger preencheu corretamente as 6 colunas legadas. Como uso `ROLLBACK`, **não preciso do DELETE** — o registro nunca existe de verdade.
-
-## Resultado esperado
-
-```
-nome_completo:    João Teste
-endereco:         Rua Exemplo, 123 - Centro, Foz do Iguaçu/PR
-numero_andares:   12
-numero_unidades:  48
-email:            teste@teste.com
-celular:          (45) 99999-9999
-```
-
-## Garantias
-
-- **Não toco** em UI, fluxo de propostas, contratos, monitoramento
-- Trigger é **idempotente** — só preenche legada se estiver vazia (não sobrescreve dados antigos)
-- `SECURITY DEFINER` + `search_path=public` conforme padrão do projeto
-- Compatível com `SindicosTable.tsx` e `SindicoDetailsDialog.tsx` que ainda leem colunas antigas
-- Teste em `ROLLBACK` — banco fica 100% limpo, sem registros de teste
-
-## Arquivo
-
-```
-supabase/migrations/<novo>.sql — função + trigger + comentário
-```
-
-Após aprovar, executo a migration, rodo o teste em transação rollback, e te mostro o resultado do RETURNING para validação. Aguardo sua aprovação para a próxima fase (formulário público) só depois disso.
+Aguardo aprovação final para executar.
 
