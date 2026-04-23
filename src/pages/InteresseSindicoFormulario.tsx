@@ -4,7 +4,7 @@ import { useSindicoFormStore } from '@/components/interesse-sindico-form/formSto
 import FormStepIndicator from '@/components/interesse-sindico-form/FormStepIndicator';
 import StepPredio from '@/components/interesse-sindico-form/StepPredio';
 import StepSindico from '@/components/interesse-sindico-form/StepSindico';
-import StepTermosPlaceholder from '@/components/interesse-sindico-form/StepTermosPlaceholder';
+import StepTermos from '@/components/interesse-sindico-form/StepTermos';
 import '@/components/interesse-sindico-form/styles.css';
 
 const InteresseSindicoFormulario: React.FC = () => {
@@ -44,7 +44,7 @@ const InteresseSindicoFormulario: React.FC = () => {
               >
                 {step === 0 && <StepPredio onNext={next} />}
                 {step === 1 && <StepSindico onNext={next} onPrev={prev} />}
-                {step === 2 && <StepTermosPlaceholder onPrev={prev} />}
+                {step === 2 && <StepTermos onPrev={prev} />}
               </motion.div>
             </AnimatePresence>
           </div>
