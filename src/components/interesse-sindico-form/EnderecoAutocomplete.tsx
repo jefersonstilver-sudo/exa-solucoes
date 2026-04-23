@@ -162,7 +162,7 @@ export const EnderecoAutocomplete: React.FC<Props> = ({ onSelect, initialValue =
           onChange={handleChange}
           onFocus={() => suggestions.length > 0 && setIsOpen(true)}
           placeholder="Comece a digitar a rua e o número..."
-          className="sif-input pl-10"
+          className="sif-input pl-11"
           autoComplete="off"
           aria-label="Buscar endereço do prédio"
         />
