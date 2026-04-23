@@ -236,6 +236,13 @@ const AppContent = () => {
             </Suspense>
           } />
 
+          {/* FORMULÁRIO PÚBLICO - Interesse do Síndico (sem auth) */}
+          <Route path="/interessesindico/formulario" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando formulário..." />}>
+              {React.createElement(lazy(() => import('./pages/InteresseSindicoFormulario')))}
+            </Suspense>
+          } />
+
 
           <Route path="/monitor" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando monitor..." />}>
