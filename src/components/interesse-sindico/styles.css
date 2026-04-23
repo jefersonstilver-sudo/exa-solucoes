@@ -262,7 +262,6 @@
 /* Benefit cards */
 .exa-theme .benefit-card {
   position: relative;
-  padding: 2rem;
   border-radius: 20px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(234, 37, 29, 0.04) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
