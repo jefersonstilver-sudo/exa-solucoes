@@ -16258,6 +16258,13 @@ export type Database = {
         }
         Returns: Json
       }
+      submit_sindico_interesse: {
+        Args: { payload: Json }
+        Returns: {
+          id: string
+          protocolo: string
+        }[]
+      }
       super_admin_bulk_delete_pedidos: {
         Args: {
           p_ip_address?: string
@@ -16320,6 +16327,10 @@ export type Database = {
       update_panel_secure: {
         Args: { p_panel_id: string; p_updates: Json }
         Returns: Json
+      }
+      update_sindico_fotos: {
+        Args: { p_fotos: string[]; p_id: string }
+        Returns: undefined
       }
       update_sindico_status_secure: {
         Args: { p_new_status: string; p_sindico_id: string }
