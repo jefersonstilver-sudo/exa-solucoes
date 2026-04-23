@@ -30,6 +30,37 @@ const InteresseSindicoLanding: React.FC = () => {
     };
   }, []);
 
+  // Prefetch agressivo: chunk do formulário + Google Maps em background
+  // enquanto o usuário lê a landing → CTA fica instantâneo no clique.
+  useEffect(() => {
+    const prefetchOnIdle = () => {
+      // Chunk principal do formulário (mesmo import do React.lazy)
+      import('@/pages/InteresseSindicoFormulario').catch(() => {});
+      // Sub-componentes pesados que entram no bundle do form
+      import('@/components/interesse-sindico-form/StepPredio').catch(() => {});
+      import('@/components/interesse-sindico-form/StepSindico').catch(() => {});
+      import('@/components/interesse-sindico-form/StepTermos').catch(() => {});
+      import('@/components/interesse-sindico-form/EnderecoAutocomplete').catch(() => {});
+      import('@/components/interesse-sindico-form/MiniMapa').catch(() => {});
+      // Pré-injeta o <script> do Google Maps Places (singleton)
+      import('@/utils/googleMapsLoader')
+        .then((mod) => mod.loadGoogleMaps?.())
+        .catch(() => {});
+    };
+
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
+    if (typeof w.requestIdleCallback === 'function') {
+      const id = w.requestIdleCallback(prefetchOnIdle, { timeout: 2000 });
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const id = window.setTimeout(prefetchOnIdle, 500);
+    return () => window.clearTimeout(id);
+  }, []);
+
   return (
     <div className="exa-theme font-inter w-full bg-[var(--exa-black)] text-white">
       <HeroSection />
