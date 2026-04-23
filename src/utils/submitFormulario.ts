@@ -3,6 +3,19 @@ import { captureEvidencias } from './captureEvidencias';
 import { normalizeBRPhoneToE164 } from './phoneE164';
 import type { PredioState, SindicoState } from '@/components/interesse-sindico-form/formStore';
 
+const ELEVADOR_LABELS: Record<string, string> = {
+  atlas: 'Atlas',
+  tke: 'TKE',
+  otis: 'Otis',
+  oriente: 'Oriente',
+};
+
+const INTERNET_LABELS: Record<string, string> = {
+  vivo: 'Vivo',
+  ligga: 'Ligga',
+  telecom_foz: 'Telecom Foz',
+};
+
 export interface SubmitResult {
   success: boolean;
   protocolo?: string;
@@ -52,8 +65,10 @@ export async function submitFormulario(
       quantidade_blocos: predio.blocos ?? 1,
       quantidade_unidades_total: predio.unidades,
       quantidade_elevadores_sociais: predio.elevadoresSociais,
-      internet_operadoras: predio.internetOps ?? [],
-      empresa_elevador: predio.elevadorEmpresa,
+      internet_operadoras: (predio.internetOps ?? []).map((op) => INTERNET_LABELS[op] || op),
+      empresa_elevador: predio.elevadorEmpresa
+        ? ELEVADOR_LABELS[predio.elevadorEmpresa] || predio.elevadorEmpresa
+        : null,
       elevador_casa_maquinas: predio.casaMaquinas,
       // Síndico
       sindico_nome: sindico.nomeCompleto,
