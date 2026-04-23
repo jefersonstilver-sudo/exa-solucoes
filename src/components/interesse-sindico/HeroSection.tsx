@@ -52,7 +52,7 @@ const HeroSection: React.FC = () => {
         </Reveal>
       </div>
 
-      <Reveal delay={0.8} className="pb-6 md:pb-10">
+      <Reveal delay={0.8} className="hidden md:block pb-6 md:pb-10">
         <div className="scroll-indicator" aria-hidden="true" />
       </Reveal>
     </section>
