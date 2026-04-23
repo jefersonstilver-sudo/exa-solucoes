@@ -1,76 +1,158 @@
 
+# Auditoria do travamento
 
-# Diagnóstico e correção: PDF não gera + tela de sucesso não aparece
+## O que o código atual indica
 
-## Investigação a executar (após aprovação, em modo default)
+### 1) O loading pode ficar infinito no envio do formulário
+Em `src/components/interesse-sindico-form/StepTermos.tsx`, o botão entra em estado permanente de loading até `submitFormulario(...)` resolver:
 
-1. **Logs da edge function** `gerar-pdf-aceite-sindico` (últimos 30 min) — capturar status HTTP e stack trace.
-2. **Inspeção do auth gate** em `supabase/functions/gerar-pdf-aceite-sindico/index.ts` — confirmar se é incondicional (bug suspeito) ou condicionado a `force_regenerate`.
-3. **Inspeção do tratamento de erro** em `src/utils/submitFormulario.ts` — confirmar se erro de PDF é silenciado com `console.warn` (a versão atual já visível no contexto inicial faz exatamente isso: `console.warn('[submitFormulario] PDF generation failed (não bloqueia)')`).
-4. **Reprodução manual** via `supabase--curl_edge_functions` invocando a função com o `id` de `EXA-2026-000003` sem `force_regenerate`.
-5. **Verificação de rota** `/interessesindico/sucesso` em `routes/index.tsx` (já confirmada no contexto: existe e tem fallback para protocolo nulo `|| '—'`).
-
-## Hipóteses (ranking de probabilidade)
-
-| # | Hipótese | Probabilidade | Evidência preliminar |
-|---|---|---|---|
-| H1 | Auth gate incondicional rejeita o submit anônimo | **Muito alta** | A última implementação adicionou checagem JWT + `has_role`. O submit do formulário público é anônimo (sem JWT) → 401/403. |
-| H2 | Erro do PDF silenciado em `console.warn` | **Confirmada** | `submitFormulario.ts` linha visível: `if (pdfErr) { console.warn(...) }` — submit retorna `success: true` mesmo sem PDF, mas o navigate pra `/sucesso` pode falhar por outro motivo. |
-| H3 | Fetch da logo crashando | Média | Fallback existe, mas pode haver throw antes dele. |
-| H4 | Rota de sucesso quebrada | Baixa | Rota existe e tem fallback. Mais provável: o submit retorna sucesso mas o `navigate` não está sendo chamado, OU o usuário foi redirecionado para outro lugar. |
-
-## Correções a aplicar (após confirmação)
-
-### Correção 1 — Auth gate condicional (CRÍTICA)
-**Arquivo**: `supabase/functions/gerar-pdf-aceite-sindico/index.ts`
-
-Mover a checagem `isAuthorizedAdmin()` para dentro do bloco `if (forceRegenerate)`. Chamadas sem `force_regenerate` (submit do formulário público) passam direto, mantendo a idempotência atual. Apenas regenerações forçadas exigem JWT admin.
-
-```ts
-const { sindico_interessado_id, force_regenerate = false } = body;
-
-if (force_regenerate) {
-  const ok = await isAuthorizedAdmin(req, supa);
-  if (!ok) return new Response(JSON.stringify({ error: 'Não autorizado' }), { status: 403, headers: corsHeaders });
-}
-// resto do fluxo (idempotência, geração, upload) inalterado
+```tsx
+setEnviando(true);
+setOverlayMsg('Registrando interesse...');
+const result = await submitFormulario(predio, sindico);
 ```
 
-### Correção 2 — Surface de erro no submit + redirecionamento garantido
-**Arquivo**: `src/utils/submitFormulario.ts`
+E o redirecionamento só acontece depois disso:
 
-Substituir o `console.warn` silencioso por:
-- Logar o erro completo no console **e** retornar um campo extra `pdf_error` no resultado.
-- O submit continua retornando `success: true` (o registro foi criado), mas com `pdf_error` populado.
+```tsx
+setTimeout(() => {
+  reset();
+  navigate(`/interessesindico/sucesso?protocolo=${encodeURIComponent(result.protocolo!)}`);
+}, 600);
+```
 
-**Arquivo**: `src/components/interesse-sindico-form/` (componente que chama `submitFormulario` e faz `navigate`)
+Se `submitFormulario` demorar demais ou travar, a tela fica girando sem sair.
 
-Investigar e garantir que:
-- Após `success: true`, o `navigate('/interessesindico/sucesso?protocolo=...')` é executado **independentemente** de `pdf_error`.
-- Se `pdf_error` existir, exibir um toast informativo na tela de sucesso (não bloquear).
+### 2) `submitFormulario` tem duas chamadas externas bloqueantes sem timeout
+Em `src/utils/submitFormulario.ts`, o fluxo aguarda em série:
 
-### Correção 3 — Hardening do fetch da logo (defensivo)
-**Arquivo**: `supabase/functions/gerar-pdf-aceite-sindico/index.ts`
+```ts
+const evid = await captureEvidencias();
+```
 
-Garantir que o `try/catch` do `loadLogo()` envolve **todo** o fluxo de embed (incluindo `embedPng`), não só o `fetch`. Fallback: gerar PDF com wordmark "EXA" em Times-Bold sem quebrar.
+e depois:
 
-### Correção 4 — Reemissão dos PDFs órfãos
-Após as correções, invocar a edge function via `supabase--curl_edge_functions` para `EXA-2026-000003` (e quaisquer outros registros com `aceite_pdf_url IS NULL` recentes) usando `force_regenerate: true` autenticado, para popular os PDFs faltantes.
+```ts
+const { data: pdfResp, error: pdfErr } = await supabase.functions.invoke(
+  'gerar-pdf-aceite-sindico',
+  { body: { sindico_interessado_id: recordId } },
+);
+```
 
-## Arquivos tocados (estimativa)
+Ou seja: IP + insert + upload de fotos + geração de PDF. Tudo isso antes de liberar a navegação.
 
-| Arquivo | Tipo |
-|---|---|
-| `supabase/functions/gerar-pdf-aceite-sindico/index.ts` | Mover auth gate para dentro de `if (force_regenerate)` + reforçar try/catch da logo |
-| `src/utils/submitFormulario.ts` | Retornar `pdf_error` em vez de silenciar |
-| Componente que invoca submit (a identificar na fase default) | Garantir navigate + toast informativo |
+### 3) A captura de IP pode pendurar
+Em `src/utils/captureEvidencias.ts`:
 
-Total: **2-3 arquivos**. Nenhuma migração SQL. Nenhuma mudança em UI/RLS/triggers/landing/sucesso.
+```ts
+const res = await fetch('https://api.ipify.org?format=json', { method: 'GET' });
+```
+
+Não existe `AbortController`, timeout nem fallback rápido. Se esse fetch ficar preso, o formulário inteiro não sai do loading.
+
+### 4) A rota de sucesso existe
+As rotas estão registradas corretamente:
+
+`src/App.tsx`
+```tsx
+<Route path="/interessesindico/sucesso" element={
+  <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
+    {React.createElement(lazy(() => import('./pages/InteresseSindicoSucesso')))}
+  </Suspense>
+} />
+```
+
+`src/routes/index.tsx`
+```tsx
+<Route path="/interessesindico/sucesso" element={<InteresseSindicoSucesso />} />
+```
+
+Então o problema mais provável não é rota quebrada; é o fluxo nunca chegando ao `navigate(...)`.
+
+## Causa raiz mais provável
+
+O travamento está no acoplamento entre:
+- captura de evidências externas,
+- geração do PDF,
+- e a navegação da tela de sucesso.
+
+Hoje o frontend espera o pacote inteiro terminar. Se qualquer etapa externa atrasar, o overlay fica infinito.
+
+## Plano de correção
+
+### 1. Colocar timeout real na captura de evidências
+**Arquivo:** `src/utils/captureEvidencias.ts`
+
+Trocar o `fetch` cru por `AbortController` com timeout curto (ex.: 2500–4000ms).  
+Se falhar ou expirar, retornar:
+
+```ts
+{ ip: 'unknown', user_agent: navigator.userAgent, timestamp: new Date().toISOString() }
+```
+
+Sem bloquear o cadastro.
+
+### 2. Tornar a geração do PDF não bloqueante para a navegação
+**Arquivo:** `src/utils/submitFormulario.ts`
+
+Manter:
+- insert no banco
+- upload de fotos
+
+Mas limitar a espera da edge function com timeout curto via `Promise.race`/`AbortController`.  
+Se o PDF falhar ou expirar:
+- retornar `success: true`
+- retornar `pdf_error`
+- nunca travar o envio do cadastro
+
+Objetivo: o protocolo nasce e o usuário segue para a tela de sucesso mesmo se o PDF atrasar.
+
+### 3. Garantir saída visual do loading no formulário
+**Arquivo:** `src/components/interesse-sindico-form/StepTermos.tsx`
+
+Ajustar o fluxo para:
+- navegar para `/interessesindico/sucesso?...` sempre que o cadastro for salvo com sucesso
+- exibir toast de aviso se `pdf_error` vier preenchido
+- evitar depender de operações lentas para remover o overlay
+
+Também vou adicionar uma proteção de watchdog de UX: se algo ultrapassar o tempo máximo esperado antes do insert concluir, o usuário recebe erro claro e o botão é liberado novamente.
+
+### 4. Preservar a auditoria técnica sem travar a UX
+**Arquivos:** `src/utils/captureEvidencias.ts`, `src/utils/submitFormulario.ts`
+
+A auditoria continua:
+- timestamp
+- user-agent
+- IP quando disponível
+
+Mas o IP deixa de ser uma dependência obrigatória para a submissão.
+
+## Estrutura final de arquivos alterados
+
+### Alterados
+1. `src/utils/captureEvidencias.ts`
+2. `src/utils/submitFormulario.ts`
+3. `src/components/interesse-sindico-form/StepTermos.tsx`
+
+### Não alterados
+- landing
+- sidebar
+- admin
+- layout global
+- rotas
+- banco/RLS
+- outras telas não relacionadas
+
+## Resultado esperado após a execução
+
+- O formulário deixa de ficar “rodando para sempre”
+- O cadastro conclui e sai da tela de envio
+- O usuário é levado para a tela de sucesso assim que o registro for salvo
+- A auditoria continua existindo, mas com fallback seguro
+- Se o PDF atrasar/falhar, isso vira aviso e não bloqueio total
 
 ## Garantias
 
-- ✅ Não toco em banco, RLS, triggers, schema, abas do dialog admin, sidebar, lista, landing, formulário (apenas no callback de submit) ou tela de sucesso.
-- ✅ Idempotência preservada para chamadas normais.
-- ✅ Auth gate continua protegendo `force_regenerate` (admin-only).
-- ✅ Submit anônimo do formulário público volta a gerar PDF imediatamente.
-
+- Nenhuma mudança em UI ou workflow fora do problema descrito
+- Não vou alterar páginas/admin/rotas sem necessidade
+- O foco será somente no travamento do envio e no bloqueio indevido da navegação
