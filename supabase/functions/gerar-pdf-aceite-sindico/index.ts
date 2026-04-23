@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
-import { PDFDocument, StandardFonts, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
+import { PDFDocument, StandardFonts, rgb, degrees } from 'https://esm.sh/pdf-lib@1.17.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,19 +10,47 @@ const corsHeaders = {
 };
 
 const COLORS = {
-  black: rgb(0.102, 0.102, 0.102),
-  red: rgb(0.918, 0.145, 0.114),
-  bordo: rgb(0.357, 0.035, 0.051),
-  gray: rgb(0.333, 0.333, 0.333),
-  lightGray: rgb(0.815, 0.815, 0.815),
-  bgGray: rgb(0.961, 0.961, 0.961),
-  bordoBg: rgb(0.976, 0.91, 0.91),
+  black: rgb(0, 0, 0),
+  textBlack: rgb(0.07, 0.07, 0.07),
+  graphite: rgb(0.267, 0.267, 0.267),
+  gray: rgb(0.4, 0.4, 0.4),
+  midGray: rgb(0.533, 0.533, 0.533),
+  lightGray: rgb(0.78, 0.78, 0.78),
+  zebra: rgb(0.973, 0.973, 0.973),
+  evidenceBg: rgb(0.98, 0.98, 0.98),
+  bordo: rgb(0.357, 0.035, 0.051), // #5B090D
+  red: rgb(0.918, 0.145, 0.114),   // #EA251D — restrito
   white: rgb(1, 1, 1),
 };
 
 const PAGE_W = 595;
 const PAGE_H = 842;
-const MARGIN = 40;
+const MARGIN = 50;
+const HEADER_TOP = PAGE_H - 30;
+const CONTENT_TOP = PAGE_H - 75;
+const CONTENT_BOTTOM = 70;
+
+// URL pública assinada (válida até 2070, já em uso em produção)
+const LOGO_URL =
+  'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJhbGciOiJIUzI1NiIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzEyOTcxOWZjLTk1OTYtNDQ3OS04OTcxLTNkOWE3OTk1MTk1ZSIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc0OTAyMDk2MSwiZXhwIjozMTYxNDIyMzc2MTYxfQ.zRYcIEUS2WYrnewRT_DfnpPCcr3tAbT9Dq4kn_ETaTo';
+
+let LOGO_BYTES: Uint8Array | null = null;
+async function loadLogo(): Promise<Uint8Array | null> {
+  if (LOGO_BYTES) return LOGO_BYTES;
+  try {
+    const res = await fetch(LOGO_URL);
+    if (!res.ok) {
+      console.warn('[pdf] logo fetch failed', res.status);
+      return null;
+    }
+    const buf = new Uint8Array(await res.arrayBuffer());
+    LOGO_BYTES = buf;
+    return buf;
+  } catch (e) {
+    console.warn('[pdf] logo fetch exception', e);
+    return null;
+  }
+}
 
 // ==== Termos integrais (sincronizado com src/components/interesse-sindico-form/termosTexto.ts) ====
 const TERMOS_MARKDOWN = `### IDENTIFICAÇÃO DAS PARTES
@@ -167,7 +195,7 @@ const TERMOS_MARKDOWN = `### IDENTIFICAÇÃO DAS PARTES
 
 // =============== Helpers ===============
 function fmtBR(date: Date): string {
-  const d = new Date(date.getTime() - 3 * 60 * 60 * 1000); // BRT
+  const d = new Date(date.getTime() - 3 * 60 * 60 * 1000);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()} às ${pad(
     d.getUTCHours(),
@@ -180,6 +208,17 @@ function fmtDateBR(iso?: string | null): string {
   if (isNaN(d.getTime())) return iso;
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`;
+}
+
+const MESES_PT = [
+  'janeiro','fevereiro','março','abril','maio','junho',
+  'julho','agosto','setembro','outubro','novembro','dezembro',
+];
+function fmtDateExtenso(iso?: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return `${d.getUTCDate()} de ${MESES_PT[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
 }
 
 function canonicalJSON(obj: any): string {
@@ -198,7 +237,7 @@ async function sha256(text: string): Promise<string> {
 }
 
 function wrapText(text: string, font: any, size: number, maxWidth: number): string[] {
-  const words = text.split(/\s+/);
+  const words = String(text).split(/\s+/);
   const lines: string[] = [];
   let cur = '';
   for (const w of words) {
@@ -215,172 +254,559 @@ function wrapText(text: string, font: any, size: number, maxWidth: number): stri
   return lines;
 }
 
-// Parse markdown line — remove **bold** markers (kept simple; bold renderiza diferente em pdf-lib)
-function stripBold(s: string): { text: string; segments: { text: string; bold: boolean }[] } {
-  const segments: { text: string; bold: boolean }[] = [];
-  const parts = s.split(/(\*\*[^*]+\*\*)/g);
-  let plain = '';
-  for (const p of parts) {
-    if (p.startsWith('**') && p.endsWith('**')) {
-      const t = p.slice(2, -2);
-      segments.push({ text: t, bold: true });
-      plain += t;
-    } else if (p) {
-      segments.push({ text: p, bold: false });
-      plain += p;
-    }
-  }
-  return { text: plain, segments };
-}
-
-interface DrawState {
+interface Ctx {
   pdf: PDFDocument;
   page: any;
   y: number;
   pageNum: number;
-  totalPagesPlaceholder: { value: number };
   font: any;
   fontBold: any;
   fontItalic: any;
+  mono: any;
+  monoBold: any;
   protocolo: string;
+  logoImg: any | null;
 }
 
-function newContentPage(state: DrawState) {
-  state.page = state.pdf.addPage([PAGE_W, PAGE_H]);
-  state.pageNum += 1;
-  state.y = PAGE_H - MARGIN;
-  drawHeader(state);
-}
-
-function drawHeader(state: DrawState) {
-  const { page, font, fontBold, protocolo } = state;
-  // logo wordmark esquerda
-  page.drawText('exa', {
-    x: MARGIN,
-    y: PAGE_H - MARGIN + 6,
-    size: 18,
-    font: fontBold,
-    color: COLORS.red,
-  });
-  // protocolo à direita
-  const protoLabel = `Protocolo ${protocolo}`;
-  const w = font.widthOfTextAtSize(protoLabel, 9);
-  page.drawText(protoLabel, {
-    x: PAGE_W - MARGIN - w,
-    y: PAGE_H - MARGIN + 8,
-    size: 9,
-    font,
-    color: COLORS.gray,
-  });
-  // linha vermelha
-  page.drawRectangle({
-    x: MARGIN,
-    y: PAGE_H - MARGIN - 2,
-    width: PAGE_W - 2 * MARGIN,
-    height: 1,
-    color: COLORS.red,
-  });
-  state.y = PAGE_H - MARGIN - 18;
-}
-
-function ensureSpace(state: DrawState, needed: number) {
-  if (state.y - needed < MARGIN + 30) {
-    newContentPage(state);
-  }
-}
-
-function drawParagraph(state: DrawState, text: string, opts: { size?: number; bold?: boolean; color?: any; indent?: number; lineHeight?: number } = {}) {
-  const size = opts.size ?? 10;
-  const lineHeight = opts.lineHeight ?? size * 1.45;
-  const indent = opts.indent ?? 0;
-  const font = opts.bold ? state.fontBold : state.font;
-  const color = opts.color ?? COLORS.black;
-  const maxWidth = PAGE_W - 2 * MARGIN - indent;
-  const lines = wrapText(text, font, size, maxWidth);
-  for (const line of lines) {
-    ensureSpace(state, lineHeight);
-    state.page.drawText(line, {
-      x: MARGIN + indent,
-      y: state.y - size,
-      size,
-      font,
-      color,
+// ===== Header (páginas ≥ 2) =====
+function drawHeader(ctx: Ctx) {
+  const { page, font, protocolo, logoImg } = ctx;
+  // Logo pequena à esquerda
+  if (logoImg) {
+    const w = 45;
+    const ratio = logoImg.height / logoImg.width;
+    const h = w * ratio;
+    page.drawImage(logoImg, {
+      x: MARGIN,
+      y: HEADER_TOP - h + 8,
+      width: w,
+      height: h,
     });
-    state.y -= lineHeight;
+  } else {
+    page.drawText('EXA', {
+      x: MARGIN,
+      y: HEADER_TOP - 4,
+      size: 14,
+      font: ctx.fontBold,
+      color: COLORS.bordo,
+    });
+  }
+  // Texto direita
+  const l1 = 'DOCUMENTO OFICIAL';
+  const l2 = `Protocolo ${protocolo}`;
+  const w1 = font.widthOfTextAtSize(l1, 8);
+  const w2 = font.widthOfTextAtSize(l2, 8);
+  page.drawText(l1, {
+    x: PAGE_W - MARGIN - w1,
+    y: HEADER_TOP - 2,
+    size: 8,
+    font,
+    color: COLORS.graphite,
+  });
+  page.drawText(l2, {
+    x: PAGE_W - MARGIN - w2,
+    y: HEADER_TOP - 13,
+    size: 8,
+    font,
+    color: COLORS.graphite,
+  });
+  // Linha fina preta
+  page.drawLine({
+    start: { x: MARGIN, y: HEADER_TOP - 22 },
+    end: { x: PAGE_W - MARGIN, y: HEADER_TOP - 22 },
+    thickness: 0.4,
+    color: COLORS.black,
+  });
+}
+
+// ===== Footer (todas as páginas) =====
+function drawFooter(page: any, font: any, fontBold: any, pageNum: number, totalPages: number) {
+  // Linha fina
+  page.drawLine({
+    start: { x: MARGIN, y: 50 },
+    end: { x: PAGE_W - MARGIN, y: 50 },
+    thickness: 0.4,
+    color: COLORS.black,
+  });
+  // Esquerda
+  const left = 'Indexa Mídia LTDA · CNPJ 38.142.638/0001-30';
+  page.drawText(left, {
+    x: MARGIN,
+    y: 38,
+    size: 7.5,
+    font,
+    color: COLORS.graphite,
+  });
+  // Centro
+  const center = `Página ${pageNum} de ${totalPages}`;
+  const cw = font.widthOfTextAtSize(center, 8);
+  page.drawText(center, {
+    x: (PAGE_W - cw) / 2,
+    y: 38,
+    size: 8,
+    font,
+    color: COLORS.black,
+  });
+  // Direita
+  const right = 'www.examidia.com.br';
+  const rw = font.widthOfTextAtSize(right, 7.5);
+  page.drawText(right, {
+    x: PAGE_W - MARGIN - rw,
+    y: 38,
+    size: 7.5,
+    font,
+    color: COLORS.graphite,
+  });
+}
+
+// ===== Caixa borda dupla preta =====
+function drawDoubleBorderBox(page: any, x: number, y: number, w: number, h: number) {
+  page.drawRectangle({
+    x, y, width: w, height: h,
+    borderColor: COLORS.black,
+    borderWidth: 1,
+  });
+  page.drawRectangle({
+    x: x + 3, y: y + 3, width: w - 6, height: h - 6,
+    borderColor: COLORS.black,
+    borderWidth: 0.4,
+  });
+}
+
+// ===== Texto justificado =====
+function drawJustifiedLine(
+  page: any, words: string[], x: number, y: number, maxWidth: number,
+  font: any, size: number, color: any, isLast: boolean,
+) {
+  if (words.length === 0) return;
+  if (words.length === 1 || isLast) {
+    page.drawText(words.join(' '), { x, y, size, font, color });
+    return;
+  }
+  const totalTextWidth = words.reduce((s, w) => s + font.widthOfTextAtSize(w, size), 0);
+  const gaps = words.length - 1;
+  const spaceWidth = (maxWidth - totalTextWidth) / gaps;
+  // Limita o espaçamento para não ficar absurdo
+  const safeSpace = Math.min(spaceWidth, font.widthOfTextAtSize(' ', size) * 4);
+  let cx = x;
+  for (let i = 0; i < words.length; i++) {
+    page.drawText(words[i], { x: cx, y, size, font, color });
+    cx += font.widthOfTextAtSize(words[i], size) + safeSpace;
   }
 }
 
-function drawTermos(state: DrawState) {
+function wrapWords(text: string, font: any, size: number, maxWidth: number): string[][] {
+  const words = String(text).replace(/\s+/g, ' ').trim().split(' ');
+  const lines: string[][] = [];
+  let cur: string[] = [];
+  let curW = 0;
+  const spaceW = font.widthOfTextAtSize(' ', size);
+  for (const w of words) {
+    const ww = font.widthOfTextAtSize(w, size);
+    const tentativeW = cur.length === 0 ? ww : curW + spaceW + ww;
+    if (tentativeW > maxWidth && cur.length > 0) {
+      lines.push(cur);
+      cur = [w];
+      curW = ww;
+    } else {
+      cur.push(w);
+      curW = tentativeW;
+    }
+  }
+  if (cur.length > 0) lines.push(cur);
+  return lines;
+}
+
+function ensureSpace(ctx: Ctx, needed: number) {
+  if (ctx.y - needed < CONTENT_BOTTOM + 10) {
+    ctx.page = ctx.pdf.addPage([PAGE_W, PAGE_H]);
+    ctx.pageNum += 1;
+    drawHeader(ctx);
+    ctx.y = CONTENT_TOP;
+  }
+}
+
+function drawJustifiedParagraph(
+  ctx: Ctx, text: string,
+  opts: { size?: number; font?: any; color?: any; lineHeight?: number; indent?: number } = {},
+) {
+  const size = opts.size ?? 10;
+  const font = opts.font ?? ctx.font;
+  const color = opts.color ?? COLORS.textBlack;
+  const lineHeight = opts.lineHeight ?? size * 1.5;
+  const indent = opts.indent ?? 0;
+  const maxW = PAGE_W - 2 * MARGIN - indent;
+  const lines = wrapWords(text, font, size, maxW);
+  for (let i = 0; i < lines.length; i++) {
+    ensureSpace(ctx, lineHeight);
+    drawJustifiedLine(
+      ctx.page, lines[i], MARGIN + indent, ctx.y - size, maxW,
+      font, size, color, i === lines.length - 1,
+    );
+    ctx.y -= lineHeight;
+  }
+}
+
+function drawLeftParagraph(
+  ctx: Ctx, text: string,
+  opts: { size?: number; font?: any; color?: any; lineHeight?: number; indent?: number; align?: 'left' | 'center' } = {},
+) {
+  const size = opts.size ?? 10;
+  const font = opts.font ?? ctx.font;
+  const color = opts.color ?? COLORS.textBlack;
+  const lineHeight = opts.lineHeight ?? size * 1.4;
+  const indent = opts.indent ?? 0;
+  const align = opts.align ?? 'left';
+  const maxW = PAGE_W - 2 * MARGIN - indent;
+  const lines = wrapText(text, font, size, maxW);
+  for (const line of lines) {
+    ensureSpace(ctx, lineHeight);
+    let x = MARGIN + indent;
+    if (align === 'center') {
+      const w = font.widthOfTextAtSize(line, size);
+      x = (PAGE_W - w) / 2;
+    }
+    ctx.page.drawText(line, { x, y: ctx.y - size, size, font, color });
+    ctx.y -= lineHeight;
+  }
+}
+
+// ===== Tabela 2 colunas =====
+function drawDataTable(
+  ctx: Ctx,
+  rows: [string, string][],
+  opts: { labelWidth?: number; rowH?: number } = {},
+) {
+  const labelWidth = opts.labelWidth ?? 160;
+  const rowH = opts.rowH ?? 18;
+  const x = MARGIN;
+  const w = PAGE_W - 2 * MARGIN;
+
+  const startY = ctx.y;
+  let totalH = 0;
+
+  // Pré-calcular linhas (com wrap do valor)
+  const renderedRows: { label: string; valueLines: string[]; height: number }[] = [];
+  for (const [label, value] of rows) {
+    const valueMaxW = w - labelWidth - 20;
+    const vLines = wrapText(value || '—', ctx.font, 9.5, valueMaxW);
+    const lineCount = Math.max(1, vLines.length);
+    const h = Math.max(rowH, lineCount * 13 + 6);
+    renderedRows.push({ label, valueLines: vLines, height: h });
+    totalH += h;
+  }
+
+  ensureSpace(ctx, totalH + 4);
+
+  // Redesenha após possível page break
+  let cy = ctx.y;
+  // Borda externa
+  ctx.page.drawRectangle({
+    x, y: cy - totalH, width: w, height: totalH,
+    borderColor: COLORS.black,
+    borderWidth: 0.5,
+  });
+
+  let alt = false;
+  for (const r of renderedRows) {
+    if (alt) {
+      ctx.page.drawRectangle({
+        x: x + 0.5, y: cy - r.height, width: w - 1, height: r.height,
+        color: COLORS.zebra,
+      });
+    }
+    // separador inferior fininho
+    ctx.page.drawLine({
+      start: { x, y: cy - r.height },
+      end: { x: x + w, y: cy - r.height },
+      thickness: 0.3,
+      color: COLORS.lightGray,
+    });
+    // separador vertical coluna
+    ctx.page.drawLine({
+      start: { x: x + labelWidth, y: cy },
+      end: { x: x + labelWidth, y: cy - r.height },
+      thickness: 0.3,
+      color: COLORS.lightGray,
+    });
+    // Label
+    ctx.page.drawText(r.label, {
+      x: x + 10,
+      y: cy - 13,
+      size: 9.5,
+      font: ctx.fontBold,
+      color: COLORS.textBlack,
+    });
+    // Valor (multilinha)
+    for (let i = 0; i < r.valueLines.length; i++) {
+      ctx.page.drawText(r.valueLines[i], {
+        x: x + labelWidth + 10,
+        y: cy - 13 - i * 13,
+        size: 9.5,
+        font: ctx.font,
+        color: COLORS.graphite,
+      });
+    }
+    cy -= r.height;
+    alt = !alt;
+  }
+  ctx.y = cy - 2;
+}
+
+// ===== Selo notarial =====
+function drawNotarialSeal(ctx: Ctx, cx: number, cy: number) {
+  const Router = 60;
+  const Rinner = 48;
+  // Anel externo
+  ctx.page.drawCircle({
+    x: cx, y: cy, size: Router,
+    borderColor: COLORS.black,
+    borderWidth: 2,
+  });
+  // Anel interno
+  ctx.page.drawCircle({
+    x: cx, y: cy, size: Rinner,
+    borderColor: COLORS.black,
+    borderWidth: 0.8,
+  });
+
+  // Texto curvo aproximado: vamos rotacionar caracteres ao redor do anel
+  const drawCurvedText = (
+    text: string, radius: number, startAngleDeg: number, endAngleDeg: number,
+    font: any, size: number,
+  ) => {
+    const chars = text.split('');
+    if (chars.length === 0) return;
+    const totalAngle = endAngleDeg - startAngleDeg;
+    const step = totalAngle / Math.max(1, chars.length - 1);
+    for (let i = 0; i < chars.length; i++) {
+      const ch = chars[i];
+      const angDeg = startAngleDeg + step * i;
+      const angRad = (angDeg * Math.PI) / 180;
+      // Posição na circunferência
+      const x = cx + radius * Math.cos(angRad);
+      const y = cy + radius * Math.sin(angRad);
+      // Rotação tangente (ângulo em graus): para texto no topo (vai de 180 a 0 indo "por cima"),
+      // a tangente aponta sentido do varrimento; ajustamos -90 para ficar de pé.
+      const rotDeg = angDeg - 90;
+      ctx.page.drawText(ch, {
+        x, y,
+        size, font,
+        color: COLORS.black,
+        rotate: degrees(rotDeg),
+      });
+    }
+  };
+
+  const radiusText = (Router + Rinner) / 2; // 54
+  // Topo: 165° → 15° (vai por cima, varrendo da esquerda à direita)
+  drawCurvedText('DOCUMENTO ASSINADO ELETRONICAMENTE', radiusText, 165, 15, ctx.fontBold, 5.5);
+  // Base: -15° → -165° (vai por baixo, da direita à esquerda) — invertemos para ficar legível
+  // Para que a base fique legível "de pé", invertemos a string e usamos ângulos crescentes pela base
+  const baseTxt = 'MP 2.200-2/2001  -  LEI 14.063/2020';
+  const chars = baseTxt.split('');
+  const baseStart = 195; // grau (esquerda-baixo)
+  const baseEnd = 345;   // grau (direita-baixo)
+  const totalAng = baseEnd - baseStart;
+  const stepB = totalAng / Math.max(1, chars.length - 1);
+  for (let i = 0; i < chars.length; i++) {
+    const angDeg = baseStart + stepB * i;
+    const angRad = (angDeg * Math.PI) / 180;
+    const x = cx + radiusText * Math.cos(angRad);
+    const y = cy + radiusText * Math.sin(angRad);
+    // Para base, queremos texto "de pé" lendo da esquerda para a direita
+    const rotDeg = angDeg + 90;
+    ctx.page.drawText(chars[i], {
+      x, y,
+      size: 5.5, font: ctx.fontBold,
+      color: COLORS.black,
+      rotate: degrees(rotDeg),
+    });
+  }
+
+  // Check central
+  const checkSize = 42;
+  const checkW = ctx.fontBold.widthOfTextAtSize('✓', checkSize);
+  ctx.page.drawText('✓', {
+    x: cx - checkW / 2,
+    y: cy - 6,
+    size: checkSize,
+    font: ctx.fontBold,
+    color: COLORS.bordo,
+  });
+  // Validade jurídica
+  const t1 = 'VALIDADE JURÍDICA';
+  const t2 = 'ATESTADA';
+  const w1 = ctx.fontBold.widthOfTextAtSize(t1, 7);
+  const w2 = ctx.fontBold.widthOfTextAtSize(t2, 7);
+  ctx.page.drawText(t1, {
+    x: cx - w1 / 2,
+    y: cy - 26,
+    size: 7,
+    font: ctx.fontBold,
+    color: COLORS.black,
+  });
+  ctx.page.drawText(t2, {
+    x: cx - w2 / 2,
+    y: cy - 35,
+    size: 7,
+    font: ctx.fontBold,
+    color: COLORS.black,
+  });
+}
+
+// ===== Renderizador dos termos com bold inline =====
+function renderInlineWithBold(
+  ctx: Ctx, line: string,
+  opts: { size?: number; lineHeight?: number; indent?: number } = {},
+) {
+  // Quebra em segmentos {text, bold}
+  const size = opts.size ?? 10;
+  const lineHeight = opts.lineHeight ?? size * 1.5;
+  const indent = opts.indent ?? 0;
+  const parts = line.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
+  const segments: { text: string; bold: boolean }[] = parts.map((p) =>
+    p.startsWith('**') && p.endsWith('**')
+      ? { text: p.slice(2, -2), bold: true }
+      : { text: p, bold: false },
+  );
+
+  // Tokenize por palavras preservando bold flag
+  type Tok = { text: string; bold: boolean };
+  const tokens: Tok[] = [];
+  for (const seg of segments) {
+    const words = seg.text.split(/(\s+)/);
+    for (const w of words) {
+      if (w === '') continue;
+      tokens.push({ text: w, bold: seg.bold });
+    }
+  }
+
+  const maxW = PAGE_W - 2 * MARGIN - indent;
+  const widthOf = (t: Tok) =>
+    (t.bold ? ctx.fontBold : ctx.font).widthOfTextAtSize(t.text, size);
+
+  // Quebra em linhas
+  const lines: Tok[][] = [];
+  let cur: Tok[] = [];
+  let curW = 0;
+  for (const t of tokens) {
+    const ww = widthOf(t);
+    if (curW + ww > maxW && cur.length > 0) {
+      // Remove espaços terminais
+      while (cur.length && /^\s+$/.test(cur[cur.length - 1].text)) cur.pop();
+      lines.push(cur);
+      cur = [];
+      curW = 0;
+      if (/^\s+$/.test(t.text)) continue; // não inicia linha com espaço
+    }
+    cur.push(t);
+    curW += ww;
+  }
+  if (cur.length) {
+    while (cur.length && /^\s+$/.test(cur[cur.length - 1].text)) cur.pop();
+    lines.push(cur);
+  }
+
+  for (let li = 0; li < lines.length; li++) {
+    ensureSpace(ctx, lineHeight);
+    const isLast = li === lines.length - 1;
+    const tokenLine = lines[li];
+    // Separar palavras (não-espaço) para justificação
+    const wordTokens: Tok[] = tokenLine.filter((t) => !/^\s+$/.test(t.text));
+    if (wordTokens.length === 0) {
+      ctx.y -= lineHeight;
+      continue;
+    }
+    const totalTextW = wordTokens.reduce((s, t) => s + widthOf(t), 0);
+    const gaps = wordTokens.length - 1;
+    let spaceW = ctx.font.widthOfTextAtSize(' ', size);
+    if (!isLast && gaps > 0) {
+      const computed = (maxW - totalTextW) / gaps;
+      // limite para não estourar
+      spaceW = Math.min(Math.max(spaceW, computed), spaceW * 4);
+    }
+    let cx = MARGIN + indent;
+    for (let i = 0; i < wordTokens.length; i++) {
+      const t = wordTokens[i];
+      const f = t.bold ? ctx.fontBold : ctx.font;
+      ctx.page.drawText(t.text, {
+        x: cx, y: ctx.y - size, size, font: f, color: COLORS.textBlack,
+      });
+      cx += widthOf(t) + spaceW;
+    }
+    ctx.y -= lineHeight;
+  }
+}
+
+function drawTermos(ctx: Ctx) {
   const lines = TERMOS_MARKDOWN.split('\n');
-  let inList = false;
-  for (const raw of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
     const line = raw.trim();
     if (!line) {
-      state.y -= 4;
-      inList = false;
+      ctx.y -= 5;
       continue;
     }
     if (line.startsWith('### ')) {
-      state.y -= 6;
-      ensureSpace(state, 18);
-      const title = line.replace(/^###\s+/, '');
-      const { text } = stripBold(title);
-      drawParagraph(state, text, { size: 11, bold: true, color: COLORS.bordo });
-      state.y -= 2;
-      inList = false;
+      // Orphan prevention: garante espaço para título + 2 linhas (~50pt)
+      ensureSpace(ctx, 50);
+      ctx.y -= 8;
+      const title = line.replace(/^###\s+/, '').replace(/\*\*/g, '');
+      ctx.page.drawText(title, {
+        x: MARGIN,
+        y: ctx.y - 11,
+        size: 11,
+        font: ctx.fontBold,
+        color: COLORS.textBlack,
+      });
+      ctx.y -= 18;
     } else if (line.startsWith('- ')) {
-      const { text } = stripBold(line.slice(2));
-      drawParagraph(state, '• ' + text, { size: 9.5, indent: 12 });
-      inList = true;
+      const txt = line.slice(2);
+      // bullet
+      ensureSpace(ctx, 14);
+      ctx.page.drawText('•', {
+        x: MARGIN + 8,
+        y: ctx.y - 10,
+        size: 10,
+        font: ctx.font,
+        color: COLORS.textBlack,
+      });
+      renderInlineWithBold(ctx, txt, { size: 10, indent: 20, lineHeight: 14 });
     } else {
-      const { text } = stripBold(line);
-      drawParagraph(state, text, { size: 9.5 });
+      renderInlineWithBold(ctx, line, { size: 10, lineHeight: 14.5 });
     }
   }
 }
 
-function drawDataRow(state: DrawState, label: string, value: string, alt: boolean) {
-  const rowH = 16;
-  ensureSpace(state, rowH);
-  if (alt) {
-    state.page.drawRectangle({
-      x: MARGIN,
-      y: state.y - rowH + 4,
-      width: PAGE_W - 2 * MARGIN,
-      height: rowH,
-      color: COLORS.bgGray,
-    });
-  }
-  state.page.drawText(label, {
-    x: MARGIN + 6,
-    y: state.y - 10,
-    size: 9,
-    font: state.fontBold,
-    color: COLORS.black,
-  });
-  // value (com wrap simples)
-  const valueX = MARGIN + 180;
-  const maxW = PAGE_W - MARGIN - valueX - 6;
-  const lines = wrapText(value || '—', state.font, 9, maxW);
-  state.page.drawText(lines[0], {
-    x: valueX,
-    y: state.y - 10,
-    size: 9,
-    font: state.font,
-    color: COLORS.gray,
-  });
-  state.y -= rowH;
-  // linhas extras
-  for (let i = 1; i < lines.length; i++) {
-    ensureSpace(state, 12);
-    state.page.drawText(lines[i], {
-      x: valueX,
-      y: state.y - 10,
-      size: 9,
-      font: state.font,
-      color: COLORS.gray,
-    });
-    state.y -= 12;
+// =============== Auth gate ===============
+const ADMIN_ROLES = ['super_admin', 'admin', 'gestor_comercial', 'diretora_operacoes'];
+
+async function isAuthorizedAdmin(req: Request, supaServiceRole: any): Promise<boolean> {
+  // Service role (server-to-server) chamada interna sem auth header — bloqueamos somente quando vier de UI
+  // Aqui se NÃO há Authorization, NÃO autorizamos regen (apenas o fluxo automático sem force_regenerate roda).
+  const authHeader = req.headers.get('Authorization') || req.headers.get('authorization');
+  if (!authHeader) return false;
+  const token = authHeader.replace(/^Bearer\s+/i, '');
+  // Se vier o service role key direto, autorizamos
+  const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (srk && token === srk) return true;
+  // Caso contrário, valida JWT do usuário e checa role
+  try {
+    const { data: userData, error } = await supaServiceRole.auth.getUser(token);
+    if (error || !userData?.user) return false;
+    const userId = userData.user.id;
+    for (const role of ADMIN_ROLES) {
+      const { data, error: rpcErr } = await supaServiceRole.rpc('has_role', {
+        _user_id: userId,
+        _role: role,
+      });
+      if (!rpcErr && data === true) return true;
+    }
+    return false;
+  } catch (e) {
+    console.warn('[pdf] auth check exception', e);
+    return false;
   }
 }
 
@@ -410,6 +836,7 @@ Deno.serve(async (req) => {
   }
 
   const id = body?.sindico_interessado_id;
+  const forceRegenerate = body?.force_regenerate === true;
   if (!id || typeof id !== 'string') {
     return new Response(JSON.stringify({ error: 'sindico_interessado_id obrigatório' }), {
       status: 400,
@@ -418,16 +845,25 @@ Deno.serve(async (req) => {
   }
 
   console.log('[gerar-pdf-aceite-sindico] request', {
-    sindico_interessado_id: id,
-    timestamp: new Date().toISOString(),
-    ip: reqIP,
-    ua: reqUA,
+    id, forceRegenerate, ts: new Date().toISOString(),
   });
 
   const supa = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
+
+  // Auth gate apenas para force_regenerate
+  if (forceRegenerate) {
+    const ok = await isAuthorizedAdmin(req, supa);
+    if (!ok) {
+      console.warn('[gerar-pdf-aceite-sindico] regen NÃO autorizado');
+      return new Response(JSON.stringify({ error: 'Não autorizado a regenerar' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
 
   const { data: rec, error: selErr } = await supa
     .from('sindicos_interessados')
@@ -449,8 +885,8 @@ Deno.serve(async (req) => {
     });
   }
 
-  // 🛡️ IDEMPOTÊNCIA
-  if (rec.aceite_pdf_url) {
+  // 🛡️ IDEMPOTÊNCIA (ignorada se force_regenerate=true)
+  if (rec.aceite_pdf_url && !forceRegenerate) {
     console.log('[gerar-pdf-aceite-sindico] cached', { id, path: rec.aceite_pdf_url });
     return new Response(
       JSON.stringify({
@@ -463,26 +899,41 @@ Deno.serve(async (req) => {
     );
   }
 
-  // 🛡️ VALIDAÇÃO TEMPORAL (5 min)
-  const idadeMin = (Date.now() - new Date(rec.created_at).getTime()) / 60000;
-  if (idadeMin > 5) {
-    console.warn('[gerar-pdf-aceite-sindico] registro muito antigo', { id, idadeMin });
-    return new Response(
-      JSON.stringify({ error: 'Registro muito antigo para geração automática.' }),
-      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
+  // 🛡️ VALIDAÇÃO TEMPORAL (5 min) — pulada para regen autorizado
+  if (!forceRegenerate) {
+    const idadeMin = (Date.now() - new Date(rec.created_at).getTime()) / 60000;
+    if (idadeMin > 5) {
+      console.warn('[gerar-pdf-aceite-sindico] registro muito antigo', { id, idadeMin });
+      return new Response(
+        JSON.stringify({ error: 'Registro muito antigo para geração automática.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
   }
 
   // ===== Geração do PDF =====
   const pdf = await PDFDocument.create();
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const fontItalic = await pdf.embedFont(StandardFonts.HelveticaOblique);
+  const font = await pdf.embedFont(StandardFonts.TimesRoman);
+  const fontBold = await pdf.embedFont(StandardFonts.TimesRomanBold);
+  const fontItalic = await pdf.embedFont(StandardFonts.TimesRomanItalic);
+  const mono = await pdf.embedFont(StandardFonts.Helvetica);
+  const monoBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+
+  // Logo
+  let logoImg: any = null;
+  const logoBytes = await loadLogo();
+  if (logoBytes) {
+    try {
+      logoImg = await pdf.embedPng(logoBytes);
+    } catch (e) {
+      console.warn('[pdf] embedPng falhou, prosseguindo sem logo', e);
+    }
+  }
 
   const protocolo = rec.protocolo || 'SEM-PROTOCOLO';
   const now = new Date();
 
-  // Hash SHA-256 dos dados canônicos
+  // Hash SHA-256
   const hashInput = canonicalJSON({
     protocolo,
     sindico: {
@@ -513,472 +964,530 @@ Deno.serve(async (req) => {
       user_agent: rec.aceite_user_agent,
     },
     termos_versao: 'v2.0',
+    regenerated_at: forceRegenerate ? now.toISOString() : undefined,
   });
   const hash = await sha256(hashInput);
 
-  // ====== Página 1 — Capa ======
-  let page = pdf.addPage([PAGE_W, PAGE_H]);
+  // ============================================================
+  // PÁGINA 1 — CAPA
+  // ============================================================
+  const cover = pdf.addPage([PAGE_W, PAGE_H]);
 
-  // Logo wordmark
-  page.drawText('exa', {
-    x: PAGE_W / 2 - 50,
-    y: PAGE_H - 130,
-    size: 64,
-    font: fontBold,
-    color: COLORS.red,
+  // Logo centralizada (140pt de largura)
+  let cursorY = PAGE_H - 80;
+  if (logoImg) {
+    const logoW = 140;
+    const ratio = logoImg.height / logoImg.width;
+    const logoH = logoW * ratio;
+    cover.drawImage(logoImg, {
+      x: (PAGE_W - logoW) / 2,
+      y: cursorY - logoH,
+      width: logoW,
+      height: logoH,
+    });
+    cursorY -= logoH + 18;
+  } else {
+    cover.drawText('EXA', {
+      x: PAGE_W / 2 - 40,
+      y: cursorY - 40,
+      size: 48,
+      font: fontBold,
+      color: COLORS.bordo,
+    });
+    cursorY -= 60;
+  }
+
+  // Linha fina
+  cover.drawLine({
+    start: { x: (PAGE_W - 80) / 2, y: cursorY },
+    end: { x: (PAGE_W + 80) / 2, y: cursorY },
+    thickness: 0.5,
+    color: COLORS.black,
   });
+  cursorY -= 18;
 
-  // Faixa vermelha
-  page.drawRectangle({
-    x: 0,
-    y: PAGE_H - 170,
-    width: PAGE_W,
-    height: 6,
-    color: COLORS.red,
+  // Identificação institucional
+  const drawCenter = (txt: string, size: number, f: any, color = COLORS.textBlack) => {
+    const w = f.widthOfTextAtSize(txt, size);
+    cover.drawText(txt, { x: (PAGE_W - w) / 2, y: cursorY, size, font: f, color });
+  };
+  drawCenter('INDEXA MÍDIA LTDA', 11, fontBold);
+  cursorY -= 14;
+  drawCenter('CNPJ 38.142.638/0001-30', 9, font, COLORS.graphite);
+  cursorY -= 12;
+  drawCenter(
+    'Av. Paraná, 974 - Sala 301 · Centro · Foz do Iguaçu/PR · 85852-000',
+    8.5, font, COLORS.graphite,
+  );
+  cursorY -= 32;
+
+  // Linha bordô
+  cover.drawRectangle({
+    x: (PAGE_W - 120) / 2, y: cursorY,
+    width: 120, height: 1.2,
+    color: COLORS.bordo,
   });
+  cursorY -= 20;
 
-  // Bloco central
-  const docLabel = 'D O C U M E N T O   O F I C I A L';
-  const dlW = fontBold.widthOfTextAtSize(docLabel, 11);
-  page.drawText(docLabel, {
+  // Título principal (com letter-spacing manual)
+  const drawSpaced = (txt: string, size: number, f: any, color: any, spacing: number) => {
+    const chars = txt.split('');
+    const totalW = chars.reduce(
+      (s, c) => s + f.widthOfTextAtSize(c, size) + spacing,
+      -spacing,
+    );
+    let cx = (PAGE_W - totalW) / 2;
+    for (const c of chars) {
+      cover.drawText(c, { x: cx, y: cursorY, size, font: f, color });
+      cx += f.widthOfTextAtSize(c, size) + spacing;
+    }
+  };
+  drawSpaced('TERMO DE REGISTRO DE INTERESSE', 18, fontBold, COLORS.textBlack, 1.5);
+  cursorY -= 22;
+  drawSpaced('E AUTORIZAÇÃO DE ACESSO TÉCNICO', 14, fontBold, COLORS.graphite, 1);
+  cursorY -= 22;
+  drawCenter(
+    'Instalação de Painel Digital EXA Mídia em elevador condominial',
+    11, fontItalic, COLORS.graphite,
+  );
+  cursorY -= 14;
+  cover.drawRectangle({
+    x: (PAGE_W - 120) / 2, y: cursorY,
+    width: 120, height: 1.2,
+    color: COLORS.bordo,
+  });
+  cursorY -= 35;
+
+  // Box duplo do protocolo
+  const boxW = 320;
+  const boxH = 95;
+  const boxX = (PAGE_W - boxW) / 2;
+  const boxY = cursorY - boxH;
+  drawDoubleBorderBox(cover, boxX, boxY, boxW, boxH);
+  // Conteúdo
+  const labelTop = 'PROTOCOLO OFICIAL';
+  // letter-spacing manual
+  const drawSpacedAt = (
+    txt: string, size: number, f: any, color: any, spacing: number, yPos: number,
+  ) => {
+    const chars = txt.split('');
+    const totalW = chars.reduce(
+      (s, c) => s + f.widthOfTextAtSize(c, size) + spacing,
+      -spacing,
+    );
+    let cx = (PAGE_W - totalW) / 2;
+    for (const c of chars) {
+      cover.drawText(c, { x: cx, y: yPos, size, font: f, color });
+      cx += f.widthOfTextAtSize(c, size) + spacing;
+    }
+  };
+  drawSpacedAt(labelTop, 8.5, fontBold, COLORS.graphite, 2.5, boxY + boxH - 20);
+  // Protocolo
+  const protW = monoBold.widthOfTextAtSize(protocolo, 22);
+  cover.drawText(protocolo, {
+    x: (PAGE_W - protW) / 2,
+    y: boxY + boxH - 50,
+    size: 22,
+    font: monoBold,
+    color: COLORS.textBlack,
+  });
+  // Linha cinza interna
+  cover.drawLine({
+    start: { x: boxX + 30, y: boxY + 38 },
+    end: { x: boxX + boxW - 30, y: boxY + 38 },
+    thickness: 0.4,
+    color: COLORS.lightGray,
+  });
+  // Data
+  const dataLabel = `DATA DO REGISTRO: ${fmtBR(now)}`;
+  const dlW = font.widthOfTextAtSize(dataLabel, 9);
+  cover.drawText(dataLabel, {
     x: (PAGE_W - dlW) / 2,
-    y: PAGE_H - 230,
-    size: 11,
-    font: fontBold,
-    color: COLORS.gray,
-  });
-
-  const t1 = 'REGISTRO DE INTERESSE';
-  const t2 = 'E AUTORIZAÇÃO TÉCNICA';
-  const t1W = fontBold.widthOfTextAtSize(t1, 22);
-  const t2W = fontBold.widthOfTextAtSize(t2, 22);
-  page.drawText(t1, {
-    x: (PAGE_W - t1W) / 2,
-    y: PAGE_H - 280,
-    size: 22,
-    font: fontBold,
-    color: COLORS.black,
-  });
-  page.drawText(t2, {
-    x: (PAGE_W - t2W) / 2,
-    y: PAGE_H - 310,
-    size: 22,
-    font: fontBold,
-    color: COLORS.black,
-  });
-
-  const sub = 'INSTALAÇÃO DE PAINEL EXA MÍDIA';
-  const subW = font.widthOfTextAtSize(sub, 13);
-  page.drawText(sub, {
-    x: (PAGE_W - subW) / 2,
-    y: PAGE_H - 340,
-    size: 13,
-    font,
-    color: COLORS.gray,
-  });
-
-  // linha vermelha curta
-  page.drawRectangle({
-    x: (PAGE_W - 80) / 2,
-    y: PAGE_H - 360,
-    width: 80,
-    height: 2,
-    color: COLORS.red,
-  });
-
-  // Box metadados
-  const boxY = PAGE_H - 470;
-  const boxH = 90;
-  page.drawRectangle({
-    x: MARGIN + 40,
-    y: boxY,
-    width: PAGE_W - 2 * MARGIN - 80,
-    height: boxH,
-    color: COLORS.bgGray,
-    borderColor: COLORS.lightGray,
-    borderWidth: 1,
-  });
-  page.drawText('PROTOCOLO', {
-    x: MARGIN + 60,
-    y: boxY + boxH - 22,
+    y: boxY + 25,
     size: 9,
-    font: fontBold,
-    color: COLORS.gray,
-  });
-  page.drawText(protocolo, {
-    x: MARGIN + 60,
-    y: boxY + boxH - 40,
-    size: 14,
-    font: fontBold,
-    color: COLORS.red,
-  });
-  page.drawText('DATA DE GERAÇÃO', {
-    x: MARGIN + 60,
-    y: boxY + 35,
-    size: 9,
-    font: fontBold,
-    color: COLORS.gray,
-  });
-  page.drawText(fmtBR(now), {
-    x: MARGIN + 60,
-    y: boxY + 20,
-    size: 10,
     font,
-    color: COLORS.black,
+    color: COLORS.textBlack,
   });
-  page.drawText('STATUS:  Assinado eletronicamente', {
-    x: MARGIN + 60,
-    y: boxY + 6,
+  // Status
+  const statusTxt = 'STATUS: ASSINADO ELETRONICAMENTE';
+  const stW = fontBold.widthOfTextAtSize(statusTxt, 9);
+  cover.drawText(statusTxt, {
+    x: (PAGE_W - stW) / 2,
+    y: boxY + 12,
     size: 9,
     font: fontBold,
     color: COLORS.bordo,
   });
 
-  // Rodapé conformidade
-  const conf = 'Gerado em conformidade com MP 2.200-2/2001 e Lei 14.063/2020';
-  const confW = font.widthOfTextAtSize(conf, 9);
-  page.drawText(conf, {
-    x: (PAGE_W - confW) / 2,
-    y: 60,
-    size: 9,
-    font: fontItalic,
-    color: COLORS.gray,
+  cursorY = boxY - 40;
+
+  // Bloco inferior — declaração
+  const decl1 =
+    'Documento eletrônico com validade jurídica plena nos termos da Medida Provisória nº 2.200-2/2001,';
+  const decl2 =
+    'da Lei nº 14.063/2020 e do Código Civil Brasileiro (Lei nº 10.406/2002, art. 107).';
+  const d1W = fontItalic.widthOfTextAtSize(decl1, 9);
+  const d2W = fontItalic.widthOfTextAtSize(decl2, 9);
+  cover.drawText(decl1, {
+    x: (PAGE_W - d1W) / 2, y: cursorY,
+    size: 9, font: fontItalic, color: COLORS.graphite,
+  });
+  cover.drawText(decl2, {
+    x: (PAGE_W - d2W) / 2, y: cursorY - 12,
+    size: 9, font: fontItalic, color: COLORS.graphite,
+  });
+  cursorY -= 30;
+  const decl3 =
+    'Para validação de integridade, consulte o hash criptográfico SHA-256 constante na página final.';
+  const d3W = fontItalic.widthOfTextAtSize(decl3, 8);
+  cover.drawText(decl3, {
+    x: (PAGE_W - d3W) / 2, y: cursorY,
+    size: 8, font: fontItalic, color: COLORS.graphite,
   });
 
-  // Faixa bordô pé
-  page.drawRectangle({ x: 0, y: 0, width: PAGE_W, height: 6, color: COLORS.bordo });
+  // Faixa bordô estreita no pé
+  cover.drawRectangle({
+    x: 0, y: 0, width: PAGE_W, height: 2,
+    color: COLORS.bordo,
+  });
 
-  // ====== State para páginas seguintes ======
-  const state: DrawState = {
+  // ============================================================
+  // CONTEXTO DE PÁGINAS DE CONTEÚDO
+  // ============================================================
+  const ctx: Ctx = {
     pdf,
-    page,
+    page: cover, // será sobrescrita
     y: 0,
     pageNum: 1,
-    totalPagesPlaceholder: { value: 0 },
-    font,
-    fontBold,
-    fontItalic,
+    font, fontBold, fontItalic, mono, monoBold,
     protocolo,
+    logoImg,
   };
 
-  // ====== Página 2 — Dados ======
-  newContentPage(state);
+  // ============================================================
+  // PÁGINA 2 — IDENTIFICAÇÃO DAS PARTES
+  // ============================================================
+  ctx.page = pdf.addPage([PAGE_W, PAGE_H]);
+  ctx.pageNum = 2;
+  drawHeader(ctx);
+  ctx.y = CONTENT_TOP;
 
-  drawParagraph(state, '1. DADOS DO PRÉDIO', {
-    size: 12,
-    bold: true,
-    color: COLORS.bordo,
+  // Título
+  ctx.page.drawText('1. IDENTIFICAÇÃO DAS PARTES', {
+    x: MARGIN, y: ctx.y - 13,
+    size: 13, font: fontBold, color: COLORS.textBlack,
   });
-  state.y -= 4;
+  ctx.y -= 18;
+  ctx.page.drawRectangle({
+    x: MARGIN, y: ctx.y, width: 60, height: 1, color: COLORS.bordo,
+  });
+  ctx.y -= 18;
 
-  let alt = false;
+  // 1.1
+  ctx.page.drawText('1.1 DADOS DO PRÉDIO', {
+    x: MARGIN, y: ctx.y - 11,
+    size: 11, font: fontBold, color: COLORS.textBlack,
+  });
+  ctx.y -= 18;
+
   const enderecoFull = [
     rec.endereco_logradouro,
     rec.endereco_numero,
-    rec.endereco_complemento,
     rec.endereco_bairro,
     rec.endereco_cidade && rec.endereco_uf ? `${rec.endereco_cidade}/${rec.endereco_uf}` : '',
-  ]
-    .filter(Boolean)
-    .join(', ');
+  ].filter(Boolean).join(', ');
 
-  drawDataRow(state, 'Nome do prédio', rec.nome_predio || '—', (alt = !alt));
-  drawDataRow(state, 'Endereço', enderecoFull, (alt = !alt));
-  drawDataRow(state, 'CEP', rec.cep || '—', (alt = !alt));
-  if (rec.endereco_complemento) drawDataRow(state, 'Complemento', rec.endereco_complemento, (alt = !alt));
-  drawDataRow(
-    state,
+  const predioRows: [string, string][] = [
+    ['Nome do prédio', rec.nome_predio || '—'],
+    ['Endereço', enderecoFull || '—'],
+    ['CEP', rec.cep || '—'],
+  ];
+  if (rec.endereco_complemento) {
+    predioRows.push(['Complemento', rec.endereco_complemento]);
+  }
+  predioRows.push([
     'Estrutura',
     `${rec.quantidade_andares ?? '—'} andares · ${rec.quantidade_blocos ?? 1} bloco(s) · ${
       rec.quantidade_unidades_total ?? '—'
     } unidades · ${rec.quantidade_elevadores_sociais ?? '—'} elevador(es) social(is)`,
-    (alt = !alt),
-  );
-  drawDataRow(
-    state,
+  ]);
+  predioRows.push([
     'Operadoras de internet',
-    Array.isArray(rec.internet_operadoras) ? rec.internet_operadoras.join(', ') : '—',
-    (alt = !alt),
-  );
-  drawDataRow(state, 'Empresa do elevador', rec.empresa_elevador || '—', (alt = !alt));
-  drawDataRow(
-    state,
+    Array.isArray(rec.internet_operadoras) && rec.internet_operadoras.length
+      ? rec.internet_operadoras.join(', ')
+      : '—',
+  ]);
+  predioRows.push(['Empresa de manutenção do elevador', rec.empresa_elevador || '—']);
+  predioRows.push([
     'Casa de máquinas',
     rec.elevador_casa_maquinas === 'sim'
       ? 'Sim'
       : rec.elevador_casa_maquinas === 'nao'
         ? 'Não'
         : 'Não sei informar',
-    (alt = !alt),
+  ]);
+  drawDataTable(ctx, predioRows);
+
+  ctx.y -= 18;
+
+  // 1.2
+  ensureSpace(ctx, 30);
+  ctx.page.drawText('1.2 DADOS DO SÍNDICO', {
+    x: MARGIN, y: ctx.y - 11,
+    size: 11, font: fontBold, color: COLORS.textBlack,
+  });
+  ctx.y -= 18;
+
+  const sindicoRows: [string, string][] = [
+    ['Nome completo', rec.sindico_nome || '—'],
+    ['CPF', rec.sindico_cpf || '—'],
+    ['WhatsApp', rec.sindico_whatsapp || '—'],
+    ['E-mail', rec.sindico_email || '—'],
+    ['Mandato até', fmtDateExtenso(rec.sindico_mandato_ate)],
+  ];
+  drawDataTable(ctx, sindicoRows);
+
+  // ============================================================
+  // PÁGINA 3+ — TERMOS
+  // ============================================================
+  ctx.page = pdf.addPage([PAGE_W, PAGE_H]);
+  ctx.pageNum += 1;
+  drawHeader(ctx);
+  ctx.y = CONTENT_TOP;
+
+  ctx.page.drawText('2. TERMOS E CONDIÇÕES DO REGISTRO DE INTERESSE', {
+    x: MARGIN, y: ctx.y - 13,
+    size: 13, font: fontBold, color: COLORS.textBlack,
+  });
+  ctx.y -= 18;
+  ctx.page.drawRectangle({
+    x: MARGIN, y: ctx.y, width: 60, height: 1, color: COLORS.bordo,
+  });
+  ctx.y -= 14;
+
+  drawTermos(ctx);
+
+  // ============================================================
+  // PÁGINA FINAL — ASSINATURA
+  // ============================================================
+  ctx.page = pdf.addPage([PAGE_W, PAGE_H]);
+  ctx.pageNum += 1;
+  drawHeader(ctx);
+  ctx.y = CONTENT_TOP;
+
+  // Título centralizado
+  const titFinal = '3. ASSINATURA ELETRÔNICA E REGISTRO DE EVIDÊNCIAS';
+  const tfW = fontBold.widthOfTextAtSize(titFinal, 14);
+  ctx.page.drawText(titFinal, {
+    x: (PAGE_W - tfW) / 2,
+    y: ctx.y - 14,
+    size: 14, font: fontBold, color: COLORS.textBlack,
+  });
+  ctx.y -= 20;
+  ctx.page.drawRectangle({
+    x: (PAGE_W - 120) / 2, y: ctx.y, width: 120, height: 1, color: COLORS.bordo,
+  });
+  ctx.y -= 18;
+
+  // Caixa borda dupla — declaração
+  const declTitle = 'DECLARAÇÃO DE CONCORDÂNCIA';
+  const declText =
+    'O signatário abaixo identificado, ao aceitar eletronicamente este termo por meio de marcação expressa de caixa de confirmação seguida do envio do formulário digital, manifestou sua plena concordância com todas as cláusulas, condições e autorizações constantes neste documento, o que produz efeitos legais equivalentes à assinatura manuscrita, nos termos da Medida Provisória nº 2.200-2, de 24 de agosto de 2001, da Lei nº 14.063, de 23 de setembro de 2020, e dos artigos 107 e seguintes do Código Civil Brasileiro.';
+  const declBoxW = PAGE_W - 2 * MARGIN;
+  const declBoxH = 100;
+  const declBoxX = MARGIN;
+  const declBoxY = ctx.y - declBoxH;
+  drawDoubleBorderBox(ctx.page, declBoxX, declBoxY, declBoxW, declBoxH);
+  // Título
+  const dtChars = declTitle.split('');
+  const dtSize = 11;
+  const dtSpacing = 2;
+  const dtTotalW = dtChars.reduce(
+    (s, c) => s + fontBold.widthOfTextAtSize(c, dtSize) + dtSpacing,
+    -dtSpacing,
   );
+  let dtX = (PAGE_W - dtTotalW) / 2;
+  const dtY = declBoxY + declBoxH - 18;
+  for (const c of dtChars) {
+    ctx.page.drawText(c, { x: dtX, y: dtY, size: dtSize, font: fontBold, color: COLORS.textBlack });
+    dtX += fontBold.widthOfTextAtSize(c, dtSize) + dtSpacing;
+  }
+  // Texto interno justificado
+  const innerLines = wrapWords(declText, font, 9.5, declBoxW - 30);
+  let innerY = dtY - 18;
+  for (let i = 0; i < innerLines.length; i++) {
+    drawJustifiedLine(
+      ctx.page, innerLines[i], declBoxX + 15, innerY, declBoxW - 30,
+      font, 9.5, COLORS.textBlack, i === innerLines.length - 1,
+    );
+    innerY -= 12;
+  }
 
-  state.y -= 14;
-  drawParagraph(state, '2. DADOS DO SÍNDICO', {
-    size: 12,
-    bold: true,
-    color: COLORS.bordo,
-  });
-  state.y -= 4;
-  alt = false;
-  drawDataRow(state, 'Nome completo', rec.sindico_nome || '—', (alt = !alt));
-  drawDataRow(state, 'CPF', rec.sindico_cpf || '—', (alt = !alt));
-  drawDataRow(state, 'WhatsApp', rec.sindico_whatsapp || '—', (alt = !alt));
-  drawDataRow(state, 'E-mail', rec.sindico_email || '—', (alt = !alt));
-  drawDataRow(state, 'Mandato até', fmtDateBR(rec.sindico_mandato_ate), (alt = !alt));
+  ctx.y = declBoxY - 22;
 
-  // ====== Página 3+ — Termos integrais ======
-  newContentPage(state);
-  drawParagraph(state, '3. TERMOS ACEITOS PELO SÍNDICO', {
-    size: 12,
-    bold: true,
-    color: COLORS.bordo,
-  });
-  state.y -= 4;
-  drawTermos(state);
-
-  // ====== Página final — Assinatura ======
-  newContentPage(state);
-  drawParagraph(state, '4. ASSINATURA ELETRÔNICA E EVIDÊNCIAS DO ACEITE', {
-    size: 13,
-    bold: true,
-    color: COLORS.bordo,
-  });
-  state.y -= 8;
-
-  // Caixa declaração
-  const declY = state.y;
-  state.page.drawRectangle({
-    x: MARGIN,
-    y: declY - 70,
-    width: PAGE_W - 2 * MARGIN,
-    height: 70,
-    borderColor: COLORS.red,
-    borderWidth: 1.5,
-    color: COLORS.white,
-  });
-  state.y = declY - 14;
-  drawParagraph(
-    state,
-    'O signatário abaixo identificado, ao marcar expressamente a caixa de aceite dos termos e enviar este formulário eletrônico, MANIFESTOU SUA CONCORDÂNCIA com todo o conteúdo acima descrito, nos termos da Medida Provisória nº 2.200-2/2001 e da Lei nº 14.063/2020.',
-    { size: 9.5, indent: 12 },
-  );
-  state.y = declY - 80;
-
-  // Identificação
-  state.page.drawRectangle({
-    x: MARGIN + 80,
-    y: state.y,
-    width: PAGE_W - 2 * MARGIN - 160,
-    height: 0.8,
-    color: COLORS.gray,
-  });
-  state.y -= 6;
-  const nomeUp = (rec.sindico_nome || '—').toUpperCase();
-  const nomeW = fontBold.widthOfTextAtSize(nomeUp, 14);
-  state.page.drawText(nomeUp, {
-    x: (PAGE_W - nomeW) / 2,
-    y: state.y - 14,
-    size: 14,
-    font: fontBold,
+  // Identificação do signatário
+  ctx.page.drawLine({
+    start: { x: (PAGE_W - 360) / 2, y: ctx.y },
+    end: { x: (PAGE_W + 360) / 2, y: ctx.y },
+    thickness: 0.8,
     color: COLORS.black,
   });
-  state.y -= 22;
+  ctx.y -= 18;
+  const nomeUp = (rec.sindico_nome || '—').toUpperCase();
+  const nW = fontBold.widthOfTextAtSize(nomeUp, 14);
+  ctx.page.drawText(nomeUp, {
+    x: (PAGE_W - nW) / 2,
+    y: ctx.y, size: 14, font: fontBold, color: COLORS.textBlack,
+  });
+  ctx.y -= 16;
   const cpfStr = `CPF ${rec.sindico_cpf || '—'}`;
-  const cpfW = font.widthOfTextAtSize(cpfStr, 9);
-  state.page.drawText(cpfStr, {
-    x: (PAGE_W - cpfW) / 2,
-    y: state.y - 10,
-    size: 9,
-    font,
-    color: COLORS.gray,
+  const cpW = font.widthOfTextAtSize(cpfStr, 10);
+  ctx.page.drawText(cpfStr, {
+    x: (PAGE_W - cpW) / 2,
+    y: ctx.y, size: 10, font, color: COLORS.graphite,
   });
-  state.y -= 14;
-  const role = 'Síndico legalmente eleito';
-  const rW = fontItalic.widthOfTextAtSize(role, 9);
-  state.page.drawText(role, {
-    x: (PAGE_W - rW) / 2,
-    y: state.y - 10,
-    size: 9,
-    font: fontItalic,
-    color: COLORS.gray,
+  ctx.y -= 12;
+  const mandato = `Síndico legalmente eleito — Mandato até ${fmtDateBR(rec.sindico_mandato_ate)}`;
+  const mW = fontItalic.widthOfTextAtSize(mandato, 9);
+  ctx.page.drawText(mandato, {
+    x: (PAGE_W - mW) / 2,
+    y: ctx.y, size: 9, font: fontItalic, color: COLORS.graphite,
   });
-  state.y -= 14;
-  const cond = `Representante do Condomínio ${rec.nome_predio || ''}`;
-  const cW = font.widthOfTextAtSize(cond, 9);
-  state.page.drawText(cond, {
-    x: (PAGE_W - cW) / 2,
-    y: state.y - 10,
-    size: 9,
-    font,
-    color: COLORS.gray,
+  ctx.y -= 12;
+  const repr = `Representante do condomínio: ${rec.nome_predio || '—'}`;
+  const reprW = font.widthOfTextAtSize(repr, 9);
+  ctx.page.drawText(repr, {
+    x: (PAGE_W - reprW) / 2,
+    y: ctx.y, size: 9, font, color: COLORS.graphite,
   });
-  state.y -= 24;
+  ctx.y -= 28;
 
-  // Caixa evidências
-  ensureSpace(state, 130);
-  const evY = state.y;
-  state.page.drawRectangle({
-    x: MARGIN,
-    y: evY - 130,
-    width: PAGE_W - 2 * MARGIN,
-    height: 130,
-    color: COLORS.bgGray,
-    borderColor: COLORS.lightGray,
-    borderWidth: 1,
-  });
-  state.page.drawText('EVIDÊNCIAS TÉCNICAS DO ACEITE', {
-    x: MARGIN + 10,
-    y: evY - 16,
-    size: 10,
-    font: fontBold,
-    color: COLORS.bordo,
-  });
-  state.y = evY - 34;
+  // Selo notarial
+  ensureSpace(ctx, 140);
+  drawNotarialSeal(ctx, PAGE_W / 2, ctx.y - 60);
+  ctx.y -= 140;
+
+  // Caixa "REGISTRO DE EVIDÊNCIAS TÉCNICAS DO ACEITE"
+  ensureSpace(ctx, 130);
+  const evX = MARGIN;
+  const evW = PAGE_W - 2 * MARGIN;
   const evRows: [string, string][] = [
-    ['Data/hora', fmtBR(new Date(rec.aceite_timestamp || now))],
-    ['IP', rec.aceite_ip || '—'],
-    ['User-agent', (rec.aceite_user_agent || '—').slice(0, 100)],
+    ['Data e hora do aceite', fmtBR(new Date(rec.aceite_timestamp || now))],
+    ['Endereço IP', rec.aceite_ip || '—'],
+    ['User-agent', (rec.aceite_user_agent || '—').slice(0, 80)],
     ['Hash SHA-256', hash],
     ['Protocolo', protocolo],
   ];
-  for (const [k, v] of evRows) {
-    state.page.drawText(k, {
-      x: MARGIN + 10,
-      y: state.y - 8,
-      size: 8.5,
-      font: fontBold,
-      color: COLORS.black,
-    });
-    const valLines = wrapText(v, font, 8.5, PAGE_W - MARGIN - (MARGIN + 110));
-    state.page.drawText(valLines[0], {
-      x: MARGIN + 110,
-      y: state.y - 8,
-      size: 8.5,
-      font,
-      color: COLORS.gray,
-    });
-    state.y -= 14;
-  }
-  state.y = evY - 145;
-
-  // Selo de assinatura
-  ensureSpace(state, 100);
-  const cx = PAGE_W / 2;
-  const cy = state.y - 50;
-  state.page.drawCircle({
-    x: cx,
-    y: cy,
-    size: 38,
-    borderColor: COLORS.gray,
-    borderWidth: 1.5,
-    color: COLORS.white,
+  // pre-calc altura
+  const evLineH = 13;
+  const evRowsRendered = evRows.map(([k, v]) => {
+    const valW = evW - 130 - 24;
+    const lines = wrapText(v, mono, 8.5, valW);
+    return { k, lines };
   });
-  state.page.drawCircle({
-    x: cx,
-    y: cy,
-    size: 32,
-    borderColor: COLORS.lightGray,
-    borderWidth: 0.8,
-    color: COLORS.white,
-  });
-  state.page.drawText('✓', {
-    x: cx - 12,
-    y: cy - 12,
-    size: 36,
-    font: fontBold,
-    color: COLORS.red,
-  });
-  const seloLabel = 'ASSINADO ELETRONICAMENTE · EXA MÍDIA';
-  const slW = font.widthOfTextAtSize(seloLabel, 7.5);
-  state.page.drawText(seloLabel, {
-    x: cx - slW / 2,
-    y: cy - 50,
-    size: 7.5,
-    font: fontBold,
-    color: COLORS.gray,
-  });
-  state.y = cy - 70;
-  const validity = 'Validade jurídica equivalente à assinatura manuscrita';
-  const vW = fontItalic.widthOfTextAtSize(validity, 8.5);
-  state.page.drawText(validity, {
-    x: (PAGE_W - vW) / 2,
-    y: state.y,
-    size: 8.5,
-    font: fontItalic,
-    color: COLORS.gray,
-  });
-  state.y -= 24;
-
-  // Bloco USO AUTORIZADO
-  ensureSpace(state, 110);
-  const uaY = state.y;
-  state.page.drawRectangle({
-    x: MARGIN,
-    y: uaY - 110,
-    width: PAGE_W - 2 * MARGIN,
-    height: 110,
-    color: COLORS.bordoBg,
-    borderColor: COLORS.bordo,
-    borderWidth: 0.8,
-  });
-  state.page.drawText('USO AUTORIZADO DESTE DOCUMENTO', {
-    x: MARGIN + 10,
-    y: uaY - 16,
-    size: 10,
-    font: fontBold,
-    color: COLORS.bordo,
-  });
-  state.y = uaY - 34;
-  drawParagraph(
-    state,
-    'Este documento comprova a manifestação formal de interesse do síndico acima identificado e a autorização de acesso técnico. Pode ser apresentado a:',
-    { size: 9, indent: 10 },
+  const evContentH = evRowsRendered.reduce(
+    (s, r) => s + Math.max(evLineH, r.lines.length * evLineH),
+    0,
   );
-  drawParagraph(state, '• Empresa de manutenção do elevador (Atlas/TKE/Otis/Oriente)', {
-    size: 9,
-    indent: 18,
+  const evBoxH = 24 + evContentH + 12;
+  const evY = ctx.y;
+  ctx.page.drawRectangle({
+    x: evX, y: evY - evBoxH, width: evW, height: evBoxH,
+    color: COLORS.evidenceBg,
+    borderColor: COLORS.black,
+    borderWidth: 0.5,
   });
-  drawParagraph(state, '• Administradora do condomínio e conselho fiscal', { size: 9, indent: 18 });
-  drawParagraph(state, '• Autoridades competentes, se solicitado', { size: 9, indent: 18 });
-  drawParagraph(state, '• Equipe técnica da EXA Mídia em visita agendada', { size: 9, indent: 18 });
-
-  // Rodapé final
-  state.y = 80;
-  const f1 = 'INDEXA MÍDIA LTDA · CNPJ 38.142.638/0001-30';
-  const f2 = 'Av. Paraná, 974 - Sala 301 · Centro · Foz do Iguaçu/PR · 85852-000';
-  const f3 = 'www.examidia.com.br · suporte@examidia.com.br';
-  for (const [t, fnt, sz] of [
-    [f1, fontBold, 9],
-    [f2, font, 8.5],
-    [f3, font, 8.5],
-  ] as const) {
-    const w = fnt.widthOfTextAtSize(t, sz);
-    state.page.drawText(t, {
-      x: (PAGE_W - w) / 2,
-      y: state.y,
-      size: sz,
-      font: fnt,
-      color: COLORS.gray,
-    });
-    state.y -= 12;
+  // Título
+  const evTitle = 'REGISTRO DE EVIDÊNCIAS TÉCNICAS DO ACEITE';
+  const etChars = evTitle.split('');
+  const etSize = 10;
+  const etSpacing = 1;
+  const etTotalW = etChars.reduce(
+    (s, c) => s + fontBold.widthOfTextAtSize(c, etSize) + etSpacing, -etSpacing,
+  );
+  let etX = (PAGE_W - etTotalW) / 2;
+  const etY = evY - 16;
+  for (const c of etChars) {
+    ctx.page.drawText(c, { x: etX, y: etY, size: etSize, font: fontBold, color: COLORS.textBlack });
+    etX += fontBold.widthOfTextAtSize(c, etSize) + etSpacing;
   }
-  state.page.drawRectangle({ x: 0, y: 0, width: PAGE_W, height: 6, color: COLORS.bordo });
+  // Linhas
+  let evCY = evY - 30;
+  for (const r of evRowsRendered) {
+    ctx.page.drawText(r.k + ':', {
+      x: evX + 12,
+      y: evCY,
+      size: 8.5, font: monoBold, color: COLORS.textBlack,
+    });
+    for (let i = 0; i < r.lines.length; i++) {
+      ctx.page.drawText(r.lines[i], {
+        x: evX + 130,
+        y: evCY - i * evLineH,
+        size: 8.5, font: mono, color: COLORS.graphite,
+      });
+    }
+    evCY -= Math.max(evLineH, r.lines.length * evLineH);
+  }
+  ctx.y = evY - evBoxH - 16;
 
-  // Numeração de páginas (a partir da pág. 2)
+  // USO AUTORIZADO
+  ensureSpace(ctx, 130);
+  const uaY = ctx.y;
+  const uaH = 130;
+  ctx.page.drawRectangle({
+    x: MARGIN, y: uaY - uaH, width: PAGE_W - 2 * MARGIN, height: uaH,
+    borderColor: COLORS.bordo,
+    borderWidth: 1,
+  });
+  // Título
+  const uaTitle = 'USO AUTORIZADO DESTE DOCUMENTO';
+  ctx.page.drawText(uaTitle, {
+    x: MARGIN + 12,
+    y: uaY - 18,
+    size: 10, font: fontBold, color: COLORS.bordo,
+  });
+  // Texto
+  let uaCY = uaY - 36;
+  const uaIntro =
+    'Este documento oficial comprova a manifestação formal de interesse e a autorização de acesso técnico concedida pelo síndico acima identificado. Poderá ser apresentado aos seguintes destinatários, sem necessidade de autenticação adicional:';
+  const uaIntroLines = wrapText(uaIntro, font, 9.5, PAGE_W - 2 * MARGIN - 24);
+  for (const ln of uaIntroLines) {
+    ctx.page.drawText(ln, {
+      x: MARGIN + 12, y: uaCY,
+      size: 9.5, font, color: COLORS.graphite,
+    });
+    uaCY -= 12;
+  }
+  uaCY -= 4;
+  const uaBullets = [
+    'Empresa de manutenção do elevador (Atlas, TKE, Otis ou Oriente)',
+    'Administradora do condomínio, zelador(a) ou conselho fiscal',
+    'Operadoras de internet contratadas (Vivo, Ligga ou Telecom Foz)',
+    'Autoridades públicas competentes, quando solicitado',
+    'Equipe técnica da EXA Mídia durante a visita técnica',
+  ];
+  for (const b of uaBullets) {
+    ctx.page.drawText('•', {
+      x: MARGIN + 16, y: uaCY,
+      size: 9, font, color: COLORS.bordo,
+    });
+    ctx.page.drawText(b, {
+      x: MARGIN + 26, y: uaCY,
+      size: 9, font, color: COLORS.graphite,
+    });
+    uaCY -= 12;
+  }
+
+  // ============================================================
+  // RODAPÉS + NUMERAÇÃO (todas as páginas, inclusive capa)
+  // ============================================================
   const totalPages = pdf.getPageCount();
-  for (let i = 1; i < totalPages; i++) {
+  for (let i = 0; i < totalPages; i++) {
     const p = pdf.getPage(i);
-    const label = `Página ${i + 1} de ${totalPages}`;
-    const w = font.widthOfTextAtSize(label, 8);
-    p.drawText(label, {
-      x: (PAGE_W - w) / 2,
-      y: 18,
-      size: 8,
-      font,
-      color: COLORS.gray,
-    });
+    drawFooter(p, font, fontBold, i + 1, totalPages);
   }
 
+  // ===== Salvar =====
   const pdfBytes = await pdf.save();
   const ano = new Date().getFullYear();
   const path = `aceites/${ano}/${protocolo}.pdf`;
@@ -1003,7 +1512,9 @@ Deno.serve(async (req) => {
     .update({ aceite_pdf_url: path, aceite_hash: hash })
     .eq('id', id);
 
-  console.log('[gerar-pdf-aceite-sindico] success', { id, protocolo, path, hash: hash.slice(0, 16) });
+  console.log('[gerar-pdf-aceite-sindico] success', {
+    id, protocolo, path, hash: hash.slice(0, 16), regenerated: forceRegenerate,
+  });
 
   return new Response(
     JSON.stringify({
@@ -1011,6 +1522,7 @@ Deno.serve(async (req) => {
       pdf_path: path,
       protocolo,
       hash,
+      regenerated: forceRegenerate,
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
   );
