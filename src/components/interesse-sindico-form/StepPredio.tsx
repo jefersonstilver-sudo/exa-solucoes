@@ -13,7 +13,26 @@ import EnderecoAutocomplete, { ParsedAddress } from './EnderecoAutocomplete';
 import MiniMapa from './MiniMapa';
 import CEPFallback, { ViaCEPResult } from './CEPFallback';
 import ChoiceCard from './ChoiceCard';
+import ValidationErrors from './ValidationErrors';
 import { ArrowRight, Info, Wifi, Cog, Building2 } from 'lucide-react';
+
+const PREDIO_FIELD_LABELS: Record<string, string> = {
+  nomePredio: 'Nome do prédio',
+  logradouro: 'Logradouro',
+  numero: 'Número',
+  complemento: 'Complemento',
+  bairro: 'Bairro',
+  cidade: 'Cidade',
+  uf: 'UF',
+  cep: 'CEP',
+  andares: 'Andares',
+  blocos: 'Blocos',
+  unidades: 'Unidades totais',
+  elevadoresSociais: 'Elevadores sociais',
+  internetOps: 'Operadoras de internet',
+  elevadorEmpresa: 'Empresa de manutenção do elevador',
+  casaMaquinas: 'Casa de máquinas',
+};
 
 interface Props {
   onNext: () => void;
@@ -57,16 +76,18 @@ export const StepPredio: React.FC<Props> = ({ onNext }) => {
 
   const validation = useMemo(() => stepPredioSchema.safeParse(predio), [predio]);
   const isValid = validation.success;
+  const errors = validation.success ? null : validation.error;
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="space-y-6 lg:grid lg:grid-cols-2 lg:gap-x-8 lg:gap-y-6 lg:space-y-0">
+      <div className="lg:col-span-2">
+
         <h2 className="text-xl sm:text-2xl font-bold text-white">Dados do prédio</h2>
         <p className="text-sm text-white/55 mt-1">Vamos identificar o local da instalação.</p>
       </div>
 
       {/* Nome */}
-      <div>
+      <div className="lg:col-span-2">
         <label className="sif-label" htmlFor="nomePredio">Nome do prédio</label>
         <input
           id="nomePredio"
@@ -80,18 +101,20 @@ export const StepPredio: React.FC<Props> = ({ onNext }) => {
       </div>
 
       {/* Endereço Google + CEP fallback */}
-      <div>
+      <div className="lg:col-span-2">
         <EnderecoAutocomplete onSelect={handleAddressSelected} />
         <CEPFallback onResult={handleCEPResult} />
       </div>
 
       {/* Mini-mapa */}
       {predio.latitude && predio.longitude && (
-        <MiniMapa lat={predio.latitude} lng={predio.longitude} />
+        <div className="lg:col-span-2">
+          <MiniMapa lat={predio.latitude} lng={predio.longitude} />
+        </div>
       )}
 
       {/* Campos editáveis */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:col-span-2">
         <div className="sm:col-span-2">
           <label className="sif-label" htmlFor="logradouro">Logradouro</label>
           <input id="logradouro" type="text" className="sif-input"
@@ -179,7 +202,7 @@ export const StepPredio: React.FC<Props> = ({ onNext }) => {
       </div>
 
       {/* Elevador (radio) */}
-      <div>
+      <div className="lg:col-span-2">
         <h3 className="text-sm font-semibold text-white/85 mb-3 flex items-center gap-2">
           <Cog size={16} className="text-[var(--exa-red,#c7141a)]" /> Empresa de manutenção do elevador
         </h3>
@@ -196,7 +219,7 @@ export const StepPredio: React.FC<Props> = ({ onNext }) => {
       </div>
 
       {/* Casa de máquinas */}
-      <div>
+      <div className="lg:col-span-2">
         <h3 className="text-sm font-semibold text-white/85 mb-3">Casa de máquinas</h3>
         <div className="space-y-2" role="radiogroup" aria-label="Casa de máquinas">
           {CASA_MAQUINAS.map((c) => (
@@ -218,19 +241,19 @@ export const StepPredio: React.FC<Props> = ({ onNext }) => {
         </div>
       </div>
 
-      <div className="pt-4">
+      <div className="pt-4 lg:col-span-2">
+        {!isValid && (
+          <ValidationErrors error={errors} fieldLabels={PREDIO_FIELD_LABELS} />
+        )}
         <button
           type="button"
           onClick={onNext}
           disabled={!isValid}
           aria-disabled={!isValid}
-          className="sif-btn-primary w-full flex items-center justify-center gap-2"
+          className="sif-btn-primary w-full flex items-center justify-center gap-2 mt-4"
         >
           Continuar <ArrowRight size={18} />
         </button>
-        {!isValid && (
-          <p className="sif-help text-center mt-2">Preencha todos os campos obrigatórios para continuar.</p>
-        )}
       </div>
     </div>
   );

@@ -194,6 +194,15 @@
   line-height: 1.5;
 }
 
+/* Caixa de erros de validação (lista por campo) */
+.sif-validation-box {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.10), rgba(239, 68, 68, 0.02));
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 8px;
+}
+
 /* ====== Etapa 3 — Termos ====== */
 .sif-warning-box {
   display: flex;
