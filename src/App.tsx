@@ -141,7 +141,7 @@ const AppContent = () => {
   
   // ✅ CORREÇÃO CRÍTICA: Detectar se é rota de painel/display público
   const currentPath = window.location.pathname;
-  const isInteresseSindicoRoute = currentPath === '/interessesindico';
+  const isInteresseSindicoRoute = currentPath.startsWith('/interessesindico');
   const isPublicDisplayRoute = 
     currentPath.includes('/painel/') || 
     currentPath.includes('/painel-comercial/') ||
