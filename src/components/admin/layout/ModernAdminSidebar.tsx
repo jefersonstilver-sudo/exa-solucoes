@@ -88,6 +88,7 @@ import { usePropostasAguardando } from '@/hooks/usePropostasAguardando';
 import { useContratosPendentes } from '@/hooks/useContratosPendentes';
 import { useBeneficiosAcaoNecessaria } from '@/hooks/useBeneficiosAcaoNecessaria';
 import { usePendingVideosCount } from '@/hooks/usePendingVideosCount';
+import { useSindicosNovosCount } from '@/hooks/useSindicosNovosCount';
 
 export function ModernAdminSidebar() {
   const { state, open, setOpen, setOpenMobile, isMobile: isSidebarMobile } = useSidebar();
@@ -109,6 +110,7 @@ export function ModernAdminSidebar() {
   const { count: contratosPendentes } = useContratosPendentes();
   const { count: beneficiosAcao } = useBeneficiosAcaoNecessaria();
   const { pendingCount: videosParaAprovar } = usePendingVideosCount();
+  const { count: sindicosNovos } = useSindicosNovosCount();
 
   const handleSignOut = async () => {
     try {
@@ -198,6 +200,15 @@ export function ModernAdminSidebar() {
           href: buildPath('vendas'),
           icon: TrendingUp,
           moduleKey: MODULE_KEYS.pedidos
+        },
+        {
+          title: 'Síndicos Interessados',
+          href: buildPath('sindicos-interessados'),
+          icon: Building2,
+          moduleKey: MODULE_KEYS.sindicos,
+          badge: sindicosNovos > 0 ? sindicosNovos : undefined,
+          badgeColor: 'bg-[#9C1E1E]',
+          badgeTooltip: 'Novos cadastros via /interessesindico'
         },
         {
           title: 'Propostas',
