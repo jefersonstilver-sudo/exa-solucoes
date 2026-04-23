@@ -19,7 +19,7 @@ const InteresseSindicoLanding: React.FC = () => {
   }, []);
 
   return (
-    <div className="exa-theme font-inter min-h-screen w-full bg-[var(--exa-black)] text-white overflow-x-hidden">
+    <div className="exa-theme font-inter min-h-screen w-full bg-[var(--exa-black)] text-white">
       <HeroSection />
       <ProblemaSection />
       <DemonstracaoSection />
