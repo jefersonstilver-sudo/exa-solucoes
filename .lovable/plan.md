@@ -1,75 +1,54 @@
 
 
-# Ajustes visuais no formulário `/interessesindico/formulario`
+# Correções na landing `/interessesindico`
 
 ## Problemas reportados
 
-1. **Fundo muito escuro** — preto puro `#0A0000` está pesado, precisa um pouco mais claro.
-2. **Logo EXA ausente** — falta marca no topo para profissionalismo.
-3. **Lupa sobreposta ao placeholder** no campo "Endereço do prédio" (ícone à esquerda mas o texto começa colado, padding insuficiente).
+1. **Botão "Registrar interesse do meu prédio" não navega** para `/interessesindico/formulario` (na seção "Como Funciona", linha 66 de `ComoFuncionaSection.tsx`).
+2. **Vídeo 1 (DemonstracaoSection) está lento** ao carregar — precisa ficar mais leve.
+3. **Falta botão CTA no topo** da landing — abaixo de "Ver como funciona", precisa ter um "Quero no meu prédio" levando ao formulário.
+
+## Investigação realizada
+
+- O `<Link to="/interessesindico/formulario">` em `ComoFuncionaSection.tsx` linha 66 está correto sintaticamente. Possíveis causas de não navegar: rota não registrada no `App.tsx` (já corrigimos antes, vou re-confirmar), ou o `Link` não envolve a área clicável corretamente, ou está dentro de um wrapper que captura o clique.
+- O `HeroSection.tsx` da landing tem um botão "Ver como funciona" mas NÃO tem CTA primário "Quero no meu prédio" levando direto ao formulário.
+- O vídeo principal em `DemonstracaoSection.tsx` provavelmente carrega com `preload="auto"` ou sem otimização (lazy load + poster).
 
 ## Alterações
 
-### 1. `src/components/interesse-sindico-form/styles.css` — linha 4-9
-Trocar fundo preto puro por um cinza-grafite com leve calor (mais claro, mantém clima EXA dark premium):
-```css
-.exa-theme.sif-shell {
-  background: radial-gradient(ellipse at top, #1a1416 0%, #15101200 60%), #15101 2;
-  /* fallback sólido: #181214 */
-  background-color: #181214;
-  color: #fff;
-  min-height: 100vh;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-}
-```
-Cor base final: `#181214` (mais claro que `#0A0000`, ainda escuro premium) com sutil radial glow no topo.
+### 1. Garantir que a rota `/interessesindico/formulario` está registrada
+Verificar `src/App.tsx` — se a rota não estiver lá (apesar das correções anteriores), adicionar. Caso já esteja, investigar se há algum `onClick` ou wrapper interceptando o evento no `Link`.
 
-Também aumentar levemente a opacidade do `.sif-card` para destacar:
-- `background: rgba(255, 255, 255, 0.04)` → `rgba(255, 255, 255, 0.05)`
-- `border: 1px solid rgba(255, 255, 255, 0.10)`
-
-### 2. `src/pages/InteresseSindicoFormulario.tsx` — adicionar logo EXA no topo
-Inserir antes do `<header>` (linha 16):
+### 2. `src/components/interesse-sindico/HeroSection.tsx` — adicionar CTA principal
+Logo abaixo do botão atual "Ver como funciona", adicionar um segundo botão (ou trocar a hierarquia) que leve direto a `/interessesindico/formulario`:
 ```tsx
-<div className="flex justify-center mb-6">
-  <img
-    src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=..."
-    alt="EXA - Publicidade Inteligente"
-    className="h-10 sm:h-12 w-auto"
-  />
-</div>
+<Link to="/interessesindico/formulario" className="cta-red">
+  Quero no meu prédio
+  <ArrowRight className="w-5 h-5" />
+</Link>
 ```
-Usar a mesma URL `EXA_LOGO_URL` já presente em `HeaderLogo.tsx` (logo branca EXA isolada). Padding visual top reduzido para `py-6` para acomodar a logo.
+Posicionado em destaque (cor vermelha EXA), acima ou ao lado do "Ver como funciona" (que continua sendo secundário, scroll-down).
 
-### 3. `src/components/interesse-sindico-form/EnderecoAutocomplete.tsx` — corrigir lupa sobreposta
-O problema: `pl-10` (40px) é insuficiente em telas com fonte densa, e o ícone fica em `left-3` (12px) com 18px de largura → fim do ícone em ~30px, encostando no texto.
+### 3. `src/components/interesse-sindico/DemonstracaoSection.tsx` — otimizar vídeo
+Aplicar carregamento mais leve no vídeo principal:
+- `preload="metadata"` (em vez de `auto`) — carrega só os metadados, não o arquivo inteiro
+- Adicionar atributo `poster` com uma thumbnail estática (primeiro frame ou imagem promocional)
+- `loading="lazy"` se for `<iframe>`; se for `<video>`, manter `playsInline muted autoPlay` mas com `preload="metadata"`
+- Garantir que o `<source>` tenha `type="video/mp4"` para evitar probing
+- Se houver lógica de IntersectionObserver para tocar só quando visível, manter; senão, adicionar
 
-Ajustar:
-- Ícone: `left-3` → `left-3.5` (manter) mas tamanho `size={18}` mantido
-- Input: `pl-10` → `pl-11` (44px de padding-left, garante respiro)
-
-```tsx
-<input ... className="sif-input pl-11" ... />
-```
+### 4. `src/components/interesse-sindico/ComoFuncionaSection.tsx` — confirmar Link funcional
+Inspecionar se o `<Link>` está dentro de um wrapper com `onClick` que faz `e.preventDefault()`. Se sim, remover. Caso contrário, garantir que o componente está usando `react-router-dom` corretamente importado.
 
 ## Garantias
 
-- Não altero lógica do Google Places, store, validação, rotas ou outras páginas.
-- Apenas tokens visuais (cor de fundo, opacidade do card) e 2 ajustes pontuais (logo + padding do input).
-- Landing `/interessesindico` permanece intacta (uso seletor escopado `.exa-theme.sif-shell`).
+- Não altero outras páginas, formulário, lógica de negócio, banco, ou tokens de design.
+- Apenas: 1 rota verificada, 1 CTA adicionado no Hero, 1 otimização de vídeo, 1 verificação de Link.
+- Mantém todo o comportamento visual e funcional da landing intacto.
 
 ## Resultado esperado
 
-- Fundo grafite suave com leve glow no topo (mais leve que o atual, ainda EXA dark).
-- Logo EXA branca centralizada acima do título → profissionalismo de marca.
-- Lupa com espaçamento correto, sem sobrepor o placeholder.
-
-## Observação sobre Google Places
-
-Você mencionou que o autocomplete "não está funcionando conforme o Google". Pelo código atual, o `EnderecoAutocomplete` já usa `AutocompleteService` + `PlacesService.getDetails` com auto-preenchimento via `onSelect(parsed)` — está correto. Se ao digitar não aparecem sugestões, pode ser:
-- API key sem `Places API` habilitada
-- Quota/billing do Google Cloud
-- Erro silencioso no `loadGoogleMaps`
-
-**Não vou alterar essa lógica agora** (você pediu foco nos 3 itens visuais). Se quiser que eu investigue o autocomplete depois, me avise — posso adicionar logs e checar o status do `loadGoogleMaps()` em outra rodada.
+- Botão "Registrar interesse do meu prédio" (seção Como Funciona) navega corretamente para `/interessesindico/formulario`.
+- Novo CTA "Quero no meu prédio" no topo (Hero), em destaque, abaixo do "Ver como funciona", levando direto ao formulário.
+- Vídeo 1 carrega mais rápido (apenas metadados inicialmente, com thumbnail visível).
 
