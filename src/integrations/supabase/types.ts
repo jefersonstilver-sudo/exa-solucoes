@@ -12331,6 +12331,7 @@ export type Database = {
       }
       sindicos_interessados: {
         Row: {
+          aceite_hash: string | null
           aceite_ip: string | null
           aceite_pdf_url: string | null
           aceite_timestamp: string | null
@@ -12362,6 +12363,7 @@ export type Database = {
           observacoes: string | null
           observacoes_internas: string | null
           primeiro_nome: string | null
+          protocolo: string | null
           quantidade_andares: number | null
           quantidade_blocos: number | null
           quantidade_elevadores_sociais: number | null
@@ -12379,6 +12381,7 @@ export type Database = {
           visita_agendada_em: string | null
         }
         Insert: {
+          aceite_hash?: string | null
           aceite_ip?: string | null
           aceite_pdf_url?: string | null
           aceite_timestamp?: string | null
@@ -12410,6 +12413,7 @@ export type Database = {
           observacoes?: string | null
           observacoes_internas?: string | null
           primeiro_nome?: string | null
+          protocolo?: string | null
           quantidade_andares?: number | null
           quantidade_blocos?: number | null
           quantidade_elevadores_sociais?: number | null
@@ -12427,6 +12431,7 @@ export type Database = {
           visita_agendada_em?: string | null
         }
         Update: {
+          aceite_hash?: string | null
           aceite_ip?: string | null
           aceite_pdf_url?: string | null
           aceite_timestamp?: string | null
@@ -12458,6 +12463,7 @@ export type Database = {
           observacoes?: string | null
           observacoes_internas?: string | null
           primeiro_nome?: string | null
+          protocolo?: string | null
           quantidade_andares?: number | null
           quantidade_blocos?: number | null
           quantidade_elevadores_sociais?: number | null
