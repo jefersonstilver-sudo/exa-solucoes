@@ -12,7 +12,8 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, RefreshCw } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { SindicoRow } from '@/hooks/useSindicosList';
 import { STATUS_OPTIONS } from '../SindicoStatusBadge';
@@ -43,6 +44,22 @@ export const TabGestaoInterna: React.FC<Props> = ({ sindico, onSaved }) => {
   const [responsavelId, setResponsavelId] = useState<string>(sindico.responsavel_id ?? 'none');
   const [responsaveis, setResponsaveis] = useState<ResponsavelOption[]>([]);
   const [saving, setSaving] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+
+  const handleRegenerate = async () => {
+    setRegenerating(true);
+    const { data, error } = await supabase.functions.invoke('gerar-pdf-aceite-sindico', {
+      body: { sindico_interessado_id: sindico.id, force_regenerate: true },
+    });
+    setRegenerating(false);
+    if (error || (data && data.error)) {
+      console.error('[TabGestaoInterna] regen erro:', error || data?.error);
+      toast.error('Falha ao regenerar PDF: ' + (error?.message || data?.error || 'erro'));
+      return;
+    }
+    toast.success('PDF regenerado com sucesso');
+    onSaved?.();
+  };
 
   useEffect(() => {
     setStatus(sindico.status);
@@ -158,6 +175,27 @@ export const TabGestaoInterna: React.FC<Props> = ({ sindico, onSaved }) => {
             <Save className="w-4 h-4 mr-2" />
           )}
           Salvar alterações
+        </Button>
+      </div>
+
+      <Separator className="my-2" />
+      <div className="space-y-2">
+        <Label className="text-sm">Manutenção do documento</Label>
+        <p className="text-xs text-muted-foreground">
+          Regera o PDF oficial com o layout mais recente, atualiza o hash SHA-256 e sobrescreve o arquivo no bucket.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleRegenerate}
+          disabled={regenerating}
+        >
+          {regenerating ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4 mr-2" />
+          )}
+          Regenerar PDF
         </Button>
       </div>
     </Card>
