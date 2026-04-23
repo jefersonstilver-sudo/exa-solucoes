@@ -13,7 +13,26 @@ import EnderecoAutocomplete, { ParsedAddress } from './EnderecoAutocomplete';
 import MiniMapa from './MiniMapa';
 import CEPFallback, { ViaCEPResult } from './CEPFallback';
 import ChoiceCard from './ChoiceCard';
+import ValidationErrors from './ValidationErrors';
 import { ArrowRight, Info, Wifi, Cog, Building2 } from 'lucide-react';
+
+const PREDIO_FIELD_LABELS: Record<string, string> = {
+  nomePredio: 'Nome do prédio',
+  logradouro: 'Logradouro',
+  numero: 'Número',
+  complemento: 'Complemento',
+  bairro: 'Bairro',
+  cidade: 'Cidade',
+  uf: 'UF',
+  cep: 'CEP',
+  andares: 'Andares',
+  blocos: 'Blocos',
+  unidades: 'Unidades totais',
+  elevadoresSociais: 'Elevadores sociais',
+  internetOps: 'Operadoras de internet',
+  elevadorEmpresa: 'Empresa de manutenção do elevador',
+  casaMaquinas: 'Casa de máquinas',
+};
 
 interface Props {
   onNext: () => void;
@@ -57,10 +76,12 @@ export const StepPredio: React.FC<Props> = ({ onNext }) => {
 
   const validation = useMemo(() => stepPredioSchema.safeParse(predio), [predio]);
   const isValid = validation.success;
+  const errors = validation.success ? null : validation.error;
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="space-y-6 lg:grid lg:grid-cols-2 lg:gap-x-8 lg:gap-y-6 lg:space-y-0">
+      <div className="lg:col-span-2">
+
         <h2 className="text-xl sm:text-2xl font-bold text-white">Dados do prédio</h2>
         <p className="text-sm text-white/55 mt-1">Vamos identificar o local da instalação.</p>
       </div>
