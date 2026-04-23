@@ -91,13 +91,16 @@ export async function submitFormulario(
       status: 'novo',
     };
 
-    const { data: inserted, error: insertErr } = await (supabase as any)
-      .from('sindicos_interessados')
-      .insert(insertPayload)
-      .select('id, protocolo')
-      .single();
+    // Usa RPC security definer para contornar a policy de SELECT (restrita a admins)
+    // que bloqueava o retorno do .insert().select() para usuários anônimos.
+    const { data: rpcData, error: insertErr } = await (supabase as any).rpc(
+      'submit_sindico_interesse',
+      { payload: insertPayload },
+    );
 
-    if (insertErr || !inserted) {
+    const inserted = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+
+    if (insertErr || !inserted?.id) {
       console.error('[submitFormulario] insert failed:', insertErr);
       return { success: false, error: insertErr?.message || 'Falha ao registrar' };
     }
@@ -119,10 +122,10 @@ export async function submitFormulario(
         else console.warn('[submitFormulario] foto upload falhou:', upErr);
       }
       if (uploadedPaths.length > 0) {
-        await (supabase as any)
-          .from('sindicos_interessados')
-          .update({ fotos_elevador_urls: uploadedPaths })
-          .eq('id', recordId);
+        await (supabase as any).rpc('update_sindico_fotos', {
+          p_id: recordId,
+          p_fotos: uploadedPaths,
+        });
       }
     }
 
