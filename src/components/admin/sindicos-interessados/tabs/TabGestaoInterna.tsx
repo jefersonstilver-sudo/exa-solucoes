@@ -27,7 +27,7 @@ interface ResponsavelOption {
   nome: string;
 }
 
-const ROLES_RESPONSAVEL = ['admin', 'super_admin', 'gestor_comercial', 'diretora_operacoes'];
+const ROLES_RESPONSAVEL = ['admin', 'super_admin', 'gestor_comercial', 'diretora_operacoes'] as const;
 
 const toLocalInput = (iso: string | null) => {
   if (!iso) return '';
@@ -56,7 +56,7 @@ export const TabGestaoInterna: React.FC<Props> = ({ sindico, onSaved }) => {
       const { data, error } = await supabase
         .from('users_with_role')
         .select('id, full_name, email, role')
-        .in('role', ROLES_RESPONSAVEL)
+        .in('role', ROLES_RESPONSAVEL as unknown as string[])
         .limit(200);
       if (error) {
         console.error('[TabGestaoInterna] erro responsáveis:', error);
