@@ -1,233 +1,379 @@
-
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { SindicoInteressado, SindicosStats } from '@/components/admin/sindicos-interessados/types';
-import SindicosPageHeader from '@/components/admin/sindicos-interessados/SindicosPageHeader';
-import SindicosStatsCards from '@/components/admin/sindicos-interessados/SindicosStatsCards';
-import SindicosFilters from '@/components/admin/sindicos-interessados/SindicosFilters';
-import SindicosTable from '@/components/admin/sindicos-interessados/SindicosTable';
-import SindicoDetailsDialog from '@/components/admin/sindicos-interessados/SindicoDetailsDialog';
-import { Loader2, Database, AlertCircle } from 'lucide-react';
+import {
+  Building2,
+  Users,
+  CheckCircle2,
+  TrendingUp,
+  Eye,
+  Download,
+  RefreshCcw,
+  X,
+  Calendar as CalendarIcon,
+  MessageCircle,
+  Loader2,
+} from 'lucide-react';
 
-const SindicosInteressados = () => {
-  const [sindicos, setSindicos] = useState<SindicoInteressado[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedSindico, setSelectedSindico] = useState<SindicoInteressado | null>(null);
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { toast } from 'sonner';
+
+import { useSindicosList, SindicoRow } from '@/hooks/useSindicosList';
+import { useSindicosStats } from '@/hooks/useSindicosStats';
+import { SindicoStatusBadge, STATUS_OPTIONS } from '@/components/admin/sindicos-interessados/SindicoStatusBadge';
+import { SindicoDialog } from '@/components/admin/sindicos-interessados/SindicoDialog';
+import { getSignedUrl } from '@/utils/storageSignedUrl';
+
+const onlyDigits = (s: string | null | undefined) => (s ?? '').replace(/\D/g, '');
+
+const StatCard: React.FC<{
+  label: string;
+  value: number;
+  icon: React.ElementType;
+  color: string;
+}> = ({ label, value, icon: Icon, color }) => (
+  <Card>
+    <CardContent className="pt-5 pb-4">
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="text-xs text-muted-foreground">{label}</div>
+          <div className="text-2xl font-bold mt-1">{value}</div>
+        </div>
+        <div className={`w-9 h-9 rounded-md flex items-center justify-center ${color}`}>
+          <Icon className="w-4 h-4 text-white" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const SindicosInteressados: React.FC = () => {
+  const {
+    rows,
+    loading,
+    filters,
+    setFilters,
+    clearFilters,
+    page,
+    setPage,
+    totalPages,
+    totalCount,
+    pageSize,
+    refetch,
+  } = useSindicosList();
+
+  const { stats } = useSindicosStats();
+
+  const [selected, setSelected] = useState<SindicoRow | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchSindicos();
-    
-    // Setup realtime subscription
-    const channel = supabase
-      .channel('sindicos-realtime')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'sindicos_interessados' 
-        }, 
-        () => {
-          console.log('📡 Sindicos: Dados atualizados em tempo real');
-          fetchSindicos();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const fetchSindicos = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log('📊 Sindicos: Buscando dados...');
-      
-      const { data, error } = await supabase
-        .from('sindicos_interessados')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('❌ Erro ao buscar síndicos:', error);
-        setError('Erro ao carregar síndicos interessados: ' + error.message);
-        toast.error('Erro ao carregar síndicos interessados');
-      } else {
-        console.log('✅ Síndicos carregados:', data?.length || 0);
-        setSindicos(data || []);
-      }
-    } catch (error) {
-      console.error('❌ Erro:', error);
-      setError('Erro inesperado ao carregar dados');
-      toast.error('Erro inesperado ao carregar dados');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateStatus = async (id: string, newStatus: string) => {
-    try {
-      console.log('🔄 Atualizando status do síndico:', id, 'para:', newStatus);
-      
-      const { error } = await supabase
-        .from('sindicos_interessados')
-        .update({ 
-          status: newStatus,
-          data_contato: newStatus === 'contatado' ? new Date().toISOString().split('T')[0] : null
-        })
-        .eq('id', id);
-
-      if (error) {
-        console.error('❌ Erro ao atualizar status:', error);
-        toast.error('Erro ao atualizar status: ' + error.message);
-      } else {
-        toast.success('Status atualizado com sucesso');
-        fetchSindicos();
-      }
-    } catch (error) {
-      console.error('❌ Erro:', error);
-      toast.error('Erro inesperado');
-    }
-  };
-
-  const exportToCSV = () => {
-    const headers = [
-      'Nome Completo',
-      'Nome do Prédio', 
-      'Endereço',
-      'Número de Andares',
-      'Número de Unidades',
-      'Email',
-      'Celular',
-      'Status',
-      'Data de Cadastro'
-    ];
-
-    const csvContent = [
-      headers.join(','),
-      ...filteredSindicos.map(sindico => [
-        sindico.nome_completo,
-        sindico.nome_predio,
-        `"${sindico.endereco}"`,
-        sindico.numero_andares,
-        sindico.numero_unidades,
-        sindico.email,
-        sindico.celular,
-        sindico.status,
-        format(new Date(sindico.created_at), 'dd/MM/yyyy', { locale: ptBR })
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `sindicos_interessados_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    link.click();
-    
-    toast.success('CSV exportado com sucesso!');
-  };
-
-  const filteredSindicos = sindicos.filter(sindico => {
-    const matchesSearch = 
-      sindico.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sindico.nome_predio.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sindico.endereco.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sindico.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || sindico.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
-
-  const stats: SindicosStats = {
-    total: sindicos.length,
-    novos: sindicos.filter(s => s.status === 'novo').length,
-    contatados: sindicos.filter(s => s.status === 'contatado').length,
-    interessados: sindicos.filter(s => s.status === 'interessado').length,
-    instalados: sindicos.filter(s => s.status === 'instalado').length
-  };
-
-  const handleViewDetails = (sindico: SindicoInteressado) => {
-    setSelectedSindico(sindico);
+  const openDetails = (s: SindicoRow) => {
+    setSelected(s);
     setDialogOpen(true);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Loader2 className="animate-spin h-12 w-12 text-indexa-purple mx-auto mb-4" />
-          <p className="text-gray-600">Carregando síndicos interessados...</p>
-          <div className="flex items-center justify-center space-x-2 mt-2">
-            <Database className="h-4 w-4 text-indexa-purple" />
-            <span className="text-sm text-indexa-purple">Conectando ao Supabase...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const downloadPdf = async (s: SindicoRow) => {
+    if (!s.aceite_pdf_url) {
+      toast.error('PDF não disponível');
+      return;
+    }
+    setDownloadingId(s.id);
+    const url = await getSignedUrl('termos-sindicos', s.aceite_pdf_url, 3600);
+    setDownloadingId(null);
+    if (!url) {
+      toast.error('Não foi possível gerar o link');
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `termo-${s.protocolo ?? s.id}.pdf`;
+    a.click();
+  };
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center max-w-md p-6 bg-red-50 rounded-lg border border-red-200">
-          <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-red-800 mb-2">Erro de Conexão</h2>
-          <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={fetchSindicos}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-          >
-            Tentar Novamente
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const dateRangeLabel = (() => {
+    if (filters.startDate && filters.endDate) {
+      return `${format(filters.startDate, 'dd/MM')} – ${format(filters.endDate, 'dd/MM')}`;
+    }
+    if (filters.startDate) return `Desde ${format(filters.startDate, 'dd/MM')}`;
+    if (filters.endDate) return `Até ${format(filters.endDate, 'dd/MM')}`;
+    return 'Período';
+  })();
+
+  const hasFilters =
+    filters.search.trim() !== '' ||
+    filters.status !== 'all' ||
+    !!filters.startDate ||
+    !!filters.endDate;
 
   return (
     <div className="p-6 space-y-6">
-      <SindicosPageHeader onExportCSV={exportToCSV} />
-      <SindicosStatsCards stats={stats} />
-      <SindicosFilters
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-      />
-      
-      {filteredSindicos.length === 0 && !loading ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <Database className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {sindicos.length === 0 ? 'Nenhum síndico cadastrado' : 'Nenhum resultado encontrado'}
-          </h3>
-          <p className="text-gray-500">
-            {sindicos.length === 0 
-              ? 'Os síndicos interessados aparecerão aqui quando forem cadastrados no formulário.'
-              : 'Tente ajustar os filtros de busca.'}
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Síndicos Interessados</h1>
+          <p className="text-sm text-muted-foreground">
+            Cadastros recebidos via /interessesindico
           </p>
         </div>
-      ) : (
-        <SindicosTable
-          sindicos={filteredSindicos}
-          onUpdateStatus={updateStatus}
-          onViewDetails={handleViewDetails}
-        />
+        <Button variant="outline" onClick={refetch} disabled={loading}>
+          <RefreshCcw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Atualizar
+        </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard label="Total" value={stats.total} icon={Users} color="bg-slate-600" />
+        <StatCard label="Novos" value={stats.novos} icon={TrendingUp} color="bg-blue-600" />
+        <StatCard label="Em contato" value={stats.emContato} icon={MessageCircle} color="bg-yellow-600" />
+        <StatCard label="Aprovados" value={stats.aprovados} icon={CheckCircle2} color="bg-emerald-600" />
+      </div>
+
+      {/* Filtros */}
+      <Card>
+        <CardContent className="pt-5 pb-4">
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+            <Input
+              placeholder="Buscar por prédio, síndico ou protocolo…"
+              value={filters.search}
+              onChange={(e) => setFilters({ search: e.target.value })}
+              className="md:max-w-sm"
+            />
+
+            <Select
+              value={filters.status}
+              onValueChange={(v) => setFilters({ status: v })}
+            >
+              <SelectTrigger className="md:w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                {STATUS_OPTIONS.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="md:w-56 justify-start">
+                  <CalendarIcon className="w-4 h-4 mr-2" />
+                  {dateRangeLabel}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-auto p-0">
+                <Calendar
+                  mode="range"
+                  selected={{
+                    from: filters.startDate,
+                    to: filters.endDate,
+                  }}
+                  onSelect={(range: any) =>
+                    setFilters({ startDate: range?.from, endDate: range?.to })
+                  }
+                  numberOfMonths={2}
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
+
+            {hasFilters && (
+              <Button variant="ghost" onClick={clearFilters} className="md:ml-auto">
+                <X className="w-4 h-4 mr-1" />
+                Limpar filtros
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tabela */}
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : rows.length === 0 ? (
+            <div className="text-center py-16">
+              <Building2 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">
+                {totalCount === 0
+                  ? 'Nenhum cadastro recebido ainda.'
+                  : 'Nenhum resultado para os filtros aplicados.'}
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Protocolo</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Prédio</TableHead>
+                  <TableHead>Síndico</TableHead>
+                  <TableHead>WhatsApp</TableHead>
+                  <TableHead>Cidade</TableHead>
+                  <TableHead className="text-center">Unid.</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r) => {
+                  const wpp = onlyDigits(r.sindico_whatsapp ?? r.celular);
+                  const enderecoCurto =
+                    [r.endereco_logradouro, r.endereco_numero].filter(Boolean).join(', ') ||
+                    r.endereco ||
+                    '';
+                  return (
+                    <TableRow
+                      key={r.id}
+                      className="cursor-pointer"
+                      onClick={() => openDetails(r)}
+                    >
+                      <TableCell>
+                        <span className="font-mono text-xs text-primary">
+                          {r.protocolo ?? '—'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {format(new Date(r.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium text-sm">{r.nome_predio}</div>
+                        {enderecoCurto && (
+                          <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                            {enderecoCurto}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {r.sindico_nome ?? r.nome_completo ?? '—'}
+                      </TableCell>
+                      <TableCell>
+                        {wpp ? (
+                          <a
+                            href={`https://wa.me/${wpp}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-sm text-primary hover:underline"
+                          >
+                            {r.sindico_whatsapp ?? r.celular}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">{r.endereco_cidade ?? '—'}</TableCell>
+                      <TableCell className="text-center text-sm">
+                        {r.quantidade_unidades_total ?? r.numero_unidades ?? '—'}
+                      </TableCell>
+                      <TableCell>
+                        <SindicoStatusBadge status={r.status} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDetails(r);
+                            }}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            disabled={downloadingId === r.id || !r.aceite_pdf_url}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              downloadPdf(r);
+                            }}
+                          >
+                            {downloadingId === r.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Download className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Paginação */}
+      {totalCount > pageSize && (
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>
+            {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalCount)} de {totalCount}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+            >
+              Anterior
+            </Button>
+            <span className="px-3 py-1.5">
+              {page} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage(page + 1)}
+            >
+              Próxima
+            </Button>
+          </div>
+        </div>
       )}
-      
-      <SindicoDetailsDialog
-        sindico={selectedSindico}
-        isOpen={dialogOpen}
+
+      <SindicoDialog
+        sindico={selected}
+        open={dialogOpen}
         onOpenChange={setDialogOpen}
+        onUpdated={refetch}
       />
     </div>
   );
