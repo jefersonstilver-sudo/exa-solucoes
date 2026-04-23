@@ -202,7 +202,7 @@ export const StepPredio: React.FC<Props> = ({ onNext }) => {
       </div>
 
       {/* Elevador (radio) */}
-      <div>
+      <div className="lg:col-span-2">
         <h3 className="text-sm font-semibold text-white/85 mb-3 flex items-center gap-2">
           <Cog size={16} className="text-[var(--exa-red,#c7141a)]" /> Empresa de manutenção do elevador
         </h3>
