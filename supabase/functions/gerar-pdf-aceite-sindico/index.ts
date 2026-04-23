@@ -911,7 +911,8 @@ Deno.serve(async (req) => {
     }
   }
 
-  // ===== Geração do PDF =====
+  // ===== Geração do PDF (envolvido em try/catch para nunca falhar silenciosamente) =====
+  try {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.TimesRoman);
   const fontBold = await pdf.embedFont(StandardFonts.TimesRomanBold);
@@ -1526,4 +1527,16 @@ Deno.serve(async (req) => {
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
   );
+  } catch (genErr: any) {
+    console.error('[gerar-pdf-aceite-sindico] geração falhou', {
+      id, message: genErr?.message, stack: genErr?.stack,
+    });
+    return new Response(
+      JSON.stringify({
+        error: 'Falha na geração do PDF',
+        details: genErr?.message || String(genErr),
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
+  }
 });
