@@ -324,7 +324,7 @@ const CalcularROIElevadores = () => {
                     Ver Prédios Disponíveis
                   </Button>
                 </Link>
-                <Link to="/contato">
+                <Link to="/interessesindico/formulario">
                   <Button variant="outline" className="border-white text-white hover:bg-white hover:text-exa-purple">
                     Falar com Especialista
                   </Button>

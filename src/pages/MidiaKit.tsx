@@ -104,7 +104,7 @@ const MidiaKit = () => {
             <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
               Entre em contato conosco e descubra como a EXA pode transformar sua estratégia de publicidade digital
             </p>
-            <Link to="/contato">
+            <Link to="/interessesindico/formulario">
               <Button size="lg" className="bg-white hover:bg-gray-100 text-black font-bold shadow-lg hover:shadow-xl transition-all duration-300">
                 Falar com Especialista
               </Button>

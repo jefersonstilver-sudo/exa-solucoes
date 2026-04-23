@@ -429,7 +429,7 @@ const CaseSucessoAcademia = () => {
                     Ver Prédios Disponíveis
                   </Button>
                 </Link>
-                <Link to="/contato">
+                <Link to="/interessesindico/formulario">
                   <Button variant="outline" className="border-white text-white hover:bg-white/20 text-lg px-8 py-3">
                     Consultoria Gratuita
                   </Button>
