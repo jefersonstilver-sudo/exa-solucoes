@@ -227,8 +227,15 @@ const AppContent = () => {
               {React.createElement(lazy(() => import('./pages/PortrasDaMarca')))}
             </Suspense>
           } />
-          
-          {/* MONITOR PÚBLICO - Página de monitoramento com senha */}
+
+          {/* LANDING PÚBLICA - Interesse do Síndico (sem auth) */}
+          <Route path="/interessesindico" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
+              {React.createElement(lazy(() => import('./pages/InteresseSindicoLanding')))}
+            </Suspense>
+          } />
+
+
           <Route path="/monitor" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando monitor..." />}>
               <MonitorPublicPage />
