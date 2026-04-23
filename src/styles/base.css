@@ -61,8 +61,17 @@
     user-select: text !important;
   }
 
-  .public-page {
+  html.public-page {
+    height: auto !important;
     overflow-y: auto !important;
+  }
+
+  body.public-page,
+  #root.public-page,
+  .public-page {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow-y: visible !important;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: auto !important;
   }

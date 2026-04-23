@@ -22,7 +22,7 @@ const DemonstracaoSection: React.FC = () => {
           <div className="section-label mb-6">02 · Na Prática</div>
         </Reveal>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,360px)] gap-10 lg:gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1.05fr)_360px] gap-10 lg:gap-16 items-center">
           <div>
             <Reveal delay={0.1}>
               <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black leading-tight tracking-tight mb-5">
@@ -50,7 +50,7 @@ const DemonstracaoSection: React.FC = () => {
 
           <Reveal delay={0.3}>
             <div className="flex justify-center lg:justify-end">
-              <div className="w-full max-w-[280px] md:max-w-[320px] lg:max-w-[360px] aspect-[9/16]">
+              <div className="w-full max-w-[260px] md:max-w-[300px] lg:max-w-[320px] xl:max-w-[360px] aspect-[9/16]">
                 <LazyVideoPlayer
                   src={VIDEO_2}
                   variant="vertical"
