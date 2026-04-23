@@ -1,7 +1,7 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { ArrowRight, AlertCircle, Download } from 'lucide-react';
 import Reveal from './Reveal';
+import CtaRedLink from './CtaRedLink';
 
 const STEPS = [
   {
@@ -63,10 +63,10 @@ const ComoFuncionaSection: React.FC = () => {
 
         <Reveal delay={0.4}>
           <div className="flex flex-col items-center gap-4">
-            <Link to="/interessesindico/formulario" className="cta-red">
+            <CtaRedLink to="/interessesindico/formulario">
               Registrar interesse do meu prédio
               <ArrowRight className="w-5 h-5" />
-            </Link>
+            </CtaRedLink>
 
             <a
               href="/apresentacao-sindicos.pdf"
