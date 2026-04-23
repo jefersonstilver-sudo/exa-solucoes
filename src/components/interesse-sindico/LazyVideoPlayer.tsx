@@ -7,6 +7,9 @@ interface LazyVideoPlayerProps {
   label?: string;
   poster?: string;
   className?: string;
+  autoPlay?: boolean;
+  loop?: boolean;
+  muted?: boolean;
 }
 
 const LazyVideoPlayer: React.FC<LazyVideoPlayerProps> = ({
@@ -15,19 +18,19 @@ const LazyVideoPlayer: React.FC<LazyVideoPlayerProps> = ({
   label,
   poster,
   className = '',
+  autoPlay = false,
+  loop = false,
+  muted = false,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [started, setStarted] = useState(false);
+  const [started, setStarted] = useState(autoPlay);
 
   const handlePlay = () => {
     const v = videoRef.current;
     if (!v) return;
     setStarted(true);
-    // Defer to next tick so controls become visible before play
     requestAnimationFrame(() => {
-      v.play().catch(() => {
-        // If autoplay fails, the native controls will let the user retry
-      });
+      v.play().catch(() => {});
     });
   };
 
@@ -37,16 +40,23 @@ const LazyVideoPlayer: React.FC<LazyVideoPlayerProps> = ({
     <div className={`${frameClass} ${className}`}>
       <video
         ref={videoRef}
-        preload="none"
+        preload={autoPlay ? 'auto' : 'metadata'}
         playsInline
-        controls={started}
+        controls={started && !autoPlay}
+        autoPlay={autoPlay}
+        loop={loop}
+        muted={muted || autoPlay}
         poster={poster}
-        className="w-full h-auto block max-h-[85vh]"
+        className={
+          variant === 'vertical'
+            ? 'block w-full h-full object-cover'
+            : 'block w-full h-auto'
+        }
       >
         <source src={src} type="video/mp4" />
       </video>
 
-      {!started && (
+      {!started && !autoPlay && (
         <button
           type="button"
           onClick={handlePlay}
