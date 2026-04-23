@@ -10,7 +10,7 @@ const HeroSection: React.FC = () => {
   };
 
   return (
-    <section className="hero-glow min-h-screen flex flex-col items-center justify-between relative px-5 md:px-8 lg:px-12 safe-top safe-bottom">
+    <section className="hero-glow min-h-screen flex flex-col items-center justify-between relative px-5 md:px-8 lg:px-12">
       <Reveal delay={0.05} className="pt-8 md:pt-12">
         <img
           src={EXA_LOGO_URL}

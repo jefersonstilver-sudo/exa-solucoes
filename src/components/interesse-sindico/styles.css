@@ -355,6 +355,5 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
-/* Safe area for iPhone */
-.exa-theme .safe-top { padding-top: max(1rem, env(safe-area-inset-top)); }
-.exa-theme .safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+.exa-theme .safe-top { padding-top: env(safe-area-inset-top); }
+.exa-theme .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
