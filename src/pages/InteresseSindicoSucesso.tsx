@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { CheckCircle2, AlertTriangle, ExternalLink, Mail } from 'lucide-react';
+import { useSindicoFormStore } from '@/components/interesse-sindico-form/formStore';
 import '@/components/interesse-sindico-form/styles.css';
 
 const EXA_LOGO_URL =
@@ -9,6 +10,12 @@ const EXA_LOGO_URL =
 const InteresseSindicoSucesso: React.FC = () => {
   const [params] = useSearchParams();
   const protocolo = params.get('protocolo') || '—';
+
+  // Limpa a store SOMENTE depois que esta tela montou — assim o formulário
+  // anterior nunca aparece zerado durante a transição.
+  useEffect(() => {
+    useSindicoFormStore.getState().reset();
+  }, []);
 
   return (
     <div className="exa-theme font-inter sif-shell min-h-screen">

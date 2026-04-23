@@ -1,158 +1,67 @@
+## Objetivo
+Corrigir o pós-envio do formulário em `/interessesindico/formulario` para que a página `/interessesindico/sucesso` apareça imediatamente, e o formulário NUNCA seja apagado antes da navegação concluir.
 
-# Auditoria do travamento
+## Diagnóstico confirmado
+- O envio funciona: protocolo `EXA-2026-000005` foi salvo no banco.
+- A Edge Function `gerar-pdf-aceite-sindico` rodou com sucesso (PDF gerado).
+- O problema é puramente no frontend, em três pontos combinados:
 
-## O que o código atual indica
+1. `src/components/interesse-sindico-form/StepTermos.tsx` chama `reset()` ANTES de `navigate(...)`. Isso apaga toda a store (predio + sindico) na hora, então o usuário vê o formulário zerar antes da nova rota montar.
+2. `src/App.tsx` declara as rotas de Interesse Síndico usando `React.createElement(lazy(() => import(...)))` inline dentro do `element`. Isso recria um novo componente lazy a cada render do `AppContent`, anula o cache do chunk e força Suspense repetido — o que torna a transição para a tela de sucesso intermitente/lenta.
+3. O `PageTransitionLoader` do `AppContent` ativa a cada mudança de rota um overlay com mínimo de 300 ms, inclusive nas rotas `/interessesindico/*`. Isso atrasa a aparição da tela de sucesso.
 
-### 1) O loading pode ficar infinito no envio do formulário
-Em `src/components/interesse-sindico-form/StepTermos.tsx`, o botão entra em estado permanente de loading até `submitFormulario(...)` resolver:
-
-```tsx
-setEnviando(true);
-setOverlayMsg('Registrando interesse...');
-const result = await submitFormulario(predio, sindico);
-```
-
-E o redirecionamento só acontece depois disso:
-
-```tsx
-setTimeout(() => {
-  reset();
-  navigate(`/interessesindico/sucesso?protocolo=${encodeURIComponent(result.protocolo!)}`);
-}, 600);
-```
-
-Se `submitFormulario` demorar demais ou travar, a tela fica girando sem sair.
-
-### 2) `submitFormulario` tem duas chamadas externas bloqueantes sem timeout
-Em `src/utils/submitFormulario.ts`, o fluxo aguarda em série:
-
-```ts
-const evid = await captureEvidencias();
-```
-
-e depois:
-
-```ts
-const { data: pdfResp, error: pdfErr } = await supabase.functions.invoke(
-  'gerar-pdf-aceite-sindico',
-  { body: { sindico_interessado_id: recordId } },
-);
-```
-
-Ou seja: IP + insert + upload de fotos + geração de PDF. Tudo isso antes de liberar a navegação.
-
-### 3) A captura de IP pode pendurar
-Em `src/utils/captureEvidencias.ts`:
-
-```ts
-const res = await fetch('https://api.ipify.org?format=json', { method: 'GET' });
-```
-
-Não existe `AbortController`, timeout nem fallback rápido. Se esse fetch ficar preso, o formulário inteiro não sai do loading.
-
-### 4) A rota de sucesso existe
-As rotas estão registradas corretamente:
-
-`src/App.tsx`
-```tsx
-<Route path="/interessesindico/sucesso" element={
-  <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
-    {React.createElement(lazy(() => import('./pages/InteresseSindicoSucesso')))}
-  </Suspense>
-} />
-```
-
-`src/routes/index.tsx`
-```tsx
-<Route path="/interessesindico/sucesso" element={<InteresseSindicoSucesso />} />
-```
-
-Então o problema mais provável não é rota quebrada; é o fluxo nunca chegando ao `navigate(...)`.
-
-## Causa raiz mais provável
-
-O travamento está no acoplamento entre:
-- captura de evidências externas,
-- geração do PDF,
-- e a navegação da tela de sucesso.
-
-Hoje o frontend espera o pacote inteiro terminar. Se qualquer etapa externa atrasar, o overlay fica infinito.
+## Arquivos a alterar (apenas 3)
+1. `src/components/interesse-sindico-form/StepTermos.tsx`
+2. `src/pages/InteresseSindicoSucesso.tsx`
+3. `src/App.tsx`
 
 ## Plano de correção
 
-### 1. Colocar timeout real na captura de evidências
-**Arquivo:** `src/utils/captureEvidencias.ts`
+### 1) Não apagar o formulário antes de navegar
+Em `StepTermos.tsx`, dentro de `handleEnviar`:
+- Remover a chamada `reset()` antes do `navigate(...)`.
+- Manter `navigate(`/interessesindico/sucesso?protocolo=...`)` imediatamente após o submit OK.
+- Manter watchdog, toasts e tratamento de erro intactos.
 
-Trocar o `fetch` cru por `AbortController` com timeout curto (ex.: 2500–4000ms).  
-Se falhar ou expirar, retornar:
+### 2) Resetar a store somente quando a tela de sucesso montar
+Em `InteresseSindicoSucesso.tsx`:
+- Importar `useSindicoFormStore`.
+- Adicionar `useEffect(() => { useSindicoFormStore.getState().reset(); }, [])`.
+- Resto da página intacto.
 
-```ts
-{ ip: 'unknown', user_agent: navigator.userAgent, timestamp: new Date().toISOString() }
+### 3) Estabilizar as rotas lazy do fluxo público
+Em `src/App.tsx`:
+- Adicionar 3 imports lazy estáveis no topo:
+  - `const InteresseSindicoLanding = lazy(() => import('./pages/InteresseSindicoLanding'))`
+  - `const InteresseSindicoFormulario = lazy(() => import('./pages/InteresseSindicoFormulario'))`
+  - `const InteresseSindicoSucesso = lazy(() => import('./pages/InteresseSindicoSucesso'))`
+- Trocar os `element` das 3 rotas para usarem esses componentes estáveis dentro do `Suspense` já existente.
+
+### 4) Pular `PageTransitionLoader` nas rotas `/interessesindico/*`
+Em `src/App.tsx`, na linha onde já existe `isInteresseSindicoRoute`:
+- Renderizar `PageTransitionLoader` apenas quando `!isInteresseSindicoRoute`.
+- Quando for rota de Interesse Síndico, renderizar o conteúdo direto, sem overlay de transição.
+
+## O que NÃO será alterado
+- Banco de dados, RLS, triggers
+- Edge Functions (PDF já está OK)
+- UI da landing, do formulário ou da tela de sucesso
+- Qualquer outra rota, admin ou fluxo
+
+## Diagrama
+```text
+Antes: submit OK -> reset() -> form vazio na tela -> navigate -> Suspense/transição atrasam -> usuário vê branco/formulário zerado
+
+Depois: submit OK -> navigate -> Suspense direto (chunk em cache) -> sucesso monta -> reset() ali
 ```
 
-Sem bloquear o cadastro.
+## Validação
+Após aplicar:
+1. Preencher e enviar o formulário.
+2. Confirmar:
+   - `/interessesindico/sucesso?protocolo=...` aparece imediatamente.
+   - O protocolo é exibido.
+   - Em nenhum momento o formulário aparece zerado na tela anterior.
+   - Nenhum overlay branco/intermediário pisca entre o submit e a tela de sucesso.
 
-### 2. Tornar a geração do PDF não bloqueante para a navegação
-**Arquivo:** `src/utils/submitFormulario.ts`
-
-Manter:
-- insert no banco
-- upload de fotos
-
-Mas limitar a espera da edge function com timeout curto via `Promise.race`/`AbortController`.  
-Se o PDF falhar ou expirar:
-- retornar `success: true`
-- retornar `pdf_error`
-- nunca travar o envio do cadastro
-
-Objetivo: o protocolo nasce e o usuário segue para a tela de sucesso mesmo se o PDF atrasar.
-
-### 3. Garantir saída visual do loading no formulário
-**Arquivo:** `src/components/interesse-sindico-form/StepTermos.tsx`
-
-Ajustar o fluxo para:
-- navegar para `/interessesindico/sucesso?...` sempre que o cadastro for salvo com sucesso
-- exibir toast de aviso se `pdf_error` vier preenchido
-- evitar depender de operações lentas para remover o overlay
-
-Também vou adicionar uma proteção de watchdog de UX: se algo ultrapassar o tempo máximo esperado antes do insert concluir, o usuário recebe erro claro e o botão é liberado novamente.
-
-### 4. Preservar a auditoria técnica sem travar a UX
-**Arquivos:** `src/utils/captureEvidencias.ts`, `src/utils/submitFormulario.ts`
-
-A auditoria continua:
-- timestamp
-- user-agent
-- IP quando disponível
-
-Mas o IP deixa de ser uma dependência obrigatória para a submissão.
-
-## Estrutura final de arquivos alterados
-
-### Alterados
-1. `src/utils/captureEvidencias.ts`
-2. `src/utils/submitFormulario.ts`
-3. `src/components/interesse-sindico-form/StepTermos.tsx`
-
-### Não alterados
-- landing
-- sidebar
-- admin
-- layout global
-- rotas
-- banco/RLS
-- outras telas não relacionadas
-
-## Resultado esperado após a execução
-
-- O formulário deixa de ficar “rodando para sempre”
-- O cadastro conclui e sai da tela de envio
-- O usuário é levado para a tela de sucesso assim que o registro for salvo
-- A auditoria continua existindo, mas com fallback seguro
-- Se o PDF atrasar/falhar, isso vira aviso e não bloqueio total
-
-## Garantias
-
-- Nenhuma mudança em UI ou workflow fora do problema descrito
-- Não vou alterar páginas/admin/rotas sem necessidade
-- O foco será somente no travamento do envio e no bloqueio indevido da navegação
+Aguardo aprovação para executar.
