@@ -10,9 +10,18 @@ import '@/components/interesse-sindico-form/styles.css';
 const InteresseSindicoFormulario: React.FC = () => {
   const { step, next, prev } = useSindicoFormStore();
 
+  const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
+
   return (
     <div className="exa-theme font-inter sif-shell">
-      <div className="max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <div className="max-w-xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+        <div className="flex justify-center mb-6">
+          <img
+            src={EXA_LOGO_URL}
+            alt="EXA - Publicidade Inteligente"
+            className="h-10 sm:h-12 w-auto"
+          />
+        </div>
         <header className="mb-6 text-center">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             Cadastro de interesse — Síndico

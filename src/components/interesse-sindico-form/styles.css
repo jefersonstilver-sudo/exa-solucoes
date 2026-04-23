@@ -2,15 +2,16 @@
 @import '../interesse-sindico/styles.css';
 
 .exa-theme.sif-shell {
-  background: var(--exa-black, #0A0000);
+  background-color: #181214;
+  background-image: radial-gradient(ellipse at top, rgba(199, 20, 26, 0.08) 0%, rgba(24, 18, 20, 0) 60%);
   color: #fff;
   min-height: 100vh;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 .sif-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 16px;
 }
 
