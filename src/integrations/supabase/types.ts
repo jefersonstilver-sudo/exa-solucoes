@@ -12342,6 +12342,9 @@ export type Database = {
           data_contato: string | null
           elevador_casa_maquinas: string | null
           email: string
+          email_confirmacao_enviado_em: string | null
+          email_confirmacao_erro: string | null
+          email_confirmacao_message_id: string | null
           empresa_elevador: string | null
           endereco: string
           endereco_bairro: string | null
@@ -12392,6 +12395,9 @@ export type Database = {
           data_contato?: string | null
           elevador_casa_maquinas?: string | null
           email: string
+          email_confirmacao_enviado_em?: string | null
+          email_confirmacao_erro?: string | null
+          email_confirmacao_message_id?: string | null
           empresa_elevador?: string | null
           endereco: string
           endereco_bairro?: string | null
@@ -12442,6 +12448,9 @@ export type Database = {
           data_contato?: string | null
           elevador_casa_maquinas?: string | null
           email?: string
+          email_confirmacao_enviado_em?: string | null
+          email_confirmacao_erro?: string | null
+          email_confirmacao_message_id?: string | null
           empresa_elevador?: string | null
           endereco?: string
           endereco_bairro?: string | null
