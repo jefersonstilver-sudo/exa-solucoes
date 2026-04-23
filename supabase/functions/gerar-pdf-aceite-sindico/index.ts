@@ -128,6 +128,19 @@ function wrap(text: string, font: any, size: number, maxWidth: number): string[]
   return lines;
 }
 
+// Sanitiza caracteres não suportados pelo WinAnsi (Helvetica nativa)
+function san(s: string): string {
+  if (!s) return s;
+  return String(s)
+    .replace(/→/g, '>')
+    .replace(/←/g, '<')
+    .replace(/…/g, '...')
+    .replace(/✓/g, 'v')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\u00A0/g, ' ');
+}
+
 // Texto com partes em bold (segments [{text, bold}])
 function drawRichLine(
   page: any, segments: { text: string; bold?: boolean }[],
@@ -136,8 +149,9 @@ function drawRichLine(
   let cx = x;
   for (const seg of segments) {
     const f = seg.bold ? fontBold : font;
-    page.drawText(seg.text, { x: cx, y, size, font: f, color });
-    cx += f.widthOfTextAtSize(seg.text, size);
+    const t = san(seg.text);
+    page.drawText(t, { x: cx, y, size, font: f, color });
+    cx += f.widthOfTextAtSize(t, size);
   }
 }
 
