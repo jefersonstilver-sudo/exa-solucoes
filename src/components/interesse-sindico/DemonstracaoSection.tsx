@@ -16,27 +16,27 @@ const PILLS = [
 
 const DemonstracaoSection: React.FC = () => {
   return (
-    <section className="section-glow py-20 md:py-28 px-6">
-      <div className="max-w-4xl mx-auto">
+    <section className="section-glow py-16 md:py-20 lg:py-28 px-5 md:px-8 lg:px-12">
+      <div className="max-w-2xl lg:max-w-3xl mx-auto">
         <Reveal>
           <div className="section-label mb-6">02 · Na Prática</div>
         </Reveal>
 
         <Reveal delay={0.1}>
-          <h2 className="text-3xl md:text-5xl font-black leading-tight tracking-tight mb-5">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black leading-tight tracking-tight mb-5">
             Veja o painel EXA <span className="gradient-text">funcionando em um prédio real.</span>
           </h2>
         </Reveal>
 
         <Reveal delay={0.2}>
-          <p className="text-base md:text-lg text-white/70 leading-relaxed mb-12 max-w-2xl">
+          <p className="text-base md:text-lg lg:text-xl text-white/70 leading-relaxed mb-12 max-w-2xl">
             A grade de exibição é mista: rotaciona câmeras ao vivo do prédio, clima, notícias, avisos do condomínio, cotações e anúncios curados. Tudo sincronizado, em alta resolução, dentro do elevador.
           </p>
         </Reveal>
 
         <Reveal delay={0.3}>
           <div className="flex justify-center">
-            <div className="w-full max-w-[280px] aspect-[9/16]">
+            <div className="w-full max-w-[280px] md:max-w-[320px] lg:max-w-[360px] aspect-[9/16]">
               <LazyVideoPlayer
                 src={VIDEO_2}
                 variant="vertical"

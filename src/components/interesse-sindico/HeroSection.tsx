@@ -10,16 +10,16 @@ const HeroSection: React.FC = () => {
   };
 
   return (
-    <section className="hero-glow min-h-screen flex flex-col items-center justify-between relative px-6 safe-top safe-bottom">
+    <section className="hero-glow min-h-screen flex flex-col items-center justify-between relative px-5 md:px-8 lg:px-12 safe-top safe-bottom">
       <Reveal delay={0.05} className="pt-8 md:pt-12">
         <img
           src={EXA_LOGO_URL}
           alt="EXA Mídia"
-          className="h-12 md:h-14 w-auto filter brightness-0 invert drop-shadow-[0_0_24px_rgba(234,37,29,0.55)]"
+          className="h-12 md:h-14 lg:h-16 w-auto filter brightness-0 invert drop-shadow-[0_0_24px_rgba(234,37,29,0.55)]"
         />
       </Reveal>
 
-      <div className="flex-1 flex flex-col items-center justify-center text-center max-w-3xl mx-auto py-12">
+      <div className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl lg:max-w-3xl mx-auto py-12">
         <Reveal delay={0.15}>
           <div className="tag-pill mb-8">
             <span className="pulse-dot" />
@@ -28,14 +28,14 @@ const HeroSection: React.FC = () => {
         </Reveal>
 
         <Reveal delay={0.25}>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-6">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.05] tracking-tight mb-6">
             Seu prédio merece <br className="hidden sm:block" />
             <span className="gradient-text">mais que mural de papel.</span>
           </h1>
         </Reveal>
 
         <Reveal delay={0.4}>
-          <p className="text-base md:text-lg text-white/70 max-w-xl mx-auto leading-relaxed mb-10">
+          <p className="text-base md:text-lg lg:text-xl text-white/70 max-w-xl mx-auto leading-relaxed mb-10">
             Painéis digitais EXA nos elevadores: comunicação oficial do condomínio, Wi-Fi grátis para os moradores e zero custo para o seu prédio.
           </p>
         </Reveal>
