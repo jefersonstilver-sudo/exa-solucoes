@@ -12,7 +12,8 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, RefreshCw } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { SindicoRow } from '@/hooks/useSindicosList';
 import { STATUS_OPTIONS } from '../SindicoStatusBadge';
