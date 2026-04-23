@@ -8,6 +8,7 @@
 // Idempotente: se já enviado, retorna sucesso sem reenviar (a menos que body.force === true).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
+import { SINDICO_CONFIRMACAO_HTML } from '../_shared/email-templates-html/sindico-confirmacao.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,10 +23,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '
 const FROM_EMAIL = 'EXA Mídia <contato@examidia.com.br>';
 const REPLY_TO = 'contato@examidia.com.br';
 
-// Lê o template HTML do disco (mesmo bundle da função)
-const TEMPLATE_HTML = await Deno.readTextFile(
-  new URL('../_shared/email-templates-html/sindico-confirmacao.html', import.meta.url),
-);
+// Template HTML inlinado (Edge Runtime não empacota arquivos .html)
+const TEMPLATE_HTML = SINDICO_CONFIRMACAO_HTML;
 
 function firstName(full: string | null | undefined): string {
   if (!full) return 'Síndico(a)';
