@@ -49,7 +49,7 @@ const LazyVideoPlayer: React.FC<LazyVideoPlayerProps> = ({
         poster={poster}
         className={
           variant === 'vertical'
-            ? 'block w-full h-full object-cover'
+            ? 'block w-full h-full object-contain'
             : 'block w-full h-auto'
         }
       >
