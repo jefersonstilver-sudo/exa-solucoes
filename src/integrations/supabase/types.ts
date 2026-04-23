@@ -16300,6 +16300,8 @@ export type Database = {
         | "tecnico"
         | "operacional"
         | "admin_departamental"
+        | "gestor_comercial"
+        | "diretora_operacoes"
       caixa_origem: "dinheiro" | "cheque" | "vale" | "ajuste" | "outros"
       caixa_tipo: "entrada" | "saida"
       categoria_tipo: "fixa" | "variavel" | "ambos" | "investimento"
@@ -16539,6 +16541,8 @@ export const Constants = {
         "tecnico",
         "operacional",
         "admin_departamental",
+        "gestor_comercial",
+        "diretora_operacoes",
       ],
       caixa_origem: ["dinheiro", "cheque", "vale", "ajuste", "outros"],
       caixa_tipo: ["entrada", "saida"],
