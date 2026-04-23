@@ -177,6 +177,27 @@ export const TabGestaoInterna: React.FC<Props> = ({ sindico, onSaved }) => {
           Salvar alterações
         </Button>
       </div>
+
+      <Separator className="my-2" />
+      <div className="space-y-2">
+        <Label className="text-sm">Manutenção do documento</Label>
+        <p className="text-xs text-muted-foreground">
+          Regera o PDF oficial com o layout mais recente, atualiza o hash SHA-256 e sobrescreve o arquivo no bucket.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleRegenerate}
+          disabled={regenerating}
+        >
+          {regenerating ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4 mr-2" />
+          )}
+          Regenerar PDF
+        </Button>
+      </div>
     </Card>
   );
 };
