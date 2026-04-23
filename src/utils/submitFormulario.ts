@@ -126,26 +126,36 @@ export async function submitFormulario(
       }
     }
 
-    // 6. Invocar edge function para gerar PDF oficial
+    // 6. Invocar edge function para gerar PDF oficial — com timeout para NÃO bloquear navegação
     let pdfError: string | undefined;
     let pdfPath: string | undefined;
+    const PDF_TIMEOUT_MS = 6000;
     try {
-      const { data: pdfResp, error: pdfErr } = await supabase.functions.invoke(
-        'gerar-pdf-aceite-sindico',
-        { body: { sindico_interessado_id: recordId } },
+      const invokePromise = supabase.functions.invoke('gerar-pdf-aceite-sindico', {
+        body: { sindico_interessado_id: recordId },
+      });
+      const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) =>
+        setTimeout(
+          () => resolve({ data: null, error: { message: 'PDF timeout — gerando em background' } }),
+          PDF_TIMEOUT_MS,
+        ),
       );
+      const { data: pdfResp, error: pdfErr } = (await Promise.race([
+        invokePromise,
+        timeoutPromise,
+      ])) as any;
       if (pdfErr) {
-        console.error('[submitFormulario] PDF generation error:', pdfErr);
+        console.warn('[submitFormulario] PDF generation deferred:', pdfErr);
         pdfError = pdfErr.message || 'Falha ao gerar PDF';
       } else if ((pdfResp as any)?.error) {
-        console.error('[submitFormulario] PDF response error:', pdfResp);
+        console.warn('[submitFormulario] PDF response error:', pdfResp);
         pdfError = (pdfResp as any).error;
       } else {
         pdfPath = (pdfResp as any)?.pdf_path;
         console.log('[submitFormulario] PDF gerado:', pdfPath);
       }
     } catch (pdfCatchErr: any) {
-      console.error('[submitFormulario] PDF invoke exception:', pdfCatchErr);
+      console.warn('[submitFormulario] PDF invoke exception (não bloqueia):', pdfCatchErr);
       pdfError = pdfCatchErr?.message || 'Exceção ao gerar PDF';
     }
 
