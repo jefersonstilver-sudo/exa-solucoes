@@ -13,7 +13,7 @@ interface Props {
 
 export const StepTermos: React.FC<Props> = ({ onPrev }) => {
   const navigate = useNavigate();
-  const { predio, sindico, reset } = useSindicoFormStore();
+  const { predio, sindico } = useSindicoFormStore();
   const boxRef = useRef<HTMLDivElement>(null);
   const [scrollCompleto, setScrollCompleto] = useState(false);
   const [aceito, setAceito] = useState(false);
@@ -75,7 +75,7 @@ export const StepTermos: React.FC<Props> = ({ onPrev }) => {
       }
       clearTimeout(watchdog);
       // navega imediatamente — não depende de PDF, sem toast intermediário
-      reset();
+      // O reset() acontece somente quando a tela de sucesso montar (evita flash de form vazio)
       navigate(`/interessesindico/sucesso?protocolo=${encodeURIComponent(result.protocolo!)}`);
     } catch (e: any) {
       clearTimeout(watchdog);
