@@ -43,6 +43,9 @@ export interface SindicoRow {
   observacoes_internas: string | null;
   visita_agendada_em: string | null;
   responsavel_id: string | null;
+  email_confirmacao_enviado_em: string | null;
+  email_confirmacao_message_id: string | null;
+  email_confirmacao_erro: string | null;
 }
 
 export interface SindicosListFilters {
