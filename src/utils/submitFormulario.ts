@@ -70,8 +70,6 @@ export async function submitFormulario(
       endereco: enderecoCompleto,
       numero_andares: predio.andares,
       numero_unidades: predio.unidades,
-      elevadores_sociais: predio.elevadoresSociais,
-      elevadores_servico: 0,
       email: (sindico.email || '').toLowerCase().trim(),
       celular: celularDigits,
       status: 'novo',
