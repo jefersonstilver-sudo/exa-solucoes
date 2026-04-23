@@ -54,9 +54,9 @@ const DemonstracaoSection: React.FC = () => {
                 <LazyVideoPlayer
                   src={VIDEO_2}
                   variant="vertical"
-                  autoPlay
                   loop
                   muted
+                  label="Ver demonstração"
                   className="w-full h-full"
                 />
               </div>
