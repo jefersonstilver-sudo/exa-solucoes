@@ -139,12 +139,7 @@ export const StepTermos: React.FC<Props> = ({ onPrev }) => {
         />
         <span className="sif-checkbox-marker">{aceito && <Check size={14} strokeWidth={3} />}</span>
         <span className="sif-checkbox-text">
-          <strong>Li até o final e CONCORDO com todos os termos acima.</strong> Declaro, sob as
-          penas da lei, ter ciência da responsabilidade civil e criminal pela veracidade das
-          informações prestadas. Autorizo formalmente a EXA Mídia a iniciar o processo de avaliação
-          técnica, entrar em contato com a empresa de manutenção do elevador e as operadoras de
-          internet informadas, e ter acesso às áreas comuns do prédio em horários previamente
-          autorizados.
+          <strong>Li e concordo com os termos acima.</strong>
         </span>
       </label>
 
