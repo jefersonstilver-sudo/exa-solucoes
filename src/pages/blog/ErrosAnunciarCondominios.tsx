@@ -297,7 +297,7 @@ const ErrosAnunciarCondominios = () => {
                     Criar Campanha Profissional
                   </Button>
                 </Link>
-                <Link to="/contato">
+                <Link to="/interessesindico/formulario">
                   <Button variant="outline" className="border-white text-white hover:bg-white hover:text-exa-purple">
                     Consultoria Gratuita
                   </Button>

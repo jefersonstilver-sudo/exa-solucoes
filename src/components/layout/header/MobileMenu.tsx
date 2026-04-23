@@ -60,13 +60,6 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
           >
             Quem Somos
           </Link>
-          <Link 
-            to="/contato" 
-            className="block text-white hover:text-exa-yellow transition-colors duration-200 font-medium font-montserrat py-3 border-b border-white/10"
-            onClick={onClose}
-          >
-            Contato
-          </Link>
 
           {/* SEÇÃO ADMINISTRATIVA - Aparece apenas para usuários admin */}
           {isLoggedIn && isAnyAdmin && (

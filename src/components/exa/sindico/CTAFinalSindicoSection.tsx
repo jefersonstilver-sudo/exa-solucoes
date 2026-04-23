@@ -24,7 +24,7 @@ const CTAFinalSindicoSection = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-2 md:pt-4">
-            <ExaCTA variant="secondary" size="lg" to="/contato">
+            <ExaCTA variant="secondary" size="lg" to="/interessesindico/formulario">
               Quero ter a EXA no meu prédio
             </ExaCTA>
             

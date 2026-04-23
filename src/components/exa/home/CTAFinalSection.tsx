@@ -34,7 +34,7 @@ const CTAFinalSection = () => {
           <ExaCTA variant="primary" size="lg" href="https://wa.me/5545991415920?text=Oi%2C%20tenho%20interesse%20em%20anunciar%20na%20EXA!">
             Quero Anunciar
           </ExaCTA>
-          <ExaCTA variant="outline" size="lg" to="/contato">
+          <ExaCTA variant="outline" size="lg" to="/interessesindico/formulario">
             Falar com Especialista
           </ExaCTA>
         </div>

@@ -72,7 +72,7 @@ const SouSindico = lazy(() => import('./pages/SouSindico'));
 const InteresseSindicoLanding = lazy(() => import('./pages/InteresseSindicoLanding'));
 const InteresseSindicoFormulario = lazy(() => import('./pages/InteresseSindicoFormulario'));
 const InteresseSindicoSucesso = lazy(() => import('./pages/InteresseSindicoSucesso'));
-const Contato = lazy(() => import('./pages/Contato'));
+
 const ComparativoOutdoor = lazy(() => import('./pages/ComparativoOutdoor'));
 const QuemSomos = lazy(() => import('./pages/QuemSomos'));
 const MidiaKit = lazy(() => import('./pages/MidiaKit'));
@@ -409,11 +409,7 @@ const AppContent = () => {
               <MidiaKit />
             </Suspense>
           } />
-          <Route path="/contato" element={
-            <Suspense fallback={<GlobalLoadingPage message="Carregando contato..." />}>
-              <Contato />
-            </Suspense>
-          } />
+          <Route path="/contato" element={<Navigate to="/interessesindico/formulario" replace />} />
           <Route path="/comparativo-outdoor" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando comparativo..." />}>
               <ComparativoOutdoor />
