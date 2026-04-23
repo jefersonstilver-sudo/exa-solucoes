@@ -65,6 +65,13 @@ const VideoEditorPage = lazy(() => import('./pages/video-editor/VideoEditorPage'
 
 // Lazy load apenas para páginas menos usadas
 const SouSindico = lazy(() => import('./pages/SouSindico'));
+
+// Fluxo público Interesse Síndico — lazy ESTÁVEIS no escopo do módulo
+// (NÃO declarar inline dentro de <Route element>, senão o React recria o
+// componente lazy a cada render, anula o cache do chunk e força Suspense).
+const InteresseSindicoLanding = lazy(() => import('./pages/InteresseSindicoLanding'));
+const InteresseSindicoFormulario = lazy(() => import('./pages/InteresseSindicoFormulario'));
+const InteresseSindicoSucesso = lazy(() => import('./pages/InteresseSindicoSucesso'));
 const Contato = lazy(() => import('./pages/Contato'));
 const ComparativoOutdoor = lazy(() => import('./pages/ComparativoOutdoor'));
 const QuemSomos = lazy(() => import('./pages/QuemSomos'));
@@ -208,7 +215,7 @@ const AppContent = () => {
 
   // Normal app routes with page transitions
   return (
-    <PageTransitionLoader isLoading={isTransitioning} loadingMessage={loadingMessage}>
+    <PageTransitionLoader isLoading={isInteresseSindicoRoute ? false : isTransitioning} loadingMessage={loadingMessage}>
       <div className={isInteresseSindicoRoute ? 'bg-background' : 'min-h-screen bg-background'}>
         {/* Global Activity Tracker - tracks login/logout */}
         <GlobalActivityTracker />
@@ -232,21 +239,21 @@ const AppContent = () => {
           {/* LANDING PÚBLICA - Interesse do Síndico (sem auth) */}
           <Route path="/interessesindico" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
-              {React.createElement(lazy(() => import('./pages/InteresseSindicoLanding')))}
+              <InteresseSindicoLanding />
             </Suspense>
           } />
 
           {/* FORMULÁRIO PÚBLICO - Interesse do Síndico (sem auth) */}
           <Route path="/interessesindico/formulario" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando formulário..." />}>
-              {React.createElement(lazy(() => import('./pages/InteresseSindicoFormulario')))}
+              <InteresseSindicoFormulario />
             </Suspense>
           } />
 
           {/* PÁGINA DE SUCESSO - Interesse do Síndico */}
           <Route path="/interessesindico/sucesso" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
-              {React.createElement(lazy(() => import('./pages/InteresseSindicoSucesso')))}
+              <InteresseSindicoSucesso />
             </Suspense>
           } />
 
