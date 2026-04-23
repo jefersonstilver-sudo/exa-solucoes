@@ -43,7 +43,7 @@ const SindicoHeroSection = React.memo(() => {
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <ExaCTA variant="primary" size="lg" to="/contato">
+          <ExaCTA variant="primary" size="lg" to="/interessesindico/formulario">
             Quero ter a EXA no meu prédio
           </ExaCTA>
         </div>
