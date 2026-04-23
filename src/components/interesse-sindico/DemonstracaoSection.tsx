@@ -36,8 +36,15 @@ const DemonstracaoSection: React.FC = () => {
 
         <Reveal delay={0.3}>
           <div className="flex justify-center">
-            <div className="w-full max-w-[320px]">
-              <LazyVideoPlayer src={VIDEO_2} variant="vertical" label="Painel ao vivo" />
+            <div className="w-full max-w-[280px] aspect-[9/16]">
+              <LazyVideoPlayer
+                src={VIDEO_2}
+                variant="vertical"
+                autoPlay
+                loop
+                muted
+                className="w-full h-full"
+              />
             </div>
           </div>
         </Reveal>
