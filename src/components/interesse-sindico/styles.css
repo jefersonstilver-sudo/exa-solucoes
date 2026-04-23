@@ -102,6 +102,26 @@
   background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.25) 50%, transparent 70%);
   transform: translateX(-100%);
   animation: shine 3s linear infinite;
+  pointer-events: none;
+}
+
+.exa-theme .cta-red.is-loading {
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.exa-theme .cta-red .cta-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: ctaSpin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes ctaSpin {
+  to { transform: rotate(360deg); }
 }
 
 /* Pulsing dot */
