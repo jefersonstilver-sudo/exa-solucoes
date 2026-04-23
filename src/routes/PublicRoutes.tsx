@@ -9,6 +9,7 @@ import Payment from '@/pages/Payment';
 import Confirmacao from '@/pages/Confirmacao';
 
 const InteresseSindicoLanding = React.lazy(() => import('@/pages/InteresseSindicoLanding'));
+const InteresseSindicoFormulario = React.lazy(() => import('@/pages/InteresseSindicoFormulario'));
 
 export const PublicRoutes = () => {
   return (
@@ -31,6 +32,7 @@ export const PublicRoutes = () => {
 
       {/* Landing pública - Interesse do Síndico */}
       <Route path="/interessesindico" element={<InteresseSindicoLanding />} />
+      <Route path="/interessesindico/formulario" element={<InteresseSindicoFormulario />} />
     </Routes>
   );
 };
