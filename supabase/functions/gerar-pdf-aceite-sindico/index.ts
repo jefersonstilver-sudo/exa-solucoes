@@ -206,33 +206,44 @@ function drawHeader(page: any, font: any, fontBold: any, logoImg: any, protocolo
   // Faixa vermelha clara
   page.drawRectangle({ x: 0, y: PH - HEADER_H, width: PW, height: FAIXA_H, color: C.exa });
 
-  // Logo
+  // Logo (oficial — 36px de altura)
   if (logoImg) {
-    const targetH = 22;
+    const targetH = 36;
     const ratio = logoImg.width / logoImg.height;
     const targetW = targetH * ratio;
+    const bandBottom = PH - HEADER_H + FAIXA_H;
+    const bandHeight = HEADER_H - FAIXA_H;
     page.drawImage(logoImg, {
       x: MX,
-      y: PH - HEADER_H + FAIXA_H + (HEADER_H - FAIXA_H - targetH) / 2,
+      y: bandBottom + (bandHeight - targetH) / 2,
       width: targetW,
       height: targetH,
     });
     // Divisor + texto INDEXA MIDIA LTDA
     const divX = MX + targetW + 12;
     page.drawLine({
-      start: { x: divX, y: PH - HEADER_H + FAIXA_H + 18 },
-      end: { x: divX, y: PH - HEADER_H + FAIXA_H + 38 },
+      start: { x: divX, y: bandBottom + 10 },
+      end: { x: divX, y: bandBottom + bandHeight - 10 },
       thickness: 0.8,
       color: rgb(1, 1, 1),
       opacity: 0.35,
     });
     page.drawText(san('INDEXA MÍDIA LTDA'), {
       x: divX + 12,
-      y: PH - HEADER_H + FAIXA_H + 24,
+      y: bandBottom + (bandHeight - 8) / 2,
       size: 8,
       font: fontBold,
       color: C.white,
       opacity: 0.92,
+    });
+  } else {
+    // Fallback texto se a logo não carregar
+    page.drawText(san('EXA MÍDIA'), {
+      x: MX,
+      y: PH - HEADER_H + FAIXA_H + (HEADER_H - FAIXA_H - 14) / 2,
+      size: 16,
+      font: fontBold,
+      color: C.white,
     });
   }
 
@@ -375,7 +386,10 @@ Deno.serve(async (req) => {
 
     let logoImg: any = null;
     try {
-      logoImg = await pdf.embedPng(getLogoBytes());
+      const bytes = await fetchLogoBytes();
+      if (bytes) {
+        logoImg = await pdf.embedPng(bytes);
+      }
     } catch (e) {
       console.warn('[pdf v4] logo embed falhou', e);
     }
