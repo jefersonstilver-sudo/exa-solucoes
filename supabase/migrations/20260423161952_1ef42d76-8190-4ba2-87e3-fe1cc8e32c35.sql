@@ -1,0 +1,1 @@
+DELETE FROM public.sindicos_interessados WHERE sindico_email = 'teste-trigger@teste.com';
