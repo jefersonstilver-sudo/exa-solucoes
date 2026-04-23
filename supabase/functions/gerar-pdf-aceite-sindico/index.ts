@@ -10,18 +10,26 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// ====== Logo EXA branca embedada (PNG ~415 bytes) — sem dependência de rede ======
-const LOGO_B64 =
-  'iVBORw0KGgoAAAANSUhEUgAAAPAAAABQCAYAAAAnSfh8AAABZklEQVR42u3YP6uIYRjH8etxZJAsBmW0SN4AKSYZJatFeQPkXViYDF7DUcriTzIhZbYZjCwmpdTX8qgnZXbO6fOpp+77uu7pV1fd9zMDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHEjVj+rN5rtbXa2ebM6cqz5UO+v+dvWzOilB+L8D/P0f9WfVpXX9ojq/6T2t7le3JAh7c4DPVO+qG9XjTf1o9Wrt70oQ9uAAr70H1ZfqxKZ2vbq3rj9WR6S4fx0Swb535K838IVN7/jM/JqZY5vatZm5Wb2fmVMzc1mEsPeu0Ber3epK9XSt7VRvN2euVg+lCHtogKvD61/n0+t+t7pWXaoe/fUe/iTF/euwCA7GFXqzfzcz32bm1bIsn9fanZl5PjMvZ+b1n4PLsvyovlZnl2UxyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHCA/AY9he4xVQDINAAAAABJRU5ErkJggg==';
+// ====== Logo EXA oficial — buscada via fetch (URL pública do site) e cacheada em memória ======
+const LOGO_URL =
+  'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Publicidade%20Inteligente%20(800%20x%20800%20px).png';
 
 let LOGO_BYTES: Uint8Array | null = null;
-function getLogoBytes(): Uint8Array {
+async function fetchLogoBytes(): Promise<Uint8Array | null> {
   if (LOGO_BYTES) return LOGO_BYTES;
-  const bin = atob(LOGO_B64);
-  const arr = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-  LOGO_BYTES = arr;
-  return arr;
+  try {
+    const res = await fetch(LOGO_URL);
+    if (!res.ok) {
+      console.warn('[pdf v4] fetch logo falhou', res.status);
+      return null;
+    }
+    const buf = new Uint8Array(await res.arrayBuffer());
+    LOGO_BYTES = buf;
+    return buf;
+  } catch (e) {
+    console.warn('[pdf v4] fetch logo exceção', (e as any)?.message);
+    return null;
+  }
 }
 
 // ====== Cores ======
