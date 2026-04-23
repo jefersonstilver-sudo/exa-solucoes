@@ -60,6 +60,12 @@ export const StepTermos: React.FC<Props> = ({ onPrev }) => {
         return;
       }
       setOverlayMsg('Gerando documento oficial...');
+      if (result.pdf_error) {
+        console.warn('[StepTermos] PDF não gerado no submit:', result.pdf_error);
+        toast.warning(
+          'Cadastro registrado, mas o PDF oficial será gerado em instantes pela equipe EXA.',
+        );
+      }
       // pequena pausa para UX
       setTimeout(() => {
         reset();

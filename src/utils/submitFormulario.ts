@@ -20,6 +20,7 @@ export interface SubmitResult {
   success: boolean;
   protocolo?: string;
   pdf_path?: string;
+  pdf_error?: string;
   error?: string;
 }
 
@@ -126,19 +127,33 @@ export async function submitFormulario(
     }
 
     // 6. Invocar edge function para gerar PDF oficial
-    const { data: pdfResp, error: pdfErr } = await supabase.functions.invoke(
-      'gerar-pdf-aceite-sindico',
-      { body: { sindico_interessado_id: recordId } },
-    );
-
-    if (pdfErr) {
-      console.warn('[submitFormulario] PDF generation failed (não bloqueia):', pdfErr);
+    let pdfError: string | undefined;
+    let pdfPath: string | undefined;
+    try {
+      const { data: pdfResp, error: pdfErr } = await supabase.functions.invoke(
+        'gerar-pdf-aceite-sindico',
+        { body: { sindico_interessado_id: recordId } },
+      );
+      if (pdfErr) {
+        console.error('[submitFormulario] PDF generation error:', pdfErr);
+        pdfError = pdfErr.message || 'Falha ao gerar PDF';
+      } else if ((pdfResp as any)?.error) {
+        console.error('[submitFormulario] PDF response error:', pdfResp);
+        pdfError = (pdfResp as any).error;
+      } else {
+        pdfPath = (pdfResp as any)?.pdf_path;
+        console.log('[submitFormulario] PDF gerado:', pdfPath);
+      }
+    } catch (pdfCatchErr: any) {
+      console.error('[submitFormulario] PDF invoke exception:', pdfCatchErr);
+      pdfError = pdfCatchErr?.message || 'Exceção ao gerar PDF';
     }
 
     return {
       success: true,
       protocolo,
-      pdf_path: (pdfResp as any)?.pdf_path,
+      pdf_path: pdfPath,
+      pdf_error: pdfError,
     };
   } catch (err: any) {
     console.error('[submitFormulario] erro inesperado:', err);
