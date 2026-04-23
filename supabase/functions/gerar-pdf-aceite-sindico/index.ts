@@ -150,7 +150,7 @@ function drawRichLine(
   for (const seg of segments) {
     const f = seg.bold ? fontBold : font;
     const t = san(seg.text);
-    page.drawText(t, { x: cx, y, size, font: f, color });
+    page.drawText(san(t), { x: cx, y, size, font: f, color });
     cx += f.widthOfTextAtSize(t, size);
   }
 }
@@ -226,7 +226,7 @@ function drawHeader(page: any, font: any, fontBold: any, logoImg: any, protocolo
       color: rgb(1, 1, 1),
       opacity: 0.35,
     });
-    page.drawText('INDEXA MÍDIA LTDA', {
+    page.drawText(san('INDEXA MÍDIA LTDA'), {
       x: divX + 12,
       y: PH - HEADER_H + FAIXA_H + 24,
       size: 8,
@@ -239,7 +239,7 @@ function drawHeader(page: any, font: any, fontBold: any, logoImg: any, protocolo
   // Direita
   const docOf = 'DOCUMENTO OFICIAL';
   const wDoc = font.widthOfTextAtSize(docOf, 7);
-  page.drawText(docOf, {
+  page.drawText(san(docOf), {
     x: PW - MX - wDoc,
     y: PH - HEADER_H + FAIXA_H + 32,
     size: 7,
@@ -248,7 +248,7 @@ function drawHeader(page: any, font: any, fontBold: any, logoImg: any, protocolo
     opacity: 0.78,
   });
   const wProto = fontBold.widthOfTextAtSize(protocolo, 12);
-  page.drawText(protocolo, {
+  page.drawText(san(protocolo), {
     x: PW - MX - wProto,
     y: PH - HEADER_H + FAIXA_H + 14,
     size: 12,
@@ -269,16 +269,16 @@ function drawFooter(page: any, font: any, fontBold: any, pageNum: number, total:
   const left = 'Indexa Mídia LTDA · CNPJ 38.142.638/0001-30';
   const center = `Página ${pageNum} de ${total}`;
   const right = 'www.examidia.com.br';
-  page.drawText(left, { x: MX, y: FOOTER_BOTTOM, size: 7.2, font: fontBold, color: C.ink500 });
+  page.drawText(san(left), { x: MX, y: FOOTER_BOTTOM, size: 7.2, font: fontBold, color: C.ink500 });
   const cw = fontBold.widthOfTextAtSize(center, 7.5);
-  page.drawText(center, { x: (PW - cw) / 2, y: FOOTER_BOTTOM, size: 7.5, font: fontBold, color: C.ink500 });
+  page.drawText(san(center), { x: (PW - cw) / 2, y: FOOTER_BOTTOM, size: 7.5, font: fontBold, color: C.ink500 });
   const rw = font.widthOfTextAtSize(right, 7.2);
-  page.drawText(right, { x: PW - MX - rw, y: FOOTER_BOTTOM, size: 7.2, font, color: C.ink400 });
+  page.drawText(san(right), { x: PW - MX - rw, y: FOOTER_BOTTOM, size: 7.2, font, color: C.ink400 });
 }
 
 // ====== Section label (eyebrow uppercase + linha) ======
 function drawSectionLabel(page: any, fontBold: any, label: string, y: number): number {
-  page.drawText(label, {
+  page.drawText(san(label), {
     x: MX, y: y - 7, size: 7, font: fontBold, color: C.ink400,
   });
   page.drawLine({
@@ -387,18 +387,18 @@ Deno.serve(async (req) => {
     let y = PH - HEADER_H - 24;
 
     // Eyebrow
-    p1.drawText('TERMO DE ADESÃO', { x: MX, y: y - 7, size: 7, font: fontBold, color: C.exa });
+    p1.drawText(san('TERMO DE ADESÃO'), { x: MX, y: y - 7, size: 7, font: fontBold, color: C.exa });
     y -= 18;
     // Título 2 linhas
-    p1.drawText('Registro de Interesse e', { x: MX, y: y - 14, size: 20, font: fontBold, color: C.ink });
+    p1.drawText(san('Registro de Interesse e'), { x: MX, y: y - 14, size: 20, font: fontBold, color: C.ink });
     y -= 22;
-    p1.drawText('Autorização Técnica', { x: MX, y: y - 14, size: 20, font: fontBold, color: C.ink });
+    p1.drawText(san('Autorização Técnica'), { x: MX, y: y - 14, size: 20, font: fontBold, color: C.ink });
     y -= 22;
     // Subtitle
     const subt = 'Manifestação formal do síndico para instalação de painel digital EXA Mídia em elevador condominial, com autorização expressa de acesso e articulação técnica com terceiros.';
     const subtLines = wrap(subt, font, 9.5, 500);
     for (const ln of subtLines) {
-      p1.drawText(ln, { x: MX, y: y - 10, size: 9.5, font, color: C.ink500 });
+      p1.drawText(san(ln), { x: MX, y: y - 10, size: 9.5, font, color: C.ink500 });
       y -= 13;
     }
     y -= 12;
@@ -417,8 +417,8 @@ Deno.serve(async (req) => {
     ];
     for (let i = 0; i < cells.length; i++) {
       const cx = MX + i * colW;
-      p1.drawText(cells[i].lbl, { x: cx, y, size: 6.8, font: fontBold, color: C.ink400 });
-      p1.drawText(cells[i].val, { x: cx, y: y - 11, size: 9, font: fontBold, color: cells[i].color });
+      p1.drawText(san(cells[i].lbl), { x: cx, y, size: 6.8, font: fontBold, color: C.ink400 });
+      p1.drawText(san(cells[i].val), { x: cx, y: y - 11, size: 9, font: fontBold, color: cells[i].color });
     }
     y -= 16;
     p1.drawLine({ start: { x: MX, y }, end: { x: PW - MX, y }, thickness: 0.5, color: C.ink100 });
@@ -426,13 +426,13 @@ Deno.serve(async (req) => {
 
     // ====== O PRÉDIO ======
     y = drawSectionLabel(p1, fontBold, 'O PRÉDIO', y);
-    p1.drawText(rec.nome_predio || '—', { x: MX, y: y - 11, size: 12.5, font: fontBold, color: C.ink });
+    p1.drawText(san(rec.nome_predio || '—'), { x: MX, y: y - 11, size: 12.5, font: fontBold, color: C.ink });
     y -= 16;
     const compl = rec.endereco_complemento ? ` — Sala ${rec.endereco_complemento}` : '';
     const enderecoLine = `${rec.endereco_logradouro ?? '—'}, ${rec.endereco_numero ?? '—'}${compl} · ${rec.endereco_bairro ?? '—'} · ${cidade}/${uf} · CEP ${rec.cep ?? '—'}`;
     const endLines = wrap(enderecoLine, font, 9, PW - 2 * MX);
     for (const ln of endLines) {
-      p1.drawText(ln, { x: MX, y: y - 9, size: 9, font, color: C.ink500 });
+      p1.drawText(san(ln), { x: MX, y: y - 9, size: 9, font, color: C.ink500 });
       y -= 12;
     }
     y -= 4;
@@ -446,10 +446,10 @@ Deno.serve(async (req) => {
       ['Elevador', `${elevEmp} · ${cm}`],
     ];
     for (const [k, v] of grid1) {
-      p1.drawText(k, { x: MX, y: y - 9, size: 8.8, font: fontBold, color: C.ink400 });
+      p1.drawText(san(k), { x: MX, y: y - 9, size: 8.8, font: fontBold, color: C.ink400 });
       const vLines = wrap(v, font, 8.8, PW - 2 * MX - 110);
       for (let i = 0; i < vLines.length; i++) {
-        p1.drawText(vLines[i], { x: MX + 110, y: y - 9 - i * 11, size: 8.8, font, color: C.ink });
+        p1.drawText(san(vLines[i]), { x: MX + 110, y: y - 9 - i * 11, size: 8.8, font, color: C.ink });
       }
       y -= Math.max(13, vLines.length * 11 + 2);
     }
@@ -460,18 +460,18 @@ Deno.serve(async (req) => {
     // ====== O SÍNDICO ======
     y = drawSectionLabel(p1, fontBold, 'O SÍNDICO', y);
     const sindicoNome = rec.sindico_nome || rec.nome_completo || '—';
-    p1.drawText(sindicoNome, { x: MX, y: y - 11, size: 12.5, font: fontBold, color: C.ink });
+    p1.drawText(san(sindicoNome), { x: MX, y: y - 11, size: 12.5, font: fontBold, color: C.ink });
     y -= 16;
     const cpfLine = `CPF ${rec.sindico_cpf ?? '—'} · Mandato até ${fmtDataExtenso(rec.sindico_mandato_ate)}`;
-    p1.drawText(cpfLine, { x: MX, y: y - 9, size: 9, font, color: C.ink500 });
+    p1.drawText(san(cpfLine), { x: MX, y: y - 9, size: 9, font, color: C.ink500 });
     y -= 16;
     const grid2: [string, string][] = [
       ['WhatsApp', fmtPhoneE164(rec.sindico_whatsapp || rec.celular)],
       ['E-mail', rec.sindico_email || rec.email || '—'],
     ];
     for (const [k, v] of grid2) {
-      p1.drawText(k, { x: MX, y: y - 9, size: 8.8, font: fontBold, color: C.ink400 });
-      p1.drawText(v, { x: MX + 110, y: y - 9, size: 8.8, font, color: C.ink });
+      p1.drawText(san(k), { x: MX, y: y - 9, size: 8.8, font: fontBold, color: C.ink400 });
+      p1.drawText(san(v), { x: MX + 110, y: y - 9, size: 8.8, font, color: C.ink });
       y -= 13;
     }
     y -= 8;
@@ -546,17 +546,17 @@ Deno.serve(async (req) => {
     y2 -= 14;
     const sigName = String(sindicoNome).toUpperCase();
     const wName = fontBold.widthOfTextAtSize(sigName, 13);
-    p2.drawText(sigName, { x: (PW - wName) / 2, y: y2, size: 13, font: fontBold, color: C.ink });
+    p2.drawText(san(sigName), { x: (PW - wName) / 2, y: y2, size: 13, font: fontBold, color: C.ink });
     y2 -= 14;
     const meta1 = `CPF ${rec.sindico_cpf ?? '—'} · Síndico legalmente eleito`;
     const wM1 = font.widthOfTextAtSize(meta1, 8.5);
-    p2.drawText(meta1, { x: (PW - wM1) / 2, y: y2, size: 8.5, font, color: C.ink500 });
+    p2.drawText(san(meta1), { x: (PW - wM1) / 2, y: y2, size: 8.5, font, color: C.ink500 });
     y2 -= 11;
     const meta2 = `Representante do Condomínio ${rec.nome_predio ?? '—'} · Mandato até ${fmtDataCurta(rec.sindico_mandato_ate)}`;
     const meta2Lines = wrap(meta2, font, 8.5, PW - 2 * MX);
     for (const ln of meta2Lines) {
       const w = font.widthOfTextAtSize(ln, 8.5);
-      p2.drawText(ln, { x: (PW - w) / 2, y: y2, size: 8.5, font, color: C.ink500 });
+      p2.drawText(san(ln), { x: (PW - w) / 2, y: y2, size: 8.5, font, color: C.ink500 });
       y2 -= 11;
     }
     y2 -= 8;
@@ -581,7 +581,7 @@ Deno.serve(async (req) => {
       start: { x: pillX + 11.5, y: y2 - 11 }, end: { x: pillX + 15, y: y2 - 7 },
       thickness: 1, color: C.white,
     });
-    p2.drawText(pillTxt, { x: pillX + 22, y: y2 - 12, size: 8, font: fontBold, color: C.ink });
+    p2.drawText(san(pillTxt), { x: pillX + 22, y: y2 - 12, size: 8, font: fontBold, color: C.ink });
     y2 -= pillH + 14;
     p2.drawLine({ start: { x: MX, y: y2 }, end: { x: PW - MX, y: y2 }, thickness: 0.5, color: C.ink100 });
     y2 -= 18;
@@ -608,12 +608,12 @@ Deno.serve(async (req) => {
       { k: 'Protocolo', v: protocolo, valColor: C.exa, valBold: true },
     ];
     for (const r of evRows) {
-      p2.drawText(r.k, { x: MX, y: y2 - 8, size: 8.3, font: fontBold, color: C.ink400 });
+      p2.drawText(san(r.k), { x: MX, y: y2 - 8, size: 8.3, font: fontBold, color: C.ink400 });
       const f = r.valBold ? fontBold : font;
       const sz = r.size ?? 8.3;
       const lines = wrap(r.v, f, sz, PW - 2 * MX - 150);
       for (let i = 0; i < lines.length; i++) {
-        p2.drawText(lines[i], {
+        p2.drawText(san(lines[i]), {
           x: MX + 150, y: y2 - 8 - i * 10, size: sz, font: f, color: r.valColor ?? C.ink,
         });
       }
@@ -628,7 +628,7 @@ Deno.serve(async (req) => {
     const usoIntro = 'Pode ser apresentado como comprovante de autorização formal, sem necessidade de autenticação adicional, a:';
     const usoLines = wrap(usoIntro, font, 8.8, PW - 2 * MX);
     for (const ln of usoLines) {
-      p2.drawText(ln, { x: MX, y: y2 - 9, size: 8.8, font, color: C.ink500 });
+      p2.drawText(san(ln), { x: MX, y: y2 - 9, size: 8.8, font, color: C.ink500 });
       y2 -= 12;
     }
     y2 -= 6;
@@ -644,12 +644,12 @@ Deno.serve(async (req) => {
     for (let i = 0; i < usoItems.length; i += 2) {
       const left = usoItems[i];
       const right = usoItems[i + 1];
-      p2.drawText('→', { x: MX, y: y2 - 9, size: 9, font: fontBold, color: C.exa });
-      p2.drawText(left, { x: MX + 12, y: y2 - 9, size: 8.8, font, color: C.ink600 });
+      p2.drawText(san('→'), { x: MX, y: y2 - 9, size: 9, font: fontBold, color: C.exa });
+      p2.drawText(san(left), { x: MX + 12, y: y2 - 9, size: 8.8, font, color: C.ink600 });
       if (right) {
         const x2 = MX + colWidth + 18;
-        p2.drawText('→', { x: x2, y: y2 - 9, size: 9, font: fontBold, color: C.exa });
-        p2.drawText(right, { x: x2 + 12, y: y2 - 9, size: 8.8, font, color: C.ink600 });
+        p2.drawText(san('→'), { x: x2, y: y2 - 9, size: 9, font: fontBold, color: C.exa });
+        p2.drawText(san(right), { x: x2 + 12, y: y2 - 9, size: 8.8, font, color: C.ink600 });
       }
       y2 -= 14;
     }
@@ -667,7 +667,7 @@ Deno.serve(async (req) => {
     y2 -= 11;
     const fn2 = 'Revogação: suporte@examidia.com.br · Foro: comarca de Foz do Iguaçu/PR';
     const fn2W = font.widthOfTextAtSize(fn2, 7.8);
-    p2.drawText(fn2, { x: (PW - fn2W) / 2, y: y2, size: 7.8, font, color: C.ink400 });
+    p2.drawText(san(fn2), { x: (PW - fn2W) / 2, y: y2, size: 7.8, font, color: C.ink400 });
 
     // Footers em ambas as páginas
     const total = pdf.getPageCount();
