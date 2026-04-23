@@ -8,6 +8,8 @@ import CheckoutFinish from '@/pages/CheckoutFinish';
 import Payment from '@/pages/Payment';
 import Confirmacao from '@/pages/Confirmacao';
 
+const InteresseSindicoLanding = React.lazy(() => import('@/pages/InteresseSindicoLanding'));
+
 export const PublicRoutes = () => {
   return (
     <Routes>
@@ -26,6 +28,9 @@ export const PublicRoutes = () => {
       {/* CONFIRMAÇÕES SEPARADAS */}
       <Route path="/confirmacao" element={<Confirmacao />} /> {/* EMAIL CONFIRMATION */}
       <Route path="/pedido-confirmado" element={<Confirmacao />} /> {/* ORDER CONFIRMATION - usando a mesma página por enquanto */}
+
+      {/* Landing pública - Interesse do Síndico */}
+      <Route path="/interessesindico" element={<InteresseSindicoLanding />} />
     </Routes>
   );
 };
