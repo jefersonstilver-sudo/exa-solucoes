@@ -1,67 +1,70 @@
-## Objetivo
-Corrigir o pós-envio do formulário em `/interessesindico/formulario` para que a página `/interessesindico/sucesso` apareça imediatamente, e o formulário NUNCA seja apagado antes da navegação concluir.
+# Plano — E-mail de confirmação ao síndico (com PDF jurídico anexo)
 
-## Diagnóstico confirmado
-- O envio funciona: protocolo `EXA-2026-000005` foi salvo no banco.
-- A Edge Function `gerar-pdf-aceite-sindico` rodou com sucesso (PDF gerado).
-- O problema é puramente no frontend, em três pontos combinados:
+## Diagnóstico
 
-1. `src/components/interesse-sindico-form/StepTermos.tsx` chama `reset()` ANTES de `navigate(...)`. Isso apaga toda a store (predio + sindico) na hora, então o usuário vê o formulário zerar antes da nova rota montar.
-2. `src/App.tsx` declara as rotas de Interesse Síndico usando `React.createElement(lazy(() => import(...)))` inline dentro do `element`. Isso recria um novo componente lazy a cada render do `AppContent`, anula o cache do chunk e força Suspense repetido — o que torna a transição para a tela de sucesso intermitente/lenta.
-3. O `PageTransitionLoader` do `AppContent` ativa a cada mudança de rota um overlay com mínimo de 300 ms, inclusive nas rotas `/interessesindico/*`. Isso atrasa a aparição da tela de sucesso.
+Hoje, ao concluir o aceite, o sistema **grava no banco e gera o PDF jurídico** no storage `termos-sindicos`, mas **não envia nenhum e-mail ao síndico**. Não há "template atual" para substituir — vamos criar o envio pela primeira vez, usando o HTML que você anexou (`04-email-template-sindico-FINAL.html`) como template oficial.
 
-## Arquivos a alterar (apenas 3)
-1. `src/components/interesse-sindico-form/StepTermos.tsx`
-2. `src/pages/InteresseSindicoSucesso.tsx`
-3. `src/App.tsx`
+## Escopo
 
-## Plano de correção
+1. **Salvar o template HTML no projeto** em `supabase/functions/_shared/email-templates-html/sindico-confirmacao.html` (com placeholders `{{PROTOCOLO}}`, `{{PRIMEIRO_NOME}}`, `{{NOME_PREDIO}}`, `{{DATA_REGISTRO}}`).
 
-### 1) Não apagar o formulário antes de navegar
-Em `StepTermos.tsx`, dentro de `handleEnviar`:
-- Remover a chamada `reset()` antes do `navigate(...)`.
-- Manter `navigate(`/interessesindico/sucesso?protocolo=...`)` imediatamente após o submit OK.
-- Manter watchdog, toasts e tratamento de erro intactos.
+2. **Criar nova edge function** `send-sindico-confirmation` que:
+   - Recebe `{ sindico_interessado_id }`.
+   - Carrega o registro de `sindicos_interessados` (e-mail, nome, prédio, protocolo, data, `aceite_pdf_url`).
+   - Carrega o HTML do template, faz replace dos placeholders.
+   - Baixa o PDF de `termos-sindicos/<aceite_pdf_url>` (Supabase Storage admin), converte para base64.
+   - Envia via **Resend** (padrão já usado pelo projeto em `send-confirmation-email`, `send-welcome-email`, etc.) com:
+     - `from`: remetente padrão da EXA já usado nas outras funções
+     - `to`: e-mail do síndico
+     - `subject`: `EXA-XXXX-XXXXXX · Registro de interesse recebido`
+     - `html`: template renderizado
+     - `attachments`: `[{ filename: 'termo-<protocolo>.pdf', content: <base64> }]`
+   - Marca `email_confirmacao_enviado_em = now()` na tabela (idempotência: se já enviado, retorna sem reenviar — exceto se `force=true`).
+   - Retorna `{ success, message_id }`.
 
-### 2) Resetar a store somente quando a tela de sucesso montar
-Em `InteresseSindicoSucesso.tsx`:
-- Importar `useSindicoFormStore`.
-- Adicionar `useEffect(() => { useSindicoFormStore.getState().reset(); }, [])`.
-- Resto da página intacto.
+3. **Adicionar coluna de auditoria** em `sindicos_interessados`:
+   - `email_confirmacao_enviado_em timestamptz NULL`
+   - `email_confirmacao_message_id text NULL`
+   (migração simples, sem afetar nada existente).
 
-### 3) Estabilizar as rotas lazy do fluxo público
-Em `src/App.tsx`:
-- Adicionar 3 imports lazy estáveis no topo:
-  - `const InteresseSindicoLanding = lazy(() => import('./pages/InteresseSindicoLanding'))`
-  - `const InteresseSindicoFormulario = lazy(() => import('./pages/InteresseSindicoFormulario'))`
-  - `const InteresseSindicoSucesso = lazy(() => import('./pages/InteresseSindicoSucesso'))`
-- Trocar os `element` das 3 rotas para usarem esses componentes estáveis dentro do `Suspense` já existente.
+4. **Disparar a função após o PDF ser gerado** em `src/utils/submitFormulario.ts`:
+   - Logo após o bloco de PDF (linha ~156, quando `pdfPath` é definido), invocar `supabase.functions.invoke('send-sindico-confirmation', { body: { sindico_interessado_id: recordId } })` em **fire-and-forget** (sem `await` bloqueante e com timeout curto, mesmo padrão do PDF) para não atrasar a tela de sucesso.
+   - Se o PDF não saiu no tempo (timeout), a função ainda assim será tentada — ela própria valida se `aceite_pdf_url` existe e, se não, agenda retry leve (ou retorna erro silencioso).
 
-### 4) Pular `PageTransitionLoader` nas rotas `/interessesindico/*`
-Em `src/App.tsx`, na linha onde já existe `isInteresseSindicoRoute`:
-- Renderizar `PageTransitionLoader` apenas quando `!isInteresseSindicoRoute`.
-- Quando for rota de Interesse Síndico, renderizar o conteúdo direto, sem overlay de transição.
+5. **Botão de reenvio manual no admin** (`TabGestaoInterna.tsx`): adicionar botão "Reenviar e-mail de confirmação" ao lado de "Regenerar PDF", chamando a função com `force: true`. **Mudança mínima, isolada — não altera nada do que já existe na aba.**
 
-## O que NÃO será alterado
-- Banco de dados, RLS, triggers
-- Edge Functions (PDF já está OK)
-- UI da landing, do formulário ou da tela de sucesso
-- Qualquer outra rota, admin ou fluxo
+## O que NÃO toco
 
-## Diagrama
-```text
-Antes: submit OK -> reset() -> form vazio na tela -> navigate -> Suspense/transição atrasam -> usuário vê branco/formulário zerado
+- Fluxo do formulário, validação, store, navegação, página de sucesso.
+- `gerar-pdf-aceite-sindico` (continua igual).
+- `submit-sindico-lead` (função antiga do `/contato` e `/sou-sindico`, fluxo paralelo).
+- Outras edge functions de e-mail.
+- UI do formulário, design, layout.
 
-Depois: submit OK -> navigate -> Suspense direto (chunk em cache) -> sucesso monta -> reset() ali
-```
+## Detalhe técnico
 
-## Validação
-Após aplicar:
-1. Preencher e enviar o formulário.
-2. Confirmar:
-   - `/interessesindico/sucesso?protocolo=...` aparece imediatamente.
-   - O protocolo é exibido.
-   - Em nenhum momento o formulário aparece zerado na tela anterior.
-   - Nenhum overlay branco/intermediário pisca entre o submit e a tela de sucesso.
+- **Provider**: Resend, via `RESEND_API_KEY` já existente no projeto (mesmo segredo usado em `send-welcome-email` etc.). Sem novo segredo.
+- **Anexo PDF**: tamanho típico < 200 KB → base64 inline no payload Resend está OK (limite 40 MB).
+- **CORS**: padrão das funções existentes.
+- **Pinning Supabase**: `@supabase/supabase-js@2.49.4` (memória do projeto).
+- **Idempotência**: `email_confirmacao_enviado_em IS NOT NULL` → não reenvia salvo `force=true`.
+- **Falhas**: erro de envio é logado, mas **não derruba** a experiência do usuário (a tela de sucesso já apareceu). Admin vê no `TabGestaoInterna` se foi enviado ou não, e pode reenviar.
 
-Aguardo aprovação para executar.
+## Arquivos tocados
+
+| Arquivo | Ação |
+|---|---|
+| `supabase/functions/_shared/email-templates-html/sindico-confirmacao.html` | CRIAR (cópia exata do HTML enviado) |
+| `supabase/functions/send-sindico-confirmation/index.ts` | CRIAR |
+| `src/utils/submitFormulario.ts` | EDITAR (adicionar invoke fire-and-forget após PDF) |
+| `src/components/admin/sindicos-interessados/tabs/TabGestaoInterna.tsx` | EDITAR (botão "Reenviar e-mail") |
+| Migração SQL | CRIAR (2 colunas em `sindicos_interessados`) |
+
+## Validação após executar
+
+1. Submeter um aceite de teste no formulário.
+2. Verificar que a tela de sucesso aparece imediatamente (sem regressão).
+3. Em segundos, o e-mail chega no inbox do síndico com o PDF anexo, design idêntico ao HTML enviado, placeholders substituídos.
+4. No admin, na aba "Gestão Interna" do registro, ver "E-mail enviado em: <data>" e botão de reenvio funcional.
+
+Aprova para eu executar?
