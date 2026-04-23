@@ -27,14 +27,14 @@ const BENEFITS = [
 
 const BeneficiosSection: React.FC = () => {
   return (
-    <section className="section-glow py-20 md:py-28 px-6">
+    <section className="section-glow py-16 md:py-20 lg:py-28 px-5 md:px-8 lg:px-12">
       <div className="max-w-5xl mx-auto">
         <Reveal>
           <div className="section-label mb-6">03 · Benefícios</div>
         </Reveal>
 
         <Reveal delay={0.1}>
-          <h2 className="text-3xl md:text-5xl font-black leading-tight tracking-tight mb-12">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black leading-tight tracking-tight mb-12">
             O que seu condomínio <span className="gradient-text">ganha.</span>
           </h2>
         </Reveal>
@@ -42,7 +42,7 @@ const BeneficiosSection: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
           {BENEFITS.map((b, i) => (
             <Reveal key={b.title} delay={0.15 + i * 0.08}>
-              <div className="benefit-card h-full">
+              <div className="benefit-card h-full p-6 md:p-8">
                 <div className="benefit-icon">{b.icon}</div>
                 <h3 className="text-lg md:text-xl font-bold mb-2 text-white relative z-10">{b.title}</h3>
                 <p className="text-sm md:text-base text-white/65 leading-relaxed relative z-10">{b.desc}</p>
