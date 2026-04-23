@@ -43,48 +43,55 @@ export const StepSindico: React.FC<Props> = ({ onNext, onPrev }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-5">
-      <div className="lg:col-span-2">
-        <label className="sif-label" htmlFor="nomeCompleto"><User size={13} className="inline mr-1" />Nome completo</label>
-        <input id="nomeCompleto" type="text" className="sif-input" maxLength={100}
-          value={sindico.nomeCompleto || ''}
-          onChange={(e) => setSindico({ nomeCompleto: e.target.value })} />
+        <div className="lg:col-span-2">
+          <label className="sif-label" htmlFor="nomeCompleto"><User size={13} className="inline mr-1" />Nome completo</label>
+          <input id="nomeCompleto" type="text" className="sif-input" maxLength={100}
+            value={sindico.nomeCompleto || ''}
+            onChange={(e) => setSindico({ nomeCompleto: e.target.value })} />
+        </div>
+
+        <div>
+          <label className="sif-label" htmlFor="cpf"><IdCard size={13} className="inline mr-1" />CPF</label>
+          <input id="cpf" type="text" inputMode="numeric" className="sif-input" placeholder="000.000.000-00"
+            value={sindico.cpf || ''}
+            onChange={(e) => setSindico({ cpf: formatCPFMask(e.target.value) })} />
+        </div>
+
+        <div>
+          <label className="sif-label" htmlFor="whatsapp"><Phone size={13} className="inline mr-1" />WhatsApp</label>
+          <input id="whatsapp" type="tel" inputMode="tel" className="sif-input" placeholder="(45) 99999-9999"
+            value={sindico.whatsappRaw || ''}
+            onChange={(e) => setSindico({ whatsappRaw: formatBRPhoneMask(e.target.value) })} />
+          <p className="sif-help">
+            Salvo como: <span className="text-white/85 font-mono">{e164 || '—'}</span>
+          </p>
+        </div>
+
+        <div>
+          <label className="sif-label" htmlFor="email"><Mail size={13} className="inline mr-1" />E-mail</label>
+          <input id="email" type="email" className="sif-input" placeholder="seu@email.com" maxLength={255}
+            value={sindico.email || ''}
+            onChange={(e) => setSindico({ email: e.target.value })} />
+        </div>
+
+        <div>
+          <label className="sif-label" htmlFor="mandatoAte"><Calendar size={13} className="inline mr-1" />Mandato de síndico até</label>
+          <input id="mandatoAte" type="date" className="sif-input" min={minMandatoStr()}
+            value={sindico.mandatoAte || ''}
+            onChange={(e) => setSindico({ mandatoAte: e.target.value })} />
+        </div>
+
+        <div className="lg:col-span-2">
+          <UploadFotos
+            fotos={sindico.fotos || []}
+            onChange={(files) => setSindico({ fotos: files })}
+          />
+        </div>
       </div>
 
-      <div>
-        <label className="sif-label" htmlFor="cpf"><IdCard size={13} className="inline mr-1" />CPF</label>
-        <input id="cpf" type="text" inputMode="numeric" className="sif-input" placeholder="000.000.000-00"
-          value={sindico.cpf || ''}
-          onChange={(e) => setSindico({ cpf: formatCPFMask(e.target.value) })} />
-      </div>
-
-      <div>
-        <label className="sif-label" htmlFor="whatsapp"><Phone size={13} className="inline mr-1" />WhatsApp</label>
-        <input id="whatsapp" type="tel" inputMode="tel" className="sif-input" placeholder="(45) 99999-9999"
-          value={sindico.whatsappRaw || ''}
-          onChange={(e) => setSindico({ whatsappRaw: formatBRPhoneMask(e.target.value) })} />
-        <p className="sif-help">
-          Salvo como: <span className="text-white/85 font-mono">{e164 || '—'}</span>
-        </p>
-      </div>
-
-      <div>
-        <label className="sif-label" htmlFor="email"><Mail size={13} className="inline mr-1" />E-mail</label>
-        <input id="email" type="email" className="sif-input" placeholder="seu@email.com" maxLength={255}
-          value={sindico.email || ''}
-          onChange={(e) => setSindico({ email: e.target.value })} />
-      </div>
-
-      <div>
-        <label className="sif-label" htmlFor="mandatoAte"><Calendar size={13} className="inline mr-1" />Mandato de síndico até</label>
-        <input id="mandatoAte" type="date" className="sif-input" min={minMandatoStr()}
-          value={sindico.mandatoAte || ''}
-          onChange={(e) => setSindico({ mandatoAte: e.target.value })} />
-      </div>
-
-      <UploadFotos
-        fotos={sindico.fotos || []}
-        onChange={(files) => setSindico({ fotos: files })}
-      />
+      {!isValid && (
+        <ValidationErrors error={errors} fieldLabels={SINDICO_FIELD_LABELS} />
+      )}
 
       <div className="pt-4 flex flex-col sm:flex-row gap-2">
         <button type="button" onClick={onPrev} className="sif-btn-secondary flex items-center justify-center gap-2 sm:w-auto">
@@ -100,9 +107,6 @@ export const StepSindico: React.FC<Props> = ({ onNext, onPrev }) => {
           Continuar <ArrowRight size={18} />
         </button>
       </div>
-      {!isValid && (
-        <p className="sif-help text-center">Preencha todos os campos obrigatórios para continuar.</p>
-      )}
     </div>
   );
 };
