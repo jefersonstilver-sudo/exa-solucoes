@@ -56,7 +56,7 @@ export const TabGestaoInterna: React.FC<Props> = ({ sindico, onSaved }) => {
       const { data, error } = await supabase
         .from('users_with_role')
         .select('id, full_name, email, role')
-        .in('role', ROLES_RESPONSAVEL as unknown as string[])
+        .in('role', ROLES_RESPONSAVEL as any)
         .limit(200);
       if (error) {
         console.error('[TabGestaoInterna] erro responsáveis:', error);
