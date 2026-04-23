@@ -243,6 +243,13 @@ const AppContent = () => {
             </Suspense>
           } />
 
+          {/* PÁGINA DE SUCESSO - Interesse do Síndico */}
+          <Route path="/interessesindico/sucesso" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
+              {React.createElement(lazy(() => import('./pages/InteresseSindicoSucesso')))}
+            </Suspense>
+          } />
+
 
           <Route path="/monitor" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando monitor..." />}>

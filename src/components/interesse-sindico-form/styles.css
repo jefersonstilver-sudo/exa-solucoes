@@ -193,3 +193,164 @@
   color: rgba(255, 255, 255, 0.78);
   line-height: 1.5;
 }
+
+/* ====== Etapa 3 — Termos ====== */
+.sif-warning-box {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(234, 37, 29, 0.14), rgba(234, 37, 29, 0.04));
+  border: 1px solid rgba(234, 37, 29, 0.45);
+  color: #fca5a5;
+}
+.sif-warning-box svg { color: #ef4444; margin-top: 2px; }
+
+.sif-termos-box {
+  background: #ffffff;
+  color: #1a1a1a;
+  border: 2px solid var(--exa-red, #EA251D);
+  border-radius: 14px;
+  padding: 20px;
+  max-height: 320px;
+  overflow-y: auto;
+  line-height: 1.6;
+  font-size: 13px;
+  scrollbar-width: thin;
+  scrollbar-color: #EA251D #F5F5F5;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+@media (min-width: 640px) {
+  .sif-termos-box { padding: 24px; max-height: 420px; font-size: 14.5px; }
+}
+.sif-termos-box::-webkit-scrollbar { width: 6px; }
+.sif-termos-box::-webkit-scrollbar-track { background: #F5F5F5; border-radius: 3px; }
+.sif-termos-box::-webkit-scrollbar-thumb { background: #EA251D; border-radius: 3px; }
+
+.sif-termos-content h3 {
+  font-weight: 700;
+  color: #5B090D;
+  font-size: 15px;
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+.sif-termos-content p {
+  margin-bottom: 10px;
+  color: #333;
+}
+.sif-termos-content strong { color: #0A0000; font-weight: 700; }
+.sif-termos-content ul {
+  padding-left: 20px;
+  margin-bottom: 10px;
+  list-style: disc;
+}
+.sif-termos-content ul li { margin-bottom: 4px; color: #333; }
+
+.sif-termos-box.just-unlocked {
+  animation: sifPulseUnlock 0.8s ease-out;
+}
+@keyframes sifPulseUnlock {
+  0%   { box-shadow: 0 0 0 0 rgba(234, 37, 29, 0.55); }
+  60%  { box-shadow: 0 0 0 14px rgba(234, 37, 29, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(234, 37, 29, 0); }
+}
+
+.sif-termos-overlay {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(10, 0, 0, 0.85);
+  color: #fff;
+  font-size: 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(234, 37, 29, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  font-weight: 500;
+}
+
+.sif-checkbox-aceite {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.sif-checkbox-aceite.locked { opacity: 0.4; cursor: not-allowed; }
+.sif-checkbox-aceite.checked {
+  background: rgba(234, 37, 29, 0.08);
+  border-color: var(--exa-red, #EA251D);
+}
+.sif-checkbox-aceite input { display: none; }
+.sif-checkbox-marker {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  transition: all 0.18s ease;
+}
+.sif-checkbox-aceite.checked .sif-checkbox-marker {
+  background: var(--exa-red, #EA251D);
+  border-color: var(--exa-red, #EA251D);
+  color: #fff;
+}
+.sif-checkbox-text {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.55;
+}
+.sif-checkbox-text strong { color: #fff; }
+
+.sif-submit-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 0, 0, 0.78);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sif-submit-overlay-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 36px;
+  background: rgba(24, 18, 20, 0.92);
+  border: 1px solid rgba(234, 37, 29, 0.4);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* Sucesso */
+.sif-success-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(234, 37, 29, 0.18), rgba(234, 37, 29, 0.04));
+  border: 2px solid rgba(234, 37, 29, 0.5);
+  color: var(--exa-red, #EA251D);
+  margin: 0 auto;
+  animation: sifSuccessPulse 2s ease-in-out infinite;
+}
+@keyframes sifSuccessPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(234, 37, 29, 0.4); }
+  50%      { box-shadow: 0 0 0 14px rgba(234, 37, 29, 0); }
+}
