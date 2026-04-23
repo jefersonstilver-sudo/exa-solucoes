@@ -4,7 +4,17 @@ import { stepSindicoSchema } from './schema';
 import { formatCPFMask } from '@/utils/cpfValidator';
 import { formatBRPhoneMask, normalizeBRPhoneToE164 } from '@/utils/phoneE164';
 import UploadFotos from './UploadFotos';
+import ValidationErrors from './ValidationErrors';
 import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, IdCard } from 'lucide-react';
+
+const SINDICO_FIELD_LABELS: Record<string, string> = {
+  nomeCompleto: 'Nome completo',
+  cpf: 'CPF',
+  whatsappRaw: 'WhatsApp',
+  email: 'E-mail',
+  mandatoAte: 'Mandato de síndico até',
+  fotos: 'Fotos do elevador',
+};
 
 interface Props {
   onNext: () => void;
@@ -23,6 +33,7 @@ export const StepSindico: React.FC<Props> = ({ onNext, onPrev }) => {
   const e164 = useMemo(() => normalizeBRPhoneToE164(sindico.whatsappRaw || ''), [sindico.whatsappRaw]);
   const validation = useMemo(() => stepSindicoSchema.safeParse(sindico), [sindico]);
   const isValid = validation.success;
+  const errors = validation.success ? null : validation.error;
 
   return (
     <div className="space-y-5">
@@ -31,7 +42,8 @@ export const StepSindico: React.FC<Props> = ({ onNext, onPrev }) => {
         <p className="text-sm text-white/55 mt-1">Para validarmos o cadastro e entrarmos em contato.</p>
       </div>
 
-      <div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-5">
+      <div className="lg:col-span-2">
         <label className="sif-label" htmlFor="nomeCompleto"><User size={13} className="inline mr-1" />Nome completo</label>
         <input id="nomeCompleto" type="text" className="sif-input" maxLength={100}
           value={sindico.nomeCompleto || ''}
