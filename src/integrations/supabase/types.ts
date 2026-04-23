@@ -3135,6 +3135,36 @@ export type Database = {
           },
         ]
       }
+      configuracoes_notificacoes_sindicos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          receber_notificacoes: boolean
+          updated_at: string
+          user_id: string
+          whatsapp: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          receber_notificacoes?: boolean
+          updated_at?: string
+          user_id: string
+          whatsapp: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          receber_notificacoes?: boolean
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       configuracoes_sindico: {
         Row: {
           condominio_ticker_names: string[] | null
@@ -12301,58 +12331,145 @@ export type Database = {
       }
       sindicos_interessados: {
         Row: {
+          aceite_ip: string | null
+          aceite_pdf_url: string | null
+          aceite_timestamp: string | null
+          aceite_user_agent: string | null
           celular: string
+          cep: string | null
           created_at: string
           data_contato: string | null
           email: string
+          empresa_elevador: string | null
           endereco: string
+          endereco_bairro: string | null
+          endereco_cidade: string | null
+          endereco_complemento: string | null
+          endereco_google_place_id: string | null
+          endereco_latitude: number | null
+          endereco_logradouro: string | null
+          endereco_longitude: number | null
+          endereco_numero: string | null
+          endereco_uf: string | null
+          fotos_elevador_urls: string[] | null
           id: string
+          internet_operadoras: string[] | null
           nome_completo: string
           nome_predio: string
           numero_andares: number
           numero_unidades: number
           observacoes: string | null
+          observacoes_internas: string | null
           primeiro_nome: string | null
+          quantidade_andares: number | null
+          quantidade_blocos: number | null
+          quantidade_elevadores_sociais: number | null
+          quantidade_unidades_total: number | null
           responsavel_contato: string | null
+          responsavel_id: string | null
+          sindico_cpf: string | null
+          sindico_email: string | null
+          sindico_mandato_ate: string | null
+          sindico_nome: string | null
+          sindico_whatsapp: string | null
           sobrenome: string | null
           status: string
           updated_at: string
+          visita_agendada_em: string | null
         }
         Insert: {
+          aceite_ip?: string | null
+          aceite_pdf_url?: string | null
+          aceite_timestamp?: string | null
+          aceite_user_agent?: string | null
           celular: string
+          cep?: string | null
           created_at?: string
           data_contato?: string | null
           email: string
+          empresa_elevador?: string | null
           endereco: string
+          endereco_bairro?: string | null
+          endereco_cidade?: string | null
+          endereco_complemento?: string | null
+          endereco_google_place_id?: string | null
+          endereco_latitude?: number | null
+          endereco_logradouro?: string | null
+          endereco_longitude?: number | null
+          endereco_numero?: string | null
+          endereco_uf?: string | null
+          fotos_elevador_urls?: string[] | null
           id?: string
+          internet_operadoras?: string[] | null
           nome_completo: string
           nome_predio: string
           numero_andares: number
           numero_unidades: number
           observacoes?: string | null
+          observacoes_internas?: string | null
           primeiro_nome?: string | null
+          quantidade_andares?: number | null
+          quantidade_blocos?: number | null
+          quantidade_elevadores_sociais?: number | null
+          quantidade_unidades_total?: number | null
           responsavel_contato?: string | null
+          responsavel_id?: string | null
+          sindico_cpf?: string | null
+          sindico_email?: string | null
+          sindico_mandato_ate?: string | null
+          sindico_nome?: string | null
+          sindico_whatsapp?: string | null
           sobrenome?: string | null
           status?: string
           updated_at?: string
+          visita_agendada_em?: string | null
         }
         Update: {
+          aceite_ip?: string | null
+          aceite_pdf_url?: string | null
+          aceite_timestamp?: string | null
+          aceite_user_agent?: string | null
           celular?: string
+          cep?: string | null
           created_at?: string
           data_contato?: string | null
           email?: string
+          empresa_elevador?: string | null
           endereco?: string
+          endereco_bairro?: string | null
+          endereco_cidade?: string | null
+          endereco_complemento?: string | null
+          endereco_google_place_id?: string | null
+          endereco_latitude?: number | null
+          endereco_logradouro?: string | null
+          endereco_longitude?: number | null
+          endereco_numero?: string | null
+          endereco_uf?: string | null
+          fotos_elevador_urls?: string[] | null
           id?: string
+          internet_operadoras?: string[] | null
           nome_completo?: string
           nome_predio?: string
           numero_andares?: number
           numero_unidades?: number
           observacoes?: string | null
+          observacoes_internas?: string | null
           primeiro_nome?: string | null
+          quantidade_andares?: number | null
+          quantidade_blocos?: number | null
+          quantidade_elevadores_sociais?: number | null
+          quantidade_unidades_total?: number | null
           responsavel_contato?: string | null
+          responsavel_id?: string | null
+          sindico_cpf?: string | null
+          sindico_email?: string | null
+          sindico_mandato_ate?: string | null
+          sindico_nome?: string | null
+          sindico_whatsapp?: string | null
           sobrenome?: string | null
           status?: string
           updated_at?: string
+          visita_agendada_em?: string | null
         }
         Relationships: []
       }
