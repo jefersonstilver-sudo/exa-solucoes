@@ -141,6 +141,7 @@ const AppContent = () => {
   
   // ✅ CORREÇÃO CRÍTICA: Detectar se é rota de painel/display público
   const currentPath = window.location.pathname;
+  const isInteresseSindicoRoute = currentPath === '/interessesindico';
   const isPublicDisplayRoute = 
     currentPath.includes('/painel/') || 
     currentPath.includes('/painel-comercial/') ||
@@ -208,7 +209,7 @@ const AppContent = () => {
   // Normal app routes with page transitions
   return (
     <PageTransitionLoader isLoading={isTransitioning} loadingMessage={loadingMessage}>
-      <div className="min-h-screen bg-background">
+      <div className={isInteresseSindicoRoute ? 'bg-background' : 'min-h-screen bg-background'}>
         {/* Global Activity Tracker - tracks login/logout */}
         <GlobalActivityTracker />
         
