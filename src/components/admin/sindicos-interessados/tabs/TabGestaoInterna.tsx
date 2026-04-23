@@ -44,6 +44,22 @@ export const TabGestaoInterna: React.FC<Props> = ({ sindico, onSaved }) => {
   const [responsavelId, setResponsavelId] = useState<string>(sindico.responsavel_id ?? 'none');
   const [responsaveis, setResponsaveis] = useState<ResponsavelOption[]>([]);
   const [saving, setSaving] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+
+  const handleRegenerate = async () => {
+    setRegenerating(true);
+    const { data, error } = await supabase.functions.invoke('gerar-pdf-aceite-sindico', {
+      body: { sindico_interessado_id: sindico.id, force_regenerate: true },
+    });
+    setRegenerating(false);
+    if (error || (data && data.error)) {
+      console.error('[TabGestaoInterna] regen erro:', error || data?.error);
+      toast.error('Falha ao regenerar PDF: ' + (error?.message || data?.error || 'erro'));
+      return;
+    }
+    toast.success('PDF regenerado com sucesso');
+    onSaved?.();
+  };
 
   useEffect(() => {
     setStatus(sindico.status);
