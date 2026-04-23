@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, AlertCircle } from 'lucide-react';
+import { ArrowRight, AlertCircle, Download } from 'lucide-react';
 import Reveal from './Reveal';
 
 const STEPS = [
@@ -28,7 +28,7 @@ const STEPS = [
 
 const ComoFuncionaSection: React.FC = () => {
   return (
-    <section className="section-glow py-16 md:py-20 lg:py-28 px-5 md:px-8 lg:px-12 safe-bottom">
+    <section className="section-glow pt-16 md:pt-20 lg:pt-28 pb-24 md:pb-32 lg:pb-40 px-5 md:px-8 lg:px-12">
       <div className="max-w-3xl mx-auto">
         <Reveal>
           <div className="section-label mb-6">04 · Processo</div>
@@ -62,11 +62,24 @@ const ComoFuncionaSection: React.FC = () => {
         </Reveal>
 
         <Reveal delay={0.4}>
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-4">
             <Link to="/interessesindico/formulario" className="cta-red">
               Registrar interesse do meu prédio
               <ArrowRight className="w-5 h-5" />
             </Link>
+
+            <a
+              href="/apresentacao-sindicos.pdf"
+              download="Apresentacao-EXA-Sindicos.pdf"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-white/15 bg-white/[0.04] text-sm md:text-base font-semibold text-white/80 hover:text-white hover:border-white/30 hover:bg-white/[0.08] transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Baixar apresentação completa (PDF)
+            </a>
+
+            <p className="text-xs text-white/40 mt-1 text-center max-w-xs">
+              Material detalhado para apresentar em assembleia ou ao conselho do condomínio.
+            </p>
           </div>
         </Reveal>
       </div>
