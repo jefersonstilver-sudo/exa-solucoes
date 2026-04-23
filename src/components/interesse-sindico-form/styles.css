@@ -1,7 +1,8 @@
 /* Estilos específicos do formulário de interesse do síndico */
+@import '../interesse-sindico/styles.css';
 
-.sif-shell {
-  background: var(--exa-black, #0a0a0a);
+.exa-theme.sif-shell {
+  background: var(--exa-black, #0A0000);
   color: #fff;
   min-height: 100vh;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
