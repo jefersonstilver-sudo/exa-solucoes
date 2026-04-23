@@ -11,7 +11,7 @@ const InteresseSindicoFormulario: React.FC = () => {
   const { step, next, prev } = useSindicoFormStore();
 
   return (
-    <div className="sif-shell">
+    <div className="exa-theme font-inter sif-shell">
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <header className="mb-6 text-center">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
