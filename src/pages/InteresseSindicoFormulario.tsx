@@ -14,7 +14,7 @@ const InteresseSindicoFormulario: React.FC = () => {
 
   return (
     <div className="exa-theme font-inter sif-shell">
-      <div className="max-w-xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <div className="max-w-xl lg:max-w-3xl xl:max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
         <div className="flex justify-center mb-6">
           <a href="/sou-sindico" aria-label="Ir para Sou Síndico">
             <img
@@ -33,7 +33,7 @@ const InteresseSindicoFormulario: React.FC = () => {
           </p>
         </header>
 
-        <div className="sif-card p-4 sm:p-6">
+        <div className="sif-card p-4 sm:p-6 lg:p-8">
           <FormStepIndicator step={step} />
           <div className="mt-6 relative overflow-hidden">
             <AnimatePresence mode="wait" initial={false}>
