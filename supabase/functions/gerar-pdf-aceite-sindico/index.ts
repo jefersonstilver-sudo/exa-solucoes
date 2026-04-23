@@ -496,12 +496,12 @@ Deno.serve(async (req) => {
       nome: rec.nome_predio,
       logradouro: rec.endereco_logradouro,
       numero: rec.endereco_numero,
-      cep: rec.endereco_cep,
+      cep: rec.cep,
       cidade: rec.endereco_cidade,
       uf: rec.endereco_uf,
       andares: rec.quantidade_andares,
       blocos: rec.quantidade_blocos,
-      unidades: rec.quantidade_unidades,
+      unidades: rec.quantidade_unidades_total,
       elevadores: rec.quantidade_elevadores_sociais,
       operadoras: rec.internet_operadoras,
       elevador_empresa: rec.empresa_elevador,
@@ -684,13 +684,13 @@ Deno.serve(async (req) => {
 
   drawDataRow(state, 'Nome do prédio', rec.nome_predio || '—', (alt = !alt));
   drawDataRow(state, 'Endereço', enderecoFull, (alt = !alt));
-  drawDataRow(state, 'CEP', rec.endereco_cep || '—', (alt = !alt));
+  drawDataRow(state, 'CEP', rec.cep || '—', (alt = !alt));
   if (rec.endereco_complemento) drawDataRow(state, 'Complemento', rec.endereco_complemento, (alt = !alt));
   drawDataRow(
     state,
     'Estrutura',
     `${rec.quantidade_andares ?? '—'} andares · ${rec.quantidade_blocos ?? 1} bloco(s) · ${
-      rec.quantidade_unidades ?? '—'
+      rec.quantidade_unidades_total ?? '—'
     } unidades · ${rec.quantidade_elevadores_sociais ?? '—'} elevador(es) social(is)`,
     (alt = !alt),
   );
