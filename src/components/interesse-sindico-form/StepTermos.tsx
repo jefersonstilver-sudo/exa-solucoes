@@ -48,9 +48,20 @@ export const StepTermos: React.FC<Props> = ({ onPrev }) => {
     if (!aceito || !etapasValidas || enviando) return;
     setEnviando(true);
     setOverlayMsg('Registrando interesse...');
+
+    // Watchdog de UX: se passar de 20s, libera o botão e avisa
+    const watchdog = setTimeout(() => {
+      setEnviando(false);
+      setOverlayMsg('');
+      toast.error(
+        'O envio está demorando mais que o esperado. Verifique sua conexão e tente novamente.',
+      );
+    }, 20000);
+
     try {
       const result = await submitFormulario(predio, sindico);
       if (!result.success) {
+        clearTimeout(watchdog);
         toast.error(
           result.error ||
             'Erro ao registrar. Tente novamente. Contato: suporte@examidia.com.br',
@@ -59,19 +70,19 @@ export const StepTermos: React.FC<Props> = ({ onPrev }) => {
         setOverlayMsg('');
         return;
       }
-      setOverlayMsg('Gerando documento oficial...');
+      setOverlayMsg('Concluindo...');
       if (result.pdf_error) {
         console.warn('[StepTermos] PDF não gerado no submit:', result.pdf_error);
         toast.warning(
-          'Cadastro registrado, mas o PDF oficial será gerado em instantes pela equipe EXA.',
+          'Cadastro registrado! O PDF oficial será gerado em instantes pela equipe EXA.',
         );
       }
-      // pequena pausa para UX
-      setTimeout(() => {
-        reset();
-        navigate(`/interessesindico/sucesso?protocolo=${encodeURIComponent(result.protocolo!)}`);
-      }, 600);
+      clearTimeout(watchdog);
+      // navega imediatamente — não depende de PDF
+      reset();
+      navigate(`/interessesindico/sucesso?protocolo=${encodeURIComponent(result.protocolo!)}`);
     } catch (e: any) {
+      clearTimeout(watchdog);
       toast.error('Erro ao registrar. Tente novamente. Contato: suporte@examidia.com.br');
       setEnviando(false);
       setOverlayMsg('');
