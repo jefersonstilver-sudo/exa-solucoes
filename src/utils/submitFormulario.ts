@@ -129,7 +129,7 @@ export async function submitFormulario(
     // 6. Invocar edge function para gerar PDF oficial — com timeout para NÃO bloquear navegação
     let pdfError: string | undefined;
     let pdfPath: string | undefined;
-    const PDF_TIMEOUT_MS = 6000;
+    const PDF_TIMEOUT_MS = 15000;
     try {
       const invokePromise = supabase.functions.invoke('gerar-pdf-aceite-sindico', {
         body: { sindico_interessado_id: recordId },
