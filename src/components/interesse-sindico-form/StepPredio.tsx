@@ -87,7 +87,7 @@ export const StepPredio: React.FC<Props> = ({ onNext }) => {
       </div>
 
       {/* Nome */}
-      <div>
+      <div className="lg:col-span-2">
         <label className="sif-label" htmlFor="nomePredio">Nome do prédio</label>
         <input
           id="nomePredio"
@@ -101,18 +101,20 @@ export const StepPredio: React.FC<Props> = ({ onNext }) => {
       </div>
 
       {/* Endereço Google + CEP fallback */}
-      <div>
+      <div className="lg:col-span-2">
         <EnderecoAutocomplete onSelect={handleAddressSelected} />
         <CEPFallback onResult={handleCEPResult} />
       </div>
 
       {/* Mini-mapa */}
       {predio.latitude && predio.longitude && (
-        <MiniMapa lat={predio.latitude} lng={predio.longitude} />
+        <div className="lg:col-span-2">
+          <MiniMapa lat={predio.latitude} lng={predio.longitude} />
+        </div>
       )}
 
       {/* Campos editáveis */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:col-span-2">
         <div className="sm:col-span-2">
           <label className="sif-label" htmlFor="logradouro">Logradouro</label>
           <input id="logradouro" type="text" className="sif-input"
@@ -217,7 +219,7 @@ export const StepPredio: React.FC<Props> = ({ onNext }) => {
       </div>
 
       {/* Casa de máquinas */}
-      <div>
+      <div className="lg:col-span-2">
         <h3 className="text-sm font-semibold text-white/85 mb-3">Casa de máquinas</h3>
         <div className="space-y-2" role="radiogroup" aria-label="Casa de máquinas">
           {CASA_MAQUINAS.map((c) => (
@@ -239,19 +241,19 @@ export const StepPredio: React.FC<Props> = ({ onNext }) => {
         </div>
       </div>
 
-      <div className="pt-4">
+      <div className="pt-4 lg:col-span-2">
+        {!isValid && (
+          <ValidationErrors error={errors} fieldLabels={PREDIO_FIELD_LABELS} />
+        )}
         <button
           type="button"
           onClick={onNext}
           disabled={!isValid}
           aria-disabled={!isValid}
-          className="sif-btn-primary w-full flex items-center justify-center gap-2"
+          className="sif-btn-primary w-full flex items-center justify-center gap-2 mt-4"
         >
           Continuar <ArrowRight size={18} />
         </button>
-        {!isValid && (
-          <p className="sif-help text-center mt-2">Preencha todos os campos obrigatórios para continuar.</p>
-        )}
       </div>
     </div>
   );
