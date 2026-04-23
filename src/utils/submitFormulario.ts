@@ -122,10 +122,10 @@ export async function submitFormulario(
         else console.warn('[submitFormulario] foto upload falhou:', upErr);
       }
       if (uploadedPaths.length > 0) {
-        await (supabase as any)
-          .from('sindicos_interessados')
-          .update({ fotos_elevador_urls: uploadedPaths })
-          .eq('id', recordId);
+        await (supabase as any).rpc('update_sindico_fotos', {
+          p_id: recordId,
+          p_fotos: uploadedPaths,
+        });
       }
     }
 
