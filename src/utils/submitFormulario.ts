@@ -159,6 +159,28 @@ export async function submitFormulario(
       pdfError = pdfCatchErr?.message || 'Exceção ao gerar PDF';
     }
 
+    // 7. Disparar e-mail de confirmação ao síndico (com PDF anexo) — fire-and-forget,
+    //    NÃO bloqueia a tela de sucesso. A própria função é idempotente e marca
+    //    auditoria em sindicos_interessados.email_confirmacao_*.
+    try {
+      void supabase.functions
+        .invoke('send-sindico-confirmation', {
+          body: { sindico_interessado_id: recordId },
+        })
+        .then((res) => {
+          if ((res as any)?.error) {
+            console.warn('[submitFormulario] envio e-mail síndico falhou (não bloqueia):', (res as any).error);
+          } else {
+            console.log('[submitFormulario] e-mail de confirmação despachado');
+          }
+        })
+        .catch((e) => {
+          console.warn('[submitFormulario] exceção ao despachar e-mail (não bloqueia):', e?.message);
+        });
+    } catch (mailErr: any) {
+      console.warn('[submitFormulario] não foi possível agendar envio de e-mail:', mailErr?.message);
+    }
+
     return {
       success: true,
       protocolo,

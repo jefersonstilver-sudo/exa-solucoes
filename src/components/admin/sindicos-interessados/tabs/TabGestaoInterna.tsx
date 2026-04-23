@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Loader2, Save, RefreshCw } from 'lucide-react';
+import { Loader2, Save, RefreshCw, Mail, MailCheck } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { SindicoRow } from '@/hooks/useSindicosList';
@@ -45,6 +45,22 @@ export const TabGestaoInterna: React.FC<Props> = ({ sindico, onSaved }) => {
   const [responsaveis, setResponsaveis] = useState<ResponsavelOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
+
+  const handleResendEmail = async () => {
+    setResendingEmail(true);
+    const { data, error } = await supabase.functions.invoke('send-sindico-confirmation', {
+      body: { sindico_interessado_id: sindico.id, force: true },
+    });
+    setResendingEmail(false);
+    if (error || (data && (data as any).error)) {
+      console.error('[TabGestaoInterna] reenvio e-mail erro:', error || (data as any)?.error);
+      toast.error('Falha ao reenviar e-mail: ' + (error?.message || (data as any)?.error || 'erro'));
+      return;
+    }
+    toast.success('E-mail de confirmação reenviado');
+    onSaved?.();
+  };
 
   const handleRegenerate = async () => {
     setRegenerating(true);
@@ -196,6 +212,32 @@ export const TabGestaoInterna: React.FC<Props> = ({ sindico, onSaved }) => {
             <RefreshCw className="w-4 h-4 mr-2" />
           )}
           Regenerar PDF
+        </Button>
+      </div>
+
+      <Separator className="my-2" />
+      <div className="space-y-2">
+        <Label className="text-sm">E-mail de confirmação</Label>
+        <p className="text-xs text-muted-foreground">
+          {sindico.email_confirmacao_enviado_em
+            ? `Enviado em ${new Date(sindico.email_confirmacao_enviado_em).toLocaleString('pt-BR')}.`
+            : 'Ainda não enviado.'}
+          {' '}Reenvia o e-mail oficial ao síndico, com o PDF jurídico em anexo.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleResendEmail}
+          disabled={resendingEmail}
+        >
+          {resendingEmail ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : sindico.email_confirmacao_enviado_em ? (
+            <MailCheck className="w-4 h-4 mr-2" />
+          ) : (
+            <Mail className="w-4 h-4 mr-2" />
+          )}
+          {sindico.email_confirmacao_enviado_em ? 'Reenviar e-mail' : 'Enviar e-mail'}
         </Button>
       </div>
     </Card>
