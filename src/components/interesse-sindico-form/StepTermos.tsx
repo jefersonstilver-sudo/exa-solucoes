@@ -70,15 +70,11 @@ export const StepTermos: React.FC<Props> = ({ onPrev }) => {
         setOverlayMsg('');
         return;
       }
-      setOverlayMsg('Concluindo...');
       if (result.pdf_error) {
         console.warn('[StepTermos] PDF não gerado no submit:', result.pdf_error);
-        toast.warning(
-          'Cadastro registrado! O PDF oficial será gerado em instantes pela equipe EXA.',
-        );
       }
       clearTimeout(watchdog);
-      // navega imediatamente — não depende de PDF
+      // navega imediatamente — não depende de PDF, sem toast intermediário
       reset();
       navigate(`/interessesindico/sucesso?protocolo=${encodeURIComponent(result.protocolo!)}`);
     } catch (e: any) {
