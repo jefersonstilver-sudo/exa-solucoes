@@ -1,84 +1,64 @@
 
 
-# Ajustes Finais Antes da Execução
+# Plano: Correções de Desktop e Scroll Duplicado em `/interessesindico`
 
-## 1. Resposta sobre a logo
+## Diagnóstico do scroll duplicado
 
-**Linha exata em `src/components/layout/header/HeaderLogo.tsx` (linha 13):**
+A página tem `overflow-x-hidden` no container raiz (`InteresseSindicoLanding.tsx`). Combinado com o wrapper global `<div className="min-h-screen bg-background">` em `App.tsx` (também com altura mínima total), o navegador renderiza barras nos dois níveis em alguns desktops. A correção é remover `overflow-x-hidden` do container e movê-lo para o `<body>` via classe nativa (já há controle global), OU substituir por `max-w-full` simples, deixando o `<html>` controlar o scroll vertical único.
 
-```ts
-const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=…';
-```
+Após inspeção: nenhuma seção tem `overflow-y` ou `h-screen` travada. O `HeroSection` já usa `min-h-screen` (correto). As 5 seções já têm `max-w-Xxl mx-auto` em containers internos, mas **os valores não escalam progressivamente** em desktop wide.
 
-**Diagnóstico:** É a logo com cores originais (vermelho/preto sobre transparente) — **não é versão branca pura**. Em fundo preto, o vermelho da logo se mistura com o glow vermelho da página (#EA251D ≈ vermelho da própria logo) e perde legibilidade.
+## Mudanças (6 arquivos, somente CSS/classes)
 
-**Solução padrão do projeto** (já usada em `ProviderBenefitChoice.tsx` linha 314, `BenefitPreview.tsx` linha 115, `MobileHeader.tsx` linha 27): aplicar `filter brightness-0 invert` na tag `<img>` para forçar versão 100% branca. Esse é o padrão consolidado do projeto, alinhado com a memory `mem://style/logo-ticker-standard-v4-0-final` ("logos obrigatoriamente em BRANCO via brightness-0 invert").
+### 1. `src/pages/InteresseSindicoLanding.tsx`
+- Remover `overflow-x-hidden` do raiz; manter apenas `min-h-screen w-full bg-[var(--exa-black)] text-white`.
 
-**Não preciso de URL nova.** Vou reusar `EXA_LOGO_URL` da `HeaderLogo.tsx` + filtro CSS:
+### 2. `src/components/interesse-sindico/HeroSection.tsx`
+- `<section>`: adicionar padding responsivo `px-5 md:px-8 lg:px-12`.
+- Container interno do conteúdo central: `max-w-2xl lg:max-w-3xl` (já é `max-w-3xl` — ajustar para `max-w-2xl lg:max-w-3xl`).
+- `<h1>`: trocar `text-4xl sm:text-5xl md:text-6xl lg:text-7xl` por `text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-[1.05] tracking-tight` (manter já tem leading/tracking; só ajustar escala).
+- `<p>` subtítulo: `text-base md:text-lg lg:text-xl`.
+- Logo `<img>`: trocar `h-12 md:h-14` por `h-12 md:h-14 lg:h-16` (usar height — `w-auto` mantém proporção; equivalente ao `w-28/32/40` solicitado).
 
-```tsx
-<img src={EXA_LOGO_URL} alt="EXA Mídia"
-     className="h-12 w-auto filter brightness-0 invert
-                drop-shadow-[0_0_24px_rgba(234,37,29,0.45)]" />
-```
+### 3. `src/components/interesse-sindico/ProblemaSection.tsx`
+- `<section>`: padding `px-5 md:px-8 lg:px-12 py-16 md:py-20 lg:py-28` (atualmente `py-20 md:py-28 px-6`).
+- Container interno: trocar `max-w-4xl mx-auto` por `max-w-2xl lg:max-w-3xl mx-auto`.
+- Wrapper do `LazyVideoPlayer`: trocar `max-w-3xl mx-auto` por `max-w-md md:max-w-lg lg:max-w-2xl mx-auto`.
+- Títulos: `text-3xl md:text-4xl lg:text-5xl xl:text-6xl`.
 
-O `drop-shadow` com `--exa-red` recria o "drop shadow vermelho" do hero do HTML.
+### 4. `src/components/interesse-sindico/DemonstracaoSection.tsx`
+- `<section>`: padding `px-5 md:px-8 lg:px-12 py-16 md:py-20 lg:py-28`.
+- Container interno: `max-w-2xl lg:max-w-3xl mx-auto` (era `max-w-4xl`).
+- Wrapper do vídeo vertical: trocar `max-w-[280px]` por `max-w-[280px] md:max-w-[320px] lg:max-w-[360px]`.
+- Títulos: mesma escala progressiva.
 
-## 2. Confirmação variáveis CSS
+### 5. `src/components/interesse-sindico/BeneficiosSection.tsx`
+- `<section>`: padding `px-5 md:px-8 lg:px-12 py-16 md:py-20 lg:py-28`.
+- Container já é `max-w-5xl mx-auto` — manter ✅.
+- Cards `.benefit-card`: padding já é 2rem; reduzir levemente em mobile via classe `p-6 md:p-8` (sobrescrever o `padding: 2rem` do CSS removendo-o e migrando para Tailwind no JSX).
+- Títulos: escala progressiva.
 
-**Sim, confirmo:** vou adotar variáveis CSS da paleta EXA.
+### 6. `src/components/interesse-sindico/ComoFuncionaSection.tsx`
+- `<section>`: padding `px-5 md:px-8 lg:px-12 py-16 md:py-20 lg:py-28`.
+- Container interno: `max-w-3xl mx-auto` (já está) ✅.
+- CTA final `<Link>`: garantir `inline-flex` (não `w-full`) — verificar e manter alinhamento centralizado via `flex justify-center` no wrapper (já está) ✅.
+- Títulos: escala progressiva.
 
-No topo de `src/components/interesse-sindico/styles.css`:
+### 7. `src/components/interesse-sindico/styles.css`
+- `.benefit-card`: remover `padding: 2rem;` para deixar o Tailwind controlar via `p-6 md:p-8` no JSX.
 
-```css
-.exa-theme {
-  --exa-red:   #EA251D;
-  --exa-bordo: #5B090D;
-  --exa-black: #0A0000;
-  --exa-glow:  #FF3A30;
-}
-```
+## Garantias
 
-Container raiz da página:
+- ✅ Sem alteração de conteúdo textual.
+- ✅ Sem alteração nos vídeos (preload, aspect, autoplay vídeo 2 mantido).
+- ✅ Sem alteração de rota.
+- ✅ Sem mexer em `/sou-sindico` ou outras páginas.
+- ✅ Sem alterar variáveis CSS `--exa-*`.
+- ✅ Sem alterar framer-motion / `Reveal`.
+- ✅ Apenas classes Tailwind responsivas + 1 remoção de padding em CSS.
 
-```tsx
-<div className="exa-theme font-inter min-h-screen bg-[var(--exa-black)] text-white">
-```
+## Teste de breakpoints
+Após aplicar, faço screenshot em 390px, 768px, 1280px e 1920px e confirmo: scroll único, conteúdo respirando nas bordas, tipografia controlada, vídeos com tamanho proporcional.
 
-**Em todos os componentes da pasta `interesse-sindico/`** uso exclusivamente `var(--…)`:
-
-| ❌ Não vou usar | ✅ Vou usar |
-|---|---|
-| `bg-[#EA251D]` | `bg-[var(--exa-red)]` |
-| `text-[#0A0000]` | `text-[var(--exa-black)]` |
-| `border-[#EA251D]/20` | `border-[var(--exa-red)]/20` |
-| `from-[#5B090D]` | `from-[var(--exa-bordo)]` |
-| `shadow-[…rgba(234,37,29,0.4)]` | `shadow-[…var(--exa-glow)]/40` (onde Tailwind suportar) ou `rgb(from var(--exa-red) r g b / 0.4)` em CSS puro |
-
-Para `box-shadow` complexo com múltiplas camadas (ex: shine do CTA, glow do play button), defino tudo em classes CSS dentro de `styles.css` usando `var(--exa-red)` / `var(--exa-glow)` — o JSX só aplica `className="play-button"`, sem hex inline.
-
-**Ganho:** próximos prompts (formulário, sucesso, admin) podem reusar a mesma classe `exa-theme` no container e herdar a paleta automaticamente.
-
-## 3. Resto do plano permanece igual
-
-Mantidas todas as decisões do plano anterior aprovado:
-
-- 10 arquivos novos em `src/pages/InteresseSindicoLanding.tsx` + `src/components/interesse-sindico/`
-- 1 edição mínima em `src/routes/PublicRoutes.tsx` (rota pública)
-- `LazyVideoPlayer.tsx` com `preload="none"` + `playsInline` + aspect nativo
-- `framer-motion` para reveal scroll
-- Inter 400-900 importada localmente no `styles.css`
-- Sem `<Layout>`, sem header global, sem rodapé
-- CTA final → `/interessesindico/formulario` (rota próximo prompt)
-- Não toco em `/sou-sindico`, `index.css`, `tailwind.config.ts`, fluxo admin
-
-## Diferenças vs plano anterior
-
-| Item | Antes | Agora |
-|---|---|---|
-| Cores | `bg-[#EA251D]` inline | `bg-[var(--exa-red)]` via `.exa-theme` |
-| Logo | URL direta sem filtro | `EXA_LOGO_URL` + `filter brightness-0 invert` + drop-shadow |
-| Reaproveitamento | Específico desta página | Variáveis disponíveis para formulário/sucesso/admin |
-
-Aguardo aprovação final para executar.
+Aguardo aprovação para executar.
 
