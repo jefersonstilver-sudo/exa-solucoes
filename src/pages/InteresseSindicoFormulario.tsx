@@ -16,11 +16,13 @@ const InteresseSindicoFormulario: React.FC = () => {
     <div className="exa-theme font-inter sif-shell">
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <div className="flex justify-center mb-6">
-          <img
-            src={EXA_LOGO_URL}
-            alt="EXA - Publicidade Inteligente"
-            className="h-10 sm:h-12 w-auto"
-          />
+          <a href="/sou-sindico" aria-label="Ir para Sou Síndico">
+            <img
+              src={EXA_LOGO_URL}
+              alt="EXA - Publicidade Inteligente"
+              className="h-10 sm:h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+            />
+          </a>
         </div>
         <header className="mb-6 text-center">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
