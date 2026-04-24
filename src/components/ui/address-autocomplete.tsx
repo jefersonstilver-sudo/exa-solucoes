@@ -12,7 +12,8 @@ interface AddressAutocompleteProps {
   onPlaceSelect?: (place: { 
     address: string; 
     coordinates: { lat: number; lng: number }; 
-    placeId: string 
+    placeId: string;
+    neighborhood?: string;
   }) => void;
   placeholder?: string;
   className?: string;
