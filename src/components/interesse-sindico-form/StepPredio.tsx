@@ -189,6 +189,45 @@ export const StepPredio: React.FC<Props> = ({ onNext }) => {
         </div>
       </div>
 
+      {/* Tipo de prédio (residencial / comercial) */}
+      <div className="lg:col-span-2">
+        <h3 className="text-sm font-semibold text-white/85 mb-3 flex items-center gap-2">
+          <Building2 size={16} className="text-[var(--exa-red,#c7141a)]" /> Tipo de prédio
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label="Tipo de prédio">
+          {TIPO_PREDIO.map((t) => (
+            <ChoiceCard
+              key={t}
+              selected={predio.tipoPredio === t}
+              onClick={() => setPredio({
+                tipoPredio: t,
+                permiteAirbnb: t === 'comercial' ? undefined : predio.permiteAirbnb,
+              })}
+              label={TIPO_PREDIO_LABELS[t]}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Permite Airbnb? — só aparece para residencial */}
+      {predio.tipoPredio === 'residencial' && (
+        <div className="lg:col-span-2">
+          <h3 className="text-sm font-semibold text-white/85 mb-3">
+            O prédio tem liberação para Airbnb?
+          </h3>
+          <div className="space-y-2" role="radiogroup" aria-label="Permite Airbnb">
+            {PERMITE_AIRBNB.map((v) => (
+              <ChoiceCard
+                key={v}
+                selected={predio.permiteAirbnb === v}
+                onClick={() => setPredio({ permiteAirbnb: v })}
+                label={PERMITE_AIRBNB_LABELS[v]}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Internet (multi) */}
       <div>
         <h3 className="text-sm font-semibold text-white/85 mb-3 flex items-center gap-2">
