@@ -63,8 +63,7 @@ const LazyVideoPlayer: React.FC<LazyVideoPlayerProps> = ({
         ref={videoRef}
         preload={autoPlay ? 'auto' : 'metadata'}
         playsInline
-        // @ts-expect-error - atributo legado do iOS Safari
-        webkit-playsinline="true"
+        {...({ 'webkit-playsinline': 'true' } as any)}
         controls={started}
         controlsList="nodownload"
         autoPlay={autoPlay}
