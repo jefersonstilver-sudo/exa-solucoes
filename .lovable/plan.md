@@ -1,67 +1,103 @@
 
 
-## Correção: PDF, e-mail e prevenção de spam
+## Plano: vídeos da landing + tipo de prédio + Airbnb (fluxo completo)
 
-### 1. Logo do PDF (oficial e maior)
+### 1. Vídeo 1 (seção "O Problema") — trocar URL apenas
+
+**Arquivo:** `src/components/interesse-sindico/ProblemaSection.tsx`
+- Trocar a constante `VIDEO_1` para a mesma URL já usada na página `/sou-sindico` (vídeo principal mais leve, já hospedado no Storage). Vou identificar a URL exata no `useVideoConfig` / componentes da página `/sou-sindico` e reaproveitar.
+- Manter o `LazyVideoPlayer` como está (preload metadata, click-to-play) — só a fonte muda.
+
+### 2. Vídeo 2 (seção "Na Prática") — autoplay puro, sem controles, sem pausa
+
+**Arquivo:** `src/components/interesse-sindico/DemonstracaoSection.tsx`
+- Substituir o `<LazyVideoPlayer>` por um `<video>` nativo simples, configurado como:
+  - `autoPlay`, `loop`, `muted`, `playsInline`
+  - **sem** `controls`
+  - `pointer-events-none` no elemento (bloqueia qualquer clique/toque que pause)
+  - `preload="auto"` para iniciar suave
+- Comportamento final: roda sozinho infinitamente, sem botão de play, sem pausa, sem som — igual a um GIF.
+
+### 3. Formulário — Tipo de prédio + Airbnb (condicional)
+
+**Onde:** `src/components/interesse-sindico-form/StepPredio.tsx` + `schema.ts` + `formStore.ts`
+
+**Novos campos no Step 1 ("Dados do prédio"), inseridos logo após "Estrutura":**
+
+a) **Tipo de prédio** (radio obrigatório, 2 opções):
+   - Residencial
+   - Comercial
+
+b) **Permite Airbnb?** (radio obrigatório, **só aparece se Residencial**):
+   - Sim, permite Airbnb
+   - Não, não permite Airbnb
+   - Quando o usuário troca para Comercial, o campo é resetado e ocultado.
+
+**Schema (`schema.ts`):**
+- Adicionar `TIPO_PREDIO = ['residencial', 'comercial']` e `PERMITE_AIRBNB = ['sim', 'nao']` com labels.
+- `tipoPredio: z.enum(TIPO_PREDIO)` obrigatório.
+- `permiteAirbnb: z.enum(PERMITE_AIRBNB).optional()` com `superRefine` exigindo o campo quando `tipoPredio === 'residencial'`.
+
+**Store (`formStore.ts`):** estender `PredioState` e o `initialPredio` com os novos campos.
+
+### 4. Banco — novas colunas + RPC
+
+**Migration:**
+- Adicionar em `sindicos_interessados`:
+  - `tipo_predio text` (valores: `residencial` | `comercial`)
+  - `permite_airbnb text` (valores: `sim` | `nao` | `null` para comerciais)
+- Atualizar a função `submit_sindico_interesse(payload jsonb)` para receber e gravar os 2 novos campos.
+
+**Frontend:** `src/utils/submitFormulario.ts` passa a enviar `tipo_predio` e `permite_airbnb` no payload do RPC.
+
+### 5. PDF oficial — nova seção/linha no documento
 
 **Arquivo:** `supabase/functions/gerar-pdf-aceite-sindico/index.ts`
+- Na seção "Dados do prédio" (página 1), adicionar 2 linhas após "Casa de máquinas":
+  - **Tipo de prédio:** Residencial / Comercial
+  - **Permite locação por Airbnb:** Sim / Não  *(linha só aparece se residencial)*
+- Buscar os 2 novos campos no SELECT da tabela.
+- Manter idempotência (PDFs já gerados não regeneram, novos protocolos terão a info).
 
-- Remover o `LOGO_B64` placeholder de ~415 bytes (gera o "quadradinho" vermelho minúsculo).
-- Buscar a logo oficial **na hora de gerar** (cacheada em memória), via `fetch` da URL pública já usada em todo o site:
-  `https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Publicidade%20Inteligente%20(800%20x%20800%20px).png`
-- Se o fetch falhar (offline), cair num fallback texto "EXA MÍDIA" em branco bold — sem quebrar o PDF.
-- Ajustar `drawHeader`: aumentar `targetH` de **22 → 36px** e re-centralizar verticalmente. O header continua com 56px de altura, mas a logo ocupará proporção visualmente reconhecível (~64% da faixa).
-- Manter o divisor + texto "INDEXA MÍDIA LTDA" do lado.
+### 6. Painel administrativo — exibir nas abas existentes
 
-### 2. Logo do e-mail (corrompida → URL pública)
+**Arquivo:** `src/components/admin/sindicos-interessados/SindicoDialog.tsx` (e tabs internas)
+- Aba **Resumo** e aba **Prédio**: incluir 2 novas linhas:
+  - "Tipo: Residencial / Comercial" (com ícone)
+  - "Airbnb: Sim / Não" (badge verde/vermelho, oculta se comercial)
+- Atualizar o tipo `SindicoInteressado` em `src/components/admin/sindicos-interessados/types.ts` com os 2 novos campos opcionais.
+- Se houver listagem com filtros, adicionar opção de filtrar por tipo (avalio na implementação; só adiciono se já houver padrão de filtros na página).
+
+### 7. E-mail de confirmação — texto enxuto
 
 **Arquivo:** `supabase/functions/_shared/email-templates-html/sindico-confirmacao.ts`
+- Adicionar 1 linha no resumo do prédio: "Tipo: Residencial • Airbnb: Não" (ou Comercial, conforme o caso). Mudança mínima, não altera layout.
 
-- Remover o `data:image/png;base64,iVBORw0...` enorme (está corrompido e por isso o Gmail mostra "imagem quebrada").
-- Substituir por `<img src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Publicidade%20Inteligente%20(800%20x%20800%20px).png" width="44" height="44" alt="EXA Mídia" style="display:block; border:0;" />` (a URL é **pública**, sem token, ideal para e-mail).
-- Adicionar ao lado do logo o texto "EXA MÍDIA" em branco/bold como reforço caso o cliente bloqueie imagens (Outlook por padrão bloqueia).
+### Arquivos afetados (resumo)
 
-### 3. Aviso de spam + táticas anti-spam (corporativo sério)
+**Editar:**
+- `src/components/interesse-sindico/ProblemaSection.tsx` (URL vídeo 1)
+- `src/components/interesse-sindico/DemonstracaoSection.tsx` (vídeo 2 autoplay puro)
+- `src/components/interesse-sindico-form/schema.ts` (novos enums + validação condicional)
+- `src/components/interesse-sindico-form/formStore.ts` (estado inicial)
+- `src/components/interesse-sindico-form/StepPredio.tsx` (UI dos 2 novos campos)
+- `src/utils/submitFormulario.ts` (payload RPC)
+- `supabase/functions/gerar-pdf-aceite-sindico/index.ts` (linhas no PDF)
+- `supabase/functions/_shared/email-templates-html/sindico-confirmacao.ts` (linha no e-mail)
+- `src/components/admin/sindicos-interessados/types.ts` (tipos)
+- `src/components/admin/sindicos-interessados/SindicoDialog.tsx` + tabs filhas (exibição)
 
-**3a. Aviso visível no corpo do e-mail** (`sindico-confirmacao.ts`):
-- Inserir antes do bloco "O que acontece agora" um card amarelo-claro discreto:
-  > 📬 **Não está vendo nossos próximos contatos?** Verifique sua caixa de **Spam / Lixo Eletrônico** e marque `contato@examidia.com.br` como **remetente confiável** ou adicione aos seus contatos. Isso garante que aprovação, contratos e comunicações cheguem sem atraso.
+**Migration:**
+- Adicionar `tipo_predio` e `permite_airbnb` em `sindicos_interessados`
+- Recriar `submit_sindico_interesse` com os 2 novos parâmetros
 
-**3b. Aviso na página de sucesso** (`src/pages/InteresseSindicoSucesso.tsx`):
-- Adicionar abaixo do parágrafo de "48 horas úteis" um bloco discreto:
-  > "Já enviamos um e-mail de confirmação. **Não esqueça de verificar sua caixa de spam** e marcar `contato@examidia.com.br` como remetente confiável."
-
-**3c. Melhorias técnicas anti-spam na edge function `send-sindico-confirmation/index.ts`:**
-- Adicionar headers Resend que melhoram pontuação:
-  - `reply_to: 'contato@examidia.com.br'` (resposta humana, não no-reply)
-  - `headers: { 'List-Unsubscribe': '<mailto:contato@examidia.com.br?subject=Unsubscribe>', 'X-Entity-Ref-ID': protocolo }`
-  - `tags: [{ name: 'category', value: 'sindico-confirmation' }]`
-- Garantir que o **From** seja `EXA Mídia <contato@examidia.com.br>` (nome amigável + e-mail corporativo verificado, não `onboarding@resend.dev`).
-- Adicionar **versão texto plano** (`text:`) no payload — e-mails só-HTML têm pontuação maior de spam. Texto curto resumindo o protocolo + próximos passos.
-- Manter o anexo PDF (já temos), pois aumenta legitimidade.
-- Subject com protocolo: `"Registro recebido • Protocolo {{PROTOCOLO}} • EXA Mídia"` (palavra-chave clara, sem CAPS, sem !!! ou $).
-
-### 4. Reenvio dos e-mails afetados
-
-Após deploy:
-- Reenviar e-mail para o protocolo `EXA-2026-000002` (último teste da tela) usando o botão "Reenviar e-mail" da aba Gestão Interna ou via `force_regenerate` no edge function.
-- O PDF dos protocolos antigos **não será regenerado automaticamente** (idempotência protege). Se quiser atualizar a logo nos PDFs já existentes, preciso disparar `gerar-pdf-aceite-sindico` com `force_regenerate: true` para cada um (posso fazer isso pós-deploy se aprovar).
-
-### Arquivos afetados
-
-- **Editar:** `supabase/functions/gerar-pdf-aceite-sindico/index.ts` (logo oficial + tamanho)
-- **Editar:** `supabase/functions/_shared/email-templates-html/sindico-confirmacao.ts` (logo via URL + bloco de aviso de spam)
-- **Editar:** `supabase/functions/send-sindico-confirmation/index.ts` (reply_to, List-Unsubscribe, text plain, subject com protocolo)
-- **Editar:** `src/pages/InteresseSindicoSucesso.tsx` (aviso "verifique spam")
-- **Deploy:** `gerar-pdf-aceite-sindico`, `send-sindico-confirmation`
-- **Pós-deploy:** reenviar e-mail do protocolo EXA-2026-000002 e (opcionalmente) regenerar PDFs antigos
+**Deploy de Edge Functions:** `gerar-pdf-aceite-sindico`, `send-sindico-confirmation`
 
 ### O que NÃO será alterado
 
-- Layout geral do PDF (texto, seções, rodapé) — só a logo do header.
-- Estrutura do template de e-mail — só a logo, o aviso de spam e melhorias de header SMTP.
-- Domínio remetente, fluxo do formulário, página de sucesso (estrutura).
-- Tabela `sindicos_interessados`.
+- Layout geral da landing, do formulário, do PDF, do e-mail e do painel admin.
+- Demais campos do formulário, autenticação, fluxo de upload de fotos.
+- PDFs já gerados de protocolos antigos (idempotência preserva).
 
 Aprova para eu executar?
 
