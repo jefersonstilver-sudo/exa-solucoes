@@ -101,7 +101,7 @@ export function useGooglePlacesAutocomplete(options: UseGooglePlacesAutocomplete
 
       const request: google.maps.places.PlaceDetailsRequest = {
         placeId,
-        fields: ['formatted_address', 'geometry', 'name', 'types'],
+        fields: ['formatted_address', 'geometry', 'name', 'types', 'address_components'],
       };
 
       placesService.current.getDetails(request, (place, status) => {
