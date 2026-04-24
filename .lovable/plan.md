@@ -1,39 +1,56 @@
-## Plano aprovado com ressalva — 2 frentes
+## Diagnóstico (confirmado via banco)
 
-### 1. Prédios "Em Instalação" — apenas vitrine (sem carrinho)
+Investiguei o caso do **Riverside**:
+- `device.status = 'offline'`
+- `building.status = 'instalacao'` ← está EM INSTALAÇÃO
+- `last_online_at` = ~29h atrás (matematicamente correto, mas irrelevante — o painel ainda não está em produção)
 
-**`src/components/building-store/card/BuildingCardActions.tsx`**
-- Adicionar detecção robusta: `const isEmInstalacao = String(building.status || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes('instala');` (pega tanto `instalação` quanto `instalacao`).
-- Se `isEmInstalacao`:
-  - Bloquear `handleAddToCart` (early return).
-  - Substituir o botão "Continuar/Adicionar" por um botão **desabilitado** estilo âmbar com ícone `Construction` (lucide) e label **"Em Instalação"**.
-  - Esconder/substituir o preço por **"Em breve"** em tom muted.
+Na função `monitor-panels/index.ts` (linha 390) existe um **BLOCK B** que ignora apenas prédios com status `'interno'`. **Não existe bloqueio para `'instalacao'`/`'instalação'`**, por isso o WhatsApp dispara "ALERTA PAINEL OFFLINE" para o Riverside (que sequer foi entregue oficialmente).
 
-**`src/components/building-store/BuildingStoreCard.tsx`**
-- Adicionar uma **tarja glass elegante** sobre a imagem (canto superior, full-width discreta) com texto **"EM INSTALAÇÃO"**:
-  - `backdrop-blur-md bg-amber-500/20 border border-amber-300/40 text-amber-50`, ícone `Construction`, animação suave de entrada.
-- Aplicar `opacity-90` na imagem e leve `grayscale-[20%]` para reforçar o estado "preview".
-- Não alterar nada em prédios `ativo` — comportamento idêntico ao atual.
+## Plano de correção
 
-### 2. Correção do mapa abrindo no oceano (Howland Island)
+### 1. `supabase/functions/monitor-panels/index.ts` — Bloqueio de prédios em instalação
 
-**Causa identificada (`src/components/building-store/BuildingMap.tsx`):**
-- Quando `mapBuildings` chega vazio na primeira renderização (antes do fetch), `bounds` fica vazio e o `fitBounds(bounds, 40)` em linha ~480 não tem efeito útil. Pior: como `selectedLocation` é null e `hasAny` é false, o fluxo cai no else final — mas o `bounds` vazio do `MarkerClusterer` ou re-render pode reposicionar o mapa para (0,0).
-- Além disso, quando markers existem mas são `OverlayView` (sem `getPosition`), `bounds.extend(position)` está correto, mas se `buildings` mudar e nenhum tiver coords válidas, o reset ainda é falho.
+Adicionar um novo bloco logo após o BLOCK B (interno), reutilizando a mesma normalização de acentos já validada:
 
-**Correções:**
-- **Centro inicial sempre Foz** quando não há `selectedLocation` nem coords válidas: garantir que `defaultCenter = FOZ_DO_IGUACU_CENTER` (importar de `@/utils/mapConstants` em vez de hardcoded), e usar `zoom: 13` como fallback consistente.
-- **Proteger `fitBounds`**: só chamar quando `!bounds.isEmpty()`. Se `bounds.isEmpty()` → `setCenter(FOZ_DO_IGUACU_CENTER)` + `setZoom(13)`.
-- **Auto-fit em todos os prédios da loja**: passar `autoFitAllBuildings={true}` nos dois usos de `BuildingMap` em `BuildingFilterSidebar.tsx` (mini-mapa lateral e dialog expandido), para que ao abrir o mapa todos os painéis EXA de Foz fiquem visíveis no enquadramento inicial — exatamente o pedido do usuário ("ver todos os painéis da exa em foz").
-- **Re-init guard**: o `useEffect` de init depende de `[buildings, selectedLocation]` — isso recria o mapa toda vez que `buildings` muda. Vou ajustar para só recriar quando `selectedLocation` mudar; mudanças em `buildings` apenas atualizam markers (já tratado no segundo `useEffect`). Isso evita o "flash" para o oceano durante re-renders.
+```typescript
+// ==================== BLOCK B-1: Building em instalação ====================
+const buildingStatus = String(device.buildings?.status || '')
+  .toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '');
 
-**Arquivos a editar:**
-1. `src/components/building-store/card/BuildingCardActions.tsx`
-2. `src/components/building-store/BuildingStoreCard.tsx`
-3. `src/components/building-store/BuildingMap.tsx`
-4. `src/components/building-store/BuildingFilterSidebar.tsx`
+if (buildingStatus.includes('instala') && !testMode) {
+  console.log(JSON.stringify({
+    type: 'BLOQUEIO_ALERTA',
+    motivo: 'predio_em_instalacao',
+    device: device.name,
+    device_id: device.id,
+    building_id: device.building_id,
+    building_status: device.buildings?.status,
+  }));
+  continue;
+}
+```
 
-### Garantias
-- Nenhuma alteração em fluxo de carrinho, filtros, busca ou prédios `ativo`.
-- Comportamento mobile preservado (`MobileFullscreenMap` continua usando `BuildingMap` com seus props atuais).
-- Sem mudanças em backend/RLS/edge functions.
+Cobre as variantes `instalacao`, `instalação`, `Instalação`, `INSTALAÇÃO`, etc.
+
+### 2. Sobre o "Offline há 29h12min"
+
+O cálculo em si (`now - last_online_at`) está correto. O problema raiz é que o painel **nunca deveria ter entrado no fluxo de alertas** enquanto o prédio estava em instalação. Com o bloqueio acima:
+- Riverside não dispara mais notificação
+- Quando o status do prédio passar para `ativo`, o `last_online_at` já terá sido atualizado pela primeira sincronização real, normalizando o tempo offline exibido
+
+**Não vou alterar a fórmula** de duração (poderia mascarar problemas reais em prédios ativos). O bloqueio na origem resolve o sintoma corretamente.
+
+### 3. Encerrar incidente aberto do Riverside (limpeza única)
+
+Após o deploy, vou rodar um UPDATE pontual para limpar o `metadata.current_incident_id` e `triggered_rules` do device Riverside, evitando que o próximo ciclo dispare um "voltou online" falso quando o status mudar.
+
+## Arquivos editados
+- `supabase/functions/monitor-panels/index.ts` (+ deploy da função)
+
+## Não será alterado
+- UI da loja, fluxo de cadastro, mapa, lógica de cálculo de tempo offline, notificações para prédios `ativo` ou `interno` (já tratados).
+
+Aprova para implementar?
