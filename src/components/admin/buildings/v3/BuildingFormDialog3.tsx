@@ -290,7 +290,7 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
         if (error) throw error;
         buildingId = data.id;
 
-        // Create external client
+        // Tentar criar cliente externo (não-bloqueante: API externa pode estar offline)
         try {
           const clienteId = data.id.replace(/-/g, '').substring(0, 4);
           const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('create-building-client', {
@@ -298,12 +298,17 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
           });
 
           if (edgeFunctionError || !edgeFunctionData?.success) {
-            // Rollback
-            await supabase.from('buildings').delete().eq('id', data.id);
-            throw new Error(edgeFunctionData?.error || 'Erro ao criar cliente externo');
+            const detail = edgeFunctionData?.error || edgeFunctionError?.message || 'API externa indisponível';
+            console.warn('[BuildingFormDialog3] Cliente externo não pôde ser criado agora:', detail);
+            toast.warning('Prédio criado, mas o cliente externo não foi sincronizado. Tente novamente mais tarde.', {
+              description: detail,
+            });
           }
         } catch (apiError: any) {
-          throw new Error(`Falha ao criar cliente externo: ${apiError.message}`);
+          console.warn('[BuildingFormDialog3] Falha ao chamar create-building-client:', apiError);
+          toast.warning('Prédio criado, mas o cliente externo não foi sincronizado.', {
+            description: apiError?.message || 'API externa indisponível',
+          });
         }
       }
 
