@@ -396,6 +396,23 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // ==================== BLOCK B-1: Building em instalação ====================
+      // Painéis em prédios marcados como "instalação" / "instalacao" nunca devem
+      // disparar alertas — o painel ainda não está oficialmente em produção.
+      const buildingStatusNormalized = String(device.buildings?.status || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+      if (buildingStatusNormalized.includes('instala') && !testMode) {
+        console.log(JSON.stringify({
+          type: 'BLOQUEIO_ALERTA', motivo: 'predio_em_instalacao',
+          device: device.name, device_id: device.id,
+          building_id: device.building_id, building_status: device.buildings?.status,
+        }));
+        continue;
+      }
+
       // ==================== BLOCK B-2: Safety net - internal name keywords ====================
       // Bloqueia mesmo que o prédio esteja mal classificado no banco
       const NOMES_INTERNOS_PROIBIDOS = [
