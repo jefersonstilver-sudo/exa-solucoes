@@ -462,8 +462,26 @@ Deno.serve(async (req) => {
     const ops = Array.isArray(rec.internet_operadoras) ? rec.internet_operadoras.join(', ') : '—';
     const elevEmp = ELEVADOR_LBL[rec.empresa_elevador as string] || rec.empresa_elevador || '—';
     const cm = CASA_MAQ_LBL[rec.elevador_casa_maquinas as string] || '—';
+
+    // Tipo de prédio + Airbnb (linha "Perfil")
+    const tipoPredioLbl = rec.tipo_predio === 'residencial'
+      ? 'Residencial'
+      : rec.tipo_predio === 'comercial'
+        ? 'Comercial'
+        : '—';
+    let perfilLine = tipoPredioLbl;
+    if (rec.tipo_predio === 'residencial') {
+      const airbnb = rec.permite_airbnb === 'sim'
+        ? 'permite Airbnb'
+        : rec.permite_airbnb === 'nao'
+          ? 'não permite Airbnb'
+          : 'liberação Airbnb não informada';
+      perfilLine = `${tipoPredioLbl} · ${airbnb}`;
+    }
+
     const grid1: [string, string][] = [
       ['Estrutura', `${rec.quantidade_andares ?? '—'} andares · ${rec.quantidade_blocos ?? 1} bloco(s) · ${rec.quantidade_unidades_total ?? '—'} unidades · ${rec.quantidade_elevadores_sociais ?? '—'} elevadores sociais`],
+      ['Perfil', perfilLine],
       ['Internet', ops || '—'],
       ['Elevador', `${elevEmp} · ${cm}`],
     ];
