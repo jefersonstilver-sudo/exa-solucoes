@@ -17,11 +17,22 @@ const InteresseSindicoSucesso: React.FC = () => {
     useSindicoFormStore.getState().reset();
   }, []);
 
+  // Garante que a página de sucesso sempre abre no topo.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   return (
     <div className="exa-theme font-inter sif-shell min-h-screen">
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-10">
         <div className="flex justify-center mb-6">
-          <img src={EXA_LOGO_URL} alt="EXA" className="h-10 sm:h-12 w-auto" />
+          <a href="/" aria-label="Ir para a página inicial EXA">
+            <img
+              src={EXA_LOGO_URL}
+              alt="EXA"
+              className="h-10 sm:h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+            />
+          </a>
         </div>
 
         <div className="sif-card p-6 sm:p-8 text-center">

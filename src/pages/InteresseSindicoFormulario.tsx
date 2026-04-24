@@ -1,22 +1,37 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSindicoFormStore } from '@/components/interesse-sindico-form/formStore';
 import FormStepIndicator from '@/components/interesse-sindico-form/FormStepIndicator';
 import StepPredio from '@/components/interesse-sindico-form/StepPredio';
 import StepSindico from '@/components/interesse-sindico-form/StepSindico';
 import StepTermos from '@/components/interesse-sindico-form/StepTermos';
+import ExitGuardFloating from '@/components/interesse-sindico-form/ExitGuardFloating';
+import { useExitGuard } from '@/components/interesse-sindico-form/useExitGuard';
 import '@/components/interesse-sindico-form/styles.css';
 
 const InteresseSindicoFormulario: React.FC = () => {
   const { step, next, prev } = useSindicoFormStore();
+  const { shouldGuard } = useExitGuard();
 
   const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
+
+  // Scroll para o topo no mount e a cada mudança de etapa (0 → 1 → 2)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
+
+  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (shouldGuard()) {
+      e.preventDefault();
+      (window as any).__exaSindicoRequestExit?.('/');
+    }
+  };
 
   return (
     <div className="exa-theme font-inter sif-shell">
       <div className="max-w-xl lg:max-w-3xl xl:max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
         <div className="flex justify-center mb-6">
-          <a href="/sou-sindico" aria-label="Ir para Sou Síndico">
+          <a href="/" aria-label="Ir para a página inicial EXA" onClick={handleLogoClick}>
             <img
               src={EXA_LOGO_URL}
               alt="EXA - Publicidade Inteligente"
@@ -52,6 +67,8 @@ const InteresseSindicoFormulario: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <ExitGuardFloating defaultTarget="/" />
     </div>
   );
 };

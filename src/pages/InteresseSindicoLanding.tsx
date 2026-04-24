@@ -8,6 +8,8 @@ import '@/components/interesse-sindico/styles.css';
 
 const InteresseSindicoLanding: React.FC = () => {
   useEffect(() => {
+    // Sempre abre a landing no topo (cobre voltar do navegador / refresh)
+    window.scrollTo({ top: 0, behavior: 'auto' });
     document.title = 'Interesse do Síndico | EXA Mídia';
     const meta = document.querySelector('meta[name="description"]');
     const rootElement = document.getElementById('root');
