@@ -66,7 +66,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
         }
 
       // Determine center - prioritize manual_latitude/manual_longitude
-      const defaultCenter = { lat: -25.5469, lng: -54.5882 }; // Foz do Iguaçu - Centro da cidade
+      const defaultCenter = FOZ_DO_IGUACU_CENTER; // Foz do Iguaçu - Centro da cidade
       
       // Helper to get valid coordinates (manual takes priority)
       const getValidCoords = (b: any) => {
