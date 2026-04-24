@@ -27,6 +27,8 @@ const initialPredio: PredioState = {
   cep: '',
   blocos: 1,
   internetOps: [],
+  tipoPredio: undefined,
+  permiteAirbnb: undefined,
 };
 
 const initialSindico: SindicoState = {

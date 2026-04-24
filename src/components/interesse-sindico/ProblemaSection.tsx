@@ -3,7 +3,8 @@ import Reveal from './Reveal';
 import LazyVideoPlayer from './LazyVideoPlayer';
 import DividerGlow from './DividerGlow';
 
-const VIDEO_1 = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/videos/sou-sindico/principal/1761169798896.mp4';
+// Mesma URL do vídeo principal usado em /sou-sindico (versão mais leve / atual)
+const VIDEO_1 = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/videos/sou-sindico/principal/1761170068946.mp4';
 
 const ProblemaSection: React.FC = () => {
   return (

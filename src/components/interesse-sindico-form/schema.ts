@@ -5,6 +5,8 @@ import { normalizeBRPhoneToE164 } from '@/utils/phoneE164';
 export const INTERNET_OPS = ['vivo', 'ligga', 'telecom_foz'] as const;
 export const ELEVADOR_EMPRESAS = ['atlas', 'tke', 'otis', 'oriente'] as const;
 export const CASA_MAQUINAS = ['sim', 'nao', 'nao_sei'] as const;
+export const TIPO_PREDIO = ['residencial', 'comercial'] as const;
+export const PERMITE_AIRBNB = ['sim', 'nao'] as const;
 
 export const stepPredioSchema = z.object({
   nomePredio: z.string().trim().min(2, 'Informe o nome do prédio').max(120),
@@ -25,6 +27,16 @@ export const stepPredioSchema = z.object({
   internetOps: z.array(z.enum(INTERNET_OPS)).min(1, 'Selecione ao menos 1 operadora'),
   elevadorEmpresa: z.enum(ELEVADOR_EMPRESAS, { errorMap: () => ({ message: 'Selecione a empresa' }) }),
   casaMaquinas: z.enum(CASA_MAQUINAS, { errorMap: () => ({ message: 'Selecione uma opção' }) }),
+  tipoPredio: z.enum(TIPO_PREDIO, { errorMap: () => ({ message: 'Selecione o tipo do prédio' }) }),
+  permiteAirbnb: z.enum(PERMITE_AIRBNB).optional(),
+}).superRefine((data, ctx) => {
+  if (data.tipoPredio === 'residencial' && !data.permiteAirbnb) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['permiteAirbnb'],
+      message: 'Informe se o prédio permite Airbnb',
+    });
+  }
 });
 
 export type StepPredioData = z.infer<typeof stepPredioSchema>;
@@ -72,4 +84,14 @@ export const CASA_MAQUINAS_LABELS: Record<typeof CASA_MAQUINAS[number], string> 
   sim: 'Sim, tem casa de máquinas',
   nao: 'Não, equipamentos ficam no poço do elevador',
   nao_sei: 'Não sei informar com certeza',
+};
+
+export const TIPO_PREDIO_LABELS: Record<typeof TIPO_PREDIO[number], string> = {
+  residencial: 'Residencial',
+  comercial: 'Comercial',
+};
+
+export const PERMITE_AIRBNB_LABELS: Record<typeof PERMITE_AIRBNB[number], string> = {
+  sim: 'Sim, o prédio tem liberação para Airbnb',
+  nao: 'Não, o prédio não permite Airbnb',
 };

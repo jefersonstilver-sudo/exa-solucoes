@@ -5,9 +5,13 @@ import {
   INTERNET_OPS,
   ELEVADOR_EMPRESAS,
   CASA_MAQUINAS,
+  TIPO_PREDIO,
+  PERMITE_AIRBNB,
   INTERNET_OPS_LABELS,
   ELEVADOR_LABELS,
   CASA_MAQUINAS_LABELS,
+  TIPO_PREDIO_LABELS,
+  PERMITE_AIRBNB_LABELS,
 } from './schema';
 import EnderecoAutocomplete, { ParsedAddress } from './EnderecoAutocomplete';
 import MiniMapa from './MiniMapa';
@@ -32,6 +36,8 @@ const PREDIO_FIELD_LABELS: Record<string, string> = {
   internetOps: 'Operadoras de internet',
   elevadorEmpresa: 'Empresa de manutenção do elevador',
   casaMaquinas: 'Casa de máquinas',
+  tipoPredio: 'Tipo de prédio',
+  permiteAirbnb: 'Permite Airbnb',
 };
 
 interface Props {
