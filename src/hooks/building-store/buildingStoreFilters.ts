@@ -87,17 +87,15 @@ export const createFilterActions = (set: any, get: any) => ({
       console.log(`🏢 [BUILDING STORE] Prédio final ${index + 1}: ${building.nome}`);
     });
     
-    // Aplicar ordenação
+    // Aplicar ordenação selecionada pelo usuário primeiro
     if (sortOption && sortOption !== 'relevance') {
       console.log('📊 [BUILDING STORE] Aplicando ordenação por:', sortOption);
       result = sortBuildings(result, sortOption, selectedLocation);
-      console.log('📊 [BUILDING STORE] Prédios ordenados por:', sortOption);
-      
-      result.forEach((building: any, index: number) => {
-        console.log(`🏢 [BUILDING STORE] Prédio ordenado ${index + 1}: ${building.nome}`);
-      });
     }
-    
+
+    // Ordenação primária estável: prédios ATIVOS sempre antes dos EM INSTALAÇÃO
+    result = sortByStatusPriority(result);
+
     console.log('📊 [BUILDING STORE] === DEFININDO RESULTADO FINAL ===');
     console.log('📊 [BUILDING STORE] Total de prédios no resultado:', result.length);
     set({ buildings: result });
