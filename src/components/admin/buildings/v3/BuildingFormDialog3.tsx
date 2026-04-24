@@ -414,6 +414,9 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
                         updateField('endereco', place.address);
                         updateField('latitude', place.coordinates.lat);
                         updateField('longitude', place.coordinates.lng);
+                        if (place.neighborhood && !formData.bairro) {
+                          updateField('bairro', place.neighborhood);
+                        }
                       }}
                       placeholder="Digite o endereço..."
                       className="h-10"
