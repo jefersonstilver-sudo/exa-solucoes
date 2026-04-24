@@ -458,7 +458,8 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
       }
 
       // Center on selected location or fit bounds
-      if (autoFitAllBuildings && hasAny) {
+      const boundsEmpty = bounds.isEmpty();
+      if (autoFitAllBuildings && hasAny && !boundsEmpty) {
         console.log(`🗺️ [MARKERS] 📍 Auto-fit: Ajustando bounds para TODOS os ${markersRef.current.length} prédios`);
         // Add padding for mobile UI elements (top header + bottom sheet)
         const padding = window.innerWidth <= 768 
@@ -468,7 +469,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
         
         // RETRY: Re-apply fitBounds after delay to ensure map is fully rendered
         setTimeout(() => {
-          if (mapInstanceRef.current && !cancelled) {
+          if (mapInstanceRef.current && !cancelled && !bounds.isEmpty()) {
             console.log(`🗺️ [MARKERS] 🔄 Re-aplicando fitBounds após delay para garantir visualização`);
             mapInstanceRef.current.fitBounds(bounds, padding);
           }
@@ -477,14 +478,13 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
         console.log(`🗺️ [MARKERS] 🎯 Centralizando na localização selecionada`);
         map.setCenter(selectedLocation);
         map.setZoom(defaultZoom);
-      } else if (hasAny) {
+      } else if (hasAny && !boundsEmpty) {
         console.log(`🗺️ [MARKERS] 📍 Ajustando bounds para todos os marcadores`);
         map.fitBounds(bounds, 40);
       } else {
-        console.log(`🗺️ [MARKERS] ❌ Nenhum marcador para exibir - centralizando em Foz do Iguaçu`);
+        console.log(`🗺️ [MARKERS] ❌ Nenhum marcador válido - centralizando em Foz do Iguaçu`);
         // Fallback: Center on Foz do Iguaçu when no markers are available
-        const FOZ_CENTER = { lat: -25.5163, lng: -54.5854 };
-        map.setCenter(FOZ_CENTER);
+        map.setCenter(FOZ_DO_IGUACU_CENTER);
         map.setZoom(13);
       }
 
