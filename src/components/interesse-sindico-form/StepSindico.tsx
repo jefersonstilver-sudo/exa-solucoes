@@ -5,12 +5,14 @@ import { formatCPFMask } from '@/utils/cpfValidator';
 import { formatBRPhoneMask, normalizeBRPhoneToE164 } from '@/utils/phoneE164';
 import UploadFotos from './UploadFotos';
 import ValidationErrors from './ValidationErrors';
+import WhatsAppVerifyBlock from './WhatsAppVerifyBlock';
 import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, IdCard } from 'lucide-react';
 
 const SINDICO_FIELD_LABELS: Record<string, string> = {
   nomeCompleto: 'Nome completo',
   cpf: 'CPF',
   whatsappRaw: 'WhatsApp',
+  whatsappVerificado: 'Verificação do WhatsApp',
   email: 'E-mail',
   mandatoAte: 'Mandato de síndico até',
   fotos: 'Fotos do elevador',
@@ -57,7 +59,7 @@ export const StepSindico: React.FC<Props> = ({ onNext, onPrev }) => {
             onChange={(e) => setSindico({ cpf: formatCPFMask(e.target.value) })} />
         </div>
 
-        <div>
+        <div className="lg:col-span-2">
           <label className="sif-label" htmlFor="whatsapp"><Phone size={13} className="inline mr-1" />WhatsApp</label>
           <input id="whatsapp" type="tel" inputMode="tel" className="sif-input" placeholder="(45) 99999-9999"
             value={sindico.whatsappRaw || ''}
@@ -65,6 +67,9 @@ export const StepSindico: React.FC<Props> = ({ onNext, onPrev }) => {
           <p className="sif-help">
             Salvo como: <span className="text-white/85 font-mono">{e164 || '—'}</span>
           </p>
+          <div className="mt-3">
+            <WhatsAppVerifyBlock whatsappRaw={sindico.whatsappRaw || ''} />
+          </div>
         </div>
 
         <div>
