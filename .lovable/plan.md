@@ -1,103 +1,145 @@
+## Verificação 2FA do WhatsApp no formulário de Síndico
 
+Adicionar verificação obrigatória do WhatsApp via OTP (código de 6 dígitos enviado por WhatsApp) na etapa 2 do formulário, e registrar essa autenticação no PDF de aceite jurídico — reforçando a validade da assinatura eletrônica conforme **Lei 14.063/2020** (assinatura eletrônica avançada com fator de autenticação adicional).
 
-## Plano: vídeos da landing + tipo de prédio + Airbnb (fluxo completo)
+---
 
-### 1. Vídeo 1 (seção "O Problema") — trocar URL apenas
+### 1. Etapa 2 do formulário — bloco de verificação obrigatório
 
-**Arquivo:** `src/components/interesse-sindico/ProblemaSection.tsx`
-- Trocar a constante `VIDEO_1` para a mesma URL já usada na página `/sou-sindico` (vídeo principal mais leve, já hospedado no Storage). Vou identificar a URL exata no `useVideoConfig` / componentes da página `/sou-sindico` e reaproveitar.
-- Manter o `LazyVideoPlayer` como está (preload metadata, click-to-play) — só a fonte muda.
+**Arquivo:** `src/components/interesse-sindico-form/StepSindico.tsx`
 
-### 2. Vídeo 2 (seção "Na Prática") — autoplay puro, sem controles, sem pausa
+- Após o campo de WhatsApp, adicionar um **bloco de verificação** com 3 estados:
+  - **Não enviado:** botão "Verificar WhatsApp" (aparece só quando o WhatsApp digitado é válido em E.164)
+  - **Aguardando código:** input OTP de 6 dígitos (reusar `WhatsAppCodeInput`), timer regressivo de 5 min, link de reenvio após 60s
+  - **Verificado:** badge verde "✓ WhatsApp verificado em DD/MM/AAAA HH:MM"
+- O botão **"Continuar"** só fica habilitado se:
+  - Schema da etapa válido **E**
+  - WhatsApp marcado como verificado no estado
+- Se o usuário **editar o número de WhatsApp** depois de verificado, a verificação é **invalidada automaticamente** (estado volta para "Não enviado") — protege contra troca de número após validação.
 
-**Arquivo:** `src/components/interesse-sindico/DemonstracaoSection.tsx`
-- Substituir o `<LazyVideoPlayer>` por um `<video>` nativo simples, configurado como:
-  - `autoPlay`, `loop`, `muted`, `playsInline`
-  - **sem** `controls`
-  - `pointer-events-none` no elemento (bloqueia qualquer clique/toque que pause)
-  - `preload="auto"` para iniciar suave
-- Comportamento final: roda sozinho infinitamente, sem botão de play, sem pausa, sem som — igual a um GIF.
+**Componente novo:** `src/components/interesse-sindico-form/WhatsAppVerifyBlock.tsx`
+- Encapsula UI + chamadas às edge functions `send-user-whatsapp-code` e `verify-user-whatsapp-code` (já existentes, suportam `tipo: 'signup'` + `sessionId` sem precisar de `userId`).
+- Gera um `sessionId` único (crypto.randomUUID) salvo no store ao entrar no fluxo.
+- Estado salvo no `formStore`: `whatsappVerificado: boolean`, `whatsappVerificadoEm: ISO string`, `whatsappVerificadoNumero: E164`, `verificationSessionId: string`.
 
-### 3. Formulário — Tipo de prédio + Airbnb (condicional)
+### 2. Store + schema
 
-**Onde:** `src/components/interesse-sindico-form/StepPredio.tsx` + `schema.ts` + `formStore.ts`
+**`src/components/interesse-sindico-form/formStore.ts`**
+- Adicionar ao `SindicoState`: `whatsappVerificado`, `whatsappVerificadoEm`, `whatsappVerificadoNumero`, `verificationSessionId`.
+- Helper `invalidarVerificacaoSeMudouNumero(novoE164)` chamado no `setSindico` quando `whatsappRaw` muda.
 
-**Novos campos no Step 1 ("Dados do prédio"), inseridos logo após "Estrutura":**
+**`src/components/interesse-sindico-form/schema.ts`**
+- `stepSindicoSchema`: adicionar `superRefine` exigindo `whatsappVerificado === true` E `whatsappVerificadoNumero === normalizeBRPhoneToE164(whatsappRaw)` — garante que o número verificado é exatamente o que está sendo submetido.
 
-a) **Tipo de prédio** (radio obrigatório, 2 opções):
-   - Residencial
-   - Comercial
+### 3. Reaproveitamento da infra existente (zero código novo no backend de OTP)
 
-b) **Permite Airbnb?** (radio obrigatório, **só aparece se Residencial**):
-   - Sim, permite Airbnb
-   - Não, não permite Airbnb
-   - Quando o usuário troca para Comercial, o campo é resetado e ocultado.
+Já existem e funcionam:
+- ✅ `send-user-whatsapp-code` — aceita `tipo: 'signup'` com `sessionId` (sem `userId`). Rate limit: 3 tentativas / 5 min. Expiração: 5 min. Z-API configurado.
+- ✅ `verify-user-whatsapp-code` — valida e marca `verificado=true` na tabela `exa_alerts_verification_codes`.
+- ✅ Tabela `exa_alerts_verification_codes` com `session_id`, `telefone`, `codigo`, `verificado`, `expires_at`.
 
-**Schema (`schema.ts`):**
-- Adicionar `TIPO_PREDIO = ['residencial', 'comercial']` e `PERMITE_AIRBNB = ['sim', 'nao']` com labels.
-- `tipoPredio: z.enum(TIPO_PREDIO)` obrigatório.
-- `permiteAirbnb: z.enum(PERMITE_AIRBNB).optional()` com `superRefine` exigindo o campo quando `tipoPredio === 'residencial'`.
+**Nenhuma migration nova de OTP** — só reuso.
 
-**Store (`formStore.ts`):** estender `PredioState` e o `initialPredio` com os novos campos.
+### 4. Persistência da verificação no banco
 
-### 4. Banco — novas colunas + RPC
+**Migration:** adicionar 3 colunas em `sindicos_interessados`:
+- `whatsapp_verificado boolean DEFAULT false`
+- `whatsapp_verificado_em timestamptz`
+- `whatsapp_verification_session_id text`
 
-**Migration:**
-- Adicionar em `sindicos_interessados`:
-  - `tipo_predio text` (valores: `residencial` | `comercial`)
-  - `permite_airbnb text` (valores: `sim` | `nao` | `null` para comerciais)
-- Atualizar a função `submit_sindico_interesse(payload jsonb)` para receber e gravar os 2 novos campos.
+**RPC `submit_sindico_interesse`:** atualizar para receber e gravar esses 3 campos. Antes de gravar, a função faz uma checagem extra no servidor:
+```sql
+-- valida que existe registro verificado para esse session_id + telefone
+SELECT EXISTS (
+  SELECT 1 FROM exa_alerts_verification_codes
+  WHERE session_id = p_session_id
+    AND telefone = p_telefone_e164
+    AND verificado = true
+    AND expires_at > now() - interval '1 hour'
+)
+```
+Se falso → erro `WHATSAPP_NAO_VERIFICADO`. Isso impede burlar a verificação chamando o RPC direto.
 
-**Frontend:** `src/utils/submitFormulario.ts` passa a enviar `tipo_predio` e `permite_airbnb` no payload do RPC.
+**Frontend:** `src/utils/submitFormulario.ts` passa `whatsapp_verificado`, `whatsapp_verificado_em`, `verification_session_id` no payload.
 
-### 5. PDF oficial — nova seção/linha no documento
+### 5. PDF de aceite — linha extra no bloco de evidências
 
 **Arquivo:** `supabase/functions/gerar-pdf-aceite-sindico/index.ts`
-- Na seção "Dados do prédio" (página 1), adicionar 2 linhas após "Casa de máquinas":
-  - **Tipo de prédio:** Residencial / Comercial
-  - **Permite locação por Airbnb:** Sim / Não  *(linha só aparece se residencial)*
-- Buscar os 2 novos campos no SELECT da tabela.
-- Manter idempotência (PDFs já gerados não regeneram, novos protocolos terão a info).
 
-### 6. Painel administrativo — exibir nas abas existentes
+Na seção **"Evidências jurídicas"** (já existente, com IP, User-Agent, hash, timestamp), adicionar 1 linha logo abaixo do timestamp:
 
-**Arquivo:** `src/components/admin/sindicos-interessados/SindicoDialog.tsx` (e tabs internas)
-- Aba **Resumo** e aba **Prédio**: incluir 2 novas linhas:
-  - "Tipo: Residencial / Comercial" (com ícone)
-  - "Airbnb: Sim / Não" (badge verde/vermelho, oculta se comercial)
-- Atualizar o tipo `SindicoInteressado` em `src/components/admin/sindicos-interessados/types.ts` com os 2 novos campos opcionais.
-- Se houver listagem com filtros, adicionar opção de filtrar por tipo (avalio na implementação; só adiciono se já houver padrão de filtros na página).
+> **Autenticação 2FA WhatsApp:** ✓ Verificado em DD/MM/AAAA HH:MM:SS (código OTP enviado e validado no nº +55 XX XXXXX-XXXX) — Lei 14.063/2020, Art. 4º, II.
 
-### 7. E-mail de confirmação — texto enxuto
+A linha só aparece quando `whatsapp_verificado = true` (compatibilidade com PDFs antigos preserva idempotência).
 
-**Arquivo:** `supabase/functions/_shared/email-templates-html/sindico-confirmacao.ts`
-- Adicionar 1 linha no resumo do prédio: "Tipo: Residencial • Airbnb: Não" (ou Comercial, conforme o caso). Mudança mínima, não altera layout.
+### 6. Painel administrativo — badge de verificação
+
+**`src/components/admin/sindicos-interessados/types.ts`** — adicionar os 3 campos opcionais.
+
+**`src/components/admin/sindicos-interessados/tabs/TabSindico.tsx`** — ao lado do número de WhatsApp, exibir badge:
+- Verde "✓ Verificado em DD/MM/AAAA HH:MM" se `whatsapp_verificado`
+- Cinza "Não verificado" caso contrário (apenas para registros antigos)
+
+### 7. E-mail de confirmação — menção sutil
+
+**`supabase/functions/_shared/email-templates-html/sindico-confirmacao.ts`**
+Adicionar 1 linha no rodapé das evidências: "WhatsApp autenticado via código (2FA) em DD/MM/AAAA HH:MM."
+
+---
+
+### Detalhes técnicos
+
+**Regras de OTP (já implementadas no backend, só uso):**
+- 6 dígitos numéricos
+- Expira em 5 minutos
+- Reenvio após 60s
+- Máximo 3 envios por número/sessão a cada 5 min (rate limit)
+- Mensagem WhatsApp: "🎉 Bem-vindo à EXA! Para completar seu cadastro, digite o código: *XXXXXX*. Válido por 5 minutos."
+
+**Fluxo completo do usuário:**
+```text
+[Etapa 2 — Dados do síndico]
+  ↓ Preenche WhatsApp (45) 99999-9999
+  ↓ Clica "Verificar WhatsApp"
+  ↓ Recebe código via WhatsApp em ~5s
+  ↓ Digita 6 dígitos → "Verificar código"
+  ↓ Badge verde "✓ Verificado"
+  ↓ Botão "Continuar" habilitado
+  → Etapa 3
+```
+
+**Segurança em camadas:**
+1. Cliente — botão Continuar bloqueado até `whatsappVerificado === true` E número bate com o verificado
+2. Schema Zod — `superRefine` valida o mesmo
+3. Servidor (RPC) — re-checa em `exa_alerts_verification_codes` se há registro `verificado=true` para o `session_id + telefone` enviados, dentro da última hora
+4. PDF — só registra "verificado" se `whatsapp_verificado=true` no banco
 
 ### Arquivos afetados (resumo)
 
 **Editar:**
-- `src/components/interesse-sindico/ProblemaSection.tsx` (URL vídeo 1)
-- `src/components/interesse-sindico/DemonstracaoSection.tsx` (vídeo 2 autoplay puro)
-- `src/components/interesse-sindico-form/schema.ts` (novos enums + validação condicional)
-- `src/components/interesse-sindico-form/formStore.ts` (estado inicial)
-- `src/components/interesse-sindico-form/StepPredio.tsx` (UI dos 2 novos campos)
+- `src/components/interesse-sindico-form/StepSindico.tsx` (UI do bloco)
+- `src/components/interesse-sindico-form/formStore.ts` (estado + invalidação)
+- `src/components/interesse-sindico-form/schema.ts` (validação)
 - `src/utils/submitFormulario.ts` (payload RPC)
-- `supabase/functions/gerar-pdf-aceite-sindico/index.ts` (linhas no PDF)
-- `supabase/functions/_shared/email-templates-html/sindico-confirmacao.ts` (linha no e-mail)
+- `supabase/functions/gerar-pdf-aceite-sindico/index.ts` (linha de evidência)
+- `supabase/functions/_shared/email-templates-html/sindico-confirmacao.ts` (linha)
 - `src/components/admin/sindicos-interessados/types.ts` (tipos)
-- `src/components/admin/sindicos-interessados/SindicoDialog.tsx` + tabs filhas (exibição)
+- `src/components/admin/sindicos-interessados/tabs/TabSindico.tsx` (badge)
+
+**Criar:**
+- `src/components/interesse-sindico-form/WhatsAppVerifyBlock.tsx` (componente do bloco OTP)
 
 **Migration:**
-- Adicionar `tipo_predio` e `permite_airbnb` em `sindicos_interessados`
-- Recriar `submit_sindico_interesse` com os 2 novos parâmetros
+- 3 colunas em `sindicos_interessados`
+- Atualizar RPC `submit_sindico_interesse` (validação 2FA server-side + grava campos)
 
-**Deploy de Edge Functions:** `gerar-pdf-aceite-sindico`, `send-sindico-confirmation`
+**Deploy:** `gerar-pdf-aceite-sindico`, `send-sindico-confirmation` (não precisa redeployar `send-user-whatsapp-code` / `verify-user-whatsapp-code` — já estão em produção).
 
 ### O que NÃO será alterado
 
-- Layout geral da landing, do formulário, do PDF, do e-mail e do painel admin.
-- Demais campos do formulário, autenticação, fluxo de upload de fotos.
-- PDFs já gerados de protocolos antigos (idempotência preserva).
+- Layout da landing, dos vídeos, das outras etapas do formulário (1 e 3).
+- Edge functions de OTP existentes (`send-user-whatsapp-code`, `verify-user-whatsapp-code`) — só consumo.
+- Configuração Z-API.
+- PDFs já gerados (idempotência preservada — só novos protocolos terão a linha de 2FA).
 
 Aprova para eu executar?
-
