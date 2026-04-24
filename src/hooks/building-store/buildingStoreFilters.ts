@@ -14,15 +14,17 @@ export const createFilterActions = (set: any, get: any) => ({
     console.log('🔍 [BUILDING STORE] Opção de ordenação:', sortOption);
     console.log('🔍 [BUILDING STORE] Configuração dos filtros:', filters);
     
+    // Helper: prédios "ativo" vêm antes dos "instalação/instalacao"
+    const statusRank = (status: string) => (status === 'ativo' ? 0 : 1);
+    const sortByStatusPriority = (list: any[]) =>
+      [...list].sort((a, b) => statusRank(a.status) - statusRank(b.status));
+
     if (disableFilters || allBuildings.length === 0) {
       const activeStatuses = ['ativo', 'instalação', 'instalacao'];
-      const activeBuildings = allBuildings.filter((building: any) =>
-        activeStatuses.includes(building.status)
+      const activeBuildings = sortByStatusPriority(
+        allBuildings.filter((building: any) => activeStatuses.includes(building.status))
       );
       console.log('✅ [BUILDING STORE] Filtros desabilitados ou sem prédios - Mostrando todos os prédios elegíveis:', activeBuildings.length);
-      activeBuildings.forEach((building: any, index: number) => {
-        console.log(`🏢 [BUILDING STORE] Prédio sem filtro ${index + 1}: ${building.nome}`);
-      });
       set({ buildings: activeBuildings });
       return;
     }
@@ -85,17 +87,15 @@ export const createFilterActions = (set: any, get: any) => ({
       console.log(`🏢 [BUILDING STORE] Prédio final ${index + 1}: ${building.nome}`);
     });
     
-    // Aplicar ordenação
+    // Aplicar ordenação selecionada pelo usuário primeiro
     if (sortOption && sortOption !== 'relevance') {
       console.log('📊 [BUILDING STORE] Aplicando ordenação por:', sortOption);
       result = sortBuildings(result, sortOption, selectedLocation);
-      console.log('📊 [BUILDING STORE] Prédios ordenados por:', sortOption);
-      
-      result.forEach((building: any, index: number) => {
-        console.log(`🏢 [BUILDING STORE] Prédio ordenado ${index + 1}: ${building.nome}`);
-      });
     }
-    
+
+    // Ordenação primária estável: prédios ATIVOS sempre antes dos EM INSTALAÇÃO
+    result = sortByStatusPriority(result);
+
     console.log('📊 [BUILDING STORE] === DEFININDO RESULTADO FINAL ===');
     console.log('📊 [BUILDING STORE] Total de prédios no resultado:', result.length);
     set({ buildings: result });
