@@ -47,7 +47,7 @@ export const SINDICO_CONFIRMACAO_HTML = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTM
                   <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                     <tr>
                       <td valign="middle" style="padding-right:14px;">
-                        <img src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Publicidade%20Inteligente%20(800%20x%20800%20px).png" alt="EXA Mídia" width="44" height="44" style="display:block; border:0; outline:none; border-radius:8px;" />
+                        <img src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Exa%20sozinha.png" alt="EXA Mídia" width="80" height="44" style="display:block; border:0; outline:none;" />
                       </td>
                       <td valign="middle">
                         <p style="margin:0; font-family:\'Inter\', Arial, Helvetica, sans-serif; font-size:16px; font-weight:800; color:#FFFFFF; letter-spacing:1px; line-height:1;">EXA MÍDIA</p>

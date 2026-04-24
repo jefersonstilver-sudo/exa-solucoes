@@ -12,7 +12,7 @@ const corsHeaders = {
 
 // ====== Logo EXA oficial — buscada via fetch (URL pública do site) e cacheada em memória ======
 const LOGO_URL =
-  'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Publicidade%20Inteligente%20(800%20x%20800%20px).png';
+  'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Exa%20sozinha.png';
 
 let LOGO_BYTES: Uint8Array | null = null;
 async function fetchLogoBytes(): Promise<Uint8Array | null> {
