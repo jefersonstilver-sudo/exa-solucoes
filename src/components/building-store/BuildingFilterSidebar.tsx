@@ -108,7 +108,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
       <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
         <DialogContent className="max-w-[96vw] w-[96vw] p-0">
           <div className="w-full h-[82vh]">
-            <BuildingMap buildings={mapBuildings} selectedLocation={selectedLocation} scrollwheel={true} defaultZoom={15} requirePreciseGeocode={false} enableClustering={false} />
+            <BuildingMap buildings={mapBuildings} selectedLocation={selectedLocation} scrollwheel={true} defaultZoom={15} requirePreciseGeocode={false} enableClustering={false} autoFitAllBuildings={!selectedLocation} />
           </div>
         </DialogContent>
       </Dialog>
