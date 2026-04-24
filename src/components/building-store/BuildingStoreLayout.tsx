@@ -62,7 +62,7 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
       </div>
       
       {/* Layout with sidebar and building grid - Com container limitado e espaçamento pro search fixo */}
-      <div className="w-full max-w-7xl mx-auto px-4 md:px-6 pt-6 py-0">
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-6 pt-6 pb-16 md:pb-24">
         <BuildingStoreGridLayout buildings={buildings} isLoading={isLoading} isSearching={isSearching} selectedLocation={selectedLocation} filters={filters} handleFilterChange={handleFilterChange} sidebarCollapsed={sidebarCollapsed} onSidebarToggle={handleSidebarToggle} sortOption={sortOption} setSortOption={setSortOption} />
       </div>
 
