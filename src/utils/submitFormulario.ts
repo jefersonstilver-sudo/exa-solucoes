@@ -79,6 +79,10 @@ export async function submitFormulario(
       sindico_whatsapp: whatsappE164,
       sindico_email: (sindico.email || '').toLowerCase().trim(),
       sindico_mandato_ate: sindico.mandatoAte || null,
+      // Verificação 2FA do WhatsApp (Lei 14.063/2020)
+      whatsapp_verificado: !!sindico.whatsappVerificado,
+      whatsapp_verificado_em: sindico.whatsappVerificadoEm || null,
+      whatsapp_verification_session_id: sindico.verificationSessionId || null,
       // Aceite — evidências
       aceite_timestamp: evid.timestamp,
       aceite_ip: evid.ip,
