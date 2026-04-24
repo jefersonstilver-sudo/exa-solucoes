@@ -12365,6 +12365,7 @@ export type Database = {
           numero_unidades: number
           observacoes: string | null
           observacoes_internas: string | null
+          permite_airbnb: string | null
           primeiro_nome: string | null
           protocolo: string | null
           quantidade_andares: number | null
@@ -12380,6 +12381,7 @@ export type Database = {
           sindico_whatsapp: string | null
           sobrenome: string | null
           status: string
+          tipo_predio: string | null
           updated_at: string
           visita_agendada_em: string | null
         }
@@ -12418,6 +12420,7 @@ export type Database = {
           numero_unidades: number
           observacoes?: string | null
           observacoes_internas?: string | null
+          permite_airbnb?: string | null
           primeiro_nome?: string | null
           protocolo?: string | null
           quantidade_andares?: number | null
@@ -12433,6 +12436,7 @@ export type Database = {
           sindico_whatsapp?: string | null
           sobrenome?: string | null
           status?: string
+          tipo_predio?: string | null
           updated_at?: string
           visita_agendada_em?: string | null
         }
@@ -12471,6 +12475,7 @@ export type Database = {
           numero_unidades?: number
           observacoes?: string | null
           observacoes_internas?: string | null
+          permite_airbnb?: string | null
           primeiro_nome?: string | null
           protocolo?: string | null
           quantidade_andares?: number | null
@@ -12486,6 +12491,7 @@ export type Database = {
           sindico_whatsapp?: string | null
           sobrenome?: string | null
           status?: string
+          tipo_predio?: string | null
           updated_at?: string
           visita_agendada_em?: string | null
         }

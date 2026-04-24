@@ -71,6 +71,8 @@ export async function submitFormulario(
         ? ELEVADOR_LABELS[predio.elevadorEmpresa] || predio.elevadorEmpresa
         : null,
       elevador_casa_maquinas: predio.casaMaquinas,
+      tipo_predio: predio.tipoPredio ?? null,
+      permite_airbnb: predio.tipoPredio === 'residencial' ? (predio.permiteAirbnb ?? null) : null,
       // Síndico
       sindico_nome: sindico.nomeCompleto,
       sindico_cpf: (sindico.cpf || '').replace(/\D/g, ''),

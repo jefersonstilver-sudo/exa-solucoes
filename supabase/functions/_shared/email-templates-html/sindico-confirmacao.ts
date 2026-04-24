@@ -101,8 +101,9 @@ export const SINDICO_CONFIRMACAO_HTML = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTM
                     <tr><td colspan="2" style="padding-top:16px; border-top:1px solid #EAEAEA; margin-top:16px;"></td></tr>
                     <tr>
                       <td class="meta-cell" width="50%" valign="top" style="padding-top:16px; padding-right:16px;">
-                        <p style="margin:0 0 4px 0; font-family:'Inter', Arial, sans-serif; font-size:9px; font-weight:700; letter-spacing:1.8px; color:#858585; text-transform:uppercase;">Prédio</p>
-                        <p style="margin:0; font-family:'Inter', Arial, sans-serif; font-size:13px; font-weight:600; color:#0A0A0A;">{{NOME_PREDIO}}</p>
+                        <p style="margin:0 0 4px 0; font-family:'Inter', Arial, Helvetica, sans-serif; font-size:9px; font-weight:700; letter-spacing:1.8px; color:#858585; text-transform:uppercase;">Prédio</p>
+                        <p style="margin:0 0 4px 0; font-family:'Inter', Arial, Helvetica, sans-serif; font-size:13px; font-weight:600; color:#0A0A0A;">{{NOME_PREDIO}}</p>
+                        <p style="margin:0; font-family:'Inter', Arial, Helvetica, sans-serif; font-size:11px; color:#737373;">{{PERFIL_PREDIO}}</p>
                       </td>
                       <td class="meta-cell" width="50%" valign="top" style="padding-top:16px;">
                         <p style="margin:0 0 4px 0; font-family:'Inter', Arial, sans-serif; font-size:9px; font-weight:700; letter-spacing:1.8px; color:#858585; text-transform:uppercase;">Status</p>

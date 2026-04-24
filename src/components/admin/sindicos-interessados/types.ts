@@ -15,6 +15,8 @@ export interface SindicoInteressado {
   data_contato?: string;
   created_at: string;
   updated_at: string;
+  tipo_predio?: 'residencial' | 'comercial' | null;
+  permite_airbnb?: 'sim' | 'nao' | null;
 }
 
 export interface SindicosStats {

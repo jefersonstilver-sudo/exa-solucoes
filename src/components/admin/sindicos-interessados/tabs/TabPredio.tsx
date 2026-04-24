@@ -83,6 +83,26 @@ export const TabPredio: React.FC<Props> = ({ sindico }) => {
           )}
         </Row>
         <Row label="Casa de máquinas">{casaLabel(sindico.elevador_casa_maquinas)}</Row>
+        <Row label="Tipo de prédio">
+          {sindico.tipo_predio === 'residencial' ? (
+            <Badge className="bg-blue-600 text-white">Residencial</Badge>
+          ) : sindico.tipo_predio === 'comercial' ? (
+            <Badge className="bg-purple-600 text-white">Comercial</Badge>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
+        </Row>
+        {sindico.tipo_predio === 'residencial' && (
+          <Row label="Permite Airbnb">
+            {sindico.permite_airbnb === 'sim' ? (
+              <Badge className="bg-green-600 text-white">Sim</Badge>
+            ) : sindico.permite_airbnb === 'nao' ? (
+              <Badge className="bg-red-600 text-white">Não</Badge>
+            ) : (
+              <span className="text-muted-foreground">Não informado</span>
+            )}
+          </Row>
+        )}
         <Row label="Operadoras de internet">
           {sindico.internet_operadoras && sindico.internet_operadoras.length > 0 ? (
             <div className="flex flex-wrap gap-1">

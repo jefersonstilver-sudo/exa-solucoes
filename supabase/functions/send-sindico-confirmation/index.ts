@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     const { data: rec, error: recErr } = await supa
       .from('sindicos_interessados')
       .select(
-        'id, protocolo, nome_predio, sindico_nome, nome_completo, sindico_email, email, aceite_pdf_url, aceite_timestamp, created_at, email_confirmacao_enviado_em',
+        'id, protocolo, nome_predio, sindico_nome, nome_completo, sindico_email, email, aceite_pdf_url, aceite_timestamp, created_at, email_confirmacao_enviado_em, tipo_predio, permite_airbnb',
       )
       .eq('id', id)
       .single();
@@ -141,11 +141,18 @@ Deno.serve(async (req) => {
     const fullName = rec.sindico_nome || rec.nome_completo || '';
     const dataRegistro = formatDateBR(rec.aceite_timestamp || rec.created_at);
 
+    const tipoLbl = rec.tipo_predio === 'residencial' ? 'Residencial' : rec.tipo_predio === 'comercial' ? 'Comercial' : '—';
+    const airbnbLbl = rec.tipo_predio === 'residencial'
+      ? (rec.permite_airbnb === 'sim' ? 'permite Airbnb' : rec.permite_airbnb === 'nao' ? 'não permite Airbnb' : 'Airbnb não informado')
+      : '';
+    const perfilPredio = rec.tipo_predio === 'residencial' ? `${tipoLbl} · ${airbnbLbl}` : tipoLbl;
+
     const html = renderTemplate(TEMPLATE_HTML, {
       PROTOCOLO: protocolo,
       PRIMEIRO_NOME: firstName(fullName),
       NOME_PREDIO: nomePredio,
       DATA_REGISTRO: dataRegistro,
+      PERFIL_PREDIO: perfilPredio,
     });
 
     // Baixa PDF (se existir) e converte para base64

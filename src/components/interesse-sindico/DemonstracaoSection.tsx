@@ -1,6 +1,5 @@
 import React from 'react';
 import Reveal from './Reveal';
-import LazyVideoPlayer from './LazyVideoPlayer';
 import DividerGlow from './DividerGlow';
 
 const VIDEO_2 = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/videos/sou-sindico/secundario/1761186591348.mp4';
@@ -50,14 +49,19 @@ const DemonstracaoSection: React.FC = () => {
 
           <Reveal delay={0.3}>
             <div className="flex justify-center lg:justify-end">
-              <div className="w-full max-w-[260px] md:max-w-[300px] lg:max-w-[320px] xl:max-w-[360px] aspect-[9/16]">
-                <LazyVideoPlayer
+              <div className="w-full max-w-[260px] md:max-w-[300px] lg:max-w-[320px] xl:max-w-[360px] aspect-[9/16] rounded-2xl overflow-hidden bg-black/40 ring-1 ring-white/10 shadow-2xl">
+                {/* Vídeo autoplay puro: sem controles, sem possibilidade de pausa — comportamento de GIF */}
+                <video
                   src={VIDEO_2}
-                  variant="vertical"
+                  autoPlay
                   loop
                   muted
-                  label="Ver demonstração"
-                  className="w-full h-full"
+                  playsInline
+                  preload="auto"
+                  disablePictureInPicture
+                  controlsList="nodownload nofullscreen noremoteplayback"
+                  className="w-full h-full object-cover pointer-events-none select-none"
+                  aria-label="Demonstração do painel EXA em loop"
                 />
               </div>
             </div>
