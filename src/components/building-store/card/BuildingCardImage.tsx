@@ -1,10 +1,17 @@
 
 import React, { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Camera } from 'lucide-react';
+import { Building2, Camera, Construction } from 'lucide-react';
 import { BuildingStore, getBuildingImageUrls, getImageUrl } from '@/services/buildingStoreService';
 import { calculateDistanceToBuilding, formatDistance } from '@/services/distanceCalculation';
 import useBuildingStore from '@/hooks/building-store/useBuildingStore';
+
+const isInstallationStatus = (status?: string) =>
+  String(status || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .includes('instala');
 
 interface BuildingCardImageProps {
   building: BuildingStore;
