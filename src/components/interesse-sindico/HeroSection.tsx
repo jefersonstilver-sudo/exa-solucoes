@@ -13,11 +13,13 @@ const HeroSection: React.FC = () => {
   return (
     <section className="hero-glow min-h-screen flex flex-col items-center justify-between relative px-5 md:px-8 lg:px-12">
       <Reveal delay={0.05} className="pt-8 md:pt-12">
-        <img
-          src={EXA_LOGO_URL}
-          alt="EXA Mídia"
-          className="h-12 md:h-14 lg:h-16 w-auto filter brightness-0 invert drop-shadow-[0_0_24px_rgba(234,37,29,0.55)]"
-        />
+        <a href="/" aria-label="Ir para a página inicial EXA" className="inline-block hover:opacity-80 transition-opacity">
+          <img
+            src={EXA_LOGO_URL}
+            alt="EXA Mídia"
+            className="h-12 md:h-14 lg:h-16 w-auto filter brightness-0 invert drop-shadow-[0_0_24px_rgba(234,37,29,0.55)]"
+          />
+        </a>
       </Reveal>
 
       <div className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl lg:max-w-3xl mx-auto py-12">
