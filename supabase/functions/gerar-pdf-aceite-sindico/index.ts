@@ -644,9 +644,20 @@ Deno.serve(async (req) => {
       { k: 'Data e hora', v: fmtTimestampEvidencia(rec.aceite_timestamp) },
       { k: 'Endereço IP', v: rec.aceite_ip ?? '—' },
       { k: 'Navegador / Sistema', v: truncate(rec.aceite_user_agent ?? '—', 80) },
+    ];
+    if ((rec as any).whatsapp_verificado === true) {
+      const wv = fmtTimestampEvidencia((rec as any).whatsapp_verificado_em);
+      const wn = (rec as any).sindico_whatsapp ?? '—';
+      evRows.push({
+        k: 'Autenticação 2FA',
+        v: `WhatsApp ${wn} verificado por código OTP em ${wv} (Lei 14.063/2020, Art. 4º, II)`,
+        valColor: C.exa,
+      });
+    }
+    evRows.push(
       { k: 'Hash SHA-256', v: hash, size: 7.6 },
       { k: 'Protocolo', v: protocolo, valColor: C.exa, valBold: true },
-    ];
+    );
     for (const r of evRows) {
       p2.drawText(san(r.k), { x: MX, y: y2 - 8, size: 8.3, font: fontBold, color: C.ink400 });
       const f = r.valBold ? fontBold : font;

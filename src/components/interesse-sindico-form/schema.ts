@@ -63,6 +63,27 @@ export const stepSindicoSchema = z.object({
     .max(5, 'Máximo 5 fotos')
     .optional()
     .default([]),
+  // Verificação 2FA do WhatsApp (Lei 14.063/2020)
+  whatsappVerificado: z.boolean().optional(),
+  whatsappVerificadoNumero: z.string().nullable().optional(),
+}).superRefine((data, ctx) => {
+  if (!data.whatsappVerificado) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['whatsappVerificado'],
+      message: 'Verifique seu WhatsApp por código antes de continuar',
+    });
+    return;
+  }
+  // Garante que o número verificado é exatamente o que está no formulário
+  const e164 = normalizeBRPhoneToE164(data.whatsappRaw || '');
+  if (!e164 || e164 !== data.whatsappVerificadoNumero) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['whatsappVerificado'],
+      message: 'O WhatsApp foi alterado. Verifique novamente o número atual.',
+    });
+  }
 });
 
 export type StepSindicoData = z.infer<typeof stepSindicoSchema>;

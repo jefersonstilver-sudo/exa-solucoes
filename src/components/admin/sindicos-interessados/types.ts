@@ -17,6 +17,9 @@ export interface SindicoInteressado {
   updated_at: string;
   tipo_predio?: 'residencial' | 'comercial' | null;
   permite_airbnb?: 'sim' | 'nao' | null;
+  whatsapp_verificado?: boolean | null;
+  whatsapp_verificado_em?: string | null;
+  whatsapp_verification_session_id?: string | null;
 }
 
 export interface SindicosStats {
