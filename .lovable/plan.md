@@ -1,45 +1,39 @@
-## Problemas identificados
+## Plano aprovado com ressalva — 2 frentes
 
-### 1. Erro ao salvar prédio (`buildings_status_check`)
-O `<SelectItem>` em `BuildingFormDialog3.tsx` envia os valores `"manutenção"` e `"instalação"` (com acento) para o banco, mas o constraint `buildings_status_check` espera valores sem acento (`"manutencao"`, `"instalacao"`). Isso causa o erro `new row for relation "buildings" violates check constraint`.
+### 1. Prédios "Em Instalação" — apenas vitrine (sem carrinho)
 
-### 2. Bairro não preenchido automaticamente
-Mesmo após selecionar um endereço completo via Google Places, o campo `Bairro` permanece vazio. O hook `useGooglePlacesAutocomplete` só pede `formatted_address`, `geometry`, `name` e `types` — não solicita `address_components`, que é onde o Google entrega o bairro (`sublocality_level_1` / `sublocality` / `neighborhood`).
+**`src/components/building-store/card/BuildingCardActions.tsx`**
+- Adicionar detecção robusta: `const isEmInstalacao = String(building.status || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes('instala');` (pega tanto `instalação` quanto `instalacao`).
+- Se `isEmInstalacao`:
+  - Bloquear `handleAddToCart` (early return).
+  - Substituir o botão "Continuar/Adicionar" por um botão **desabilitado** estilo âmbar com ícone `Construction` (lucide) e label **"Em Instalação"**.
+  - Esconder/substituir o preço por **"Em breve"** em tom muted.
 
----
+**`src/components/building-store/BuildingStoreCard.tsx`**
+- Adicionar uma **tarja glass elegante** sobre a imagem (canto superior, full-width discreta) com texto **"EM INSTALAÇÃO"**:
+  - `backdrop-blur-md bg-amber-500/20 border border-amber-300/40 text-amber-50`, ícone `Construction`, animação suave de entrada.
+- Aplicar `opacity-90` na imagem e leve `grayscale-[20%]` para reforçar o estado "preview".
+- Não alterar nada em prédios `ativo` — comportamento idêntico ao atual.
 
-## Plano de correção
+### 2. Correção do mapa abrindo no oceano (Howland Island)
 
-### A) `src/components/admin/buildings/v3/BuildingFormDialog3.tsx`
-- Trocar os `value` dos `<SelectItem>` de status para os canônicos do constraint:
-  - `"manutenção"` → `"manutencao"`
-  - `"instalação"` → `"instalacao"`
-  - Labels visíveis continuam com acento (Manutenção / Instalação).
-- No `onPlaceSelect` do `<AddressAutocomplete>`, passar a usar o novo campo `neighborhood` retornado e, **só preencher o bairro se ele ainda estiver vazio** (não sobrescrever edição manual do usuário):
-  ```ts
-  if (place.neighborhood && !formData.bairro) {
-    updateField('bairro', place.neighborhood);
-  }
-  ```
+**Causa identificada (`src/components/building-store/BuildingMap.tsx`):**
+- Quando `mapBuildings` chega vazio na primeira renderização (antes do fetch), `bounds` fica vazio e o `fitBounds(bounds, 40)` em linha ~480 não tem efeito útil. Pior: como `selectedLocation` é null e `hasAny` é false, o fluxo cai no else final — mas o `bounds` vazio do `MarkerClusterer` ou re-render pode reposicionar o mapa para (0,0).
+- Além disso, quando markers existem mas são `OverlayView` (sem `getPosition`), `bounds.extend(position)` está correto, mas se `buildings` mudar e nenhum tiver coords válidas, o reset ainda é falho.
 
-### B) `src/hooks/useGooglePlacesAutocomplete.tsx`
-- Adicionar `'address_components'` ao array `fields` do `PlaceDetailsRequest` em `getPlaceDetails`. Sem isso, o Google não devolve o bairro.
+**Correções:**
+- **Centro inicial sempre Foz** quando não há `selectedLocation` nem coords válidas: garantir que `defaultCenter = FOZ_DO_IGUACU_CENTER` (importar de `@/utils/mapConstants` em vez de hardcoded), e usar `zoom: 13` como fallback consistente.
+- **Proteger `fitBounds`**: só chamar quando `!bounds.isEmpty()`. Se `bounds.isEmpty()` → `setCenter(FOZ_DO_IGUACU_CENTER)` + `setZoom(13)`.
+- **Auto-fit em todos os prédios da loja**: passar `autoFitAllBuildings={true}` nos dois usos de `BuildingMap` em `BuildingFilterSidebar.tsx` (mini-mapa lateral e dialog expandido), para que ao abrir o mapa todos os painéis EXA de Foz fiquem visíveis no enquadramento inicial — exatamente o pedido do usuário ("ver todos os painéis da exa em foz").
+- **Re-init guard**: o `useEffect` de init depende de `[buildings, selectedLocation]` — isso recria o mapa toda vez que `buildings` muda. Vou ajustar para só recriar quando `selectedLocation` mudar; mudanças em `buildings` apenas atualizam markers (já tratado no segundo `useEffect`). Isso evita o "flash" para o oceano durante re-renders.
 
-### C) `src/components/ui/address-autocomplete.tsx`
-- Estender o callback `onPlaceSelect` com um campo opcional `neighborhood?: string`.
-- Após receber `placeDetails`, varrer `placeDetails.address_components` na ordem de prioridade:
-  1. `sublocality_level_1`
-  2. `sublocality`
-  3. `neighborhood`
-  4. (fallback) `administrative_area_level_4` / `administrative_area_level_3`
-- Repassar o `long_name` encontrado em `onPlaceSelect({ ..., neighborhood })`.
+**Arquivos a editar:**
+1. `src/components/building-store/card/BuildingCardActions.tsx`
+2. `src/components/building-store/BuildingStoreCard.tsx`
+3. `src/components/building-store/BuildingMap.tsx`
+4. `src/components/building-store/BuildingFilterSidebar.tsx`
 
 ### Garantias
-- **Não altero** UI, layout, estilos, fluxos ou qualquer outro comportamento fora dos pontos acima — segue a regra do projeto.
-- Bairro digitado manualmente pelo usuário **não** é sobrescrito.
-- Mudanças são puramente locais ao formulário e ao hook de autocomplete; nenhum schema/migration necessário (o constraint do banco já está correto, o frontend é que estava enviando valor errado).
-
-### Arquivos a editar
-- `src/components/admin/buildings/v3/BuildingFormDialog3.tsx`
-- `src/hooks/useGooglePlacesAutocomplete.tsx`
-- `src/components/ui/address-autocomplete.tsx`
+- Nenhuma alteração em fluxo de carrinho, filtros, busca ou prédios `ativo`.
+- Comportamento mobile preservado (`MobileFullscreenMap` continua usando `BuildingMap` com seus props atuais).
+- Sem mudanças em backend/RLS/edge functions.

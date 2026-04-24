@@ -93,7 +93,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
         ease: "easeInOut"
       }}>
             <div className="absolute inset-0">
-              <BuildingMap buildings={mapBuildings} selectedLocation={selectedLocation} scrollwheel={false} requirePreciseGeocode={false} enableClustering={false} />
+              <BuildingMap buildings={mapBuildings} selectedLocation={selectedLocation} scrollwheel={false} requirePreciseGeocode={false} enableClustering={false} autoFitAllBuildings={!selectedLocation} />
               <div className="absolute top-2 right-2 z-10">
                 <Button variant="outline" className="border-2 border-[#9C1E1E]/20 text-[#9C1E1E] bg-white/90 hover:bg-white rounded-lg px-3 py-2 h-9 flex items-center gap-2 shadow-sm" onClick={() => setIsMapDialogOpen(true)}>
                   <Maximize2 className="h-4 w-4" />
@@ -108,7 +108,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
       <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
         <DialogContent className="max-w-[96vw] w-[96vw] p-0">
           <div className="w-full h-[82vh]">
-            <BuildingMap buildings={mapBuildings} selectedLocation={selectedLocation} scrollwheel={true} defaultZoom={15} requirePreciseGeocode={false} enableClustering={false} />
+            <BuildingMap buildings={mapBuildings} selectedLocation={selectedLocation} scrollwheel={true} defaultZoom={15} requirePreciseGeocode={false} enableClustering={false} autoFitAllBuildings={!selectedLocation} />
           </div>
         </DialogContent>
       </Dialog>
