@@ -12384,6 +12384,9 @@ export type Database = {
           tipo_predio: string | null
           updated_at: string
           visita_agendada_em: string | null
+          whatsapp_verificado: boolean
+          whatsapp_verificado_em: string | null
+          whatsapp_verification_session_id: string | null
         }
         Insert: {
           aceite_hash?: string | null
@@ -12439,6 +12442,9 @@ export type Database = {
           tipo_predio?: string | null
           updated_at?: string
           visita_agendada_em?: string | null
+          whatsapp_verificado?: boolean
+          whatsapp_verificado_em?: string | null
+          whatsapp_verification_session_id?: string | null
         }
         Update: {
           aceite_hash?: string | null
@@ -12494,6 +12500,9 @@ export type Database = {
           tipo_predio?: string | null
           updated_at?: string
           visita_agendada_em?: string | null
+          whatsapp_verificado?: boolean
+          whatsapp_verificado_em?: string | null
+          whatsapp_verification_session_id?: string | null
         }
         Relationships: []
       }
