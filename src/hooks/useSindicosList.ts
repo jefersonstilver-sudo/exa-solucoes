@@ -26,6 +26,8 @@ export interface SindicoRow {
   internet_operadoras: string[] | null;
   empresa_elevador: string | null;
   elevador_casa_maquinas: string | null;
+  tipo_predio: 'residencial' | 'comercial' | null;
+  permite_airbnb: 'sim' | 'nao' | null;
   sindico_nome: string | null;
   sindico_cpf: string | null;
   sindico_whatsapp: string | null;
