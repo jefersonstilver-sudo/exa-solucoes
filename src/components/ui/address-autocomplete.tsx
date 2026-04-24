@@ -12,7 +12,8 @@ interface AddressAutocompleteProps {
   onPlaceSelect?: (place: { 
     address: string; 
     coordinates: { lat: number; lng: number }; 
-    placeId: string 
+    placeId: string;
+    neighborhood?: string;
   }) => void;
   placeholder?: string;
   className?: string;
@@ -76,6 +77,28 @@ export function AddressAutocomplete({
         lng: placeDetails.geometry.location.lng(),
       };
 
+      // Extract neighborhood from address_components
+      let neighborhood: string | undefined;
+      const components = (placeDetails as any).address_components as
+        | Array<{ long_name: string; short_name: string; types: string[] }>
+        | undefined;
+      if (components?.length) {
+        const priority = [
+          'sublocality_level_1',
+          'sublocality',
+          'neighborhood',
+          'administrative_area_level_4',
+          'administrative_area_level_3',
+        ];
+        for (const type of priority) {
+          const match = components.find((c) => c.types.includes(type));
+          if (match?.long_name) {
+            neighborhood = match.long_name;
+            break;
+          }
+        }
+      }
+
       // Track address selection from autocomplete
       trackSearch(placeDetails.formatted_address || place.description, {
         source: 'address_autocomplete',
@@ -88,6 +111,7 @@ export function AddressAutocomplete({
         address: placeDetails.formatted_address || place.description,
         coordinates,
         placeId: place.placeId,
+        neighborhood,
       });
 
       onChange(placeDetails.formatted_address || place.description);
