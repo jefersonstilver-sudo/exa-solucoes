@@ -10,6 +10,7 @@ import BuildingHoverCard from '@/components/maps/BuildingHoverCard';
 import { createRoot } from 'react-dom/client';
 import BusinessLocationPin from '@/components/maps/BusinessLocationPin';
 import BusinessLocationEditor from '@/components/building-store/BusinessLocationEditor';
+import { FOZ_DO_IGUACU_CENTER } from '@/utils/mapConstants';
 
 interface BuildingMapProps {
   buildings: BuildingStore[];
