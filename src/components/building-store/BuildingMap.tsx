@@ -138,7 +138,8 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
       isMounted = false;
       setIsReady(false);
     };
-  }, [buildings, selectedLocation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLocation]);
 
   // Update markers (with geocoding fallback)
   useEffect(() => {
