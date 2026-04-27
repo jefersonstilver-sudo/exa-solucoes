@@ -18,9 +18,26 @@ interface ValidationResult {
 export const validateRequest = async (req: Request): Promise<ValidationResult> => {
   console.log('🔧 [VALIDATION] v4 - Dynamic role_types validation');
   try {
-    const { email, adminType, nome, cpf, tipo_documento } = await req.json();
+    const {
+      email,
+      adminType,
+      nome,
+      cpf,
+      tipo_documento,
+      whatsapp,
+      whatsapp_verified,
+      whatsapp_verification_required,
+    } = await req.json();
     const cleanAdminType = (adminType || '').trim();
-    console.log('📦 [CREATE-ADMIN] Dados recebidos:', { email, adminType: cleanAdminType, nome, cpf: cpf ? '***' : undefined });
+    const cleanWhatsapp = (whatsapp || '').replace(/\D/g, '');
+    console.log('📦 [CREATE-ADMIN] Dados recebidos:', {
+      email,
+      adminType: cleanAdminType,
+      nome,
+      cpf: cpf ? '***' : undefined,
+      whatsapp: cleanWhatsapp ? `${cleanWhatsapp.substring(0, 4)}****` : undefined,
+      whatsapp_verified,
+    });
 
     // Validações básicas
     if (!email || !cleanAdminType) {
