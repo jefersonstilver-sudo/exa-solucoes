@@ -43,18 +43,21 @@ const BASE_CLEAN_MAP_STYLES: google.maps.MapTypeStyle[] = [
 ];
 
 // Create SVG marker as data URL (works without mapId)
+// Cores seguem o ciclo de vida do prédio (igual à página "Painéis Real"):
+//   ativo      → verde
+//   instalacao → amarelo
+//   inativo    → vermelho
 const createMarkerSvgUrl = (
-  status: 'online' | 'offline' | 'partial' | 'unknown',
+  kind: 'ativo' | 'instalacao' | 'inativo',
   sequentialNumber: number
 ): string => {
   const colors = {
-    online: { primary: '#22C55E', dark: '#16A34A' },
-    partial: { primary: '#F59E0B', dark: '#D97706' },
-    offline: { primary: '#EF4444', dark: '#DC2626' },
-    unknown: { primary: '#6B7280', dark: '#4B5563' },
+    ativo:      { primary: '#22C55E', dark: '#16A34A' },
+    instalacao: { primary: '#F59E0B', dark: '#D97706' },
+    inativo:    { primary: '#EF4444', dark: '#DC2626' },
   };
-  
-  const { primary, dark } = colors[status];
+
+  const { primary, dark } = colors[kind] || colors.ativo;
   
   const svg = `
     <svg width="32" height="42" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
