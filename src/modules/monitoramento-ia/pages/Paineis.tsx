@@ -31,6 +31,7 @@ import { ConfigHorarioDialog } from '@/components/admin/paineis-exa/ConfigHorari
 import { PaineisMapModal } from '../components/paineis/PaineisMapModal';
 import { useDeviceGroups } from '@/hooks/useDeviceGroups';
 import { DeviceGroupManager } from '@/components/monitor/DeviceGroupManager';
+import { SyncHealthDialog } from '../components/SyncHealthDialog';
 
 // Compact Stat Icon Component for mobile
 const CompactStatIcon = ({ icon: Icon, value, color, label }: { 
