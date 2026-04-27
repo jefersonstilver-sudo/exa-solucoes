@@ -68,6 +68,11 @@ const createUserSchema = z.object({
       message: 'CPF inválido (digite apenas números ou formato XXX.XXX.XXX-XX)',
     })
     .optional(),
+  whatsapp: z
+    .string()
+    .regex(/^\d{10,11}$/, {
+      message: 'WhatsApp inválido (DDD + número, 10 ou 11 dígitos)',
+    }),
   role: z.string().min(1, { message: 'Selecione um tipo de conta' }),
 });
 
