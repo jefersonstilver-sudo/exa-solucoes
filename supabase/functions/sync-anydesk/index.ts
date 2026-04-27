@@ -455,6 +455,100 @@ serve(async (req) => {
       }
     }
 
+    // ============ STALE DEVICE DETECTION ============
+    // Devices que NÃO apareceram nesta resposta da API são marcados como offline
+    // (preservando last_online_at). NUNCA deletar — só admin pode arquivar.
+    let staleDetected = 0;
+    try {
+      const apiClientIds = clients.map((c: any) => String(c.cid));
+      
+      // Busca todos os devices ativos não-deletados
+      const { data: allActiveDevices } = await supabase
+        .from('devices')
+        .select('id, anydesk_client_id, status, last_online_at, metadata, name')
+        .eq('is_deleted', false);
+      
+      const missingDevices = (allActiveDevices || []).filter(
+        (d) => d.anydesk_client_id && !apiClientIds.includes(String(d.anydesk_client_id))
+      );
+      
+      console.log(`[SYNC-ANYDESK] 🔍 Stale check: ${missingDevices.length} devices não retornaram da API`);
+      
+      for (const dev of missingDevices) {
+        const existingMeta = (dev.metadata as any) || {};
+        const wasAlreadyStale = existingMeta.stale === true;
+        const wasOnline = dev.status !== 'offline';
+        
+        // Atualiza status + flag stale (preserva last_online_at)
+        const newMetadata = {
+          ...existingMeta,
+          stale: true,
+          stale_reason: 'not_returned_by_anydesk_api',
+          stale_detected_at: existingMeta.stale_detected_at || new Date().toISOString(),
+          stale_since: existingMeta.stale_since || dev.last_online_at,
+          stale_last_check: new Date().toISOString(),
+        };
+        
+        const { error: staleErr } = await supabase
+          .from('devices')
+          .update({
+            status: 'offline',
+            consecutive_offline_count: 0,
+            metadata: newMetadata,
+          })
+          .eq('id', dev.id);
+        
+        if (staleErr) {
+          console.warn(`[SYNC-ANYDESK] ⚠️ Stale update error ${dev.anydesk_client_id}:`, staleErr.message);
+          continue;
+        }
+        
+        // Só registra evento na transição (primeira vez detectado)
+        if (!wasAlreadyStale) {
+          staleDetected++;
+          console.log(`[SYNC-ANYDESK] 👻 Device ${dev.anydesk_client_id} (${dev.name}) marcado como STALE`);
+          
+          await supabase.from('events_log').insert({
+            computer_id: dev.id,
+            event_type: 'stale_detected',
+            old_status: dev.status,
+            new_status: 'offline',
+            description: 'Device removido da API AnyDesk - marcado como offline',
+            metadata: { stale_since: dev.last_online_at, reason: 'missing_from_api' },
+          });
+          
+          // Fecha sessão online aberta, se houver
+          if (wasOnline) {
+            const { data: lastOnline } = await supabase
+              .from('connection_history')
+              .select('*')
+              .eq('computer_id', dev.id)
+              .eq('event_type', 'online')
+              .is('ended_at', null)
+              .order('started_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            
+            if (lastOnline) {
+              const duration = Math.floor((Date.now() - new Date(lastOnline.started_at).getTime()) / 1000);
+              await supabase.from('connection_history')
+                .update({ ended_at: new Date().toISOString(), duration_seconds: duration })
+                .eq('id', lastOnline.id);
+            }
+            
+            await supabase.from('connection_history').insert({
+              computer_id: dev.id,
+              event_type: 'offline',
+              started_at: new Date().toISOString(),
+            });
+          }
+        }
+      }
+    } catch (staleError) {
+      console.error('[SYNC-ANYDESK] ⚠️ Stale detection block failed:', staleError);
+    }
+    // ============ END STALE DETECTION ============
+
     const result = {
       success: true,
       timestamp: new Date().toISOString(),
@@ -464,6 +558,7 @@ serve(async (req) => {
         devices_created: devicesCreated,
         status_changes: statusChanges,
         provider_detections: providerDetections,
+        stale_detected: staleDetected,
         errors: errors.length,
       },
       errors: errors.length > 0 ? errors : undefined,
