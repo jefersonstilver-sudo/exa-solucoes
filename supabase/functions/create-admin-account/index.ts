@@ -41,7 +41,7 @@ serve(async (req) => {
       );
     }
 
-    const { email, adminType, nome, cpf, tipo_documento } = validationResult.data;
+    const { email, adminType, nome, cpf, tipo_documento, whatsapp, whatsapp_verified, whatsapp_verification_required } = validationResult.data;
 
     // Verificar se usuário já existe
     const existingUserCheck = await checkExistingUser(email);
