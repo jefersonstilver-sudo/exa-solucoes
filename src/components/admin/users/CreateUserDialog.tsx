@@ -129,9 +129,15 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
             setRole(data[0].key);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching role types:', error);
-        toast.error('Erro ao carregar tipos de conta');
+        const msg =
+          error?.message ?? 'Erro desconhecido ao carregar tipos de conta';
+        setRolesError(msg);
+        toast.error('Erro ao carregar tipos de conta', {
+          description: msg,
+          duration: 8000,
+        });
       } finally {
         setLoadingRoles(false);
       }
