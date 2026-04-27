@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, ChevronUp, Maximize2, Clock, MapPin, Link2, Layers, BellOff } from 'lucide-react';
+import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, ChevronUp, Maximize2, Clock, MapPin, Link2, Layers, BellOff, Activity } from 'lucide-react';
 import {
   Device,
   calculateDeviceStats,
@@ -31,6 +31,7 @@ import { ConfigHorarioDialog } from '@/components/admin/paineis-exa/ConfigHorari
 import { PaineisMapModal } from '../components/paineis/PaineisMapModal';
 import { useDeviceGroups } from '@/hooks/useDeviceGroups';
 import { DeviceGroupManager } from '@/components/monitor/DeviceGroupManager';
+import { SyncHealthDialog } from '../components/SyncHealthDialog';
 
 // Compact Stat Icon Component for mobile
 const CompactStatIcon = ({ icon: Icon, value, color, label }: { 
@@ -137,6 +138,7 @@ export const PaineisPage = () => {
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [groupManagerOpen, setGroupManagerOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [syncHealthOpen, setSyncHealthOpen] = useState(false);
   // Hook de alertas offline
   const { offlineDevices, activeAlerts, dismissAlert } = useOfflineAlerts();
   const { groups: deviceGroups, createGroup, updateGroup, deleteGroup, moveDeviceToGroup } = useDeviceGroups();
@@ -432,6 +434,13 @@ export const PaineisPage = () => {
           <ViewToggle view={viewMode} onViewChange={setViewMode} />
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setSyncHealthOpen(true)}
+              className="p-2.5 lg:p-3 bg-muted hover:bg-muted/80 text-foreground rounded-lg transition-colors border border-border shadow-sm"
+              title="Saúde de Sincronia AnyDesk"
+            >
+              <Activity className="w-4 h-4 lg:w-5 lg:h-5" />
+            </button>
+            <button
               onClick={() => {
                 const url = generatePublicUrl('/monitor');
                 navigator.clipboard.writeText(url);
@@ -631,6 +640,9 @@ export const PaineisPage = () => {
           />
         )}
       </AnimatePresence>
+
+      {/* Saúde de Sincronia AnyDesk */}
+      <SyncHealthDialog open={syncHealthOpen} onOpenChange={setSyncHealthOpen} />
       </div>
     </div>
   );

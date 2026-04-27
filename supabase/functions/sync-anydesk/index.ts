@@ -189,7 +189,7 @@ serve(async (req) => {
     
     console.log(`[SYNC-ANYDESK] 📋 Found ${clients.length} clients from AnyDesk API`);
 
-    let devicesUpdated = 0, devicesCreated = 0, statusChanges = 0, providerDetections = 0;
+    let devicesUpdated = 0, devicesCreated = 0, statusChanges = 0, providerDetections = 0, staleRecovered = 0;
     const errors: string[] = [];
 
     for (const client of clients) {
@@ -286,7 +286,20 @@ serve(async (req) => {
 
         // CRITICAL: Preserve existing metadata (especially alert-related fields) while updating AnyDesk data
         const existingMetadata = existingDevice?.metadata || {};
-        
+        const wasStale = (existingMetadata as any).stale === true;
+
+        // Build cleaned metadata: strip stale_* flags when device returns from API
+        const cleanedExistingMeta: any = { ...existingMetadata };
+        if (wasStale) {
+          delete cleanedExistingMeta.stale;
+          delete cleanedExistingMeta.stale_reason;
+          delete cleanedExistingMeta.stale_detected_at;
+          delete cleanedExistingMeta.stale_since;
+          delete cleanedExistingMeta.stale_last_check;
+          cleanedExistingMeta.stale_recovered_at = new Date().toISOString();
+          console.log(`[SYNC-ANYDESK] ♻️ Device ${anydeskId} (${parsed.buildingName}) RECUPERADO da stale list`);
+        }
+
         const deviceData = {
           anydesk_client_id: anydeskId,
           name: parsed.buildingName,
@@ -298,12 +311,12 @@ serve(async (req) => {
           comments: comment,
           provider: parsed.provider,
           address: parsed.address,
-          metadata: { 
-            // Preserve existing alert-related fields (DO NOT OVERWRITE!)
-            ...existingMetadata,
+          metadata: {
+            // Preserve existing alert-related fields (DO NOT OVERWRITE!) — minus any cleared stale_* keys
+            ...cleanedExistingMeta,
             // Update AnyDesk-specific fields
-            alias, 
-            label, 
+            alias,
+            label,
             online_time: client['online-time'],
             raw_tags: rawTags,
             parsed_data: {
@@ -331,6 +344,19 @@ serve(async (req) => {
           }
 
           devicesUpdated++;
+
+          // Stale recovery: log event when a previously stale device returns
+          if (wasStale) {
+            staleRecovered++;
+            await supabase.from('events_log').insert({
+              computer_id: existingDevice.id,
+              event_type: 'stale_recovered',
+              old_status: existingDevice.status,
+              new_status: finalStatus,
+              description: 'Device voltou a aparecer na API AnyDesk',
+              metadata: { recovered_at: new Date().toISOString() },
+            });
+          }
 
           // Provider detection alert
           if (providerChanged) {
@@ -559,6 +585,7 @@ serve(async (req) => {
         status_changes: statusChanges,
         provider_detections: providerDetections,
         stale_detected: staleDetected,
+        stale_recovered: staleRecovered,
         errors: errors.length,
       },
       errors: errors.length > 0 ? errors : undefined,
