@@ -40,8 +40,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ModulePermissionsModal from '@/components/admin/account-types/ModulePermissionsModal';
 import DeleteRoleTypeDialog from '@/components/admin/account-types/DeleteRoleTypeDialog';
+import RoleUsersPanel from '@/components/admin/account-types/RoleUsersPanel';
 import { useAuth } from '@/hooks/useAuth';
 
 interface RoleType {
