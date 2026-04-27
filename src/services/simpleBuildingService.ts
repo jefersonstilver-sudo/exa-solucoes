@@ -90,6 +90,15 @@ export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => 
     }
 
     console.log('✅ [SIMPLE SERVICE] Prédios ativos encontrados:', buildings.length);
+
+    // 🛡️ AUDITORIA: prédios em instalação que aparecem na vitrine
+    const inInstallation = buildings.filter((b: any) =>
+      String(b.status || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('instala')
+    );
+    if (inInstallation.length > 0) {
+      console.warn(`🛠️ [AUDIT] ${inInstallation.length} prédio(s) em INSTALAÇÃO na loja pública (vitrine — sem compra):`,
+        inInstallation.map((b: any) => b.nome));
+    }
     
     // Log detalhado dos prédios
     buildings.forEach((building, index) => {
