@@ -553,14 +553,15 @@ export default function ModulePermissionsModal({ role, onClose }: ModulePermissi
           </div>
         </motion.div>
       </motion.div>
-
-      <DeleteRoleTypeDialog
-        role={role}
-        currentUserRoleKey={userProfile?.role ?? null}
-        open={showDelete}
-        onOpenChange={setShowDelete}
-        onDeleted={onClose}
-      />
     </AnimatePresence>
+
+    <DeleteRoleTypeDialog
+      role={role}
+      currentUserRoleKey={userProfile?.role ?? null}
+      open={showDelete}
+      onOpenChange={setShowDelete}
+      onDeleted={onClose}
+    />
+    </>
   );
 }
