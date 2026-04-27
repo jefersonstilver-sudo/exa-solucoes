@@ -9,9 +9,10 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Camera, Upload, X, Image as ImageIcon, Star } from 'lucide-react';
+import { Camera, Upload, X, Image as ImageIcon, Star, Move } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import ImageFocusEditor from './ImageFocusEditor';
 
 interface BuildingImageManagerProps {
   open: boolean;
