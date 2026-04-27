@@ -7,6 +7,9 @@ interface ValidationResult {
     nome?: string;
     cpf?: string;
     tipo_documento?: string;
+    whatsapp?: string;
+    whatsapp_verified?: boolean;
+    whatsapp_verification_required?: boolean;
   };
   error?: any;
   status?: number;
