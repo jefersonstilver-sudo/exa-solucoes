@@ -212,7 +212,7 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
       const lng = building.manual_longitude || building.longitude;
       if (!lat || !lng || lat === 0 || lng === 0) return;
 
-      const iconUrl = createMarkerSvgUrl(building.status, index + 1);
+      const iconUrl = createMarkerSvgUrl(building.buildingStatus, index + 1);
 
       // Use classic google.maps.Marker (no mapId required)
       const marker = new google.maps.Marker({
@@ -224,14 +224,8 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
           anchor: new google.maps.Point(16, 42),
         },
         title: building.nome,
-        animation: building.status === 'offline' ? google.maps.Animation.BOUNCE : undefined,
         optimized: true,
       });
-
-      // Stop bounce animation after 2 seconds for offline markers
-      if (building.status === 'offline') {
-        setTimeout(() => marker.setAnimation(null), 2000);
-      }
 
       const statusColors = {
         online: '#22C55E',
