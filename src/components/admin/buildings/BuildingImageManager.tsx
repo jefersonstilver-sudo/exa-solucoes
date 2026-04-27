@@ -290,7 +290,7 @@ const BuildingImageManager: React.FC<BuildingImageManagerProps> = ({
                   )}
                 </div>
 
-                <div className="mt-3">
+                <div className="mt-3 space-y-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -301,6 +301,21 @@ const BuildingImageManager: React.FC<BuildingImageManagerProps> = ({
                     <Upload className="h-4 w-4 mr-2" />
                     {imageUrl ? 'Substituir' : 'Adicionar'} Imagem
                   </Button>
+                  {imageUrl && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        const path = getRawPath(index);
+                        if (path) setFocusEditor({ open: true, slot: index, path });
+                      }}
+                      disabled={uploading}
+                    >
+                      <Move className="h-4 w-4 mr-2" />
+                      Ajustar enquadramento
+                    </Button>
+                  )}
                 </div>
 
                 <input
