@@ -29,7 +29,22 @@ const BuildingImageManager: React.FC<BuildingImageManagerProps> = ({
 }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [focusEditor, setFocusEditor] = useState<{ open: boolean; slot: number; path: string } | null>(null);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const focusFieldByIndex = ['imagem_principal_focus', 'imagem_2_focus', 'imagem_3_focus', 'imagem_4_focus'];
+  const getInitialFocus = (idx: number) => {
+    const field = focusFieldByIndex[idx];
+    return building?.[field] || { x: 50, y: 50 };
+  };
+  const getRawPath = (idx: number): string | null => {
+    if (!building) return null;
+    if (idx === 0) return building.imagem_principal || null;
+    if (idx === 1) return building.imagem_2 || null;
+    if (idx === 2) return building.imagem_3 || null;
+    if (idx === 3) return building.imagem_4 || null;
+    return null;
+  };
 
   // Construir array de imagens usando os novos campos individuais
   const imageSlots = Array.from({ length: 4 }, (_, index) => {
