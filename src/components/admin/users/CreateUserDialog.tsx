@@ -388,6 +388,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       setCpf('');
       setRole('admin');
       setDocumentoObrigatorio(false);
+      setWhatsapp({ raw: '', e164: '', verified: false, mode: 'first_login' });
       setErrors({});
       
       onOpenChange(false);
