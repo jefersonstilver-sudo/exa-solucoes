@@ -9,7 +9,7 @@ const EXA_LOGO_URL =
 const ACCESS_PASSWORD = '573040@';
 const STORAGE_KEY = 'pnt_access_v1';
 const PRESENTATION_URL =
-  'https://docs.google.com/presentation/d/e/2PACX-1vQldYKnclqBnGPRfUTj3jU2mQtEMPrKH8jcl0U3ZMztx6ThRF_renc7Qrm6fBOIniaZBPk9KCYfPVz4/embed?start=false&loop=false&delayms=3000';
+  'https://docs.google.com/presentation/d/e/2PACX-1vSSvIePXlFmEoKPe-sJVjDZI5OWdLjzLxscj_4IuDtaqJIMwzkDgyIQmNFJOa6x926Xh0SqdUEDUjhp/embed?start=false&loop=false&delayms=3000';
 
 const ParanaNutriTalentos: React.FC = () => {
   const [authed, setAuthed] = useState(false);
