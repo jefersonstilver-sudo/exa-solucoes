@@ -33,6 +33,8 @@ import { useDeviceGroups } from '@/hooks/useDeviceGroups';
 import { DeviceGroupManager } from '@/components/monitor/DeviceGroupManager';
 import { SyncHealthDialog } from '../components/SyncHealthDialog';
 
+const PANELS_PAGE_SIZE = 100;
+
 // Compact Stat Icon Component for mobile
 const CompactStatIcon = ({ icon: Icon, value, color, label }: { 
   icon: any; 
@@ -96,7 +98,7 @@ export const PaineisPage = () => {
     sort,
     setSort,
     refresh,
-  } = useDevices(0, 30);
+  } = useDevices(0, PANELS_PAGE_SIZE);
 
   const { theme } = useModuleTheme();
 
@@ -539,7 +541,7 @@ export const PaineisPage = () => {
           )}
 
           {/* Paginação */}
-          {total > 30 && (
+          {total > PANELS_PAGE_SIZE && (
             <div className="mt-8 flex justify-center gap-4">
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
@@ -549,11 +551,11 @@ export const PaineisPage = () => {
                 Anterior
               </button>
               <span className="px-4 py-2 text-module-primary">
-                Página {page + 1} de {Math.ceil(total / 30)}
+                Página {page + 1} de {Math.ceil(total / PANELS_PAGE_SIZE)}
               </span>
               <button
                 onClick={() => setPage(page + 1)}
-                disabled={(page + 1) * 30 >= total}
+                disabled={(page + 1) * PANELS_PAGE_SIZE >= total}
                 className="px-4 py-2 border-module border rounded-lg hover:bg-module-hover disabled:opacity-50 disabled:cursor-not-allowed text-module-primary"
               >
                 Próxima
