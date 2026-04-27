@@ -102,6 +102,7 @@ export default function TiposContaPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<RoleType | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+  const [detailTab, setDetailTab] = useState<'permissions' | 'users'>('permissions');
   const [newRole, setNewRole] = useState({
     key: '',
     display_name: '',
