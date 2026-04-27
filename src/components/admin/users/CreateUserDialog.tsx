@@ -276,6 +276,9 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         email: email.trim(),
         adminType: role,
         nome: nomeCompleto,
+        whatsapp: whatsapp.e164,
+        whatsapp_verified: whatsapp.verified,
+        whatsapp_verification_required: !whatsapp.verified,
       };
 
       // Adicionar CPF se fornecido
