@@ -1,66 +1,72 @@
 
 ## Problema
 
-No mapa do `/super_admin/paineis-exa` (componente `PaineisMapModal`), as cores dos pinos hoje refletem apenas o estado **operacional dos painéis** (online/offline/partial). Isso não bate com a página "Painéis Real", onde a cor segue o **status do prédio**:
+No mapa de `/super_admin/paineis-exa`:
 
-- `ativo` → **verde**
-- `instalacao` (em instalação) → **amarelo**
-- `inativo` → **vermelho**
+1. **Royal Legacy** está com `status='ativo'` no banco mas seus painéis estão **offline** — hoje o pino aparece **verde**, escondendo o problema. A cor precisa refletir a realidade operacional.
+2. Prédios marcados como **`interno`** estão aparecendo no mapa público — não devem.
+3. O **tooltip de hover** mostra apenas "X/Y painéis online" — o usuário quer ver **todas as informações de cada painel** (nome, status, provedor, último online, endereço).
 
-Além disso, prédios em instalação não estão aparecendo no endereço correto (ou somem do mapa) porque o hook `useBuildingsWithDeviceStatus` exige `totalDevices > 0` — prédios em instalação geralmente ainda não têm devices vinculados, então caem fora.
+## Regras corretas de cor do pino
+
+| Status do prédio | Painéis | Cor |
+|---|---|---|
+| `interno` | qualquer | **não aparece no mapa** |
+| `instalacao` | qualquer | **amarelo** |
+| `inativo` | qualquer | **vermelho** |
+| `ativo` | todos online | **verde** |
+| `ativo` | algum/todos offline | **vermelho** |
+| `ativo` | sem painéis | **vermelho** (anomalia) |
+
+Ou seja: para `ativo`, a cor passa a depender do estado operacional dos painéis. `instalacao` continua amarelo independente dos painéis (estão sendo configurados).
 
 ## Mudanças
 
-### 1. Buscar o `status` do prédio
-Arquivo: `src/modules/monitoramento-ia/hooks/useBuildingsWithDeviceStatus.ts`
+### 1. `src/modules/monitoramento-ia/hooks/useBuildingsWithDeviceStatus.ts`
 
-- Incluir `status` no `select` da tabela `buildings`.
-- Adicionar `buildingStatus: 'ativo' | 'instalacao' | 'inativo' | string` no tipo `BuildingWithDeviceStatus` (mantendo o `status` operacional atual para o tooltip e contadores).
-- Remover o filtro `.filter(b => b.totalDevices > 0)` para prédios com `status = 'instalacao'`, para que apareçam no mapa mesmo sem painéis ainda instalados (desde que tenham coordenadas — manual ou auto). Manter o filtro para os demais para não poluir.
-- Normalizar o status com NFD (igual ao `BuildingStoreCard`) para tratar "instalação"/"instalacao".
+- Estender `getBuildingStatusKind` para reconhecer também `'interno'`.
+- Adicionar campo derivado `pinKind: 'ativo' | 'instalacao' | 'inativo'` no tipo `BuildingWithDeviceStatus`, computado assim:
+  ```ts
+  if (buildingStatus === 'instalacao') pinKind = 'instalacao';
+  else if (buildingStatus === 'inativo') pinKind = 'inativo';
+  else if (buildingStatus === 'ativo' && status === 'online') pinKind = 'ativo';
+  else pinKind = 'inativo'; // ativo com painéis offline/partial/sem painéis
+  ```
+- Atualizar o filtro final para **excluir prédios `interno`** do mapa:
+  ```ts
+  .filter(b => b.buildingStatus !== 'interno')
+  .filter(b => b.totalDevices > 0 || b.buildingStatus === 'instalacao')
+  ```
+- Buscar campos extras dos devices úteis para o tooltip: já temos `name`, `status`, `provider`. Adicionar `address` e `last_online_at` ao select e ao tipo `DeviceInfo`.
 
-### 2. Pino colorido por status do prédio
-Arquivo: `src/modules/monitoramento-ia/components/paineis/PaineisMapModal.tsx`
+### 2. `src/modules/monitoramento-ia/components/paineis/PaineisMapModal.tsx`
 
-- Trocar a função `createMarkerSvgUrl` para receber o **status do prédio** (`ativo` | `instalacao` | `inativo`) em vez de `online/offline/partial`.
-- Paleta:
-  - `ativo` → `#22C55E` (verde) / dark `#16A34A`
-  - `instalacao` → `#F59E0B` (amarelo) / dark `#D97706`
-  - `inativo` → `#EF4444` (vermelho) / dark `#DC2626`
-  - fallback → cinza
-- Atualizar o `marker.icon` para usar essa nova função.
-- O tooltip (mouseover) e o `BuildingDetailCard` continuam exibindo `onlineCount/totalDevices` (operacional) — apenas a **cor** do pino muda.
-- Animação `BOUNCE` deixa de ser por status operacional; aplicar somente a prédios `inativo` ou remover a animação para evitar confusão (preferência: remover BOUNCE, manter mapa limpo).
+- Trocar `createMarkerSvgUrl(building.buildingStatus, …)` por `createMarkerSvgUrl(building.pinKind, …)`.
+- Reescrever o **tooltip de hover** com card detalhado:
+  - Cabeçalho: nome do prédio, badge com status do prédio (Ativo/Em Instalação/Inativo) e endereço.
+  - Resumo: `X/Y painéis online`.
+  - Lista de painéis (até 8 visíveis, scroll se mais), cada item:
+    - Bolinha verde/vermelha de status
+    - Nome do painel
+    - Provedor (badge)
+    - "Último online: há Xh" (`formatDistanceToNow` em pt-BR a partir de `last_online_at`)
+  - Estilo limpo, max-width ~320px, fundo branco com leve sombra, fonte system-ui.
+- Usar `disableAutoPan: false` para o `InfoWindow` ficar visível em pinos próximos da borda.
 
-### 3. Endereço correto para prédios em instalação
-- Como o hook agora inclui prédios em instalação mesmo sem devices, eles serão renderizados na coordenada (`manual_latitude`/`manual_longitude` se existir, senão `latitude`/`longitude`) — exatamente como qualquer outro prédio.
-- Caso um prédio em instalação não tenha coordenadas válidas, ele continua excluído (impossível posicionar). O ajuste manual de coordenada já existe em `BuildingDetailCard` via `handleAddressUpdate`.
+### 3. Filtro "Problemas" (header)
 
-### 4. Filtro "Problemas" (toggle vermelho no header)
-- Hoje filtra por status operacional (`offline`/`partial`). Manter como está — é um filtro independente sobre painéis com problema, não sobre status do prédio. Apenas garantir que prédios em instalação sem devices não sejam contados como "problema".
+Continua filtrando por `status` operacional (`offline`/`partial`) — ele já reflete corretamente o que o usuário considera problema. Sem mudanças.
 
 ## Detalhes técnicos
 
-```ts
-// Helper de normalização (já usado no BuildingStoreCard)
-const normalizeStatus = (s?: string) =>
-  String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-const getBuildingStatusKind = (s?: string): 'ativo' | 'instalacao' | 'inativo' => {
-  const n = normalizeStatus(s);
-  if (n.includes('instala')) return 'instalacao';
-  if (n.includes('inativ')) return 'inativo';
-  return 'ativo';
-};
-```
-
-```ts
-// createMarkerSvgUrl(kind, sequentialNumber) — kind = 'ativo' | 'instalacao' | 'inativo'
-```
+- `last_online_at` já existe na tabela `devices` (visto nos logs do realtime).
+- Usar `date-fns` (`formatDistanceToNow`, locale `ptBR`) — já importado em outros componentes do projeto.
+- Manter `optimized: true` nos markers.
+- A coluna `status` em `buildings` aceita exatamente: `ativo`, `instalacao`, `interno` (confirmado via query). Não há `inativo` no banco hoje, mas a regra fica preparada para quando existir.
 
 ## Arquivos editados
 
 - `src/modules/monitoramento-ia/hooks/useBuildingsWithDeviceStatus.ts`
 - `src/modules/monitoramento-ia/components/paineis/PaineisMapModal.tsx`
 
-Nenhuma mudança em UI fora do mapa, nenhuma alteração de workflow ou de outras telas.
+Nenhuma mudança em UI fora do mapa, no workflow ou em outras telas.

@@ -16,8 +16,10 @@ export interface BuildingWithDeviceStatus {
   manual_longitude: number | null;
   devices: DeviceInfo[];
   status: 'online' | 'partial' | 'offline' | 'unknown';
-  /** Status de ciclo de vida do prédio: ativo | instalacao | inativo */
-  buildingStatus: 'ativo' | 'instalacao' | 'inativo';
+  /** Status de ciclo de vida do prédio: ativo | instalacao | inativo | interno */
+  buildingStatus: 'ativo' | 'instalacao' | 'inativo' | 'interno';
+  /** Cor do pino combinando ciclo de vida + estado operacional */
+  pinKind: 'ativo' | 'instalacao' | 'inativo';
   /** Status bruto vindo do banco (preserva original p/ debug) */
   rawBuildingStatus?: string | null;
   onlineCount: number;
@@ -30,10 +32,11 @@ export interface BuildingWithDeviceStatus {
 const normalizeStatus = (s?: string | null) =>
   String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-export const getBuildingStatusKind = (s?: string | null): 'ativo' | 'instalacao' | 'inativo' => {
+export const getBuildingStatusKind = (s?: string | null): 'ativo' | 'instalacao' | 'inativo' | 'interno' => {
   const n = normalizeStatus(s);
   if (n.includes('instala')) return 'instalacao';
   if (n.includes('inativ')) return 'inativo';
+  if (n.includes('interno')) return 'interno';
   return 'ativo';
 };
 
@@ -42,6 +45,8 @@ export interface DeviceInfo {
   alias: string;
   status: string;
   provider?: string;
+  address?: string | null;
+  lastOnlineAt?: string | null;
 }
 
 // Provider colors mapping
