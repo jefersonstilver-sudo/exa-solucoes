@@ -481,18 +481,53 @@ export default function ModulePermissionsModal({ role, onClose }: ModulePermissi
           </div>
 
           {/* Fixed Footer - Always Visible */}
-          <div className="flex-shrink-0 p-3 border-t border-gray-100 bg-white safe-area-bottom">
-            <div className="flex items-center justify-between gap-2">
+          <div className="flex-shrink-0 border-t border-gray-100 bg-white safe-area-bottom">
+            {/* Danger Zone - Excluir tipo de conta */}
+            {!role.is_system && role.key !== 'super_admin' && (
+              <div className="px-3 py-2.5 border-b border-red-100 bg-red-50/40">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold text-red-900 flex items-center gap-1">
+                      <Trash2 className="h-3 w-3" />
+                      Zona de Risco
+                    </p>
+                    <p className="text-[10px] text-red-700/80 truncate">
+                      Excluir este tipo afeta usuários vinculados.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowDelete(true)}
+                    className="h-7 text-[11px] px-2.5 border-red-300 text-red-700 hover:bg-red-100 hover:text-red-800 hover:border-red-400 flex-shrink-0"
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Excluir tipo
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {role.is_system && (
+              <div className="px-3 py-2 border-b border-gray-100 bg-gray-50/60">
+                <p className="text-[10px] text-gray-500 flex items-center gap-1">
+                  <Shield className="h-3 w-3" />
+                  Tipo de sistema — não pode ser excluído.
+                </p>
+              </div>
+            )}
+
+            <div className="p-3 flex items-center justify-between gap-2">
               {hasChanges && (
                 <span className="text-[10px] text-amber-600 font-medium">
                   • Não salvo
                 </span>
               )}
               {!hasChanges && <span />}
-              
+
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={onClose}
                   className="h-8 text-xs px-3"
@@ -517,6 +552,14 @@ export default function ModulePermissionsModal({ role, onClose }: ModulePermissi
           </div>
         </motion.div>
       </motion.div>
+
+      <DeleteRoleTypeDialog
+        role={role}
+        currentUserRoleKey={userProfile?.role ?? null}
+        open={showDelete}
+        onOpenChange={setShowDelete}
+        onDeleted={onClose}
+      />
     </AnimatePresence>
   );
 }
