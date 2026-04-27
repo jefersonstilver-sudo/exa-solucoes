@@ -62,6 +62,30 @@ export const validateRequest = async (req: Request): Promise<ValidationResult> =
       };
     }
 
+    // Validar WhatsApp (10 ou 11 dígitos sem prefixo, OU 12-13 com prefixo 55)
+    if (!cleanWhatsapp) {
+      return {
+        error: {
+          error: 'WhatsApp é obrigatório',
+          code: 'MISSING_WHATSAPP',
+        },
+        status: 400,
+      };
+    }
+    const whatsappValid = /^(55)?\d{10,11}$/.test(cleanWhatsapp);
+    if (!whatsappValid) {
+      return {
+        error: {
+          error: 'WhatsApp inválido (DDD + número)',
+          code: 'INVALID_WHATSAPP',
+        },
+        status: 400,
+      };
+    }
+    const whatsappE164 = cleanWhatsapp.startsWith('55')
+      ? cleanWhatsapp
+      : `55${cleanWhatsapp}`;
+
     // Buscar roles válidos do banco de dados
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
