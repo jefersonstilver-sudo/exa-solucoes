@@ -585,6 +585,7 @@ serve(async (req) => {
         status_changes: statusChanges,
         provider_detections: providerDetections,
         stale_detected: staleDetected,
+        stale_recovered: staleRecovered,
         errors: errors.length,
       },
       errors: errors.length > 0 ? errors : undefined,
