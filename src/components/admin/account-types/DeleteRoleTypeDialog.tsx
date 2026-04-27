@@ -38,7 +38,7 @@ interface AffectedUser {
   id: string;
   email: string | null;
   nome: string | null;
-  last_sign_in_at: string | null;
+  data_criacao: string | null;
 }
 
 interface DeleteRoleTypeDialogProps {
@@ -74,11 +74,11 @@ export default function DeleteRoleTypeDialog({
       if (!role) return [];
       const { data, error } = await supabase
         .from('users')
-        .select('id, email, nome, last_sign_in_at')
+        .select('id, email, nome, data_criacao')
         .eq('role', role.key as any)
-        .order('last_sign_in_at', { ascending: false, nullsFirst: false });
+        .order('data_criacao', { ascending: false });
       if (error) throw error;
-      return (data ?? []) as AffectedUser[];
+      return (data ?? []) as unknown as AffectedUser[];
     },
     enabled: !!role && open,
   });
@@ -126,8 +126,8 @@ export default function DeleteRoleTypeDialog({
     },
   });
 
-  const formatLastAccess = (iso: string | null) => {
-    if (!iso) return 'Nunca acessou';
+  const formatDate = (iso: string | null) => {
+    if (!iso) return '—';
     try {
       return new Date(iso).toLocaleDateString('pt-BR', {
         day: '2-digit',
@@ -246,7 +246,7 @@ export default function DeleteRoleTypeDialog({
                             {u.nome || u.email || 'Usuário sem nome'}
                           </p>
                           <p className="text-[11px] text-muted-foreground truncate">
-                            {u.email} • Último acesso: {formatLastAccess(u.last_sign_in_at)}
+                            {u.email} • Cadastrado em {formatDate(u.data_criacao)}
                           </p>
                         </div>
                       </div>
