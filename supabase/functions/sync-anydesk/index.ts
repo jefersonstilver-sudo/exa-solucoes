@@ -345,6 +345,19 @@ serve(async (req) => {
 
           devicesUpdated++;
 
+          // Stale recovery: log event when a previously stale device returns
+          if (wasStale) {
+            staleRecovered++;
+            await supabase.from('events_log').insert({
+              computer_id: existingDevice.id,
+              event_type: 'stale_recovered',
+              old_status: existingDevice.status,
+              new_status: finalStatus,
+              description: 'Device voltou a aparecer na API AnyDesk',
+              metadata: { recovered_at: new Date().toISOString() },
+            });
+          }
+
           // Provider detection alert
           if (providerChanged) {
             providerDetections++;
