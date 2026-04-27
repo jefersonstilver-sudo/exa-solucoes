@@ -1,8 +1,9 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, Upload, X, Star, Image as ImageIcon, GripVertical } from 'lucide-react';
+import { Camera, Upload, X, Star, Image as ImageIcon, GripVertical, Move } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import ImageFocusEditor from '../ImageFocusEditor';
 import {
   DndContext,
   closestCenter,
