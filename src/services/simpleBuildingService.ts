@@ -17,6 +17,7 @@ export interface SimpleBuildingStore {
   visualizacoes_mes: number;
   preco_base: number;
   imagem_principal: string;
+  imagem_principal_focus?: { x: number; y: number };
   imagem_2: string;
   imagem_3: string;
   imagem_4: string;
