@@ -318,6 +318,23 @@ export const PanelCard = ({
           {/* Badge de Incidente Offline com HoverCard */}
           {renderIncidentBadge()}
 
+          {/* Badge STALE: device sumiu da API AnyDesk */}
+          {(device.metadata as any)?.stale === true && (() => {
+            const staleSince = (device.metadata as any)?.stale_since || device.last_online_at;
+            const days = staleSince ? Math.floor((Date.now() - new Date(staleSince).getTime()) / 86400000) : null;
+            return (
+              <Badge
+                title={`AnyDesk parou de listar este device. Último contato: ${staleSince ? new Date(staleSince).toLocaleDateString('pt-BR') : 'desconhecido'}. Só admin pode arquivar.`}
+                className="text-[10px] sm:text-xs lg:text-xs gap-1 bg-orange-100 text-orange-800 border-orange-400 px-1.5 sm:px-2 py-0.5"
+              >
+                <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                <span className="truncate max-w-[140px]">
+                  Sem resposta da API{days !== null ? ` há ${days}d` : ''}
+                </span>
+              </Badge>
+            );
+          })()}
+
           {/* Badge: alerta WhatsApp silenciado (defesa em profundidade) */}
           {silenceReason && (
             <Badge

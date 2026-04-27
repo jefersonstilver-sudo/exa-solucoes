@@ -1,72 +1,68 @@
+## Diagnóstico confirmado
 
-## Problema
+3 devices estão "fantasmas online" no sistema porque a API do AnyDesk parou de retorná-los há ~3 meses, mas o `sync-anydesk` só faz UPSERT do que vem na resposta — nunca marca como offline o que sumiu:
 
-No mapa de `/super_admin/paineis-exa`:
+| Device | AnyDesk ID | Último sync real | Status atual no DB |
+|---|---|---|---|
+| Di Cavalcante | 1217746313 | 30/jan/2026 | "online" 🟢 (errado) |
+| Esmeralda 1 | 1470796265 | 22/jan/2026 | "online" 🟢 (errado) |
+| Esmeralda 2 | 1974596809 | 22/jan/2026 | "online" 🟢 (errado) |
 
-1. **Royal Legacy** está com `status='ativo'` no banco mas seus painéis estão **offline** — hoje o pino aparece **verde**, escondendo o problema. A cor precisa refletir a realidade operacional.
-2. Prédios marcados como **`interno`** estão aparecendo no mapa público — não devem.
-3. O **tooltip de hover** mostra apenas "X/Y painéis online" — o usuário quer ver **todas as informações de cada painel** (nome, status, provedor, último online, endereço).
+---
 
-## Regras corretas de cor do pino
+## Diretriz do usuário (regra permanente)
 
-| Status do prédio | Painéis | Cor |
-|---|---|---|
-| `interno` | qualquer | **não aparece no mapa** |
-| `instalacao` | qualquer | **amarelo** |
-| `inativo` | qualquer | **vermelho** |
-| `ativo` | todos online | **verde** |
-| `ativo` | algum/todos offline | **vermelho** |
-| `ativo` | sem painéis | **vermelho** (anomalia) |
+1. Devices que **somem da API do AnyDesk** devem ser marcados como **offline desde a data do último sync real** — nunca mais aparecer como online.
+2. **Nunca remover automaticamente** do sistema. Só o administrador pode excluir manualmente.
+3. Aplica a TODOS os devices, não só esses 3.
 
-Ou seja: para `ativo`, a cor passa a depender do estado operacional dos painéis. `instalacao` continua amarelo independente dos painéis (estão sendo configurados).
+---
 
-## Mudanças
+## Plano de implementação
 
-### 1. `src/modules/monitoramento-ia/hooks/useBuildingsWithDeviceStatus.ts`
+### 1. Atualizar `supabase/functions/sync-anydesk/index.ts`
+Após o loop que processa os clientes retornados pela API, adicionar bloco final:
 
-- Estender `getBuildingStatusKind` para reconhecer também `'interno'`.
-- Adicionar campo derivado `pinKind: 'ativo' | 'instalacao' | 'inativo'` no tipo `BuildingWithDeviceStatus`, computado assim:
-  ```ts
-  if (buildingStatus === 'instalacao') pinKind = 'instalacao';
-  else if (buildingStatus === 'inativo') pinKind = 'inativo';
-  else if (buildingStatus === 'ativo' && status === 'online') pinKind = 'ativo';
-  else pinKind = 'inativo'; // ativo com painéis offline/partial/sem painéis
-  ```
-- Atualizar o filtro final para **excluir prédios `interno`** do mapa:
-  ```ts
-  .filter(b => b.buildingStatus !== 'interno')
-  .filter(b => b.totalDevices > 0 || b.buildingStatus === 'instalacao')
-  ```
-- Buscar campos extras dos devices úteis para o tooltip: já temos `name`, `status`, `provider`. Adicionar `address` e `last_online_at` ao select e ao tipo `DeviceInfo`.
+- Buscar todos os devices ativos (`is_deleted = false`) que **não apareceram** na resposta da API neste ciclo.
+- Para cada um:
+  - Se `status != 'offline'` → forçar `status = 'offline'`
+  - Setar `last_online_at = (valor atual)` se ainda não tiver — **não sobrescrever** se já existe (preserva data real do último online)
+  - Setar `metadata.stale = true` e `metadata.stale_detected_at = now()` e `metadata.stale_reason = 'not_returned_by_anydesk_api'`
+  - Registrar 1 entrada em `connection_history` com motivo "Removido da API AnyDesk" (apenas na transição, não a cada sync)
+- **Nunca** deletar nem marcar `is_deleted`. Só o admin pode.
 
-### 2. `src/modules/monitoramento-ia/components/paineis/PaineisMapModal.tsx`
+### 2. Migration única para corrigir os 3 devices afetados agora
+UPDATE direto:
+- Di Cavalcante / Esmeralda 1 / Esmeralda 2 → `status = 'offline'`, `metadata.stale = true`, `metadata.stale_since = last_online_at`
+- Mantém `last_online_at` original (jan/2026) — fica claro que estão offline há 3 meses.
 
-- Trocar `createMarkerSvgUrl(building.buildingStatus, …)` por `createMarkerSvgUrl(building.pinKind, …)`.
-- Reescrever o **tooltip de hover** com card detalhado:
-  - Cabeçalho: nome do prédio, badge com status do prédio (Ativo/Em Instalação/Inativo) e endereço.
-  - Resumo: `X/Y painéis online`.
-  - Lista de painéis (até 8 visíveis, scroll se mais), cada item:
-    - Bolinha verde/vermelha de status
-    - Nome do painel
-    - Provedor (badge)
-    - "Último online: há Xh" (`formatDistanceToNow` em pt-BR a partir de `last_online_at`)
-  - Estilo limpo, max-width ~320px, fundo branco com leve sombra, fonte system-ui.
-- Usar `disableAutoPan: false` para o `InfoWindow` ficar visível em pinos próximos da borda.
+### 3. Indicador visual nos cards de painel
+Em `src/modules/monitoramento-ia/components/PanelCard.tsx` (e qualquer card equivalente na página `/super_admin/paineis-exa`):
+- Quando `metadata.stale === true`, exibir badge **âmbar/laranja**: "⚠️ Sem resposta da API há X dias"
+- Diferencia visualmente de um offline normal (que é só vermelho)
+- Mantém o card visível — só admin remove
 
-### 3. Filtro "Problemas" (header)
+### 4. Botão de exclusão manual (admin-only)
+Verificar se já existe ação de excluir device em `/super_admin/paineis-exa`. Se não existir:
+- Adicionar botão "Arquivar device" no card (visível apenas para `super_admin`)
+- Confirmação obrigatória
+- Marca `is_deleted = true` (não apaga fisicamente — preserva histórico)
 
-Continua filtrando por `status` operacional (`offline`/`partial`) — ele já reflete corretamente o que o usuário considera problema. Sem mudanças.
+---
+
+## Arquivos a alterar
+
+- `supabase/functions/sync-anydesk/index.ts` — detecção de stale ao fim do loop
+- Migration SQL — corrigir os 3 devices afetados
+- `src/modules/monitoramento-ia/components/PanelCard.tsx` (ou equivalente) — badge âmbar para stale
+- Página `/super_admin/paineis-exa` — botão de arquivamento manual (se ainda não houver)
+
+---
 
 ## Detalhes técnicos
 
-- `last_online_at` já existe na tabela `devices` (visto nos logs do realtime).
-- Usar `date-fns` (`formatDistanceToNow`, locale `ptBR`) — já importado em outros componentes do projeto.
-- Manter `optimized: true` nos markers.
-- A coluna `status` em `buildings` aceita exatamente: `ativo`, `instalacao`, `interno` (confirmado via query). Não há `inativo` no banco hoje, mas a regra fica preparada para quando existir.
+- A regra "marca offline mas preserva `last_online_at`" garante que o tempo real desde o último contato fica visível na UI ("Offline há 3 meses").
+- Stale ≠ Offline normal: stale = "AnyDesk parou de listar este client" (provável reinstalação/troca de hardware). Offline normal = "AnyDesk listou mas com online: false".
+- Esses 3 devices continuam **órfãos** (sem `building_id`). Isso é separado e pode ser tratado depois pelo admin via UI manual.
 
-## Arquivos editados
-
-- `src/modules/monitoramento-ia/hooks/useBuildingsWithDeviceStatus.ts`
-- `src/modules/monitoramento-ia/components/paineis/PaineisMapModal.tsx`
-
-Nenhuma mudança em UI fora do mapa, no workflow ou em outras telas.
+Aprova?
