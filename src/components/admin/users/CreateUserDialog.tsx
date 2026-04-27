@@ -80,19 +80,21 @@ interface CreateUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  defaultRole?: string;
 }
 
 const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
   open,
   onOpenChange,
   onSuccess,
+  defaultRole,
 }) => {
   const isMobile = useIsMobile();
   const [email, setEmail] = useState('');
   const [nome, setNome] = useState('');
   const [sobrenome, setSobrenome] = useState('');
   const [cpf, setCpf] = useState('');
-  const [role, setRole] = useState('admin');
+  const [role, setRole] = useState(defaultRole || 'admin');
   const [documentoObrigatorio, setDocumentoObrigatorio] = useState(false);
   const [roleTypes, setRoleTypes] = useState<RoleType[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(true);
@@ -120,13 +122,17 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         if (error) throw error;
         setRoleTypes(data || []);
         
-        // Set default role to first admin type
+        // Set default role: prefer prop defaultRole, then 'admin', then first
         if (data && data.length > 0) {
-          const adminRole = data.find(r => r.key === 'admin');
-          if (adminRole) {
-            setRole(adminRole.key);
+          if (defaultRole && data.find(r => r.key === defaultRole)) {
+            setRole(defaultRole);
           } else {
-            setRole(data[0].key);
+            const adminRole = data.find(r => r.key === 'admin');
+            if (adminRole) {
+              setRole(adminRole.key);
+            } else {
+              setRole(data[0].key);
+            }
           }
         }
       } catch (error: any) {

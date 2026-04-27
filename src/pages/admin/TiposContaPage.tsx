@@ -40,8 +40,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ModulePermissionsModal from '@/components/admin/account-types/ModulePermissionsModal';
 import DeleteRoleTypeDialog from '@/components/admin/account-types/DeleteRoleTypeDialog';
+import RoleUsersPanel from '@/components/admin/account-types/RoleUsersPanel';
 import { useAuth } from '@/hooks/useAuth';
 
 interface RoleType {
@@ -99,6 +102,7 @@ export default function TiposContaPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<RoleType | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+  const [detailTab, setDetailTab] = useState<'permissions' | 'users'>('permissions');
   const [newRole, setNewRole] = useState({
     key: '',
     display_name: '',
@@ -477,117 +481,164 @@ export default function TiposContaPage() {
               </div>
             </DialogHeader>
 
-            <ScrollArea className="flex-1 p-4">
-              {/* Can Make Orders Status */}
-              {selectedRole && ADMIN_ROLE_KEYS.includes(selectedRole.key) && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-                  <div className="flex items-center gap-2 text-red-700">
-                    <AlertTriangle className="h-4 w-4" />
-                    <span className="text-sm font-medium">Não pode fazer pedidos</span>
-                  </div>
-                  <p className="text-xs text-red-600 mt-1">
-                    Contas administrativas não podem realizar compras por segurança.
-                  </p>
+            {selectedRole && (
+              <Tabs
+                value={detailTab}
+                onValueChange={(v) => setDetailTab(v as 'permissions' | 'users')}
+                className="flex-1 flex flex-col overflow-hidden"
+              >
+                <div className="px-4 pt-3 border-b">
+                  <TabsList className="w-full">
+                    <TabsTrigger value="permissions" className="flex-1">Permissões</TabsTrigger>
+                    <TabsTrigger value="users" className="flex-1">
+                      Usuários
+                      <Badge variant="secondary" className="ml-2 h-4 px-1.5 text-[10px]">
+                        {userCounts[selectedRole.key] || 0}
+                      </Badge>
+                    </TabsTrigger>
+                  </TabsList>
                 </div>
-              )}
 
-              {/* Permissions */}
-              {loadingPermissions ? (
-                <div className="space-y-2">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {Object.entries(groupedPermissions).map(([group, perms]) => (
-                    <Collapsible 
-                      key={group}
-                      open={expandedGroups.includes(group)}
-                      onOpenChange={() => toggleGroup(group)}
-                    >
-                      <CollapsibleTrigger className="w-full">
-                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                          <span className="text-sm font-medium">{group}</span>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-[10px]">
-                              {perms.filter(p => p.is_enabled).length}/{perms.length}
-                            </Badge>
-                            <ChevronRight className={`h-4 w-4 transition-transform ${expandedGroups.includes(group) ? 'rotate-90' : ''}`} />
-                          </div>
+                <TabsContent value="permissions" className="flex-1 m-0 overflow-hidden">
+                  <ScrollArea className="h-full p-4">
+                    {/* Can Make Orders Status */}
+                    {ADMIN_ROLE_KEYS.includes(selectedRole.key) && (
+                      <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                        <div className="flex items-center gap-2 text-red-700">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span className="text-sm font-medium">Não pode fazer pedidos</span>
                         </div>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="mt-2 space-y-1 pl-2">
-                          {perms.map(perm => {
-                            const isBlocked = selectedRole?.key === 'super_admin' || 
-                              (perm.permission_key === 'can_make_orders' && selectedRole && ADMIN_ROLE_KEYS.includes(selectedRole.key));
-                            
-                            return (
-                              <div 
-                                key={perm.id}
-                                className={`flex items-center justify-between p-2.5 rounded-lg ${isBlocked ? 'bg-gray-100' : 'bg-white'}`}
-                              >
-                                <div className="flex-1">
-                                  <span className="text-sm">{perm.permission_label}</span>
-                                  {perm.permission_key === 'can_make_orders' && (
-                                    <span className="ml-1.5 text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
-                                      CRÍTICA
-                                    </span>
-                                  )}
-                                </div>
-                                {isBlocked ? (
+                        <p className="text-xs text-red-600 mt-1">
+                          Contas administrativas não podem realizar compras por segurança.
+                        </p>
+                      </div>
+                    )}
+
+                    {loadingPermissions ? (
+                      <div className="space-y-2">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {Object.entries(groupedPermissions).map(([group, perms]) => (
+                          <Collapsible 
+                            key={group}
+                            open={expandedGroups.includes(group)}
+                            onOpenChange={() => toggleGroup(group)}
+                          >
+                            <CollapsibleTrigger className="w-full">
+                              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                <span className="text-sm font-medium">{group}</span>
+                                <div className="flex items-center gap-2">
                                   <Badge variant="secondary" className="text-[10px]">
-                                    {selectedRole?.key === 'super_admin' ? 'Sempre ativo' : 'Bloqueado'}
+                                    {perms.filter(p => p.is_enabled).length}/{perms.length}
                                   </Badge>
-                                ) : (
-                                  <Switch
-                                    checked={perm.is_enabled}
-                                    onCheckedChange={(checked) => 
-                                      togglePermission.mutate({ 
-                                        permissionId: perm.id, 
-                                        isEnabled: checked,
-                                        permissionKey: perm.permission_key
-                                      })
-                                    }
-                                    disabled={togglePermission.isPending}
-                                  />
-                                )}
+                                  <ChevronRight className={`h-4 w-4 transition-transform ${expandedGroups.includes(group) ? 'rotate-90' : ''}`} />
+                                </div>
                               </div>
-                            );
-                          })}
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <div className="mt-2 space-y-1 pl-2">
+                                {perms.map(perm => {
+                                  const isBlocked = selectedRole.key === 'super_admin' || 
+                                    (perm.permission_key === 'can_make_orders' && ADMIN_ROLE_KEYS.includes(selectedRole.key));
+                                  
+                                  return (
+                                    <div 
+                                      key={perm.id}
+                                      className={`flex items-center justify-between p-2.5 rounded-lg ${isBlocked ? 'bg-gray-100' : 'bg-white'}`}
+                                    >
+                                      <div className="flex-1">
+                                        <span className="text-sm">{perm.permission_label}</span>
+                                        {perm.permission_key === 'can_make_orders' && (
+                                          <span className="ml-1.5 text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                                            CRÍTICA
+                                          </span>
+                                        )}
+                                      </div>
+                                      {isBlocked ? (
+                                        <Badge variant="secondary" className="text-[10px]">
+                                          {selectedRole.key === 'super_admin' ? 'Sempre ativo' : 'Bloqueado'}
+                                        </Badge>
+                                      ) : (
+                                        <Switch
+                                          checked={perm.is_enabled}
+                                          onCheckedChange={(checked) => 
+                                            togglePermission.mutate({ 
+                                              permissionId: perm.id, 
+                                              isEnabled: checked,
+                                              permissionKey: perm.permission_key
+                                            })
+                                          }
+                                          disabled={togglePermission.isPending}
+                                        />
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </TabsContent>
 
-            {/* Actions */}
-            {selectedRole && !selectedRole.is_system && (
-              <div className="p-4 border-t bg-white/80 backdrop-blur-sm flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => cloneRole.mutate(selectedRole)}
-                  disabled={cloneRole.isPending}
-                >
-                  <Copy className="h-4 w-4 mr-1.5" />
-                  Clonar
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => setDeleteConfirm(selectedRole)}
-                >
-                  <Trash2 className="h-4 w-4 mr-1.5" />
-                  Excluir
-                </Button>
-              </div>
+                <TabsContent value="users" className="flex-1 m-0 overflow-hidden">
+                  <RoleUsersPanel
+                    role={selectedRole}
+                    currentUserId={userProfile?.id ?? null}
+                  />
+                </TabsContent>
+              </Tabs>
             )}
+
+            {/* Actions - always visible with tooltip when blocked */}
+            {selectedRole && (() => {
+              const isSelf = !!userProfile?.role && userProfile.role === selectedRole.key;
+              const deleteDisabled = selectedRole.is_system || isSelf;
+              const deleteReason = selectedRole.is_system
+                ? 'Tipos de sistema não podem ser excluídos.'
+                : isSelf
+                  ? 'Você não pode excluir o tipo que está usando.'
+                  : '';
+              return (
+                <TooltipProvider>
+                  <div className="p-4 border-t bg-white/80 backdrop-blur-sm flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => cloneRole.mutate(selectedRole)}
+                      disabled={cloneRole.isPending}
+                    >
+                      <Copy className="h-4 w-4 mr-1.5" />
+                      Clonar
+                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="flex-1">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => !deleteDisabled && setDeleteConfirm(selectedRole)}
+                            disabled={deleteDisabled}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1.5" />
+                            Excluir tipo
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {deleteDisabled && <TooltipContent>{deleteReason}</TooltipContent>}
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
+              );
+            })()}
           </DialogContent>
         </Dialog>
 
@@ -857,27 +908,48 @@ export default function TiposContaPage() {
                       </div>
                     </div>
                     
-                    {!selectedRole.is_system && (
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => cloneRole.mutate(selectedRole)}
-                          disabled={cloneRole.isPending}
-                        >
-                          <Copy className="h-4 w-4 mr-1.5" />
-                          Clonar
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => setDeleteConfirm(selectedRole)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1.5" />
-                          Excluir
-                        </Button>
-                      </div>
-                    )}
+                    {(() => {
+                      const isSelf = !!userProfile?.role && userProfile.role === selectedRole.key;
+                      const deleteDisabled = selectedRole.is_system || isSelf;
+                      const deleteReason = selectedRole.is_system
+                        ? 'Tipos de sistema não podem ser excluídos.'
+                        : isSelf
+                          ? 'Você não pode excluir o tipo que está usando.'
+                          : '';
+                      return (
+                        <TooltipProvider>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => cloneRole.mutate(selectedRole)}
+                              disabled={cloneRole.isPending}
+                            >
+                              <Copy className="h-4 w-4 mr-1.5" />
+                              Clonar
+                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => !deleteDisabled && setDeleteConfirm(selectedRole)}
+                                    disabled={deleteDisabled}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-1.5" />
+                                    Excluir tipo
+                                  </Button>
+                                </span>
+                              </TooltipTrigger>
+                              {deleteDisabled && (
+                                <TooltipContent>{deleteReason}</TooltipContent>
+                              )}
+                            </Tooltip>
+                          </div>
+                        </TooltipProvider>
+                      );
+                    })()}
                   </div>
                   
                   {/* Can Make Orders Warning */}
@@ -894,88 +966,115 @@ export default function TiposContaPage() {
                   )}
                 </div>
 
-                {/* Permissions Grid */}
-                <ScrollArea className="h-[calc(100%-140px)]">
-                  <div className="p-4 space-y-4">
-                    {loadingPermissions ? (
-                      <div className="space-y-3">
-                        {[1, 2, 3].map(i => (
-                          <div key={i} className="h-20 bg-gray-100 rounded-lg animate-pulse" />
-                        ))}
-                      </div>
-                    ) : (
-                      Object.entries(groupedPermissions).map(([group, perms]) => (
-                        <Collapsible 
-                          key={group}
-                          open={expandedGroups.includes(group)}
-                          onOpenChange={() => toggleGroup(group)}
-                          defaultOpen
-                        >
-                          <CollapsibleTrigger className="w-full">
-                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                              <span className="font-medium">{group}</span>
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-xs">
-                                  {perms.filter(p => p.is_enabled).length} de {perms.length} ativas
-                                </Badge>
-                                <ChevronRight className={`h-4 w-4 transition-transform ${expandedGroups.includes(group) ? 'rotate-90' : ''}`} />
-                              </div>
-                            </div>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <div className="grid grid-cols-2 gap-2 mt-2 pl-2">
-                              {perms.map(perm => {
-                                const isBlocked = selectedRole.key === 'super_admin' || 
-                                  (perm.permission_key === 'can_make_orders' && ADMIN_ROLE_KEYS.includes(selectedRole.key));
-                                const isCritical = perm.permission_key === 'can_make_orders';
-                                
-                                return (
-                                  <div 
-                                    key={perm.id}
-                                    className={`flex items-center justify-between p-3 rounded-lg border ${
-                                      isBlocked ? 'bg-gray-50 border-gray-200' : 
-                                      isCritical ? 'bg-amber-50 border-amber-200' : 
-                                      'bg-white border-gray-100'
-                                    }`}
-                                  >
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-1.5">
-                                        <span className="text-sm truncate">{perm.permission_label}</span>
-                                        {isCritical && (
-                                          <Badge variant="outline" className="text-[9px] border-amber-300 text-amber-700 shrink-0">
-                                            CRÍTICA
+                {/* Tabs: Permissions | Users */}
+                <Tabs
+                  value={detailTab}
+                  onValueChange={(v) => setDetailTab(v as 'permissions' | 'users')}
+                  className="flex-1 flex flex-col h-[calc(100%-140px)]"
+                >
+                  <div className="px-4 pt-3 border-b bg-white/40">
+                    <TabsList>
+                      <TabsTrigger value="permissions">Permissões</TabsTrigger>
+                      <TabsTrigger value="users">
+                        Usuários
+                        <Badge variant="secondary" className="ml-2 h-4 px-1.5 text-[10px]">
+                          {userCounts[selectedRole.key] || 0}
+                        </Badge>
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
+
+                  <TabsContent value="permissions" className="flex-1 m-0 overflow-hidden">
+                    <ScrollArea className="h-full">
+                      <div className="p-4 space-y-4">
+                        {loadingPermissions ? (
+                          <div className="space-y-3">
+                            {[1, 2, 3].map(i => (
+                              <div key={i} className="h-20 bg-gray-100 rounded-lg animate-pulse" />
+                            ))}
+                          </div>
+                        ) : (
+                          Object.entries(groupedPermissions).map(([group, perms]) => (
+                            <Collapsible 
+                              key={group}
+                              open={expandedGroups.includes(group)}
+                              onOpenChange={() => toggleGroup(group)}
+                              defaultOpen
+                            >
+                              <CollapsibleTrigger className="w-full">
+                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                  <span className="font-medium">{group}</span>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-xs">
+                                      {perms.filter(p => p.is_enabled).length} de {perms.length} ativas
+                                    </Badge>
+                                    <ChevronRight className={`h-4 w-4 transition-transform ${expandedGroups.includes(group) ? 'rotate-90' : ''}`} />
+                                  </div>
+                                </div>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <div className="grid grid-cols-2 gap-2 mt-2 pl-2">
+                                  {perms.map(perm => {
+                                    const isBlocked = selectedRole.key === 'super_admin' || 
+                                      (perm.permission_key === 'can_make_orders' && ADMIN_ROLE_KEYS.includes(selectedRole.key));
+                                    const isCritical = perm.permission_key === 'can_make_orders';
+                                    
+                                    return (
+                                      <div 
+                                        key={perm.id}
+                                        className={`flex items-center justify-between p-3 rounded-lg border ${
+                                          isBlocked ? 'bg-gray-50 border-gray-200' : 
+                                          isCritical ? 'bg-amber-50 border-amber-200' : 
+                                          'bg-white border-gray-100'
+                                        }`}
+                                      >
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="text-sm truncate">{perm.permission_label}</span>
+                                            {isCritical && (
+                                              <Badge variant="outline" className="text-[9px] border-amber-300 text-amber-700 shrink-0">
+                                                CRÍTICA
+                                              </Badge>
+                                            )}
+                                          </div>
+                                        </div>
+                                        {isBlocked ? (
+                                          <Badge variant="secondary" className="text-[10px] shrink-0 ml-2">
+                                            {selectedRole.key === 'super_admin' ? 'Sempre ativo' : 'Bloqueado'}
                                           </Badge>
+                                        ) : (
+                                          <Switch
+                                            checked={perm.is_enabled}
+                                            onCheckedChange={(checked) => 
+                                              togglePermission.mutate({ 
+                                                permissionId: perm.id, 
+                                                isEnabled: checked,
+                                                permissionKey: perm.permission_key
+                                              })
+                                            }
+                                            disabled={togglePermission.isPending}
+                                            className="shrink-0 ml-2"
+                                          />
                                         )}
                                       </div>
-                                    </div>
-                                    {isBlocked ? (
-                                      <Badge variant="secondary" className="text-[10px] shrink-0 ml-2">
-                                        {selectedRole.key === 'super_admin' ? 'Sempre ativo' : 'Bloqueado'}
-                                      </Badge>
-                                    ) : (
-                                      <Switch
-                                        checked={perm.is_enabled}
-                                        onCheckedChange={(checked) => 
-                                          togglePermission.mutate({ 
-                                            permissionId: perm.id, 
-                                            isEnabled: checked,
-                                            permissionKey: perm.permission_key
-                                          })
-                                        }
-                                        disabled={togglePermission.isPending}
-                                        className="shrink-0 ml-2"
-                                      />
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      ))
-                    )}
-                  </div>
-                </ScrollArea>
+                                    );
+                                  })}
+                                </div>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          ))
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </TabsContent>
+
+                  <TabsContent value="users" className="flex-1 m-0 overflow-hidden">
+                    <RoleUsersPanel
+                      role={selectedRole}
+                      currentUserId={userProfile?.id ?? null}
+                    />
+                  </TabsContent>
+                </Tabs>
               </>
             )}
           </Card>
