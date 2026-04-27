@@ -41,6 +41,8 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import ModulePermissionsModal from '@/components/admin/account-types/ModulePermissionsModal';
+import DeleteRoleTypeDialog from '@/components/admin/account-types/DeleteRoleTypeDialog';
+import { useAuth } from '@/hooks/useAuth';
 
 interface RoleType {
   id: string;
@@ -90,6 +92,8 @@ export default function TiposContaPage() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
+  const { userProfile } = useAuth();
+  const currentUserRoleKey = userProfile?.role ?? null;
   const [selectedRole, setSelectedRole] = useState<RoleType | null>(null);
   const [modulePermissionsRole, setModulePermissionsRole] = useState<RoleType | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -673,26 +677,14 @@ export default function TiposContaPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Confirmation */}
-        <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Excluir Tipo de Conta?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta ação não pode ser desfeita. O tipo "{deleteConfirm?.display_name}" será permanentemente removido.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => deleteConfirm && deleteRole.mutate(deleteConfirm.key)}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Excluir
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {/* Delete Confirmation - Mobile */}
+        <DeleteRoleTypeDialog
+          role={deleteConfirm}
+          currentUserRoleKey={currentUserRoleKey}
+          open={!!deleteConfirm}
+          onOpenChange={(open) => !open && setDeleteConfirm(null)}
+          onDeleted={() => setSelectedRole(null)}
+        />
 
         {/* Module Permissions Modal - Mobile */}
         {modulePermissionsRole && (
@@ -1076,26 +1068,14 @@ export default function TiposContaPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Tipo de Conta?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não pode ser desfeita. O tipo "{deleteConfirm?.display_name}" e todas suas permissões serão permanentemente removidos.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteConfirm && deleteRole.mutate(deleteConfirm.key)}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {deleteRole.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Excluir'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Delete Confirmation - Desktop */}
+      <DeleteRoleTypeDialog
+        role={deleteConfirm}
+        currentUserRoleKey={currentUserRoleKey}
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        onDeleted={() => setSelectedRole(null)}
+      />
 
       {/* Module Permissions Modal */}
       {modulePermissionsRole && (

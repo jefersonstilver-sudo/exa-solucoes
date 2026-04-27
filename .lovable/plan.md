@@ -1,116 +1,64 @@
-# Criação de Conta Administrativa — Tipos de Conta + WhatsApp Validado
+# Exclusão de Tipo de Conta com Aviso de Impacto
 
-## Diagnóstico
+## O que muda na experiência
 
-### 1. Por que os tipos de conta "não aparecem" no formulário
-O `CreateUserDialog.tsx` busca corretamente da tabela `role_types` (filtrando `is_active=true`, exceto `client` e `painel`). A query no banco retorna **7 tipos válidos** (Super Admin, Admin Geral, Admin Departamental, Admin Financeiro, Admin Marketing, Comercial, Eletricista).
+Hoje a exclusão existe apenas na lista de tipos (com um diálogo simples "Excluir? Esta ação não pode ser desfeita"). Não mostra quantos/quais usuários usam aquele tipo, e não está disponível dentro do modal "Configurar Módulos" (que é onde o super_admin geralmente está trabalhando o tipo).
 
-Causa provável de "sumirem":
-- Ao abrir o dialog, o `useEffect` define `role` como `admin` por padrão, mas a lista é carregada via fetch assíncrono. Se a renderização do `<SelectValue />` ocorrer antes do `setRoleTypes`, o trigger fica vazio até clicar.
-- O `select` está corretamente populado, mas **não há fallback visual** quando `loadingRoles=false` e `roleTypes=[]` (ex.: erro RLS silenciado).
-- O role `eletricista_` tem chave com underscore final e display name com espaço — sintoma de que a UI de tipos de conta permite cadastro sujo.
+Com a mudança:
 
-### 2. WhatsApp não existe no fluxo de criação
-A tabela `profiles` tem apenas a coluna `phone` (text). **Não existe**: `whatsapp`, `whatsapp_verified`, `whatsapp_verified_at`. O dialog `CreateUserDialog.tsx` também **não pede telefone**. Por isso não há como validar.
+1. **Botão "Excluir tipo de conta"** passa a aparecer dentro do `ModulePermissionsModal` (rodapé, em destaque vermelho destrutivo, fora dos toggles), apenas para tipos `is_system = false` (Super Admin / Sistema continuam protegidos).
+2. Ao clicar, abre um **diálogo de impacto completo** com:
+   - Nome e descrição do tipo prestes a ser excluído.
+   - **Contagem total** de usuários que usam aquele tipo.
+   - **Lista dos usuários afetados** (nome + email + último acesso), rolável, com badge "Perderá acesso".
+   - Aviso claro em vermelho: *"Estes usuários ficarão sem tipo de conta válido e perderão acesso ao sistema. Será necessário atribuir manualmente um novo tipo de conta para cada um antes que voltem a acessar."*
+   - Bloco de **próximos passos sugeridos** (com link rápido para a página de Usuários filtrada por esses IDs).
+3. Se houver usuários vinculados, o botão "Excluir mesmo assim" exige **confirmação dupla** — o super_admin precisa digitar a palavra `EXCLUIR` no campo (padrão Danger Zone do Enterprise Console).
+4. Se não houver usuários vinculados, exclusão direta com um único clique de confirmação.
+5. Após excluir: invalida `role-types`, `user-counts-by-role` e `module-permissions`, fecha o modal e mostra toast com resumo (`"Tipo X excluído. N usuários ficaram sem tipo válido."`).
+6. O AlertDialog antigo da TiposContaPage continua funcionando (compatibilidade), mas reaproveita o mesmo componente novo de impacto, garantindo o mesmo aviso completo em qualquer ponto de entrada.
 
-### 3. Infraestrutura Z-API já existe e está pronta para reuso
-Já temos as edge functions:
-- `send-user-whatsapp-code` — envia código OTP via Z-API
-- `verify-user-whatsapp-code` — valida código OTP
-- `zapi-send-message` — envio genérico
+## Comportamento de borda
 
-Componente `PhoneVerificationOTP.tsx` em `monitoramento-ia` já implementa o input de 6 dígitos. Padrão Z-API exige prefixo `55` (memória `whatsapp-phone-formatting-standard`).
-
----
-
-## Plano de Solução
-
-### Etapa 1 — Banco de dados (migration)
-Adicionar à tabela `profiles`:
-- `whatsapp` (text, nullable) — número formatado E.164 com prefixo 55
-- `whatsapp_verified` (boolean, default false)
-- `whatsapp_verified_at` (timestamptz, nullable)
-- `whatsapp_verification_required` (boolean, default true) — força validação no primeiro login se não validado pelo admin
-
-Índice único parcial em `whatsapp` quando não nulo (evita duplicidade).
-
-### Etapa 2 — `CreateUserDialog.tsx` (Conta Administrativa)
-Adicionar dois novos campos abaixo do CPF:
-
-**Campo "WhatsApp" (obrigatório)**
-- Input com máscara `(XX) XXXXX-XXXX`
-- Validação Zod: 10–11 dígitos (DDD + número)
-- Conversão automática para `55XXXXXXXXXXX` antes de salvar (padrão Z-API)
-
-**Bloco "Validação WhatsApp" (opcional na criação)**
-Toggle com 2 opções claras:
-1. **"Validar agora"** — Botão "Enviar código" → chama `send-user-whatsapp-code` → exibe `PhoneVerificationOTP` reaproveitado → ao validar, salva `whatsapp_verified=true`
-2. **"Validar no primeiro login"** (default) — `whatsapp_verified=false` + `whatsapp_verification_required=true`. O usuário verá o gate de validação antes de acessar o sistema.
-
-**Correção do Select de Tipo de Conta**
-- Adicionar fallback `<SelectItem disabled>Nenhum tipo cadastrado</SelectItem>` quando `roleTypes.length === 0 && !loadingRoles`
-- Garantir que o `value` default só seja setado **depois** da resposta (já está, mas precisa exibir mesmo durante loading via texto "Carregando tipos…" no trigger).
-- Adicionar log de erro visível (toast persistente) se a query falhar por RLS.
-
-### Etapa 3 — Edge function `create-admin-account`
-Atualizar `validation.ts` e `userCreation.ts`:
-- Aceitar `whatsapp`, `whatsapp_verified`, `whatsapp_verification_required` no payload
-- Validar WhatsApp como obrigatório (rejeita criação sem)
-- Persistir esses campos em `profiles` após criar o `auth.user`
-- Se `whatsapp_verified=false`, gerar e enviar automaticamente um código de boas-vindas com link de validação no WhatsApp (reusa `send-user-whatsapp-code`)
-
-### Etapa 4 — Gate de validação no primeiro login
-Em `useAuth.tsx` (após autenticar e antes de liberar rotas admin):
-- Checar `profile.whatsapp_verified === false && profile.whatsapp_verification_required === true`
-- Se sim, redirecionar para nova rota `/sistema/validar-whatsapp` com componente `WhatsAppVerificationGate` (reusa `PhoneVerificationOTP`)
-- Bloquear navegação até validar (similar ao padrão `pending_2fa` da memória `two-factor-auth-gate-v2-0-final`)
-- Após validar, atualiza `whatsapp_verified=true`, `whatsapp_verified_at=now()` e libera
-
-### Etapa 5 — UI de status na lista de usuários
-Em `UserManagementPanel.tsx` / `IndexaTeamSection.tsx`:
-- Badge ao lado do email: ✅ verde "WhatsApp validado" ou ⚠️ amarelo "WhatsApp pendente"
-- No `UserConsoleDialog`, ação "Reenviar validação" e "Marcar como validado manualmente" (apenas super_admin)
-
-### Etapa 6 — Higienização
-- Trim no `display_name` e `key` da tabela `role_types` (corrigir "Eletricista " e `eletricista_`)
-- Adicionar trigger BEFORE INSERT/UPDATE em `role_types` aplicando `TRIM()` em `key` e `display_name`
-
----
+- Tipos `is_system = true` (Super Admin, Admin, etc.): botão Excluir fica desabilitado com tooltip *"Tipos de sistema não podem ser excluídos"*.
+- Tipo do próprio usuário logado: botão desabilitado com aviso *"Você não pode excluir o tipo que está usando atualmente"*.
+- A exclusão remove em cascata as `role_permissions` daquele `role_key` (já é o comportamento atual da mutation; mantido).
+- Os usuários afetados **não** são deletados — apenas perdem o vínculo de tipo. A página de Usuários os exibe destacados como "Sem tipo válido" para o super_admin atribuir um novo (já existe esse fluxo de edição de role).
 
 ## Detalhes técnicos
 
-**Migration SQL (resumo):**
-```sql
-ALTER TABLE profiles
-  ADD COLUMN whatsapp text,
-  ADD COLUMN whatsapp_verified boolean NOT NULL DEFAULT false,
-  ADD COLUMN whatsapp_verified_at timestamptz,
-  ADD COLUMN whatsapp_verification_required boolean NOT NULL DEFAULT true;
+**Novo componente:** `src/components/admin/account-types/DeleteRoleTypeDialog.tsx`
+- Props: `role: RoleType | null`, `currentUserRoleKey: string`, `open`, `onOpenChange`, `onDeleted()`.
+- Query `affected-users-by-role` busca de `users` (`id, email, nome, last_sign_in_at`) onde `role = role.key`.
+- Renderiza:
+  - Header destrutivo com ícone `AlertTriangle`.
+  - Card de contagem ("X usuários serão impactados").
+  - `ScrollArea` com a lista (limite visual ~6, restante rolável).
+  - Box de aviso vermelho explicando a consequência.
+  - Box informativo com sugestão "Atribua um novo tipo a esses usuários antes ou depois da exclusão".
+  - Quando `affectedUsers.length > 0`: input "Digite EXCLUIR para confirmar" + botão `Excluir mesmo assim` (desabilitado até bater).
+  - Quando `affectedUsers.length === 0`: botão simples `Excluir tipo`.
+- Mutation reutiliza a lógica existente: deleta `role_permissions` por `role_key` e depois `role_types` por `key`. Em caso de sucesso, invalida queries (`role-types`, `user-counts-by-role`, `module-permissions`, `role-permissions`) e chama `onDeleted()`.
 
-CREATE UNIQUE INDEX profiles_whatsapp_unique_idx
-  ON profiles(whatsapp) WHERE whatsapp IS NOT NULL;
+**Edição em `ModulePermissionsModal.tsx`:**
+- Importar `DeleteRoleTypeDialog` e `Trash2`.
+- Adicionar estado `showDelete`.
+- Acima/abaixo dos botões "Salvar/Cancelar" do rodapé, adicionar uma "Danger Zone" colapsável com botão `Excluir tipo de conta` (vermelho outline). Disponível apenas se `!role.is_system`.
+- Ao confirmar exclusão (`onDeleted`), chamar `onClose()` para fechar o modal de módulos.
 
-UPDATE role_types SET
-  key = TRIM(key),
-  display_name = TRIM(display_name);
-```
+**Edição em `TiposContaPage.tsx`:**
+- Substituir os dois `AlertDialog` existentes (linha 677 e 1080) por `DeleteRoleTypeDialog` reutilizado.
+- Remover a `deleteRole` mutation duplicada do componente da página (passa a viver no novo componente). O botão lixeira da lista mobile/desktop apenas abre o dialog.
+- Passar `currentUserRoleKey` obtido via `useAuth` para impedir auto-exclusão.
 
-**Z-API formatting:** sempre persistir `55` + DDD + número, sem máscara. Exibir mascarado na UI.
+**Sem mudanças** em RLS, edge functions, fluxo de criação, `CreateUserDialog`, validação WhatsApp, navegação ou qualquer outro módulo. Escopo restrito à exclusão de tipos de conta.
 
-**Componentes reaproveitados:**
-- `PhoneVerificationOTP.tsx` (input 6 dígitos)
-- `send-user-whatsapp-code` / `verify-user-whatsapp-code` (edge functions)
-- `Login2FAModal.tsx` como referência de UX do gate
+## Resultado
 
-**Sem mudanças** em outros fluxos (clientes, painéis, criação cortesia, etc.) — escopo restrito a contas administrativas, conforme regra de projeto.
+- Super_admin pode excluir um tipo de conta direto de "Configurar Módulos".
+- Antes de excluir, vê **exatamente quem perde acesso** e o que precisa fazer depois.
+- Tipos do sistema permanecem protegidos.
+- Auto-exclusão bloqueada.
+- Mesma UX consistente quando exclui pela lista ou pelo modal.
 
----
-
-## Resultado esperado
-1. Tipos de conta sempre aparecem corretamente no select (com mensagem clara em caso de falha)
-2. Toda nova conta administrativa exige WhatsApp
-3. Super admin pode escolher: validar na hora (OTP) ou exigir validação no primeiro login
-4. Lista de usuários mostra status de validação com ações rápidas
-5. Sistema bloqueia acesso até a validação ser concluída
-
-Aprova o plano para eu implementar?
+Aprova para eu implementar?
