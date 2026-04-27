@@ -1,85 +1,116 @@
+# Criação de Conta Administrativa — Tipos de Conta + WhatsApp Validado
+
 ## Diagnóstico
 
-Auditei os três prédios mencionados no banco e na API AnyDesk. Resultado:
+### 1. Por que os tipos de conta "não aparecem" no formulário
+O `CreateUserDialog.tsx` busca corretamente da tabela `role_types` (filtrando `is_active=true`, exceto `client` e `painel`). A query no banco retorna **7 tipos válidos** (Super Admin, Admin Geral, Admin Departamental, Admin Financeiro, Admin Marketing, Comercial, Eletricista).
 
-### Estado real no sistema
+Causa provável de "sumirem":
+- Ao abrir o dialog, o `useEffect` define `role` como `admin` por padrão, mas a lista é carregada via fetch assíncrono. Se a renderização do `<SelectValue />` ocorrer antes do `setRoleTypes`, o trigger fica vazio até clicar.
+- O `select` está corretamente populado, mas **não há fallback visual** quando `loadingRoles=false` e `roleTypes=[]` (ex.: erro RLS silenciado).
+- O role `eletricista_` tem chave com underscore final e display name com espaço — sintoma de que a UI de tipos de conta permite cadastro sujo.
 
-| Prédio | Existe em `buildings`? | Device em `devices`? | Vinculado? | Sync AnyDesk |
-|---|---|---|---|---|
-| Residencial Vale do Monjolo (`018`) | Sim, status `ativo` | Sim (AnyDesk `1042429852`) | Sim, building_id correto | OK — último parse `27/04 16:13Z` |
-| Vila Appia (`007`) | Sim, status `ativo` | Sim (AnyDesk `1184148838`) | Sim, building_id correto | OK — último parse `27/04 16:13Z` |
-| Torre Azul (`009`) | Sim, status `ativo` | Sim (AnyDesk `1106649362`) | Sim, building_id correto | OK — último parse `27/04 16:13Z` |
+### 2. WhatsApp não existe no fluxo de criação
+A tabela `profiles` tem apenas a coluna `phone` (text). **Não existe**: `whatsapp`, `whatsapp_verified`, `whatsapp_verified_at`. O dialog `CreateUserDialog.tsx` também **não pede telefone**. Por isso não há como validar.
 
-Todos os três:
-- estão **online** na tabela `devices`
-- estão **vinculados** ao `building_id` correto
-- estão no grupo "Predios" (`device_group_id = 2794d433-...`)
-- têm `is_active=true` e `is_deleted=false`
-- o `sync-anydesk` os retorna a cada execução
+### 3. Infraestrutura Z-API já existe e está pronta para reuso
+Já temos as edge functions:
+- `send-user-whatsapp-code` — envia código OTP via Z-API
+- `verify-user-whatsapp-code` — valida código OTP
+- `zapi-send-message` — envio genérico
 
-### Por que sumiram da tela "Predios (9)"
+Componente `PhoneVerificationOTP.tsx` em `monitoramento-ia` já implementa o input de 6 dígitos. Padrão Z-API exige prefixo `55` (memória `whatsapp-phone-formatting-standard`).
 
-O grupo "Predios" tem hoje **12 devices ativos** + 3 deletados (Di Cavalcante, Esmeralda 1 e 2). O header "Predios (9)" da imagem reflete um **estado anterior ao sync que aconteceu pouco antes do screenshot** — os 3 já voltaram a aparecer no DB e devem aparecer ao recarregar/forçar sync. **Não há filtro escondendo eles.**
+---
 
-Mas existem dois problemas reais identificados na auditoria que justificam o reforço:
+## Plano de Solução
 
-1. **Risco de "ghost" no grupo de prédios**: o mesmo padrão dos antigos Di Cavalcante / Esmeralda. Se um device some da API e volta, o status pode ficar inconsistente até o próximo sync. Precisamos garantir reconciliação contínua.
-2. **Inconsistências menores nos 3 prédios** (não bloqueantes mas atrapalham telas):
-   - Torre Azul: `nome` começa com espaço ` Torre Azul` (causa ordenação errada e bugs de match)
-   - Vila Appia: `nome` termina com espaço `Vila Appia ` (mesmo problema)
-   - Vale do Monjolo: usa só `latitude/longitude` (sem `manual_*`) — funciona, mas inconsistente com os demais
+### Etapa 1 — Banco de dados (migration)
+Adicionar à tabela `profiles`:
+- `whatsapp` (text, nullable) — número formatado E.164 com prefixo 55
+- `whatsapp_verified` (boolean, default false)
+- `whatsapp_verified_at` (timestamptz, nullable)
+- `whatsapp_verification_required` (boolean, default true) — força validação no primeiro login se não validado pelo admin
 
-## Plano de correção
+Índice único parcial em `whatsapp` quando não nulo (evita duplicidade).
 
-### 1. Normalizar dados dos 3 prédios (migration)
+### Etapa 2 — `CreateUserDialog.tsx` (Conta Administrativa)
+Adicionar dois novos campos abaixo do CPF:
 
+**Campo "WhatsApp" (obrigatório)**
+- Input com máscara `(XX) XXXXX-XXXX`
+- Validação Zod: 10–11 dígitos (DDD + número)
+- Conversão automática para `55XXXXXXXXXXX` antes de salvar (padrão Z-API)
+
+**Bloco "Validação WhatsApp" (opcional na criação)**
+Toggle com 2 opções claras:
+1. **"Validar agora"** — Botão "Enviar código" → chama `send-user-whatsapp-code` → exibe `PhoneVerificationOTP` reaproveitado → ao validar, salva `whatsapp_verified=true`
+2. **"Validar no primeiro login"** (default) — `whatsapp_verified=false` + `whatsapp_verification_required=true`. O usuário verá o gate de validação antes de acessar o sistema.
+
+**Correção do Select de Tipo de Conta**
+- Adicionar fallback `<SelectItem disabled>Nenhum tipo cadastrado</SelectItem>` quando `roleTypes.length === 0 && !loadingRoles`
+- Garantir que o `value` default só seja setado **depois** da resposta (já está, mas precisa exibir mesmo durante loading via texto "Carregando tipos…" no trigger).
+- Adicionar log de erro visível (toast persistente) se a query falhar por RLS.
+
+### Etapa 3 — Edge function `create-admin-account`
+Atualizar `validation.ts` e `userCreation.ts`:
+- Aceitar `whatsapp`, `whatsapp_verified`, `whatsapp_verification_required` no payload
+- Validar WhatsApp como obrigatório (rejeita criação sem)
+- Persistir esses campos em `profiles` após criar o `auth.user`
+- Se `whatsapp_verified=false`, gerar e enviar automaticamente um código de boas-vindas com link de validação no WhatsApp (reusa `send-user-whatsapp-code`)
+
+### Etapa 4 — Gate de validação no primeiro login
+Em `useAuth.tsx` (após autenticar e antes de liberar rotas admin):
+- Checar `profile.whatsapp_verified === false && profile.whatsapp_verification_required === true`
+- Se sim, redirecionar para nova rota `/sistema/validar-whatsapp` com componente `WhatsAppVerificationGate` (reusa `PhoneVerificationOTP`)
+- Bloquear navegação até validar (similar ao padrão `pending_2fa` da memória `two-factor-auth-gate-v2-0-final`)
+- Após validar, atualiza `whatsapp_verified=true`, `whatsapp_verified_at=now()` e libera
+
+### Etapa 5 — UI de status na lista de usuários
+Em `UserManagementPanel.tsx` / `IndexaTeamSection.tsx`:
+- Badge ao lado do email: ✅ verde "WhatsApp validado" ou ⚠️ amarelo "WhatsApp pendente"
+- No `UserConsoleDialog`, ação "Reenviar validação" e "Marcar como validado manualmente" (apenas super_admin)
+
+### Etapa 6 — Higienização
+- Trim no `display_name` e `key` da tabela `role_types` (corrigir "Eletricista " e `eletricista_`)
+- Adicionar trigger BEFORE INSERT/UPDATE em `role_types` aplicando `TRIM()` em `key` e `display_name`
+
+---
+
+## Detalhes técnicos
+
+**Migration SQL (resumo):**
 ```sql
-UPDATE buildings SET nome = TRIM(nome)
-WHERE id IN (
-  '0077c002-fdd5-430a-8794-bedd66ff526a', -- Vila Appia
-  '6d8d0f86-7ac4-438f-9f3b-dbc8263524ca'  -- Torre Azul
-);
-```
-Resultado: nomes ficam `Vila Appia` e `Torre Azul` sem espaços parasitas, melhorando match em `findBuildingByDeviceName`.
+ALTER TABLE profiles
+  ADD COLUMN whatsapp text,
+  ADD COLUMN whatsapp_verified boolean NOT NULL DEFAULT false,
+  ADD COLUMN whatsapp_verified_at timestamptz,
+  ADD COLUMN whatsapp_verification_required boolean NOT NULL DEFAULT true;
 
-### 2. Reforçar reconciliação contínua no `sync-anydesk`
+CREATE UNIQUE INDEX profiles_whatsapp_unique_idx
+  ON profiles(whatsapp) WHERE whatsapp IS NOT NULL;
 
-Garantir que toda execução do sync:
-- compara devices do DB com devices retornados pela API AnyDesk
-- devices presentes no DB e ausentes da API por **mais de 1 ciclo** entram em estado `offline + metadata.stale=true` (já implementado anteriormente)
-- devices que **voltam** a aparecer na API têm `metadata.stale` removido automaticamente e `status` recalculado a partir do `online`/`offline` real da API
-- nunca deletar nada — manter para auditoria do administrador
-
-Adicionar log explícito no fim de cada sync:
-```
-[SYNC] Total API: X | DB ativos: Y | Reconciliados: Z | Stale: W | Voltaram: V
+UPDATE role_types SET
+  key = TRIM(key),
+  display_name = TRIM(display_name);
 ```
 
-### 3. Painel de "Saúde de Sincronia" (admin)
+**Z-API formatting:** sempre persistir `55` + DDD + número, sem máscara. Exibir mascarado na UI.
 
-Adicionar pequeno botão/aba em `/admin/monitoramento-ia/paineis` mostrando:
-- timestamp do último sync
-- devices presentes no DB **mas não na API** (stale) — destacados
-- devices presentes na API **mas não no DB** (novos não importados)
-- devices com `building_id = null` (órfãos)
+**Componentes reaproveitados:**
+- `PhoneVerificationOTP.tsx` (input 6 dígitos)
+- `send-user-whatsapp-code` / `verify-user-whatsapp-code` (edge functions)
+- `Login2FAModal.tsx` como referência de UX do gate
 
-Isso dá visibilidade total: o admin vê na hora qualquer prédio "fora de eixo" como Vale do Monjolo / Vila Appia / Torre Azul, sem precisar abrir o banco.
+**Sem mudanças** em outros fluxos (clientes, painéis, criação cortesia, etc.) — escopo restrito a contas administrativas, conforme regra de projeto.
 
-### 4. Forçar um sync agora
+---
 
-Após o deploy, executar `sync-anydesk` com `force: true` para reconciliar imediatamente os três prédios e qualquer outro stale.
+## Resultado esperado
+1. Tipos de conta sempre aparecem corretamente no select (com mensagem clara em caso de falha)
+2. Toda nova conta administrativa exige WhatsApp
+3. Super admin pode escolher: validar na hora (OTP) ou exigir validação no primeiro login
+4. Lista de usuários mostra status de validação com ações rápidas
+5. Sistema bloqueia acesso até a validação ser concluída
 
-## Garantia "nunca mais acontece"
-
-- **Reconciliação a cada sync** (já em produção, será reforçada com o reverso: limpar `stale` quando voltam).
-- **Painel de saúde** dá visibilidade imediata.
-- **Nada é deletado automaticamente** — apenas o admin remove.
-- **Nomes normalizados** evitam falhas de match futuras.
-
-## Não será alterado
-
-- Nenhum fluxo, UI ou comportamento existente fora dos pontos acima.
-- Nenhuma regra de RLS, autenticação ou rota.
-- Cards e layout do `PaineisExa`/`Paineis` permanecem idênticos — apenas ganham um botão extra "Saúde de Sincronia".
-
-Aprova para implementar?
+Aprova o plano para eu implementar?
