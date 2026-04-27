@@ -16,12 +16,26 @@ export interface BuildingWithDeviceStatus {
   manual_longitude: number | null;
   devices: DeviceInfo[];
   status: 'online' | 'partial' | 'offline' | 'unknown';
+  /** Status de ciclo de vida do prédio: ativo | instalacao | inativo */
+  buildingStatus: 'ativo' | 'instalacao' | 'inativo';
+  /** Status bruto vindo do banco (preserva original p/ debug) */
+  rawBuildingStatus?: string | null;
   onlineCount: number;
   offlineCount: number;
   totalDevices: number;
   eventsCount: number;
   provider?: string;
 }
+
+const normalizeStatus = (s?: string | null) =>
+  String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+export const getBuildingStatusKind = (s?: string | null): 'ativo' | 'instalacao' | 'inativo' => {
+  const n = normalizeStatus(s);
+  if (n.includes('instala')) return 'instalacao';
+  if (n.includes('inativ')) return 'inativo';
+  return 'ativo';
+};
 
 export interface DeviceInfo {
   id: string;

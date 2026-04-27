@@ -1,92 +1,66 @@
-## 🔍 Auditoria — Status "Em Instalação" na Loja Pública
 
-### Resultado da auditoria (banco de dados)
-Existem **8 prédios** com status `instalacao` (sem cedilha) no banco que estão visíveis na loja pública:
-- Bella Vita, Condomínio Cheverny, Edifício Barcelona, Renoir, Residencial Miró, Riverside, Toscana, e o Cheverny.
+## Problema
 
-A RPC `get_buildings_for_public_store` retorna corretamente o status `instalacao` para todos eles. O componente `BuildingCardImage.tsx` (desktop) e `MobileBuildingInfoCard.tsx` (mobile) **já normalizam acentos** e exibem a tarja "EM INSTALAÇÃO" + ações desabilitadas.
+No mapa do `/super_admin/paineis-exa` (componente `PaineisMapModal`), as cores dos pinos hoje refletem apenas o estado **operacional dos painéis** (online/offline/partial). Isso não bate com a página "Painéis Real", onde a cor segue o **status do prédio**:
 
-### Causa-raiz identificada
-O componente `BuildingStoreCard.tsx` possui **3 layouts** (Desktop compacto, Mobile, Desktop default — linhas 21-116). Todos chamam `BuildingCardImage` que tem a tarja, **MAS** a checagem de "em instalação" para desabilitar o clique no card e o botão "Adicionar" está apenas em `BuildingCardActions`. Resultado: o card inteiro continua **clicável** abrindo o detalhe normal, e em alguns layouts o estado visual não é homogêneo. Isso faz o usuário "ver" como se fosse ativo.
+- `ativo` → **verde**
+- `instalacao` (em instalação) → **amarelo**
+- `inativo` → **vermelho**
 
-Adicionalmente, **NÃO há nenhuma proteção de servidor**: a RPC pública lista esses prédios igual aos ativos, sem nenhuma flag de "showcase only". O frontend é a única defesa.
+Além disso, prédios em instalação não estão aparecendo no endereço correto (ou somem do mapa) porque o hook `useBuildingsWithDeviceStatus` exige `totalDevices > 0` — prédios em instalação geralmente ainda não têm devices vinculados, então caem fora.
 
----
+## Mudanças
 
-## 🎯 Plano de Correção
+### 1. Buscar o `status` do prédio
+Arquivo: `src/modules/monitoramento-ia/hooks/useBuildingsWithDeviceStatus.ts`
 
-### 1. Reforço Anti-Falha — Status "Em Instalação" (prioridade ALTA)
+- Incluir `status` no `select` da tabela `buildings`.
+- Adicionar `buildingStatus: 'ativo' | 'instalacao' | 'inativo' | string` no tipo `BuildingWithDeviceStatus` (mantendo o `status` operacional atual para o tooltip e contadores).
+- Remover o filtro `.filter(b => b.totalDevices > 0)` para prédios com `status = 'instalacao'`, para que apareçam no mapa mesmo sem painéis ainda instalados (desde que tenham coordenadas — manual ou auto). Manter o filtro para os demais para não poluir.
+- Normalizar o status com NFD (igual ao `BuildingStoreCard`) para tratar "instalação"/"instalacao".
 
-**`src/components/building-store/BuildingStoreCard.tsx`**
-- Criar helper local `isEmInstalacao(status)` (mesma normalização NFD).
-- Quando true, em **todos os 3 layouts**:
-  - Bloquear `onClick` do card (não abrir detalhe / não adicionar carrinho).
-  - Aplicar classe `cursor-default` + remover hover de "scale".
-  - Adicionar borda âmbar sutil (`ring-1 ring-amber-300/40`) para diferenciação visual instantânea.
+### 2. Pino colorido por status do prédio
+Arquivo: `src/modules/monitoramento-ia/components/paineis/PaineisMapModal.tsx`
 
-**`src/components/building-store/MobileBuildingSheet.tsx`** e **`MobileBuildingInfoCard.tsx`**
-- Reforçar o botão "Adicionar ao carrinho" para usar a mesma normalização (já existe parcialmente).
-- Esconder preço e mostrar selo "Em breve disponível" alinhado ao desktop.
+- Trocar a função `createMarkerSvgUrl` para receber o **status do prédio** (`ativo` | `instalacao` | `inativo`) em vez de `online/offline/partial`.
+- Paleta:
+  - `ativo` → `#22C55E` (verde) / dark `#16A34A`
+  - `instalacao` → `#F59E0B` (amarelo) / dark `#D97706`
+  - `inativo` → `#EF4444` (vermelho) / dark `#DC2626`
+  - fallback → cinza
+- Atualizar o `marker.icon` para usar essa nova função.
+- O tooltip (mouseover) e o `BuildingDetailCard` continuam exibindo `onlineCount/totalDevices` (operacional) — apenas a **cor** do pino muda.
+- Animação `BOUNCE` deixa de ser por status operacional; aplicar somente a prédios `inativo` ou remover a animação para evitar confusão (preferência: remover BOUNCE, manter mapa limpo).
 
-**`src/services/simpleBuildingService.ts`**
-- Adicionar log de auditoria ao detectar prédio em instalação no payload público (apenas console, para rastreio).
+### 3. Endereço correto para prédios em instalação
+- Como o hook agora inclui prédios em instalação mesmo sem devices, eles serão renderizados na coordenada (`manual_latitude`/`manual_longitude` se existir, senão `latitude`/`longitude`) — exatamente como qualquer outro prédio.
+- Caso um prédio em instalação não tenha coordenadas válidas, ele continua excluído (impossível posicionar). O ajuste manual de coordenada já existe em `BuildingDetailCard` via `handleAddressUpdate`.
 
-### 2. Editor de Posicionamento de Fotos (Reframe Manual)
+### 4. Filtro "Problemas" (toggle vermelho no header)
+- Hoje filtra por status operacional (`offline`/`partial`). Manter como está — é um filtro independente sobre painéis com problema, não sobre status do prédio. Apenas garantir que prédios em instalação sem devices não sejam contados como "problema".
 
-#### 2.1 Migration de banco (schema)
-Adicionar 2 colunas em `buildings` para guardar a posição focal de cada slot de imagem:
-```sql
-ALTER TABLE buildings ADD COLUMN imagem_principal_focus jsonb DEFAULT '{"x":50,"y":50}'::jsonb;
-ALTER TABLE buildings ADD COLUMN imagem_2_focus jsonb DEFAULT '{"x":50,"y":50}'::jsonb;
-ALTER TABLE buildings ADD COLUMN imagem_3_focus jsonb DEFAULT '{"x":50,"y":50}'::jsonb;
-ALTER TABLE buildings ADD COLUMN imagem_4_focus jsonb DEFAULT '{"x":50,"y":50}'::jsonb;
+## Detalhes técnicos
+
+```ts
+// Helper de normalização (já usado no BuildingStoreCard)
+const normalizeStatus = (s?: string) =>
+  String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+const getBuildingStatusKind = (s?: string): 'ativo' | 'instalacao' | 'inativo' => {
+  const n = normalizeStatus(s);
+  if (n.includes('instala')) return 'instalacao';
+  if (n.includes('inativ')) return 'inativo';
+  return 'ativo';
+};
 ```
-Os valores são percentuais (0-100) usados em CSS `object-position: X% Y%`.
 
-> Atualizar a RPC `get_buildings_for_public_store` para retornar `imagem_principal_focus` (apenas o focus da imagem principal, que é o que aparece na loja).
+```ts
+// createMarkerSvgUrl(kind, sequentialNumber) — kind = 'ativo' | 'instalacao' | 'inativo'
+```
 
-#### 2.2 Novo componente — `ImageFocusEditor.tsx`
-Editor fluido inline (dentro do `BuildingImageManager`) com:
-- **Preview ao vivo** mostrando como a imagem aparecerá no card da loja (proporção 16:10).
-- **Crosshair arrastável** (mouse + touch) sobre a imagem original — define o ponto de foco da fachada.
-- **Mini-thumbnails** com presets rápidos (Centro, Topo, Inferior, Esquerda, Direita).
-- Botão **"Ver como aparece na loja"** abrindo modal com o card final renderizado.
-- Salvar via `update` na coluna `imagem_X_focus` correspondente.
-- Animação `framer-motion` suave; design Apple-like glassmorphism (paleta EXA).
+## Arquivos editados
 
-#### 2.3 Integração no `BuildingImageManager.tsx`
-- Sob cada slot de imagem com foto enviada, adicionar botão **"Ajustar enquadramento"** (ícone `Move` ou `Crop`).
-- Abre o `ImageFocusEditor` em painel lateral fluido (não substitui a galeria).
-- Botão "Remover" continua intacto (já existe).
+- `src/modules/monitoramento-ia/hooks/useBuildingsWithDeviceStatus.ts`
+- `src/modules/monitoramento-ia/components/paineis/PaineisMapModal.tsx`
 
-#### 2.4 Aplicar o focus na loja pública
-- `src/services/simpleBuildingService.ts`: passar `imagem_principal_focus` no payload.
-- `src/services/buildingStoreService.ts`: incluir o campo no tipo `BuildingStore`.
-- `src/components/building-store/card/BuildingCardImage.tsx`: aplicar `style={{ objectPosition: \`${focus.x}% ${focus.y}%\` }}` no `<img>`.
-
-### 3. Ferramenta de Auditoria (admin)
-Adicionar pequeno alerta no topo de `AdminBuildingsPageContent.tsx` quando houver prédios em instalação visíveis na loja pública, com link "Ver lista" — para o admin saber rapidamente o que está em vitrine.
-
----
-
-## 📁 Arquivos a editar/criar
-
-**Editar:**
-- `src/components/building-store/BuildingStoreCard.tsx` — bloqueio de clique nos 3 layouts
-- `src/components/building-store/MobileBuildingSheet.tsx` — reforço do bloqueio
-- `src/components/building-store/MobileBuildingInfoCard.tsx` — reforço do bloqueio
-- `src/components/building-store/card/BuildingCardImage.tsx` — aplicar `object-position`
-- `src/services/simpleBuildingService.ts` — passar focus + log de auditoria
-- `src/services/buildingStoreService.ts` — tipo
-- `src/components/admin/buildings/BuildingImageManager.tsx` — botão "Ajustar enquadramento" por slot
-- `src/components/admin/buildings/AdminBuildingsPageContent.tsx` — alerta de auditoria
-
-**Criar:**
-- `src/components/admin/buildings/ImageFocusEditor.tsx` — editor fluido drag-and-drop
-- `supabase/migrations/[timestamp]_add_image_focus_columns.sql` — colunas focus
-- Atualizar RPC `get_buildings_for_public_store` para retornar `imagem_principal_focus`
-
-## ✅ Garantias
-- **Nenhuma alteração** em fluxos que não estejam relacionados ao status "instalação" ou ao gerenciamento de imagens.
-- **Backward-compatible**: prédios sem `focus` definido usam centro (50/50) como hoje.
-- **Sem mudanças** no fluxo de cobrança, pedidos, agenda, painéis ou monitoramento.
+Nenhuma mudança em UI fora do mapa, nenhuma alteração de workflow ou de outras telas.
