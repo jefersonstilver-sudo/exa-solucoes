@@ -434,6 +434,13 @@ export const PaineisPage = () => {
           <ViewToggle view={viewMode} onViewChange={setViewMode} />
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setSyncHealthOpen(true)}
+              className="p-2.5 lg:p-3 bg-muted hover:bg-muted/80 text-foreground rounded-lg transition-colors border border-border shadow-sm"
+              title="Saúde de Sincronia AnyDesk"
+            >
+              <Activity className="w-4 h-4 lg:w-5 lg:h-5" />
+            </button>
+            <button
               onClick={() => {
                 const url = generatePublicUrl('/monitor');
                 navigator.clipboard.writeText(url);
