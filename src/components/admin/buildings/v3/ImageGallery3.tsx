@@ -311,10 +311,41 @@ const ImageGallery3: React.FC<ImageGallery3Props> = ({
                 index={index}
                 onRemove={handleRemove}
                 onUploadClick={handleUploadClick}
+                onAdjustFocus={handleAdjustFocus}
                 disabled={disabled}
               />
             ))}
           </div>
+        </SortableContext>
+      </DndContext>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileInputChange}
+      />
+
+      <p className="text-xs text-gray-500 text-center">
+        Máximo 5MB por imagem • JPG, PNG, WebP • Passe o mouse sobre a foto para ajustar enquadramento
+      </p>
+
+      {focusEditor && buildingId && (
+        <ImageFocusEditor
+          open={focusEditor.open}
+          onOpenChange={(o) => setFocusEditor(o ? focusEditor : null)}
+          buildingId={buildingId}
+          buildingName=""
+          imagePath={focusEditor.imagePath}
+          slotIndex={focusEditor.slotIndex}
+          initialFocus={focusEditor.initialFocus}
+          onSaved={() => setFocusEditor(null)}
+        />
+      )}
+    </div>
+  );
+};
         </SortableContext>
       </DndContext>
 
