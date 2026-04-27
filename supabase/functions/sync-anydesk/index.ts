@@ -286,7 +286,20 @@ serve(async (req) => {
 
         // CRITICAL: Preserve existing metadata (especially alert-related fields) while updating AnyDesk data
         const existingMetadata = existingDevice?.metadata || {};
-        
+        const wasStale = (existingMetadata as any).stale === true;
+
+        // Build cleaned metadata: strip stale_* flags when device returns from API
+        const cleanedExistingMeta: any = { ...existingMetadata };
+        if (wasStale) {
+          delete cleanedExistingMeta.stale;
+          delete cleanedExistingMeta.stale_reason;
+          delete cleanedExistingMeta.stale_detected_at;
+          delete cleanedExistingMeta.stale_since;
+          delete cleanedExistingMeta.stale_last_check;
+          cleanedExistingMeta.stale_recovered_at = new Date().toISOString();
+          console.log(`[SYNC-ANYDESK] ♻️ Device ${anydeskId} (${parsed.buildingName}) RECUPERADO da stale list`);
+        }
+
         const deviceData = {
           anydesk_client_id: anydeskId,
           name: parsed.buildingName,
@@ -298,12 +311,12 @@ serve(async (req) => {
           comments: comment,
           provider: parsed.provider,
           address: parsed.address,
-          metadata: { 
-            // Preserve existing alert-related fields (DO NOT OVERWRITE!)
-            ...existingMetadata,
+          metadata: {
+            // Preserve existing alert-related fields (DO NOT OVERWRITE!) — minus any cleared stale_* keys
+            ...cleanedExistingMeta,
             // Update AnyDesk-specific fields
-            alias, 
-            label, 
+            alias,
+            label,
             online_time: client['online-time'],
             raw_tags: rawTags,
             parsed_data: {
