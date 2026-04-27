@@ -161,6 +161,42 @@ const ImageGallery3: React.FC<ImageGallery3Props> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [focusEditor, setFocusEditor] = useState<{
+    open: boolean;
+    slotIndex: number;
+    imagePath: string;
+    initialFocus: { x: number; y: number };
+  } | null>(null);
+
+  const focusFieldByIndex = ['imagem_principal_focus', 'imagem_2_focus', 'imagem_3_focus', 'imagem_4_focus'];
+
+  const handleAdjustFocus = useCallback(async (image: LocalImage, index: number) => {
+    if (!buildingId || !image.originalPath) {
+      toast.error('Salve o prédio primeiro para ajustar enquadramento');
+      return;
+    }
+    // Buscar o focus atual do banco
+    const field = focusFieldByIndex[index];
+    let initialFocus = { x: 50, y: 50 };
+    try {
+      const { data } = await supabase
+        .from('buildings')
+        .select(field)
+        .eq('id', buildingId)
+        .maybeSingle();
+      if (data && (data as any)[field]) {
+        initialFocus = (data as any)[field];
+      }
+    } catch (e) {
+      console.warn('Não foi possível carregar foco atual, usando centro', e);
+    }
+    setFocusEditor({
+      open: true,
+      slotIndex: index,
+      imagePath: image.originalPath,
+      initialFocus,
+    });
+  }, [buildingId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
