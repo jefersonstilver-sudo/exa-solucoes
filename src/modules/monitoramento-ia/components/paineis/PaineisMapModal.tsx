@@ -212,7 +212,7 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
       const lng = building.manual_longitude || building.longitude;
       if (!lat || !lng || lat === 0 || lng === 0) return;
 
-      const iconUrl = createMarkerSvgUrl(building.buildingStatus, index + 1);
+      const iconUrl = createMarkerSvgUrl(building.pinKind, index + 1);
 
       // Use classic google.maps.Marker (no mapId required)
       const marker = new google.maps.Marker({
@@ -227,21 +227,75 @@ export const PaineisMapModal: React.FC<PaineisMapModalProps> = ({
         optimized: true,
       });
 
-      const statusColors = {
-        online: '#22C55E',
-        partial: '#F59E0B',
-        offline: '#EF4444',
-        unknown: '#6B7280',
+      const pinColors = {
+        ativo:      { primary: '#22C55E', label: 'Ativo' },
+        instalacao: { primary: '#F59E0B', label: 'Em Instalação' },
+        inativo:    { primary: '#EF4444', label: 'Inativo' },
       } as const;
-      const statusColor = statusColors[building.status];
+      const pin = pinColors[building.pinKind];
+
+      const escapeHtml = (s: string) =>
+        s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+
+      const formatRelative = (iso?: string | null) => {
+        if (!iso) return 'sem registro';
+        try {
+          const d = new Date(iso);
+          const diff = Date.now() - d.getTime();
+          const min = Math.floor(diff / 60000);
+          if (min < 1) return 'agora mesmo';
+          if (min < 60) return `há ${min} min`;
+          const h = Math.floor(min / 60);
+          if (h < 24) return `há ${h}h`;
+          const days = Math.floor(h / 24);
+          return `há ${days}d`;
+        } catch {
+          return 'sem registro';
+        }
+      };
+
+      const devicesHtml = building.devices.length === 0
+        ? `<div style="font-size:11px;color:#9ca3af;font-style:italic;padding:6px 0;">Sem painéis vinculados ainda</div>`
+        : building.devices.map((d) => {
+            const isOnline = d.status === 'online';
+            const dotColor = isOnline ? '#22C55E' : '#EF4444';
+            const statusLabel = isOnline ? 'Online' : 'Offline';
+            const provider = d.provider ? `<span style="background:#f3f4f6;color:#374151;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600;">${escapeHtml(d.provider)}</span>` : '';
+            return `
+              <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6;">
+                <span style="width:8px;height:8px;border-radius:50%;background:${dotColor};box-shadow:0 0 4px ${dotColor};flex-shrink:0;"></span>
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                    <span style="font-size:12px;font-weight:600;color:#111827;">${escapeHtml(d.alias)}</span>
+                    ${provider}
+                  </div>
+                  <div style="font-size:10px;color:#6b7280;margin-top:1px;">
+                    ${statusLabel} • ${escapeHtml(formatRelative((d as any).lastOnlineAt))}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+      const enderecoHtml = building.endereco
+        ? `<div style="font-size:11px;color:#6b7280;margin-top:2px;">${escapeHtml(building.endereco)}</div>`
+        : '';
 
       marker.addListener('mouseover', () => {
         infoWindowRef.current?.setContent(`
-          <div style="padding:8px 12px;font-family:system-ui,-apple-system,sans-serif;min-width:140px;">
-            <div style="font-weight:600;font-size:13px;color:#1f2937;">${building.nome}</div>
-            <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
-              <span style="width:8px;height:8px;border-radius:50%;background:${statusColor};box-shadow:0 0 4px ${statusColor};"></span>
-              <span style="font-size:11px;color:#666;">${building.onlineCount}/${building.totalDevices} painéis online</span>
+          <div style="padding:10px 12px;font-family:system-ui,-apple-system,sans-serif;min-width:240px;max-width:320px;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:700;font-size:13px;color:#111827;line-height:1.2;">${escapeHtml(building.nome)}</div>
+                ${enderecoHtml}
+              </div>
+              <span style="background:${pin.primary}1a;color:${pin.primary};font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;">${pin.label}</span>
+            </div>
+            <div style="font-size:11px;color:#374151;font-weight:600;margin:6px 0 4px;">
+              ${building.onlineCount}/${building.totalDevices} painéis online
+            </div>
+            <div style="max-height:240px;overflow-y:auto;">
+              ${devicesHtml}
             </div>
           </div>
         `);
