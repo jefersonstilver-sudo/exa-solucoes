@@ -41,6 +41,8 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import ModulePermissionsModal from '@/components/admin/account-types/ModulePermissionsModal';
+import DeleteRoleTypeDialog from '@/components/admin/account-types/DeleteRoleTypeDialog';
+import { useAuth } from '@/hooks/useAuth';
 
 interface RoleType {
   id: string;
@@ -90,6 +92,8 @@ export default function TiposContaPage() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
+  const { userProfile } = useAuth();
+  const currentUserRoleKey = userProfile?.role ?? null;
   const [selectedRole, setSelectedRole] = useState<RoleType | null>(null);
   const [modulePermissionsRole, setModulePermissionsRole] = useState<RoleType | null>(null);
   const [isCreating, setIsCreating] = useState(false);
