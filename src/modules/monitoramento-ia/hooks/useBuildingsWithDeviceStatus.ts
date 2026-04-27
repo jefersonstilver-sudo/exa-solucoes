@@ -16,12 +16,26 @@ export interface BuildingWithDeviceStatus {
   manual_longitude: number | null;
   devices: DeviceInfo[];
   status: 'online' | 'partial' | 'offline' | 'unknown';
+  /** Status de ciclo de vida do prédio: ativo | instalacao | inativo */
+  buildingStatus: 'ativo' | 'instalacao' | 'inativo';
+  /** Status bruto vindo do banco (preserva original p/ debug) */
+  rawBuildingStatus?: string | null;
   onlineCount: number;
   offlineCount: number;
   totalDevices: number;
   eventsCount: number;
   provider?: string;
 }
+
+const normalizeStatus = (s?: string | null) =>
+  String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+export const getBuildingStatusKind = (s?: string | null): 'ativo' | 'instalacao' | 'inativo' => {
+  const n = normalizeStatus(s);
+  if (n.includes('instala')) return 'instalacao';
+  if (n.includes('inativ')) return 'inativo';
+  return 'ativo';
+};
 
 export interface DeviceInfo {
   id: string;
@@ -50,6 +64,7 @@ interface BuildingBase {
   longitude: number | null;
   manual_latitude: number | null;
   manual_longitude: number | null;
+  status?: string | null;
 }
 
 // Função para encontrar building por nome similar ao device
@@ -97,7 +112,7 @@ export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
       // Fetch ALL buildings (com ou sem coordenadas - vamos usar endereço depois)
       const { data: buildingsData, error: buildingsError } = await supabase
         .from('buildings')
-        .select('id, nome, endereco, latitude, longitude, manual_latitude, manual_longitude');
+        .select('id, nome, endereco, latitude, longitude, manual_latitude, manual_longitude, status');
 
       if (buildingsError) throw buildingsError;
 
@@ -180,10 +195,14 @@ export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
           const primaryProvider = Object.entries(providerCounts)
             .sort((a, b) => b[1] - a[1])[0]?.[0];
 
+          const buildingStatus = getBuildingStatusKind((building as any).status);
+
           return {
             ...building,
             devices: buildingDevices,
             status,
+            buildingStatus,
+            rawBuildingStatus: (building as any).status ?? null,
             onlineCount,
             offlineCount,
             totalDevices,
@@ -191,7 +210,8 @@ export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
             provider: primaryProvider,
           };
         })
-        .filter(b => b.totalDevices > 0); // Only buildings with devices
+        // Mantém prédios com devices OU em instalação (mesmo sem painéis ainda)
+        .filter(b => b.totalDevices > 0 || b.buildingStatus === 'instalacao');
 
       setBuildings(buildingsWithStatus);
     } catch (error) {
