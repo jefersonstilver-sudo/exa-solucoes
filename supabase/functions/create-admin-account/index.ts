@@ -41,7 +41,7 @@ serve(async (req) => {
       );
     }
 
-    const { email, adminType, nome, cpf, tipo_documento } = validationResult.data;
+    const { email, adminType, nome, cpf, tipo_documento, whatsapp, whatsapp_verified, whatsapp_verification_required } = validationResult.data;
 
     // Verificar se usuário já existe
     const existingUserCheck = await checkExistingUser(email);
@@ -65,6 +65,38 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
+    }
+
+    // Persistir WhatsApp em profiles + users (após criação do auth.user)
+    if (createResult.user?.id && whatsapp) {
+      const supabasePersist = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      const verifiedAt = whatsapp_verified ? new Date().toISOString() : null;
+      const { error: profileWaError } = await supabasePersist
+        .from('profiles')
+        .update({
+          whatsapp,
+          whatsapp_verified: !!whatsapp_verified,
+          whatsapp_verified_at: verifiedAt,
+          whatsapp_verification_required: !!whatsapp_verification_required,
+        })
+        .eq('id', createResult.user.id);
+      if (profileWaError) {
+        console.error('⚠️ [CREATE-ADMIN] Falha ao salvar WhatsApp no profile:', profileWaError);
+      } else {
+        console.log('✅ [CREATE-ADMIN] WhatsApp salvo no profile');
+      }
+      // Também espelha em users (telefone) para retrocompatibilidade
+      await supabasePersist
+        .from('users')
+        .update({
+          telefone: whatsapp,
+          telefone_verificado: !!whatsapp_verified,
+          telefone_verificado_at: verifiedAt,
+        })
+        .eq('id', createResult.user.id);
     }
 
     // Buscar usuário autenticado que está criando a conta

@@ -11157,6 +11157,10 @@ export type Database = {
           id: string
           phone: string | null
           updated_at: string | null
+          whatsapp: string | null
+          whatsapp_verification_required: boolean
+          whatsapp_verified: boolean
+          whatsapp_verified_at: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -11166,6 +11170,10 @@ export type Database = {
           id: string
           phone?: string | null
           updated_at?: string | null
+          whatsapp?: string | null
+          whatsapp_verification_required?: boolean
+          whatsapp_verified?: boolean
+          whatsapp_verified_at?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -11175,6 +11183,10 @@ export type Database = {
           id?: string
           phone?: string | null
           updated_at?: string | null
+          whatsapp?: string | null
+          whatsapp_verification_required?: boolean
+          whatsapp_verified?: boolean
+          whatsapp_verified_at?: string | null
         }
         Relationships: []
       }

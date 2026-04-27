@@ -28,6 +28,9 @@ import { useEmailCheck } from '@/hooks/useEmailCheck';
 import ExistingUserAlert from './ExistingUserAlert';
 import EmailConfigWarning from './EmailConfigWarning';
 import { useIsMobile } from '@/hooks/use-mobile';
+import WhatsAppValidationField, {
+  type WhatsAppFieldValue,
+} from './WhatsAppValidationField';
 
 // Interface for role types from database
 interface RoleType {
@@ -65,6 +68,11 @@ const createUserSchema = z.object({
       message: 'CPF inválido (digite apenas números ou formato XXX.XXX.XXX-XX)',
     })
     .optional(),
+  whatsapp: z
+    .string()
+    .regex(/^\d{10,11}$/, {
+      message: 'WhatsApp inválido (DDD + número, 10 ou 11 dígitos)',
+    }),
   role: z.string().min(1, { message: 'Selecione um tipo de conta' }),
 });
 
@@ -88,10 +96,18 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
   const [documentoObrigatorio, setDocumentoObrigatorio] = useState(false);
   const [roleTypes, setRoleTypes] = useState<RoleType[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(true);
+  const [rolesError, setRolesError] = useState<string | null>(null);
+  const [whatsapp, setWhatsapp] = useState<WhatsAppFieldValue>({
+    raw: '',
+    e164: '',
+    verified: false,
+    mode: 'first_login',
+  });
 
   // Fetch role types from database
   useEffect(() => {
     const fetchRoleTypes = async () => {
+      setRolesError(null);
       try {
         const { data, error } = await supabase
           .from('role_types')
@@ -113,9 +129,15 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
             setRole(data[0].key);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching role types:', error);
-        toast.error('Erro ao carregar tipos de conta');
+        const msg =
+          error?.message ?? 'Erro desconhecido ao carregar tipos de conta';
+        setRolesError(msg);
+        toast.error('Erro ao carregar tipos de conta', {
+          description: msg,
+          duration: 8000,
+        });
       } finally {
         setLoadingRoles(false);
       }
@@ -183,6 +205,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         nome: nome.trim(),
         sobrenome: sobrenome.trim(),
         cpf: cpf.replace(/\D/g, ''), // Remove formatação para validação
+        whatsapp: whatsapp.raw,
         role: role,
       };
 
@@ -193,6 +216,16 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       }
 
       createUserSchema.parse(formData);
+
+      // Se modo "validar agora" foi escolhido, exigir verificação completa
+      if (whatsapp.mode === 'now' && !whatsapp.verified) {
+        setErrors({
+          whatsapp:
+            'Conclua a validação do WhatsApp ou escolha "Validar no 1º login"',
+        });
+        return false;
+      }
+
       setErrors({});
       return true;
     } catch (error) {
@@ -243,6 +276,9 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         email: email.trim(),
         adminType: role,
         nome: nomeCompleto,
+        whatsapp: whatsapp.e164,
+        whatsapp_verified: whatsapp.verified,
+        whatsapp_verification_required: !whatsapp.verified,
       };
 
       // Adicionar CPF se fornecido
@@ -352,6 +388,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       setCpf('');
       setRole('admin');
       setDocumentoObrigatorio(false);
+      setWhatsapp({ raw: '', e164: '', verified: false, mode: 'first_login' });
       setErrors({});
       
       onOpenChange(false);
@@ -506,18 +543,32 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         )}
       </div>
 
+      {/* WhatsApp + Validação Z-API */}
+      <WhatsAppValidationField
+        value={whatsapp}
+        onChange={setWhatsapp}
+        isMobile={isMobile}
+        error={errors.whatsapp}
+      />
+
       {/* Tipo de Conta */}
       <div>
         <Label htmlFor="role" className="text-foreground text-sm">
           Tipo de Conta <span className="text-destructive">*</span>
         </Label>
-        <Select value={role} onValueChange={setRole} disabled={loadingRoles}>
+        <Select
+          value={role}
+          onValueChange={setRole}
+          disabled={loadingRoles || roleTypes.length === 0}
+        >
           <SelectTrigger className={`bg-background border-input text-foreground ${isMobile ? 'h-11' : ''}`}>
             {loadingRoles ? (
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Carregando...</span>
+                <span>Carregando tipos de conta…</span>
               </div>
+            ) : roleTypes.length === 0 ? (
+              <span className="text-muted-foreground">Nenhum tipo disponível</span>
             ) : (
               <SelectValue />
             )}
@@ -533,6 +584,17 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
             ))}
           </SelectContent>
         </Select>
+        {!loadingRoles && rolesError && (
+          <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+            <AlertCircle className="h-3 w-3" />
+            {rolesError}
+          </p>
+        )}
+        {!loadingRoles && !rolesError && roleTypes.length === 0 && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Cadastre tipos em <span className="font-medium">Super Admin → Tipos de Conta</span>.
+          </p>
+        )}
       </div>
 
       {/* Aviso de Senha */}
