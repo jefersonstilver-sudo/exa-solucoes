@@ -346,8 +346,25 @@ const BuildingImageManager: React.FC<BuildingImageManagerProps> = ({
             <li>• Formatos aceitos: JPG, PNG, WebP</li>
             <li>• Recomendado: proporção 16:9 para melhor exibição</li>
             <li>• As imagens são salvas tanto individualmente quanto em array para compatibilidade</li>
+            <li>• Use <strong>Ajustar enquadramento</strong> para escolher qual parte da fachada aparece em destaque</li>
           </ul>
         </div>
+
+        {focusEditor && building && (
+          <ImageFocusEditor
+            open={focusEditor.open}
+            onOpenChange={(o) => setFocusEditor(o ? focusEditor : null)}
+            buildingId={building.id}
+            buildingName={building.nome}
+            imagePath={focusEditor.path}
+            slotIndex={focusEditor.slot}
+            initialFocus={getInitialFocus(focusEditor.slot)}
+            onSaved={() => {
+              setFocusEditor(null);
+              onImagesUpdate();
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
