@@ -64,6 +64,7 @@ interface BuildingBase {
   longitude: number | null;
   manual_latitude: number | null;
   manual_longitude: number | null;
+  status?: string | null;
 }
 
 // Função para encontrar building por nome similar ao device
