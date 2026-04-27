@@ -35,7 +35,8 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { UserConsoleDialog } from '@/components/admin/users/console/UserConsoleDialog';
-import type { ConsoleUser, UserRole } from '@/types/userConsoleTypes';
+import type { ConsoleUser } from '@/types/userConsoleTypes';
+import type { UserRole } from '@/types/userTypes';
 import CreateUserDialog from '@/components/admin/users/CreateUserDialog';
 import { toast } from 'sonner';
 
