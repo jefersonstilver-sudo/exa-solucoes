@@ -42,6 +42,7 @@ interface SortableImageProps {
   index: number;
   onRemove: (id: string) => void;
   onUploadClick: (index: number) => void;
+  onAdjustFocus?: (image: LocalImage, index: number) => void;
   disabled?: boolean;
 }
 
@@ -50,6 +51,7 @@ const SortableImage: React.FC<SortableImageProps> = ({
   index, 
   onRemove, 
   onUploadClick,
+  onAdjustFocus,
   disabled 
 }) => {
   const {
