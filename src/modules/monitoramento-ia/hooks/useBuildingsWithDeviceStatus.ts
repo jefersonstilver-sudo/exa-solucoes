@@ -195,10 +195,14 @@ export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
           const primaryProvider = Object.entries(providerCounts)
             .sort((a, b) => b[1] - a[1])[0]?.[0];
 
+          const buildingStatus = getBuildingStatusKind((building as any).status);
+
           return {
             ...building,
             devices: buildingDevices,
             status,
+            buildingStatus,
+            rawBuildingStatus: (building as any).status ?? null,
             onlineCount,
             offlineCount,
             totalDevices,
@@ -206,7 +210,8 @@ export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
             provider: primaryProvider,
           };
         })
-        .filter(b => b.totalDevices > 0); // Only buildings with devices
+        // Mantém prédios com devices OU em instalação (mesmo sem painéis ainda)
+        .filter(b => b.totalDevices > 0 || b.buildingStatus === 'instalacao');
 
       setBuildings(buildingsWithStatus);
     } catch (error) {
