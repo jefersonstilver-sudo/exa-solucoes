@@ -164,6 +164,8 @@ export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
               alias: d.name || 'Sem nome',
               status: d.status || 'unknown',
               provider: d.provider || undefined,
+              address: (d as any).address || null,
+              lastOnlineAt: (d as any).last_online_at || null,
             }));
 
           const onlineCount = buildingDevices.filter(d => d.status === 'online').length;
@@ -202,11 +204,25 @@ export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
 
           const buildingStatus = getBuildingStatusKind((building as any).status);
 
+          // Cor do pino: combina ciclo de vida + estado operacional
+          let pinKind: 'ativo' | 'instalacao' | 'inativo';
+          if (buildingStatus === 'instalacao') {
+            pinKind = 'instalacao';
+          } else if (buildingStatus === 'inativo' || buildingStatus === 'interno') {
+            pinKind = 'inativo';
+          } else if (status === 'online') {
+            pinKind = 'ativo';
+          } else {
+            // ativo com painéis offline / partial / sem painéis → vermelho
+            pinKind = 'inativo';
+          }
+
           return {
             ...building,
             devices: buildingDevices,
             status,
             buildingStatus,
+            pinKind,
             rawBuildingStatus: (building as any).status ?? null,
             onlineCount,
             offlineCount,
@@ -215,6 +231,8 @@ export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
             provider: primaryProvider,
           };
         })
+        // Esconde prédios INTERNOS do mapa público
+        .filter(b => b.buildingStatus !== 'interno')
         // Mantém prédios com devices OU em instalação (mesmo sem painéis ainda)
         .filter(b => b.totalDevices > 0 || b.buildingStatus === 'instalacao');
 
