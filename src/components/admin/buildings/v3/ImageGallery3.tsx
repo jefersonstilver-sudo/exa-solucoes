@@ -346,22 +346,7 @@ const ImageGallery3: React.FC<ImageGallery3Props> = ({
     </div>
   );
 };
-        </SortableContext>
-      </DndContext>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileInputChange}
-      />
-
-      <p className="text-xs text-gray-500 text-center">
-        Máximo 5MB por imagem • JPG, PNG, WebP
-      </p>
-    </div>
-  );
-};
+export default ImageGallery3;
 
 export default ImageGallery3;
