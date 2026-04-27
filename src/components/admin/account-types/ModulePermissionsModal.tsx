@@ -9,11 +9,13 @@ import {
   Globe, MessageSquare, Users, Bot, Bell, Sunrise, TrendingUp,
   Building2, Monitor, UserCheck, Megaphone, Scale, Package, Calendar,
   Video, Play, Type, Film, Mail, CalendarDays, Network, Home, Image,
-  Settings, Shield, BarChart3, RefreshCw, Landmark, UsersRound
+  Settings, Shield, BarChart3, RefreshCw, Landmark, UsersRound, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import { Badge } from '@/components/ui/badge';
+import DeleteRoleTypeDialog from '@/components/admin/account-types/DeleteRoleTypeDialog';
+import { useAuth } from '@/hooks/useAuth';
 
 interface RoleType {
   id: string;
@@ -116,9 +118,11 @@ const MODULE_SECTIONS = [
 
 export default function ModulePermissionsModal({ role, onClose }: ModulePermissionsModalProps) {
   const queryClient = useQueryClient();
+  const { userProfile } = useAuth();
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [localPermissions, setLocalPermissions] = useState<Record<string, boolean>>({});
   const [hasChanges, setHasChanges] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
 
   // Fetch current permissions for this role
   const { data: permissions = [], isLoading } = useQuery({
