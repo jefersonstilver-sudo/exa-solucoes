@@ -20,9 +20,13 @@ export interface BuildingStore {
   visualizacoes_mes: number;
   preco_base: number;
   imagem_principal: string;
+  imagem_principal_focus?: { x: number; y: number };
   imagem_2: string;
+  imagem_2_focus?: { x: number; y: number };
   imagem_3: string;
+  imagem_3_focus?: { x: number; y: number };
   imagem_4: string;
+  imagem_4_focus?: { x: number; y: number };
   imagens: string[];
   amenities: string[];
   caracteristicas: string[];
