@@ -24,6 +24,10 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building, mode = 
   const imageUrls = getBuildingImageUrls(building);
   const totalImages = imageUrls.length;
   const emInstalacao = isInstallationStatus(building.status);
+  const focus = (building as any).imagem_principal_focus || { x: 50, y: 50 };
+  const focusStyle: React.CSSProperties = {
+    objectPosition: `${focus.x}% ${focus.y}%`,
+  };
   
   // Calcular distância se houver localização do negócio
   const distance = businessLocation ? calculateDistanceToBuilding(businessLocation, building as any) : null;
@@ -34,7 +38,8 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building, mode = 
         <img
           src={primaryImage}
           alt={building.nome}
-          className={`w-full h-full object-cover object-center ${emInstalacao ? 'opacity-90 grayscale-[20%]' : ''}`}
+          style={focusStyle}
+          className={`w-full h-full object-cover ${emInstalacao ? 'opacity-90 grayscale-[20%]' : ''}`}
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-gray-100">

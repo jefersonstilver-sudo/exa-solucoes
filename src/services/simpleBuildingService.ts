@@ -17,6 +17,7 @@ export interface SimpleBuildingStore {
   visualizacoes_mes: number;
   preco_base: number;
   imagem_principal: string;
+  imagem_principal_focus?: { x: number; y: number };
   imagem_2: string;
   imagem_3: string;
   imagem_4: string;
@@ -89,6 +90,15 @@ export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => 
     }
 
     console.log('✅ [SIMPLE SERVICE] Prédios ativos encontrados:', buildings.length);
+
+    // 🛡️ AUDITORIA: prédios em instalação que aparecem na vitrine
+    const inInstallation = buildings.filter((b: any) =>
+      String(b.status || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('instala')
+    );
+    if (inInstallation.length > 0) {
+      console.warn(`🛠️ [AUDIT] ${inInstallation.length} prédio(s) em INSTALAÇÃO na loja pública (vitrine — sem compra):`,
+        inInstallation.map((b: any) => b.nome));
+    }
     
     // Log detalhado dos prédios
     buildings.forEach((building, index) => {
@@ -123,6 +133,7 @@ export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => 
       visualizacoes_mes: 0, // Not exposed publicly for security
       preco_base: building.preco_base || 280,
       imagem_principal: building.imagem_principal || '',
+      imagem_principal_focus: (building as any).imagem_principal_focus || { x: 50, y: 50 },
       imagem_2: '', // Not available in public data
       imagem_3: '', // Not available in public data
       imagem_4: '', // Not available in public data

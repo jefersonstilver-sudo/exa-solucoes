@@ -1525,9 +1525,13 @@ export type Database = {
           id: string
           image_urls: string[] | null
           imagem_2: string | null
+          imagem_2_focus: Json | null
           imagem_3: string | null
+          imagem_3_focus: Json | null
           imagem_4: string | null
+          imagem_4_focus: Json | null
           imagem_principal: string | null
+          imagem_principal_focus: Json | null
           imageurl: string | null
           latitude: number | null
           link_comercial: string | null
@@ -1596,9 +1600,13 @@ export type Database = {
           id?: string
           image_urls?: string[] | null
           imagem_2?: string | null
+          imagem_2_focus?: Json | null
           imagem_3?: string | null
+          imagem_3_focus?: Json | null
           imagem_4?: string | null
+          imagem_4_focus?: Json | null
           imagem_principal?: string | null
+          imagem_principal_focus?: Json | null
           imageurl?: string | null
           latitude?: number | null
           link_comercial?: string | null
@@ -1667,9 +1675,13 @@ export type Database = {
           id?: string
           image_urls?: string[] | null
           imagem_2?: string | null
+          imagem_2_focus?: Json | null
           imagem_3?: string | null
+          imagem_3_focus?: Json | null
           imagem_4?: string | null
+          imagem_4_focus?: Json | null
           imagem_principal?: string | null
+          imagem_principal_focus?: Json | null
           imageurl?: string | null
           latitude?: number | null
           link_comercial?: string | null
@@ -15617,6 +15629,7 @@ export type Database = {
           endereco: string
           id: string
           imagem_principal: string
+          imagem_principal_focus: Json
           latitude: number
           longitude: number
           nome: string

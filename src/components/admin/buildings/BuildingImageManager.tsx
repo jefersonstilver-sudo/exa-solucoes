@@ -9,9 +9,10 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Camera, Upload, X, Image as ImageIcon, Star } from 'lucide-react';
+import { Camera, Upload, X, Image as ImageIcon, Star, Move } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import ImageFocusEditor from './ImageFocusEditor';
 
 interface BuildingImageManagerProps {
   open: boolean;
@@ -28,7 +29,22 @@ const BuildingImageManager: React.FC<BuildingImageManagerProps> = ({
 }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [focusEditor, setFocusEditor] = useState<{ open: boolean; slot: number; path: string } | null>(null);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const focusFieldByIndex = ['imagem_principal_focus', 'imagem_2_focus', 'imagem_3_focus', 'imagem_4_focus'];
+  const getInitialFocus = (idx: number) => {
+    const field = focusFieldByIndex[idx];
+    return building?.[field] || { x: 50, y: 50 };
+  };
+  const getRawPath = (idx: number): string | null => {
+    if (!building) return null;
+    if (idx === 0) return building.imagem_principal || null;
+    if (idx === 1) return building.imagem_2 || null;
+    if (idx === 2) return building.imagem_3 || null;
+    if (idx === 3) return building.imagem_4 || null;
+    return null;
+  };
 
   // Construir array de imagens usando os novos campos individuais
   const imageSlots = Array.from({ length: 4 }, (_, index) => {
@@ -274,7 +290,7 @@ const BuildingImageManager: React.FC<BuildingImageManagerProps> = ({
                   )}
                 </div>
 
-                <div className="mt-3">
+                <div className="mt-3 space-y-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -285,6 +301,21 @@ const BuildingImageManager: React.FC<BuildingImageManagerProps> = ({
                     <Upload className="h-4 w-4 mr-2" />
                     {imageUrl ? 'Substituir' : 'Adicionar'} Imagem
                   </Button>
+                  {imageUrl && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        const path = getRawPath(index);
+                        if (path) setFocusEditor({ open: true, slot: index, path });
+                      }}
+                      disabled={uploading}
+                    >
+                      <Move className="h-4 w-4 mr-2" />
+                      Ajustar enquadramento
+                    </Button>
+                  )}
                 </div>
 
                 <input
@@ -315,8 +346,25 @@ const BuildingImageManager: React.FC<BuildingImageManagerProps> = ({
             <li>• Formatos aceitos: JPG, PNG, WebP</li>
             <li>• Recomendado: proporção 16:9 para melhor exibição</li>
             <li>• As imagens são salvas tanto individualmente quanto em array para compatibilidade</li>
+            <li>• Use <strong>Ajustar enquadramento</strong> para escolher qual parte da fachada aparece em destaque</li>
           </ul>
         </div>
+
+        {focusEditor && building && (
+          <ImageFocusEditor
+            open={focusEditor.open}
+            onOpenChange={(o) => setFocusEditor(o ? focusEditor : null)}
+            buildingId={building.id}
+            buildingName={building.nome}
+            imagePath={focusEditor.path}
+            slotIndex={focusEditor.slot}
+            initialFocus={getInitialFocus(focusEditor.slot)}
+            onSaved={() => {
+              setFocusEditor(null);
+              onImagesUpdate();
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

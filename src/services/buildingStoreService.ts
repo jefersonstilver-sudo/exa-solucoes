@@ -20,9 +20,13 @@ export interface BuildingStore {
   visualizacoes_mes: number;
   preco_base: number;
   imagem_principal: string;
+  imagem_principal_focus?: { x: number; y: number };
   imagem_2: string;
+  imagem_2_focus?: { x: number; y: number };
   imagem_3: string;
+  imagem_3_focus?: { x: number; y: number };
   imagem_4: string;
+  imagem_4_focus?: { x: number; y: number };
   imagens: string[];
   amenities: string[];
   caracteristicas: string[];
@@ -138,6 +142,7 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
       visualizacoes_mes: (building as any).visualizacoes_mes || 0,
       preco_base: Number(building.preco_base) || 280,
       imagem_principal: building.imagem_principal || '',
+      imagem_principal_focus: (building as any).imagem_principal_focus || { x: 50, y: 50 },
       imagem_2: '',
       imagem_3: '',
       imagem_4: '',
