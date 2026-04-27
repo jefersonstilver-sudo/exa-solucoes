@@ -124,7 +124,7 @@ export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
       // Fetch ALL devices (não apenas os com building_id)
       const { data: devicesData, error: devicesError } = await supabase
         .from('devices')
-        .select('id, name, status, building_id, provider');
+        .select('id, name, status, building_id, provider, address, last_online_at');
 
       if (devicesError) throw devicesError;
 
