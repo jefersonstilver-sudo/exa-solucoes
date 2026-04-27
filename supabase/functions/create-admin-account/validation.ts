@@ -137,7 +137,13 @@ export const validateRequest = async (req: Request): Promise<ValidationResult> =
         adminType: cleanAdminType,
         nome,
         cpf,
-        tipo_documento 
+        tipo_documento,
+        whatsapp: whatsappE164,
+        whatsapp_verified: !!whatsapp_verified,
+        whatsapp_verification_required:
+          whatsapp_verification_required === undefined
+            ? !whatsapp_verified
+            : !!whatsapp_verification_required,
       } 
     };
   } catch (error) {
