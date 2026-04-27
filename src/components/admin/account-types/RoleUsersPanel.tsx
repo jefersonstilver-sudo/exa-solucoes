@@ -87,7 +87,7 @@ export const RoleUsersPanel: React.FC<RoleUsersPanelProps> = ({ role, currentUse
       // Enrich with WhatsApp validation status from profiles (best-effort)
       const { data: profiles } = await (supabase as any)
         .from('profiles')
-        .select('id, whatsapp, whatsapp_verified, email_confirmed_at')
+        .select('id, whatsapp, whatsapp_verified')
         .in('id', ids);
       const profileMap = new Map<string, any>(
         (profiles || []).map((p: any) => [p.id, p])
