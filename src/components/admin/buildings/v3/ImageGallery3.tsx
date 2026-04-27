@@ -348,5 +348,3 @@ const ImageGallery3: React.FC<ImageGallery3Props> = ({
 };
 
 export default ImageGallery3;
-
-export default ImageGallery3;
