@@ -28,6 +28,9 @@ import { useEmailCheck } from '@/hooks/useEmailCheck';
 import ExistingUserAlert from './ExistingUserAlert';
 import EmailConfigWarning from './EmailConfigWarning';
 import { useIsMobile } from '@/hooks/use-mobile';
+import WhatsAppValidationField, {
+  type WhatsAppFieldValue,
+} from './WhatsAppValidationField';
 
 // Interface for role types from database
 interface RoleType {
