@@ -96,10 +96,18 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
   const [documentoObrigatorio, setDocumentoObrigatorio] = useState(false);
   const [roleTypes, setRoleTypes] = useState<RoleType[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(true);
+  const [rolesError, setRolesError] = useState<string | null>(null);
+  const [whatsapp, setWhatsapp] = useState<WhatsAppFieldValue>({
+    raw: '',
+    e164: '',
+    verified: false,
+    mode: 'first_login',
+  });
 
   // Fetch role types from database
   useEffect(() => {
     const fetchRoleTypes = async () => {
+      setRolesError(null);
       try {
         const { data, error } = await supabase
           .from('role_types')
