@@ -110,7 +110,20 @@ const SortableImage: React.FC<SortableImageProps> = ({
               className="w-full h-full object-cover"
             />
             {!disabled && (
-              <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
+              <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 hover:opacity-100">
+                {!image.isNew && image.originalPath && onAdjustFocus && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => onAdjustFocus(image, index)}
+                    className="h-8 px-3"
+                    title="Ajustar enquadramento"
+                  >
+                    <Move className="h-3 w-3 mr-1" />
+                    Ajustar
+                  </Button>
+                )}
                 <Button
                   type="button"
                   size="sm"
