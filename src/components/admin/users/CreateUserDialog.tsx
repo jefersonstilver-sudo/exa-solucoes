@@ -80,19 +80,21 @@ interface CreateUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  defaultRole?: string;
 }
 
 const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
   open,
   onOpenChange,
   onSuccess,
+  defaultRole,
 }) => {
   const isMobile = useIsMobile();
   const [email, setEmail] = useState('');
   const [nome, setNome] = useState('');
   const [sobrenome, setSobrenome] = useState('');
   const [cpf, setCpf] = useState('');
-  const [role, setRole] = useState('admin');
+  const [role, setRole] = useState(defaultRole || 'admin');
   const [documentoObrigatorio, setDocumentoObrigatorio] = useState(false);
   const [roleTypes, setRoleTypes] = useState<RoleType[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(true);
