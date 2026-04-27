@@ -41,7 +41,6 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ModulePermissionsModal from '@/components/admin/account-types/ModulePermissionsModal';
 import DeleteRoleTypeDialog from '@/components/admin/account-types/DeleteRoleTypeDialog';
 import RoleUsersPanel from '@/components/admin/account-types/RoleUsersPanel';
@@ -596,47 +595,30 @@ export default function TiposContaPage() {
               </Tabs>
             )}
 
-            {/* Actions - always visible with tooltip when blocked */}
+            {/* Actions - always visible; delete opens full impact dialog */}
             {selectedRole && (() => {
-              const isSelf = !!userProfile?.role && userProfile.role === selectedRole.key;
-              const deleteDisabled = selectedRole.is_system || isSelf;
-              const deleteReason = selectedRole.is_system
-                ? 'Tipos de sistema não podem ser excluídos.'
-                : isSelf
-                  ? 'Você não pode excluir o tipo que está usando.'
-                  : '';
               return (
-                <TooltipProvider>
-                  <div className="p-4 border-t bg-white/80 backdrop-blur-sm flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => cloneRole.mutate(selectedRole)}
-                      disabled={cloneRole.isPending}
-                    >
-                      <Copy className="h-4 w-4 mr-1.5" />
-                      Clonar
-                    </Button>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="flex-1">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => !deleteDisabled && setDeleteConfirm(selectedRole)}
-                            disabled={deleteDisabled}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1.5" />
-                            Excluir tipo
-                          </Button>
-                        </span>
-                      </TooltipTrigger>
-                      {deleteDisabled && <TooltipContent>{deleteReason}</TooltipContent>}
-                    </Tooltip>
-                  </div>
-                </TooltipProvider>
+                <div className="p-4 border-t bg-white/80 backdrop-blur-sm flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => cloneRole.mutate(selectedRole)}
+                    disabled={cloneRole.isPending}
+                  >
+                    <Copy className="h-4 w-4 mr-1.5" />
+                    Clonar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setDeleteConfirm(selectedRole)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1.5" />
+                    Excluir tipo
+                  </Button>
+                </div>
               );
             })()}
           </DialogContent>
@@ -908,48 +890,25 @@ export default function TiposContaPage() {
                       </div>
                     </div>
                     
-                    {(() => {
-                      const isSelf = !!userProfile?.role && userProfile.role === selectedRole.key;
-                      const deleteDisabled = selectedRole.is_system || isSelf;
-                      const deleteReason = selectedRole.is_system
-                        ? 'Tipos de sistema não podem ser excluídos.'
-                        : isSelf
-                          ? 'Você não pode excluir o tipo que está usando.'
-                          : '';
-                      return (
-                        <TooltipProvider>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => cloneRole.mutate(selectedRole)}
-                              disabled={cloneRole.isPending}
-                            >
-                              <Copy className="h-4 w-4 mr-1.5" />
-                              Clonar
-                            </Button>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span>
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => !deleteDisabled && setDeleteConfirm(selectedRole)}
-                                    disabled={deleteDisabled}
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-1.5" />
-                                    Excluir tipo
-                                  </Button>
-                                </span>
-                              </TooltipTrigger>
-                              {deleteDisabled && (
-                                <TooltipContent>{deleteReason}</TooltipContent>
-                              )}
-                            </Tooltip>
-                          </div>
-                        </TooltipProvider>
-                      );
-                    })()}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => cloneRole.mutate(selectedRole)}
+                        disabled={cloneRole.isPending}
+                      >
+                        <Copy className="h-4 w-4 mr-1.5" />
+                        Clonar
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setDeleteConfirm(selectedRole)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1.5" />
+                        Excluir tipo
+                      </Button>
+                    </div>
                   </div>
                   
                   {/* Can Make Orders Warning */}
