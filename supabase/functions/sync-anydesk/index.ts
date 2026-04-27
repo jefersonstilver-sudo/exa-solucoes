@@ -189,7 +189,7 @@ serve(async (req) => {
     
     console.log(`[SYNC-ANYDESK] 📋 Found ${clients.length} clients from AnyDesk API`);
 
-    let devicesUpdated = 0, devicesCreated = 0, statusChanges = 0, providerDetections = 0;
+    let devicesUpdated = 0, devicesCreated = 0, statusChanges = 0, providerDetections = 0, staleRecovered = 0;
     const errors: string[] = [];
 
     for (const client of clients) {
