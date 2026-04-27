@@ -112,7 +112,7 @@ export function useBuildingsWithDeviceStatus(eventsMap?: Map<string, number>) {
       // Fetch ALL buildings (com ou sem coordenadas - vamos usar endereço depois)
       const { data: buildingsData, error: buildingsError } = await supabase
         .from('buildings')
-        .select('id, nome, endereco, latitude, longitude, manual_latitude, manual_longitude');
+        .select('id, nome, endereco, latitude, longitude, manual_latitude, manual_longitude, status');
 
       if (buildingsError) throw buildingsError;
 
