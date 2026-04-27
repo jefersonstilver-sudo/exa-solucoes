@@ -266,14 +266,6 @@ export const RoleUsersPanel: React.FC<RoleUsersPanelProps> = ({ role, currentUse
                           Bloqueado
                         </Badge>
                       )}
-                      {!u.email_confirmed_at && (
-                        <Badge
-                          variant="outline"
-                          className="text-[9px] h-4 px-1 border-amber-300 text-amber-700"
-                        >
-                          Email não confirmado
-                        </Badge>
-                      )}
                       {u.whatsapp_verified ? (
                         <Badge
                           variant="outline"
