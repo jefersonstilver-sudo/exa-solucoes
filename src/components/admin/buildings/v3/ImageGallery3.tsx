@@ -1,8 +1,9 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, Upload, X, Star, Image as ImageIcon, GripVertical } from 'lucide-react';
+import { Camera, Upload, X, Star, Image as ImageIcon, GripVertical, Move } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import ImageFocusEditor from '../ImageFocusEditor';
 import {
   DndContext,
   closestCenter,
@@ -41,6 +42,7 @@ interface SortableImageProps {
   index: number;
   onRemove: (id: string) => void;
   onUploadClick: (index: number) => void;
+  onAdjustFocus?: (image: LocalImage, index: number) => void;
   disabled?: boolean;
 }
 
@@ -49,6 +51,7 @@ const SortableImage: React.FC<SortableImageProps> = ({
   index, 
   onRemove, 
   onUploadClick,
+  onAdjustFocus,
   disabled 
 }) => {
   const {
@@ -107,7 +110,20 @@ const SortableImage: React.FC<SortableImageProps> = ({
               className="w-full h-full object-cover"
             />
             {!disabled && (
-              <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
+              <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 hover:opacity-100">
+                {!image.isNew && image.originalPath && onAdjustFocus && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => onAdjustFocus(image, index)}
+                    className="h-8 px-3"
+                    title="Ajustar enquadramento"
+                  >
+                    <Move className="h-3 w-3 mr-1" />
+                    Ajustar
+                  </Button>
+                )}
                 <Button
                   type="button"
                   size="sm"
@@ -145,6 +161,42 @@ const ImageGallery3: React.FC<ImageGallery3Props> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [focusEditor, setFocusEditor] = useState<{
+    open: boolean;
+    slotIndex: number;
+    imagePath: string;
+    initialFocus: { x: number; y: number };
+  } | null>(null);
+
+  const focusFieldByIndex = ['imagem_principal_focus', 'imagem_2_focus', 'imagem_3_focus', 'imagem_4_focus'];
+
+  const handleAdjustFocus = useCallback(async (image: LocalImage, index: number) => {
+    if (!buildingId || !image.originalPath) {
+      toast.error('Salve o prédio primeiro para ajustar enquadramento');
+      return;
+    }
+    // Buscar o focus atual do banco
+    const field = focusFieldByIndex[index];
+    let initialFocus = { x: 50, y: 50 };
+    try {
+      const { data } = await supabase
+        .from('buildings')
+        .select(field)
+        .eq('id', buildingId)
+        .maybeSingle();
+      if (data && (data as any)[field]) {
+        initialFocus = (data as any)[field];
+      }
+    } catch (e) {
+      console.warn('Não foi possível carregar foco atual, usando centro', e);
+    }
+    setFocusEditor({
+      open: true,
+      slotIndex: index,
+      imagePath: image.originalPath,
+      initialFocus,
+    });
+  }, [buildingId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -259,6 +311,7 @@ const ImageGallery3: React.FC<ImageGallery3Props> = ({
                 index={index}
                 onRemove={handleRemove}
                 onUploadClick={handleUploadClick}
+                onAdjustFocus={handleAdjustFocus}
                 disabled={disabled}
               />
             ))}
@@ -275,8 +328,21 @@ const ImageGallery3: React.FC<ImageGallery3Props> = ({
       />
 
       <p className="text-xs text-gray-500 text-center">
-        Máximo 5MB por imagem • JPG, PNG, WebP
+        Máximo 5MB por imagem • JPG, PNG, WebP • Passe o mouse sobre a foto para ajustar enquadramento
       </p>
+
+      {focusEditor && buildingId && (
+        <ImageFocusEditor
+          open={focusEditor.open}
+          onOpenChange={(o) => setFocusEditor(o ? focusEditor : null)}
+          buildingId={buildingId}
+          buildingName=""
+          imagePath={focusEditor.imagePath}
+          slotIndex={focusEditor.slotIndex}
+          initialFocus={focusEditor.initialFocus}
+          onSaved={() => setFocusEditor(null)}
+        />
+      )}
     </div>
   );
 };
