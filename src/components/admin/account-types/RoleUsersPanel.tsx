@@ -60,10 +60,9 @@ interface RoleUserRow {
   departamento_id: string | null;
   data_criacao: string;
   is_blocked: boolean | null;
-  email_confirmed_at: string | null;
-  last_sign_in_at: string | null;
   whatsapp: string | null;
   whatsapp_verified: boolean | null;
+  email_confirmed_at: string | null;
 }
 
 export const RoleUsersPanel: React.FC<RoleUsersPanelProps> = ({ role, currentUserId }) => {
@@ -75,15 +74,40 @@ export const RoleUsersPanel: React.FC<RoleUsersPanelProps> = ({ role, currentUse
   const { data: users, isLoading } = useQuery({
     queryKey: ['users-by-role', role.key],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      // Base user info from public.users
+      const { data: baseUsers, error } = await (supabase as any)
         .from('users')
-        .select(
-          'id, email, nome, role, departamento_id, data_criacao, is_blocked, email_confirmed_at, last_sign_in_at, whatsapp, whatsapp_verified'
-        )
+        .select('id, email, nome, role, departamento_id, data_criacao, is_blocked')
         .eq('role', role.key)
         .order('data_criacao', { ascending: false });
       if (error) throw error;
-      return (data || []) as RoleUserRow[];
+      const ids = (baseUsers || []).map((u: any) => u.id);
+      if (ids.length === 0) return [] as RoleUserRow[];
+
+      // Enrich with WhatsApp validation status from profiles (best-effort)
+      const { data: profiles } = await (supabase as any)
+        .from('profiles')
+        .select('id, whatsapp, whatsapp_verified, email_confirmed_at')
+        .in('id', ids);
+      const profileMap = new Map<string, any>(
+        (profiles || []).map((p: any) => [p.id, p])
+      );
+
+      return (baseUsers || []).map((u: any) => {
+        const p = profileMap.get(u.id) || {};
+        return {
+          id: u.id,
+          email: u.email,
+          nome: u.nome ?? null,
+          role: u.role,
+          departamento_id: u.departamento_id ?? null,
+          data_criacao: u.data_criacao,
+          is_blocked: u.is_blocked ?? false,
+          whatsapp: p.whatsapp ?? null,
+          whatsapp_verified: p.whatsapp_verified ?? null,
+          email_confirmed_at: p.email_confirmed_at ?? null,
+        } as RoleUserRow;
+      });
     },
   });
 
