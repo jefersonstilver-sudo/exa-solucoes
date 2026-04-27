@@ -142,6 +142,7 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
       visualizacoes_mes: (building as any).visualizacoes_mes || 0,
       preco_base: Number(building.preco_base) || 280,
       imagem_principal: building.imagem_principal || '',
+      imagem_principal_focus: (building as any).imagem_principal_focus || { x: 50, y: 50 },
       imagem_2: '',
       imagem_3: '',
       imagem_4: '',
