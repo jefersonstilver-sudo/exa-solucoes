@@ -640,6 +640,9 @@ export const PaineisPage = () => {
           />
         )}
       </AnimatePresence>
+
+      {/* Saúde de Sincronia AnyDesk */}
+      <SyncHealthDialog open={syncHealthOpen} onOpenChange={setSyncHealthOpen} />
       </div>
     </div>
   );
