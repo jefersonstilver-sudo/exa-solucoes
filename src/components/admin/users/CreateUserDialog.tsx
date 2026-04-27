@@ -205,6 +205,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         nome: nome.trim(),
         sobrenome: sobrenome.trim(),
         cpf: cpf.replace(/\D/g, ''), // Remove formatação para validação
+        whatsapp: whatsapp.raw,
         role: role,
       };
 
@@ -215,6 +216,16 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       }
 
       createUserSchema.parse(formData);
+
+      // Se modo "validar agora" foi escolhido, exigir verificação completa
+      if (whatsapp.mode === 'now' && !whatsapp.verified) {
+        setErrors({
+          whatsapp:
+            'Conclua a validação do WhatsApp ou escolha "Validar no 1º login"',
+        });
+        return false;
+      }
+
       setErrors({});
       return true;
     } catch (error) {
