@@ -147,7 +147,6 @@ export const RoleUsersPanel: React.FC<RoleUsersPanelProps> = ({ role, currentUse
       departamento_id: u.departamento_id ?? undefined,
       data_criacao: u.data_criacao,
       email_confirmed_at: u.email_confirmed_at ?? undefined,
-      last_sign_in_at: u.last_sign_in_at ?? undefined,
       is_blocked: u.is_blocked ?? false,
     };
     setConsoleUser(consoleU);
