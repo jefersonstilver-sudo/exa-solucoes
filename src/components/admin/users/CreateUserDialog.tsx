@@ -122,13 +122,17 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         if (error) throw error;
         setRoleTypes(data || []);
         
-        // Set default role to first admin type
+        // Set default role: prefer prop defaultRole, then 'admin', then first
         if (data && data.length > 0) {
-          const adminRole = data.find(r => r.key === 'admin');
-          if (adminRole) {
-            setRole(adminRole.key);
+          if (defaultRole && data.find(r => r.key === defaultRole)) {
+            setRole(defaultRole);
           } else {
-            setRole(data[0].key);
+            const adminRole = data.find(r => r.key === 'admin');
+            if (adminRole) {
+              setRole(adminRole.key);
+            } else {
+              setRole(data[0].key);
+            }
           }
         }
       } catch (error: any) {
