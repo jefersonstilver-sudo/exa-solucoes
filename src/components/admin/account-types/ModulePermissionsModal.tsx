@@ -269,6 +269,7 @@ export default function ModulePermissionsModal({ role, onClose }: ModulePermissi
   };
 
   return (
+    <>
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
