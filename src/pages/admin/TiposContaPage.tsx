@@ -677,26 +677,14 @@ export default function TiposContaPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Confirmation */}
-        <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Excluir Tipo de Conta?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta ação não pode ser desfeita. O tipo "{deleteConfirm?.display_name}" será permanentemente removido.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => deleteConfirm && deleteRole.mutate(deleteConfirm.key)}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Excluir
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {/* Delete Confirmation - Mobile */}
+        <DeleteRoleTypeDialog
+          role={deleteConfirm}
+          currentUserRoleKey={currentUserRoleKey}
+          open={!!deleteConfirm}
+          onOpenChange={(open) => !open && setDeleteConfirm(null)}
+          onDeleted={() => setSelectedRole(null)}
+        />
 
         {/* Module Permissions Modal - Mobile */}
         {modulePermissionsRole && (
