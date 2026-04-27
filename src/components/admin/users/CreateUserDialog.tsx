@@ -543,18 +543,32 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         )}
       </div>
 
+      {/* WhatsApp + Validação Z-API */}
+      <WhatsAppValidationField
+        value={whatsapp}
+        onChange={setWhatsapp}
+        isMobile={isMobile}
+        error={errors.whatsapp}
+      />
+
       {/* Tipo de Conta */}
       <div>
         <Label htmlFor="role" className="text-foreground text-sm">
           Tipo de Conta <span className="text-destructive">*</span>
         </Label>
-        <Select value={role} onValueChange={setRole} disabled={loadingRoles}>
+        <Select
+          value={role}
+          onValueChange={setRole}
+          disabled={loadingRoles || roleTypes.length === 0}
+        >
           <SelectTrigger className={`bg-background border-input text-foreground ${isMobile ? 'h-11' : ''}`}>
             {loadingRoles ? (
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Carregando...</span>
+                <span>Carregando tipos de conta…</span>
               </div>
+            ) : roleTypes.length === 0 ? (
+              <span className="text-muted-foreground">Nenhum tipo disponível</span>
             ) : (
               <SelectValue />
             )}
@@ -570,6 +584,17 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
             ))}
           </SelectContent>
         </Select>
+        {!loadingRoles && rolesError && (
+          <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+            <AlertCircle className="h-3 w-3" />
+            {rolesError}
+          </p>
+        )}
+        {!loadingRoles && !rolesError && roleTypes.length === 0 && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Cadastre tipos em <span className="font-medium">Super Admin → Tipos de Conta</span>.
+          </p>
+        )}
       </div>
 
       {/* Aviso de Senha */}
