@@ -105,7 +105,7 @@ const GeradorRoteiros: React.FC = () => {
   const loadHistory = async () => {
     setHistLoad(true);
     const { data } = await supabase.from('roteiros_gerados' as any).select('*').order('created_at', { ascending: false });
-    if (data) setHistory(data as RoteiroRecord[]);
+    if (data) setHistory(data as unknown as RoteiroRecord[]);
     setHistLoad(false);
   };
 
