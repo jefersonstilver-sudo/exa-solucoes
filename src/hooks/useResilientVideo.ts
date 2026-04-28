@@ -46,9 +46,20 @@ export const useResilientVideo = ({
   const [hasError, setHasError] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const [useFallback, setUseFallback] = useState(false);
+  // Quando o overrideUrl (vindo do banco) falha de fato (objeto corrompido
+  // no Storage, ERR_ABORTED, MEDIA_ERR_*), descartamos ele e caímos em
+  // primaryUrl/fallbackUrl. Reseta automaticamente quando a URL muda.
+  const [overrideFailed, setOverrideFailed] = useState(false);
 
-  // override > fallback > primary
-  const activeSrc = overrideUrl || (useFallback && fallbackUrl ? fallbackUrl : primaryUrl);
+  // override (se ainda válido) > fallback > primary
+  const effectiveOverride = overrideFailed ? undefined : overrideUrl;
+  const activeSrc = effectiveOverride || (useFallback && fallbackUrl ? fallbackUrl : primaryUrl);
+
+  // Reset do flag quando admin troca a URL no painel
+  useEffect(() => {
+    setOverrideFailed(false);
+    retryCount.current = 0;
+  }, [overrideUrl]);
 
   // ── Recovery sem destruir buffer ─────────────────────────
   const attemptRecovery = useCallback((forceReload = false) => {
