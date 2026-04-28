@@ -137,7 +137,7 @@ const GeradorRoteiros: React.FC = () => {
 
       const { data, error } = await supabase.functions.invoke('generate-roteiro', {
         body: {
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-sonnet-4-5',
           max_tokens: 4096,
           system: SOFIA_PROMPT,
           messages: apiMessages,
