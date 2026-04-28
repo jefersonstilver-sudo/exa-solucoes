@@ -113,8 +113,9 @@ const HeroMobileLayout = ({ overrideUrl }: { overrideUrl?: string }) => {
             loop
             muted
             playsInline
-            onStalled={handleStalled}
-            onWaiting={handleWaiting}
+            preload="auto"
+            disablePictureInPicture
+            disableRemotePlayback
             onError={handleError}
             onTimeUpdate={handleTimeUpdate}
             onPlaying={handlePlaying}
@@ -239,26 +240,25 @@ const HeroSection = () => {
           className="relative mx-auto max-w-[320px] lg:max-w-[380px] z-[40] -mt-8 lg:-mt-12"
         >
           <div className="relative bg-black shadow-2xl rounded-lg overflow-hidden">
-            <div className="aspect-[9/16]">
-              {!loading && (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  onStalled={handleStalled}
-                  onWaiting={handleWaiting}
-                  onError={handleError}
-                  onTimeUpdate={handleTimeUpdate}
-                  onPlaying={handlePlaying}
-                  className="w-full h-full object-cover"
-                >
-                  <source src={currentSrc} type="video/mp4" />
-                </video>
-              )}
+            <div className="aspect-[9/16] relative">
+              {/* Vídeo SEMPRE montado — evita remount/redownload quando `loading` muda */}
+              <video
+                ref={videoRef}
+                src={currentSrc}
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
+                disablePictureInPicture
+                disableRemotePlayback
+                onError={handleError}
+                onTimeUpdate={handleTimeUpdate}
+                onPlaying={handlePlaying}
+                className="w-full h-full object-cover"
+              />
               {loading && (
-                <div className="w-full h-full flex items-center justify-center bg-exa-black">
+                <div className="absolute inset-0 flex items-center justify-center bg-exa-black z-10">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-exa-yellow" />
                 </div>
               )}
