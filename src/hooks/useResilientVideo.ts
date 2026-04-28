@@ -69,6 +69,15 @@ export const useResilientVideo = ({
     retryCount.current += 1;
 
     if (retryCount.current > MAX_RETRIES) {
+      // Se o que está falhando é o override do banco, descarta ele
+      // e tenta o primary/fallback hardcoded ANTES de declarar erro.
+      if (effectiveOverride) {
+        console.warn('[useResilientVideo] overrideUrl falhou após retries. Caindo no fallback hardcoded.');
+        setOverrideFailed(true);
+        retryCount.current = 0;
+        setIsRecovering(false);
+        return;
+      }
       setHasError(true);
       setIsRecovering(false);
       return;
@@ -76,8 +85,8 @@ export const useResilientVideo = ({
 
     setIsRecovering(true);
 
-    // Trocar para fallback no 2º retry (apenas se houver)
-    if (retryCount.current === 2 && fallbackUrl && !useFallback && !overrideUrl) {
+    // Trocar para fallback no 2º retry (apenas se houver e sem override ativo)
+    if (retryCount.current === 2 && fallbackUrl && !useFallback && !effectiveOverride) {
       setUseFallback(true);
       return;
     }
@@ -93,7 +102,7 @@ export const useResilientVideo = ({
     } catch {
       /* noop */
     }
-  }, [fallbackUrl, useFallback, overrideUrl]);
+  }, [fallbackUrl, useFallback, effectiveOverride]);
 
   // ── Event Handlers (passivos) ────────────────────────────
   // waiting/stalled são EVENTOS NORMAIS de buffering. Não fazemos nada
