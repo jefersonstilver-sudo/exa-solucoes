@@ -102,6 +102,7 @@ const MyCampaigns = lazy(() => import('./pages/advertiser/MyCampaigns'));
 const MyVideos = lazy(() => import('./pages/advertiser/MyVideos'));
 const AdvertiserSettings = lazy(() => import('./pages/advertiser/AdvertiserSettings'));
 const CampaignDetails = lazy(() => import('./pages/advertiser/CampaignDetails'));
+const GeradorRoteiros = lazy(() => import('./pages/advertiser/GeradorRoteiros'));
 const CompleteResponsiveLayout = lazy(() => import('@/components/advertiser/layout/CompleteResponsiveLayout'));
 
 // 🚨 SUBDOMAIN REDIRECT - Must run BEFORE React renders
@@ -529,6 +530,11 @@ const AppContent = () => {
             <Route path="faturas" element={
               <Suspense fallback={<GlobalLoadingPage message="Carregando faturas..." />}>
                 <AdvertiserInvoices />
+              </Suspense>
+            } />
+            <Route path="gerador-roteiros" element={
+              <Suspense fallback={<GlobalLoadingPage message="Carregando gerador de roteiros..." />}>
+                <GeradorRoteiros />
               </Suspense>
             } />
           </Route>
