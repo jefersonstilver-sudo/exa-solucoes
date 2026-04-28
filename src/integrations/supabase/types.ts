@@ -12248,6 +12248,48 @@ export type Database = {
         }
         Relationships: []
       }
+      roteiros_gerados: {
+        Row: {
+          blueprint_types: string[] | null
+          company_name: string
+          created_at: string
+          format: string
+          has_qr_code: boolean | null
+          id: string
+          roteiro_content: string
+          segment: string
+          tone: string | null
+          user_id: string
+          video_count: number
+        }
+        Insert: {
+          blueprint_types?: string[] | null
+          company_name: string
+          created_at?: string
+          format: string
+          has_qr_code?: boolean | null
+          id?: string
+          roteiro_content: string
+          segment: string
+          tone?: string | null
+          user_id: string
+          video_count: number
+        }
+        Update: {
+          blueprint_types?: string[] | null
+          company_name?: string
+          created_at?: string
+          format?: string
+          has_qr_code?: boolean | null
+          id?: string
+          roteiro_content?: string
+          segment?: string
+          tone?: string | null
+          user_id?: string
+          video_count?: number
+        }
+        Relationships: []
+      }
       session_navigation_history: {
         Row: {
           action_details: Json | null
