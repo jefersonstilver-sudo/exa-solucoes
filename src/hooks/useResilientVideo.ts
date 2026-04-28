@@ -22,8 +22,10 @@ interface UseResilientVideoReturn {
 }
 
 const MAX_RETRIES = 3;
-const STALL_TIMEOUT_MS = 3000;
-const FREEZE_TIMEOUT_MS = 5000;
+// Apenas freeze REAL (sem timeupdate por mais de 10s) é considerado problema.
+// Buffer/waiting normal NÃO dispara recovery.
+const FREEZE_TIMEOUT_MS = 10000;
+const VISIBILITY_DEBOUNCE_MS = 150;
 
 export const useResilientVideo = ({
   primaryUrl,
@@ -33,39 +35,29 @@ export const useResilientVideo = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Recovery state
+  // Recovery state em refs (evita re-renders)
   const retryCount = useRef(0);
-  const stallTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTimeUpdate = useRef(0);
-  const lastKnownTime = useRef(0);
   const freezeCheckTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const isVisibleRef = useRef(true);
   const userPausedRef = useRef(false);
+  const visibilityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [hasError, setHasError] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const [useFallback, setUseFallback] = useState(false);
 
-  // Determine active source: override > primary/fallback
+  // override > fallback > primary
   const activeSrc = overrideUrl || (useFallback && fallbackUrl ? fallbackUrl : primaryUrl);
 
-  // ── Helpers ──────────────────────────────────────────────
-  const clearStallTimer = useCallback(() => {
-    if (stallTimer.current) {
-      clearTimeout(stallTimer.current);
-      stallTimer.current = null;
-    }
-  }, []);
-
-  const attemptRecovery = useCallback(() => {
+  // ── Recovery sem destruir buffer ─────────────────────────
+  const attemptRecovery = useCallback((forceReload = false) => {
     const video = videoRef.current;
     if (!video) return;
 
     retryCount.current += 1;
-    console.log(`🔄 [RESILIENT_VIDEO] Recovery attempt ${retryCount.current}/${MAX_RETRIES}`);
 
     if (retryCount.current > MAX_RETRIES) {
-      console.error('❌ [RESILIENT_VIDEO] Max retries exceeded, showing error state');
       setHasError(true);
       setIsRecovering(false);
       return;
@@ -73,81 +65,54 @@ export const useResilientVideo = ({
 
     setIsRecovering(true);
 
-    // On 2nd retry, try fallback URL if available
+    // Trocar para fallback no 2º retry (apenas se houver)
     if (retryCount.current === 2 && fallbackUrl && !useFallback && !overrideUrl) {
-      console.log('🔀 [RESILIENT_VIDEO] Switching to fallback URL');
       setUseFallback(true);
-      // Source change will trigger re-render, load handled in effect
       return;
     }
 
-    // Standard recovery: reload + play
     try {
-      video.load();
-      const playPromise = video.play();
-      if (playPromise) {
-        playPromise.catch((err) => {
-          console.warn('⚠️ [RESILIENT_VIDEO] Play after recovery failed:', err.message);
-        });
+      // Recovery PADRÃO: só tenta play() — preserva buffer.
+      // load() apenas em erro grave (forceReload=true) ou troca de URL.
+      if (forceReload) {
+        video.load();
       }
-    } catch (err) {
-      console.warn('⚠️ [RESILIENT_VIDEO] Recovery load/play error:', err);
+      const p = video.play();
+      if (p) p.catch(() => {});
+    } catch {
+      /* noop */
     }
   }, [fallbackUrl, useFallback, overrideUrl]);
 
-  // ── Event Handlers ──────────────────────────────────────
+  // ── Event Handlers (passivos) ────────────────────────────
+  // waiting/stalled são EVENTOS NORMAIS de buffering. Não fazemos nada
+  // proativo aqui — o navegador retoma sozinho. O freeze-detector cuida
+  // de freezes reais e prolongados.
   const handleStalled = useCallback(() => {
-    console.warn('⏸ [RESILIENT_VIDEO] Video stalled');
-    clearStallTimer();
-    stallTimer.current = setTimeout(() => {
-      console.log('⏱ [RESILIENT_VIDEO] Stall timeout reached, attempting recovery');
-      attemptRecovery();
-    }, STALL_TIMEOUT_MS);
-  }, [attemptRecovery, clearStallTimer]);
+    // intencionalmente vazio
+  }, []);
 
   const handleWaiting = useCallback(() => {
-    clearStallTimer();
-    stallTimer.current = setTimeout(() => {
-      console.log('⏱ [RESILIENT_VIDEO] Waiting timeout reached, attempting recovery');
-      attemptRecovery();
-    }, STALL_TIMEOUT_MS);
-  }, [attemptRecovery, clearStallTimer]);
+    // intencionalmente vazio
+  }, []);
 
   const handleError = useCallback(() => {
-    const video = videoRef.current;
-    const errorCode = video?.error?.code;
-    const errorMsg = video?.error?.message;
-    console.error(`❌ [RESILIENT_VIDEO] Video error: code=${errorCode}, msg=${errorMsg}`);
+    // Erro real do elemento — força reload após pequeno delay.
+    setTimeout(() => attemptRecovery(true), 1500);
+  }, [attemptRecovery]);
 
-    clearStallTimer();
-
-    // Small delay before recovery to avoid tight loop
-    setTimeout(() => {
-      attemptRecovery();
-    }, 2000);
-  }, [attemptRecovery, clearStallTimer]);
-
+  // Atualiza apenas REF — sem setState, sem re-render por frame
   const handleTimeUpdate = useCallback(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
     lastTimeUpdate.current = Date.now();
-    lastKnownTime.current = video.currentTime;
-
-    // Reset recovery counters on healthy playback
-    if (retryCount.current > 0 || isRecovering) {
-      retryCount.current = 0;
-      setIsRecovering(false);
-      setHasError(false);
-    }
-  }, [isRecovering]);
+  }, []);
 
   const handlePlaying = useCallback(() => {
-    clearStallTimer();
     retryCount.current = 0;
-    setIsRecovering(false);
-    setHasError(false);
-  }, [clearStallTimer]);
+    // Só dispara setState quando realmente muda (evita re-renders ociosos)
+    setIsRecovering((prev) => (prev ? false : prev));
+    setHasError((prev) => (prev ? false : prev));
+    lastTimeUpdate.current = Date.now();
+  }, []);
 
   const manualRetry = useCallback(() => {
     retryCount.current = 0;
@@ -161,25 +126,28 @@ export const useResilientVideo = ({
     }
   }, []);
 
-  // ── Silent Freeze Detection ─────────────────────────────
+  // ── Freeze detector (apenas freeze REAL > 10s) ───────────
   useEffect(() => {
     freezeCheckTimer.current = setInterval(() => {
       const video = videoRef.current;
       if (!video || video.paused || video.ended || hasError) return;
+      // Pausa detecção quando aba não está visível (evita falso positivo
+      // de timer throttling do navegador)
+      if (typeof document !== 'undefined' && document.hidden) return;
+      if (lastTimeUpdate.current === 0) return;
 
       const elapsed = Date.now() - lastTimeUpdate.current;
-      if (elapsed > FREEZE_TIMEOUT_MS && lastTimeUpdate.current > 0) {
-        console.warn(`🧊 [RESILIENT_VIDEO] Silent freeze detected (${Math.round(elapsed / 1000)}s without timeupdate)`);
-        attemptRecovery();
+      if (elapsed > FREEZE_TIMEOUT_MS) {
+        attemptRecovery(false);
       }
-    }, 2000);
+    }, 3000);
 
     return () => {
       if (freezeCheckTimer.current) clearInterval(freezeCheckTimer.current);
     };
   }, [attemptRecovery, hasError]);
 
-  // ── Intersection Observer (pause/resume) ────────────────
+  // ── IntersectionObserver com debounce ────────────────────
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -191,42 +159,41 @@ export const useResilientVideo = ({
 
         isVisibleRef.current = entry.isIntersecting;
 
-        if (entry.isIntersecting) {
-          if (!userPausedRef.current && video.paused && !hasError) {
-            video.play().catch(() => {});
-          }
-        } else {
-          if (!video.paused) {
-            video.pause();
-          }
+        // Debounce evita play/pause em rajada durante scroll
+        if (visibilityDebounceRef.current) {
+          clearTimeout(visibilityDebounceRef.current);
         }
+        visibilityDebounceRef.current = setTimeout(() => {
+          const v = videoRef.current;
+          if (!v) return;
+          if (isVisibleRef.current) {
+            if (!userPausedRef.current && v.paused && !hasError) {
+              v.play().catch(() => {});
+            }
+          } else {
+            if (!v.paused) v.pause();
+          }
+        }, VISIBILITY_DEBOUNCE_MS);
       },
       { threshold: 0.15 }
     );
 
     observer.observe(container);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (visibilityDebounceRef.current) clearTimeout(visibilityDebounceRef.current);
+    };
   }, [hasError]);
 
   // ── Source change effect ─────────────────────────────────
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !activeSrc) return;
-
-    // When source changes (e.g. fallback), reload
     video.load();
     if (isVisibleRef.current) {
       video.play().catch(() => {});
     }
   }, [activeSrc]);
-
-  // ── Cleanup ──────────────────────────────────────────────
-  useEffect(() => {
-    return () => {
-      clearStallTimer();
-      if (freezeCheckTimer.current) clearInterval(freezeCheckTimer.current);
-    };
-  }, [clearStallTimer]);
 
   return {
     videoRef,

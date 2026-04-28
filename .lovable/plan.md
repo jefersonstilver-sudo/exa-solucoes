@@ -1,101 +1,63 @@
-# Tipos de Conta como Módulo Completo (com Usuários, Edição e Exclusão)
+# Vídeo da Home Pública – Diagnóstico e Plano de Correção
 
-Hoje a página tem dois problemas principais:
+## Diagnóstico
 
-1. **Botão "Excluir tipo" não aparece** porque o painel de detalhe só renderiza Clonar/Excluir quando `is_system === false`. Para os tipos do sistema (Super Admin, Admin, etc.) ele simplesmente some — sem nem dizer ao usuário o porquê.
-2. **Não há visão dos usuários daquele tipo**. O usuário só descobre quem usa o tipo no momento em que tenta excluir. Falta um módulo completo para gerenciar quem está vinculado.
+O arquivo de vídeo em si **não é o problema**: 480x848, H.264, 1.5 Mbps, 11 MB, ~59s, com `moov` no início (faststart correto) servido pelo Cloudflare/Supabase Storage. Isso deveria tocar suavíssimo até em conexões fracas.
 
-Além disso, o console aponta um aviso de chaves duplicadas no `AnimatePresence` do `ModulePermissionsModal` que apareceu depois da minha última edição.
+O travamento vem do **`useResilientVideo`** (hook usado em `HeroSection.tsx`) e da configuração do `<video>`. Pontos que causam stutter/freeze visível:
 
-## O que muda na experiência
+1. **Loop de "recovery" agressivo derrubando o vídeo**
+   - `handleWaiting` dispara em **toda** bufferização normal e agenda um `setTimeout` de 3s que chama `attemptRecovery()` → executa `video.load()` (= reinicia o vídeo do zero, perde buffer).
+   - Mesmo que o vídeo volte a tocar antes, `clearStallTimer` só roda se `onPlaying` disparar a tempo. Em conexões médias isso vira loop: waiting → load() → waiting → load()…
+   - O "freeze detector" roda a cada 2s comparando `Date.now() - lastTimeUpdate`. Se o usuário mudar de aba ou o navegador throttla timers, dispara `attemptRecovery()` falso-positivo e reinicia o vídeo.
 
-### 1. Painel direito vira "Módulo do Tipo de Conta" com 2 abas
+2. **`preload` ausente / metadata** – sem `preload="auto"` o navegador hesita em encher o buffer, agravando o waiting → recovery.
 
-Quando o super_admin clicar num tipo na lista esquerda, o painel direito passa a mostrar **abas no topo**:
+3. **Re-render do `<video>` quando `loading` vira false** desmonta/monta o elemento, forçando novo download (no desktop tem `{!loading && <video … />}`).
 
-- **Permissões** (já existe — mantida igual)
-- **Usuários** (nova) — lista todos os usuários com aquele `role`
+4. **IntersectionObserver pausa/retoma** sem debounce: ao rolar a página o vídeo pausa e tenta dar `play()` repetidamente, gerando micro-travadas.
 
-### 2. Aba "Usuários" — gestão completa
+5. **`onTimeUpdate` setando estado React** (`setIsRecovering(false)`/`setHasError(false)`) **a cada frame** (~24x/s) – causa re-render constante do componente Hero inteiro.
 
-Por usuário mostra:
-- Avatar/ícone, nome, email
-- Departamento (quando houver) e badge de status (Ativo / Bloqueado / Email não confirmado)
-- WhatsApp validado ou não (✅/⚠️) — usa colunas que adicionamos na migration anterior
-- Data de cadastro
+6. **Mobile sempre carrega o vídeo institucional horizontal** (institucional.mp4) cuja URL está hardcoded mas não foi otimizada da mesma forma; em tablets pequenos isso pode ser pesado.
 
-Para cada usuário, um botão de **menu de configurações** (ícone engrenagem) com opções:
-- **Abrir console** → abre o `UserConsoleDialog` existente (já tem Identidade, Acesso, Escopo, Auditoria, Danger Zone — tudo pronto)
-- **Trocar tipo de conta** → atalho que abre direto a aba "Acesso" do console
-- **Reenviar validação WhatsApp** (se não validado)
-- **Bloquear / Desbloquear**
-- **Excluir usuário** (com confirmação destrutiva — usa fluxo padrão do console)
+## Plano de Correção
 
-Acima da lista: campo de busca rápida (nome/email) + botão "Adicionar usuário com este tipo" que abre o `CreateUserDialog` já com o role pré-selecionado.
+### 1. Reescrever `useResilientVideo` com lógica passiva (não destrutiva)
+- Remover o `setTimeout` de recovery em `handleWaiting` (waiting é normal durante buffering).
+- Manter recovery **apenas** para `onError` real e para freeze de **>10s** (não 5s).
+- Não chamar `video.load()` em recovery padrão – tentar só `video.play()`. Usar `load()` somente quando trocar de URL (override/fallback).
+- **Throttle** do `handleTimeUpdate`: só atualizar `lastTimeUpdate.current` (ref, não state) e **não** chamar `setIsRecovering/setHasError` a cada frame – fazer isso apenas em `onPlaying`.
+- Pausar o freeze-detector quando `document.hidden` for true (evita falso positivo em troca de aba).
+- Debounce do IntersectionObserver (150ms) para evitar play/pause durante scroll.
 
-Quando vazio: estado limpo "Nenhum usuário usa este tipo ainda" + CTA para criar.
+### 2. Ajustes no `<video>` em `HeroSection.tsx` (desktop e mobile)
+- Adicionar `preload="auto"` para encher buffer.
+- Manter o elemento `<video>` **sempre montado** – em vez de `{!loading && <video/>}`, renderizar o `<video>` direto e só sobrepor o spinner quando `loading`. Evita remount + redownload.
+- Adicionar `disablePictureInPicture` e `disableRemotePlayback` (mais leve no Safari).
+- Usar atributo `src` direto em vez de `<source>` aninhado (mais rápido para iniciar no Chromium).
+- Mover os event listeners pesados (onTimeUpdate) para passar uma função estável memoizada.
 
-### 3. Botão "Excluir tipo" sempre visível, com explicação clara
+### 3. Otimização de recursos paralelos
+- O `LogoTicker` logo abaixo do hero roda animação CSS contínua sobre o mesmo viewport e pode competir por GPU. Garantir que use `will-change: transform` apenas enquanto visível (já parece OK) e baixar a frequência quando o vídeo estiver no viewport.
 
-No header do painel direito, o bloco de ações vira:
-
-- Sempre exibe **"Clonar"** (todos os tipos podem ser clonados como base para outros).
-- Sempre exibe **"Excluir tipo"** em vermelho — mas:
-  - Para `is_system = true`: botão fica **desabilitado** com tooltip *"Tipos de sistema não podem ser excluídos."*
-  - Para o tipo do próprio super_admin logado: desabilitado com tooltip *"Você não pode excluir o tipo que está usando."*
-  - Caso contrário: clicável → abre o `DeleteRoleTypeDialog` completo (já criado, com lista de impacto, contagem e confirmação digitada).
-
-### 4. Mesmo modelo no mobile
-
-A versão mobile (Sheet/Dialog) ganha as mesmas duas abas e o mesmo bloco de ações com os mesmos comportamentos.
-
-### 5. Botão "Excluir tipo" no `ModulePermissionsModal`
-
-Mantém o que já adicionei (Zona de Risco no rodapé). Apenas corrijo o bug de chave duplicada do `AnimatePresence`.
-
-## Correção do bug do console
-
-O warning *"two children with the same key"* foi introduzido quando passei a renderizar `<DeleteRoleTypeDialog>` como segundo filho do `<AnimatePresence>` raiz. Solução: mover o `DeleteRoleTypeDialog` para **fora** do `<AnimatePresence>` (fica como sibling no fragmento React), já que ele não precisa de animação de mount/unmount controlada por esse AnimatePresence.
+### 4. (Opcional, não obrigatório) gerar versão poster
+- Adicionar `poster` (primeiro frame estático) para evitar tela preta enquanto baixa.
 
 ## Detalhes técnicos
 
-**Novo componente:** `src/components/admin/account-types/RoleUsersPanel.tsx`
-- Props: `role: RoleType`, `currentUserId: string | null`, `onChanged?: () => void`.
-- Query `users-by-role` em `users` (`id, email, nome, role, is_blocked, email_confirmed_at, data_criacao, departamento_id, whatsapp_verified`) onde `role = role.key`. Ordena por `data_criacao desc`. Usa `useQuery`.
-- Query `departments` para mapear `departamento_id → name` quando aplicável.
-- Estado local: `searchTerm`, `consoleUser` (qual usuário está aberto no console), `createForRole` (boolean para abrir CreateUserDialog).
-- Renderiza:
-  - Toolbar: `Input` de busca + Botão "Adicionar usuário".
-  - Lista de cards com: nome, email, departamento, badges (status, WhatsApp), data, e `DropdownMenu` (engrenagem) com as ações descritas acima.
-  - Empty state e loading skeleton.
-- Reutiliza:
-  - `UserConsoleDialog` (`src/components/admin/users/console/UserConsoleDialog.tsx`) — já tem todo o fluxo de edição, bloqueio, mudança de role, danger zone.
-  - `CreateUserDialog` — abre passando role default = `role.key` (acrescentar prop opcional `defaultRole?: string` e usar no estado inicial; se já houver, reaproveita).
-- Após `onUserUpdated` do console: invalida `users-by-role`, `user-counts-by-role`, `users` para refletir trocas (se o role mudou, o usuário sai dessa lista automaticamente).
+Arquivos a editar:
+- `src/hooks/useResilientVideo.ts` — refatorar lógica de recovery (passos 1).
+- `src/components/exa/home/HeroSection.tsx` — ajustes de atributos e remoção do unmount condicional (passo 2).
 
-**Edição em `TiposContaPage.tsx`:**
-- Importar `Tabs, TabsList, TabsTrigger, TabsContent` do shadcn e `RoleUsersPanel`.
-- Adicionar estado `detailTab: 'permissions' | 'users'` (default `permissions`).
-- No header de detalhe (desktop e mobile), substituir o bloco condicional `!is_system` por sempre mostrar Clonar + Excluir, controlando `disabled` + `Tooltip` quando bloqueado (sistema ou auto-exclusão). Capturar `userProfile?.id` via `useAuth` para a checagem de auto.
-- Trocar a área `Permissions Grid` (linhas ~898-978 desktop e equivalente mobile) por:
-  - `<Tabs value={detailTab} onValueChange={...}>` com `TabsList` (Permissões / Usuários).
-  - `TabsContent value="permissions"`: o conteúdo atual (grupos colapsáveis).
-  - `TabsContent value="users"`: `<RoleUsersPanel role={selectedRole} currentUserId={userProfile?.id} />`.
-- Ajustar contagem do header já mostrada (`{userCounts[selectedRole.key] || 0} usuários`) para clicar e levar à aba "Usuários".
+Não serão alterados:
+- `useHomepageVideo.ts` (apenas busca URL do banco, sem impacto em performance).
+- URLs do vídeo, layout visual, textos, CTA, controles de mute/restart/fullscreen.
+- Mobile vs Desktop layout, `LogoTicker`, demais sections.
 
-**Edição em `CreateUserDialog.tsx`:**
-- Adicionar prop opcional `defaultRole?: string`. Se vier, usa como valor inicial de `role` no `useState` e seleciona no Select.
-
-**Edição em `ModulePermissionsModal.tsx` (bugfix):**
-- Mover o `<DeleteRoleTypeDialog>` para fora do `<AnimatePresence>` raiz, retornando um `<>` envolvendo `<AnimatePresence>{...}</AnimatePresence>` e o `<DeleteRoleTypeDialog />`. Resolve o warning de chave duplicada sem alterar comportamento.
-
-**Sem mudanças** em RLS, edge functions, fluxo de WhatsApp, criação de prédios, painéis ou qualquer outro módulo. Escopo restrito à página de Tipos de Conta + bugfix do modal.
-
-## Resultado
-
-- Clica num tipo → vê **permissões** e **usuários** no mesmo lugar, sem precisar trocar de página.
-- Cada usuário tem **engrenagem com ações** completas (editar, mudar tipo, bloquear, excluir).
-- Botão **"Excluir tipo"** sempre visível com motivo claro quando está bloqueado.
-- Sem mais warning de chave duplicada no console.
+Após aplicar, esperar:
+- Vídeo arranca em 1–2s, sem reinicializações.
+- Sem `[RESILIENT_VIDEO] Recovery attempt` no console em rede normal.
+- Scroll suave sem o vídeo "soluçar".
 
 Aprova para eu implementar?
