@@ -1,5 +1,8 @@
 // Edge Function: generate-roteiro
-// Proxy transparente para a Anthropic Messages API.
+// Proxy para a Anthropic Messages API.
+// IMPORTANTE: sempre retorna HTTP 200 para que o supabase-js
+// não trate a resposta como erro — erros da Anthropic ficam
+// dentro do JSON retornado em { error: { message } }.
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,60 +16,63 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+  if (!ANTHROPIC_API_KEY) {
+    console.error('[generate-roteiro] ANTHROPIC_API_KEY ausente');
+    return new Response(
+      JSON.stringify({ error: { message: 'Secret ANTHROPIC_API_KEY não configurado no Supabase. Vá em Project Settings > Edge Functions > Secrets e adicione a chave.' } }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
+  }
+
+  let body: Record<string, unknown>;
   try {
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!ANTHROPIC_API_KEY) {
-      console.error('[generate-roteiro] ANTHROPIC_API_KEY ausente');
-      return new Response(
-        JSON.stringify({ error: 'ANTHROPIC_API_KEY não configurada' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
+    body = await req.json();
+  } catch {
+    console.error('[generate-roteiro] body inválido');
+    return new Response(
+      JSON.stringify({ error: { message: 'Body inválido — envie JSON.' } }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
+  }
 
-    const body = await req.json().catch(() => null);
-    if (!body || typeof body !== 'object') {
-      console.error('[generate-roteiro] body inválido');
-      return new Response(
-        JSON.stringify({ error: 'Body JSON inválido' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
+  // Garante um modelo válido
+  const safeModel = (body.model as string) || 'claude-3-5-haiku-20241022';
+  const payload = { ...body, model: safeModel };
 
-    const requestedModel = (body as any).model;
-    console.log('[generate-roteiro] >>> chamando Anthropic | model:', requestedModel, '| max_tokens:', (body as any).max_tokens);
+  console.log('[generate-roteiro] >>> chamando Anthropic | model:', safeModel, '| max_tokens:', body.max_tokens);
 
-    const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+  try {
+    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     });
 
-    const responseText = await anthropicResponse.text();
+    const data = await anthropicRes.json();
 
-    if (!anthropicResponse.ok) {
-      console.error(
-        '[generate-roteiro] <<< Anthropic ERRO',
-        anthropicResponse.status,
-        '| body:',
-        responseText.substring(0, 1000),
+    if (!anthropicRes.ok) {
+      console.error('[generate-roteiro] <<< Anthropic ERRO', anthropicRes.status, JSON.stringify(data).substring(0, 500));
+      return new Response(
+        JSON.stringify({ error: { message: `Anthropic ${anthropicRes.status}: ${data?.error?.message || JSON.stringify(data)}` } }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
-    } else {
-      console.log('[generate-roteiro] <<< Anthropic OK', anthropicResponse.status);
     }
 
-    return new Response(responseText, {
-      status: anthropicResponse.status,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.log('[generate-roteiro] <<< Anthropic OK', anthropicRes.status);
+    return new Response(
+      JSON.stringify(data),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
   } catch (err) {
     console.error('[generate-roteiro] EXCEPTION:', err);
     return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : 'Erro desconhecido' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      JSON.stringify({ error: { message: err instanceof Error ? err.message : 'Erro interno na Edge Function.' } }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }
 });
