@@ -1,54 +1,47 @@
-# Correção definitiva do vídeo travado da home pública
+# Plano: Ativar Gerador de Roteiros Sofia
 
-## Causa raiz confirmada (via banco + browser real)
+## Status atual da auditoria
 
-O banco `configuracoes_sindico` tem este registro ativo:
+Tudo já está no lugar — só falta uma ação real: **deploy da Edge Function**.
 
-```
-video_homepage_url            = .../storage/v1/object/public/videos/homepage/1774238437862.mp4
-video_homepage_horizontal_url = .../storage/v1/object/public/videos/homepage-horizontal/1774238496065.mp4
-```
+| Item | Status |
+|---|---|
+| `supabase/functions/generate-roteiro/index.ts` | Existe, usa `Deno.serve`, CORS correto, proxy transparente para Anthropic |
+| Secret `ANTHROPIC_API_KEY` | Já configurado |
+| `src/pages/advertiser/GeradorRoteiros.tsx` | Existe, 423 linhas, tipagem OK (usa `as any` para `roteiros_gerados`) |
+| `src/assets/exa-logo.png` | Existe |
+| Rota `/anunciante/gerador-roteiros` | Registrada em `App.tsx` (linhas 105 e 535-537) |
+| Tabela `roteiros_gerados` | Migration aplicada anteriormente |
 
-Ambos retornam `net::ERR_ABORTED` ao tentar baixar (TUS upload corrompido / objeto incompleto no Storage). O hook `useResilientVideo` prioriza `overrideUrl` (banco) sobre o vídeo hardcoded que **funciona** (`arquivos exa/Videos Site/video vertical novo exa.mp4`, 11 MB, 200 OK), então o site fica eternamente "carregando" e nunca chega a tocar.
+## Ações a executar
 
-## Correção em duas frentes
+### 1. Deploy da Edge Function
+Fazer deploy de `generate-roteiro` via `supabase--deploy_edge_functions`. O arquivo já segue os padrões corretos (Deno.serve + corsHeaders + tratamento de erro com CORS em todas as respostas).
 
-### 1. Limpar o registro corrompido no banco (migração SQL)
+### 2. Smoke test da Edge Function
+Após o deploy, chamar `supabase--curl_edge_functions` com um payload mínimo de teste para confirmar que:
+- A função responde (não 404/500 de inicialização)
+- A Anthropic responde com 200 + bloco `content[0].text`
+- Em caso de erro, validar logs via `supabase--edge_function_logs`
 
-Migration que zera somente as duas URLs específicas que estão quebradas:
+### 3. Validação do componente (somente leitura)
+Sem alterações de UI/lógica/workflow (constraint do projeto). Confirmar:
+- Imports corretos (lucide-react, exaLogo, useAuth, supabase, sonner)
+- Uso de `supabase.functions.invoke('generate-roteiro', { body: { model, max_tokens, system, messages } })` ✓ confere
+- Leitura de `data?.content?.[0]?.text` ✓ confere
+- Auto-save em `roteiros_gerados` quando detecta `## ROTEIRO` ✓ confere
+- Imports não usados (`Film`, `Trash2`, `ChevronDown`, `exaLogo`): apenas warnings de lint, **não removerei** para respeitar a regra "não alterar nada que não seja o problema descrito"
 
-```sql
-UPDATE public.configuracoes_sindico
-SET video_homepage_url = NULL,
-    video_homepage_horizontal_url = NULL
-WHERE video_homepage_url LIKE '%/videos/homepage/1774238437862.mp4'
-   OR video_homepage_horizontal_url LIKE '%/videos/homepage-horizontal/1774238496065.mp4';
-```
-
-Efeito imediato: o site cai no fallback hardcoded (vídeo bom) e volta a tocar agora.
-
-### 2. Fallback automático no código (proteção definitiva)
-
-Refator no `src/hooks/useResilientVideo.ts`:
-
-- Adicionar estado `overrideFailed`. Se o `<video>` disparar `error` ou esgotar `MAX_RETRIES` enquanto a URL ativa for o `overrideUrl` do banco, marcamos `overrideFailed = true` e o `activeSrc` passa a ignorar o override e usar `primaryUrl` (e depois `fallbackUrl` se também falhar).
-- Resetar `overrideFailed` quando o `overrideUrl` mudar (admin re-upload pelo painel).
-- Quando o site ainda assim entrar em estado `hasError`, mostrar o overlay "tentar novamente" como hoje — mas isso só vai acontecer agora se TODAS as fontes (DB + primário + fallback) falharem.
-
-Resultado: nunca mais um upload ruim derruba o vídeo da home — o site se auto-recupera para o vídeo bom hardcoded.
+### 4. Reportar resultado
+Confirmar URL `/anunciante/gerador-roteiros` ativa, com link direto para os logs da Edge Function caso o usuário queira monitorar.
 
 ## Detalhes técnicos
 
-Arquivos:
-- **NEW** `supabase/migrations/<timestamp>_clear_broken_homepage_video_urls.sql` — UPDATE acima.
-- `src/hooks/useResilientVideo.ts` — adicionar `overrideFailed`, ajustar cálculo de `activeSrc`, marcar `overrideFailed` em `attemptRecovery` quando esgotar retries com `overrideUrl` ativo, e resetar via `useEffect([overrideUrl])`.
+- **Modelo Claude usado pelo frontend:** `claude-3-5-sonnet-20241022` (passado no body, a Edge Function só repassa)
+- **Auth:** A Edge Function não exige verificação extra de JWT no código (proxy puro). Se `verify_jwt = true` em `config.toml`, o gateway do Supabase já barra requests não autenticadas
+- **Sem migrations novas, sem novos secrets, sem alterações de UI**
 
-Não serão alterados:
-- `HeroSection.tsx`, `useHomepageVideo.ts`, painel admin de configurações, layout, demais sections.
-- A lógica do fluxo `primaryUrl → fallbackUrl` que já existe.
-
-Após aplicar:
-- Site público volta a tocar o vídeo institucional imediatamente.
-- Você poderá re-fazer o upload do vídeo via painel admin quando quiser, sem risco de quebrar a home novamente.
-
-Aprova?
+## O que NÃO será feito
+- Adicionar item no sidebar (`AdvertiserSidebarContent.tsx`) — usuário pediu para postergar até validar a página
+- Refatorar imports não usados — fora do escopo, viola a regra de não alterar o que não é problema
+- Alterar design, cores, layout ou copy do componente
