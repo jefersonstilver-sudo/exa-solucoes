@@ -270,8 +270,14 @@ const GeradorRoteiros: React.FC = () => {
   const [segCategory, setSegCategory] = useState('Todos');
   const resultRef = useRef<HTMLDivElement>(null);
 
+  const profileCompanyName =
+    (userProfile as any)?.company_name ||
+    (userProfile as any)?.nome ||
+    (userProfile as any)?.name ||
+    '';
+
   const [form, setForm] = useState<FormData>({
-    companyName: userProfile?.company_name || '',
+    companyName: profileCompanyName,
     segment: '',
     format: 'vertical',
     videoCount: 3,
@@ -283,10 +289,10 @@ const GeradorRoteiros: React.FC = () => {
 
   // Pré-preenche nome da empresa quando perfil carrega
   useEffect(() => {
-    if (userProfile?.company_name && !form.companyName) {
-      setForm(f => ({ ...f, companyName: userProfile.company_name || '' }));
+    if (profileCompanyName && !form.companyName) {
+      setForm(f => ({ ...f, companyName: profileCompanyName }));
     }
-  }, [userProfile?.company_name]);
+  }, [profileCompanyName]);
 
   // Carrega histórico quando aba muda
   useEffect(() => {
@@ -386,7 +392,7 @@ const GeradorRoteiros: React.FC = () => {
     setStep(0);
     setResult(null);
     setForm({
-      companyName: userProfile?.company_name || '',
+      companyName: profileCompanyName,
       segment: '',
       format: 'vertical',
       videoCount: 3,
