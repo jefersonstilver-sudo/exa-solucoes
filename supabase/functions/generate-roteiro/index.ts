@@ -1,9 +1,5 @@
 // Edge Function: generate-roteiro
 // Proxy transparente para a Anthropic Messages API.
-// O frontend (GeradorRoteiros.tsx) já monta o body completo:
-//   { model, max_tokens, messages: [{ role: 'user', content: prompt }] }
-// Esta função apenas adiciona a API key e repassa para a Anthropic,
-// retornando a resposta completa para que o frontend leia data?.content?.[0]?.text.
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,6 +16,7 @@ Deno.serve(async (req: Request) => {
   try {
     const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
     if (!ANTHROPIC_API_KEY) {
+      console.error('[generate-roteiro] ANTHROPIC_API_KEY ausente');
       return new Response(
         JSON.stringify({ error: 'ANTHROPIC_API_KEY não configurada' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -28,11 +25,15 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== 'object') {
+      console.error('[generate-roteiro] body inválido');
       return new Response(
         JSON.stringify({ error: 'Body JSON inválido' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
+
+    const requestedModel = (body as any).model;
+    console.log('[generate-roteiro] >>> chamando Anthropic | model:', requestedModel, '| max_tokens:', (body as any).max_tokens);
 
     const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -46,12 +47,23 @@ Deno.serve(async (req: Request) => {
 
     const responseText = await anthropicResponse.text();
 
+    if (!anthropicResponse.ok) {
+      console.error(
+        '[generate-roteiro] <<< Anthropic ERRO',
+        anthropicResponse.status,
+        '| body:',
+        responseText.substring(0, 1000),
+      );
+    } else {
+      console.log('[generate-roteiro] <<< Anthropic OK', anthropicResponse.status);
+    }
+
     return new Response(responseText, {
       status: anthropicResponse.status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    console.error('[generate-roteiro] erro:', err);
+    console.error('[generate-roteiro] EXCEPTION:', err);
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : 'Erro desconhecido' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },

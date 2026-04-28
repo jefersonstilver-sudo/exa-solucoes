@@ -1,47 +1,37 @@
-# Plano: Ativar Gerador de Roteiros Sofia
+# Corrigir erro da Edge Function `generate-roteiro`
 
-## Status atual da auditoria
+## O que está acontecendo
 
-Tudo já está no lugar — só falta uma ação real: **deploy da Edge Function**.
+O usuário enviou "blackbill" e a IA respondeu com erro `Edge Function returned a non-2xx status code`. Diagnóstico até aqui:
 
-| Item | Status |
-|---|---|
-| `supabase/functions/generate-roteiro/index.ts` | Existe, usa `Deno.serve`, CORS correto, proxy transparente para Anthropic |
-| Secret `ANTHROPIC_API_KEY` | Já configurado |
-| `src/pages/advertiser/GeradorRoteiros.tsx` | Existe, 423 linhas, tipagem OK (usa `as any` para `roteiros_gerados`) |
-| `src/assets/exa-logo.png` | Existe |
-| Rota `/anunciante/gerador-roteiros` | Registrada em `App.tsx` (linhas 105 e 535-537) |
-| Tabela `roteiros_gerados` | Migration aplicada anteriormente |
+- **Secret `ANTHROPIC_API_KEY`** existe ✓
+- **Função deployada** ✓ (logs mostram `booted`)
+- **`verify_jwt = true`** ✓ (usuário está logado, então o auth passa)
+- **Logs de erro:** vazios — a função não está logando nada quando a Anthropic retorna erro, então não conseguimos ver a causa real às cegas
 
-## Ações a executar
+A causa mais provável: o frontend envia `model: 'claude-3-5-sonnet-20241022'` (linha 140 de `GeradorRoteiros.tsx`). Esse modelo existe na Anthropic, mas se a chave configurada for de uma conta sem acesso a esse modelo, ou tiver expirado / sem créditos, a Anthropic retorna 4xx e o frontend só vê "non-2xx status".
 
-### 1. Deploy da Edge Function
-Fazer deploy de `generate-roteiro` via `supabase--deploy_edge_functions`. O arquivo já segue os padrões corretos (Deno.serve + corsHeaders + tratamento de erro com CORS em todas as respostas).
+## Plano de correção
 
-### 2. Smoke test da Edge Function
-Após o deploy, chamar `supabase--curl_edge_functions` com um payload mínimo de teste para confirmar que:
-- A função responde (não 404/500 de inicialização)
-- A Anthropic responde com 200 + bloco `content[0].text`
-- Em caso de erro, validar logs via `supabase--edge_function_logs`
+### 1. Adicionar logs detalhados na Edge Function
+Adicionar `console.log` antes/depois da chamada à Anthropic e logar o status + corpo de erro quando a resposta não for OK. Isso permite ver no painel de logs exatamente o que a Anthropic devolveu (modelo inválido, sem crédito, chave inválida, etc.).
 
-### 3. Validação do componente (somente leitura)
-Sem alterações de UI/lógica/workflow (constraint do projeto). Confirmar:
-- Imports corretos (lucide-react, exaLogo, useAuth, supabase, sonner)
-- Uso de `supabase.functions.invoke('generate-roteiro', { body: { model, max_tokens, system, messages } })` ✓ confere
-- Leitura de `data?.content?.[0]?.text` ✓ confere
-- Auto-save em `roteiros_gerados` quando detecta `## ROTEIRO` ✓ confere
-- Imports não usados (`Film`, `Trash2`, `ChevronDown`, `exaLogo`): apenas warnings de lint, **não removerei** para respeitar a regra "não alterar nada que não seja o problema descrito"
+### 2. Re-deploy + testar
+Após o deploy, pedir ao usuário para tentar novamente em `/anunciante/gerador-roteiros`. Ler os logs imediatamente para identificar a mensagem real da Anthropic.
 
-### 4. Reportar resultado
-Confirmar URL `/anunciante/gerador-roteiros` ativa, com link direto para os logs da Edge Function caso o usuário queira monitorar.
+### 3. Aplicar a correção conforme o erro real
+- Se for **modelo inválido** → atualizar para um modelo Claude válido vigente (ex: `claude-3-5-sonnet-latest` ou `claude-sonnet-4-5`)
+- Se for **chave inválida / 401** → pedir ao usuário para atualizar `ANTHROPIC_API_KEY`
+- Se for **sem crédito / 402** → orientar a recarregar a conta Anthropic
+- Se for **rate limit / 429** → adicionar mensagem amigável no frontend
 
-## Detalhes técnicos
+### 4. NÃO alterar
+- UI, layout, copy ou workflow do componente `GeradorRoteiros.tsx`
+- Outras edge functions
+- Migrations / tipos
 
-- **Modelo Claude usado pelo frontend:** `claude-3-5-sonnet-20241022` (passado no body, a Edge Function só repassa)
-- **Auth:** A Edge Function não exige verificação extra de JWT no código (proxy puro). Se `verify_jwt = true` em `config.toml`, o gateway do Supabase já barra requests não autenticadas
-- **Sem migrations novas, sem novos secrets, sem alterações de UI**
+## Arquivos afetados
+- `supabase/functions/generate-roteiro/index.ts` — apenas adicionar logs
+- (Possivelmente) ajuste do nome do modelo no frontend se o erro for "model not found"
 
-## O que NÃO será feito
-- Adicionar item no sidebar (`AdvertiserSidebarContent.tsx`) — usuário pediu para postergar até validar a página
-- Refatorar imports não usados — fora do escopo, viola a regra de não alterar o que não é problema
-- Alterar design, cores, layout ou copy do componente
+Posso prosseguir?
