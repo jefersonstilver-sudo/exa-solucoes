@@ -46,9 +46,20 @@ export const useResilientVideo = ({
   const [hasError, setHasError] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const [useFallback, setUseFallback] = useState(false);
+  // Quando o overrideUrl (vindo do banco) falha de fato (objeto corrompido
+  // no Storage, ERR_ABORTED, MEDIA_ERR_*), descartamos ele e caímos em
+  // primaryUrl/fallbackUrl. Reseta automaticamente quando a URL muda.
+  const [overrideFailed, setOverrideFailed] = useState(false);
 
-  // override > fallback > primary
-  const activeSrc = overrideUrl || (useFallback && fallbackUrl ? fallbackUrl : primaryUrl);
+  // override (se ainda válido) > fallback > primary
+  const effectiveOverride = overrideFailed ? undefined : overrideUrl;
+  const activeSrc = effectiveOverride || (useFallback && fallbackUrl ? fallbackUrl : primaryUrl);
+
+  // Reset do flag quando admin troca a URL no painel
+  useEffect(() => {
+    setOverrideFailed(false);
+    retryCount.current = 0;
+  }, [overrideUrl]);
 
   // ── Recovery sem destruir buffer ─────────────────────────
   const attemptRecovery = useCallback((forceReload = false) => {
@@ -58,6 +69,15 @@ export const useResilientVideo = ({
     retryCount.current += 1;
 
     if (retryCount.current > MAX_RETRIES) {
+      // Se o que está falhando é o override do banco, descarta ele
+      // e tenta o primary/fallback hardcoded ANTES de declarar erro.
+      if (effectiveOverride) {
+        console.warn('[useResilientVideo] overrideUrl falhou após retries. Caindo no fallback hardcoded.');
+        setOverrideFailed(true);
+        retryCount.current = 0;
+        setIsRecovering(false);
+        return;
+      }
       setHasError(true);
       setIsRecovering(false);
       return;
@@ -65,8 +85,8 @@ export const useResilientVideo = ({
 
     setIsRecovering(true);
 
-    // Trocar para fallback no 2º retry (apenas se houver)
-    if (retryCount.current === 2 && fallbackUrl && !useFallback && !overrideUrl) {
+    // Trocar para fallback no 2º retry (apenas se houver e sem override ativo)
+    if (retryCount.current === 2 && fallbackUrl && !useFallback && !effectiveOverride) {
       setUseFallback(true);
       return;
     }
@@ -82,7 +102,7 @@ export const useResilientVideo = ({
     } catch {
       /* noop */
     }
-  }, [fallbackUrl, useFallback, overrideUrl]);
+  }, [fallbackUrl, useFallback, effectiveOverride]);
 
   // ── Event Handlers (passivos) ────────────────────────────
   // waiting/stalled são EVENTOS NORMAIS de buffering. Não fazemos nada
@@ -118,6 +138,7 @@ export const useResilientVideo = ({
     retryCount.current = 0;
     setHasError(false);
     setUseFallback(false);
+    setOverrideFailed(false);
     setIsRecovering(true);
     const video = videoRef.current;
     if (video) {
