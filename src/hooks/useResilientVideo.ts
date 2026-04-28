@@ -138,6 +138,7 @@ export const useResilientVideo = ({
     retryCount.current = 0;
     setHasError(false);
     setUseFallback(false);
+    setOverrideFailed(false);
     setIsRecovering(true);
     const video = videoRef.current;
     if (video) {
