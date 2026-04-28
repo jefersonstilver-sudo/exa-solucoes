@@ -609,3 +609,6 @@ verify_jwt = false
 [[cron]]
 function_name = "task-daily-report"
 schedule = "* * * * *"
+
+[functions.generate-roteiro]
+verify_jwt = true
