@@ -244,7 +244,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
         });
       } catch (recorderError) {
         console.error('❌ MediaRecorder creation failed:', recorderError);
-        return createFallbackFile();
+        return createMetadataOnlyFile();
       }
 
       const chunks: Blob[] = [];
@@ -271,14 +271,14 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
             recorder.stop();
           } else {
             // Recorder never started or already stopped — use fallback
-            resolve(createFallbackFile());
+            resolve(createMetadataOnlyFile());
           }
         };
 
         recorder.onstop = () => {
           const blob = new Blob(chunks, { type: mimeType });
           if (blob.size === 0) {
-            resolve(createFallbackFile());
+            resolve(createMetadataOnlyFile());
             return;
           }
           
@@ -317,7 +317,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
         recorder.onerror = () => {
           cleanup();
           // Fallback instead of rejecting
-          resolve(createFallbackFile());
+          resolve(createMetadataOnlyFile());
         };
 
         // Safety timeout: 30s max processing time
@@ -338,7 +338,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
             console.error('❌ recorder.start() failed:', startErr);
             resolved = true;
             cleanup();
-            resolve(createFallbackFile());
+            resolve(createMetadataOnlyFile());
             return;
           }
           video.play();
@@ -370,7 +370,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
       });
     } catch (error) {
       console.error('❌ Trim failed entirely, using fallback:', error);
-      return createFallbackFile();
+      return createMetadataOnlyFile();
     }
   }, [state.startTime, state.duration, maxDuration, file]);
 
