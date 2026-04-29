@@ -613,12 +613,14 @@ export const uploadVideo = async (
     }
     
     // Tratamento específico para erros de segurança
+    let friendly = `Erro ao fazer upload do vídeo: ${errorMessage}`;
     if (errorMessage.includes('não permitido para pedidos não pagos')) {
-      toast.error('Upload bloqueado: apenas pedidos pagos podem enviar vídeos');
-    } else {
-      toast.error(`Erro ao fazer upload do vídeo: ${errorMessage}`);
+      friendly = 'Upload bloqueado: apenas pedidos pagos/contratados podem enviar vídeos';
+    } else if (errorMessage.includes('pedido_videos_slot_position_check')) {
+      friendly = `Slot ${slotPosition} indisponível. Atualize a página e tente novamente.`;
     }
-    
-    return { success: false };
+    toast.error(friendly);
+
+    return { success: false, error: friendly };
   }
 };
