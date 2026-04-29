@@ -34,11 +34,14 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
     state,
     endTime,
     selectedDuration,
+    windowSize,
     setStartTime,
     togglePlay,
     seekPreview,
     trimVideo,
   } = useVideoTrimmer({ file, maxDuration });
+
+  const isMobile = isMobileDevice();
 
   const handleTrim = async () => {
     try {
