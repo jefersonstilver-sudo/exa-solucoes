@@ -163,20 +163,42 @@ serve(async (req) => {
       console.log('⏰ [UPLOAD_EXTERNAL_API] Sem campanha - usando programação padrão 24/7');
     }
 
-    // 4. Verificar se é o primeiro vídeo aprovado deste pedido
-    const { count: approvedCount } = await supabase
-      .from('pedido_videos')
-      .select('*', { count: 'exact', head: true })
-      .eq('pedido_id', pedidoVideo.pedido_id)
-      .eq('approval_status', 'approved')
-      .neq('id', pedido_video_id);
+    // 4. Determinar flag `ativo` para a API externa.
+    // Regra correta (substitui antiga "isFirstApproved"):
+    //  a) Se este slot já é o `selected_for_display` no banco -> ativo: true
+    //  b) Senão, se NÃO houver outro slot do mesmo pedido com `selected_for_display=true && is_active=true` -> ativo: true
+    //  c) Caso contrário -> ativo: false (já existe principal vigente)
+    // Agendamentos são tratados pela função sync-video-status-to-aws no toggle de troca de principal.
+    const thisSlotIsCurrent =
+      (pedidoVideo as any).selected_for_display === true &&
+      (pedidoVideo as any).is_active === true;
 
-    const isFirstApproved = (approvedCount ?? 0) === 0;
-    console.log('🎯 [UPLOAD_EXTERNAL_API] Verificação primeiro aprovado:', {
+    let activeFlag = thisSlotIsCurrent;
+    let otherCurrentSlot: { id: string; video_id: string } | null = null;
+
+    if (!activeFlag) {
+      const { data: othersDisplayed } = await supabase
+        .from('pedido_videos')
+        .select('id, video_id')
+        .eq('pedido_id', pedidoVideo.pedido_id)
+        .eq('selected_for_display', true)
+        .eq('is_active', true)
+        .neq('id', pedido_video_id)
+        .limit(1);
+
+      if (!othersDisplayed || othersDisplayed.length === 0) {
+        // Nenhum outro vídeo principal → este vira o principal
+        activeFlag = true;
+      } else {
+        otherCurrentSlot = othersDisplayed[0] as any;
+      }
+    }
+
+    console.log('🎯 [UPLOAD_EXTERNAL_API] Decisão de flag ativo:', {
       pedido_id: pedidoVideo.pedido_id,
-      outros_aprovados: approvedCount,
-      isFirstApproved,
-      ativo: isFirstApproved
+      thisSlotIsCurrent,
+      otherCurrentSlot,
+      activeFlag
     });
 
     // 5. Preparar metadados
@@ -203,7 +225,7 @@ serve(async (req) => {
     const metadataJson = {
       [storageFileName]: {
         ...metadata,
-        ativo: isFirstApproved,
+        ativo: activeFlag,
         status: 'new',
         ...(isVertical && { isPlus: true })
       }
