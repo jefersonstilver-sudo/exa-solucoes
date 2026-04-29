@@ -4,17 +4,11 @@ import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useHomepageVideo } from '@/hooks/useHomepageVideo';
 import { useResilientVideo } from '@/hooks/useResilientVideo';
 import { Volume2, VolumeX, RotateCcw, Maximize, Minimize, RefreshCw } from 'lucide-react';
+import { HOMEPAGE_VIDEOS, HOMEPAGE_VIDEO_BREAKPOINT } from '@/config/homepageVideos';
 
-// ── Public URLs (no expiration) ──────────────────────────
-const MOBILE_VIDEO_URL =
-  'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos%20exa/Videos%20Site/institucional.mp4';
-
-const DESKTOP_VIDEO_URL =
-  'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos%20exa/Videos%20Site/video%20vertical%20novo%20exa.mp4';
-
-// Signed URL kept only as fallback for desktop
-const DESKTOP_FALLBACK_URL =
-  'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos%20exa/Videos%20Site/video%20vertical%20novo%20exa.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcyBleGEvVmlkZW9zIFNpdGUvdmlkZW8gdmVydGljYWwgbm92byBleGEubXA0IiwiaWF0IjoxNzY0MjcxMTA2LCJleHAiOjE3OTU4MDcxMDZ9.p7LRGVwfDFMfQZIB-60RiMiqlYSJD6-gDQz4HlnZYLk';
+// ── URLs centralizadas (ver src/config/homepageVideos.ts) ──
+const MOBILE_VIDEO_URL = HOMEPAGE_VIDEOS.horizontal;
+const DESKTOP_VIDEO_URL = HOMEPAGE_VIDEOS.vertical;
 
 // ── Retry overlay ────────────────────────────────────────
 const VideoRetryOverlay = ({ onRetry }: { onRetry: () => void }) => (
@@ -184,13 +178,12 @@ const HeroSection = () => {
     manualRetry,
   } = useResilientVideo({
     primaryUrl: DESKTOP_VIDEO_URL,
-    fallbackUrl: DESKTOP_FALLBACK_URL,
     overrideUrl: dbOverride,
   });
 
   // Detect tablet/mobile
   useEffect(() => {
-    const checkSize = () => setIsTabletOrMobile(window.innerWidth < 1024);
+    const checkSize = () => setIsTabletOrMobile(window.innerWidth < HOMEPAGE_VIDEO_BREAKPOINT);
     checkSize();
     window.addEventListener('resize', checkSize);
     return () => window.removeEventListener('resize', checkSize);
