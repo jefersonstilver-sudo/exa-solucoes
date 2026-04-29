@@ -106,8 +106,8 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
       );
 
       if (!result?.success) {
-        // Não mostramos toast aqui — uploadVideo já tratou. Apenas devolvemos falha.
-        return { success: false, error: 'Falha no upload do vídeo' };
+        // uploadVideo já tratou o toast — apenas devolve a falha com a causa real
+        return { success: false, error: (result as any)?.error || 'Falha no upload do vídeo' };
       }
 
       // Confirmar que o slot realmente recebeu o vídeo antes de declarar sucesso
