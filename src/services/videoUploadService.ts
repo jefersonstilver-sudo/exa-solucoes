@@ -366,14 +366,26 @@ export const uploadVideo = async (
 
     if (slotError) {
       console.error('❌ Erro ao gerenciar slot:', slotError);
-      
-      // Verificar se é erro de segurança do trigger
-      if (slotError.message?.includes('não permitido para pedidos não pagos')) {
-        toast.error('Upload não permitido: pedido não foi pago');
-        return { success: false };
+
+      // Mapear erros conhecidos para mensagens claras
+      const raw = slotError.message || '';
+      let friendly = `Erro ao salvar no slot: ${raw}`;
+
+      if (raw.includes('não permitido para pedidos não pagos')) {
+        friendly = 'Upload não permitido: pedido ainda não foi pago/contratado.';
+      } else if (raw.includes('pedido_videos_slot_position_check')) {
+        friendly = `Slot ${slotPosition} indisponível para este pedido. Atualize a página e tente novamente.`;
+      } else if (raw.includes('unique_slot_per_pedido')) {
+        friendly = `Já existe outro vídeo no slot ${slotPosition}. Remova o vídeo atual antes de enviar outro.`;
+      } else if (raw.toLowerCase().includes('row-level security') || raw.toLowerCase().includes('rls')) {
+        friendly = 'Permissão negada para vincular o vídeo ao pedido. Faça login novamente.';
       }
-      
-      throw new Error(`Erro ao salvar no slot: ${slotError.message}`);
+
+      // Rollback: remover storage e registro de videos órfãos
+      await rollbackOrphanUpload(videoUrl, videoRecord.id);
+
+      toast.error(friendly);
+      return { success: false, error: friendly };
     }
 
     console.log('✅ Slot salvo/atualizado com sucesso');
