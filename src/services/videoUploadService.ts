@@ -105,6 +105,14 @@ export const uploadVideo = async (
   try {
     console.log(`🚀 Iniciando upload para slot ${slotPosition}:`, file.name);
 
+    // 0) VALIDAÇÃO ESTRUTURAL DE SLOT — antes de gastar banda
+    const slotCheck = await validateSlotCapacity(orderId, slotPosition);
+    if (!slotCheck.ok) {
+      console.warn('🚫 [VideoUpload] Slot rejeitado antes do upload:', slotCheck.reason);
+      toast.error(slotCheck.reason || 'Slot inválido para este pedido');
+      return { success: false, error: slotCheck.reason };
+    }
+
     // VALIDAÇÃO DE SEGURANÇA OTIMIZADA COM CACHE
     onProgress?.(5);
     const securityStart = uploadSession.logPhaseStart('SECURITY', { 
@@ -136,9 +144,10 @@ export const uploadVideo = async (
     }
     
     if (!securityValidation?.canUpload) {
-      uploadSession.logPhaseFailure('SECURITY', securityStart, securityValidation?.reason || 'Validação negada');
-      toast.error(`Upload não permitido: ${securityValidation?.reason || 'Erro de validação'}`);
-      return { success: false };
+      const reason = securityValidation?.reason || 'Erro de validação';
+      uploadSession.logPhaseFailure('SECURITY', securityStart, reason);
+      toast.error(`Upload não permitido: ${reason}`);
+      return { success: false, error: reason };
     }
 
     uploadSession.logPhaseSuccess('SECURITY', securityStart, { cached: !!uploadCache.get(securityCacheKey) });
