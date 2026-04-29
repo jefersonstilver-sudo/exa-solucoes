@@ -217,10 +217,9 @@ const tusUploadToSupabase = async (
 ): Promise<string> => {
   const tus = await import('tus-js-client');
 
-  // URL do projeto e token de acesso da sessão
-  // Acessamos via cliente exposto (mesmo projeto)
-  const SUPABASE_URL = (supabase as any).supabaseUrl as string;
-  const ANON_KEY = (supabase as any).supabaseKey as string;
+  // URL e chave públicas (mesmas do client) — usadas para o endpoint TUS do Storage
+  const SUPABASE_URL = 'https://aakenoljsycyrcrchgxj.supabase.co';
+  const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFha2Vub2xqc3ljeXJjcmNoZ3hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5MDM3NTUsImV4cCI6MjA2MjQ3OTc1NX0.wEKVfJKfQiybyne0yn0dOUwbujb_WXkZHAzlyfHb0lk';
 
   const { data: sessionData } = await supabase.auth.getSession();
   const accessToken = sessionData?.session?.access_token;
