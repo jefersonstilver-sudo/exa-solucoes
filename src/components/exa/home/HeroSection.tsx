@@ -183,7 +183,7 @@ const HeroSection = () => {
 
   // Detect tablet/mobile
   useEffect(() => {
-    const checkSize = () => setIsTabletOrMobile(window.innerWidth < 1024);
+    const checkSize = () => setIsTabletOrMobile(window.innerWidth < HOMEPAGE_VIDEO_BREAKPOINT);
     checkSize();
     window.addEventListener('resize', checkSize);
     return () => window.removeEventListener('resize', checkSize);
