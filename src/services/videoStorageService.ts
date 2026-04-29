@@ -145,103 +145,127 @@ export const validateVideoFile = (file: File, tipo: 'horizontal' | 'vertical' = 
   });
 };
 
+/**
+ * Upload de vídeo para o Storage com progresso REAL via TUS (resumable).
+ * Cai em fallback para o upload padrão somente se TUS falhar na inicialização.
+ *
+ * onProgress recebe valores de 0–100 baseados em bytes realmente enviados.
+ */
 export const uploadVideoToStorage = async (
-  file: File, 
+  file: File,
   userId: string,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
+  console.log('🚀 [Storage] Iniciando upload TUS:', file.name, `${(file.size / 1024 / 1024).toFixed(2)}MB`);
+
+  // Nome final no storage
+  const timestamp = Date.now();
+  const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const fileName = `${timestamp}_${sanitizedName}`;
+  const filePath = `${userId}/${fileName}`;
+
+  // Tenta TUS primeiro (progresso real). Fallback: supabase.storage.upload.
   try {
-    console.log('🚀 Iniciando upload do vídeo para storage:', file.name);
-    console.log('📦 Tamanho do arquivo:', file.size, 'bytes');
-    
-    // Simular progresso inicial
-    if (onProgress) onProgress(10);
-    
-    // Gerar nome único para o arquivo
-    const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop() || 'mp4';
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const fileName = `${timestamp}_${sanitizedName}`;
-    const filePath = `${userId}/${fileName}`;
-    
-    console.log('📁 Caminho do arquivo:', filePath);
-    
-    if (onProgress) onProgress(20);
-    
-    // Tentar upload direto (removendo dependência do teste de conectividade que estava falhando)
-    console.log('⬆️ Iniciando upload para bucket videos...');
-    
-    const { data, error } = await supabase.storage
-      .from('videos')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-        contentType: file.type
-      });
-    
-    if (error) {
-      console.error('❌ Erro detalhado no upload:', error);
-      
-      // Tratar erros específicos com mensagens mais claras
-      if (error.message.includes('Bucket not found')) {
-        throw new Error('Storage não configurado. Contate o suporte técnico.');
-      } else if (error.message.includes('Row level security')) {
-        throw new Error('Erro de permissão. Faça login novamente.');
-      } else if (error.message.includes('File size')) {
-        throw new Error('Arquivo muito grande. Máximo 100MB.');
-      } else if (error.message.includes('duplicate')) {
-        throw new Error('Arquivo já existe. Tente novamente.');
-      } else {
-        throw new Error(`Falha no upload: ${error.message}`);
-      }
-    }
-    
-    console.log('✅ Upload realizado com sucesso:', data);
-    
-    if (onProgress) onProgress(80);
-    
-    // Obter URL pública
-    const { data: urlData } = supabase.storage
-      .from('videos')
-      .getPublicUrl(filePath);
-    
-    if (!urlData || !urlData.publicUrl) {
-      throw new Error('Erro ao gerar URL pública do vídeo');
-    }
-    
-    console.log('🔗 URL pública gerada:', urlData.publicUrl);
-    
-    if (onProgress) onProgress(95);
-    
-    // Validar URL com timeout reduzido e sem falhar se não conseguir
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 segundos timeout
-      
-      const response = await fetch(urlData.publicUrl, { 
-        method: 'HEAD',
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (response.ok) {
-        console.log('✅ URL validada com sucesso');
-      } else {
-        console.warn('⚠️ URL pode não estar acessível ainda, mas continuando...');
-      }
-    } catch (urlError) {
-      console.warn('⚠️ Não foi possível validar URL (não crítico):', urlError);
-      // Não falhar aqui, a URL provavelmente está válida
-    }
-    
-    if (onProgress) onProgress(100);
-    
-    return urlData.publicUrl;
-  } catch (error) {
-    console.error('💥 Erro no upload para storage:', error);
-    throw error;
+    const url = await tusUploadToSupabase(file, filePath, onProgress);
+    console.log('✅ [Storage] Upload TUS concluído:', url);
+    return url;
+  } catch (tusError: any) {
+    console.warn('⚠️ [Storage] TUS falhou, caindo em fallback:', tusError?.message || tusError);
   }
+
+  // Fallback: upload padrão (sem progresso real, mas garante envio)
+  if (onProgress) onProgress(5);
+  const { data, error } = await supabase.storage
+    .from('videos')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type || 'video/mp4',
+    });
+
+  if (error) {
+    console.error('❌ [Storage] Fallback upload falhou:', error);
+    if (error.message.includes('Bucket not found')) {
+      throw new Error('Storage não configurado. Contate o suporte técnico.');
+    } else if (error.message.includes('Row level security')) {
+      throw new Error('Erro de permissão. Faça login novamente.');
+    } else if (error.message.includes('File size')) {
+      throw new Error('Arquivo muito grande. Máximo 100MB.');
+    } else if (error.message.includes('duplicate')) {
+      throw new Error('Arquivo já existe. Tente novamente.');
+    }
+    throw new Error(`Falha no upload: ${error.message}`);
+  }
+
+  const { data: urlData } = supabase.storage.from('videos').getPublicUrl(filePath);
+  if (!urlData?.publicUrl) {
+    throw new Error('Erro ao gerar URL pública do vídeo');
+  }
+
+  if (onProgress) onProgress(100);
+  return urlData.publicUrl;
+};
+
+/**
+ * Upload via protocolo TUS direto ao endpoint resumível do Supabase Storage.
+ * Reporta progresso real (0–100) baseado em bytes enviados.
+ */
+const tusUploadToSupabase = async (
+  file: File,
+  filePath: string,
+  onProgress?: (progress: number) => void
+): Promise<string> => {
+  const tus = await import('tus-js-client');
+
+  // URL e chave públicas (mesmas do client) — usadas para o endpoint TUS do Storage
+  const SUPABASE_URL = 'https://aakenoljsycyrcrchgxj.supabase.co';
+  const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFha2Vub2xqc3ljeXJjcmNoZ3hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5MDM3NTUsImV4cCI6MjA2MjQ3OTc1NX0.wEKVfJKfQiybyne0yn0dOUwbujb_WXkZHAzlyfHb0lk';
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+  if (!accessToken) {
+    throw new Error('Sem sessão autenticada para upload TUS');
+  }
+
+  return await new Promise<string>((resolve, reject) => {
+    const upload = new tus.Upload(file, {
+      endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
+      retryDelays: [0, 1500, 3000, 6000],
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        'x-upsert': 'false',
+        apikey: ANON_KEY,
+      },
+      uploadDataDuringCreation: true,
+      removeFingerprintOnSuccess: true,
+      metadata: {
+        bucketName: 'videos',
+        objectName: filePath,
+        contentType: file.type || 'video/mp4',
+        cacheControl: '3600',
+      },
+      // Chunk maior para conexões móveis estáveis
+      chunkSize: 6 * 1024 * 1024,
+      onError: (err) => reject(err),
+      onProgress: (bytesUploaded: number, bytesTotal: number) => {
+        if (!onProgress || !bytesTotal) return;
+        // Reservamos os últimos 5% para "salvando registro"
+        const pct = Math.min(95, Math.floor((bytesUploaded / bytesTotal) * 95));
+        onProgress(pct);
+      },
+      onSuccess: () => {
+        const { data: urlData } = supabase.storage.from('videos').getPublicUrl(filePath);
+        if (!urlData?.publicUrl) {
+          reject(new Error('Falha ao obter URL pública após TUS'));
+          return;
+        }
+        if (onProgress) onProgress(95);
+        resolve(urlData.publicUrl);
+      },
+    });
+
+    upload.start();
+  });
 };
 
 export const deleteVideoFromStorage = async (videoUrl: string): Promise<void> => {

@@ -78,14 +78,15 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
     };
   }, [orderId, debouncedRefresh]);
 
-  // Upload de vídeo com validação de segurança
+  // Upload de vídeo com validação de segurança — SEMPRE retorna { success, error? }
   const handleUpload = async (slotPosition: number, file: File, title: string) => {
     try {
       // Validação prévia de segurança
       const securityCheck = await validateVideoUploadPermission(orderId);
       if (!securityCheck.canUpload) {
-        toast.error(`Upload bloqueado: ${securityCheck.reason}`);
-        return { success: false };
+        const reason = securityCheck.reason || 'Upload bloqueado';
+        toast.error(`Upload bloqueado: ${reason}`);
+        return { success: false, error: reason };
       }
 
       setUploading(true);
@@ -104,17 +105,36 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
         tipoProduto
       );
 
-      if (result.success) {
-        // Recarregar slots após upload bem-sucedido
-        const slots = await loadVideoSlots(orderId);
-        setVideoSlots(slots);
+      if (!result?.success) {
+        // Não mostramos toast aqui — uploadVideo já tratou. Apenas devolvemos falha.
+        return { success: false, error: 'Falha no upload do vídeo' };
       }
-      
-      return result;
 
-    } catch (error) {
+      // Confirmar que o slot realmente recebeu o vídeo antes de declarar sucesso
+      const slots = await loadVideoSlots(orderId);
+      setVideoSlots(slots);
+      const updatedSlot = slots.find(s => s.slot_position === slotPosition);
+      const persisted = !!updatedSlot?.video_id;
+
+      if (!persisted) {
+        toast.error('O vídeo foi enviado mas não foi vinculado ao pedido. Tente novamente.');
+        return { success: false, error: 'Vídeo não vinculado ao pedido' };
+      }
+
+      return {
+        success: true,
+        isMasterApproved: result.isMasterApproved,
+        isBaseActivated: result.isBaseActivated,
+      };
+    } catch (error: any) {
+      const message = error?.message || 'Erro ao fazer upload do vídeo';
       console.error('Erro no upload:', error);
-      toast.error('Erro ao fazer upload do vídeo');
+      // Repassar erros estruturados (ex.: SCHEDULE_CONFLICT) para o caller
+      if (error?.conflictData || message === 'SCHEDULE_CONFLICT') {
+        throw error;
+      }
+      toast.error(message);
+      return { success: false, error: message };
     } finally {
       setUploading(false);
       setUploadProgress(prev => {
