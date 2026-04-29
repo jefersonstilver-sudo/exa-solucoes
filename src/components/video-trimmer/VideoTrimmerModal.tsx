@@ -7,6 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useVideoTrimmer } from './useVideoTrimmer';
 import { TrimmerTimeline } from './TrimmerTimeline';
+import { SimpleTrimmerSlider } from './SimpleTrimmerSlider';
+
+const isMobileDevice = () => {
+  if (typeof navigator === 'undefined') return false;
+  return /iPad|iPhone|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 640;
+};
 
 interface VideoTrimmerModalProps {
   file: File;
