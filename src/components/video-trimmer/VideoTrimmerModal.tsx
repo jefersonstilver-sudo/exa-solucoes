@@ -169,16 +169,25 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
             {/* Timeline section */}
             <div className="px-4 sm:px-6 pt-4 pb-2 bg-white flex-shrink-0 border-t border-slate-100">
               {state.isReady && (
-                <TrimmerTimeline
-                  duration={state.duration}
-                  startTime={state.startTime}
-                  endTime={endTime}
-                  currentTime={state.currentTime}
-                  maxDuration={maxDuration}
-                  thumbnails={state.thumbnails}
-                  onStartChange={setStartTime}
-                  onSeek={seekPreview}
-                />
+                isMobile ? (
+                  <SimpleTrimmerSlider
+                    duration={state.duration}
+                    startTime={state.startTime}
+                    windowSize={windowSize}
+                    onStartChange={setStartTime}
+                  />
+                ) : (
+                  <TrimmerTimeline
+                    duration={state.duration}
+                    startTime={state.startTime}
+                    endTime={endTime}
+                    currentTime={state.currentTime}
+                    maxDuration={maxDuration}
+                    thumbnails={state.thumbnails}
+                    onStartChange={setStartTime}
+                    onSeek={seekPreview}
+                  />
+                )
               )}
             </div>
 
