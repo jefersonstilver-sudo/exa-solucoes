@@ -499,7 +499,7 @@ export const uploadVideo = async (
     onProgress?.(100);
     uploadSession.complete();
     console.log('🎉 Upload completo com sucesso!');
-    toast.success(`Vídeo "${finalVideoName}" ${scheduleRules?.length ? 'e agendamento' : ''} enviado com sucesso!`);
+    // Toast de sucesso fica a cargo do componente consumidor (após validar slot persistido)
     // Invalida caches relacionados ao pedido para evitar decisões antigas
     try {
       uploadCache.invalidateOrder(orderId);
