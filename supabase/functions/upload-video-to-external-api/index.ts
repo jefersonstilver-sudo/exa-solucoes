@@ -57,6 +57,8 @@ serve(async (req) => {
         pedido_id,
         video_id,
         slot_position,
+        is_active,
+        selected_for_display,
         pedidos!inner (
           id,
           client_id,
@@ -161,20 +163,42 @@ serve(async (req) => {
       console.log('⏰ [UPLOAD_EXTERNAL_API] Sem campanha - usando programação padrão 24/7');
     }
 
-    // 4. Verificar se é o primeiro vídeo aprovado deste pedido
-    const { count: approvedCount } = await supabase
-      .from('pedido_videos')
-      .select('*', { count: 'exact', head: true })
-      .eq('pedido_id', pedidoVideo.pedido_id)
-      .eq('approval_status', 'approved')
-      .neq('id', pedido_video_id);
+    // 4. Determinar flag `ativo` para a API externa.
+    // Regra correta (substitui antiga "isFirstApproved"):
+    //  a) Se este slot já é o `selected_for_display` no banco -> ativo: true
+    //  b) Senão, se NÃO houver outro slot do mesmo pedido com `selected_for_display=true && is_active=true` -> ativo: true
+    //  c) Caso contrário -> ativo: false (já existe principal vigente)
+    // Agendamentos são tratados pela função sync-video-status-to-aws no toggle de troca de principal.
+    const thisSlotIsCurrent =
+      (pedidoVideo as any).selected_for_display === true &&
+      (pedidoVideo as any).is_active === true;
 
-    const isFirstApproved = (approvedCount ?? 0) === 0;
-    console.log('🎯 [UPLOAD_EXTERNAL_API] Verificação primeiro aprovado:', {
+    let activeFlag = thisSlotIsCurrent;
+    let otherCurrentSlot: { id: string; video_id: string } | null = null;
+
+    if (!activeFlag) {
+      const { data: othersDisplayed } = await supabase
+        .from('pedido_videos')
+        .select('id, video_id')
+        .eq('pedido_id', pedidoVideo.pedido_id)
+        .eq('selected_for_display', true)
+        .eq('is_active', true)
+        .neq('id', pedido_video_id)
+        .limit(1);
+
+      if (!othersDisplayed || othersDisplayed.length === 0) {
+        // Nenhum outro vídeo principal → este vira o principal
+        activeFlag = true;
+      } else {
+        otherCurrentSlot = othersDisplayed[0] as any;
+      }
+    }
+
+    console.log('🎯 [UPLOAD_EXTERNAL_API] Decisão de flag ativo:', {
       pedido_id: pedidoVideo.pedido_id,
-      outros_aprovados: approvedCount,
-      isFirstApproved,
-      ativo: isFirstApproved
+      thisSlotIsCurrent,
+      otherCurrentSlot,
+      activeFlag
     });
 
     // 5. Preparar metadados
@@ -201,7 +225,7 @@ serve(async (req) => {
     const metadataJson = {
       [storageFileName]: {
         ...metadata,
-        ativo: isFirstApproved,
+        ativo: activeFlag,
         status: 'new',
         ...(isVertical && { isPlus: true })
       }
@@ -362,13 +386,31 @@ serve(async (req) => {
     if (successCount === 0) {
       throw new Error(`Falha ao enviar vídeo para todos os ${failedCount} prédios`);
     }
-    
+
+    // 8. Pós-upload: se este vídeo entrou como ativo e havia outro principal anterior,
+    // disparar sync para garantir desativação consistente do anterior na AWS.
+    if (activeFlag && successCount > 0) {
+      try {
+        console.log('🔄 [UPLOAD_EXTERNAL_API] Disparando sync-video-status-to-aws para reforço de estado');
+        await supabase.functions.invoke('sync-video-status-to-aws', {
+          body: {
+            pedidoId: pedidoVideo.pedido_id,
+            activeVideoId: pedidoVideo.video_id,
+            previousVideoId: otherCurrentSlot?.video_id ?? null
+          }
+        });
+      } catch (syncErr: any) {
+        console.warn('⚠️ [UPLOAD_EXTERNAL_API] Falha no sync pós-upload (não bloqueante):', syncErr?.message);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         message: `Vídeo enviado para ${successCount}/${uploadResults.length} prédios`,
         results: uploadResults,
-        videoFileName: storageFileName
+        videoFileName: storageFileName,
+        ativo_aws: activeFlag
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

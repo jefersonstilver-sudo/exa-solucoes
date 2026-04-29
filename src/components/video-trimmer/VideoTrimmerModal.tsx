@@ -174,6 +174,8 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
                     duration={state.duration}
                     startTime={state.startTime}
                     windowSize={windowSize}
+                    currentTime={state.currentTime}
+                    isPlaying={state.isPlaying}
                     onStartChange={setStartTime}
                   />
                 ) : (
