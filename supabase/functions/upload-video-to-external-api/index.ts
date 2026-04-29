@@ -386,13 +386,31 @@ serve(async (req) => {
     if (successCount === 0) {
       throw new Error(`Falha ao enviar vídeo para todos os ${failedCount} prédios`);
     }
-    
+
+    // 8. Pós-upload: se este vídeo entrou como ativo e havia outro principal anterior,
+    // disparar sync para garantir desativação consistente do anterior na AWS.
+    if (activeFlag && successCount > 0) {
+      try {
+        console.log('🔄 [UPLOAD_EXTERNAL_API] Disparando sync-video-status-to-aws para reforço de estado');
+        await supabase.functions.invoke('sync-video-status-to-aws', {
+          body: {
+            pedidoId: pedidoVideo.pedido_id,
+            activeVideoId: pedidoVideo.video_id,
+            previousVideoId: otherCurrentSlot?.video_id ?? null
+          }
+        });
+      } catch (syncErr: any) {
+        console.warn('⚠️ [UPLOAD_EXTERNAL_API] Falha no sync pós-upload (não bloqueante):', syncErr?.message);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         message: `Vídeo enviado para ${successCount}/${uploadResults.length} prédios`,
         results: uploadResults,
-        videoFileName: storageFileName
+        videoFileName: storageFileName,
+        ativo_aws: activeFlag
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
