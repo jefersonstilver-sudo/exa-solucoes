@@ -135,8 +135,9 @@ export const useOrderVideoManagement = (orderId: string) => {
       await refreshSlots();
 
       if (!result?.success) {
-        // Falha tratada: não abre popup de sucesso, propaga para o chamador.
-        throw new Error(result?.error || 'Falha no upload do vídeo');
+        // Falha tratada: não abre popup de sucesso, propaga mensagem real para o chamador.
+        const reason = (result as any)?.error || 'Falha no upload do vídeo';
+        throw new Error(reason);
       }
 
       setVideoName(videoTitle || file.name);
