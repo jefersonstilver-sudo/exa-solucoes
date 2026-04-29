@@ -64,11 +64,15 @@ export class VideoCache {
     try {
       await this.init();
 
-      // Verificar se já está em cache
-      if (await this.hasCachedVideo(videoId)) {
+      // Invalidar entrada se a URL no DB mudou (evita servir blob antigo)
+      const existing = await this.getFromStore(videoId);
+      if (existing && existing.videoUrl && existing.videoUrl !== videoUrl) {
+        console.log('[VideoCache] URL mudou — invalidando blob antigo:', { videoId });
+        await this.deleteFromStore(videoId);
+      } else if (existing) {
         return true;
       }
-      
+
       // Baixar o vídeo
       const response = await fetch(videoUrl);
       if (!response.ok) {
