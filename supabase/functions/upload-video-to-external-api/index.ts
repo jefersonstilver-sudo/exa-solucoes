@@ -69,7 +69,9 @@ serve(async (req) => {
         videos!inner (
           id,
           nome,
-          url
+          url,
+          trim_start_seconds,
+          trim_end_seconds
         )
       `)
       .eq('id', pedido_video_id)
@@ -78,6 +80,21 @@ serve(async (req) => {
     if (pvError || !pedidoVideo) {
       console.error('❌ [UPLOAD_EXTERNAL_API] Erro ao buscar pedido_video:', pvError);
       throw new Error('Vídeo não encontrado');
+    }
+
+    // 🚧 BLOQUEIO: vídeos com corte metadata-only (sem corte físico) NÃO devem
+    // ser enviados aos painéis sem reencode. Caso contrário o painel reproduz o original inteiro.
+    const trimStart = (pedidoVideo as any).videos?.trim_start_seconds;
+    const trimEnd = (pedidoVideo as any).videos?.trim_end_seconds;
+    if (typeof trimStart === 'number' && typeof trimEnd === 'number' && trimEnd > trimStart) {
+      const msg =
+        `Vídeo com corte metadata-only (${trimStart}s → ${trimEnd}s) ainda não tem reencode físico. ` +
+        `Envio externo bloqueado para evitar reproduzir o arquivo original completo nos painéis.`;
+      console.error('🚫 [UPLOAD_EXTERNAL_API]', msg);
+      return new Response(
+        JSON.stringify({ success: false, error: msg, requires_reencode: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 422 }
+      );
     }
 
     console.log('✅ [UPLOAD_EXTERNAL_API] Dados do vídeo carregados:', {
