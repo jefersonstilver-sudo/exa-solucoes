@@ -172,16 +172,12 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         fileName: selectedFile.name,
         videoTitle
       });
-      toast.loading('Iniciando upload do vídeo...', {
-        id: 'upload-toast'
-      });
+
+      // Sem toast otimista. O progresso real é mostrado pelo card do slot.
       await onUpload(slotPosition, selectedFile, videoTitle);
       console.log('✅ [VideoSlotUpload] onUpload completado com sucesso');
-      toast.success('Upload concluído!', {
-        id: 'upload-toast'
-      });
 
-      // Enviar email de confirmação de recebimento
+      // Enviar email de confirmação de recebimento (não-bloqueante)
       try {
         console.log('📧 [VideoSlotUpload] Tentando enviar email de confirmação...');
         const {
@@ -218,16 +214,16 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         console.warn('⚠️ Falha ao enviar email de confirmação:', emailErr);
       }
 
-      // Reset after upload
+      // Reset somente em sucesso
       console.log('🔄 [VideoSlotUpload] Resetando formulário');
       setSelectedFile(null);
       setVideoTitle('');
       setTitleError('');
     } catch (error) {
       console.error('💥 [VideoSlotUpload] Erro no upload:', error);
-      toast.error(`Erro ao fazer upload: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, {
-        id: 'upload-toast'
-      });
+      const msg = error instanceof Error ? error.message : 'Erro desconhecido';
+      // Mantém arquivo e título para o usuário poder tentar novamente
+      toast.error(`Erro ao enviar vídeo: ${msg}`);
     }
   };
   const canUpload = selectedFile && videoTitle.trim() && !uploading && !isUploading;
