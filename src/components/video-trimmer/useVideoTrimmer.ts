@@ -73,9 +73,18 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const thumbCount = Math.min(16, Math.max(8, Math.floor(duration * 1.5)));
-    canvas.width = 160;
-    canvas.height = 90;
+    // iOS/Safari: gera muito menos thumbnails para evitar travar o seek pesado.
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) ||
+      (/(Macintosh).*Version\/.+ Mobile/.test(ua));
+    const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+    const lowEnd = isIOS || isSafari;
+
+    const thumbCount = lowEnd
+      ? Math.min(8, Math.max(5, Math.floor(duration)))
+      : Math.min(16, Math.max(8, Math.floor(duration * 1.5)));
+    canvas.width = lowEnd ? 120 : 160;
+    canvas.height = lowEnd ? 68 : 90;
     const thumbs: string[] = [];
 
     for (let i = 0; i < thumbCount; i++) {
@@ -83,7 +92,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
       try {
         await seekTo(video, time);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        thumbs.push(canvas.toDataURL('image/jpeg', 0.6));
+        thumbs.push(canvas.toDataURL('image/jpeg', 0.55));
       } catch {
         thumbs.push('');
       }
