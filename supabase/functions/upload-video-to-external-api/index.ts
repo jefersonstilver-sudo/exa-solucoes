@@ -57,6 +57,8 @@ serve(async (req) => {
         pedido_id,
         video_id,
         slot_position,
+        is_active,
+        selected_for_display,
         pedidos!inner (
           id,
           client_id,

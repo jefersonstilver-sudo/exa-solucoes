@@ -1,118 +1,84 @@
-Auditoria concluída. O problema não é mais o limite de 10 slots: essa parte está correta no banco.
+## Auditoria — o que aconteceu
 
-Diagnóstico principal
+### Problema 1 — Trimmer mobile travado / sem usabilidade
+Hoje no mobile usamos `SimpleTrimmerSlider` (um `<input type="range">` simples). Resultado:
+- Não há régua nem marcadores fixos do tamanho da janela (10s horizontal / 15s vertical premium).
+- Não há preview do "cortado" — o usuário não consegue assistir só o trecho.
+- O play roda o vídeo inteiro, não respeita o `startTime`/`endTime`.
+- Sem feedback visual da janela selecionada sobre a timeline.
+- O `setStartTime` força uma única dimensão (início) sem indicar visualmente o intervalo final.
 
-1. O erro atual vem do fluxo de corte + revalidação
-- No replay, o vídeo foi cortado no modal e virou `wizard_trimmed.mp4`.
-- Em mobile/iOS/Safari, o trimmer não recodifica o arquivo; ele retorna o arquivo original com metadados internos `_trimStart` e `_trimEnd`.
-- Depois disso, `uploadVideoService.ts` chama `validateVideoFile()` de novo no arquivo físico.
-- Como o arquivo físico continua com a duração original, a validação volta a reprovar o vídeo por duração.
-- Esse erro não chega corretamente até a tela, então a UI mostra apenas: `Falha no upload do vídeo`.
+A janela de corte JÁ é fixa por produto (`maxDuration` = 10s ou 15s) — mas a UI não comunica isso e não permite arrastar a janela inteira de forma fluida.
 
-Fluxo quebrado atual:
-```text
-Seleciona vídeo longo
-  -> abre trimmer
-  -> iPhone/Safari retorna arquivo original + metadados de corte
-  -> upload revalida arquivo original
-  -> reprova duração novamente
-  -> erro genérico na tela
+### Problema 2 — Vídeo aprovado vai para a API externa como `ativo: false`
+**Pedido:** `c5f155fc-9abc-4175-bd00-bcd75048744a` (BlackNBill, jefi92@gmail.com)  
+**Vídeo novo:** `quinta texicana` (slot 2, aprovado hoje 18:25)  
+**Vídeo antigo:** `BLACKNBILL` (slot 1, aprovado 24/03 — `is_active=false`, `selected_for_display=false`)
+
+Em `supabase/functions/upload-video-to-external-api/index.ts` (linhas 164–208):
+
+```ts
+const isFirstApproved = (approvedCount ?? 0) === 0;
+// ...
+ativo: isFirstApproved
 ```
 
-2. Os metadados de corte ainda não são aplicados de ponta a ponta
-- O banco já tem `videos.trim_start_seconds` e `videos.trim_end_seconds`.
-- O upload salva esses campos quando eles existem.
-- Porém a API externa `upload-video-to-external-api` baixa e envia o arquivo inteiro do Supabase Storage.
-- Ou seja: mesmo quando o upload passa, o corte metadata-only não corta fisicamente o vídeo antes de enviar para os dispositivos.
-- Isso explica o comportamento estrutural: no mobile tenta “cortar”, mas o sistema ainda pode tratar o vídeo como original em fases posteriores.
+Como já existia o BLACKNBILL aprovado (mesmo desativado), `approvedCount = 1` → `isFirstApproved = false` → o vídeo novo foi para a AWS como **`ativo: false`**.
 
-3. O banco/Storage para esse pedido específico está consistente
-Pedido atual: `55570ca6-a8c7-44b3-8a1b-656f3002874b`
-- `status`: `ativo`
-- `tipo_produto`: `horizontal`
-- `is_master`: `true`
-- `max_videos_por_pedido`: `10`
-- Constraint atual: `pedido_videos_slot_position_check` permite `1..10`
-- Bucket `videos`: existe, público, limite 100MB.
-- Slots atuais do pedido: 1, 2 e 3 preenchidos. Slot 4 estava vazio no momento da auditoria.
+A regra correta deveria ser: **enviar como `ativo: true` se este vídeo for o `selected_for_display`/`is_active` no banco, ou se não houver nenhum outro `selected_for_display=true` no pedido (e não houver agendamento vigente conflitante).** O critério atual ("primeiro aprovado") está errado porque ignora trocas de vídeo principal.
 
-4. Há também um risco no TUS mobile
-O upload usa TUS primeiro e fallback padrão depois. Isso é correto, mas no iOS precisa ser mais conservador:
-- chunk atual: 6MB
-- timeout/retry pouco específico
-- erro final pode ser engolido pelo wrapper e virar mensagem genérica
+Quando depois o usuário marcou "quinta texicana" como principal pelo painel, `setBaseVideo` chama `sync-video-status-to-aws` que faz `PATCH /ativo/batch`. Os logs mostram chamadas funcionando para outros pedidos hoje (Kammer Soho), mas **não há entrada para o título `Blackbill_-_Quinta_Texicana...`** — ou seja, o sync-toggle não foi disparado para esse vídeo, ou foi disparado antes de ele existir na AWS. Resultado: na AWS continua `ativo: false`.
 
-5. O modal mobile ainda tem fragilidade de layout
-O modal foi ajustado com `100svh`, mas continua com preview/timeline/actions disputando altura em iPhone. O problema visual relatado tem duas causas prováveis:
-- geração de thumbnails ainda faz seeks múltiplos no mesmo `<video>`, pesado no Safari;
-- layout usa uma timeline complexa com zoom/drag que é excessiva para mobile.
+---
 
-Plano de correção estrutural
+## Plano
 
-1. Corrigir a validação pós-trimmer
-- Detectar quando o arquivo tem `_trimStart` e `_trimEnd`.
-- Nesses casos, validar a duração efetiva do corte, não a duração física do arquivo original.
-- Exemplo: se o original tem 30s, mas `_trimStart=5` e `_trimEnd=15`, a duração efetiva deve ser 10s.
-- Salvar `duracao` no banco como duração efetiva do trecho, não como duração original.
+### 1) Refazer o trimmer mobile como componente profissional
+Substituir `SimpleTrimmerSlider` por `MobileTrimmerTimeline` com:
+- **Trilho horizontal** mostrando duração total do vídeo (linha cinza).
+- **Janela fixa destacada em vermelho EXA** (#C7141A) com largura proporcional a `windowSize` (10s ou 15s — fixa, sem permitir redimensionar).
+- **Drag fluido da janela inteira** via touch (pointer events com `requestAnimationFrame`), com snap às bordas (0 e `duration - windowSize`).
+- **Marcadores numéricos fixos** nas extremidades (`0:00` e `total`) e no início/fim da janela (`startTime` / `endTime`) atualizados em tempo real.
+- **Botão Play que respeita o trecho:** ao apertar play, vídeo vai para `startTime`, toca até `endTime`, depois loopa — exatamente o que o desktop já faz em `useVideoTrimmer.togglePlay`. Hoje no mobile isso já existe, mas o usuário não percebe porque não há indicação visual de "estou tocando só o trecho".
+- **Indicador de playhead** (linha vertical animada) dentro da janela mostrando o progresso da reprodução do trecho.
+- **Touch targets ≥ 44px** e haptic feedback (`navigator.vibrate?.(10)`) ao iniciar drag.
+- **Preview do thumbnail central** (1 frame leve no startTime) para o usuário identificar onde está cortando, sem gerar 8+ thumbs (que travam o Safari).
 
-2. Separar estratégia por plataforma
-- iOS/Safari/mobile: usar modo “seleção de trecho” metadata-only, sem tentar recodificar no browser.
-- Desktop/Chrome: pode continuar recodificando, mas com fallback explícito para metadata-only quando gerar WebM ou falhar.
-- A tela deve informar claramente quando será usado “Trecho selecionado: 10s” em vez de “arquivo cortado fisicamente”.
+Resultado: no mobile o usuário arrasta a janela vermelha de 10s/15s pela timeline, vê os tempos atualizando, aperta play e assiste apenas ao trecho que vai usar — igual a apps profissionais (CapCut, iOS Photos).
 
-3. Aplicar o corte antes de enviar à API externa
-- Atualizar `supabase/functions/upload-video-to-external-api/index.ts` para ler `trim_start_seconds` e `trim_end_seconds`.
-- Se houver corte metadata-only, criar um arquivo final MP4 cortado antes do envio aos dispositivos.
-- Como Edge Function não deve depender de recorte pesado se não houver FFmpeg garantido, há duas opções técnicas:
-  - Opção A: chamar um endpoint/serviço de processamento de vídeo já existente/externo antes do envio;
-  - Opção B: bloquear metadata-only para envio externo até haver corte físico e orientar o usuário a enviar vídeo já dentro da duração.
-- Minha recomendação: implementar agora a correção segura de upload e salvar metadados corretamente, e na função externa pelo menos bloquear envio de vídeo metadata-only sem corte físico com mensagem técnica clara, para não mandar original errado aos painéis.
+### 2) Corrigir flag `ativo` no upload para API externa
+Em `supabase/functions/upload-video-to-external-api/index.ts`:
+- Trocar a regra "isFirstApproved" por uma consulta direta ao estado real do slot:
+  ```ts
+  const { data: thisSlot } = await supabase
+    .from('pedido_videos')
+    .select('selected_for_display, is_active')
+    .eq('id', pedido_video_id).single();
 
-4. Melhorar mensagens de erro no frontend
-- `useOrderVideoManagement.tsx` não deve transformar tudo em `Falha no upload do vídeo`.
-- Propagar o erro real: duração, permissão, Storage, RLS, slot, TUS, validação ou API externa.
-- Isso evita falsa auditoria no futuro.
+  // Verificar se há agendamento vigente que prevalece
+  const hasActiveSchedule = await checkScheduleConflict(pedido_video_id);
 
-5. Refatorar o trimmer mobile para UX estável no iPhone
-- Criar um layout mobile específico, mais simples:
-```text
-Header fixo
-Preview com altura limitada
-Controles de play centralizados
-Slider nativo para escolher início
-Resumo: 0:05 até 0:15 / 10s
-Botões fixos no rodapé com safe-area
-```
-- Remover zoom da timeline em mobile.
-- Reduzir thumbnails em iOS ou usar placeholder/frames mínimos.
-- Garantir botões com 44px+ e alinhamento central.
+  const ativo = (thisSlot?.selected_for_display && thisSlot?.is_active)
+                || (!hasActiveSchedule && !await hasOtherDisplayedVideo(pedido_id, pedido_video_id));
+  ```
+- Garantir que, quando o vídeo é enviado como `ativo: true`, qualquer outro vídeo `selected_for_display=true` do mesmo pedido seja **desativado na AWS** na sequência (chamando `sync-video-status-to-aws` ao final do upload bem-sucedido), evitando dois vídeos tocando.
 
-6. Hardening do upload TUS
-- Reduzir chunk em mobile para 1–2MB.
-- Usar erro específico quando TUS falhar e fallback padrão também falhar.
-- Não tentar upload se a validação efetiva já sabe que o vídeo não será aceito.
+### 3) Re-sync imediato do pedido BlackNBill
+Após deploy, disparar uma única chamada manual de `sync-video-status-to-aws` para `pedido_id=c5f155fc...` com `activeVideoId=efc4221a-9020-4dd1-acb0-3c2159581650` (quinta texicana) para corrigir o estado atual na AWS — desativando `BLACK_BILL_REDUZIDO.mp4` e ativando `Blackbill_-_Quinta_Texicana_Vertical_v4__1_.mp4`.
 
-7. Correção de cache dos painéis/dispositivos
-- O app já remove service workers e caches da aplicação, mas o cache de vídeo em IndexedDB (`exa_video_cache`) pode continuar servindo blobs antigos por `videoId`.
-- Atualizar o cache para invalidar também quando a `video_url` mudar, não apenas quando o `videoId` existe.
-- Isso evita painéis/dispositivos mostrarem vídeo desatualizado.
+### Localização dos vídeos no Supabase (referência)
+Bucket público `videos/`:
+- `de96cfa9-9dbe-4ead-be94-3647e345d2de/1777487076358_Blackbill_-_Quinta_Texicana_Vertical_v4__1_.mp4` (novo principal)
+- `de96cfa9-9dbe-4ead-be94-3647e345d2de/1774386415598_BLACK_BILL_REDUZIDO.mp4` (antigo, deve ficar inativo)
 
-Arquivos a alterar após aprovação
+---
 
-- `src/services/videoUploadService.ts`
-- `src/services/videoStorageService.ts`
-- `src/hooks/useOrderVideoManagement.tsx`
-- `src/hooks/useVideoManagement.tsx`
-- `src/components/video-trimmer/useVideoTrimmer.ts`
-- `src/components/video-trimmer/VideoTrimmerModal.tsx`
-- `src/components/video-trimmer/TrimmerTimeline.tsx`
-- `src/utils/videoCache.ts`
-- `supabase/functions/upload-video-to-external-api/index.ts`
+## Arquivos a alterar
 
-Links úteis para conferência no Supabase
+- `src/components/video-trimmer/SimpleTrimmerSlider.tsx` → reescrever como `MobileTrimmerTimeline` (drag da janela + playhead + marcadores fixos).
+- `src/components/video-trimmer/VideoTrimmerModal.tsx` → passar `currentTime` e `seekPreview` ao componente mobile.
+- `src/components/video-trimmer/useVideoTrimmer.ts` → expor `currentTime` durante reprodução também no mobile (já existe via `tick()`, validar).
+- `supabase/functions/upload-video-to-external-api/index.ts` → trocar lógica `isFirstApproved` por leitura real de `selected_for_display`/`is_active`/agendamento; disparar desativação do anterior se aplicável.
+- Migração SQL (one-shot, opcional): chamada explícita ao `sync-video-status-to-aws` para o pedido BlackNBill via script Edge.
 
-<lov-actions>
-<lov-link url="https://supabase.com/dashboard/project/aakenoljsycyrcrchgxj/storage/buckets">Supabase Storage</lov-link>
-<lov-link url="https://supabase.com/dashboard/project/aakenoljsycyrcrchgxj/functions/upload-video-to-external-api/logs">Logs da função de envio externo</lov-link>
-<lov-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</lov-link>
-</lov-actions>
+Nenhuma outra UI/feature será alterada.
