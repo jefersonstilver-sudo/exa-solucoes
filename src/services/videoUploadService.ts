@@ -189,18 +189,48 @@ export const uploadVideo = async (
     onProgress?.(15);
     const videoTipo: 'horizontal' | 'vertical' = (tipoProduto === 'vertical_premium' || tipoProduto === 'vertical') ? 'vertical' : 'horizontal';
     const validationStart = uploadSession.logPhaseStart('VALIDATION', { fileSize: file.size, fileType: file.type, videoTipo });
-    
+
+    // 🔪 Detectar metadados de corte (trimmer metadata-only) ANTES da validação
+    const preTrimStart = (file as any)?._trimStart;
+    const preTrimEnd = (file as any)?._trimEnd;
+    const hasTrimMetadata =
+      typeof preTrimStart === 'number' &&
+      typeof preTrimEnd === 'number' &&
+      preTrimEnd > preTrimStart;
+    const effectiveTrimDuration = hasTrimMetadata ? Math.round(preTrimEnd - preTrimStart) : null;
+
     const validation = await validateVideoFile(file, videoTipo);
+
+    // Se há metadados de corte, a duração efetiva é a do trecho — não a do arquivo físico.
+    // Reaproveita o resto da validação (orientação, tamanho, formato).
+    if (hasTrimMetadata && validation.needsTrimming && effectiveTrimDuration !== null) {
+      const maxDur = validation.maxDuration ?? (videoTipo === 'vertical' ? 15 : 10);
+      if (effectiveTrimDuration <= maxDur) {
+        console.log('✂️ [VALIDATION] Vídeo com corte metadata-only — aceitando trecho:', {
+          trimStart: preTrimStart,
+          trimEnd: preTrimEnd,
+          effectiveTrimDuration,
+          maxDur,
+        });
+        validation.valid = true;
+        validation.needsTrimming = false;
+        validation.errors = [];
+        validation.metadata.duration = effectiveTrimDuration;
+      }
+    }
+
     if (!validation.valid) {
-      const reason = validation.errors.join(', ');
-      uploadSession.logPhaseFailure('VALIDATION', validationStart, reason, { errors: validation.errors });
-      console.error('❌ Validação falhou:', validation.errors);
+      const reason = validation.needsTrimming
+        ? `Vídeo precisa ser cortado para no máximo ${validation.maxDuration ?? (videoTipo === 'vertical' ? 15 : 10)} segundos`
+        : (validation.errors.join(', ') || 'Vídeo inválido');
+      uploadSession.logPhaseFailure('VALIDATION', validationStart, reason, { errors: validation.errors, needsTrimming: validation.needsTrimming });
+      console.error('❌ Validação falhou:', { reason, errors: validation.errors, needsTrimming: validation.needsTrimming });
       toast.error(reason);
       return { success: false, error: reason };
     }
 
-    uploadSession.logPhaseSuccess('VALIDATION', validationStart, { metadata: validation.metadata });
-    console.log('✅ Vídeo validado com sucesso:', validation.metadata);
+    uploadSession.logPhaseSuccess('VALIDATION', validationStart, { metadata: validation.metadata, hasTrimMetadata });
+    console.log('✅ Vídeo validado com sucesso:', { metadata: validation.metadata, hasTrimMetadata });
     onProgress?.(25);
 
     // VALIDAÇÃO CRÍTICA: Verificar conflitos de agendamento ANTES de qualquer operação de upload
