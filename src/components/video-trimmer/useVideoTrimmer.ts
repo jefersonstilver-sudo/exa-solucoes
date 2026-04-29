@@ -175,17 +175,30 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     const endT = startT + ws;
     const trimDuration = ws;
 
-    // Fallback: return a slice of the original file if MediaRecorder fails
-    const createFallbackFile = () => {
-      console.warn('⚠️ Using fallback: returning original file (no re-encoding)');
-      const fallbackFile = new File(
+    // Fallback / iOS path: returns original file + trim metadata, sem reencode no browser.
+    const createMetadataOnlyFile = (reason: string) => {
+      console.warn(`⚠️ [TRIMMER] ${reason} — usando arquivo original com metadados de corte`);
+      const trimmedFile = new File(
         [file],
-        file.name.replace(/\.[^.]+$/, '_trimmed.' + file.name.split('.').pop()),
+        file.name.replace(/\.[^.]+$/, '_trimmed.' + (file.name.split('.').pop() || 'mp4')),
         { type: file.type }
       );
+      (trimmedFile as any)._trimStart = startT;
+      (trimmedFile as any)._trimEnd = endT;
+      (trimmedFile as any)._wasFallbackFromWebm = true;
       setState(prev => ({ ...prev, isProcessing: false, processingProgress: 100 }));
-      return fallbackFile;
+      return trimmedFile;
     };
+
+    // iOS/Safari: MediaRecorder + Canvas é instável e gera arquivos corrompidos.
+    // Vamos direto pelo caminho metadata-only para preservar áudio e qualidade.
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) ||
+      (/(Macintosh).*Version\/.+ Mobile/.test(ua));
+    const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+    if (isIOS || isSafari) {
+      return createMetadataOnlyFile('iOS/Safari detectado');
+    }
 
     try {
       // Setup canvas matching video dimensions
@@ -193,7 +206,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
-      if (!ctx) return createFallbackFile();
+      if (!ctx) return createMetadataOnlyFile('Sem contexto de canvas');
 
       // Setup MediaRecorder
       const stream = canvas.captureStream(30);
