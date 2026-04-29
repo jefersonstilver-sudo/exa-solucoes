@@ -120,6 +120,7 @@ export const useOrderVideoManagement = (orderId: string) => {
   };
 
   // Wrapper para upload com tratamento de sucesso e conflitos
+  // IMPORTANTE: só abre popup de sucesso se o upload realmente concluiu.
   const uploadVideo = async (
     slotPosition: number,
     file: File,
@@ -130,26 +131,32 @@ export const useOrderVideoManagement = (orderId: string) => {
     try {
       const result = await baseHook.handleUpload(slotPosition, file, videoTitle || file.name);
 
+      // Refresh sempre — para refletir o estado real
+      await refreshSlots();
+
+      if (!result?.success) {
+        // Falha tratada: não abre popup de sucesso, propaga para o chamador.
+        throw new Error(result?.error || 'Falha no upload do vídeo');
+      }
+
       setVideoName(videoTitle || file.name);
       setIsMasterApproved(result?.isMasterApproved || false);
       setIsBaseActivated(result?.isBaseActivated || false);
       setIsSuccessOpen(true);
-      
-      // Refresh automático após upload
-      await refreshSlots();
-      
+      return result;
     } catch (error: any) {
       // Verificar se é um erro de conflito de horário
-      if (error.message?.includes('conflito') || error.conflicts) {
+      if (error?.message?.includes('conflito') || error?.conflicts || error?.conflictData) {
+        const cd = error?.conflictData || {};
         setConflictModal({
           isOpen: true,
-          conflicts: error.conflicts || [],
-          suggestions: error.suggestions || [],
+          conflicts: cd.conflicts || error.conflicts || [],
+          suggestions: cd.suggestions || error.suggestions || [],
           newVideoName: videoTitle || file.name,
           hideConflictModal: () => setConflictModal(prev => ({ ...prev, isOpen: false }))
         });
       }
-      
+
       throw error;
     }
   };
