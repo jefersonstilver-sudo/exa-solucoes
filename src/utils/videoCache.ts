@@ -265,6 +265,24 @@ export class VideoCache {
       request.onerror = () => reject(request.error);
     });
   }
+
+  /**
+   * Remover entrada específica do store
+   */
+  private async deleteFromStore(videoId: string): Promise<void> {
+    if (!this.db) return;
+    return new Promise((resolve) => {
+      try {
+        const transaction = this.db!.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.delete(videoId);
+        request.onsuccess = () => resolve();
+        request.onerror = () => resolve();
+      } catch {
+        resolve();
+      }
+    });
+  }
 }
 
 // Singleton instance
