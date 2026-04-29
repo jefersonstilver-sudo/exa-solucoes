@@ -5,7 +5,8 @@ import { setBaseVideo } from '@/services/videoBaseService';
 import { 
   validateVideoFile, 
   uploadVideoToStorage,
-  cleanupPendingUploads
+  cleanupPendingUploads,
+  deleteVideoFromStorage
 } from '@/services/videoStorageService';
 import { validateVideoUploadPermission } from '@/services/videoUploadSecurityService';
 import { validateScheduleConflicts, formatConflictMessage } from './videoScheduleValidationService';
@@ -15,9 +16,78 @@ import { UploadSession } from './videoUploadLogsService';
 
 export interface UploadResult {
   success: boolean;
+  error?: string;
   isMasterApproved?: boolean;
   isBaseActivated?: boolean;
 }
+
+/**
+ * Valida se o slot está dentro do limite real do produto/pedido
+ * antes de gastar banda fazendo upload.
+ */
+const validateSlotCapacity = async (
+  orderId: string,
+  slotPosition: number
+): Promise<{ ok: boolean; reason?: string; maxSlots?: number }> => {
+  try {
+    if (slotPosition < 1 || slotPosition > 10) {
+      return { ok: false, reason: `Posição de slot inválida (${slotPosition}). Mínimo 1, máximo 10.` };
+    }
+
+    const { data: pedido, error: pedidoErr } = await supabase
+      .from('pedidos')
+      .select('tipo_produto')
+      .eq('id', orderId)
+      .single();
+
+    if (pedidoErr || !pedido) {
+      return { ok: false, reason: 'Pedido não encontrado para validar capacidade de vídeos.' };
+    }
+
+    const codigo =
+      (pedido as any).tipo_produto === 'vertical_premium' || (pedido as any).tipo_produto === 'vertical'
+        ? 'vertical_premium'
+        : 'horizontal';
+
+    const { data: produto } = await supabase
+      .from('produtos_exa')
+      .select('max_videos_por_pedido')
+      .eq('codigo', codigo)
+      .single();
+
+    const maxSlots = Math.min(((produto as any)?.max_videos_por_pedido as number) || 10, 10);
+
+    if (slotPosition > maxSlots) {
+      return {
+        ok: false,
+        reason: `Este pedido permite no máximo ${maxSlots} vídeo(s). Slot ${slotPosition} não está disponível.`,
+        maxSlots,
+      };
+    }
+
+    return { ok: true, maxSlots };
+  } catch (e: any) {
+    return { ok: false, reason: e?.message || 'Erro ao validar capacidade do pedido.' };
+  }
+};
+
+/** Limpa storage e registro de vídeo se o vínculo no pedido falhou. */
+const rollbackOrphanUpload = async (videoUrl?: string, videoId?: string) => {
+  try {
+    if (videoUrl) {
+      await deleteVideoFromStorage(videoUrl);
+    }
+  } catch (e) {
+    console.warn('⚠️ [UPLOAD] Falha ao remover arquivo órfão do Storage:', e);
+  }
+  try {
+    if (videoId) {
+      await supabase.from('videos').delete().eq('id', videoId);
+    }
+  } catch (e) {
+    console.warn('⚠️ [UPLOAD] Falha ao remover registro órfão de videos:', e);
+  }
+};
 
 export const uploadVideo = async (
   slotPosition: number,
@@ -34,6 +104,14 @@ export const uploadVideo = async (
   
   try {
     console.log(`🚀 Iniciando upload para slot ${slotPosition}:`, file.name);
+
+    // 0) VALIDAÇÃO ESTRUTURAL DE SLOT — antes de gastar banda
+    const slotCheck = await validateSlotCapacity(orderId, slotPosition);
+    if (!slotCheck.ok) {
+      console.warn('🚫 [VideoUpload] Slot rejeitado antes do upload:', slotCheck.reason);
+      toast.error(slotCheck.reason || 'Slot inválido para este pedido');
+      return { success: false, error: slotCheck.reason };
+    }
 
     // VALIDAÇÃO DE SEGURANÇA OTIMIZADA COM CACHE
     onProgress?.(5);
@@ -66,9 +144,10 @@ export const uploadVideo = async (
     }
     
     if (!securityValidation?.canUpload) {
-      uploadSession.logPhaseFailure('SECURITY', securityStart, securityValidation?.reason || 'Validação negada');
-      toast.error(`Upload não permitido: ${securityValidation?.reason || 'Erro de validação'}`);
-      return { success: false };
+      const reason = securityValidation?.reason || 'Erro de validação';
+      uploadSession.logPhaseFailure('SECURITY', securityStart, reason);
+      toast.error(`Upload não permitido: ${reason}`);
+      return { success: false, error: reason };
     }
 
     uploadSession.logPhaseSuccess('SECURITY', securityStart, { cached: !!uploadCache.get(securityCacheKey) });
@@ -77,8 +156,9 @@ export const uploadVideo = async (
     // Validar título se fornecido
     if (videoTitle) {
       if (videoTitle.length < 3 || videoTitle.length > 50) {
-        toast.error('Título deve ter entre 3 e 50 caracteres');
-        return { success: false };
+        const reason = 'Título deve ter entre 3 e 50 caracteres';
+        toast.error(reason);
+        return { success: false, error: reason };
       }
     }
 
@@ -112,10 +192,11 @@ export const uploadVideo = async (
     
     const validation = await validateVideoFile(file, videoTipo);
     if (!validation.valid) {
-      uploadSession.logPhaseFailure('VALIDATION', validationStart, validation.errors.join(', '), { errors: validation.errors });
+      const reason = validation.errors.join(', ');
+      uploadSession.logPhaseFailure('VALIDATION', validationStart, reason, { errors: validation.errors });
       console.error('❌ Validação falhou:', validation.errors);
-      toast.error(validation.errors.join(', '));
-      return { success: false };
+      toast.error(reason);
+      return { success: false, error: reason };
     }
 
     uploadSession.logPhaseSuccess('VALIDATION', validationStart, { metadata: validation.metadata });
@@ -285,14 +366,26 @@ export const uploadVideo = async (
 
     if (slotError) {
       console.error('❌ Erro ao gerenciar slot:', slotError);
-      
-      // Verificar se é erro de segurança do trigger
-      if (slotError.message?.includes('não permitido para pedidos não pagos')) {
-        toast.error('Upload não permitido: pedido não foi pago');
-        return { success: false };
+
+      // Mapear erros conhecidos para mensagens claras
+      const raw = slotError.message || '';
+      let friendly = `Erro ao salvar no slot: ${raw}`;
+
+      if (raw.includes('não permitido para pedidos não pagos')) {
+        friendly = 'Upload não permitido: pedido ainda não foi pago/contratado.';
+      } else if (raw.includes('pedido_videos_slot_position_check')) {
+        friendly = `Slot ${slotPosition} indisponível para este pedido. Atualize a página e tente novamente.`;
+      } else if (raw.includes('unique_slot_per_pedido')) {
+        friendly = `Já existe outro vídeo no slot ${slotPosition}. Remova o vídeo atual antes de enviar outro.`;
+      } else if (raw.toLowerCase().includes('row-level security') || raw.toLowerCase().includes('rls')) {
+        friendly = 'Permissão negada para vincular o vídeo ao pedido. Faça login novamente.';
       }
-      
-      throw new Error(`Erro ao salvar no slot: ${slotError.message}`);
+
+      // Rollback: remover storage e registro de videos órfãos
+      await rollbackOrphanUpload(videoUrl, videoRecord.id);
+
+      toast.error(friendly);
+      return { success: false, error: friendly };
     }
 
     console.log('✅ Slot salvo/atualizado com sucesso');
@@ -520,12 +613,14 @@ export const uploadVideo = async (
     }
     
     // Tratamento específico para erros de segurança
+    let friendly = `Erro ao fazer upload do vídeo: ${errorMessage}`;
     if (errorMessage.includes('não permitido para pedidos não pagos')) {
-      toast.error('Upload bloqueado: apenas pedidos pagos podem enviar vídeos');
-    } else {
-      toast.error(`Erro ao fazer upload do vídeo: ${errorMessage}`);
+      friendly = 'Upload bloqueado: apenas pedidos pagos/contratados podem enviar vídeos';
+    } else if (errorMessage.includes('pedido_videos_slot_position_check')) {
+      friendly = `Slot ${slotPosition} indisponível. Atualize a página e tente novamente.`;
     }
-    
-    return { success: false };
+    toast.error(friendly);
+
+    return { success: false, error: friendly };
   }
 };

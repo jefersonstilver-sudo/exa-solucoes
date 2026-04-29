@@ -73,9 +73,18 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const thumbCount = Math.min(16, Math.max(8, Math.floor(duration * 1.5)));
-    canvas.width = 160;
-    canvas.height = 90;
+    // iOS/Safari: gera muito menos thumbnails para evitar travar o seek pesado.
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) ||
+      (/(Macintosh).*Version\/.+ Mobile/.test(ua));
+    const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+    const lowEnd = isIOS || isSafari;
+
+    const thumbCount = lowEnd
+      ? Math.min(8, Math.max(5, Math.floor(duration)))
+      : Math.min(16, Math.max(8, Math.floor(duration * 1.5)));
+    canvas.width = lowEnd ? 120 : 160;
+    canvas.height = lowEnd ? 68 : 90;
     const thumbs: string[] = [];
 
     for (let i = 0; i < thumbCount; i++) {
@@ -83,7 +92,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
       try {
         await seekTo(video, time);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        thumbs.push(canvas.toDataURL('image/jpeg', 0.6));
+        thumbs.push(canvas.toDataURL('image/jpeg', 0.55));
       } catch {
         thumbs.push('');
       }
@@ -166,17 +175,30 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     const endT = startT + ws;
     const trimDuration = ws;
 
-    // Fallback: return a slice of the original file if MediaRecorder fails
-    const createFallbackFile = () => {
-      console.warn('⚠️ Using fallback: returning original file (no re-encoding)');
-      const fallbackFile = new File(
+    // Fallback / iOS path: returns original file + trim metadata, sem reencode no browser.
+    const createMetadataOnlyFile = (reason: string) => {
+      console.warn(`⚠️ [TRIMMER] ${reason} — usando arquivo original com metadados de corte`);
+      const trimmedFile = new File(
         [file],
-        file.name.replace(/\.[^.]+$/, '_trimmed.' + file.name.split('.').pop()),
+        file.name.replace(/\.[^.]+$/, '_trimmed.' + (file.name.split('.').pop() || 'mp4')),
         { type: file.type }
       );
+      (trimmedFile as any)._trimStart = startT;
+      (trimmedFile as any)._trimEnd = endT;
+      (trimmedFile as any)._wasFallbackFromWebm = true;
       setState(prev => ({ ...prev, isProcessing: false, processingProgress: 100 }));
-      return fallbackFile;
+      return trimmedFile;
     };
+
+    // iOS/Safari: MediaRecorder + Canvas é instável e gera arquivos corrompidos.
+    // Vamos direto pelo caminho metadata-only para preservar áudio e qualidade.
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) ||
+      (/(Macintosh).*Version\/.+ Mobile/.test(ua));
+    const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+    if (isIOS || isSafari) {
+      return createMetadataOnlyFile('iOS/Safari detectado');
+    }
 
     try {
       // Setup canvas matching video dimensions
@@ -184,7 +206,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
-      if (!ctx) return createFallbackFile();
+      if (!ctx) return createMetadataOnlyFile('Sem contexto de canvas');
 
       // Setup MediaRecorder
       const stream = canvas.captureStream(30);
@@ -222,7 +244,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
         });
       } catch (recorderError) {
         console.error('❌ MediaRecorder creation failed:', recorderError);
-        return createFallbackFile();
+        return createMetadataOnlyFile('fallback');
       }
 
       const chunks: Blob[] = [];
@@ -249,14 +271,14 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
             recorder.stop();
           } else {
             // Recorder never started or already stopped — use fallback
-            resolve(createFallbackFile());
+            resolve(createMetadataOnlyFile('fallback'));
           }
         };
 
         recorder.onstop = () => {
           const blob = new Blob(chunks, { type: mimeType });
           if (blob.size === 0) {
-            resolve(createFallbackFile());
+            resolve(createMetadataOnlyFile('fallback'));
             return;
           }
           
@@ -295,7 +317,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
         recorder.onerror = () => {
           cleanup();
           // Fallback instead of rejecting
-          resolve(createFallbackFile());
+          resolve(createMetadataOnlyFile('fallback'));
         };
 
         // Safety timeout: 30s max processing time
@@ -316,7 +338,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
             console.error('❌ recorder.start() failed:', startErr);
             resolved = true;
             cleanup();
-            resolve(createFallbackFile());
+            resolve(createMetadataOnlyFile('fallback'));
             return;
           }
           video.play();
@@ -348,7 +370,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
       });
     } catch (error) {
       console.error('❌ Trim failed entirely, using fallback:', error);
-      return createFallbackFile();
+      return createMetadataOnlyFile('fallback');
     }
   }, [state.startTime, state.duration, maxDuration, file]);
 
