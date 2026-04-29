@@ -244,7 +244,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
         });
       } catch (recorderError) {
         console.error('❌ MediaRecorder creation failed:', recorderError);
-        return createMetadataOnlyFile();
+        return createMetadataOnlyFile('fallback');
       }
 
       const chunks: Blob[] = [];
@@ -271,14 +271,14 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
             recorder.stop();
           } else {
             // Recorder never started or already stopped — use fallback
-            resolve(createMetadataOnlyFile());
+            resolve(createMetadataOnlyFile('fallback'));
           }
         };
 
         recorder.onstop = () => {
           const blob = new Blob(chunks, { type: mimeType });
           if (blob.size === 0) {
-            resolve(createMetadataOnlyFile());
+            resolve(createMetadataOnlyFile('fallback'));
             return;
           }
           
@@ -317,7 +317,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
         recorder.onerror = () => {
           cleanup();
           // Fallback instead of rejecting
-          resolve(createMetadataOnlyFile());
+          resolve(createMetadataOnlyFile('fallback'));
         };
 
         // Safety timeout: 30s max processing time
@@ -338,7 +338,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
             console.error('❌ recorder.start() failed:', startErr);
             resolved = true;
             cleanup();
-            resolve(createMetadataOnlyFile());
+            resolve(createMetadataOnlyFile('fallback'));
             return;
           }
           video.play();
@@ -370,7 +370,7 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
       });
     } catch (error) {
       console.error('❌ Trim failed entirely, using fallback:', error);
-      return createMetadataOnlyFile();
+      return createMetadataOnlyFile('fallback');
     }
   }, [state.startTime, state.duration, maxDuration, file]);
 
