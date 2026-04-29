@@ -156,8 +156,9 @@ export const uploadVideo = async (
     // Validar título se fornecido
     if (videoTitle) {
       if (videoTitle.length < 3 || videoTitle.length > 50) {
-        toast.error('Título deve ter entre 3 e 50 caracteres');
-        return { success: false };
+        const reason = 'Título deve ter entre 3 e 50 caracteres';
+        toast.error(reason);
+        return { success: false, error: reason };
       }
     }
 
@@ -191,10 +192,11 @@ export const uploadVideo = async (
     
     const validation = await validateVideoFile(file, videoTipo);
     if (!validation.valid) {
-      uploadSession.logPhaseFailure('VALIDATION', validationStart, validation.errors.join(', '), { errors: validation.errors });
+      const reason = validation.errors.join(', ');
+      uploadSession.logPhaseFailure('VALIDATION', validationStart, reason, { errors: validation.errors });
       console.error('❌ Validação falhou:', validation.errors);
-      toast.error(validation.errors.join(', '));
-      return { success: false };
+      toast.error(reason);
+      return { success: false, error: reason };
     }
 
     uploadSession.logPhaseSuccess('VALIDATION', validationStart, { metadata: validation.metadata });
