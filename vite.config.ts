@@ -43,7 +43,8 @@ export default defineConfig(({ mode }) => ({
     {
       name: "html-build-id",
       transformIndexHtml(html: string) {
-        return html.replace("__BUILD_ID__", BUILD_ID);
+        // Substitui TODAS as ocorrências (Safari pre-load + cache buster)
+        return html.split("__BUILD_ID__").join(BUILD_ID);
       },
     },
   ].filter(Boolean),
