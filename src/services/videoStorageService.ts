@@ -228,9 +228,14 @@ const tusUploadToSupabase = async (
   }
 
   return await new Promise<string>((resolve, reject) => {
+    // Chunk menor em mobile/iOS para evitar timeouts em redes celulares
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const isMobile = /iPad|iPhone|iPod|Android/i.test(ua);
+    const chunkSize = isMobile ? 2 * 1024 * 1024 : 6 * 1024 * 1024;
+
     const upload = new tus.Upload(file, {
       endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
-      retryDelays: [0, 1500, 3000, 6000],
+      retryDelays: [0, 1500, 3000, 6000, 12000],
       headers: {
         authorization: `Bearer ${accessToken}`,
         'x-upsert': 'false',
@@ -244,12 +249,13 @@ const tusUploadToSupabase = async (
         contentType: file.type || 'video/mp4',
         cacheControl: '3600',
       },
-      // Chunk maior para conexões móveis estáveis
-      chunkSize: 6 * 1024 * 1024,
-      onError: (err) => reject(err),
+      chunkSize,
+      onError: (err) => {
+        console.error('❌ [TUS] Erro no upload TUS:', err);
+        reject(new Error(err?.message || 'Falha no upload TUS'));
+      },
       onProgress: (bytesUploaded: number, bytesTotal: number) => {
         if (!onProgress || !bytesTotal) return;
-        // Reservamos os últimos 5% para "salvando registro"
         const pct = Math.min(95, Math.floor((bytesUploaded / bytesTotal) * 95));
         onProgress(pct);
       },
