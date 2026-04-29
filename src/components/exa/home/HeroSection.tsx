@@ -178,7 +178,6 @@ const HeroSection = () => {
     manualRetry,
   } = useResilientVideo({
     primaryUrl: DESKTOP_VIDEO_URL,
-    fallbackUrl: DESKTOP_FALLBACK_URL,
     overrideUrl: dbOverride,
   });
 
