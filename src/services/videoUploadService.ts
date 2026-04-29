@@ -5,7 +5,8 @@ import { setBaseVideo } from '@/services/videoBaseService';
 import { 
   validateVideoFile, 
   uploadVideoToStorage,
-  cleanupPendingUploads
+  cleanupPendingUploads,
+  deleteVideoFromStorage
 } from '@/services/videoStorageService';
 import { validateVideoUploadPermission } from '@/services/videoUploadSecurityService';
 import { validateScheduleConflicts, formatConflictMessage } from './videoScheduleValidationService';
@@ -15,9 +16,78 @@ import { UploadSession } from './videoUploadLogsService';
 
 export interface UploadResult {
   success: boolean;
+  error?: string;
   isMasterApproved?: boolean;
   isBaseActivated?: boolean;
 }
+
+/**
+ * Valida se o slot está dentro do limite real do produto/pedido
+ * antes de gastar banda fazendo upload.
+ */
+const validateSlotCapacity = async (
+  orderId: string,
+  slotPosition: number
+): Promise<{ ok: boolean; reason?: string; maxSlots?: number }> => {
+  try {
+    if (slotPosition < 1 || slotPosition > 10) {
+      return { ok: false, reason: `Posição de slot inválida (${slotPosition}). Mínimo 1, máximo 10.` };
+    }
+
+    const { data: pedido, error: pedidoErr } = await supabase
+      .from('pedidos')
+      .select('tipo_produto')
+      .eq('id', orderId)
+      .single();
+
+    if (pedidoErr || !pedido) {
+      return { ok: false, reason: 'Pedido não encontrado para validar capacidade de vídeos.' };
+    }
+
+    const codigo =
+      (pedido as any).tipo_produto === 'vertical_premium' || (pedido as any).tipo_produto === 'vertical'
+        ? 'vertical_premium'
+        : 'horizontal';
+
+    const { data: produto } = await supabase
+      .from('produtos_exa')
+      .select('max_videos_por_pedido')
+      .eq('codigo', codigo)
+      .single();
+
+    const maxSlots = Math.min(((produto as any)?.max_videos_por_pedido as number) || 10, 10);
+
+    if (slotPosition > maxSlots) {
+      return {
+        ok: false,
+        reason: `Este pedido permite no máximo ${maxSlots} vídeo(s). Slot ${slotPosition} não está disponível.`,
+        maxSlots,
+      };
+    }
+
+    return { ok: true, maxSlots };
+  } catch (e: any) {
+    return { ok: false, reason: e?.message || 'Erro ao validar capacidade do pedido.' };
+  }
+};
+
+/** Limpa storage e registro de vídeo se o vínculo no pedido falhou. */
+const rollbackOrphanUpload = async (videoUrl?: string, videoId?: string) => {
+  try {
+    if (videoUrl) {
+      await deleteVideoFromStorage(videoUrl);
+    }
+  } catch (e) {
+    console.warn('⚠️ [UPLOAD] Falha ao remover arquivo órfão do Storage:', e);
+  }
+  try {
+    if (videoId) {
+      await supabase.from('videos').delete().eq('id', videoId);
+    }
+  } catch (e) {
+    console.warn('⚠️ [UPLOAD] Falha ao remover registro órfão de videos:', e);
+  }
+};
 
 export const uploadVideo = async (
   slotPosition: number,
