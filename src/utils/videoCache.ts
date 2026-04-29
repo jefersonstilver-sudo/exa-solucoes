@@ -64,11 +64,15 @@ export class VideoCache {
     try {
       await this.init();
 
-      // Verificar se já está em cache
-      if (await this.hasCachedVideo(videoId)) {
+      // Invalidar entrada se a URL no DB mudou (evita servir blob antigo)
+      const existing = await this.getFromStore(videoId);
+      if (existing && existing.videoUrl && existing.videoUrl !== videoUrl) {
+        console.log('[VideoCache] URL mudou — invalidando blob antigo:', { videoId });
+        await this.deleteFromStore(videoId);
+      } else if (existing) {
         return true;
       }
-      
+
       // Baixar o vídeo
       const response = await fetch(videoUrl);
       if (!response.ok) {
@@ -259,6 +263,24 @@ export class VideoCache {
 
       request.onsuccess = () => resolve(request.result || null);
       request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * Remover entrada específica do store
+   */
+  private async deleteFromStore(videoId: string): Promise<void> {
+    if (!this.db) return;
+    return new Promise((resolve) => {
+      try {
+        const transaction = this.db!.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.delete(videoId);
+        request.onsuccess = () => resolve();
+        request.onerror = () => resolve();
+      } catch {
+        resolve();
+      }
     });
   }
 }

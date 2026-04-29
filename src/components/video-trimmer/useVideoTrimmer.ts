@@ -73,12 +73,21 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // iOS/Safari: gera muito menos thumbnails para evitar travar o seek pesado.
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
     const isIOS = /iPad|iPhone|iPod/.test(ua) ||
       (/(Macintosh).*Version\/.+ Mobile/.test(ua));
+    const isAndroid = /Android/i.test(ua);
+    const isMobile = isIOS || isAndroid;
+
+    // Em mobile, o trimmer usa um slider simples (sem thumbnails),
+    // então não desperdiçamos seeks pesados que travam o Safari.
+    if (isMobile) {
+      setState(prev => ({ ...prev, thumbnails: [] }));
+      return;
+    }
+
     const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
-    const lowEnd = isIOS || isSafari;
+    const lowEnd = isSafari;
 
     const thumbCount = lowEnd
       ? Math.min(8, Math.max(5, Math.floor(duration)))

@@ -7,6 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useVideoTrimmer } from './useVideoTrimmer';
 import { TrimmerTimeline } from './TrimmerTimeline';
+import { SimpleTrimmerSlider } from './SimpleTrimmerSlider';
+
+const isMobileDevice = () => {
+  if (typeof navigator === 'undefined') return false;
+  return /iPad|iPhone|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 640;
+};
 
 interface VideoTrimmerModalProps {
   file: File;
@@ -28,11 +34,14 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
     state,
     endTime,
     selectedDuration,
+    windowSize,
     setStartTime,
     togglePlay,
     seekPreview,
     trimVideo,
   } = useVideoTrimmer({ file, maxDuration });
+
+  const isMobile = isMobileDevice();
 
   const handleTrim = async () => {
     try {
@@ -160,16 +169,25 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
             {/* Timeline section */}
             <div className="px-4 sm:px-6 pt-4 pb-2 bg-white flex-shrink-0 border-t border-slate-100">
               {state.isReady && (
-                <TrimmerTimeline
-                  duration={state.duration}
-                  startTime={state.startTime}
-                  endTime={endTime}
-                  currentTime={state.currentTime}
-                  maxDuration={maxDuration}
-                  thumbnails={state.thumbnails}
-                  onStartChange={setStartTime}
-                  onSeek={seekPreview}
-                />
+                isMobile ? (
+                  <SimpleTrimmerSlider
+                    duration={state.duration}
+                    startTime={state.startTime}
+                    windowSize={windowSize}
+                    onStartChange={setStartTime}
+                  />
+                ) : (
+                  <TrimmerTimeline
+                    duration={state.duration}
+                    startTime={state.startTime}
+                    endTime={endTime}
+                    currentTime={state.currentTime}
+                    maxDuration={maxDuration}
+                    thumbnails={state.thumbnails}
+                    onStartChange={setStartTime}
+                    onSeek={seekPreview}
+                  />
+                )
               )}
             </div>
 
