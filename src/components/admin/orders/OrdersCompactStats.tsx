@@ -9,6 +9,8 @@ interface RealStats {
   total_orders: number;
   receita_confirmada: number;
   receita_prevista: number;
+  receita_avista: number;
+  receita_mensal_recorrente: number;
   pedidos_ativos: number;
   pedidos_finalizados: number;
   pedidos_processando: number;
@@ -46,6 +48,8 @@ const OrdersCompactStats: React.FC<OrdersCompactStatsProps> = ({
     total_orders: stats.total_orders,
     receita_confirmada: stats.total_revenue,
     receita_prevista: stats.total_revenue,
+    receita_avista: 0,
+    receita_mensal_recorrente: 0,
     pedidos_ativos: activeOrdersCount,
     total_tentativas: stats.total_attempts,
     valor_abandonado: stats.abandoned_value,
