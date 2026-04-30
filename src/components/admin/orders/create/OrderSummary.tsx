@@ -15,7 +15,14 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ formData }) => {
     { label: 'Produto', value: formData.tipoProduto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal', ok: true },
     { label: 'Prédios', value: `${formData.listaPredios.length} selecionado(s)`, ok: formData.listaPredios.length > 0 },
     { label: 'Plano', value: `${formData.planoMeses} mês(es)`, ok: true },
-    { label: 'Valor', value: `R$ ${formData.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, ok: formData.valorTotal > 0 },
+    {
+      label: 'Cobrança',
+      value: formData.tipoCobranca === 'mensal'
+        ? `Mensal — R$ ${(formData.valorMensal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês × ${formData.planoMeses}`
+        : 'À Vista',
+      ok: true,
+    },
+    { label: 'Valor Total', value: `R$ ${formData.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, ok: formData.valorTotal > 0 },
     { label: 'Pagamento', value: formData.metodoPagamento, ok: true },
     { label: 'Status', value: formData.statusInicial, ok: true },
     { label: 'Logo', value: formData.logoFile ? formData.logoFile.name : 'Não enviada', ok: true },
