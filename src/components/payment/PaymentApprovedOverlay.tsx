@@ -14,11 +14,6 @@ const PaymentApprovedOverlay: React.FC<PaymentApprovedOverlayProps> = ({
   const [countdown, setCountdown] = useState(Math.ceil(autoRedirectTimeout / 1000));
 
   useEffect(() => {
-    // Play success sound
-    const audio = new Audio('/brand-assets/success-sound.mp3');
-    audio.volume = 0.3;
-    audio.play().catch(console.error);
-
     // Countdown timer
     const countdownInterval = setInterval(() => {
       setCountdown((prev) => {
