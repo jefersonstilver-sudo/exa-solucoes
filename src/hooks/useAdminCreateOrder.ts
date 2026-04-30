@@ -21,6 +21,8 @@ export interface AdminOrderFormData {
   listaPaineis: string[];
   planoMeses: number;
   valorTotal: number;
+  tipoCobranca: 'avista' | 'mensal';
+  valorMensal: number;
   dataInicio: string;
   dataFim: string;
   metodoPagamento: string;
