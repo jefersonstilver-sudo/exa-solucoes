@@ -61,7 +61,7 @@ const ExaQRCodeWithLogo: React.FC<ExaQRCodeWithLogoProps> = ({
           }}
         >
           <img 
-            src="/lovable-uploads/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png"
+            src="/brand-assets/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png"
             alt="EXA Publicidade Inteligente - Painéis Digitais para Elevadores em Foz do Iguaçu"
             className="w-full h-full object-contain"
             loading="lazy"

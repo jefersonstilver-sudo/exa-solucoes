@@ -83,13 +83,13 @@ const BuildingStore = () => {
         title="Anuncie em Painéis Digitais de Elevadores | A partir de R$297/mês - EXA"
         description="Alcance 10.000+ pessoas em prédios premium de Foz do Iguaçu. Anúncios em painéis digitais 21&quot; HD nos elevadores. Segmentação por perfil, rastreamento em tempo real. Planos a partir de R$297."
         keywords="anunciar painel digital, preço publicidade elevador, quanto custa anúncio prédio, contratar mídia indoor, publicidade elevador preço, anúncio prédio residencial, mídia indoor foz iguaçu"
-        canonical="https://exa.com.br/loja"
-        ogImage="https://exa.com.br/og-loja.jpg"
+        canonical="https://www.examidia.com.br/loja"
+        ogImage="https://www.examidia.com.br/og-loja.jpg"
         structuredData={[
           organizationSchema,
           createBreadcrumbSchema([
-            { name: 'Início', url: 'https://exa.com.br/' },
-            { name: 'Loja', url: 'https://exa.com.br/loja' }
+            { name: 'Início', url: 'https://www.examidia.com.br/' },
+            { name: 'Loja', url: 'https://www.examidia.com.br/loja' }
           ]),
           createFAQSchema(lojaFAQs)
         ]}

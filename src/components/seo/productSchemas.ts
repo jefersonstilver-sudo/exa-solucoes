@@ -13,10 +13,10 @@ export const planoEssencialSchema = {
     "price": "297",
     "priceCurrency": "BRL",
     "availability": "https://schema.org/InStock",
-    "url": "https://exa.com.br/loja?plano=1",
+    "url": "https://www.examidia.com.br/loja?plano=1",
     "priceValidUntil": "2025-12-31",
     "seller": {
-      "@id": "https://exa.com.br/#organization"
+      "@id": "https://www.examidia.com.br/#organization"
     }
   },
   "aggregateRating": {
@@ -39,10 +39,10 @@ export const planoExpansaoSchema = {
     "price": "697",
     "priceCurrency": "BRL",
     "availability": "https://schema.org/InStock",
-    "url": "https://exa.com.br/loja?plano=3",
+    "url": "https://www.examidia.com.br/loja?plano=3",
     "priceValidUntil": "2025-12-31",
     "seller": {
-      "@id": "https://exa.com.br/#organization"
+      "@id": "https://www.examidia.com.br/#organization"
     }
   },
   "aggregateRating": {
@@ -65,10 +65,10 @@ export const planoPremiumSchema = {
     "price": "1297",
     "priceCurrency": "BRL",
     "availability": "https://schema.org/InStock",
-    "url": "https://exa.com.br/loja?plano=6",
+    "url": "https://www.examidia.com.br/loja?plano=6",
     "priceValidUntil": "2025-12-31",
     "seller": {
-      "@id": "https://exa.com.br/#organization"
+      "@id": "https://www.examidia.com.br/#organization"
     }
   },
   "aggregateRating": {
@@ -91,10 +91,10 @@ export const planoDominioSchema = {
     "price": "2397",
     "priceCurrency": "BRL",
     "availability": "https://schema.org/InStock",
-    "url": "https://exa.com.br/loja?plano=12",
+    "url": "https://www.examidia.com.br/loja?plano=12",
     "priceValidUntil": "2025-12-31",
     "seller": {
-      "@id": "https://exa.com.br/#organization"
+      "@id": "https://www.examidia.com.br/#organization"
     }
   },
   "aggregateRating": {
@@ -108,12 +108,12 @@ export const heroVideoSchema = {
   "@type": "VideoObject",
   "name": "Como Funciona a EXA - Publicidade em Painéis Digitais de Elevadores",
   "description": "Veja como nossos painéis digitais 21\" transformam elevadores em mídia premium. Alcance público de alto padrão com 95% de taxa de visualização em Foz do Iguaçu.",
-  "thumbnailUrl": "https://exa.com.br/lovable-uploads/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png",
+  "thumbnailUrl": "https://www.examidia.com.br/brand-assets/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png",
   "uploadDate": "2025-01-20",
   "duration": "PT1M45S",
   "contentUrl": "https://indexa.net.br/wp-content/uploads/2025/01/indexa_exa.mp4",
-  "embedUrl": "https://exa.com.br/",
+  "embedUrl": "https://www.examidia.com.br/",
   "publisher": {
-    "@id": "https://exa.com.br/#organization"
+    "@id": "https://www.examidia.com.br/#organization"
   }
 };

@@ -15,7 +15,7 @@ const PaymentApprovedOverlay: React.FC<PaymentApprovedOverlayProps> = ({
 
   useEffect(() => {
     // Play success sound
-    const audio = new Audio('/lovable-uploads/success-sound.mp3');
+    const audio = new Audio('/brand-assets/success-sound.mp3');
     audio.volume = 0.3;
     audio.play().catch(console.error);
 

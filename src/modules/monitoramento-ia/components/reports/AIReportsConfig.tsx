@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export const AIReportsConfig = () => {
   const [isEnabled, setIsEnabled] = useState(false);
   const [selectedHour, setSelectedHour] = useState('06:00');
-  const [emails, setEmails] = useState<string[]>(['diretor@exa.com.br', 'ceo@examidia.com.br']);
+  const [emails, setEmails] = useState<string[]>(['diretor@www.examidia.com.br', 'ceo@examidia.com.br']);
   const [newEmail, setNewEmail] = useState('');
   const { toast } = useToast();
 

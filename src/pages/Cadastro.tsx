@@ -294,13 +294,13 @@ const Cadastro: React.FC = () => {
         title="Criar Conta - EXA Publicidade Inteligente" 
         description="Crie sua conta gratuita na EXA e comece a anunciar em painéis digitais de elevadores em Foz do Iguaçu. Cadastro rápido e seguro." 
         keywords="criar conta exa, cadastro anunciante, criar anúncio elevador, cadastro mídia indoor" 
-        canonical="https://exa.com.br/cadastro" 
+        canonical="https://www.examidia.com.br/cadastro" 
         noindex={true} 
         structuredData={[
           organizationSchema, 
           createBreadcrumbSchema([
-            { name: 'Início', url: 'https://exa.com.br/' }, 
-            { name: 'Cadastro', url: 'https://exa.com.br/cadastro' }
+            { name: 'Início', url: 'https://www.examidia.com.br/' }, 
+            { name: 'Cadastro', url: 'https://www.examidia.com.br/cadastro' }
           ])
         ]} 
       />

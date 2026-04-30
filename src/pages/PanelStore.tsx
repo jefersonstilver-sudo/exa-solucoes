@@ -135,14 +135,14 @@ export default function PanelStore() {
         title="Loja Online de Painéis Digitais para Elevadores | EXA Foz do Iguaçu"
         description="Compre publicidade em painéis digitais 21&quot; HD instalados em elevadores de prédios premium em Foz do Iguaçu. Planos a partir de R$297/mês. Escolha seu prédio, crie seu anúncio e comece a impactar milhares de pessoas hoje."
         keywords="comprar espaço publicitário elevador, anunciar em prédio, painel digital loja online, publicidade condomínio preço, quanto custa anunciar elevador foz iguaçu"
-        canonical="https://exa.com.br/loja"
-        ogImage="https://exa.com.br/og-loja.jpg"
+        canonical="https://www.examidia.com.br/loja"
+        ogImage="https://www.examidia.com.br/og-loja.jpg"
         structuredData={[
           organizationSchema,
           serviceSchema,
           createBreadcrumbSchema([
-            { name: 'Início', url: 'https://exa.com.br/' },
-            { name: 'Loja Online', url: 'https://exa.com.br/loja' }
+            { name: 'Início', url: 'https://www.examidia.com.br/' },
+            { name: 'Loja Online', url: 'https://www.examidia.com.br/loja' }
           ]),
           createFAQSchema(lojaFAQs),
           {

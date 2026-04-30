@@ -28,14 +28,14 @@ const MidiaIndoorVsOutdoor = () => {
         title="Mídia Indoor vs Outdoor: Guia Completo Para Escolher [2025]"
         description="Comparação detalhada entre publicidade indoor e outdoor. Custos, ROI, casos de uso, vantagens e quando usar cada formato. Tabela comparativa completa + exemplos reais."
         keywords="mídia indoor vs outdoor, outdoor ou elevador, publicidade indoor vantagens, diferença indoor outdoor, melhor tipo publicidade negócio local"
-        canonical="https://exa.com.br/blog/midia-indoor-vs-outdoor"
-        ogImage="https://exa.com.br/blog/og-indoor-outdoor.jpg"
+        canonical="https://www.examidia.com.br/blog/midia-indoor-vs-outdoor"
+        ogImage="https://www.examidia.com.br/blog/og-indoor-outdoor.jpg"
         structuredData={[
           organizationSchema,
           createBreadcrumbSchema([
-            { name: 'Início', url: 'https://exa.com.br/' },
-            { name: 'Blog', url: 'https://exa.com.br/blog' },
-            { name: 'Indoor vs Outdoor', url: 'https://exa.com.br/blog/midia-indoor-vs-outdoor' }
+            { name: 'Início', url: 'https://www.examidia.com.br/' },
+            { name: 'Blog', url: 'https://www.examidia.com.br/blog' },
+            { name: 'Indoor vs Outdoor', url: 'https://www.examidia.com.br/blog/midia-indoor-vs-outdoor' }
           ]),
           createFAQSchema(articleFAQs)
         ]}
