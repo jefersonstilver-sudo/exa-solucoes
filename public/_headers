@@ -3,9 +3,9 @@
   X-XSS-Protection: 1; mode=block
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co https://www.googletagmanager.com https://maps.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in https://examidia.com.br https://*.examidia.com.br; connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://api.asaas.com https://maps.googleapis.com https://viacep.com.br https://brasilapi.com.br https://receitaws.com.br; frame-ancestors 'self' https://*.lovable.app https://*.lovableproject.com;base-uri 'self'; form-action 'self';
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://maps.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in https://www.examidia.com.br https://*.examidia.com.br; connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://api.asaas.com https://maps.googleapis.com https://viacep.com.br https://brasilapi.com.br https://receitaws.com.br; frame-ancestors 'self'; base-uri 'self'; form-action 'self';
 
-# HTML/SPA shell — sempre revalidar para evitar versão antiga em cache (Safari/iPhone)
+# HTML/SPA shell — always revalidate to avoid stale cache (Safari/iPhone)
 /
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
   Pragma: no-cache
@@ -16,13 +16,12 @@
   Pragma: no-cache
   Expires: 0
 
-# Service Worker e manifest devem ser sempre revalidados
 /sw.js
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
 /site.webmanifest
   Cache-Control: no-cache, must-revalidate
 
-# Assets versionados (com hash) — cache longo e imutável
+# Hashed/versioned build assets — long-lived immutable cache
 /assets/*
   Cache-Control: public, max-age=31536000, immutable

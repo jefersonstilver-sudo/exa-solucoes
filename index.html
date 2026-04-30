@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    
-    <!-- 🚨 ERP SUBDOMAIN REDIRECT - Must run FIRST before anything else -->
+
+    <!-- ERP subdomain redirect — runs first -->
     <script>
       (function() {
         var h = window.location.hostname;
@@ -13,8 +13,8 @@
         }
       })();
     </script>
-    
-    <!-- 🧹 SW CLEANUP - Remove any cached Service Workers from previous PWA builds -->
+
+    <!-- Service Worker cleanup (legacy PWA builds) -->
     <script>
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(regs) {
@@ -27,78 +27,129 @@
         }
       }
     </script>
-    
-    <title>EXA | Publicidade Inteligente em Elevadores - Foz do Iguaçu</title>
-    <meta name="description" content="Transforme elevadores em mídia premium. Alcance milhares de moradores diariamente em prédios de alto padrão.">
-    <meta name="author" content="EXA Publicidade Inteligente" />
-    
-    <!-- Cache Control - Prevent stale content -->
+
+    <title>EXA Mídia · Publicidade Inteligente em Elevadores · Foz do Iguaçu/PR</title>
+    <meta name="description" content="EXA Mídia · DOOH residencial premium em Foz do Iguaçu. Painéis digitais 21\" em elevadores de prédios de alto padrão. Alcance moradores qualificados com publicidade que convive, não interrompe." />
+    <meta name="author" content="EXA Mídia · Indexa Mídia LTDA" />
+    <meta name="keywords" content="EXA Mídia, painel digital elevador, publicidade DOOH, mídia indoor condomínio, anunciar Foz do Iguaçu, digital signage residencial" />
+
+    <!-- Cache Control -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
 
-    <!-- Security Headers -->
+    <!-- Security -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
-    
-    <!-- Favicons para todos os dispositivos -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon.png" />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="shortcut icon" href="/favicon.png" />
-    
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#9C1E1E" />
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#C7141A" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    <meta name="msapplication-TileColor" content="#C7141A" />
+
+    <!-- Theme / PWA -->
+    <meta name="theme-color" content="#C7141A" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="EXA" />
-    
-    <!-- Mobile Optimizations -->
+    <meta name="apple-mobile-web-app-title" content="EXA Mídia" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="format-detection" content="telephone=no" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    
+
+    <!-- Geo -->
+    <meta name="geo.region" content="BR-PR" />
+    <meta name="geo.placename" content="Foz do Iguaçu" />
+    <meta name="geo.position" content="-25.5163;-54.5854" />
+    <meta name="ICBM" content="-25.5163, -54.5854" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://www.examidia.com.br/" />
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
-    <!-- Google Maps (preconnect para CTA da landing /interessesindico) -->
+    <!-- Google Maps preconnect -->
     <link rel="dns-prefetch" href="https://maps.googleapis.com" />
     <link rel="preconnect" href="https://maps.googleapis.com" crossorigin />
     <link rel="dns-prefetch" href="https://maps.gstatic.com" />
     <link rel="preconnect" href="https://maps.gstatic.com" crossorigin />
 
-    
-    
-    <!-- Open Graph / Facebook / WhatsApp -->
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="EXA | Publicidade Inteligente em Elevadores" />
-    <meta property="og:description" content="Transforme elevadores em mídia premium. Alcance milhares de moradores diariamente." />
-    <meta property="og:image" content="https://examidia.com.br/og-image.jpg?v=2" />
-    <meta property="og:image:secure_url" content="https://examidia.com.br/og-image.jpg?v=2" />
-    <meta property="og:image:type" content="image/jpeg" />
-    <meta property="og:image:width" content="1024" />
-    <meta property="og:image:height" content="1024" />
-    <meta property="og:image:alt" content="EXA - Publicidade Inteligente em Elevadores" />
-    <meta property="og:url" content="https://examidia.com.br/" />
-    <meta property="og:site_name" content="EXA Publicidade Inteligente" />
+    <meta property="og:title" content="EXA Mídia · Publicidade Inteligente em Elevadores" />
+    <meta property="og:description" content="DOOH residencial premium em Foz do Iguaçu/PR. Painéis digitais 21\" em prédios de alto padrão." />
+    <meta property="og:image" content="https://www.examidia.com.br/og-image.png" />
+    <meta property="og:image:secure_url" content="https://www.examidia.com.br/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="EXA Mídia — Publicidade Inteligente em Elevadores" />
+    <meta property="og:url" content="https://www.examidia.com.br/" />
+    <meta property="og:site_name" content="EXA Mídia" />
     <meta property="og:locale" content="pt_BR" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@exa_publicidade" />
-    <meta name="twitter:title" content="EXA | Publicidade Inteligente em Elevadores" />
-    <meta name="twitter:description" content="Transforme elevadores em mídia premium. Alcance milhares de moradores diariamente." />
-    <meta name="twitter:image" content="https://examidia.com.br/og-image.jpg?v=2" />
-    <meta name="twitter:image:alt" content="EXA - Publicidade Inteligente em Elevadores" />
-</head>
+    <meta name="twitter:title" content="EXA Mídia · Publicidade Inteligente em Elevadores" />
+    <meta name="twitter:description" content="DOOH residencial premium em Foz do Iguaçu/PR." />
+    <meta name="twitter:image" content="https://www.examidia.com.br/twitter-card.png" />
+    <meta name="twitter:image:alt" content="EXA Mídia — Publicidade Inteligente em Elevadores" />
+
+    <!-- JSON-LD: Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": ["Organization", "LocalBusiness"],
+      "@id": "https://www.examidia.com.br/#organization",
+      "name": "EXA Mídia",
+      "legalName": "Indexa Mídia LTDA",
+      "alternateName": ["EXA", "EXA Mídia Digital"],
+      "url": "https://www.examidia.com.br",
+      "logo": "https://www.examidia.com.br/android-chrome-512x512.png",
+      "image": "https://www.examidia.com.br/og-image.png",
+      "description": "DOOH residencial premium em Foz do Iguaçu/PR. Painéis digitais 21\" instalados em elevadores de prédios de alto padrão.",
+      "telephone": "+55 45 9141-5856",
+      "email": "contato@examidia.com.br",
+      "taxID": "38.142.638/0001-30",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Foz do Iguaçu",
+        "addressRegion": "PR",
+        "postalCode": "85851-000",
+        "addressCountry": "BR"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "-25.5163",
+        "longitude": "-54.5854"
+      },
+      "areaServed": {
+        "@type": "City",
+        "name": "Foz do Iguaçu"
+      },
+      "sameAs": [
+        "https://instagram.com/exa.midia",
+        "https://www.linkedin.com/company/exa-midia"
+      ],
+      "slogan": "Publicidade que convive, não interrompe."
+    }
+    </script>
+  </head>
 
   <body>
     <div id="root"></div>
-    
-    <!-- 🔄 HARD CACHE BUST - Detect stale HTML and force reload -->
+
+    <!-- Hard cache bust -->
     <script>
       (function() {
         var BUILD_ID = '__BUILD_ID__';
@@ -122,8 +173,8 @@
         }
       })();
     </script>
-    
-    <!-- 🍎 SAFARI/iOS PRE-LOAD VERSION CHECK - runs before React bundle -->
+
+    <!-- Safari/iOS pre-load version check -->
     <script>
       (function() {
         var BUILD_ID = '__BUILD_ID__';
@@ -135,7 +186,6 @@
         .then(function(r) { return r.json(); })
         .then(function(d) {
           if (d.version && d.version !== '0' && d.version !== BUILD_ID) {
-            console.log('[PRE-LOAD] New version: ' + d.version + ' (local: ' + BUILD_ID + '). Forcing reload...');
             sessionStorage.setItem('v-check-done', '1');
             localStorage.removeItem('html-build-id');
             localStorage.removeItem('app-version');
@@ -152,9 +202,8 @@
         .catch(function() {});
       })();
     </script>
-    
-    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+
+    <!-- DEV_EDITOR_SCRIPT_PLACEHOLDER -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

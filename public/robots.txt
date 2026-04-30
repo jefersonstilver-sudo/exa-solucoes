@@ -1,5 +1,5 @@
-# EXA Publicidade Inteligente - Robots.txt
-# Última atualização: 2025-01-20
+# EXA Mídia — robots.txt
+# https://www.examidia.com.br
 
 User-agent: Googlebot
 Allow: /
@@ -19,7 +19,13 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-# Crawlers de ferramentas SEO (limitar carga)
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+# SEO crawlers — limit load
 User-agent: SemrushBot
 Crawl-delay: 10
 
@@ -29,28 +35,31 @@ Crawl-delay: 10
 User-agent: MJ12bot
 Crawl-delay: 10
 
-# Bloquear crawlers ruins
+# Block low-value bots
 User-agent: BLEXBot
 Disallow: /
 
 User-agent: DataForSeoBot
 Disallow: /
 
-# Regras para todos os outros bots
+# Default policy
 User-agent: *
 Allow: /
 Allow: /loja
 Allow: /sou-sindico
 Allow: /contato
 Allow: /plano
+Allow: /vagadevideomaker
 
-# Bloquear áreas administrativas
+# Admin and private areas
 Disallow: /admin/
 Disallow: /super_admin/
+Disallow: /sistema/
 Disallow: /57303905503127900/
 Disallow: /painel-debug/
+Disallow: /monitor
 
-# Bloquear checkout e áreas privadas
+# Checkout / private
 Disallow: /checkout/
 Disallow: /payment
 Disallow: /pix-payment
@@ -58,16 +67,15 @@ Disallow: /anunciante/
 Disallow: /pedido-confirmado
 Disallow: /confirmacao
 
-# Bloquear parâmetros de rastreamento
+# Tracking parameters
 Disallow: /*?utm_*
 Disallow: /*?ref=*
 Disallow: /*?fbclid=*
 Disallow: /*?gclid=*
 
-# Bloquear recursos técnicos
+# Technical resources
 Disallow: /api/
 Disallow: /*.json$
 Disallow: /src/
 
-# Sitemaps
 Sitemap: https://www.examidia.com.br/sitemap.xml
