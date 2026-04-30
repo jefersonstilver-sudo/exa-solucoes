@@ -117,12 +117,14 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
       const { data } = await supabase
         .from('buildings')
         .select('id, nome, bairro, codigo_predio, status')
-        .in('status', ['ativo', 'interno'])
+        .in('status', ['ativo', 'instalacao', 'interno'])
         .order('nome');
-      // Sort: ativos first, internos last
+      // Sort: ativos → instalacao → internos (alfabético dentro de cada grupo)
+      const statusRank: Record<string, number> = { ativo: 0, instalacao: 1, interno: 2 };
       const sorted = (data || []).sort((a, b) => {
-        if (a.status === 'interno' && b.status !== 'interno') return 1;
-        if (a.status !== 'interno' && b.status === 'interno') return -1;
+        const ra = statusRank[a.status] ?? 99;
+        const rb = statusRank[b.status] ?? 99;
+        if (ra !== rb) return ra - rb;
         return a.nome.localeCompare(b.nome);
       });
       setBuildings(sorted);
