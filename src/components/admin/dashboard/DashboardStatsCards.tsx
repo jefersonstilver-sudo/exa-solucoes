@@ -138,6 +138,11 @@ const DashboardStatsCards = ({ stats, growthData }: DashboardStatsCardsProps) =>
                 Total: <span className="font-semibold text-[hsl(var(--apple-gray-700))]">{card.accumulated.toLocaleString()}</span>
               </div>
             )}
+            {(card as any).breakdown && (
+              <div className="mt-2 text-[11px] text-[hsl(var(--apple-gray-500))] px-4 leading-tight">
+                {(card as any).breakdown}
+              </div>
+            )}
           </motion.div>
         ))}
       </motion.div>
