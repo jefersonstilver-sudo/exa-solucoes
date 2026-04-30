@@ -75,6 +75,9 @@ const DashboardStatsCards = ({ stats, growthData }: DashboardStatsCardsProps) =>
       growth: growthData?.revenue || 0,
       icon: DollarSign,
       iconColor: 'text-amber-600',
+      breakdown: (stats.monthly_revenue_avista || 0) > 0 || (stats.monthly_revenue_recorrente || 0) > 0
+        ? `À vista: ${formatCurrency(stats.monthly_revenue_avista || 0)} · Mensal: ${formatCurrency(stats.monthly_revenue_recorrente || 0)}/mês`
+        : null,
     }
   ];
 
