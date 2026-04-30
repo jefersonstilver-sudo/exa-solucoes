@@ -61,13 +61,13 @@ const Home: React.FC = () => {
         title="Painéis Digitais para Elevadores em Foz do Iguaçu | EXA Publicidade Inteligente"
         description="Anuncie em painéis digitais HD de 21&quot; nos elevadores de Foz do Iguaçu. Alcance milhares de pessoas diariamente com mídia indoor de alto impacto. Planos a partir de R$297/mês. Instalação gratuita para síndicos."
         keywords="painel digital elevador foz iguaçu, publicidade elevador, mídia indoor, anúncio prédio residencial, outdoor digital, marketing condomínio, painéis publicitários digitais"
-        canonical="https://examidia.com.br/"
-        ogImage="https://examidia.com.br/og-image.jpg?v=3"
+        canonical="https://www.examidia.com.br/"
+        ogImage="https://www.examidia.com.br/og-image.png"
         structuredData={[
           organizationSchema,
           webSiteSchema,
           createBreadcrumbSchema([
-            { name: 'Início', url: 'https://examidia.com.br/' }
+            { name: 'Início', url: 'https://www.examidia.com.br/' }
           ]),
           createFAQSchema(homeFAQs)
         ]}

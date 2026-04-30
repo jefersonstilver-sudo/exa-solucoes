@@ -22,13 +22,13 @@ const SouSindico = () => {
         title="Painel Digital GRATUITO para Seu Condomínio | EXA"
         description="Síndico, modernize seu prédio sem gastar nada! Painel digital grátis + WIFI + instalação gratuita."
         keywords="painel digital gratuito condomínio, comunicação visual síndico, modernizar condomínio foz iguaçu, painel aviso elevador grátis, tecnologia condomínio gratuita, como modernizar condomínio sem custo"
-        canonical="https://examidia.com.br/sou-sindico"
-        ogImage="https://examidia.com.br/og-image.jpg?v=3"
+        canonical="https://www.examidia.com.br/sou-sindico"
+        ogImage="https://www.examidia.com.br/og-image.png"
         structuredData={[
           organizationSchema,
           createBreadcrumbSchema([
-            { name: 'Início', url: 'https://examidia.com.br/' },
-            { name: 'Sou Síndico', url: 'https://examidia.com.br/sou-sindico' }
+            { name: 'Início', url: 'https://www.examidia.com.br/' },
+            { name: 'Sou Síndico', url: 'https://www.examidia.com.br/sou-sindico' }
           ]),
           createFAQSchema(sindicoFAQs)
         ]}

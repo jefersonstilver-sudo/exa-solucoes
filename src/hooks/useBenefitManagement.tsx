@@ -321,7 +321,7 @@ export const useBenefitManagement = () => {
   };
 
   const copyBenefitLink = (token: string) => {
-    const link = `https://examidia.com.br/presente?token=${token}`;
+    const link = `https://www.examidia.com.br/presente?token=${token}`;
     navigator.clipboard.writeText(link);
     toast.success('Link copiado para a área de transferência!');
   };

@@ -564,7 +564,7 @@ const PropostasPage = () => {
   };
 
   const handleCopyLink = (proposal: Proposal) => {
-    const link = `https://examidia.com.br/propostacomercial/${proposal.id}`;
+    const link = `https://www.examidia.com.br/propostacomercial/${proposal.id}`;
     navigator.clipboard.writeText(link);
     toast.success('Link copiado!');
   };

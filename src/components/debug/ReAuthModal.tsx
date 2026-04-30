@@ -96,7 +96,7 @@ export const ReAuthModal: React.FC<ReAuthModalProps> = ({ open, onClose, onSucce
                 <>
                   <strong>ATENÇÃO:</strong> Ativar o Debug com IA irá:
                   <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>Consumir créditos da Lovable AI</li>
+                    <li>Consumir créditos de IA</li>
                     <li>Analisar profundamente cada página</li>
                     <li>Registrar tudo em logs permanentes</li>
                   </ul>

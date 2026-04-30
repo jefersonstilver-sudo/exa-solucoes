@@ -1706,14 +1706,14 @@ const PropostaPublicaPage = () => {
         <link rel="icon" type="image/png" href="/favicon.png" />
         <meta property="og:title" content={`${proposal.client_company_name || proposal.client_name} | Proposta EXA`} />
         <meta property="og:description" content={`Proposta comercial de publicidade inteligente em elevadores para ${proposal.client_company_name || proposal.client_name}`} />
-        <meta property="og:image" content="https://examidia.com.br/og-image.jpg?v=2" />
+        <meta property="og:image" content="https://www.examidia.com.br/og-image.png" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="EXA Publicidade Inteligente" />
         <meta property="og:locale" content="pt_BR" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${proposal.client_company_name || proposal.client_name} | Proposta EXA`} />
         <meta name="twitter:description" content={`Proposta comercial de publicidade inteligente em elevadores para ${proposal.client_company_name || proposal.client_name}`} />
-        <meta name="twitter:image" content="https://examidia.com.br/og-image.jpg?v=2" />
+        <meta name="twitter:image" content="https://www.examidia.com.br/og-image.png" />
       </Helmet>
 
       {/* Contract Flow: Loading Screen */}
@@ -2030,7 +2030,7 @@ const PropostaPublicaPage = () => {
             <Button 
               variant="outline" 
               className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
-              onClick={() => window.open('https://examidia.com.br', '_blank')}
+              onClick={() => window.open('https://www.examidia.com.br', '_blank')}
             >
               <Globe className="h-4 w-4 mr-2 text-[#9C1E1E]" />
               Visitar Nosso Site
@@ -2039,7 +2039,7 @@ const PropostaPublicaPage = () => {
             <Button 
               variant="outline" 
               className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
-              onClick={() => window.open('https://examidia.com.br/quem-somos', '_blank')}
+              onClick={() => window.open('https://www.examidia.com.br/quem-somos', '_blank')}
             >
               <Users className="h-4 w-4 mr-2 text-[#9C1E1E]" />
               Quem Somos

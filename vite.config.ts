@@ -15,6 +15,12 @@ const NO_CACHE_HEADERS = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
 };
 
+// Editor-companion script tag (only injected in development).
+// In production builds the placeholder is stripped, leaving zero traces in the HTML source.
+const DEV_EDITOR_SCRIPT =
+  '<script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>';
+const DEV_EDITOR_PLACEHOLDER = "<!-- DEV_EDITOR_SCRIPT_PLACEHOLDER -->";
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
@@ -22,15 +28,12 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     headers: NO_CACHE_HEADERS,
   },
-  // Inject build timestamp for dynamic versioning
   define: {
     __BUILD_TIMESTAMP__: BUILD_TIMESTAMP,
   },
-  // Force cache busting on builds
   build: {
     rollupOptions: {
       output: {
-        // Add hash to all chunk filenames for cache busting
         entryFileNames: "assets/[name]-[hash].js",
         chunkFileNames: "assets/[name]-[hash].js",
         assetFileNames: "assets/[name]-[hash].[ext]",
@@ -41,10 +44,17 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     {
-      name: "html-build-id",
+      name: "html-build-id-and-editor",
       transformIndexHtml(html: string) {
-        // Substitui TODAS as ocorrências (Safari pre-load + cache buster)
-        return html.split("__BUILD_ID__").join(BUILD_ID);
+        // Replace BUILD_ID placeholders.
+        let out = html.split("__BUILD_ID__").join(BUILD_ID);
+        // Inject editor companion script only in dev. In prod the placeholder comment is removed entirely.
+        if (mode === "development") {
+          out = out.replace(DEV_EDITOR_PLACEHOLDER, DEV_EDITOR_SCRIPT);
+        } else {
+          out = out.replace(DEV_EDITOR_PLACEHOLDER, "");
+        }
+        return out;
       },
     },
   ].filter(Boolean),
@@ -52,7 +62,6 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    // Avoid multiple React copies which can break hooks (useEffect dispatcher null)
     dedupe: ["react", "react-dom"],
   },
 }));

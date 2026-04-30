@@ -227,7 +227,7 @@ export class ProposalPDFExporter {
   }
 
   private async generateValidationQRCode(proposalId: string): Promise<string> {
-    const validationUrl = `https://examidia.com.br/propostacomercial/${proposalId}`;
+    const validationUrl = `https://www.examidia.com.br/propostacomercial/${proposalId}`;
     return await QRCode.toDataURL(validationUrl, {
       width: 100,
       margin: 1,
@@ -1146,11 +1146,11 @@ export class ProposalPDFExporter {
       },
       { 
         label: 'Visitar Nosso Site', 
-        url: 'https://examidia.com.br'
+        url: 'https://www.examidia.com.br'
       },
       { 
         label: 'Quem Somos', 
-        url: 'https://examidia.com.br/quem-somos'
+        url: 'https://www.examidia.com.br/quem-somos'
       },
       { 
         label: 'Mais Videos da EXA', 

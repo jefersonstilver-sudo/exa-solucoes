@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils';
 
 // Descrições oficiais das subcategorias de SAÍDA
 const SUBCATEGORIA_DESCRIPTIONS_SAIDA: Record<string, string> = {
-  'Sistema / Infraestrutura': 'AWS, Supabase, Lovable, OpenAI, APIs, hospedagem, banco de dados',
+  'Sistema / Infraestrutura': 'AWS, Supabase, OpenAI, APIs, hospedagem, banco de dados',
   'Salários & Estrutura': 'CLT, pró-labore, estagiários, funcionários fixos, encargos',
   'Estrutura Administrativa': 'Aluguel, energia, internet, água, escritório, contabilidade',
   'Marketing & Aquisição': 'Meta Ads, Google Ads, Canva, ferramentas de design, campanhas',
