@@ -237,6 +237,13 @@ const AppContent = () => {
             </Suspense>
           } />
 
+          {/* VAGA PÚBLICA - Videomaker de Performance (HTML standalone em /public) */}
+          <Route path="/vagadevideomaker" element={
+            <Suspense fallback={<GlobalLoadingPage message="" />}>
+              {React.createElement(lazy(() => import('./pages/VagaVideomaker')))}
+            </Suspense>
+          } />
+
           {/* LANDING PÚBLICA - Interesse do Síndico (sem auth) */}
           <Route path="/interessesindico" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
