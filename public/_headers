@@ -20,11 +20,13 @@
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
 /site.webmanifest
-  Cache-Control: no-cache, must-revalidate
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
 # Favicons / brand icons — must always revalidate to avoid stale brand assets
 /favicon.ico
   Cache-Control: no-cache, must-revalidate
+/favicon.png
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 /favicon-16x16.png
   Cache-Control: no-cache, must-revalidate
 /favicon-32x32.png
