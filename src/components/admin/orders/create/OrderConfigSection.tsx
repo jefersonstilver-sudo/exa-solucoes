@@ -179,6 +179,16 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
     }
   }, [formData.dataInicio, formData.planoMeses]);
 
+  // Auto-calculate valorTotal when in monthly billing mode
+  useEffect(() => {
+    if (formData.tipoCobranca === 'mensal') {
+      const total = (formData.valorMensal || 0) * (formData.planoMeses || 0);
+      if (total !== formData.valorTotal) {
+        updateField('valorTotal', total);
+      }
+    }
+  }, [formData.tipoCobranca, formData.valorMensal, formData.planoMeses]);
+
   return (
     <div className="space-y-5">
       {/* Buildings multi-select */}
