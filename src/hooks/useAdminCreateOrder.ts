@@ -248,6 +248,8 @@ export function useAdminCreateOrder() {
         lista_paineis: formData.listaPaineis,
         plano_meses: formData.planoMeses,
         valor_total: formData.valorTotal,
+        tipo_cobranca: formData.tipoCobranca,
+        valor_mensal: formData.tipoCobranca === 'mensal' ? formData.valorMensal : null,
         data_inicio: formData.dataInicio || null,
         data_fim: formData.dataFim || null,
         metodo_pagamento: formData.metodoPagamento,
