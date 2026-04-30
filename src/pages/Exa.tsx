@@ -31,8 +31,8 @@ const Exa = () => {
         title="EXA | Publicidade Inteligente em Elevadores - Painéis Digitais Foz do Iguaçu"
         description="Transforme elevadores em mídia premium. Painéis digitais 21&quot; em prédios de alto padrão em Foz do Iguaçu. Teste GRÁTIS por 30 dias. Alcance 10.000+ moradores diariamente."
         keywords="painel digital elevador, publicidade elevador foz iguaçu, mídia indoor condomínio, digital signage elevador, tela publicidade prédio, screen elevador, display digital, publicidade condomínio, anúncio prédio residencial, mídia OOH indoor"
-        canonical="https://exa.com.br/"
-        ogImage="https://exa.com.br/og-home.jpg"
+        canonical="https://www.examidia.com.br/"
+        ogImage="https://www.examidia.com.br/og-home.jpg"
         structuredData={[
           organizationSchema,
           webSiteSchema,

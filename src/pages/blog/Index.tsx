@@ -65,12 +65,12 @@ const BlogIndex = () => {
         title="Blog EXA - Guias e Estratégias de Publicidade em Painéis Digitais"
         description="Aprenda as melhores práticas de publicidade em elevadores, estratégias de ROI, tendências de mídia indoor e como maximizar seus resultados com painéis digitais."
         keywords="blog publicidade digital, estratégias mídia indoor, ROI publicidade elevador, tendências DOOH, guia anúncio prédio"
-        canonical="https://exa.com.br/blog"
+        canonical="https://www.examidia.com.br/blog"
         structuredData={[
           organizationSchema,
           createBreadcrumbSchema([
-            { name: 'Início', url: 'https://exa.com.br/' },
-            { name: 'Blog', url: 'https://exa.com.br/blog' }
+            { name: 'Início', url: 'https://www.examidia.com.br/' },
+            { name: 'Blog', url: 'https://www.examidia.com.br/blog' }
           ])
         ]}
       />

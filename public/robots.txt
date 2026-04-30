@@ -70,4 +70,4 @@ Disallow: /*.json$
 Disallow: /src/
 
 # Sitemaps
-Sitemap: https://exa.com.br/sitemap.xml
+Sitemap: https://www.examidia.com.br/sitemap.xml

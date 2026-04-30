@@ -40,14 +40,14 @@ const CalcularROIElevadores = () => {
         title="Como Calcular ROI de Publicidade em Elevadores: Guia Completo 2025"
         description="Aprenda a calcular o ROI real de campanhas em painéis de elevadores. Fórmulas práticas, calculadora gratuita, benchmarks do mercado e estratégias para maximizar retorno."
         keywords="calcular ROI elevador, ROI mídia indoor, quanto vale pena anunciar elevador, retorno publicidade prédio, métricas publicidade elevador, CPM elevador"
-        canonical="https://exa.com.br/blog/calcular-roi-elevadores"
-        ogImage="https://exa.com.br/blog/og-calcular-roi.jpg"
+        canonical="https://www.examidia.com.br/blog/calcular-roi-elevadores"
+        ogImage="https://www.examidia.com.br/blog/og-calcular-roi.jpg"
         structuredData={[
           organizationSchema,
           createBreadcrumbSchema([
-            { name: 'Início', url: 'https://exa.com.br/' },
-            { name: 'Blog', url: 'https://exa.com.br/blog' },
-            { name: 'Calcular ROI Elevadores', url: 'https://exa.com.br/blog/calcular-roi-elevadores' }
+            { name: 'Início', url: 'https://www.examidia.com.br/' },
+            { name: 'Blog', url: 'https://www.examidia.com.br/blog' },
+            { name: 'Calcular ROI Elevadores', url: 'https://www.examidia.com.br/blog/calcular-roi-elevadores' }
           ]),
           createFAQSchema(articleFAQs)
         ]}

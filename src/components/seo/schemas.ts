@@ -3,18 +3,18 @@
 export const organizationSchema = {
   "@context": "https://schema.org",
   "@type": ["Organization", "LocalBusiness"],
-  "@id": "https://exa.com.br/#organization",
+  "@id": "https://www.examidia.com.br/#organization",
   "name": "EXA Publicidade Inteligente",
   "legalName": "EXA Mídia Digital LTDA",
   "alternateName": ["EXA", "EXA Publicidade", "EXA Digital"],
   "description": "Líder em publicidade inteligente em elevadores de Foz do Iguaçu. Painéis digitais 21\" em prédios premium. Alcance 10.000+ moradores por mês com 95% de taxa de visualização.",
-  "url": "https://exa.com.br",
-  "logo": "https://exa.com.br/lovable-uploads/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png",
+  "url": "https://www.examidia.com.br",
+  "logo": "https://www.examidia.com.br/brand-assets/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png",
   "image": [
-    "https://exa.com.br/lovable-uploads/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png"
+    "https://www.examidia.com.br/brand-assets/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png"
   ],
   "telephone": "+55 45 9141-5856",
-  "email": "contato@exa.com.br",
+  "email": "contato@www.examidia.com.br",
   "address": {
     "@type": "PostalAddress",
     "addressLocality": "Foz do Iguaçu",
@@ -61,15 +61,15 @@ export const organizationSchema = {
 export const webSiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "@id": "https://exa.com.br/#website",
-  "url": "https://exa.com.br",
+  "@id": "https://www.examidia.com.br/#website",
+  "url": "https://www.examidia.com.br",
   "name": "EXA Publicidade Inteligente",
   "publisher": {
-    "@id": "https://exa.com.br/#organization"
+    "@id": "https://www.examidia.com.br/#organization"
   },
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://exa.com.br/busca?q={search_term_string}",
+    "target": "https://www.examidia.com.br/busca?q={search_term_string}",
     "query-input": "required name=search_term_string"
   }
 };
@@ -102,7 +102,7 @@ export const serviceSchema = {
   "@context": "https://schema.org",
   "@type": "Service",
   "serviceType": "Publicidade em Painéis Digitais",
-  "provider": { "@id": "https://exa.com.br/#organization" },
+  "provider": { "@id": "https://www.examidia.com.br/#organization" },
   "areaServed": "Foz do Iguaçu, PR, Brasil",
   "hasOfferCatalog": {
     "@type": "OfferCatalog",

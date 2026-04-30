@@ -28,14 +28,14 @@ const CaseSucessoAcademia = () => {
         title="Case: Como Academia Local Cresceu 300% com Painéis em Elevadores [2025]"
         description="História real de uma academia em Foz do Iguaçu que investiu R$ 800 em painéis de elevadores e conquistou 64 novos alunos em 60 dias. Estratégias replicáveis e números detalhados."
         keywords="case sucesso academia, publicidade academia elevador, como divulgar academia, crescer academia local, marketing academia condomínio"
-        canonical="https://exa.com.br/blog/case-sucesso-academia"
-        ogImage="https://exa.com.br/blog/og-case-academia.jpg"
+        canonical="https://www.examidia.com.br/blog/case-sucesso-academia"
+        ogImage="https://www.examidia.com.br/blog/og-case-academia.jpg"
         structuredData={[
           organizationSchema,
           createBreadcrumbSchema([
-            { name: 'Início', url: 'https://exa.com.br/' },
-            { name: 'Blog', url: 'https://exa.com.br/blog' },
-            { name: 'Case Academia', url: 'https://exa.com.br/blog/case-sucesso-academia' }
+            { name: 'Início', url: 'https://www.examidia.com.br/' },
+            { name: 'Blog', url: 'https://www.examidia.com.br/blog' },
+            { name: 'Case Academia', url: 'https://www.examidia.com.br/blog/case-sucesso-academia' }
           ]),
           createFAQSchema(articleFAQs)
         ]}

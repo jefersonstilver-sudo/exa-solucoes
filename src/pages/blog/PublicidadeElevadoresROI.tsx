@@ -28,14 +28,14 @@ const PublicidadeElevadoresROI = () => {
         title="5 Motivos Para Anunciar em Elevadores: ROI Comprovado [2025]"
         description="Descubra por que anúncios em elevadores geram até 500% de ROI. Dados reais, comparativo de custos e estratégias para maximizar resultados da sua campanha."
         keywords="ROI publicidade elevador, quanto custa anunciar elevador, retorno investimento mídia indoor, anúncio elevador funciona, CPM publicidade prédio"
-        canonical="https://exa.com.br/blog/publicidade-elevadores-roi"
-        ogImage="https://exa.com.br/blog/og-roi-elevadores.jpg"
+        canonical="https://www.examidia.com.br/blog/publicidade-elevadores-roi"
+        ogImage="https://www.examidia.com.br/blog/og-roi-elevadores.jpg"
         structuredData={[
           organizationSchema,
           createBreadcrumbSchema([
-            { name: 'Início', url: 'https://exa.com.br/' },
-            { name: 'Blog', url: 'https://exa.com.br/blog' },
-            { name: 'ROI Publicidade Elevadores', url: 'https://exa.com.br/blog/publicidade-elevadores-roi' }
+            { name: 'Início', url: 'https://www.examidia.com.br/' },
+            { name: 'Blog', url: 'https://www.examidia.com.br/blog' },
+            { name: 'ROI Publicidade Elevadores', url: 'https://www.examidia.com.br/blog/publicidade-elevadores-roi' }
           ]),
           createFAQSchema(articleFAQs)
         ]}

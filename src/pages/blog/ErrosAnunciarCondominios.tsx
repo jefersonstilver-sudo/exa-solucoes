@@ -101,14 +101,14 @@ const ErrosAnunciarCondominios = () => {
         title="10 Erros Fatais ao Anunciar em Condomínios (E Como Evitá-los) [2025]"
         description="Descubra os 10 erros que matam campanhas em painéis de elevadores e condomínios. Aprenda como evitá-los e multiplique seu ROI. Guia completo com exemplos reais."
         keywords="erros publicidade condomínio, como anunciar elevador, erros mídia indoor, publicidade prédio não funciona, melhorar anúncio elevador"
-        canonical="https://exa.com.br/blog/erros-anunciar-condominios"
-        ogImage="https://exa.com.br/blog/og-erros-condominios.jpg"
+        canonical="https://www.examidia.com.br/blog/erros-anunciar-condominios"
+        ogImage="https://www.examidia.com.br/blog/og-erros-condominios.jpg"
         structuredData={[
           organizationSchema,
           createBreadcrumbSchema([
-            { name: 'Início', url: 'https://exa.com.br/' },
-            { name: 'Blog', url: 'https://exa.com.br/blog' },
-            { name: 'Erros ao Anunciar em Condomínios', url: 'https://exa.com.br/blog/erros-anunciar-condominios' }
+            { name: 'Início', url: 'https://www.examidia.com.br/' },
+            { name: 'Blog', url: 'https://www.examidia.com.br/blog' },
+            { name: 'Erros ao Anunciar em Condomínios', url: 'https://www.examidia.com.br/blog/erros-anunciar-condominios' }
           ]),
           createFAQSchema(articleFAQs)
         ]}
