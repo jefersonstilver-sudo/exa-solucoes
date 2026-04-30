@@ -1703,7 +1703,7 @@ const PropostaPublicaPage = () => {
       <Helmet>
         <title>{proposal.client_company_name || proposal.client_name} | Proposta Comercial EXA</title>
         <meta name="description" content={`Proposta comercial de publicidade inteligente em elevadores para ${proposal.client_company_name || proposal.client_name}. ${proposal.total_panels} telas em ${proposal.selected_buildings?.length || 0} prédios.`} />
-        <link rel="icon" type="image/png" href="/favicon.png" />
+        <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2" />
         <meta property="og:title" content={`${proposal.client_company_name || proposal.client_name} | Proposta EXA`} />
         <meta property="og:description" content={`Proposta comercial de publicidade inteligente em elevadores para ${proposal.client_company_name || proposal.client_name}`} />
         <meta property="og:image" content="https://www.examidia.com.br/og-image.png" />

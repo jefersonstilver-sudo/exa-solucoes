@@ -241,7 +241,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       theme_color: "#FF4430",
       icons: [
         {
-          src: "/favicon.png",
+          src: "/android-chrome-512x512.png?v=2",
           sizes: "512x512",
           type: "image/png",
           purpose: "any maskable"
