@@ -1,46 +1,49 @@
-## Problema
+## Diagnóstico
 
-Em `/super_admin/pedidos` → Novo Pedido, o campo "Valor Total (R$)" só aceita um valor único (à vista, tipo PIX). Como o lançamento financeiro está sendo feito manualmente e existem clientes com pagamento mensal (fidelidade), o admin precisa poder informar:
+Varredura completa nas RPCs e dashboards. Os números estão zerados por **3 causas reais**:
 
-- Modalidade de cobrança: **À vista** ou **Mensal**
-- Quando for **Mensal**: digitar o **valor por mês**, e o sistema calcula automaticamente o **valor total** = `valor mensal × plano (meses)`
+### 1. `get_orders_stats_real` (Dashboard `/super_admin/pedidos`)
+Calcula `receita_confirmada` SOMENTE da tabela `parcelas`. Hoje **17 pedidos** com status `ativo`/`pago_pendente_video` (incluindo R$ 6.271 e R$ 792, lançados manualmente pelo admin) **não têm parcela gerada**. Por isso aparece "R$ 0,00 Receita Confirmada".
 
-O resto do fluxo (ativação manual do pedido, criação do registro) permanece exatamente igual.
+### 2. `get_dashboard_stats_by_month` (Dashboard Inicial)
+- `monthly_revenue` até soma `valor_total`, mas **não distingue** receita à vista vs mensal recorrente (MRR).
+- Não há card mostrando vendas/receita do mês com a quebra correta.
 
-## Mudança (mínima e localizada)
+### 3. Formulário de novo pedido não persiste tipo de cobrança
+Mudança recente do form (avista/mensal) gravou `valor_total`, mas as colunas `tipo_cobranca` e `valor_mensal` **não existem** na tabela `pedidos` — informação se perde.
 
-### 1. `src/hooks/useAdminCreateOrder.ts`
-Adicionar 2 campos no `AdminOrderFormData` (sem quebrar nada existente):
+---
 
-- `tipoCobranca: 'avista' | 'mensal'` (default `'avista'`)
-- `valorMensal: number` (default `0`, usado só quando `tipoCobranca === 'mensal'`)
+## O que vou fazer
 
-`valorTotal` continua sendo a fonte de verdade que vai pro banco (`pedidos.valor_total`). Quando `tipoCobranca === 'mensal'`, o `valorTotal` é derivado automaticamente de `valorMensal × planoMeses`.
+### A) Migração SQL
+1. Adicionar em `public.pedidos`:
+   - `tipo_cobranca text DEFAULT 'avista'` (`avista` | `mensal`)
+   - `valor_mensal numeric` (nullable)
+2. Reescrever `get_orders_stats_real` para somar **direto de `pedidos.valor_total`** quando status ∈ (`pago`, `ativo`, `pago_pendente_video`, `video_aprovado`) — **funciona com pedidos manuais do admin**, sem depender de parcelas. Quando houver parcelas, prioriza o valor pago real das parcelas para evitar contagem dupla.
+3. Adicionar à RPC dois novos campos: `receita_avista` e `receita_mensal_recorrente` (MRR).
+4. Atualizar `get_dashboard_stats_by_month` para incluir:
+   - `monthly_revenue_avista`
+   - `monthly_revenue_recorrente` (MRR)
+   - `vendas_realizadas` (count de pedidos do mês com status pago/ativo)
 
-Nada muda na lógica de submit — `valor_total` e `metodo_pagamento` continuam sendo gravados como hoje.
+### B) Frontend
+- `useAdminCreateOrder.ts` — gravar `tipo_cobranca` e `valor_mensal` no INSERT.
+- `OrdersCompactStats.tsx` — consumir os novos campos da RPC (Receita Confirmada passará a mostrar ~R$ 7.077 em vez de R$ 0).
+- `DashboardStatsCards.tsx` — card "Receita do Mês" mostra total + quebra discreta "À vista: R$ X · Mensal: R$ Y/mês".
+- Tipo TS em `useMonthlyDashboardData` — adicionar campos novos.
 
-### 2. `src/components/admin/orders/create/OrderConfigSection.tsx`
-No grid da linha 281 (Valor / Método / Status), substituir o bloco "Valor Total" por uma UI condicional:
+### C) Não vou alterar
+- Layout/visual dos cards (mantém glassmorphism EXA).
+- Outros fluxos (criação de pedido continua igual, só passa a persistir 2 campos extras).
+- Nenhuma RPC fora das 2 listadas.
 
-- Novo seletor pequeno **"Tipo de Cobrança"**: `À Vista` | `Mensal (Fidelidade)`
-- Se **À Vista** (comportamento atual): campo único `Valor Total (R$)`
-- Se **Mensal**: campo `Valor Mensal (R$)` + linha discreta abaixo mostrando `Total: R$ X (valor × N meses)` calculado em tempo real (read-only, vai pro `valorTotal`)
+---
 
-`useEffect` recalcula `valorTotal` automaticamente quando `valorMensal` ou `planoMeses` mudam (no modo mensal).
+## Resultado esperado
+- Dashboard de Pedidos: **R$ 7.077,50** de receita confirmada (804,30 + 6.273,20) em vez de R$ 0.
+- Dashboard Inicial: vendas e receita do mês corretas, com separação à vista vs mensal.
+- Pedidos lançados **manualmente pelo admin** entram em todos os totais automaticamente.
+- Novos pedidos no modo "Mensal" alimentam o MRR corretamente.
 
-### 3. `src/components/admin/orders/create/OrderSummary.tsx`
-Acrescentar uma linha no resumo: **"Cobrança"** mostrando `À Vista` ou `Mensal — R$ X/mês × N meses`. A linha "Valor" continua mostrando o total final.
-
-## Fora de escopo
-
-- Nenhuma mudança no schema do banco (usa colunas existentes `valor_total` e `metodo_pagamento`).
-- Nenhuma mudança no fluxo de checkout público, edge functions, gateway de pagamento, ou no `BuildingManagementDialog`.
-- Sem alterar layout/espaçamento dos outros campos. Só o bloco do "Valor" muda.
-- Não toca em nenhuma outra UI, comportamento ou workflow.
-
-## Validação
-
-1. Abrir Novo Pedido → selecionar "À Vista" → comportamento idêntico ao atual.
-2. Selecionar "Mensal", digitar `R$ 500`, plano `6 meses` → resumo mostra `R$ 3.000` total e `R$ 500/mês × 6`.
-3. Mudar plano para `12 meses` com mesmo valor mensal → total atualiza para `R$ 6.000` automaticamente.
-4. Confirmar pedido → registro criado normalmente em `pedidos` com `valor_total` correto.
+Aprove para eu executar.
