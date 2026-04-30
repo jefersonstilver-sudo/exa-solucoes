@@ -43,6 +43,8 @@ const initialFormData: AdminOrderFormData = {
   listaPaineis: [],
   planoMeses: 1,
   valorTotal: 0,
+  tipoCobranca: 'avista',
+  valorMensal: 0,
   dataInicio: '',
   dataFim: '',
   metodoPagamento: 'pix_avista',
