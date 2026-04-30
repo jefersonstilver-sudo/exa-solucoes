@@ -108,7 +108,7 @@ export const heroVideoSchema = {
   "@type": "VideoObject",
   "name": "Como Funciona a EXA - Publicidade em Painéis Digitais de Elevadores",
   "description": "Veja como nossos painéis digitais 21\" transformam elevadores em mídia premium. Alcance público de alto padrão com 95% de taxa de visualização em Foz do Iguaçu.",
-  "thumbnailUrl": "https://www.examidia.com.br/brand-assets/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png",
+  "thumbnailUrl": "https://www.examidia.com.br/android-chrome-512x512.png",
   "uploadDate": "2025-01-20",
   "duration": "PT1M45S",
   "contentUrl": "https://indexa.net.br/wp-content/uploads/2025/01/indexa_exa.mp4",

@@ -9,9 +9,9 @@ export const organizationSchema = {
   "alternateName": ["EXA", "EXA Publicidade", "EXA Digital"],
   "description": "Líder em publicidade inteligente em elevadores de Foz do Iguaçu. Painéis digitais 21\" em prédios premium. Alcance 10.000+ moradores por mês com 95% de taxa de visualização.",
   "url": "https://www.examidia.com.br",
-  "logo": "https://www.examidia.com.br/brand-assets/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png",
+  "logo": "https://www.examidia.com.br/android-chrome-512x512.png",
   "image": [
-    "https://www.examidia.com.br/brand-assets/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png"
+    "https://www.examidia.com.br/android-chrome-512x512.png"
   ],
   "telephone": "+55 45 9141-5856",
   "email": "contato@www.examidia.com.br",
