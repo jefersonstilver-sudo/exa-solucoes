@@ -84,11 +84,12 @@ const OrdersCompactStats: React.FC<OrdersCompactStatsProps> = ({
       />
       
       <AppleLikeMetricCard
-        label="Taxa de Conversão"
-        value={`${conversionRate}%`}
+        label="Receita Mensal (MRR)"
+        value={formatCurrency(displayStats.receita_mensal_recorrente || 0)}
         icon={TrendingUp}
+        variant="success"
       />
-      
+
       <AppleLikeMetricCard
         label="Valor Abandonado"
         value={formatCurrency(displayStats.valor_abandonado)}
