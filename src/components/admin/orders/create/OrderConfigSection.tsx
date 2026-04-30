@@ -245,6 +245,7 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
                 />
                 <Building2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                 <span className={`truncate ${isSelected ? 'font-medium' : ''}`}>{b.nome}</span>
+                {b.status === 'instalacao' && <span className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 px-1.5 py-0.5 rounded">Instalação</span>}
                 {b.status === 'interno' && <span className="text-[10px] bg-accent text-accent-foreground px-1.5 py-0.5 rounded">Interno</span>}
                 <span className="text-xs text-muted-foreground ml-auto">{b.bairro}</span>
               </button>
