@@ -16,13 +16,13 @@ interface SEOProps {
 }
 
 const SEO: React.FC<SEOProps> = ({
-  title = 'EXA | Publicidade Inteligente em Elevadores - Foz do Iguaçu',
-  description = 'Transforme elevadores em mídia premium. Alcance milhares de moradores diariamente em prédios de alto padrão.',
-  keywords = 'painel digital elevador, publicidade elevador foz iguaçu, mídia indoor condomínio, digital signage elevador, tela publicidade prédio',
+  title = 'EXA Mídia · Publicidade Inteligente em Elevadores · Foz do Iguaçu/PR',
+  description = 'EXA Mídia · DOOH residencial premium em Foz do Iguaçu. Painéis digitais 21" em elevadores de prédios de alto padrão.',
+  keywords = 'EXA Mídia, painel digital elevador, publicidade elevador Foz do Iguaçu, mídia indoor condomínio, DOOH residencial, digital signage elevador',
   canonical,
   ogType = 'website',
   ogImage = 'https://www.examidia.com.br/og-image.png',
-  ogImageAlt = 'EXA - Publicidade Inteligente em Elevadores',
+  ogImageAlt = 'EXA Mídia — Publicidade Inteligente em Elevadores',
   twitterCard = 'summary_large_image',
   noindex = false,
   nofollow = false,

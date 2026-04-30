@@ -66,7 +66,7 @@ export const AIAnalysisProgressModal: React.FC<AIAnalysisProgressModalProps> = (
             </p>
             <p className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-purple-500"></span>
-              Consumo estimado: ~1 crédito Lovable AI
+              Consumo estimado: ~1 crédito de IA
             </p>
           </div>
 

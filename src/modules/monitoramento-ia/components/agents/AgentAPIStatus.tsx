@@ -128,12 +128,12 @@ export const AgentAPIStatus = ({ agent, status, testing, onTest }: AgentAPIStatu
           </div>
         )}
 
-        {/* Lovable AI Status */}
+        {/* AI Gateway Status */}
         <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
           <div className="flex items-center gap-3 mb-2">
             <CheckCircle2 className="w-6 h-6 text-blue-500" />
             <div>
-              <h4 className="font-semibold text-module-primary">Lovable AI Gateway</h4>
+              <h4 className="font-semibold text-module-primary">Gateway de IA Interno</h4>
               <p className="text-xs text-module-secondary mt-0.5">Motor de IA (OpenAI)</p>
             </div>
           </div>
