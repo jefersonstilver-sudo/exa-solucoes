@@ -288,17 +288,57 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <div>
-          <Label className="text-sm">Valor Total (R$) *</Label>
-          <Input
-            type="number"
-            step="0.01"
-            value={formData.valorTotal || ''}
-            onChange={e => updateField('valorTotal', parseFloat(e.target.value) || 0)}
-            placeholder="0,00"
-          />
+          <Label className="text-sm">Tipo de Cobrança</Label>
+          <Select
+            value={formData.tipoCobranca}
+            onValueChange={(v) => {
+              updateField('tipoCobranca', v as 'avista' | 'mensal');
+              if (v === 'avista') {
+                updateField('valorMensal', 0);
+              } else {
+                // switching to mensal: clear total so it gets recomputed from valorMensal
+                updateField('valorTotal', 0);
+              }
+            }}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="avista">À Vista</SelectItem>
+              <SelectItem value="mensal">Mensal (Fidelidade)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+
+        {formData.tipoCobranca === 'avista' ? (
+          <div>
+            <Label className="text-sm">Valor Total (R$) *</Label>
+            <Input
+              type="number"
+              step="0.01"
+              value={formData.valorTotal || ''}
+              onChange={e => updateField('valorTotal', parseFloat(e.target.value) || 0)}
+              placeholder="0,00"
+            />
+          </div>
+        ) : (
+          <div>
+            <Label className="text-sm">Valor Mensal (R$) *</Label>
+            <Input
+              type="number"
+              step="0.01"
+              value={formData.valorMensal || ''}
+              onChange={e => updateField('valorMensal', parseFloat(e.target.value) || 0)}
+              placeholder="0,00"
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Total: R$ {formData.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              {' '}({formData.planoMeses}× R$ {(formData.valorMensal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })})
+            </p>
+          </div>
+        )}
+
         <div>
           <Label className="text-sm">Método Pagamento</Label>
           <Select value={formData.metodoPagamento} onValueChange={v => updateField('metodoPagamento', v)}>
