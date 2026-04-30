@@ -1,40 +1,46 @@
 ## Problema
 
-Na página `/super_admin/pedidos` → "Novo Pedido", a lista de Prédios não mostra todos os prédios que aparecem na loja pública. Hoje só carrega `ativo` + `interno`, deixando de fora os `instalacao` (6 prédios atualmente no banco).
+Em `/super_admin/pedidos` → Novo Pedido, o campo "Valor Total (R$)" só aceita um valor único (à vista, tipo PIX). Como o lançamento financeiro está sendo feito manualmente e existem clientes com pagamento mensal (fidelidade), o admin precisa poder informar:
 
-A loja pública exibe: **ativo + instalacao + interno**, então a tela de criação de pedido precisa espelhar isso.
+- Modalidade de cobrança: **À vista** ou **Mensal**
+- Quando for **Mensal**: digitar o **valor por mês**, e o sistema calcula automaticamente o **valor total** = `valor mensal × plano (meses)`
 
-## Causa raiz
+O resto do fluxo (ativação manual do pedido, criação do registro) permanece exatamente igual.
 
-`src/components/admin/orders/create/OrderConfigSection.tsx` (linha 120):
+## Mudança (mínima e localizada)
 
-```ts
-.in('status', ['ativo', 'interno'])
-```
+### 1. `src/hooks/useAdminCreateOrder.ts`
+Adicionar 2 campos no `AdminOrderFormData` (sem quebrar nada existente):
 
-Falta o status `'instalacao'`.
+- `tipoCobranca: 'avista' | 'mensal'` (default `'avista'`)
+- `valorMensal: number` (default `0`, usado só quando `tipoCobranca === 'mensal'`)
 
-Confirmado via consulta ao banco: existem 12 ativo, 6 instalacao, 4 interno → total 22. A tela atual só mostra 16.
+`valorTotal` continua sendo a fonte de verdade que vai pro banco (`pedidos.valor_total`). Quando `tipoCobranca === 'mensal'`, o `valorTotal` é derivado automaticamente de `valorMensal × planoMeses`.
 
-## Mudança
+Nada muda na lógica de submit — `valor_total` e `metodo_pagamento` continuam sendo gravados como hoje.
 
-**Arquivo único:** `src/components/admin/orders/create/OrderConfigSection.tsx`
+### 2. `src/components/admin/orders/create/OrderConfigSection.tsx`
+No grid da linha 281 (Valor / Método / Status), substituir o bloco "Valor Total" por uma UI condicional:
 
-1. Atualizar o filtro do fetch para incluir os três status:
-   ```ts
-   .in('status', ['ativo', 'instalacao', 'interno'])
-   ```
+- Novo seletor pequeno **"Tipo de Cobrança"**: `À Vista` | `Mensal (Fidelidade)`
+- Se **À Vista** (comportamento atual): campo único `Valor Total (R$)`
+- Se **Mensal**: campo `Valor Mensal (R$)` + linha discreta abaixo mostrando `Total: R$ X (valor × N meses)` calculado em tempo real (read-only, vai pro `valorTotal`)
 
-2. Ajustar a ordenação para: **ativos primeiro → em instalação no meio → internos no final** (ordem alfabética dentro de cada grupo). Internos continuam por último conforme já fazia.
+`useEffect` recalcula `valorTotal` automaticamente quando `valorMensal` ou `planoMeses` mudam (no modo mensal).
 
-3. Adicionar um pequeno badge "Instalação" (cor âmbar/discreto, mesmo padrão visual do badge "Interno" já existente) ao lado do nome do prédio para o admin identificar facilmente que aquele prédio ainda está em fase de instalação. Sem alterar nenhum outro layout, espaçamento ou comportamento.
+### 3. `src/components/admin/orders/create/OrderSummary.tsx`
+Acrescentar uma linha no resumo: **"Cobrança"** mostrando `À Vista` ou `Mensal — R$ X/mês × N meses`. A linha "Valor" continua mostrando o total final.
 
-## Fora de escopo (não vou tocar)
+## Fora de escopo
 
-- Nada na loja pública.
-- Nada no `BuildingManagementDialog` (modal de adicionar prédios em pedido existente) — que também filtra por `['ativo','interno']` — a menos que você confirme que quer o mesmo ajuste lá.
-- Nenhum outro componente, fluxo ou UI.
+- Nenhuma mudança no schema do banco (usa colunas existentes `valor_total` e `metodo_pagamento`).
+- Nenhuma mudança no fluxo de checkout público, edge functions, gateway de pagamento, ou no `BuildingManagementDialog`.
+- Sem alterar layout/espaçamento dos outros campos. Só o bloco do "Valor" muda.
+- Não toca em nenhuma outra UI, comportamento ou workflow.
 
 ## Validação
 
-- Abrir Novo Pedido e conferir que aparecem os 22 prédios (ativos + instalação + internos), com os badges corretos e a ordem ativo → instalação → interno.
+1. Abrir Novo Pedido → selecionar "À Vista" → comportamento idêntico ao atual.
+2. Selecionar "Mensal", digitar `R$ 500`, plano `6 meses` → resumo mostra `R$ 3.000` total e `R$ 500/mês × 6`.
+3. Mudar plano para `12 meses` com mesmo valor mensal → total atualiza para `R$ 6.000` automaticamente.
+4. Confirmar pedido → registro criado normalmente em `pedidos` com `valor_total` correto.
