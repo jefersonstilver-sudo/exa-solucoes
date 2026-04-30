@@ -109,7 +109,7 @@ export const EmailConfigTab: React.FC<EmailConfigTabProps> = ({ config, updateCo
               type="url"
               value={localConfig.termos_uso_url || ''}
               onChange={(e) => handleChange('termos_uso_url', e.target.value)}
-              placeholder="https://examidia.com.br/termos-de-uso"
+              placeholder="https://www.examidia.com.br/termos-de-uso"
             />
           </div>
 
@@ -120,7 +120,7 @@ export const EmailConfigTab: React.FC<EmailConfigTabProps> = ({ config, updateCo
               type="url"
               value={localConfig.politica_privacidade_url || ''}
               onChange={(e) => handleChange('politica_privacidade_url', e.target.value)}
-              placeholder="https://examidia.com.br/politica-privacidade"
+              placeholder="https://www.examidia.com.br/politica-privacidade"
             />
           </div>
 
@@ -131,7 +131,7 @@ export const EmailConfigTab: React.FC<EmailConfigTabProps> = ({ config, updateCo
               type="url"
               value={localConfig.politica_cookies_url || ''}
               onChange={(e) => handleChange('politica_cookies_url', e.target.value)}
-              placeholder="https://examidia.com.br/politica-cookies"
+              placeholder="https://www.examidia.com.br/politica-cookies"
             />
           </div>
         </CardContent>

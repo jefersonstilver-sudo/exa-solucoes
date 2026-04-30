@@ -361,7 +361,7 @@ const PropostaDetalhesPage = () => {
   };
 
   const handleCopyLink = () => {
-    const link = `https://examidia.com.br/propostacomercial/${id}`;
+    const link = `https://www.examidia.com.br/propostacomercial/${id}`;
     navigator.clipboard.writeText(link);
     toast.success('Link copiado!');
   };
@@ -812,7 +812,7 @@ const PropostaDetalhesPage = () => {
                 variant="outline"
                 size="sm"
                 className="h-10 text-xs justify-start gap-2"
-                onClick={() => window.open(`https://examidia.com.br/propostacomercial/${id}`, '_blank')}
+                onClick={() => window.open(`https://www.examidia.com.br/propostacomercial/${id}`, '_blank')}
               >
                 <ExternalLink className="h-4 w-4 text-purple-600" />
                 Ver Página Pública

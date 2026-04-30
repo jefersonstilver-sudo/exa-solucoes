@@ -76,7 +76,7 @@ const InteresseSindicoSucesso: React.FC = () => {
           </div>
 
           <a
-            href="https://examidia.com.br"
+            href="https://www.examidia.com.br"
             className="sif-btn-primary mt-7 inline-flex items-center justify-center gap-2 w-full sm:w-auto"
           >
             Voltar para examidia.com.br

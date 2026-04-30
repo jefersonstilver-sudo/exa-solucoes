@@ -17,12 +17,12 @@ export const PAINEL_CONFIG = {
   
   // URL do conteúdo que será exibido no painel
   contentUrl: isProduction 
-    ? 'https://examidia.com.br/painel-content'
+    ? 'https://www.examidia.com.br/painel-content'
     : `${PRIMARY_DOMAIN}/painel-content`,
   
   // URL padrão de fallback caso o prédio não tenha URL específica
   defaultContentUrl: isProduction
-    ? 'https://examidia.com.br'
+    ? 'https://www.examidia.com.br'
     : PRIMARY_DOMAIN,
 };
 

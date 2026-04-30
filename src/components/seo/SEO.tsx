@@ -21,14 +21,14 @@ const SEO: React.FC<SEOProps> = ({
   keywords = 'painel digital elevador, publicidade elevador foz iguaçu, mídia indoor condomínio, digital signage elevador, tela publicidade prédio',
   canonical,
   ogType = 'website',
-  ogImage = 'https://examidia.com.br/og-image.jpg?v=2',
+  ogImage = 'https://www.examidia.com.br/og-image.png',
   ogImageAlt = 'EXA - Publicidade Inteligente em Elevadores',
   twitterCard = 'summary_large_image',
   noindex = false,
   nofollow = false,
   structuredData = [],
 }) => {
-  const siteUrl = 'https://examidia.com.br';
+  const siteUrl = 'https://www.examidia.com.br';
   const currentUrl = canonical || `${siteUrl}${window.location.pathname}`;
 
   return (

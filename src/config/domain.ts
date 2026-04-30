@@ -4,7 +4,7 @@
  */
 
 // Your custom domain - update this to match your production domain
-export const PRIMARY_DOMAIN = 'https://examidia.com.br';
+export const PRIMARY_DOMAIN = 'https://www.examidia.com.br';
 
 // Fallback to current domain in development/testing if needed
 export const FORCE_CUSTOM_DOMAIN = true;

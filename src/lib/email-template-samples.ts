@@ -64,19 +64,19 @@ export const emailTemplateSamples = {
   confirmation: {
     userName: 'João Silva',
     userEmail: 'joao.silva@example.com',
-    confirmationUrl: 'https://examidia.com.br/confirmar-email?token=abc123xyz789'
+    confirmationUrl: 'https://www.examidia.com.br/confirmar-email?token=abc123xyz789'
   } as ConfirmationEmailData,
 
   resend_confirmation: {
     userName: 'Maria Santos',
     userEmail: 'maria.santos@example.com',
-    confirmationUrl: 'https://examidia.com.br/confirmar-email?token=def456uvw012'
+    confirmationUrl: 'https://www.examidia.com.br/confirmar-email?token=def456uvw012'
   } as ConfirmationEmailData,
 
   password_recovery: {
     userName: 'Pedro Oliveira',
     userEmail: 'pedro.oliveira@example.com',
-    recoveryUrl: 'https://examidia.com.br/redefinir-senha?token=ghi789rst345'
+    recoveryUrl: 'https://www.examidia.com.br/redefinir-senha?token=ghi789rst345'
   } as PasswordRecoveryEmailData,
 
   admin_welcome: {
@@ -87,7 +87,7 @@ export const emailTemplateSamples = {
     role: 'admin' as const,
     password: 'TempSenha#2024',
     createdBy: 'Super Admin',
-    loginUrl: 'https://examidia.com.br/login'
+    loginUrl: 'https://www.examidia.com.br/login'
   } as AdminWelcomeEmailData,
 
   video_submitted: {
@@ -122,7 +122,7 @@ export const emailTemplateSamples = {
   benefit_invitation: {
     providerName: 'Lucas Martins',
     providerEmail: 'lucas.martins@example.com',
-    presentLink: 'https://examidia.com.br/escolher-presente?token=xyz789abc123',
+    presentLink: 'https://www.examidia.com.br/escolher-presente?token=xyz789abc123',
     activationPoint: 'Edifício Golden Tower - Brooklin, SP'
   } as BenefitInvitationEmailData,
 
