@@ -75,6 +75,9 @@ const DashboardStatsCards = ({ stats, growthData }: DashboardStatsCardsProps) =>
       growth: growthData?.revenue || 0,
       icon: DollarSign,
       iconColor: 'text-amber-600',
+      breakdown: (stats.monthly_revenue_avista || 0) > 0 || (stats.monthly_revenue_recorrente || 0) > 0
+        ? `À vista: ${formatCurrency(stats.monthly_revenue_avista || 0)} · Mensal: ${formatCurrency(stats.monthly_revenue_recorrente || 0)}/mês`
+        : null,
     }
   ];
 
@@ -133,6 +136,11 @@ const DashboardStatsCards = ({ stats, growthData }: DashboardStatsCardsProps) =>
             {card.accumulated !== null && (
               <div className="mt-2 text-xs text-[hsl(var(--apple-gray-500))] px-4">
                 Total: <span className="font-semibold text-[hsl(var(--apple-gray-700))]">{card.accumulated.toLocaleString()}</span>
+              </div>
+            )}
+            {(card as any).breakdown && (
+              <div className="mt-2 text-[11px] text-[hsl(var(--apple-gray-500))] px-4 leading-tight">
+                {(card as any).breakdown}
               </div>
             )}
           </motion.div>

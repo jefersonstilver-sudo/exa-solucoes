@@ -11,6 +11,9 @@ export interface MonthlyDashboardStats {
   total_panels: number;
   total_panels_accumulated: number;
   monthly_revenue: number;
+  monthly_revenue_avista: number;
+  monthly_revenue_recorrente: number;
+  vendas_realizadas: number;
   active_orders: number;
   pending_orders: number;
   online_panels: number;
@@ -50,6 +53,9 @@ const convertToMonthlyStats = (data: any): MonthlyDashboardStats => {
     total_panels: Number(data?.total_panels) || 0,
     total_panels_accumulated: Number(data?.total_panels_accumulated) || 0,
     monthly_revenue: Number(data?.monthly_revenue) || 0,
+    monthly_revenue_avista: Number(data?.monthly_revenue_avista) || 0,
+    monthly_revenue_recorrente: Number(data?.monthly_revenue_recorrente) || 0,
+    vendas_realizadas: Number(data?.vendas_realizadas) || 0,
     active_orders: Number(data?.active_orders) || 0,
     pending_orders: Number(data?.pending_orders) || 0,
     online_panels: Number(data?.online_panels) || 0,
@@ -122,6 +128,9 @@ export const useMonthlyDashboardData = (startDate?: Date, endDate?: Date) => {
           total_panels: typedHistoryData.length > 0 ? Math.max(...typedHistoryData.map(m => m.total_panels_accumulated)) : 0,
           total_panels_accumulated: typedHistoryData.length > 0 ? Math.max(...typedHistoryData.map(m => m.total_panels_accumulated)) : 0,
           monthly_revenue: typedHistoryData.reduce((sum, m) => sum + m.monthly_revenue, 0),
+          monthly_revenue_avista: typedHistoryData.reduce((sum, m) => sum + (m.monthly_revenue_avista || 0), 0),
+          monthly_revenue_recorrente: typedHistoryData.reduce((sum, m) => sum + (m.monthly_revenue_recorrente || 0), 0),
+          vendas_realizadas: typedHistoryData.reduce((sum, m) => sum + (m.vendas_realizadas || 0), 0),
           active_orders: typedHistoryData.length > 0 ? typedHistoryData[typedHistoryData.length - 1].active_orders : 0,
           pending_orders: typedHistoryData.length > 0 ? typedHistoryData[typedHistoryData.length - 1].pending_orders : 0,
           online_panels: typedHistoryData.length > 0 ? typedHistoryData[typedHistoryData.length - 1].online_panels : 0,

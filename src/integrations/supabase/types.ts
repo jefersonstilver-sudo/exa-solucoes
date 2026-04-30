@@ -10404,12 +10404,14 @@ export type Database = {
           status: string
           status_adimplencia: string | null
           termos_aceitos: boolean | null
+          tipo_cobranca: string | null
           tipo_pagamento: string | null
           tipo_produto: string | null
           total_parcelas: number | null
           transaction_id: string | null
           ultima_notificacao_cobranca: string | null
           updated_at: string | null
+          valor_mensal: number | null
           valor_total: number | null
         }
         Insert: {
@@ -10467,12 +10469,14 @@ export type Database = {
           status?: string
           status_adimplencia?: string | null
           termos_aceitos?: boolean | null
+          tipo_cobranca?: string | null
           tipo_pagamento?: string | null
           tipo_produto?: string | null
           total_parcelas?: number | null
           transaction_id?: string | null
           ultima_notificacao_cobranca?: string | null
           updated_at?: string | null
+          valor_mensal?: number | null
           valor_total?: number | null
         }
         Update: {
@@ -10530,12 +10534,14 @@ export type Database = {
           status?: string
           status_adimplencia?: string | null
           termos_aceitos?: boolean | null
+          tipo_cobranca?: string | null
           tipo_pagamento?: string | null
           tipo_produto?: string | null
           total_parcelas?: number | null
           transaction_id?: string | null
           ultima_notificacao_cobranca?: string | null
           updated_at?: string | null
+          valor_mensal?: number | null
           valor_total?: number | null
         }
         Relationships: [
