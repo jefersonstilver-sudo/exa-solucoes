@@ -147,15 +147,11 @@ export const useOrderStatus = (
         if (!hasVideos) {
           return {
             label: 'Aguardando Vídeo',
-            description: 'Faça upload do seu vídeo para análise e aprovação',
+            description: 'Acesse "Ver Detalhes" para enviar o vídeo da sua campanha',
             color: 'text-white',
             bgColor: 'bg-blue-600 border-blue-700',
             icon: Upload,
-            action: {
-              label: 'Enviar Vídeo',
-              variant: 'default',
-              href: `/anunciante/pedido/${order.id}#upload`
-            }
+            // Sem action: upload acontece SOMENTE dentro de "Ver Detalhes" (página do pedido)
           };
         } else if (!hasApprovedVideo) {
           return {

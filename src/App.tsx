@@ -22,6 +22,7 @@ import { useActiveSession } from '@/hooks/useActiveSession';
 import { GlobalNotificationProvider } from '@/providers/GlobalNotificationProvider';
 import { ZAPIDisconnectAlert } from '@/components/notifications/ZAPIDisconnectAlert';
 import { useForceCacheClear } from '@/hooks/useForceCacheClear';
+import { useVersionWatcher } from '@/hooks/useVersionWatcher';
 import TwoFactorVerificationPage from '@/pages/auth/TwoFactorVerificationPage';
 
 // Importação direta APENAS para a homepage (rota /)
@@ -144,7 +145,10 @@ const AppContent = () => {
   const isDevSession = typeof window !== 'undefined' && sessionStorage.getItem('exa_dev_session') === 'true';
   
   // 🔄 Force cache clear on version change
+  // 🔄 Force cache clear on version change
   const { version } = useForceCacheClear();
+  // 🛰️ Polling de versão a cada 5min (Safari macOS, Comet desktop)
+  useVersionWatcher();
   console.log(`📦 Running version: ${version}`);
   
   // ✅ CORREÇÃO CRÍTICA: Detectar se é rota de painel/display público

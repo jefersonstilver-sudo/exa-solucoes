@@ -175,32 +175,84 @@
       })();
     </script>
 
-    <!-- Safari/iOS pre-load version check -->
+    <!-- Multi-layer version check (Safari macOS, Comet/Chromium desktop, Safari iOS, Chrome, Firefox) -->
     <script>
       (function() {
         var BUILD_ID = '__BUILD_ID__';
-        if (sessionStorage.getItem('v-check-done')) return;
-        fetch('https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/get-app-version', {
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-          if (d.version && d.version !== '0' && d.version !== BUILD_ID) {
-            sessionStorage.setItem('v-check-done', '1');
-            localStorage.removeItem('html-build-id');
-            localStorage.removeItem('app-version');
-            if ('caches' in window) {
-              caches.keys().then(function(n) {
-                Promise.all(n.map(function(k) { return caches.delete(k); }))
-                  .then(function() { location.replace('/?_r=' + Date.now()); });
-              });
-            } else {
-              location.replace('/?_r=' + Date.now());
+        var VERSION_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/get-app-version';
+        var MIN_RECHECK_MS = 60 * 1000;       // 60s — respeita política de polling
+        var VISIBILITY_RECHECK_MS = 5 * 60 * 1000; // 5min — re-checa quando aba volta a ficar visível
+
+        function clearAndReload() {
+          try { localStorage.removeItem('html-build-id'); } catch (e) {}
+          try { localStorage.removeItem('app-version'); } catch (e) {}
+          var doReload = function() { location.replace('/?_v=' + Date.now()); };
+          if ('caches' in window) {
+            caches.keys()
+              .then(function(names) { return Promise.all(names.map(function(n) { return caches.delete(n); })); })
+              .then(doReload, doReload);
+          } else {
+            doReload();
+          }
+        }
+
+        function checkVersion() {
+          try {
+            var lastTs = parseInt(localStorage.getItem('last-version-check-ts') || '0', 10);
+            if (Date.now() - lastTs < MIN_RECHECK_MS) return;
+            localStorage.setItem('last-version-check-ts', String(Date.now()));
+          } catch (e) {}
+
+          var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+          var timeoutId = ctrl ? setTimeout(function() { ctrl.abort(); }, 4000) : null;
+
+          fetch(VERSION_URL, {
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+            signal: ctrl ? ctrl.signal : undefined
+          })
+            .then(function(r) { if (timeoutId) clearTimeout(timeoutId); return r.json(); })
+            .then(function(d) {
+              if (d && d.version && d.version !== '0' && d.version !== BUILD_ID) {
+                clearAndReload();
+              }
+            })
+            .catch(function() { /* timeout/erro de rede: tenta de novo na próxima janela */ });
+        }
+
+        // Camada 1: boot
+        checkVersion();
+
+        // Camada 2: bfcache do Safari (back/forward) — bundle restaurado da memória
+        window.addEventListener('pageshow', function(e) {
+          if (e.persisted) {
+            try { localStorage.setItem('last-version-check-ts', '0'); } catch (err) {}
+            checkVersion();
+          }
+        });
+
+        // Camada 3: aba volta a ficar visível após >5min
+        var lastHiddenAt = 0;
+        document.addEventListener('visibilitychange', function() {
+          if (document.visibilityState === 'hidden') {
+            lastHiddenAt = Date.now();
+          } else if (document.visibilityState === 'visible') {
+            if (lastHiddenAt && (Date.now() - lastHiddenAt) > VISIBILITY_RECHECK_MS) {
+              try { localStorage.setItem('last-version-check-ts', '0'); } catch (err) {}
+              checkVersion();
             }
           }
-        })
-        .catch(function() {});
+        });
+
+        // Camada 4: hard-refresh manual via ?force=1 (suporte instrui usuário)
+        try {
+          if (location.search.indexOf('force=1') !== -1) {
+            clearAndReload();
+          }
+        } catch (e) {}
+
+        // Expõe helper global para suporte
+        window.__exaForceRefresh = clearAndReload;
       })();
     </script>
 

@@ -162,6 +162,35 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
     }
   };
 
+  // Confirmação isolada do Termo (quando empresa já está cadastrada e só falta assinar)
+  const handleConfirmTermOnly = async () => {
+    try {
+      if (!termsAccepted) {
+        toast.error('Marque a caixa do termo de responsabilidade para confirmar');
+        return;
+      }
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+      const { error } = await supabase
+        .from('users')
+        .update({
+          empresa_aceite_termo: true,
+          empresa_aceite_termo_data: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+      if (error) throw error;
+      await loadCompanyData(true);
+      await refreshUserProfile();
+      toast.success('Termo de responsabilidade confirmado!');
+    } catch (error: any) {
+      console.error('Erro ao confirmar termo:', error);
+      toast.error('Erro ao confirmar termo: ' + (error.message || 'Tente novamente'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSave = async () => {
     try {
       if (!companyName.trim()) { toast.error('Informe o nome da empresa/marca'); return; }
@@ -234,6 +263,81 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/*
+          Modo "Só Termo": empresa já cadastrada (CNPJ/documento preenchido)
+          mas o termo de responsabilidade ainda não foi assinado.
+          Não duplicamos o cadastro — pedimos apenas a confirmação do termo.
+        */}
+        {(() => {
+          const termOnlyMode = !!companyDocument && !termsAccepted && isEditing;
+          if (!termOnlyMode) return null;
+          return (
+            <>
+              {hasInstitutionalData && (
+                <div className="rounded-xl border bg-gray-50/50 p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="w-[72px] h-[72px] rounded-2xl bg-gradient-to-br from-[#4a0f0f] via-[#6B1515] to-[#7D1818] flex items-center justify-center p-2.5 flex-shrink-0 shadow overflow-hidden">
+                      {(signedLogoUrl || logoUrl) ? (
+                        <img
+                          src={signedLogoUrl || logoUrl || ''}
+                          alt="Logo"
+                          className={cn(
+                            "max-w-full max-h-full object-contain rounded transition-transform",
+                            !logoUrl?.includes('#original') && "brightness-0 invert"
+                          )}
+                          style={{ transform: `scale(${logoScale})` }}
+                        />
+                      ) : (
+                        <Building2 className="h-8 w-8 text-white/80" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <p className="text-base font-semibold text-foreground truncate">{companyName || '—'}</p>
+                      <p className="text-sm text-muted-foreground">{getDocumentLabel()}: {companyDocument}</p>
+                      {businessSegment && <p className="text-xs text-muted-foreground">{businessSegment}</p>}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-900 space-y-1">
+                  <p className="font-semibold">Seus dados de empresa já estão cadastrados.</p>
+                  <p>
+                    Para liberar o upload de vídeos, falta apenas <strong>confirmar o Termo
+                    de Responsabilidade</strong> abaixo, declarando que você é o representante
+                    legal desta empresa.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <CompanyTermsCheckbox
+                  accepted={termsAccepted}
+                  onAcceptedChange={setTermsAccepted}
+                  disabled={false}
+                  acceptedDate={termsAcceptedDate}
+                />
+              </div>
+
+              <div className="flex justify-center pt-2">
+                <Button
+                  onClick={handleConfirmTermOnly}
+                  disabled={loading || !termsAccepted}
+                  size="lg"
+                  className="bg-[#9C1E1E] hover:bg-[#7A1818] text-white px-12 min-h-[48px] text-base font-semibold shadow-lg"
+                >
+                  {loading ? "Confirmando..." : "Confirmar Termo"}
+                </Button>
+              </div>
+            </>
+          );
+        })()}
+
+        {/* Form completo: oculto quando estamos no modo "Só Termo" */}
+        {!(!!companyDocument && !termsAccepted && isEditing) && (
+        <>
         {/* Institutional Summary Card */}
         {hasInstitutionalData && (
           <div className="rounded-xl border bg-gray-50/50 p-5">
@@ -463,6 +567,8 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
               {loading ? "Salvando..." : "Salvar Empresa"}
             </Button>
           </div>
+        )}
+        </>
         )}
       </CardContent>
     </Card>
