@@ -162,6 +162,35 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
     }
   };
 
+  // Confirmação isolada do Termo (quando empresa já está cadastrada e só falta assinar)
+  const handleConfirmTermOnly = async () => {
+    try {
+      if (!termsAccepted) {
+        toast.error('Marque a caixa do termo de responsabilidade para confirmar');
+        return;
+      }
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+      const { error } = await supabase
+        .from('users')
+        .update({
+          empresa_aceite_termo: true,
+          empresa_aceite_termo_data: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+      if (error) throw error;
+      await loadCompanyData(true);
+      await refreshUserProfile();
+      toast.success('Termo de responsabilidade confirmado!');
+    } catch (error: any) {
+      console.error('Erro ao confirmar termo:', error);
+      toast.error('Erro ao confirmar termo: ' + (error.message || 'Tente novamente'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSave = async () => {
     try {
       if (!companyName.trim()) { toast.error('Informe o nome da empresa/marca'); return; }
