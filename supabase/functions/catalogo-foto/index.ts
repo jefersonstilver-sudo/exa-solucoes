@@ -4,7 +4,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-const NOTION_VERSION = '2025-09-03';
+const NOTION_VERSION = '2022-06-28';
 
 function findFilesProp(props: any): any | null {
   for (const k of Object.keys(props || {})) {

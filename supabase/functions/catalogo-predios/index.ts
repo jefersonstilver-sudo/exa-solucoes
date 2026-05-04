@@ -6,8 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const DATA_SOURCE_ID = '1d6f9e03-8d81-813f-ad60-ff2fa347c3f5';
-const NOTION_VERSION = '2025-09-03';
+const DATABASE_ID = '1d6f9e03-8d81-813f-ad60-ff2fa347c3f5';
+const NOTION_VERSION = '2022-06-28';
 const STATUS_PERMITIDOS = new Set(['Ativo', 'Instalação', 'Instalaçao Internet', 'Instalação Internet', 'Interesse']);
 
 function getProp(props: any, name: string): any {
@@ -71,7 +71,7 @@ Deno.serve(async (req: Request) => {
     for (let i = 0; i < 10; i++) {
       const body: any = { page_size: 100 };
       if (cursor) body.start_cursor = cursor;
-      const r = await fetch(`https://api.notion.com/v1/data_sources/${DATA_SOURCE_ID}/query`, {
+      const r = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${NOTION_API_KEY}`,
