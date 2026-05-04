@@ -86,7 +86,15 @@ Deno.serve(async (req: Request) => {
 
       const unidades = unidadesKey ? readNumber(props[unidadesKey]) : null;
       const andares = andaresKey ? readNumber(props[andaresKey]) : null;
-      const fotosCount = fotosKey && props[fotosKey]?.type === 'files' ? (props[fotosKey].files || []).length : 0;
+      const imgRe = /\.(jpe?g|png|webp|gif|avif|heic|heif)(\?|$)/i;
+      let fotosCount = 0;
+      if (fotosKey && props[fotosKey]?.type === 'files') {
+        for (const f of (props[fotosKey].files || [])) {
+          const url = f.type === 'external' ? f.external?.url : f.file?.url;
+          const name = f.name || '';
+          if (imgRe.test(name) || (url && imgRe.test(url))) fotosCount++;
+        }
+      }
       const publico = unidades ? Math.round(unidades * 3.5) : null;
 
       const statusGroup = status.startsWith('Instala') ? 'instalacao' : (status === 'Ativo' ? 'ativo' : 'interesse');
