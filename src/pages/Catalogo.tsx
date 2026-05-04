@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import logoExa from '@/assets/logo-branca-exa.png';
 
 type Predio = {
   id: string;
@@ -186,7 +187,7 @@ export default function Catalogo() {
   return (
     <>
       <Helmet>
-        <title>Catálogo Rede EXA Mídia · {total || '100+'} Prédios · Foz do Iguaçu</title>
+        <title>{`Catálogo Rede EXA Mídia · ${total || '100+'} Prédios · Foz do Iguaçu`}</title>
         <meta name="description" content={`A maior rede DOOH residencial do Paraná. ${total || '100+'} condomínios em Foz do Iguaçu com painéis premium nos elevadores.`} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -197,10 +198,8 @@ export default function Catalogo() {
       <div className="catalogo-root">
         <header className="cat-hero">
           <div className="cat-hero-top">
-            <div>
-              <div className="cat-brand-logo">EXA</div>
-              <div className="cat-brand-sub">MÍDIA</div>
-            </div>
+            <img src={logoExa} alt="EXA Mídia" style={{ height: 64, width: 'auto', display: 'block' }} />
+
             <div className="cat-meta">EXA.NET.001<br /><strong>FOZ DO IGUAÇU · PR</strong><br />ATUALIZADO {new Date().toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).toUpperCase()}</div>
           </div>
           <div className="cat-hero-main">
