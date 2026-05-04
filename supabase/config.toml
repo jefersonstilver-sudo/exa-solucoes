@@ -9,6 +9,12 @@ verify_jwt = false
 [functions.log-video-playback]
 verify_jwt = false
 
+[functions.catalogo-predios]
+verify_jwt = false
+
+[functions.catalogo-foto]
+verify_jwt = false
+
 [api]
 enabled = true
 port = 54321
