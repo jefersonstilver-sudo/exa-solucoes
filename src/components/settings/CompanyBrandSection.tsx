@@ -568,6 +568,8 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
             </Button>
           </div>
         )}
+        </>
+        )}
       </CardContent>
     </Card>
   );
