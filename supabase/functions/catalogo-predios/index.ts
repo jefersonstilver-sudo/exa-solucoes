@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const DATABASE_ID = '1d6f9e03-8d81-813f-ad60-ff2fa347c3f5';
+const DATABASE_ID = Deno.env.get('NOTION_DATABASE_ID') || '1d6f9e03-8d81-813f-ad60-ff2fa347c3f5';
 const NOTION_VERSION = '2022-06-28';
 const STATUS_PERMITIDOS = new Set(['Ativo', 'Instalação', 'Instalaçao Internet', 'Instalação Internet', 'Interesse']);
 
