@@ -16,6 +16,12 @@
   Pragma: no-cache
   Expires: 0
 
+# Catch-all para qualquer rota SPA que sirva o index.html (Safari macOS, Comet/Chromium)
+/*.html
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  Pragma: no-cache
+  Expires: 0
+
 /sw.js
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
