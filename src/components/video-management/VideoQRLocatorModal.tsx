@@ -167,10 +167,10 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Crosshair className="h-4 w-4" /> Selecionar localização do QR
+            <Crosshair className="h-4 w-4" /> {readOnly ? 'Posição do QR no vídeo' : 'Selecionar localização do QR'}
           </DialogTitle>
           <DialogDescription>
-            Arraste o QR Code para a posição desejada.
+            {readOnly ? 'Visualização da posição definida (somente leitura).' : 'Arraste o QR Code para a posição desejada.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -192,14 +192,14 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
           />
           {overlay && (
             <div
-              role="button"
-              aria-label="Arraste para posicionar o QR"
+              role={readOnly ? undefined : 'button'}
+              aria-label={readOnly ? 'Posição do QR' : 'Arraste para posicionar o QR'}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
               onClick={(e) => e.stopPropagation()}
-              className="absolute cursor-grab active:cursor-grabbing"
+              className={`absolute ${readOnly ? 'cursor-default pointer-events-none' : 'cursor-grab active:cursor-grabbing'}`}
               style={{
                 left: overlay.left,
                 top: overlay.top,
@@ -223,19 +223,21 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
 
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button
-            disabled={!position}
-            onClick={() => {
-              if (position) {
-                onConfirm(position);
-                onOpenChange(false);
-              }
-            }}
-          >
-            <Crosshair className="h-4 w-4 mr-1" />
-            Selecionar localização
-          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{readOnly ? 'Fechar' : 'Cancelar'}</Button>
+          {!readOnly && (
+            <Button
+              disabled={!position}
+              onClick={() => {
+                if (position && onConfirm) {
+                  onConfirm(position);
+                  onOpenChange(false);
+                }
+              }}
+            >
+              <Crosshair className="h-4 w-4 mr-1" />
+              Selecionar localização
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
