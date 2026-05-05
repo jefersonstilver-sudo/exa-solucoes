@@ -273,6 +273,15 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
           </div>}
       </div>
 
+      {/* QR rastreável (captação antes do envio) */}
+      <div className="mt-3">
+        <VideoQRConfig
+          value={qrConfig}
+          onChange={setQrConfig}
+          disabled={uploading || isUploading}
+        />
+      </div>
+
       {/* Botão principal - Upload direto */}
       <Button onClick={handleDirectUpload} disabled={!canUpload} className="w-full mt-3 sm:mt-3 h-11 sm:h-9 text-sm sm:text-sm rounded-xl sm:rounded-md">
         {uploading || isUploading ? <>
