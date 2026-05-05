@@ -5,12 +5,28 @@ import { Crosshair, QrCode } from 'lucide-react';
 
 const QR_SIZE = 200; // em pixels do CANVAS canônico
 
+export interface VideoQRPositionData {
+  x: number;
+  y: number;
+  x1?: number;
+  y1?: number;
+  x2?: number;
+  y2?: number;
+  width?: number;
+  height?: number;
+  center_x?: number;
+  center_y?: number;
+  canvas_width?: number;
+  canvas_height?: number;
+  fit?: 'fill';
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   videoUrl: string;
-  initialPosition?: { x: number; y: number } | null;
-  onConfirm?: (positionInCanonicalPx: { x: number; y: number }) => void;
+  initialPosition?: VideoQRPositionData | null;
+  onConfirm?: (positionInCanonicalPx: VideoQRPositionData) => void;
   /** Orientação do vídeo. 'vertical' usa canvas 1080x1920, qualquer outro usa 1920x1080. */
   orientation?: 'vertical' | 'horizontal';
   /** Modo somente leitura — desabilita drag/click e botão de confirmar. */
@@ -24,9 +40,8 @@ interface Props {
  * são tratadas no canvas canônico 1920x1080 (ou 1080x1920 para vertical). Isso garante
  * que o backend e os monitores recebam sempre o mesmo sistema de referência.
  *
- * O vídeo é exibido com object-fit: contain dentro desse canvas — letterbox/pillarbox
- * são considerados parte do quadro e a sombra de 200x200 também pode ficar nessa área
- * (que será preenchida pelo backend ao renderizar em 1920x1080).
+ * O vídeo é exibido com object-fit: fill nesse canvas, igual ao layout da tela/API.
+ * Além do canto superior esquerdo, salvamos a caixa completa 200x200 para o backend.
  */
 export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, videoUrl, initialPosition, onConfirm, orientation = 'horizontal', readOnly = false }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -39,17 +54,35 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     x: Math.max(0, Math.min(CANON_W - QR_SIZE, Math.round(pos.x))),
     y: Math.max(0, Math.min(CANON_H - QR_SIZE, Math.round(pos.y))),
   });
-  const defaultPosition = () => clampPosition({ x: (CANON_W - QR_SIZE) / 2, y: (CANON_H - QR_SIZE) / 2 });
+  const buildPositionData = (pos: { x: number; y: number }): VideoQRPositionData => {
+    const topLeft = clampPosition(pos);
+    return {
+      x: topLeft.x,
+      y: topLeft.y,
+      x1: topLeft.x,
+      y1: topLeft.y,
+      x2: topLeft.x + QR_SIZE,
+      y2: topLeft.y + QR_SIZE,
+      width: QR_SIZE,
+      height: QR_SIZE,
+      center_x: topLeft.x + QR_SIZE / 2,
+      center_y: topLeft.y + QR_SIZE / 2,
+      canvas_width: CANON_W,
+      canvas_height: CANON_H,
+      fit: 'fill',
+    };
+  };
+  const defaultPosition = () => buildPositionData({ x: (CANON_W - QR_SIZE) / 2, y: (CANON_H - QR_SIZE) / 2 });
 
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
   const [stageSize, setStageSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
   // posição do canto superior esquerdo do QR em pixels do CANVAS CANÔNICO (1920x1080)
-  const [position, setPosition] = useState<{ x: number; y: number } | null>(initialPosition ?? null);
+  const [position, setPosition] = useState<VideoQRPositionData | null>(initialPosition ? buildPositionData(initialPosition) : null);
   const dragRef = useRef<{ dragging: boolean; offsetX: number; offsetY: number }>({ dragging: false, offsetX: 0, offsetY: 0 });
 
   useEffect(() => {
     if (open) {
-      setPosition(initialPosition ? clampPosition(initialPosition) : defaultPosition());
+      setPosition(initialPosition ? buildPositionData(initialPosition) : defaultPosition());
     }
   }, [open, initialPosition?.x, initialPosition?.y, CANON_W, CANON_H]);
 
@@ -144,7 +177,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     if (readOnly) return;
     if (!dragRef.current.dragging) return;
     const next = stageToCanon(e.clientX - dragRef.current.offsetX, e.clientY - dragRef.current.offsetY);
-    if (next) setPosition(next);
+    if (next) setPosition(buildPositionData(next));
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
@@ -157,7 +190,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     if (readOnly) return;
     if (dragRef.current.dragging) return;
     const next = stageToCanon(e.clientX, e.clientY, 'center');
-    if (next) setPosition(next);
+    if (next) setPosition(buildPositionData(next));
   };
 
   const overlay = position && ready ? canonToStage(position) : null;

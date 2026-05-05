@@ -9,11 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { VideoQRLocatorModal } from './VideoQRLocatorModal';
+import type { VideoQRPositionData } from './VideoQRLocatorModal';
 
 export interface VideoQRConfigData {
   enabled: boolean;
   redirect_url: string;
-  position: { x: number; y: number } | null;
+  position: VideoQRPositionData | null;
   updated_at?: string;
 }
 

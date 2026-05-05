@@ -29,6 +29,32 @@ const dayMap: { [key: number]: string } = {
   6: 'sábado'
 };
 
+const QR_SIZE = 200;
+
+function buildQrFields(qrConfig: any, isVertical: boolean): any {
+  if (!qrConfig?.enabled || !qrConfig?.redirect_url) return {};
+  const qrFields: any = { redirecionamento: qrConfig.redirect_url };
+  const position = qrConfig.position;
+  if (position && typeof position.x === 'number' && typeof position.y === 'number') {
+    const canvasWidth = typeof position.canvas_width === 'number' ? position.canvas_width : (isVertical ? 1080 : 1920);
+    const canvasHeight = typeof position.canvas_height === 'number' ? position.canvas_height : (isVertical ? 1920 : 1080);
+    const width = typeof position.width === 'number' ? position.width : QR_SIZE;
+    const height = typeof position.height === 'number' ? position.height : QR_SIZE;
+    const x1 = typeof position.x1 === 'number' ? position.x1 : position.x;
+    const y1 = typeof position.y1 === 'number' ? position.y1 : position.y;
+    const x2 = typeof position.x2 === 'number' ? position.x2 : x1 + width;
+    const y2 = typeof position.y2 === 'number' ? position.y2 : y1 + height;
+    const centerX = typeof position.center_x === 'number' ? position.center_x : x1 + width / 2;
+    const centerY = typeof position.center_y === 'number' ? position.center_y : y1 + height / 2;
+
+    qrFields.QRLocale = `${x1},${y1}`;
+    qrFields.QRBox = { x1, y1, x2, y2, width, height, center_x: centerX, center_y: centerY, canvas_width: canvasWidth, canvas_height: canvasHeight, fit: 'fill' };
+    qrFields.QRCantos = { superior_esquerdo: { x: x1, y: y1 }, superior_direito: { x: x2, y: y1 }, inferior_esquerdo: { x: x1, y: y2 }, inferior_direito: { x: x2, y: y2 } };
+    qrFields.QRTamanho = `${width},${height}`;
+  }
+  return qrFields;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -225,12 +251,8 @@ serve(async (req) => {
 
     // QR Code rastreável (opcional)
     const qrConfig: any = (pedidoVideo as any).qr_config;
-    const qrFields: any = {};
-    if (qrConfig && qrConfig.enabled && qrConfig.redirect_url) {
-      qrFields.redirecionamento = qrConfig.redirect_url;
-      if (qrConfig.position && typeof qrConfig.position.x === 'number' && typeof qrConfig.position.y === 'number') {
-        qrFields.QRLocale = `${qrConfig.position.x},${qrConfig.position.y}`;
-      }
+    const qrFields = buildQrFields(qrConfig, isVertical);
+    if (Object.keys(qrFields).length > 0) {
       console.log('🔳 [UPLOAD_EXTERNAL_API] QR Code incluído no payload:', qrFields);
     }
 
