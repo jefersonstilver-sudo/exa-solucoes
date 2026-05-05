@@ -6,9 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { VideoQRLocatorModal } from './VideoQRLocatorModal';
 
 export interface VideoQRConfigData {
   enabled: boolean;
@@ -27,11 +27,13 @@ interface VideoQRConfigProps {
   onChange?: (next: VideoQRConfigData | null) => void;
   /** No modo controlado: bloqueia o seletor de localização até haver vídeo. */
   hasVideoSelected?: boolean;
+  /** URL do vídeo para o seletor visual de posição (200x200px). */
+  videoUrl?: string | null;
 }
 
 const urlSchema = z.string().trim().url('URL inválida').max(2048, 'URL muito longa');
 
-export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, initial, disabled, value, onChange, hasVideoSelected = true }) => {
+export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, initial, disabled, value, onChange, hasVideoSelected = true, videoUrl }) => {
   const isControlled = typeof onChange === 'function';
   const source = isControlled ? value : initial;
 
@@ -219,34 +221,19 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
         </div>
       )}
 
-      <Dialog open={showLocator} onOpenChange={setShowLocator}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Crosshair className="h-4 w-4" />
-              Selecionar localização do QR
-            </DialogTitle>
-            <DialogDescription>
-              O seletor visual com sombreado sobre o vídeo será disponibilizado em breve.
-              Por enquanto, confirme a posição padrão (centro do vídeo) — nossa equipe ajustará no render final.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowLocator(false)}>Cancelar</Button>
-            <Button
-              onClick={() => {
-                const defaultPos = { x: 0, y: 0 };
-                setPosition(defaultPos);
-                setDirty(true);
-                emitChange({ enabled, url, position: defaultPos });
-                setShowLocator(false);
-              }}
-            >
-              Confirmar posição padrão
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {videoUrl && (
+        <VideoQRLocatorModal
+          open={showLocator}
+          onOpenChange={setShowLocator}
+          videoUrl={videoUrl}
+          initialPosition={position}
+          onConfirm={(pos) => {
+            setPosition(pos);
+            setDirty(true);
+            emitChange({ enabled, url, position: pos });
+          }}
+        />
+      )}
     </div>
   );
 };
