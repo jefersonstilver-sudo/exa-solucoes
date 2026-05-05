@@ -126,6 +126,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
+    if (readOnly) return;
     if (!position) return;
     const metrics = getStageMetrics();
     if (!metrics) return;
@@ -140,17 +141,20 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
+    if (readOnly) return;
     if (!dragRef.current.dragging) return;
     const next = stageToCanon(e.clientX - dragRef.current.offsetX, e.clientY - dragRef.current.offsetY);
     if (next) setPosition(next);
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
+    if (readOnly) return;
     dragRef.current.dragging = false;
     try { (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId); } catch {}
   };
 
   const onStageClick = (e: React.MouseEvent) => {
+    if (readOnly) return;
     if (dragRef.current.dragging) return;
     const next = stageToCanon(e.clientX, e.clientY, 'center');
     if (next) setPosition(next);
