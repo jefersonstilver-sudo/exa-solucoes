@@ -97,7 +97,8 @@ export const uploadVideo = async (
   onProgress?: (progress: number) => void,
   videoTitle?: string,
   scheduleRules?: any[],
-  tipoProduto?: string
+  tipoProduto?: string,
+  qrConfig?: { enabled: boolean; redirect_url: string; position: { x: number; y: number } | null } | null
 ): Promise<UploadResult> => {
   // Criar sessão de logs estruturados
   const uploadSession = new UploadSession(orderId, userId);
