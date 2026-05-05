@@ -37,7 +37,19 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   const [trimmerFile, setTrimmerFile] = useState<File | null>(null);
   const [trimmerMaxDuration, setTrimmerMaxDuration] = useState(10);
   const [qrConfig, setQrConfig] = useState<VideoQRConfigData | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Object URL para o preview do vídeo no seletor de localização do QR
+  useEffect(() => {
+    if (!selectedFile) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(selectedFile);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [selectedFile]);
 
   useEffect(() => {
     // Se recebeu a prop do pai, usar ela e não verificar
