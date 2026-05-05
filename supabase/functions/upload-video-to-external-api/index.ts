@@ -59,6 +59,7 @@ serve(async (req) => {
         slot_position,
         is_active,
         selected_for_display,
+        qr_config,
         pedidos!inner (
           id,
           client_id,
