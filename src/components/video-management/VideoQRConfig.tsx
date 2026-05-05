@@ -18,27 +18,49 @@ export interface VideoQRConfigData {
 }
 
 interface VideoQRConfigProps {
-  pedidoVideoId: string;
+  /** Quando informado: modo persistido (edita o slot existente). */
+  pedidoVideoId?: string;
   initial?: VideoQRConfigData | null;
   disabled?: boolean;
+  /** Quando informado: modo inline/controlado (captação durante upload, sem DB). */
+  value?: VideoQRConfigData | null;
+  onChange?: (next: VideoQRConfigData | null) => void;
 }
 
 const urlSchema = z.string().trim().url('URL inválida').max(2048, 'URL muito longa');
 
-export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, initial, disabled }) => {
-  const [enabled, setEnabled] = useState<boolean>(!!initial?.enabled);
-  const [url, setUrl] = useState<string>(initial?.redirect_url ?? '');
-  const [position, setPosition] = useState<{ x: number; y: number } | null>(initial?.position ?? null);
+export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, initial, disabled, value, onChange }) => {
+  const isControlled = typeof onChange === 'function';
+  const source = isControlled ? value : initial;
+
+  const [enabled, setEnabled] = useState<boolean>(!!source?.enabled);
+  const [url, setUrl] = useState<string>(source?.redirect_url ?? '');
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(source?.position ?? null);
   const [saving, setSaving] = useState(false);
   const [showLocator, setShowLocator] = useState(false);
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
-    setEnabled(!!initial?.enabled);
-    setUrl(initial?.redirect_url ?? '');
-    setPosition(initial?.position ?? null);
+    setEnabled(!!source?.enabled);
+    setUrl(source?.redirect_url ?? '');
+    setPosition(source?.position ?? null);
     setDirty(false);
-  }, [pedidoVideoId, initial?.enabled, initial?.redirect_url, initial?.position?.x, initial?.position?.y]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pedidoVideoId, source?.enabled, source?.redirect_url, source?.position?.x, source?.position?.y]);
+
+  // Modo controlado: emite mudanças ao pai sem salvar no banco
+  const emitChange = (next: { enabled: boolean; url: string; position: { x: number; y: number } | null }) => {
+    if (!isControlled) return;
+    if (!next.enabled) {
+      onChange!(null);
+      return;
+    }
+    onChange!({
+      enabled: true,
+      redirect_url: next.url,
+      position: next.position,
+    });
+  };
 
   const handleSave = async () => {
     const parsed = urlSchema.safeParse(url);
@@ -46,6 +68,7 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
       toast.error(parsed.error.errors[0]?.message || 'URL inválida');
       return;
     }
+    if (!pedidoVideoId) return;
     setSaving(true);
     try {
       const payload: VideoQRConfigData = {
@@ -70,6 +93,7 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
   };
 
   const handleRemove = async () => {
+    if (!pedidoVideoId) return;
     setSaving(true);
     try {
       const { error } = await (supabase as any)
@@ -89,7 +113,9 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
     }
   };
 
-  const isConfigured = !!initial?.enabled && !!initial?.redirect_url;
+  const isConfigured = isControlled
+    ? !!value?.enabled && !!value?.redirect_url
+    : !!initial?.enabled && !!initial?.redirect_url;
 
   return (
     <div className="mt-3 rounded-xl border border-border bg-background/60 backdrop-blur-sm p-3 space-y-2">
@@ -99,8 +125,10 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
             checked={enabled}
             disabled={disabled || saving}
             onCheckedChange={(checked) => {
-              setEnabled(!!checked);
+              const next = !!checked;
+              setEnabled(next);
               setDirty(true);
+              emitChange({ enabled: next, url, position });
             }}
           />
           <span className="flex items-center gap-1.5 text-sm font-medium">
@@ -129,8 +157,10 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
               value={url}
               disabled={disabled || saving}
               onChange={(e) => {
-                setUrl(e.target.value);
+                const v = e.target.value;
+                setUrl(v);
                 setDirty(true);
+                emitChange({ enabled, url: v, position });
               }}
               maxLength={2048}
               className="h-9 text-sm"
@@ -150,31 +180,33 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
               {position ? `Local: ${position.x}, ${position.y} px` : 'Selecionar localização do QR'}
             </Button>
 
-            <div className="ml-auto flex items-center gap-2">
-              {isConfigured && (
+            {!isControlled && (
+              <div className="ml-auto flex items-center gap-2">
+                {isConfigured && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRemove}
+                    disabled={disabled || saving}
+                    className="h-8 text-xs text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    Remover
+                  </Button>
+                )}
                 <Button
                   type="button"
-                  variant="ghost"
                   size="sm"
-                  onClick={handleRemove}
-                  disabled={disabled || saving}
-                  className="h-8 text-xs text-destructive hover:text-destructive"
+                  onClick={handleSave}
+                  disabled={disabled || saving || !dirty || !url}
+                  className="h-8 text-xs"
                 >
-                  <Trash2 className="h-3.5 w-3.5 mr-1" />
-                  Remover
+                  {saving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                  Salvar
                 </Button>
-              )}
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleSave}
-                disabled={disabled || saving || !dirty || !url}
-                className="h-8 text-xs"
-              >
-                {saving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                Salvar
-              </Button>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}

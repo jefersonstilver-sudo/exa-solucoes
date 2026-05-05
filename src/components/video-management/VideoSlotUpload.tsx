@@ -8,11 +8,12 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { validateVideoFile } from '@/services/videoStorageService';
 import { VideoTrimmerModal } from '@/components/video-trimmer/VideoTrimmerModal';
+import { VideoQRConfig, VideoQRConfigData } from './VideoQRConfig';
 interface VideoSlotUploadProps {
   slotPosition: number;
   uploading: boolean;
   isUploading: boolean;
-  onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: ScheduleRule[]) => void;
+  onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: ScheduleRule[], qrConfig?: VideoQRConfigData | null) => void;
   companyInfoComplete?: boolean;
   tipoProduto?: string;
 }
@@ -35,6 +36,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   const [showTrimmer, setShowTrimmer] = useState(false);
   const [trimmerFile, setTrimmerFile] = useState<File | null>(null);
   const [trimmerMaxDuration, setTrimmerMaxDuration] = useState(10);
+  const [qrConfig, setQrConfig] = useState<VideoQRConfigData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -174,7 +176,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       });
 
       // Sem toast otimista. O progresso real é mostrado pelo card do slot.
-      await onUpload(slotPosition, selectedFile, videoTitle);
+      await onUpload(slotPosition, selectedFile, videoTitle, undefined, qrConfig);
       console.log('✅ [VideoSlotUpload] onUpload completado com sucesso');
 
       // Enviar email de confirmação de recebimento (não-bloqueante)
@@ -219,6 +221,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       setSelectedFile(null);
       setVideoTitle('');
       setTitleError('');
+      setQrConfig(null);
     } catch (error) {
       console.error('💥 [VideoSlotUpload] Erro no upload:', error);
       const msg = error instanceof Error ? error.message : 'Erro desconhecido';
@@ -268,6 +271,15 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
             <div className="truncate"><strong>Arquivo:</strong> {selectedFile.name}</div>
             <div><strong>Tamanho:</strong> {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</div>
           </div>}
+      </div>
+
+      {/* QR rastreável (captação antes do envio) */}
+      <div className="mt-3">
+        <VideoQRConfig
+          value={qrConfig}
+          onChange={setQrConfig}
+          disabled={uploading || isUploading}
+        />
       </div>
 
       {/* Botão principal - Upload direto */}

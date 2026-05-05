@@ -97,7 +97,8 @@ export const uploadVideo = async (
   onProgress?: (progress: number) => void,
   videoTitle?: string,
   scheduleRules?: any[],
-  tipoProduto?: string
+  tipoProduto?: string,
+  qrConfig?: { enabled: boolean; redirect_url: string; position: { x: number; y: number } | null } | null
 ): Promise<UploadResult> => {
   // Criar sessão de logs estruturados
   const uploadSession = new UploadSession(orderId, userId);
@@ -388,8 +389,11 @@ export const uploadVideo = async (
         approval_status: approvalStatus,
         selected_for_display: false,
         is_active: false,
-        updated_at: new Date().toISOString()
-      }, {
+        updated_at: new Date().toISOString(),
+        ...(qrConfig && qrConfig.enabled && qrConfig.redirect_url
+          ? { qr_config: { ...qrConfig, updated_at: new Date().toISOString() } as any }
+          : { qr_config: null as any })
+      } as any, {
         onConflict: 'pedido_id,slot_position',
         ignoreDuplicates: false
       });
