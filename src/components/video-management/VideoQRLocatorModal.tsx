@@ -157,14 +157,14 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
 
         <div
           ref={stageRef}
-          className="relative w-full bg-black rounded-lg overflow-hidden select-none"
+          className="relative w-full bg-black rounded-lg select-none"
           style={{ aspectRatio: `${CANON_W} / ${CANON_H}`, maxHeight: '60vh' }}
           onClick={onStageClick}
         >
           <video
             ref={videoRef}
             src={videoUrl}
-            className="absolute inset-0 w-full h-full object-contain"
+            className="absolute inset-0 w-full h-full object-contain rounded-lg"
             muted
             playsInline
             loop
