@@ -209,7 +209,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
                 <QrCode className="h-10 w-10 opacity-90" />
               </div>
               <div className="absolute -top-6 left-0 text-[11px] font-medium text-white bg-black/70 px-2 py-0.5 rounded">
-                {center ? `${center.x}, ${center.y} px` : ''}
+                {position ? `${position.x}, ${position.y} px` : ''}
               </div>
             </div>
           )}
@@ -223,10 +223,10 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button
-            disabled={!center}
+            disabled={!position}
             onClick={() => {
-              if (center) {
-                onConfirm(center);
+              if (position) {
+                onConfirm(position);
                 onOpenChange(false);
               }
             }}
