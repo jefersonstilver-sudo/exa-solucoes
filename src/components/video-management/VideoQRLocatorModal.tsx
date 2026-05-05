@@ -54,9 +54,21 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
       const r = stageRef.current.getBoundingClientRect();
       setStageSize({ w: r.width, h: r.height });
     };
-    update();
+    // Atrasa para garantir que o Dialog já montou o stage
+    const raf = requestAnimationFrame(update);
+    const t = setTimeout(update, 50);
+    let ro: ResizeObserver | null = null;
+    if (stageRef.current && typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(update);
+      ro.observe(stageRef.current);
+    }
     window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t);
+      ro?.disconnect();
+      window.removeEventListener('resize', update);
+    };
   }, [open]);
 
   const handleLoaded = () => {
