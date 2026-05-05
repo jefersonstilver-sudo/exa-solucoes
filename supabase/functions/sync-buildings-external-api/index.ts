@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
       // Get approved videos for this order
       const { data: videos, error: videoError } = await supabase
         .from('pedido_videos')
-        .select('video_id, selected_for_display, videos(nome, url, duracao, orientacao)')
+        .select('video_id, selected_for_display, qr_config, videos(nome, url, duracao, orientacao)')
         .eq('pedido_id', pedido_id)
         .eq('approval_status', 'approved')
 
@@ -133,6 +133,17 @@ Deno.serve(async (req) => {
             ? new Date(pedido.data_fim).toISOString().replace('Z', '')
             : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().replace('Z', '')
 
+          // QR Code rastreável (opcional)
+          const qrConfig: any = (pv as any).qr_config;
+          const qrFields: any = {};
+          if (qrConfig && qrConfig.enabled && qrConfig.redirect_url) {
+            qrFields.redirecionamento = qrConfig.redirect_url;
+            if (qrConfig.position && typeof qrConfig.position.x === 'number' && typeof qrConfig.position.y === 'number') {
+              qrFields.QRLocale = `${qrConfig.position.x},${qrConfig.position.y}`;
+            }
+            console.log(`🔳 [SYNC-BUILDINGS] QR Code incluído para ${fileNameClean}:`, qrFields);
+          }
+
           metadados[fileNameClean] = {
             titulo: video.nome || 'Campanha',
             data_ini: dataIni,
@@ -147,7 +158,8 @@ Deno.serve(async (req) => {
               quinta: [{ inicio: "00:00", fim: "23:59" }],
               sexta: [{ inicio: "00:00", fim: "23:59" }],
               sábado: [{ inicio: "00:00", fim: "23:59" }]
-            }
+            },
+            ...qrFields
           }
         } catch (dlError: any) {
           console.error(`⚠️ [SYNC-BUILDINGS] Error downloading ${fileNameClean}:`, dlError.message)
