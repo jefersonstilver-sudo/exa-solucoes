@@ -95,35 +95,45 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
   const scaleY = stageSize.h ? stageSize.h / CANON_H : 0;
   const ready = scaleX > 0 && scaleY > 0;
 
+  const getStageMetrics = () => {
+    if (!stageRef.current) return null;
+    const rect = stageRef.current.getBoundingClientRect();
+    return { rect, scaleX: rect.width / CANON_W, scaleY: rect.height / CANON_H };
+  };
+
   const canonToStage = (px: { x: number; y: number }) => {
-    const sizeStageX = QR_SIZE * scaleX;
-    const sizeStageY = QR_SIZE * scaleY;
-    return { left: px.x * scaleX, top: px.y * scaleY, width: sizeStageX, height: sizeStageY };
+    const metrics = getStageMetrics();
+    const currentScaleX = metrics?.scaleX ?? scaleX;
+    const currentScaleY = metrics?.scaleY ?? scaleY;
+    const sizeStageX = QR_SIZE * currentScaleX;
+    const sizeStageY = QR_SIZE * currentScaleY;
+    return { left: px.x * currentScaleX, top: px.y * currentScaleY, width: sizeStageX, height: sizeStageY };
   };
 
   const stageToCanon = (clientX: number, clientY: number, anchor: 'topLeft' | 'center' = 'topLeft'): { x: number; y: number } | null => {
-    if (!stageRef.current || !ready) return null;
-    const r = stageRef.current.getBoundingClientRect();
-    const xStage = clientX - r.left;
-    const yStage = clientY - r.top;
+    const metrics = getStageMetrics();
+    if (!metrics) return null;
+    const xStage = clientX - metrics.rect.left;
+    const yStage = clientY - metrics.rect.top;
     const offset = anchor === 'center' ? QR_SIZE / 2 : 0;
-    let xCanon = (xStage / scaleX) - offset;
-    let yCanon = (yStage / scaleY) - offset;
+    let xCanon = (xStage / metrics.scaleX) - offset;
+    let yCanon = (yStage / metrics.scaleY) - offset;
     xCanon = Math.max(0, Math.min(CANON_W - QR_SIZE, xCanon));
     yCanon = Math.max(0, Math.min(CANON_H - QR_SIZE, yCanon));
     return { x: Math.round(xCanon), y: Math.round(yCanon) };
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (!ready || !center) return;
+    if (!center) return;
+    const metrics = getStageMetrics();
+    if (!metrics) return;
     const target = e.currentTarget as HTMLDivElement;
     target.setPointerCapture(e.pointerId);
     const overlay = canonToStage(center);
-    const r = stageRef.current!.getBoundingClientRect();
     dragRef.current = {
       dragging: true,
-      offsetX: (e.clientX - r.left) - overlay.left,
-      offsetY: (e.clientY - r.top) - overlay.top,
+      offsetX: (e.clientX - metrics.rect.left) - overlay.left,
+      offsetY: (e.clientY - metrics.rect.top) - overlay.top,
     };
   };
 
