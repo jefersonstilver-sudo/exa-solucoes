@@ -10,7 +10,7 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   videoUrl: string;
   initialPosition?: { x: number; y: number } | null;
-  onConfirm: (centerInCanonicalPx: { x: number; y: number }) => void;
+  onConfirm: (positionInCanonicalPx: { x: number; y: number }) => void;
   /** Orientação do vídeo. 'vertical' usa canvas 1080x1920, qualquer outro usa 1920x1080. */
   orientation?: 'vertical' | 'horizontal';
 }
@@ -33,16 +33,21 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
   // Canvas canônico — SEMPRE 1920x1080 (ou 1080x1920 para vertical)
   const CANON_W = orientation === 'vertical' ? 1080 : 1920;
   const CANON_H = orientation === 'vertical' ? 1920 : 1080;
+  const clampPosition = (pos: { x: number; y: number }) => ({
+    x: Math.max(0, Math.min(CANON_W - QR_SIZE, Math.round(pos.x))),
+    y: Math.max(0, Math.min(CANON_H - QR_SIZE, Math.round(pos.y))),
+  });
+  const defaultPosition = () => clampPosition({ x: (CANON_W - QR_SIZE) / 2, y: (CANON_H - QR_SIZE) / 2 });
 
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
   const [stageSize, setStageSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
-  // posição do centro em pixels do CANVAS CANÔNICO (1920x1080)
+  // posição do canto superior esquerdo do QR em pixels do CANVAS CANÔNICO (1920x1080)
   const [center, setCenter] = useState<{ x: number; y: number } | null>(initialPosition ?? null);
   const dragRef = useRef<{ dragging: boolean; offsetX: number; offsetY: number }>({ dragging: false, offsetX: 0, offsetY: 0 });
 
   useEffect(() => {
     if (open) {
-      setCenter(initialPosition ?? { x: Math.round(CANON_W / 2), y: Math.round(CANON_H / 2) });
+      setCenter(initialPosition ? clampPosition(initialPosition) : defaultPosition());
     }
   }, [open, initialPosition?.x, initialPosition?.y, CANON_W, CANON_H]);
 
@@ -79,8 +84,8 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     if (!w || !h) return;
     setNatural({ w, h });
     if (!center) {
-      // centro do canvas canônico
-      setCenter({ x: Math.round(CANON_W / 2), y: Math.round(CANON_H / 2) });
+      // centro visual do canvas canônico, salvando o canto superior esquerdo do QR
+      setCenter(defaultPosition());
     }
   };
 
@@ -93,21 +98,19 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
   const canonToStage = (px: { x: number; y: number }) => {
     const sizeStageX = QR_SIZE * scaleX;
     const sizeStageY = QR_SIZE * scaleY;
-    const cxStage = px.x * scaleX;
-    const cyStage = px.y * scaleY;
-    return { left: cxStage - sizeStageX / 2, top: cyStage - sizeStageY / 2, width: sizeStageX, height: sizeStageY };
+    return { left: px.x * scaleX, top: px.y * scaleY, width: sizeStageX, height: sizeStageY };
   };
 
-  const stageToCanon = (clientX: number, clientY: number): { x: number; y: number } | null => {
+  const stageToCanon = (clientX: number, clientY: number, anchor: 'topLeft' | 'center' = 'topLeft'): { x: number; y: number } | null => {
     if (!stageRef.current || !ready) return null;
     const r = stageRef.current.getBoundingClientRect();
     const xStage = clientX - r.left;
     const yStage = clientY - r.top;
-    let xCanon = xStage / scaleX;
-    let yCanon = yStage / scaleY;
-    const half = QR_SIZE / 2;
-    xCanon = Math.max(half, Math.min(CANON_W - half, xCanon));
-    yCanon = Math.max(half, Math.min(CANON_H - half, yCanon));
+    const offset = anchor === 'center' ? QR_SIZE / 2 : 0;
+    let xCanon = (xStage / scaleX) - offset;
+    let yCanon = (yStage / scaleY) - offset;
+    xCanon = Math.max(0, Math.min(CANON_W - QR_SIZE, xCanon));
+    yCanon = Math.max(0, Math.min(CANON_H - QR_SIZE, yCanon));
     return { x: Math.round(xCanon), y: Math.round(yCanon) };
   };
 
@@ -119,8 +122,8 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     const r = stageRef.current!.getBoundingClientRect();
     dragRef.current = {
       dragging: true,
-      offsetX: (e.clientX - r.left) - (overlay.left + overlay.width / 2),
-      offsetY: (e.clientY - r.top) - (overlay.top + overlay.height / 2),
+      offsetX: (e.clientX - r.left) - overlay.left,
+      offsetY: (e.clientY - r.top) - overlay.top,
     };
   };
 
@@ -137,7 +140,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
 
   const onStageClick = (e: React.MouseEvent) => {
     if (dragRef.current.dragging) return;
-    const next = stageToCanon(e.clientX, e.clientY);
+    const next = stageToCanon(e.clientX, e.clientY, 'center');
     if (next) setCenter(next);
   };
 
@@ -157,14 +160,14 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
 
         <div
           ref={stageRef}
-          className="relative w-full bg-black rounded-lg select-none"
-          style={{ aspectRatio: `${CANON_W} / ${CANON_H}`, maxHeight: '60vh' }}
+          className="relative mx-auto bg-black rounded-lg select-none"
+          style={{ aspectRatio: `${CANON_W} / ${CANON_H}`, width: `min(100%, calc(60vh * ${CANON_W} / ${CANON_H}))` }}
           onClick={onStageClick}
         >
           <video
             ref={videoRef}
             src={videoUrl}
-            className="absolute inset-0 w-full h-full object-contain rounded-lg"
+            className="absolute inset-0 w-full h-full object-fill rounded-lg"
             muted
             playsInline
             loop
