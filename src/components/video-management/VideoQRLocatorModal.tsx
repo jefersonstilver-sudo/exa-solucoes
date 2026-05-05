@@ -94,10 +94,10 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (!display || !center) return;
+    if (!scale || !center) return;
     const target = e.currentTarget as HTMLDivElement;
     target.setPointerCapture(e.pointerId);
-    const overlay = naturalToStage(center);
+    const overlay = canonToStage(center);
     const r = stageRef.current!.getBoundingClientRect();
     dragRef.current = {
       dragging: true,
@@ -108,7 +108,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (!dragRef.current.dragging) return;
-    const next = stageToNatural(e.clientX - dragRef.current.offsetX, e.clientY - dragRef.current.offsetY);
+    const next = stageToCanon(e.clientX - dragRef.current.offsetX, e.clientY - dragRef.current.offsetY);
     if (next) setCenter(next);
   };
 
@@ -119,11 +119,11 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
 
   const onStageClick = (e: React.MouseEvent) => {
     if (dragRef.current.dragging) return;
-    const next = stageToNatural(e.clientX, e.clientY);
+    const next = stageToCanon(e.clientX, e.clientY);
     if (next) setCenter(next);
   };
 
-  const overlay = center ? naturalToStage(center) : null;
+  const overlay = center && scale ? canonToStage(center) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
