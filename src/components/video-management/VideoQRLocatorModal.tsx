@@ -112,15 +112,15 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (!scale || !center) return;
+    if (!ready || !center) return;
     const target = e.currentTarget as HTMLDivElement;
     target.setPointerCapture(e.pointerId);
     const overlay = canonToStage(center);
     const r = stageRef.current!.getBoundingClientRect();
     dragRef.current = {
       dragging: true,
-      offsetX: (e.clientX - r.left) - (overlay.left + overlay.size / 2),
-      offsetY: (e.clientY - r.top) - (overlay.top + overlay.size / 2),
+      offsetX: (e.clientX - r.left) - (overlay.left + overlay.width / 2),
+      offsetY: (e.clientY - r.top) - (overlay.top + overlay.height / 2),
     };
   };
 
