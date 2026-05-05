@@ -3,27 +3,40 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Crosshair, QrCode } from 'lucide-react';
 
-const QR_SIZE = 200; // in NATURAL video pixels
+const QR_SIZE = 200; // em pixels do CANVAS canônico
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   videoUrl: string;
   initialPosition?: { x: number; y: number } | null;
-  onConfirm: (centerInVideoPx: { x: number; y: number }) => void;
+  onConfirm: (centerInCanonicalPx: { x: number; y: number }) => void;
+  /** Orientação do vídeo. 'vertical' usa canvas 1080x1920, qualquer outro usa 1920x1080. */
+  orientation?: 'vertical' | 'horizontal';
 }
 
 /**
  * Editor de posição do QR rastreável.
- * Mostra o vídeo no tamanho do container, com uma sombra 200x200px (em coords NATURAIS do vídeo)
- * arrastável. Retorna o CENTRO da sombra em pixels do vídeo.
+ *
+ * IMPORTANTE: independente da resolução real do vídeo enviado, todas as coordenadas
+ * são tratadas no canvas canônico 1920x1080 (ou 1080x1920 para vertical). Isso garante
+ * que o backend e os monitores recebam sempre o mesmo sistema de referência.
+ *
+ * O vídeo é exibido com object-fit: contain dentro desse canvas — letterbox/pillarbox
+ * são considerados parte do quadro e a sombra de 200x200 também pode ficar nessa área
+ * (que será preenchida pelo backend ao renderizar em 1920x1080).
  */
-export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, videoUrl, initialPosition, onConfirm }) => {
+export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, videoUrl, initialPosition, onConfirm, orientation = 'horizontal' }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+
+  // Canvas canônico — SEMPRE 1920x1080 (ou 1080x1920 para vertical)
+  const CANON_W = orientation === 'vertical' ? 1080 : 1920;
+  const CANON_H = orientation === 'vertical' ? 1920 : 1080;
+
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
   const [stageSize, setStageSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
-  // center position in NATURAL video pixels
+  // posição do centro em pixels do CANVAS CANÔNICO (1920x1080)
   const [center, setCenter] = useState<{ x: number; y: number } | null>(initialPosition ?? null);
   const dragRef = useRef<{ dragging: boolean; offsetX: number; offsetY: number }>({ dragging: false, offsetX: 0, offsetY: 0 });
 
@@ -31,7 +44,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     if (open) setCenter(initialPosition ?? null);
   }, [open, initialPosition?.x, initialPosition?.y]);
 
-  // Track stage size on resize (relative to natural via object-fit: contain)
+  // Track stage size on resize
   useEffect(() => {
     if (!open) return;
     const update = () => {
@@ -42,7 +55,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     update();
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
-  }, [open, natural?.w, natural?.h]);
+  }, [open]);
 
   const handleLoaded = () => {
     const v = videoRef.current;
@@ -52,41 +65,32 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     if (!w || !h) return;
     setNatural({ w, h });
     if (!center) {
-      setCenter({ x: Math.round(w / 2), y: Math.round(h / 2) });
+      // centro do canvas canônico
+      setCenter({ x: Math.round(CANON_W / 2), y: Math.round(CANON_H / 2) });
     }
   };
 
-  // Compute video display rect inside stage (object-fit: contain)
-  const display = (() => {
-    if (!natural || !stageSize.w || !stageSize.h) return null;
-    const scale = Math.min(stageSize.w / natural.w, stageSize.h / natural.h);
-    const dispW = natural.w * scale;
-    const dispH = natural.h * scale;
-    const offsetX = (stageSize.w - dispW) / 2;
-    const offsetY = (stageSize.h - dispH) / 2;
-    return { scale, dispW, dispH, offsetX, offsetY };
-  })();
+  // O stage tem sempre aspect ratio do CANVAS CANÔNICO. Escala 1 unidade canônica → px de tela.
+  const scale = stageSize.w && stageSize.h ? stageSize.w / CANON_W : 0;
 
-  const naturalToStage = (px: { x: number; y: number }) => {
-    if (!display) return { left: 0, top: 0, size: 0 };
-    const sizeStage = QR_SIZE * display.scale;
-    const cxStage = display.offsetX + px.x * display.scale;
-    const cyStage = display.offsetY + px.y * display.scale;
+  const canonToStage = (px: { x: number; y: number }) => {
+    const sizeStage = QR_SIZE * scale;
+    const cxStage = px.x * scale;
+    const cyStage = px.y * scale;
     return { left: cxStage - sizeStage / 2, top: cyStage - sizeStage / 2, size: sizeStage };
   };
 
-  const stageToNatural = (clientX: number, clientY: number): { x: number; y: number } | null => {
-    if (!stageRef.current || !display || !natural) return null;
+  const stageToCanon = (clientX: number, clientY: number): { x: number; y: number } | null => {
+    if (!stageRef.current || !scale) return null;
     const r = stageRef.current.getBoundingClientRect();
     const xStage = clientX - r.left;
     const yStage = clientY - r.top;
-    let xVid = (xStage - display.offsetX) / display.scale;
-    let yVid = (yStage - display.offsetY) / display.scale;
-    // clamp center so the 200x200 stays inside
+    let xCanon = xStage / scale;
+    let yCanon = yStage / scale;
     const half = QR_SIZE / 2;
-    xVid = Math.max(half, Math.min(natural.w - half, xVid));
-    yVid = Math.max(half, Math.min(natural.h - half, yVid));
-    return { x: Math.round(xVid), y: Math.round(yVid) };
+    xCanon = Math.max(half, Math.min(CANON_W - half, xCanon));
+    yCanon = Math.max(half, Math.min(CANON_H - half, yCanon));
+    return { x: Math.round(xCanon), y: Math.round(yCanon) };
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
