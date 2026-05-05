@@ -31,7 +31,7 @@ interface VideoQRConfigProps {
 
 const urlSchema = z.string().trim().url('URL inválida').max(2048, 'URL muito longa');
 
-export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, initial, disabled, value, onChange }) => {
+export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, initial, disabled, value, onChange, hasVideoSelected = true }) => {
   const isControlled = typeof onChange === 'function';
   const source = isControlled ? value : initial;
 
