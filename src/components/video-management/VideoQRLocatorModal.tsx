@@ -184,8 +184,8 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
               style={{
                 left: overlay.left,
                 top: overlay.top,
-                width: overlay.size,
-                height: overlay.size,
+                width: overlay.width,
+                height: overlay.height,
                 background: 'rgba(0,0,0,0.55)',
                 border: '2px dashed rgba(255,255,255,0.95)',
                 boxShadow: '0 0 0 9999px rgba(0,0,0,0.25) inset',
