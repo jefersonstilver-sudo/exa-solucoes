@@ -176,7 +176,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       });
 
       // Sem toast otimista. O progresso real é mostrado pelo card do slot.
-      await onUpload(slotPosition, selectedFile, videoTitle);
+      await onUpload(slotPosition, selectedFile, videoTitle, undefined, qrConfig);
       console.log('✅ [VideoSlotUpload] onUpload completado com sucesso');
 
       // Enviar email de confirmação de recebimento (não-bloqueante)
