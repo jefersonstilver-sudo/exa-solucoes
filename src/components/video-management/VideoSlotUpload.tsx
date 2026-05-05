@@ -8,11 +8,12 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { validateVideoFile } from '@/services/videoStorageService';
 import { VideoTrimmerModal } from '@/components/video-trimmer/VideoTrimmerModal';
+import { VideoQRConfig, VideoQRConfigData } from './VideoQRConfig';
 interface VideoSlotUploadProps {
   slotPosition: number;
   uploading: boolean;
   isUploading: boolean;
-  onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: ScheduleRule[]) => void;
+  onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: ScheduleRule[], qrConfig?: VideoQRConfigData | null) => void;
   companyInfoComplete?: boolean;
   tipoProduto?: string;
 }
