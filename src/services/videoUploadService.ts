@@ -13,6 +13,7 @@ import { validateScheduleConflicts, formatConflictMessage } from './videoSchedul
 import type { ScheduleConflict } from './videoScheduleValidationService';
 import { uploadCache, getCacheKey } from './videoUploadCacheService';
 import { UploadSession } from './videoUploadLogsService';
+import type { VideoQRConfigData } from '@/components/video-management/VideoQRConfig';
 
 export interface UploadResult {
   success: boolean;
@@ -98,7 +99,7 @@ export const uploadVideo = async (
   videoTitle?: string,
   scheduleRules?: any[],
   tipoProduto?: string,
-  qrConfig?: { enabled: boolean; redirect_url: string; position: { x: number; y: number } | null } | null
+  qrConfig?: VideoQRConfigData | null
 ): Promise<UploadResult> => {
   // Criar sessão de logs estruturados
   const uploadSession = new UploadSession(orderId, userId);
