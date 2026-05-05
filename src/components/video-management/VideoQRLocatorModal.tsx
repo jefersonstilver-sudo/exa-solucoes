@@ -185,7 +185,8 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
         </div>
 
         <div className="text-xs text-muted-foreground">
-          {natural ? <>Resolução do vídeo: <strong>{natural.w}×{natural.h}px</strong> · Área do QR: <strong>200×200px</strong></> : 'Carregando vídeo...'}
+          Canvas padronizado: <strong>{CANON_W}×{CANON_H}px</strong> · Área do QR: <strong>200×200px</strong>
+          {natural && <> · Vídeo original: {natural.w}×{natural.h}px</>}
         </div>
 
         <DialogFooter className="gap-2">
