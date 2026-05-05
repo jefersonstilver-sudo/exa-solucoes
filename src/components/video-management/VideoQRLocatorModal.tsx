@@ -164,7 +164,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
             <Crosshair className="h-4 w-4" /> Selecionar localização do QR
           </DialogTitle>
           <DialogDescription>
-            Arraste a área de 200×200px para a posição desejada. As coordenadas são padronizadas no canvas <strong>{CANON_W}×{CANON_H}px</strong> — independente da resolução real do vídeo, o backend usará esse sistema para gerar o QR.
+            Arraste o QR Code para a posição desejada.
           </DialogDescription>
         </DialogHeader>
 
@@ -215,10 +215,6 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
           )}
         </div>
 
-        <div className="text-xs text-muted-foreground">
-          Canvas padronizado: <strong>{CANON_W}×{CANON_H}px</strong> · Área do QR: <strong>200×200px</strong>
-          {natural && <> · Vídeo original: {natural.w}×{natural.h}px</>}
-        </div>
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
