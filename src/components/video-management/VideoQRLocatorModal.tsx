@@ -62,9 +62,10 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     if (!open) return;
     const update = () => {
       if (!stageRef.current) return;
-      const r = stageRef.current.getBoundingClientRect();
-      if (!r.width || !r.height) return;
-      setStageSize({ w: r.width, h: r.height });
+      const w = stageRef.current.clientWidth;
+      const h = stageRef.current.clientHeight;
+      if (!w || !h) return;
+      setStageSize({ w, h });
       setHasMeasuredStage(true);
     };
     // Atrasa para garantir que o Dialog já montou e concluiu o layout inicial do stage
@@ -110,7 +111,9 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
   const getStageMetrics = () => {
     if (!stageRef.current) return null;
     const rect = stageRef.current.getBoundingClientRect();
-    return { rect, scaleX: rect.width / CANON_W, scaleY: rect.height / CANON_H };
+    const w = stageRef.current.clientWidth;
+    const h = stageRef.current.clientHeight;
+    return { rect, scaleX: w / CANON_W, scaleY: h / CANON_H };
   };
 
   const canonToStage = (px: { x: number; y: number }) => {
