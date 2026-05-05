@@ -219,7 +219,7 @@ const OrderDetails = () => {
     }
   };
 
-  const handleVideoUpload = async (slotPosition: number, file: File, title: string, scheduleRules?: any[]) => {
+  const handleVideoUpload = async (slotPosition: number, file: File, title: string, scheduleRules?: any[], qrConfig?: any) => {
     console.log('🎬 [OrderDetails] handleVideoUpload chamado', {
       slotPosition,
       fileName: file.name,
