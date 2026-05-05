@@ -33,6 +33,7 @@ interface VideoSlot {
     formato?: string;
   };
   rejection_reason?: string;
+  qr_config?: VideoQRConfigData | null;
   schedule_rules?: {
     id: string;
     days_of_week: number[];
