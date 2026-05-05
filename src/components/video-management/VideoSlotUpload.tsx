@@ -293,6 +293,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
           onChange={setQrConfig}
           disabled={uploading || isUploading}
           hasVideoSelected={!!selectedFile}
+          videoUrl={previewUrl}
         />
       </div>
 
