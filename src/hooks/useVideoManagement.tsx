@@ -79,7 +79,7 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
   }, [orderId, debouncedRefresh]);
 
   // Upload de vídeo com validação de segurança — SEMPRE retorna { success, error? }
-  const handleUpload = async (slotPosition: number, file: File, title: string) => {
+  const handleUpload = async (slotPosition: number, file: File, title: string, _scheduleRules?: any[], qrConfig?: any) => {
     try {
       // Validação prévia de segurança
       const securityCheck = await validateVideoUploadPermission(orderId);
