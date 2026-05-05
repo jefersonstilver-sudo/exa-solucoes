@@ -18,6 +18,12 @@ export interface VideoSlot {
     formato?: string;
   };
   rejection_reason?: string;
+  qr_config?: {
+    enabled: boolean;
+    redirect_url: string;
+    position: { x: number; y: number } | null;
+    updated_at?: string;
+  } | null;
   schedule_rules?: {
     id: string;
     days_of_week: number[];

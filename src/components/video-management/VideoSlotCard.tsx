@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { videoLogger } from '@/services/logger/VideoActionLogger';
 import { useForceCleanup } from '@/hooks/useForceCleanup';
+import { VideoQRConfig, VideoQRConfigData } from './VideoQRConfig';
 interface VideoSlot {
   id?: string;
   slot_position: number;
@@ -32,6 +33,7 @@ interface VideoSlot {
     formato?: string;
   };
   rejection_reason?: string;
+  qr_config?: VideoQRConfigData | null;
   schedule_rules?: {
     id: string;
     days_of_week: number[];
@@ -474,6 +476,14 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               totalApprovedVideos={totalApprovedVideos} 
               orderId={orderId} 
             />
+
+            {/* QR Rastreável */}
+            {slot.id && slot.approval_status !== 'rejected' && (
+              <VideoQRConfig
+                pedidoVideoId={slot.id}
+                initial={slot.qr_config ?? null}
+              />
+            )}
           </div>
         ) : slot.id ? (
       // Placeholder para vídeo enviado mas ainda não carregado
