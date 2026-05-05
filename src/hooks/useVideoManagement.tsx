@@ -102,7 +102,8 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
         },
         title,
         undefined, // scheduleRules
-        tipoProduto
+        tipoProduto,
+        qrConfig ?? null
       );
 
       if (!result?.success) {
