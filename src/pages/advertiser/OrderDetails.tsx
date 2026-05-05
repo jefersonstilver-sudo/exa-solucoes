@@ -219,7 +219,7 @@ const OrderDetails = () => {
     }
   };
 
-  const handleVideoUpload = async (slotPosition: number, file: File, title: string, scheduleRules?: any[]) => {
+  const handleVideoUpload = async (slotPosition: number, file: File, title: string, scheduleRules?: any[], qrConfig?: any) => {
     console.log('🎬 [OrderDetails] handleVideoUpload chamado', {
       slotPosition,
       fileName: file.name,
@@ -254,7 +254,7 @@ const OrderDetails = () => {
 
     try {
       console.log('📤 [OrderDetails] Chamando uploadVideo...');
-      await uploadVideo(slotPosition, file, userProfile.id, title, scheduleRules);
+      await uploadVideo(slotPosition, file, userProfile.id, title, scheduleRules, qrConfig);
       console.log('✅ [OrderDetails] Upload concluído com sucesso');
       
       // Track video upload after successful upload

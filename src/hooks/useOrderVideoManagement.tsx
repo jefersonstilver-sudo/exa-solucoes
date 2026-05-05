@@ -126,10 +126,11 @@ export const useOrderVideoManagement = (orderId: string) => {
     file: File,
     userId: string,
     videoTitle?: string,
-    scheduleRules?: any[]
+    scheduleRules?: any[],
+    qrConfig?: any
   ) => {
     try {
-      const result = await baseHook.handleUpload(slotPosition, file, videoTitle || file.name);
+      const result = await baseHook.handleUpload(slotPosition, file, videoTitle || file.name, scheduleRules, qrConfig);
 
       // Refresh sempre — para refletir o estado real
       await refreshSlots();
