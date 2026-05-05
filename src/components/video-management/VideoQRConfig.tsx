@@ -27,6 +27,8 @@ interface VideoQRConfigProps {
   onChange?: (next: VideoQRConfigData | null) => void;
   /** No modo controlado: bloqueia o seletor de localização até haver vídeo. */
   hasVideoSelected?: boolean;
+  /** URL do vídeo para o seletor visual de posição (200x200px). */
+  videoUrl?: string | null;
 }
 
 const urlSchema = z.string().trim().url('URL inválida').max(2048, 'URL muito longa');
