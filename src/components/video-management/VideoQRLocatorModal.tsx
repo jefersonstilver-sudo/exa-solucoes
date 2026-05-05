@@ -107,9 +107,10 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     const metrics = getStageMetrics();
     const currentScaleX = metrics?.scaleX ?? scaleX;
     const currentScaleY = metrics?.scaleY ?? scaleY;
-    const sizeStageX = QR_SIZE * currentScaleX;
-    const sizeStageY = QR_SIZE * currentScaleY;
-    return { left: px.x * currentScaleX, top: px.y * currentScaleY, width: sizeStageX, height: sizeStageY };
+    // Usa escala uniforme para garantir que o QR seja sempre exatamente 200x200 do canvas canônico (quadrado)
+    const uniform = Math.min(currentScaleX, currentScaleY);
+    const sizeStage = QR_SIZE * uniform;
+    return { left: px.x * currentScaleX, top: px.y * currentScaleY, width: sizeStage, height: sizeStage };
   };
 
   const stageToCanon = (clientX: number, clientY: number, anchor: 'topLeft' | 'center' = 'topLeft'): { x: number; y: number } | null => {
