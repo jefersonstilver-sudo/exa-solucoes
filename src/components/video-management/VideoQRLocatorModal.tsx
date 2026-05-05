@@ -105,9 +105,8 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     const yStage = clientY - r.top;
     let xCanon = xStage / scaleX;
     let yCanon = yStage / scaleY;
-    const half = QR_SIZE / 2;
-    xCanon = Math.max(half, Math.min(CANON_W - half, xCanon));
-    yCanon = Math.max(half, Math.min(CANON_H - half, yCanon));
+    xCanon = Math.max(0, Math.min(CANON_W, xCanon));
+    yCanon = Math.max(0, Math.min(CANON_H, yCanon));
     return { x: Math.round(xCanon), y: Math.round(yCanon) };
   };
 
