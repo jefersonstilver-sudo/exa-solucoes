@@ -228,11 +228,22 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
             </DialogTitle>
             <DialogDescription>
               O seletor visual com sombreado sobre o vídeo será disponibilizado em breve.
-              Por enquanto, salve o link e nossa equipe definirá uma posição padrão para o QR no vídeo.
+              Por enquanto, confirme a posição padrão (centro do vídeo) — nossa equipe ajustará no render final.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowLocator(false)}>Entendi</Button>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowLocator(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                const defaultPos = { x: 0, y: 0 };
+                setPosition(defaultPos);
+                setDirty(true);
+                emitChange({ enabled, url, position: defaultPos });
+                setShowLocator(false);
+              }}
+            >
+              Confirmar posição padrão
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
