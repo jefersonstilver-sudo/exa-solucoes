@@ -207,6 +207,9 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
                 </Button>
               </div>
             )}
+          </div>
+        </div>
+      )}
 
       <Dialog open={showLocator} onOpenChange={setShowLocator}>
         <DialogContent>
