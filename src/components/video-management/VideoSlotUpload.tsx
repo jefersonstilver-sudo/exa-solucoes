@@ -280,6 +280,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
           value={qrConfig}
           onChange={setQrConfig}
           disabled={uploading || isUploading}
+          hasVideoSelected={!!selectedFile}
         />
       </div>
 
