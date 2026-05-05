@@ -10,9 +10,11 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   videoUrl: string;
   initialPosition?: { x: number; y: number } | null;
-  onConfirm: (positionInCanonicalPx: { x: number; y: number }) => void;
+  onConfirm?: (positionInCanonicalPx: { x: number; y: number }) => void;
   /** Orientação do vídeo. 'vertical' usa canvas 1080x1920, qualquer outro usa 1920x1080. */
   orientation?: 'vertical' | 'horizontal';
+  /** Modo somente leitura — desabilita drag/click e botão de confirmar. */
+  readOnly?: boolean;
 }
 
 /**
