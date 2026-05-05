@@ -41,8 +41,10 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
   const dragRef = useRef<{ dragging: boolean; offsetX: number; offsetY: number }>({ dragging: false, offsetX: 0, offsetY: 0 });
 
   useEffect(() => {
-    if (open) setCenter(initialPosition ?? null);
-  }, [open, initialPosition?.x, initialPosition?.y]);
+    if (open) {
+      setCenter(initialPosition ?? { x: Math.round(CANON_W / 2), y: Math.round(CANON_H / 2) });
+    }
+  }, [open, initialPosition?.x, initialPosition?.y, CANON_W, CANON_H]);
 
   // Track stage size on resize
   useEffect(() => {
