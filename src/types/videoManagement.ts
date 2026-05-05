@@ -21,21 +21,7 @@ export interface VideoSlot {
   qr_config?: {
     enabled: boolean;
     redirect_url: string;
-    position: {
-      x: number;
-      y: number;
-      x1?: number;
-      y1?: number;
-      x2?: number;
-      y2?: number;
-      width?: number;
-      height?: number;
-      center_x?: number;
-      center_y?: number;
-      canvas_width?: number;
-      canvas_height?: number;
-      fit?: 'fill';
-    } | null;
+    position: { x: number; y: number } | null;
     updated_at?: string;
   } | null;
   schedule_rules?: {
