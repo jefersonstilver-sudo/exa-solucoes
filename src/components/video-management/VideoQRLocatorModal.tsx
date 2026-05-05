@@ -40,9 +40,8 @@ interface Props {
  * são tratadas no canvas canônico 1920x1080 (ou 1080x1920 para vertical). Isso garante
  * que o backend e os monitores recebam sempre o mesmo sistema de referência.
  *
- * O vídeo é exibido com object-fit: contain dentro desse canvas — letterbox/pillarbox
- * são considerados parte do quadro e a sombra de 200x200 também pode ficar nessa área
- * (que será preenchida pelo backend ao renderizar em 1920x1080).
+ * O vídeo é exibido com object-fit: fill nesse canvas, igual ao layout da tela/API.
+ * Além do canto superior esquerdo, salvamos a caixa completa 200x200 para o backend.
  */
 export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, videoUrl, initialPosition, onConfirm, orientation = 'horizontal', readOnly = false }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
