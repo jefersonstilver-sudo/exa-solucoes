@@ -25,11 +25,13 @@ interface VideoQRConfigProps {
   /** Quando informado: modo inline/controlado (captação durante upload, sem DB). */
   value?: VideoQRConfigData | null;
   onChange?: (next: VideoQRConfigData | null) => void;
+  /** No modo controlado: bloqueia o seletor de localização até haver vídeo. */
+  hasVideoSelected?: boolean;
 }
 
 const urlSchema = z.string().trim().url('URL inválida').max(2048, 'URL muito longa');
 
-export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, initial, disabled, value, onChange }) => {
+export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, initial, disabled, value, onChange, hasVideoSelected = true }) => {
   const isControlled = typeof onChange === 'function';
   const source = isControlled ? value : initial;
 
@@ -172,13 +174,19 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
               type="button"
               variant="outline"
               size="sm"
-              disabled={disabled || saving}
+              disabled={disabled || saving || !hasVideoSelected}
               onClick={() => setShowLocator(true)}
               className="h-8 text-xs"
+              title={!hasVideoSelected ? 'Faça upload do vídeo primeiro antes de selecionar a localização' : undefined}
             >
               <Crosshair className="h-3.5 w-3.5 mr-1" />
               {position ? `Local: ${position.x}, ${position.y} px` : 'Selecionar localização do QR'}
             </Button>
+            {!hasVideoSelected && (
+              <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
+                Faça upload do vídeo primeiro antes de selecionar a localização
+              </span>
+            )}
 
             {!isControlled && (
               <div className="ml-auto flex items-center gap-2">
@@ -220,11 +228,22 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
             </DialogTitle>
             <DialogDescription>
               O seletor visual com sombreado sobre o vídeo será disponibilizado em breve.
-              Por enquanto, salve o link e nossa equipe definirá uma posição padrão para o QR no vídeo.
+              Por enquanto, confirme a posição padrão (centro do vídeo) — nossa equipe ajustará no render final.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowLocator(false)}>Entendi</Button>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowLocator(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                const defaultPos = { x: 0, y: 0 };
+                setPosition(defaultPos);
+                setDirty(true);
+                emitChange({ enabled, url, position: defaultPos });
+                setShowLocator(false);
+              }}
+            >
+              Confirmar posição padrão
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
