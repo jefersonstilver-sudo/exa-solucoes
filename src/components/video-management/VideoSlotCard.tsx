@@ -477,12 +477,14 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               orderId={orderId} 
             />
 
-            {/* QR Rastreável */}
-            {slot.id && slot.approval_status !== 'rejected' && (
-              <VideoQRConfig
-                pedidoVideoId={slot.id}
-                initial={slot.qr_config ?? null}
-              />
+            {/* QR Rastreável: configurado durante o upload. Card pós-upload é apenas leitura. */}
+            {slot.qr_config?.enabled && slot.qr_config.redirect_url && (
+              <div className="mt-2 rounded-lg border border-border bg-background/60 backdrop-blur-sm p-2 text-xs flex items-center gap-2">
+                <Badge variant="outline" className="text-[10px] gap-1">QR rastreável</Badge>
+                <span className="truncate text-muted-foreground" title={slot.qr_config.redirect_url}>
+                  {slot.qr_config.redirect_url}
+                </span>
+              </div>
             )}
           </div>
         ) : slot.id ? (
