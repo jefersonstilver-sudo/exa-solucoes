@@ -125,8 +125,10 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
             checked={enabled}
             disabled={disabled || saving}
             onCheckedChange={(checked) => {
-              setEnabled(!!checked);
+              const next = !!checked;
+              setEnabled(next);
               setDirty(true);
+              emitChange({ enabled: next, url, position });
             }}
           />
           <span className="flex items-center gap-1.5 text-sm font-medium">
