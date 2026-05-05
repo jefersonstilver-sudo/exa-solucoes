@@ -29,11 +29,13 @@ interface VideoQRConfigProps {
   hasVideoSelected?: boolean;
   /** URL do vídeo para o seletor visual de posição (200x200px). */
   videoUrl?: string | null;
+  /** Orientação do vídeo (define canvas canônico 1920x1080 ou 1080x1920). */
+  orientation?: 'vertical' | 'horizontal';
 }
 
 const urlSchema = z.string().trim().url('URL inválida').max(2048, 'URL muito longa');
 
-export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, initial, disabled, value, onChange, hasVideoSelected = true, videoUrl }) => {
+export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, initial, disabled, value, onChange, hasVideoSelected = true, videoUrl, orientation = 'horizontal' }) => {
   const isControlled = typeof onChange === 'function';
   const source = isControlled ? value : initial;
 
@@ -227,6 +229,7 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
           onOpenChange={setShowLocator}
           videoUrl={videoUrl}
           initialPosition={position}
+          orientation={orientation}
           onConfirm={(pos) => {
             setPosition(pos);
             setDirty(true);
