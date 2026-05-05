@@ -43,12 +43,16 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
 
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
   const [stageSize, setStageSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  const [hasMeasuredStage, setHasMeasuredStage] = useState(false);
   // posição do canto superior esquerdo do QR em pixels do CANVAS CANÔNICO (1920x1080)
   const [position, setPosition] = useState<{ x: number; y: number } | null>(initialPosition ?? null);
   const dragRef = useRef<{ dragging: boolean; offsetX: number; offsetY: number }>({ dragging: false, offsetX: 0, offsetY: 0 });
 
   useEffect(() => {
     if (open) {
+      setNatural(null);
+      setStageSize({ w: 0, h: 0 });
+      setHasMeasuredStage(false);
       setPosition(initialPosition ? clampPosition(initialPosition) : defaultPosition());
     }
   }, [open, initialPosition?.x, initialPosition?.y, CANON_W, CANON_H]);
@@ -59,10 +63,15 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     const update = () => {
       if (!stageRef.current) return;
       const r = stageRef.current.getBoundingClientRect();
+      if (!r.width || !r.height) return;
       setStageSize({ w: r.width, h: r.height });
+      setHasMeasuredStage(true);
     };
-    // Atrasa para garantir que o Dialog já montou o stage
-    const raf = requestAnimationFrame(update);
+    // Atrasa para garantir que o Dialog já montou e concluiu o layout inicial do stage
+    let raf2 = 0;
+    const raf = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(update);
+    });
     const t = setTimeout(update, 50);
     let ro: ResizeObserver | null = null;
     if (stageRef.current && typeof ResizeObserver !== 'undefined') {
@@ -72,6 +81,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     window.addEventListener('resize', update);
     return () => {
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(raf2);
       clearTimeout(t);
       ro?.disconnect();
       window.removeEventListener('resize', update);
@@ -95,7 +105,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
   // o stage seja levemente diferente da razão canônica (por maxHeight, arredondamento, etc.)
   const scaleX = stageSize.w ? stageSize.w / CANON_W : 0;
   const scaleY = stageSize.h ? stageSize.h / CANON_H : 0;
-  const ready = scaleX > 0 && scaleY > 0;
+  const ready = !!natural && hasMeasuredStage && scaleX > 0 && scaleY > 0;
 
   const getStageMetrics = () => {
     if (!stageRef.current) return null;
