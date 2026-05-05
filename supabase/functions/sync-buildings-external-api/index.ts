@@ -160,12 +160,8 @@ Deno.serve(async (req) => {
 
           // QR Code rastreável (opcional)
           const qrConfig: any = (pv as any).qr_config;
-          const qrFields: any = {};
-          if (qrConfig && qrConfig.enabled && qrConfig.redirect_url) {
-            qrFields.redirecionamento = qrConfig.redirect_url;
-            if (qrConfig.position && typeof qrConfig.position.x === 'number' && typeof qrConfig.position.y === 'number') {
-              qrFields.QRLocale = `${qrConfig.position.x},${qrConfig.position.y}`;
-            }
+          const qrFields = buildQrFields(qrConfig, isVertical);
+          if (Object.keys(qrFields).length > 0) {
             console.log(`🔳 [SYNC-BUILDINGS] QR Code incluído para ${fileNameClean}:`, qrFields);
           }
 
