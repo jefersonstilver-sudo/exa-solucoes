@@ -1,0 +1,1 @@
+ALTER TABLE public.pedido_videos ADD COLUMN IF NOT EXISTS qr_config jsonb;

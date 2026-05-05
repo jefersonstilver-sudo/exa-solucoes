@@ -10295,6 +10295,7 @@ export type Database = {
           is_active: boolean
           is_base_video: boolean
           pedido_id: string
+          qr_config: Json | null
           rejection_reason: string | null
           selected_for_display: boolean
           slot_position: number
@@ -10310,6 +10311,7 @@ export type Database = {
           is_active?: boolean
           is_base_video?: boolean
           pedido_id: string
+          qr_config?: Json | null
           rejection_reason?: string | null
           selected_for_display?: boolean
           slot_position: number
@@ -10325,6 +10327,7 @@ export type Database = {
           is_active?: boolean
           is_base_video?: boolean
           pedido_id?: string
+          qr_config?: Json | null
           rejection_reason?: string | null
           selected_for_display?: boolean
           slot_position?: number
