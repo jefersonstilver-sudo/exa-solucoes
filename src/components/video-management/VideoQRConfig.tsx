@@ -157,8 +157,10 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
               value={url}
               disabled={disabled || saving}
               onChange={(e) => {
-                setUrl(e.target.value);
+                const v = e.target.value;
+                setUrl(v);
                 setDirty(true);
+                emitChange({ enabled, url: v, position });
               }}
               maxLength={2048}
               className="h-9 text-sm"
