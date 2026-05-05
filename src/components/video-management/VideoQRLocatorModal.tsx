@@ -215,7 +215,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
                 <QrCode className="h-10 w-10 opacity-90" />
               </div>
               <div className="absolute -top-6 left-0 text-[11px] font-medium text-white bg-black/70 px-2 py-0.5 rounded">
-                {position ? `${position.x}, ${position.y}` : ''}
+                {position ? `${position.x}, ${position.y} px` : ''}
               </div>
             </div>
           )}

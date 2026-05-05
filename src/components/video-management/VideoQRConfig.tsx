@@ -184,7 +184,7 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
               title={!hasVideoSelected ? 'Faça upload do vídeo primeiro antes de selecionar a localização' : undefined}
             >
               <Crosshair className="h-3.5 w-3.5 mr-1" />
-              {position ? `Local: ${position.x}, ${position.y}` : 'Selecionar localização do QR'}
+              {position ? `Local: ${position.x}, ${position.y} px` : 'Selecionar localização do QR'}
             </Button>
             {!hasVideoSelected && (
               <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
