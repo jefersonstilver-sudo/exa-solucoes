@@ -28,7 +28,7 @@ interface Props {
  * são considerados parte do quadro e a sombra de 200x200 também pode ficar nessa área
  * (que será preenchida pelo backend ao renderizar em 1920x1080).
  */
-export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, videoUrl, initialPosition, onConfirm, orientation = 'horizontal' }) => {
+export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, videoUrl, initialPosition, onConfirm, orientation = 'horizontal', readOnly = false }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
 
