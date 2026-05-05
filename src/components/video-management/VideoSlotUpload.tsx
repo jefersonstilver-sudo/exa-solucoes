@@ -36,6 +36,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   const [showTrimmer, setShowTrimmer] = useState(false);
   const [trimmerFile, setTrimmerFile] = useState<File | null>(null);
   const [trimmerMaxDuration, setTrimmerMaxDuration] = useState(10);
+  const [qrConfig, setQrConfig] = useState<VideoQRConfigData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
