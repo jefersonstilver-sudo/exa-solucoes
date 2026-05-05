@@ -33,6 +33,11 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
   // Canvas canônico — SEMPRE 1920x1080 (ou 1080x1920 para vertical)
   const CANON_W = orientation === 'vertical' ? 1080 : 1920;
   const CANON_H = orientation === 'vertical' ? 1920 : 1080;
+  const clampPosition = (pos: { x: number; y: number }) => ({
+    x: Math.max(0, Math.min(CANON_W - QR_SIZE, Math.round(pos.x))),
+    y: Math.max(0, Math.min(CANON_H - QR_SIZE, Math.round(pos.y))),
+  });
+  const defaultPosition = () => clampPosition({ x: (CANON_W - QR_SIZE) / 2, y: (CANON_H - QR_SIZE) / 2 });
 
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
   const [stageSize, setStageSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
@@ -42,7 +47,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
 
   useEffect(() => {
     if (open) {
-      setCenter(initialPosition ?? { x: Math.round((CANON_W - QR_SIZE) / 2), y: Math.round((CANON_H - QR_SIZE) / 2) });
+      setCenter(initialPosition ? clampPosition(initialPosition) : defaultPosition());
     }
   }, [open, initialPosition?.x, initialPosition?.y, CANON_W, CANON_H]);
 
@@ -80,7 +85,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     setNatural({ w, h });
     if (!center) {
       // centro visual do canvas canônico, salvando o canto superior esquerdo do QR
-      setCenter({ x: Math.round((CANON_W - QR_SIZE) / 2), y: Math.round((CANON_H - QR_SIZE) / 2) });
+      setCenter(defaultPosition());
     }
   };
 
@@ -162,7 +167,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
           <video
             ref={videoRef}
             src={videoUrl}
-            className="absolute inset-0 w-full h-full object-contain rounded-lg"
+            className="absolute inset-0 w-full h-full object-fill rounded-lg"
             muted
             playsInline
             loop
