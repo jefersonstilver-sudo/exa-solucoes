@@ -221,6 +221,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       setSelectedFile(null);
       setVideoTitle('');
       setTitleError('');
+      setQrConfig(null);
     } catch (error) {
       console.error('💥 [VideoSlotUpload] Erro no upload:', error);
       const msg = error instanceof Error ? error.message : 'Erro desconhecido';
