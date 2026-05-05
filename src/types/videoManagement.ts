@@ -46,6 +46,6 @@ export interface VideoManagementActions {
   activateVideo: (slotId: string) => Promise<void>;
   removeVideo: (slotId: string) => Promise<void>;
   setBaseVideo: (slotId: string) => Promise<void>;
-  uploadVideo: (slotPosition: number, file: File, userId: string, videoTitle?: string, scheduleRules?: any[]) => Promise<void>;
+  uploadVideo: (slotPosition: number, file: File, userId: string, videoTitle?: string, scheduleRules?: any[], qrConfig?: any) => Promise<void>;
   refreshSlots: () => Promise<void>;
 }
