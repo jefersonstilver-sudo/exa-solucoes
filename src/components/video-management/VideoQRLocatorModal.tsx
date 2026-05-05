@@ -215,10 +215,6 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
           )}
         </div>
 
-        <div className="text-xs text-muted-foreground">
-          Canvas padronizado: <strong>{CANON_W}×{CANON_H}px</strong> · Área do QR: <strong>200×200px</strong>
-          {natural && <> · Vídeo original: {natural.w}×{natural.h}px</>}
-        </div>
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
