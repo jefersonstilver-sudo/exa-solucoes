@@ -223,12 +223,24 @@ serve(async (req) => {
 
     const isVertical = pedidoVideo.pedidos.tipo_produto === 'vertical_premium';
 
+    // QR Code rastreável (opcional)
+    const qrConfig: any = (pedidoVideo as any).qr_config;
+    const qrFields: any = {};
+    if (qrConfig && qrConfig.enabled && qrConfig.redirect_url) {
+      qrFields.redirecionamento = qrConfig.redirect_url;
+      if (qrConfig.position && typeof qrConfig.position.x === 'number' && typeof qrConfig.position.y === 'number') {
+        qrFields.QRLocale = `${qrConfig.position.x},${qrConfig.position.y}`;
+      }
+      console.log('🔳 [UPLOAD_EXTERNAL_API] QR Code incluído no payload:', qrFields);
+    }
+
     const metadataJson = {
       [storageFileName]: {
         ...metadata,
         ativo: activeFlag,
         status: 'new',
-        ...(isVertical && { isPlus: true })
+        ...(isVertical && { isPlus: true }),
+        ...qrFields
       }
     };
 
