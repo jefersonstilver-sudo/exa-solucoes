@@ -29,6 +29,8 @@ interface VideoQRConfigProps {
   hasVideoSelected?: boolean;
   /** URL do vídeo para o seletor visual de posição (200x200px). */
   videoUrl?: string | null;
+  /** Orientação do vídeo (define canvas canônico 1920x1080 ou 1080x1920). */
+  orientation?: 'vertical' | 'horizontal';
 }
 
 const urlSchema = z.string().trim().url('URL inválida').max(2048, 'URL muito longa');
