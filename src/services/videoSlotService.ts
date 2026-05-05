@@ -113,6 +113,7 @@ export const loadVideoSlots = async (orderId: string, maxSlots: number = 10): Pr
             is_base_video: isBase,
             approval_status: (pedidoVideo.approval_status as 'pending' | 'approved' | 'rejected') || 'pending',
             rejection_reason: pedidoVideo.rejection_reason,
+            qr_config: (pedidoVideo as any).qr_config ?? null,
             video_data: undefined, // Será undefined para mostrar como "aguardando"
             schedule_rules: []
           };
