@@ -18,9 +18,13 @@ export interface VideoQRConfigData {
 }
 
 interface VideoQRConfigProps {
-  pedidoVideoId: string;
+  /** Quando informado: modo persistido (edita o slot existente). */
+  pedidoVideoId?: string;
   initial?: VideoQRConfigData | null;
   disabled?: boolean;
+  /** Quando informado: modo inline/controlado (captação durante upload, sem DB). */
+  value?: VideoQRConfigData | null;
+  onChange?: (next: VideoQRConfigData | null) => void;
 }
 
 const urlSchema = z.string().trim().url('URL inválida').max(2048, 'URL muito longa');
