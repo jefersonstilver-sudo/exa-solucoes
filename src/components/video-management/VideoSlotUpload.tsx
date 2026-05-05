@@ -229,7 +229,8 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       toast.error(`Erro ao enviar vídeo: ${msg}`);
     }
   };
-  const canUpload = selectedFile && videoTitle.trim() && !uploading && !isUploading;
+  const qrIncomplete = !!qrConfig?.enabled && (!qrConfig?.redirect_url?.trim() || !qrConfig?.position);
+  const canUpload = !!selectedFile && !!videoTitle.trim() && !uploading && !isUploading && !qrIncomplete;
   if (checkingCompanyInfo) {
     return <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
         <div className="flex items-center justify-center">
