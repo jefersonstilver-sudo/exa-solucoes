@@ -229,6 +229,7 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
           onOpenChange={setShowLocator}
           videoUrl={videoUrl}
           initialPosition={position}
+          orientation={orientation}
           onConfirm={(pos) => {
             setPosition(pos);
             setDirty(true);
