@@ -25,6 +25,8 @@ interface VideoQRConfigProps {
   /** Quando informado: modo inline/controlado (captação durante upload, sem DB). */
   value?: VideoQRConfigData | null;
   onChange?: (next: VideoQRConfigData | null) => void;
+  /** No modo controlado: bloqueia o seletor de localização até haver vídeo. */
+  hasVideoSelected?: boolean;
 }
 
 const urlSchema = z.string().trim().url('URL inválida').max(2048, 'URL muito longa');
