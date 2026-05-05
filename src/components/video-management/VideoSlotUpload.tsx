@@ -294,6 +294,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
           disabled={uploading || isUploading}
           hasVideoSelected={!!selectedFile}
           videoUrl={previewUrl}
+          orientation={isVertical ? 'vertical' : 'horizontal'}
         />
       </div>
 
