@@ -474,6 +474,14 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               totalApprovedVideos={totalApprovedVideos} 
               orderId={orderId} 
             />
+
+            {/* QR Rastreável */}
+            {slot.id && slot.approval_status !== 'rejected' && (
+              <VideoQRConfig
+                pedidoVideoId={slot.id}
+                initial={slot.qr_config ?? null}
+              />
+            )}
           </div>
         ) : slot.id ? (
       // Placeholder para vídeo enviado mas ainda não carregado
