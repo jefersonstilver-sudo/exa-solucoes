@@ -41,8 +41,10 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
   const dragRef = useRef<{ dragging: boolean; offsetX: number; offsetY: number }>({ dragging: false, offsetX: 0, offsetY: 0 });
 
   useEffect(() => {
-    if (open) setCenter(initialPosition ?? null);
-  }, [open, initialPosition?.x, initialPosition?.y]);
+    if (open) {
+      setCenter(initialPosition ?? { x: Math.round(CANON_W / 2), y: Math.round(CANON_H / 2) });
+    }
+  }, [open, initialPosition?.x, initialPosition?.y, CANON_W, CANON_H]);
 
   // Track stage size on resize
   useEffect(() => {
@@ -52,9 +54,21 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
       const r = stageRef.current.getBoundingClientRect();
       setStageSize({ w: r.width, h: r.height });
     };
-    update();
+    // Atrasa para garantir que o Dialog já montou o stage
+    const raf = requestAnimationFrame(update);
+    const t = setTimeout(update, 50);
+    let ro: ResizeObserver | null = null;
+    if (stageRef.current && typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(update);
+      ro.observe(stageRef.current);
+    }
     window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t);
+      ro?.disconnect();
+      window.removeEventListener('resize', update);
+    };
   }, [open]);
 
   const handleLoaded = () => {
