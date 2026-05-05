@@ -84,23 +84,27 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     }
   };
 
-  // O stage tem sempre aspect ratio do CANVAS CANÔNICO. Escala 1 unidade canônica → px de tela.
-  const scale = stageSize.w && stageSize.h ? stageSize.w / CANON_W : 0;
+  // Escalas independentes em X e Y — evita "perder" a borda direita/inferior caso
+  // o stage seja levemente diferente da razão canônica (por maxHeight, arredondamento, etc.)
+  const scaleX = stageSize.w ? stageSize.w / CANON_W : 0;
+  const scaleY = stageSize.h ? stageSize.h / CANON_H : 0;
+  const ready = scaleX > 0 && scaleY > 0;
 
   const canonToStage = (px: { x: number; y: number }) => {
-    const sizeStage = QR_SIZE * scale;
-    const cxStage = px.x * scale;
-    const cyStage = px.y * scale;
-    return { left: cxStage - sizeStage / 2, top: cyStage - sizeStage / 2, size: sizeStage };
+    const sizeStageX = QR_SIZE * scaleX;
+    const sizeStageY = QR_SIZE * scaleY;
+    const cxStage = px.x * scaleX;
+    const cyStage = px.y * scaleY;
+    return { left: cxStage - sizeStageX / 2, top: cyStage - sizeStageY / 2, width: sizeStageX, height: sizeStageY };
   };
 
   const stageToCanon = (clientX: number, clientY: number): { x: number; y: number } | null => {
-    if (!stageRef.current || !scale) return null;
+    if (!stageRef.current || !ready) return null;
     const r = stageRef.current.getBoundingClientRect();
     const xStage = clientX - r.left;
     const yStage = clientY - r.top;
-    let xCanon = xStage / scale;
-    let yCanon = yStage / scale;
+    let xCanon = xStage / scaleX;
+    let yCanon = yStage / scaleY;
     const half = QR_SIZE / 2;
     xCanon = Math.max(half, Math.min(CANON_W - half, xCanon));
     yCanon = Math.max(half, Math.min(CANON_H - half, yCanon));
@@ -108,15 +112,15 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (!scale || !center) return;
+    if (!ready || !center) return;
     const target = e.currentTarget as HTMLDivElement;
     target.setPointerCapture(e.pointerId);
     const overlay = canonToStage(center);
     const r = stageRef.current!.getBoundingClientRect();
     dragRef.current = {
       dragging: true,
-      offsetX: (e.clientX - r.left) - (overlay.left + overlay.size / 2),
-      offsetY: (e.clientY - r.top) - (overlay.top + overlay.size / 2),
+      offsetX: (e.clientX - r.left) - (overlay.left + overlay.width / 2),
+      offsetY: (e.clientY - r.top) - (overlay.top + overlay.height / 2),
     };
   };
 
@@ -137,7 +141,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     if (next) setCenter(next);
   };
 
-  const overlay = center && scale ? canonToStage(center) : null;
+  const overlay = center && ready ? canonToStage(center) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -180,8 +184,8 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
               style={{
                 left: overlay.left,
                 top: overlay.top,
-                width: overlay.size,
-                height: overlay.size,
+                width: overlay.width,
+                height: overlay.height,
                 background: 'rgba(0,0,0,0.55)',
                 border: '2px dashed rgba(255,255,255,0.95)',
                 boxShadow: '0 0 0 9999px rgba(0,0,0,0.25) inset',
