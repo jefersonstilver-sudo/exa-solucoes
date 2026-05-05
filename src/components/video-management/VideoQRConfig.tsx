@@ -180,34 +180,33 @@ export const VideoQRConfig: React.FC<VideoQRConfigProps> = ({ pedidoVideoId, ini
               {position ? `Local: ${position.x}, ${position.y} px` : 'Selecionar localização do QR'}
             </Button>
 
-            <div className="ml-auto flex items-center gap-2">
-              {isConfigured && (
+            {!isControlled && (
+              <div className="ml-auto flex items-center gap-2">
+                {isConfigured && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRemove}
+                    disabled={disabled || saving}
+                    className="h-8 text-xs text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    Remover
+                  </Button>
+                )}
                 <Button
                   type="button"
-                  variant="ghost"
                   size="sm"
-                  onClick={handleRemove}
-                  disabled={disabled || saving}
-                  className="h-8 text-xs text-destructive hover:text-destructive"
+                  onClick={handleSave}
+                  disabled={disabled || saving || !dirty || !url}
+                  className="h-8 text-xs"
                 >
-                  <Trash2 className="h-3.5 w-3.5 mr-1" />
-                  Remover
+                  {saving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                  Salvar
                 </Button>
-              )}
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleSave}
-                disabled={disabled || saving || !dirty || !url}
-                className="h-8 text-xs"
-              >
-                {saving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                Salvar
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+              </div>
+            )}
 
       <Dialog open={showLocator} onOpenChange={setShowLocator}>
         <DialogContent>
