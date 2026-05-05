@@ -148,6 +148,7 @@ export const loadVideoSlots = async (orderId: string, maxSlots: number = 10): Pr
             formato: video.formato
           },
           rejection_reason: pedidoVideo.rejection_reason,
+          qr_config: (pedidoVideo as any).qr_config ?? null,
           schedule_rules: scheduleRules
         };
       } else {
