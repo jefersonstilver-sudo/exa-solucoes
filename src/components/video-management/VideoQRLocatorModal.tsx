@@ -141,7 +141,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
     if (next) setCenter(next);
   };
 
-  const overlay = center && scale ? canonToStage(center) : null;
+  const overlay = center && ready ? canonToStage(center) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
