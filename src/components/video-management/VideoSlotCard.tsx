@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Star, StarOff, CheckCircle, XCircle, Clock, AlertCircle, Lock, Shield, Tv } from 'lucide-react';
+import { Star, StarOff, CheckCircle, XCircle, Clock, AlertCircle, Lock, Shield, Tv, Crosshair } from 'lucide-react';
+import { VideoQRLocatorModal } from './VideoQRLocatorModal';
 import { VideoPlayer } from './VideoPlayer';
 import { VideoSlotActions } from './VideoSlotActions';
 import { VideoSlotUpload } from './VideoSlotUpload';
@@ -79,6 +80,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   tipoProduto
 }) => {
   const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
+  const [showQRView, setShowQRView] = React.useState(false);
   const {
     forceCleanupSlot
   } = useForceCleanup();
@@ -481,10 +483,32 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
             {slot.qr_config?.enabled && slot.qr_config.redirect_url && (
               <div className="mt-2 rounded-lg border border-border bg-background/60 backdrop-blur-sm p-2 text-xs flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] gap-1">QR rastreável</Badge>
-                <span className="truncate text-muted-foreground" title={slot.qr_config.redirect_url}>
+                <span className="truncate text-muted-foreground flex-1 min-w-0" title={slot.qr_config.redirect_url}>
                   {slot.qr_config.redirect_url}
                 </span>
+                {slot.qr_config.position && slot.video_data?.url && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-[11px] px-2"
+                    onClick={() => setShowQRView(true)}
+                  >
+                    <Crosshair className="h-3 w-3 mr-1" />
+                    Ver posição
+                  </Button>
+                )}
               </div>
+            )}
+            {slot.qr_config?.position && slot.video_data?.url && (
+              <VideoQRLocatorModal
+                open={showQRView}
+                onOpenChange={setShowQRView}
+                videoUrl={slot.video_data.url}
+                initialPosition={slot.qr_config.position}
+                orientation={isVertical ? 'vertical' : 'horizontal'}
+                readOnly
+              />
             )}
           </div>
         ) : slot.id ? (

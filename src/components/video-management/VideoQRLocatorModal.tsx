@@ -10,9 +10,11 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   videoUrl: string;
   initialPosition?: { x: number; y: number } | null;
-  onConfirm: (positionInCanonicalPx: { x: number; y: number }) => void;
+  onConfirm?: (positionInCanonicalPx: { x: number; y: number }) => void;
   /** Orientação do vídeo. 'vertical' usa canvas 1080x1920, qualquer outro usa 1920x1080. */
   orientation?: 'vertical' | 'horizontal';
+  /** Modo somente leitura — desabilita drag/click e botão de confirmar. */
+  readOnly?: boolean;
 }
 
 /**
@@ -26,7 +28,7 @@ interface Props {
  * são considerados parte do quadro e a sombra de 200x200 também pode ficar nessa área
  * (que será preenchida pelo backend ao renderizar em 1920x1080).
  */
-export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, videoUrl, initialPosition, onConfirm, orientation = 'horizontal' }) => {
+export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, videoUrl, initialPosition, onConfirm, orientation = 'horizontal', readOnly = false }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
 
@@ -124,6 +126,7 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
+    if (readOnly) return;
     if (!position) return;
     const metrics = getStageMetrics();
     if (!metrics) return;
@@ -138,17 +141,20 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
+    if (readOnly) return;
     if (!dragRef.current.dragging) return;
     const next = stageToCanon(e.clientX - dragRef.current.offsetX, e.clientY - dragRef.current.offsetY);
     if (next) setPosition(next);
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
+    if (readOnly) return;
     dragRef.current.dragging = false;
     try { (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId); } catch {}
   };
 
   const onStageClick = (e: React.MouseEvent) => {
+    if (readOnly) return;
     if (dragRef.current.dragging) return;
     const next = stageToCanon(e.clientX, e.clientY, 'center');
     if (next) setPosition(next);
@@ -161,10 +167,10 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Crosshair className="h-4 w-4" /> Selecionar localização do QR
+            <Crosshair className="h-4 w-4" /> {readOnly ? 'Posição do QR no vídeo' : 'Selecionar localização do QR'}
           </DialogTitle>
           <DialogDescription>
-            Arraste o QR Code para a posição desejada.
+            {readOnly ? 'Visualização da posição definida (somente leitura).' : 'Arraste o QR Code para a posição desejada.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -186,14 +192,14 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
           />
           {overlay && (
             <div
-              role="button"
-              aria-label="Arraste para posicionar o QR"
+              role={readOnly ? undefined : 'button'}
+              aria-label={readOnly ? 'Posição do QR' : 'Arraste para posicionar o QR'}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
               onClick={(e) => e.stopPropagation()}
-              className="absolute cursor-grab active:cursor-grabbing"
+              className={`absolute ${readOnly ? 'cursor-default pointer-events-none' : 'cursor-grab active:cursor-grabbing'}`}
               style={{
                 left: overlay.left,
                 top: overlay.top,
@@ -217,19 +223,21 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
 
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button
-            disabled={!position}
-            onClick={() => {
-              if (position) {
-                onConfirm(position);
-                onOpenChange(false);
-              }
-            }}
-          >
-            <Crosshair className="h-4 w-4 mr-1" />
-            Selecionar localização
-          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{readOnly ? 'Fechar' : 'Cancelar'}</Button>
+          {!readOnly && (
+            <Button
+              disabled={!position}
+              onClick={() => {
+                if (position && onConfirm) {
+                  onConfirm(position);
+                  onOpenChange(false);
+                }
+              }}
+            >
+              <Crosshair className="h-4 w-4 mr-1" />
+              Selecionar localização
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
