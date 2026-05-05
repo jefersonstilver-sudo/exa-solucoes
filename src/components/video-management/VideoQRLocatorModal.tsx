@@ -160,8 +160,8 @@ export const VideoQRLocatorModal: React.FC<Props> = ({ open, onOpenChange, video
 
         <div
           ref={stageRef}
-          className="relative w-full bg-black rounded-lg select-none"
-          style={{ aspectRatio: `${CANON_W} / ${CANON_H}`, maxHeight: '60vh' }}
+          className="relative mx-auto bg-black rounded-lg select-none"
+          style={{ aspectRatio: `${CANON_W} / ${CANON_H}`, width: `min(100%, calc(60vh * ${CANON_W} / ${CANON_H}))` }}
           onClick={onStageClick}
         >
           <video
