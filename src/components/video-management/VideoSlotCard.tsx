@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { videoLogger } from '@/services/logger/VideoActionLogger';
 import { useForceCleanup } from '@/hooks/useForceCleanup';
+import { VideoQRConfig, VideoQRConfigData } from './VideoQRConfig';
 interface VideoSlot {
   id?: string;
   slot_position: number;
