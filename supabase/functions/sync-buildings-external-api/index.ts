@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
       // Get approved videos for this order
       const { data: videos, error: videoError } = await supabase
         .from('pedido_videos')
-        .select('video_id, selected_for_display, videos(nome, url, duracao, orientacao)')
+        .select('video_id, selected_for_display, qr_config, videos(nome, url, duracao, orientacao)')
         .eq('pedido_id', pedido_id)
         .eq('approval_status', 'approved')
 
