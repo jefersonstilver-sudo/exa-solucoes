@@ -124,6 +124,7 @@ Deno.serve(async (req: Request) => {
         tipo: tipoKey ? readPlain(props[tipoKey]) : null,
         fotosCount,
         fotoUrl: fotosCount > 0 ? `https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/catalogo-foto?id=${page.id}&i=0` : null,
+        temAirbnb,
       });
     }
 
