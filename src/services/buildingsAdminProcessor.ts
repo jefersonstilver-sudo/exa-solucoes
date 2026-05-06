@@ -59,8 +59,9 @@ export const processAdminBuildingsData = (buildingsData: any[]): AdminBuilding[]
         // Device status fields
         device_id: building.device_id || null,
         device_status: building.device_status || 'not_connected',
-        device_last_online_at: building.device_last_online_at || null
-      };
+        device_last_online_at: building.device_last_online_at || null,
+        tem_airbnb: Boolean(building.tem_airbnb)
+      } as any;
     });
 
   console.log('✅ [ADMIN BUILDINGS PROCESSOR] Processamento concluído:', {
