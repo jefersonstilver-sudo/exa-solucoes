@@ -266,6 +266,7 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
         contato_vice_sindico: formData.contato_vice_sindico || null,
         nome_contato_predio: formData.nome_contato_predio || null,
         numero_contato_predio: formData.numero_contato_predio || null,
+        tem_airbnb: Boolean((formData as any).tem_airbnb),
         amenities: formData.caracteristicas,
       };
 

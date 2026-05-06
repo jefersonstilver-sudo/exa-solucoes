@@ -1,18 +1,14 @@
-## Selo Airbnb — Execução simples
+## Problema
 
-### Ordem
-1. Copiar PNG para `public/selos/airbnb.png`
-2. Migração: `ALTER TABLE buildings ADD COLUMN tem_airbnb boolean NOT NULL DEFAULT false;`
-3. Adicionar `tem_airbnb: boolean` em `Building` (`src/types/panel.ts`) e nos services/processors que fazem SELECT explícito
-4. `BuildingFormDialog3` + `useBuildingFormData`: switch "Tem Airbnb?" salvando o campo
-5. `BuildingsManagement3` (listagem admin): badge na linha + ação em massa "Marcar/Desmarcar Airbnb" para itens selecionados
-6. Componente `src/components/shared/SeloAirbnb.tsx` — props `size: 'sm'|'md'|'lg'|'xl'`, `<img loading="lazy" alt="Prédio com Airbnb">` com fallback `<span>AIRBNB</span>` (bg #FF5A5F, branco) em `onError`
-7. Plugar nos 5 pontos:
-   - Loja pública: `BuildingCard.tsx`, `SimpleBuildingGrid.tsx`, `BuildingHoverCard.tsx`
-   - Página de detalhes do prédio
-   - Proposta comercial (HTML + PDF) — usa import do PNG via Vite para embedar
-   - Lista de prédios em pedido (admin/anunciante)
-   - Portal do anunciante (`MyVideos.tsx` etc.)
-8. Screenshots dos pontos para validação
+O switch "Tem Airbnb?" atualiza o estado do formulário, mas o `handleSubmit` em `src/components/admin/buildings/v3/BuildingFormDialog3.tsx` (linhas 245-270) constrói o `payload` enviado ao Supabase campo a campo — e **omite `tem_airbnb`**. Por isso o toast aparece como sucesso (o UPDATE roda), mas o campo nunca é salvo.
 
-Sem trigger, sem backfill, sem coluna manual_override, sem FK sindico_id, sem botão de conversão.
+Verifiquei no banco: `Residencial Miró` está `tem_airbnb = false`, confirmando que nenhum salvamento chegou.
+
+## Correção
+
+1 alteração, 1 arquivo:
+
+- `src/components/admin/buildings/v3/BuildingFormDialog3.tsx`: adicionar `tem_airbnb: Boolean((formData as any).tem_airbnb)` no objeto `payload` do `handleSubmit` (junto com os demais campos, antes de `amenities`).
+- Garantir também que `tem_airbnb` exista no tipo `FormData` local do componente (se faltar) e no `initialFormData`, para o switch funcionar tipado sem `as any`.
+
+Sem migrações, sem mudanças de RLS, sem mudanças em outros componentes. Após a correção, eu mesmo verifico via query no banco que o salvamento persistiu.
