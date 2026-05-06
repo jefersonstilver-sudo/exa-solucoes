@@ -178,7 +178,7 @@ export default function Catalogo() {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${SUPABASE_URL}/functions/v1/catalogo-predios`)
+    fetch(`${SUPABASE_URL}/functions/v1/catalogo-predios?v=${Date.now()}`)
       .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
       .then(setData)
       .catch(e => setErr(String(e)));
