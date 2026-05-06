@@ -5,6 +5,7 @@ import { Building2, Camera, Construction } from 'lucide-react';
 import { BuildingStore, getBuildingImageUrls, getImageUrl } from '@/services/buildingStoreService';
 import { calculateDistanceToBuilding, formatDistance } from '@/services/distanceCalculation';
 import useBuildingStore from '@/hooks/building-store/useBuildingStore';
+import SeloAirbnb from '@/components/shared/SeloAirbnb';
 
 const isInstallationStatus = (status?: string) =>
   String(status || '')
@@ -73,14 +74,17 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building, mode = 
         </span>
       </div>
       
-      {/* Distância - canto superior direito */}
-      {distance && (
-        <div className={`absolute ${emInstalacao ? 'top-12' : 'top-3'} right-3`}>
+      {/* Distância + Selo Airbnb - canto superior direito */}
+      <div className={`absolute ${emInstalacao ? 'top-12' : 'top-3'} right-3 flex items-center gap-1.5`}>
+        {distance && (
           <span className="bg-white/95 text-gray-900 px-2 py-1 rounded text-xs font-medium shadow-sm">
             {distance}
           </span>
-        </div>
-      )}
+        )}
+        {(building as any).tem_airbnb && (
+          <SeloAirbnb size="md" className="shadow-md" />
+        )}
+      </div>
       
       {/* Contador de fotos - canto inferior esquerdo */}
       {totalImages > 0 && (
