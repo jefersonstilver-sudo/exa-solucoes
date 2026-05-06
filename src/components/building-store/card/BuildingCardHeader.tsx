@@ -40,7 +40,6 @@ const BuildingCardHeader: React.FC<BuildingCardHeaderProps> = ({ building, busin
         <h3 className="text-lg font-bold text-gray-900 leading-tight">
           {building.nome}
         </h3>
-        {(building as any).tem_airbnb && <SeloAirbnb size="sm" className="flex-shrink-0" />}
       </div>
       <p className="text-sm text-gray-500">
         {bairroDisplay} • {building.endereco}
