@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { BuildingStore } from '@/services/buildingStoreService';
+import SeloAirbnb from '@/components/shared/SeloAirbnb';
 
 // Helper local para extrair bairro caso necessário
 const extractNeighborhoodFromAddress = (endereco?: string): string => {
@@ -35,9 +36,12 @@ const BuildingCardHeader: React.FC<BuildingCardHeaderProps> = ({ building, busin
 
   return (
     <div>
-      <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1">
-        {building.nome}
-      </h3>
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <h3 className="text-lg font-bold text-gray-900 leading-tight">
+          {building.nome}
+        </h3>
+        {(building as any).tem_airbnb && <SeloAirbnb size="sm" className="flex-shrink-0" />}
+      </div>
       <p className="text-sm text-gray-500">
         {bairroDisplay} • {building.endereco}
       </p>
