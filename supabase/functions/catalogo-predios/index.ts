@@ -83,6 +83,16 @@ Deno.serve(async (req: Request) => {
       const blocosKey = findKey(props, ['Blocos']);
       const tipoKey = findKey(props, ['Tipo']);
       const fotosKey = findKey(props, ['Fotos', 'Imagens']);
+      const airbnbKey = findKey(props, ['Airbnb', 'Tem Airbnb', 'Aibnb']);
+      let temAirbnb = false;
+      if (airbnbKey && props[airbnbKey]) {
+        const ap = props[airbnbKey];
+        if (ap.type === 'checkbox') temAirbnb = !!ap.checkbox;
+        else {
+          const v = (readPlain(ap) || '').toLowerCase();
+          temAirbnb = v === 'sim' || v === 'true' || v === 'yes' || v === '1' || v.includes('airbnb');
+        }
+      }
 
       const unidades = unidadesKey ? readNumber(props[unidadesKey]) : null;
       const andares = andaresKey ? readNumber(props[andaresKey]) : null;
