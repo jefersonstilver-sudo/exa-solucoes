@@ -82,7 +82,7 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building, mode = 
           </span>
         )}
         {(building as any).tem_airbnb && (
-          <SeloAirbnb size="md" className="shadow-md" />
+          <SeloAirbnb size="lg" className="shadow-md" />
         )}
       </div>
       
