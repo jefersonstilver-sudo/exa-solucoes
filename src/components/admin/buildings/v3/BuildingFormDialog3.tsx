@@ -147,6 +147,7 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
           nome_contato_predio: building.nome_contato_predio || '',
           numero_contato_predio: building.numero_contato_predio || '',
           caracteristicas: building.caracteristicas || building.amenities || [],
+          tem_airbnb: Boolean(building.tem_airbnb),
         });
 
         // Load existing images
