@@ -72,6 +72,7 @@ interface FormData {
   nome_contato_predio: string;
   numero_contato_predio: string;
   caracteristicas: string[];
+  tem_airbnb: boolean;
 }
 
 const initialFormData: FormData = {
