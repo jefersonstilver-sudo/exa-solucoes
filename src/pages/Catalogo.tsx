@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import logoExa from '@/assets/logo-branca-exa.png';
+import SeloAirbnb from '@/components/shared/SeloAirbnb';
 
 type Predio = {
   id: string;
