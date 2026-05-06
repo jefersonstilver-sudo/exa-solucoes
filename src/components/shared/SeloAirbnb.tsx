@@ -13,7 +13,7 @@ const SIZE_MAP: Record<SeloAirbnbSize, { wrap: string; text: string; px: number 
   sm: { wrap: 'h-6', text: 'text-[9px]', px: 24 },
   md: { wrap: 'h-9', text: 'text-[11px]', px: 36 },
   lg: { wrap: 'h-12', text: 'text-xs', px: 48 },
-  xl: { wrap: 'h-16', text: 'text-sm', px: 64 },
+  xl: { wrap: 'h-24', text: 'text-base', px: 96 },
 };
 
 /**

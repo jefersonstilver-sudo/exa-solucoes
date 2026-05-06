@@ -18,6 +18,7 @@ const MobileSortDialog: React.FC<MobileSortDialogProps> = ({
 
   const sortOptions = [
     ...(hasLocationSearch ? [{ value: 'distance', label: 'Distância', icon: '📍' }] : []),
+    { value: 'airbnb', label: 'Airbnb primeiro', icon: '🏠' },
     { value: 'audience-desc', label: 'Maior Público', icon: '👥' },
     { value: 'price-asc', label: 'Menor Preço', icon: '💰' },
     { value: 'price-desc', label: 'Maior Preço', icon: '💎' },
