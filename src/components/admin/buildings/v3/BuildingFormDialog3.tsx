@@ -100,6 +100,7 @@ const initialFormData: FormData = {
   nome_contato_predio: '',
   numero_contato_predio: '',
   caracteristicas: [],
+  tem_airbnb: false,
 };
 
 const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
