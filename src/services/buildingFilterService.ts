@@ -159,6 +159,11 @@ export const sortBuildings = (
         const panelsB = b.quantidade_telas || 0;
         return panelsB - panelsA;
       
+      case 'airbnb':
+        const airbnbA = (a as any).tem_airbnb ? 1 : 0;
+        const airbnbB = (b as any).tem_airbnb ? 1 : 0;
+        return airbnbB - airbnbA;
+      
       default:
         return 0;
     }
