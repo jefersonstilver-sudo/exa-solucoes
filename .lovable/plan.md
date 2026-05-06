@@ -1,49 +1,18 @@
-## QR Rastreável por Vídeo — Captação de Dados
+## Selo Airbnb — Execução simples
 
-Adicionar, em cada slot de vídeo da tela de Gestão de Vídeos do anunciante (`/anunciante/pedido/:id`), os controles para o cliente solicitar um QR Code rastreável. Esta etapa apenas **capta as informações** — o backend externo gera/renderiza o QR posteriormente.
+### Ordem
+1. Copiar PNG para `public/selos/airbnb.png`
+2. Migração: `ALTER TABLE buildings ADD COLUMN tem_airbnb boolean NOT NULL DEFAULT false;`
+3. Adicionar `tem_airbnb: boolean` em `Building` (`src/types/panel.ts`) e nos services/processors que fazem SELECT explícito
+4. `BuildingFormDialog3` + `useBuildingFormData`: switch "Tem Airbnb?" salvando o campo
+5. `BuildingsManagement3` (listagem admin): badge na linha + ação em massa "Marcar/Desmarcar Airbnb" para itens selecionados
+6. Componente `src/components/shared/SeloAirbnb.tsx` — props `size: 'sm'|'md'|'lg'|'xl'`, `<img loading="lazy" alt="Prédio com Airbnb">` com fallback `<span>AIRBNB</span>` (bg #FF5A5F, branco) em `onError`
+7. Plugar nos 5 pontos:
+   - Loja pública: `BuildingCard.tsx`, `SimpleBuildingGrid.tsx`, `BuildingHoverCard.tsx`
+   - Página de detalhes do prédio
+   - Proposta comercial (HTML + PDF) — usa import do PNG via Vite para embedar
+   - Lista de prédios em pedido (admin/anunciante)
+   - Portal do anunciante (`MyVideos.tsx` etc.)
+8. Screenshots dos pontos para validação
 
-### Comportamento da UI (em cada VideoSlotCard com vídeo enviado)
-
-1. Checkbox "Adicionar QR rastreável".
-2. Quando marcado, expande:
-   - Input de texto: "Link de redirecionamento" (validação de URL com zod, max 2048 chars).
-   - Botão "Selecionar localização do QR no vídeo" — por enquanto abre um modal placeholder informando que o seletor visual (shadow sobre o vídeo, captura do centro em pixels) será disponibilizado em breve. Deixa o ponto `{ x, y }` como `null` até lá.
-3. Botão "Salvar QR" persiste; "Remover QR" limpa.
-4. Badge discreto no card quando o QR estiver configurado.
-
-### Persistência
-
-Coluna nova `qr_config jsonb` em `pedido_videos` (escolha do usuário). Estrutura:
-
-```json
-{
-  "enabled": true,
-  "redirect_url": "https://...",
-  "position": { "x": 320, "y": 480 },   // null enquanto o seletor visual não existe
-  "updated_at": "2026-05-05T..."
-}
-```
-
-- Migração: `ALTER TABLE pedido_videos ADD COLUMN qr_config jsonb;`
-- RLS já existente em `pedido_videos` cobre acesso (cliente dono do pedido).
-- Sem trigger, sem nova tabela.
-
-### Frontend — arquivos a tocar
-
-- `src/components/video-management/VideoSlotCard.tsx` — renderizar o bloco "QR rastreável" abaixo do bloco do vídeo (apenas quando `slot.video_data` existe e status ≠ `rejected`).
-- Novo `src/components/video-management/VideoQRConfig.tsx` — encapsula checkbox + input + botão de localização + persistência via `supabase.from('pedido_videos').update({ qr_config }).eq('id', slot.id)`.
-- `src/types/videoManagement.ts` — adicionar tipo `qr_config?: VideoQRConfig` no `VideoSlot`.
-- `src/services/videoSlotService.ts` — incluir `qr_config` no SELECT já existente para hidratar o slot.
-
-### O que NÃO está no escopo agora
-
-- Geração do QR (responsabilidade do backend externo).
-- Seletor visual de posição em pixels (entra em fase posterior; reservamos o campo `position`).
-- Painel admin para visualizar/aprovar (pode vir depois).
-- Telemetria de scans (a API externa decide).
-
-### Validação
-
-- `redirect_url` validado com `z.string().url().max(2048)`.
-- Toast de sucesso/erro no salvar.
-- Sem alterações em fluxos existentes (upload, agendamento, aprovação).
+Sem trigger, sem backfill, sem coluna manual_override, sem FK sindico_id, sem botão de conversão.

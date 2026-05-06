@@ -1580,6 +1580,7 @@ export type Database = {
           publico_estimado: number | null
           quantidade_telas: number | null
           status: string
+          tem_airbnb: boolean
           venue_type: string | null
           visualizacoes_mes: number | null
         }
@@ -1655,6 +1656,7 @@ export type Database = {
           publico_estimado?: number | null
           quantidade_telas?: number | null
           status?: string
+          tem_airbnb?: boolean
           venue_type?: string | null
           visualizacoes_mes?: number | null
         }
@@ -1730,6 +1732,7 @@ export type Database = {
           publico_estimado?: number | null
           quantidade_telas?: number | null
           status?: string
+          tem_airbnb?: boolean
           venue_type?: string | null
           visualizacoes_mes?: number | null
         }
