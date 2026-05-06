@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import logoExa from '@/assets/logo-branca-exa.png';
+import SeloAirbnb from '@/components/shared/SeloAirbnb';
 
 type Predio = {
   id: string;
@@ -16,6 +17,7 @@ type Predio = {
   tipo: string | null;
   fotosCount: number;
   fotoUrl: string | null;
+  temAirbnb?: boolean;
 };
 
 type ApiResp = {
@@ -131,6 +133,11 @@ function Card({ p, idx }: { p: Predio; idx: number }) {
           <img src={p.fotoUrl!} alt={`Foto de ${p.nome}`} loading="lazy" onError={() => setImgErr(true)} />
         ) : (
           <div className="cat-card-noimg">{String(idx + 1).padStart(2, '0')}</div>
+        )}
+        {p.temAirbnb && (
+          <div style={{ position: 'absolute', top: 0, right: 0, zIndex: 4 }}>
+            <SeloAirbnb size="xl" />
+          </div>
         )}
       </div>
       <div className="cat-card-body">
