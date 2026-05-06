@@ -16,6 +16,7 @@ type Predio = {
   tipo: string | null;
   fotosCount: number;
   fotoUrl: string | null;
+  temAirbnb?: boolean;
 };
 
 type ApiResp = {
