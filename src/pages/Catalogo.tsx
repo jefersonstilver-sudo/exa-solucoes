@@ -135,8 +135,8 @@ function Card({ p, idx }: { p: Predio; idx: number }) {
           <div className="cat-card-noimg">{String(idx + 1).padStart(2, '0')}</div>
         )}
         {p.temAirbnb && (
-          <div style={{ position: 'absolute', top: 0, right: 0, zIndex: 4 }}>
-            <SeloAirbnb size="xl" />
+          <div style={{ position: 'absolute', top: 8, left: 8, zIndex: 4 }}>
+            <SeloAirbnb size="md" />
           </div>
         )}
       </div>
