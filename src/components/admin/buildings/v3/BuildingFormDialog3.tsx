@@ -483,6 +483,25 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
                     </div>
                   </div>
 
+                  <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50/60 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <img src="/selos/airbnb.png" alt="Airbnb" className="h-7 w-auto" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                      <div>
+                        <Label className="text-sm font-medium">Tem Airbnb?</Label>
+                        <p className="text-xs text-gray-500">Marca este prédio como tendo hóspedes via Airbnb</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={Boolean((formData as any).tem_airbnb)}
+                      onClick={() => updateField('tem_airbnb' as any, !((formData as any).tem_airbnb))}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${(formData as any).tem_airbnb ? 'bg-[#FF5A5F]' : 'bg-gray-300'}`}
+                    >
+                      <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${(formData as any).tem_airbnb ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    </button>
+                  </div>
+
                   <div className="pt-4">
                     <CharacteristicsSelector
                       selectedCharacteristics={formData.caracteristicas}
