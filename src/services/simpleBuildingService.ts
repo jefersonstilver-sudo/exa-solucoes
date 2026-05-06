@@ -26,6 +26,7 @@ export interface SimpleBuildingStore {
   caracteristicas: string[];
   padrao_publico: 'alto' | 'medio' | 'normal';
   quantidade_telas: number;
+  tem_airbnb?: boolean;
 }
 
 // Helper to extract bairro do endereço quando estiver ausente
@@ -141,7 +142,8 @@ export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => 
       amenities: building.amenities || [], // Now available from public store
       caracteristicas: building.caracteristicas || [], // Now available from public store
       padrao_publico: 'normal' as 'alto' | 'medio' | 'normal', // Default value for security
-      quantidade_telas: building.quantidade_telas || 1
+      quantidade_telas: building.quantidade_telas || 1,
+      tem_airbnb: Boolean((building as any).tem_airbnb)
     }));
 
     // Log final para verificar os preços processados

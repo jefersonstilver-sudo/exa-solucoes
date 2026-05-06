@@ -44,6 +44,7 @@ export interface Building {
   device_id?: string | null;
   device_status?: 'online' | 'offline' | 'not_connected';
   device_last_online_at?: string | null;
+  tem_airbnb?: boolean;
 }
 
 export const buildImageUrlsArray = (building: any) => {

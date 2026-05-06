@@ -19,6 +19,7 @@ import { Building } from '@/services/buildingsDataService';
 import { BuildingVideoPlaylistPreview } from '../BuildingVideoPlaylistPreview';
 import BuildingPanelStatusBadge from '../BuildingPanelStatusBadge';
 import { DeviceStatus } from '@/hooks/useBuildingDeviceStatus';
+import SeloAirbnb from '@/components/shared/SeloAirbnb';
 
 interface BuildingCard3Props {
   building: Building & {
@@ -155,6 +156,7 @@ const BuildingCard3: React.FC<BuildingCard3Props> = ({
                       {building.codigo_predio}
                     </Badge>
                   )}
+                  {building.tem_airbnb && <SeloAirbnb size="sm" />}
                 </div>
                 <div className="flex items-center text-gray-500 text-xs mt-0.5">
                   <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />

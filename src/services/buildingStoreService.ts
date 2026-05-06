@@ -33,6 +33,7 @@ export interface BuildingStore {
   padrao_publico: 'alto' | 'medio' | 'normal';
   quantidade_telas: number;
   numero_elevadores: number; // Número de telas (campo renomeado)
+  tem_airbnb?: boolean;
 }
 
 /**
@@ -151,7 +152,8 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
       caracteristicas: [],
       padrao_publico: 'normal' as 'alto' | 'medio' | 'normal',
       quantidade_telas: building.quantidade_telas || 1,
-      numero_elevadores: (building as any).numero_elevadores || 0
+      numero_elevadores: (building as any).numero_elevadores || 0,
+      tem_airbnb: Boolean((building as any).tem_airbnb)
     }));
 
     return buildingStores;
