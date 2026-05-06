@@ -33,6 +33,7 @@ export interface BuildingStore {
   padrao_publico: 'alto' | 'medio' | 'normal';
   quantidade_telas: number;
   numero_elevadores: number; // Número de telas (campo renomeado)
+  tem_airbnb?: boolean;
 }
 
 /**
