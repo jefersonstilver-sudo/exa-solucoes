@@ -5,6 +5,7 @@ import { Building2, Camera, Construction } from 'lucide-react';
 import { BuildingStore, getBuildingImageUrls, getImageUrl } from '@/services/buildingStoreService';
 import { calculateDistanceToBuilding, formatDistance } from '@/services/distanceCalculation';
 import useBuildingStore from '@/hooks/building-store/useBuildingStore';
+import SeloAirbnb from '@/components/shared/SeloAirbnb';
 
 const isInstallationStatus = (status?: string) =>
   String(status || '')
