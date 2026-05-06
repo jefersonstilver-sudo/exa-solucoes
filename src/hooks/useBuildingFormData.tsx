@@ -30,6 +30,7 @@ interface BuildingFormData {
   contato_vice_sindico: string;
   nome_contato_predio: string;
   numero_contato_predio: string;
+  tem_airbnb: boolean;
 }
 
 const initialFormData: BuildingFormData = {
@@ -58,7 +59,8 @@ const initialFormData: BuildingFormData = {
   nome_vice_sindico: '',
   contato_vice_sindico: '',
   nome_contato_predio: '',
-  numero_contato_predio: ''
+  numero_contato_predio: '',
+  tem_airbnb: false
 };
 
 export const useBuildingFormData = (building: any, open: boolean) => {
@@ -95,7 +97,8 @@ export const useBuildingFormData = (building: any, open: boolean) => {
         nome_vice_sindico: building.nome_vice_sindico || '',
         contato_vice_sindico: building.contato_vice_sindico || '',
         nome_contato_predio: building.nome_contato_predio || '',
-        numero_contato_predio: building.numero_contato_predio || ''
+        numero_contato_predio: building.numero_contato_predio || '',
+        tem_airbnb: Boolean(building.tem_airbnb)
       });
     } else {
       setFormData(initialFormData);
