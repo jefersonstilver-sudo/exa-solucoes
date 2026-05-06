@@ -74,17 +74,21 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building, mode = 
         </span>
       </div>
       
-      {/* Distância + Selo Airbnb - canto superior direito */}
-      <div className={`absolute ${emInstalacao ? 'top-12' : 'top-3'} right-3 flex items-center gap-1.5`}>
-        {distance && (
+      {/* Distância - canto superior direito */}
+      {distance && (
+        <div className={`absolute ${emInstalacao ? 'top-12' : 'top-3'} right-3`}>
           <span className="bg-white/95 text-gray-900 px-2 py-1 rounded text-xs font-medium shadow-sm">
             {distance}
           </span>
-        )}
-        {(building as any).tem_airbnb && (
+        </div>
+      )}
+
+      {/* Selo Airbnb - bem no canto superior direito */}
+      {(building as any).tem_airbnb && (
+        <div className="absolute top-0 right-0">
           <SeloAirbnb size="xl" />
-        )}
-      </div>
+        </div>
+      )}
       
       {/* Contador de fotos - canto inferior esquerdo */}
       {totalImages > 0 && (
