@@ -72,6 +72,7 @@ interface FormData {
   nome_contato_predio: string;
   numero_contato_predio: string;
   caracteristicas: string[];
+  tem_airbnb: boolean;
 }
 
 const initialFormData: FormData = {
@@ -99,6 +100,7 @@ const initialFormData: FormData = {
   nome_contato_predio: '',
   numero_contato_predio: '',
   caracteristicas: [],
+  tem_airbnb: false,
 };
 
 const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
@@ -145,6 +147,7 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
           nome_contato_predio: building.nome_contato_predio || '',
           numero_contato_predio: building.numero_contato_predio || '',
           caracteristicas: building.caracteristicas || building.amenities || [],
+          tem_airbnb: Boolean(building.tem_airbnb),
         });
 
         // Load existing images
