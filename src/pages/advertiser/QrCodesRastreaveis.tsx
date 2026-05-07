@@ -144,13 +144,26 @@ const QrCodesRastreaveis: React.FC = () => {
     );
   };
 
+  // Lista de prédios disponíveis (ordenada)
+  const prediosDisponiveis = useMemo(() => {
+    return Object.entries(buildingsByCid)
+      .map(([cid, b]) => ({ cid, nome: b.nome }))
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [buildingsByCid]);
+
+  // Filtra logs por prédio selecionado
+  const logsFiltrados = useMemo(() => {
+    if (predioFiltro === 'all') return logs;
+    return logs.filter((l) => l.cliente_id === predioFiltro);
+  }, [logs, predioFiltro]);
+
   // Agrupa logs por título para estatísticas
   const stats = useMemo(() => {
-    const totalCliques = logs.length;
-    const titulosUnicos = new Set(logs.map((l) => l.titulo).filter(Boolean)).size;
-    const prediosAtivos = new Set(logs.map((l) => l.cliente_id).filter(Boolean)).size;
+    const totalCliques = logsFiltrados.length;
+    const titulosUnicos = new Set(logsFiltrados.map((l) => l.titulo).filter(Boolean)).size;
+    const prediosAtivos = new Set(logsFiltrados.map((l) => l.cliente_id).filter(Boolean)).size;
     return { totalCliques, titulosUnicos, prediosAtivos };
-  }, [logs]);
+  }, [logsFiltrados]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
