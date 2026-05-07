@@ -89,6 +89,11 @@ export function NewModernAdvertiserSidebar() {
           icon: Video
         },
         {
+          title: 'QR Codes Rastreáveis',
+          href: '/anunciante/qr-codes',
+          icon: QrCode
+        },
+        {
           title: 'Minhas Campanhas',
           href: '/anunciante/campanhas',
           icon: BarChart3

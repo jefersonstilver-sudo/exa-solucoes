@@ -102,6 +102,7 @@ const AdvertiserOrders = lazy(() => import('./pages/advertiser/AdvertiserOrders'
 const OrderDetails = lazy(() => import('./pages/advertiser/OrderDetails'));
 const MyCampaigns = lazy(() => import('./pages/advertiser/MyCampaigns'));
 const MyVideos = lazy(() => import('./pages/advertiser/MyVideos'));
+const QrCodesRastreaveis = lazy(() => import('./pages/advertiser/QrCodesRastreaveis'));
 const AdvertiserSettings = lazy(() => import('./pages/advertiser/AdvertiserSettings'));
 const CampaignDetails = lazy(() => import('./pages/advertiser/CampaignDetails'));
 const GeradorRoteiros = lazy(() => import('./pages/advertiser/GeradorRoteiros'));
@@ -525,6 +526,11 @@ const AppContent = () => {
             <Route path="videos" element={
               <Suspense fallback={<GlobalLoadingPage message="Carregando vídeos..." />}>
                 <MyVideos />
+              </Suspense>
+            } />
+            <Route path="qr-codes" element={
+              <Suspense fallback={<GlobalLoadingPage message="Carregando QR Codes..." />}>
+                <QrCodesRastreaveis />
               </Suspense>
             } />
             <Route path="editor-video" element={<Suspense fallback={<GlobalLoadingPage />}><VideoEditorDashboard /></Suspense>} />

@@ -7,7 +7,8 @@ import {
   User,
   LogOut,
   Crown,
-  Receipt
+  Receipt,
+  QrCode
 } from 'lucide-react';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
 import { useUserSession } from '@/hooks/useUserSession';
@@ -63,6 +64,12 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
       title: 'Relatório',
       href: '/anunciante/videos',
       icon: Video,
+      section: 'content'
+    },
+    {
+      title: 'QR Codes Rastreáveis',
+      href: '/anunciante/qr-codes',
+      icon: QrCode,
       section: 'content'
     },
     {
