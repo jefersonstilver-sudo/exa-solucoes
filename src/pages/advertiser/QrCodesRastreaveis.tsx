@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
@@ -6,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QrCode, Search, Building2, Video as VideoIcon, Calendar, Loader2, Link as LinkIcon } from 'lucide-react';
+import { QrCode, Search, Building2, Video as VideoIcon, Calendar, Loader2, Link as LinkIcon, ArrowRight } from 'lucide-react';
 import { getImageUrl } from '@/services/buildingStoreService';
 
 interface QrLog {
