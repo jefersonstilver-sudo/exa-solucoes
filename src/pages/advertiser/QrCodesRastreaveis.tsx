@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { QrCode, Search, ExternalLink, Building2, Video as VideoIcon, Calendar, Loader2 } from 'lucide-react';
 
 interface QrLog {
   cliente_id?: string;
@@ -8,6 +13,19 @@ interface QrLog {
   titulo?: string;
   link?: string;
   data_hora?: string;
+}
+
+interface BuildingMini {
+  id: string;
+  nome: string;
+  bairro?: string;
+  foto?: string;
+}
+
+interface VideoMini {
+  id: string;
+  nome: string;
+  url: string;
 }
 
 const SUPABASE_URL = 'https://aakenoljsycyrcrchgxj.supabase.co';
@@ -36,34 +54,58 @@ const QrCodesRastreaveis: React.FC = () => {
   const userId = userProfile?.id;
 
   const [clienteIds, setClienteIds] = useState<string[]>([]);
+  const [buildingsByCid, setBuildingsByCid] = useState<Record<string, BuildingMini>>({});
+  const [videos, setVideos] = useState<VideoMini[]>([]);
   const [titulo, setTitulo] = useState('');
   const [logs, setLogs] = useState<QrLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Carrega prédios do cliente -> deriva cliente_ids (4 primeiros dígitos do UUID do prédio)
+  // Carrega prédios e vídeos do cliente
   useEffect(() => {
     if (!userId) return;
     (async () => {
       try {
-        const { data: pedidos, error: err } = await supabase
+        const { data: pedidos } = await supabase
           .from('pedidos')
           .select('lista_predios')
           .eq('client_id', userId);
-        if (err) throw err;
+
         const buildingIds = new Set<string>();
         (pedidos || []).forEach((p: any) => {
           (p.lista_predios || []).forEach((id: string) => buildingIds.add(id));
         });
-        const ids = Array.from(buildingIds).map(deriveClienteId);
-        setClienteIds(Array.from(new Set(ids)));
+        const buildingIdArr = Array.from(buildingIds);
+
+        const { data: buildings } = await supabase
+          .from('buildings')
+          .select('id, nome, bairro, imagem_principal, imageurl')
+          .in('id', buildingIdArr);
+
+        const map: Record<string, BuildingMini> = {};
+        (buildings || []).forEach((b: any) => {
+          map[deriveClienteId(b.id)] = {
+            id: b.id,
+            nome: b.nome,
+            bairro: b.bairro,
+            foto: b.imagem_principal || b.imageurl || undefined,
+          };
+        });
+        setBuildingsByCid(map);
+        setClienteIds(Array.from(new Set(buildingIdArr.map(deriveClienteId))));
+
+        const { data: vids } = await supabase
+          .from('videos')
+          .select('id, nome, url')
+          .eq('client_id', userId);
+        setVideos((vids as VideoMini[]) || []);
       } catch (e: any) {
-        setError(e.message || 'Erro ao carregar prédios');
+        setError(e.message || 'Erro ao carregar dados');
       }
     })();
   }, [userId]);
 
-  // Busca logs para cada cliente_id
+  // Busca logs
   useEffect(() => {
     if (clienteIds.length === 0) {
       setLogs([]);
@@ -89,82 +131,184 @@ const QrCodesRastreaveis: React.FC = () => {
     };
   }, [clienteIds, titulo]);
 
+  // Match vídeo pelo título do log (case-insensitive, contém)
+  const findVideo = (logTitulo?: string): VideoMini | undefined => {
+    if (!logTitulo) return undefined;
+    const t = logTitulo.toLowerCase().trim();
+    return videos.find(
+      (v) => v.nome?.toLowerCase().includes(t) || t.includes(v.nome?.toLowerCase() || '__none__')
+    );
+  };
+
+  // Agrupa logs por título para estatísticas
+  const stats = useMemo(() => {
+    const totalCliques = logs.length;
+    const titulosUnicos = new Set(logs.map((l) => l.titulo).filter(Boolean)).size;
+    const prediosAtivos = new Set(logs.map((l) => l.cliente_id).filter(Boolean)).size;
+    return { totalCliques, titulosUnicos, prediosAtivos };
+  }, [logs]);
+
   return (
-    <div className="min-h-screen p-6 space-y-4">
-      <h1 className="text-2xl font-semibold">QR Codes Rastreáveis</h1>
-      <p className="text-xs text-muted-foreground">
-        cliente_ids: {clienteIds.join(', ') || '(carregando...)'}
-      </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-[#C7141A]/10 text-[#C7141A]">
+              <QrCode className="w-7 h-7" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+                QR Codes Rastreáveis
+              </h1>
+              <p className="text-sm text-slate-500">
+                Acompanhe os cliques nos QR Codes das suas campanhas em tempo real.
+              </p>
+            </div>
+          </div>
+        </div>
 
-      <div className="flex gap-2 max-w-2xl">
-        <input
-          type="text"
-          placeholder="Buscar por título..."
-          value={titulo}
-          onChange={(e) => setTitulo(e.target.value)}
-          className="flex-1 border rounded px-3 py-2"
-        />
-        <button
-          type="button"
-          onClick={async () => {
-            const t = window.prompt('Título para teste na API:', titulo);
-            if (t === null) return;
-            setLoading(true);
-            setError(null);
-            try {
-              const proxyUrl = buildProxyUrl(clienteIds, t);
-              console.log('[QR TEST] GET', proxyUrl);
-              const res = await fetch(proxyUrl);
-              const data = await res.json().catch(() => []);
-              console.log('[QR TEST] response', res.status, data);
-              setLogs(Array.isArray(data) ? data : []);
-              setTitulo(t);
-            } catch (e: any) {
-              setError(e.message || 'Erro no teste');
-            } finally {
-              setLoading(false);
-            }
-          }}
-          className="px-4 py-2 bg-[#C7141A] text-white rounded hover:bg-[#B40D1A]"
-        >
-          Testar API
-        </button>
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Card className="p-5 shadow-sm border-slate-200">
+            <p className="text-xs text-slate-500 uppercase tracking-wide">Total de Cliques</p>
+            <p className="text-3xl font-bold text-slate-900 mt-1">{stats.totalCliques}</p>
+          </Card>
+          <Card className="p-5 shadow-sm border-slate-200">
+            <p className="text-xs text-slate-500 uppercase tracking-wide">Campanhas Ativas</p>
+            <p className="text-3xl font-bold text-slate-900 mt-1">{stats.titulosUnicos}</p>
+          </Card>
+          <Card className="p-5 shadow-sm border-slate-200 col-span-2 md:col-span-1">
+            <p className="text-xs text-slate-500 uppercase tracking-wide">Prédios c/ Cliques</p>
+            <p className="text-3xl font-bold text-slate-900 mt-1">{stats.prediosAtivos}</p>
+          </Card>
+        </div>
+
+        {/* Search */}
+        <Card className="p-4 shadow-sm border-slate-200">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              type="text"
+              placeholder="Buscar por título da campanha..."
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+              className="pl-10 h-11 border-slate-200"
+            />
+          </div>
+        </Card>
+
+        {/* Error */}
+        {error && (
+          <Card className="p-4 border-red-200 bg-red-50 text-red-700 text-sm">
+            {error}
+          </Card>
+        )}
+
+        {/* Logs */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-[#C7141A]" />
+          </div>
+        ) : logs.length === 0 ? (
+          <Card className="p-12 text-center border-dashed border-slate-300 bg-white/50">
+            <QrCode className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-600 font-medium">Nenhum clique registrado ainda</p>
+            <p className="text-sm text-slate-400 mt-1">
+              Os cliques nos seus QR Codes aparecerão aqui.
+            </p>
+          </Card>
+        ) : (
+          <div className="grid gap-3">
+            {logs.map((log, i) => {
+              const building = log.cliente_id ? buildingsByCid[log.cliente_id] : undefined;
+              const video = findVideo(log.titulo);
+              return (
+                <Card
+                  key={i}
+                  className="p-4 shadow-sm hover:shadow-md transition-shadow border-slate-200"
+                >
+                  <div className="flex flex-col md:flex-row gap-4">
+                    {/* Foto prédio */}
+                    <div className="flex-shrink-0 w-full md:w-24 h-24 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
+                      {building?.foto ? (
+                        <img
+                          src={building.foto}
+                          alt={building.nome}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Building2 className="w-8 h-8 text-slate-300" />
+                      )}
+                    </div>
+
+                    {/* Vídeo miniatura */}
+                    <div className="flex-shrink-0 w-full md:w-32 h-24 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center relative">
+                      {video?.url ? (
+                        <video
+                          src={video.url}
+                          className="w-full h-full object-cover"
+                          muted
+                          playsInline
+                          preload="metadata"
+                          onMouseEnter={(e) => (e.currentTarget as HTMLVideoElement).play().catch(() => {})}
+                          onMouseLeave={(e) => {
+                            const el = e.currentTarget as HTMLVideoElement;
+                            el.pause();
+                            el.currentTime = 0;
+                          }}
+                        />
+                      ) : (
+                        <VideoIcon className="w-8 h-8 text-slate-600" />
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                          <h3 className="font-semibold text-slate-900 truncate">
+                            {log.titulo || 'Sem título'}
+                          </h3>
+                          <Badge variant="secondary" className="text-xs font-mono">
+                            {log.cliente_id}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-slate-600 mt-1 flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
+                          {building?.nome || log.nome_cliente || '—'}
+                          {building?.bairro && (
+                            <span className="text-slate-400">· {building.bairro}</span>
+                          )}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 mt-2 flex-wrap">
+                        <span className="text-xs text-slate-500 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {formatDateBR(log.data_hora)}
+                        </span>
+                        {log.link && (
+                          <Button
+                            asChild
+                            variant="ghost"
+                            size="sm"
+                            className="text-[#C7141A] hover:text-[#B40D1A] hover:bg-[#C7141A]/5"
+                          >
+                            <a href={log.link} target="_blank" rel="noreferrer">
+                              <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                              Abrir link
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
-
-      {loading && <p>Carregando...</p>}
-      {error && <p className="text-red-600">Erro: {error}</p>}
-
-      <div className="overflow-x-auto border rounded">
-        <table className="w-full text-sm">
-          <thead className="bg-muted">
-            <tr>
-              <th className="text-left p-2">Nome Cliente</th>
-              <th className="text-left p-2">Título</th>
-              <th className="text-left p-2">Data/Hora</th>
-              <th className="text-left p-2">Link</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs.length === 0 && !loading ? (
-              <tr><td colSpan={4} className="p-4 text-center text-muted-foreground">Nenhum resultado</td></tr>
-            ) : logs.map((l, i) => (
-              <tr key={i} className="border-t">
-                <td className="p-2">{l.nome_cliente || '-'}</td>
-                <td className="p-2">{l.titulo || '-'}</td>
-                <td className="p-2">{formatDateBR(l.data_hora)}</td>
-                <td className="p-2">
-                  {l.link ? <a href={l.link} target="_blank" rel="noreferrer" className="text-blue-600 underline">{l.link}</a> : '-'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <details className="text-xs">
-        <summary className="cursor-pointer text-muted-foreground">JSON bruto</summary>
-        <pre className="bg-muted p-2 overflow-auto">{JSON.stringify(logs, null, 2)}</pre>
-      </details>
     </div>
   );
 };
