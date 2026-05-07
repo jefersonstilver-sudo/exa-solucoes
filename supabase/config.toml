@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.catalogo-foto]
 verify_jwt = false
 
+[functions.qrcode-logs-proxy]
+verify_jwt = false
+
 [api]
 enabled = true
 port = 54321
