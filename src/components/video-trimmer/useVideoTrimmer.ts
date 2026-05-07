@@ -164,17 +164,18 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     if (!video) return;
     setState(prev => {
       if (prev.isPlaying) return prev;
-      video.currentTime = time;
-      return { ...prev, currentTime: time };
+      const ws = Math.min(maxDuration, prev.duration);
+      const clamped = Math.max(prev.startTime, Math.min(time, prev.startTime + ws));
+      video.currentTime = clamped;
+      return { ...prev, currentTime: clamped };
     });
-  }, []);
+  }, [maxDuration]);
 
-  // Trim the video using MediaRecorder + Canvas
+  // ===== Real video cut via FFmpeg.wasm (CapCut-grade) =====
   const trimVideo = useCallback(async (): Promise<File> => {
     const video = videoRef.current;
     if (!video) throw new Error('Video element not available');
 
-    // Stop playback if active
     video.pause();
     cancelAnimationFrame(animFrameRef.current);
     setState(prev => ({ ...prev, isPlaying: false, isProcessing: true, processingProgress: 0 }));
@@ -182,11 +183,9 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     const startT = state.startTime;
     const ws = Math.min(maxDuration, state.duration);
     const endT = startT + ws;
-    const trimDuration = ws;
 
-    // Fallback / iOS path: returns original file + trim metadata, sem reencode no browser.
-    const createMetadataOnlyFile = (reason: string) => {
-      console.warn(`⚠️ [TRIMMER] ${reason} — usando arquivo original com metadados de corte`);
+    const metadataOnlyFallback = (reason: string): File => {
+      console.warn(`⚠️ [TRIMMER] Fallback metadata-only: ${reason}`);
       const trimmedFile = new File(
         [file],
         file.name.replace(/\.[^.]+$/, '_trimmed.' + (file.name.split('.').pop() || 'mp4')),
@@ -199,187 +198,101 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
       return trimmedFile;
     };
 
-    // iOS/Safari: MediaRecorder + Canvas é instável e gera arquivos corrompidos.
-    // Vamos direto pelo caminho metadata-only para preservar áudio e qualidade.
-    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-    const isIOS = /iPad|iPhone|iPod/.test(ua) ||
-      (/(Macintosh).*Version\/.+ Mobile/.test(ua));
-    const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
-    if (isIOS || isSafari) {
-      return createMetadataOnlyFile('iOS/Safari detectado');
-    }
-
     try {
-      // Setup canvas matching video dimensions
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return createMetadataOnlyFile('Sem contexto de canvas');
+      const ffmpeg = await getFFmpeg((p) => {
+        setState(prev => ({ ...prev, processingProgress: Math.min(15, p * 15) }));
+      });
 
-      // Setup MediaRecorder
-      const stream = canvas.captureStream(30);
-      
-      // Try to capture audio too
-      try {
-        const audioCtx = new AudioContext();
-        const source = audioCtx.createMediaElementSource(video);
-        const dest = audioCtx.createMediaStreamDestination();
-        source.connect(dest);
-        source.connect(audioCtx.destination);
-        dest.stream.getAudioTracks().forEach(track => stream.addTrack(track));
-      } catch {
-        console.log('⚠️ Could not capture audio, trimming video only');
-      }
+      const onProgress = ({ progress }: { progress: number }) => {
+        const pct = 15 + Math.min(84, Math.max(0, progress) * 84);
+        setState(prev => ({ ...prev, processingProgress: pct }));
+      };
+      ffmpeg.on('progress', onProgress);
 
-      // PRIORIZAR MP4 para compatibilidade com API AWS
-      // Chrome 116+ suporta video/mp4 no MediaRecorder
-      const mimeType = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')
-        ? 'video/mp4;codecs=avc1'
-        : MediaRecorder.isTypeSupported('video/mp4')
-        ? 'video/mp4'
-        : MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-        ? 'video/webm;codecs=vp9'
-        : 'video/webm';
-      
-      const isWebmOutput = mimeType.includes('webm');
-      console.log('🎬 [TRIMMER] MediaRecorder mimeType selecionado:', mimeType, '| isWebm:', isWebmOutput);
+      const ext = (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
+      const inputName = `input.${ext}`;
+      const outputName = 'output.mp4';
 
-      let recorder: MediaRecorder;
-      try {
-        recorder = new MediaRecorder(stream, {
-          mimeType,
-          videoBitsPerSecond: 5_000_000
-        });
-      } catch (recorderError) {
-        console.error('❌ MediaRecorder creation failed:', recorderError);
-        return createMetadataOnlyFile('fallback');
-      }
+      const { fetchFile } = await import('@ffmpeg/util');
+      await ffmpeg.writeFile(inputName, await fetchFile(file));
 
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
+      const ss = startT.toFixed(3);
+      const dur = (endT - startT).toFixed(3);
+
+      const tryRead = async (): Promise<Uint8Array | null> => {
+        try {
+          const data = await ffmpeg.readFile(outputName);
+          return data as Uint8Array;
+        } catch {
+          return null;
+        }
       };
 
-      return new Promise<File>((resolve, reject) => {
-        let safetyTimeout: ReturnType<typeof setTimeout>;
-        let drawFrameId: number;
-        let resolved = false;
-
-        const cleanup = () => {
-          if (safetyTimeout) clearTimeout(safetyTimeout);
-          if (drawFrameId) cancelAnimationFrame(drawFrameId);
-          video.pause();
-        };
-
-        const stopRecording = () => {
-          if (resolved) return;
-          resolved = true;
-          cleanup();
-          if (recorder.state === 'recording') {
-            recorder.stop();
-          } else {
-            // Recorder never started or already stopped — use fallback
-            resolve(createMetadataOnlyFile('fallback'));
-          }
-        };
-
-        recorder.onstop = () => {
-          const blob = new Blob(chunks, { type: mimeType });
-          if (blob.size === 0) {
-            resolve(createMetadataOnlyFile('fallback'));
-            return;
-          }
-          
-          // Se o output é WebM, enviar o ORIGINAL (que já é MP4) com metadados de corte
-          // em vez de enviar WebM disfarçado de MP4
-          if (isWebmOutput) {
-            console.warn('⚠️ [TRIMMER] Browser produziu WebM - enviando arquivo original MP4 com metadados de corte');
-            const originalWithTrimMeta = new File(
-              [file],
-              file.name.replace(/\.[^.]+$/, '_trimmed.' + file.name.split('.').pop()),
-              { type: file.type }
-            );
-            // Attach trim metadata as custom properties
-            (originalWithTrimMeta as any)._trimStart = startT;
-            (originalWithTrimMeta as any)._trimEnd = endT;
-            (originalWithTrimMeta as any)._wasFallbackFromWebm = true;
-            setState(prev => ({ ...prev, isProcessing: false, processingProgress: 100 }));
-            resolve(originalWithTrimMeta);
-            return;
-          }
-          
+      // 1) Stream copy (fast & lossless)
+      try {
+        await ffmpeg.exec([
+          '-ss', ss,
+          '-i', inputName,
+          '-t', dur,
+          '-c', 'copy',
+          '-avoid_negative_ts', 'make_zero',
+          '-movflags', '+faststart',
+          outputName,
+        ]);
+        const data = await tryRead();
+        if (data && data.length > 1024) {
+          const blob = new Blob([data.buffer as ArrayBuffer], { type: 'video/mp4' });
           const trimmedFile = new File(
             [blob],
             file.name.replace(/\.[^.]+$/, '_trimmed.mp4'),
-            { type: mimeType }
+            { type: 'video/mp4' }
           );
-          console.log('✅ [TRIMMER] Vídeo trimado em MP4 nativo:', {
-            size: trimmedFile.size,
-            type: trimmedFile.type,
-            name: trimmedFile.name
-          });
+          await safeUnlink(ffmpeg, inputName);
+          await safeUnlink(ffmpeg, outputName);
+          ffmpeg.off('progress', onProgress);
           setState(prev => ({ ...prev, isProcessing: false, processingProgress: 100 }));
-          resolve(trimmedFile);
-        };
+          console.log('✅ [TRIMMER] Stream copy:', trimmedFile.size, 'bytes');
+          return trimmedFile;
+        }
+      } catch (copyErr) {
+        console.warn('⚠️ [TRIMMER] Stream copy falhou, reencodando:', copyErr);
+      }
 
-        recorder.onerror = () => {
-          cleanup();
-          // Fallback instead of rejecting
-          resolve(createMetadataOnlyFile('fallback'));
-        };
-
-        // Safety timeout: 30s max processing time
-        safetyTimeout = setTimeout(() => {
-          console.warn('⚠️ Trim safety timeout reached, forcing stop');
-          stopRecording();
-        }, 30_000);
-
-        // Seek to start, then begin recording ONCE
-        video.currentTime = startT;
-        video.addEventListener('seeked', () => {
-          // Guard: only start if not already recording
-          if (recorder.state === 'recording') return;
-          
-          try {
-            recorder.start();
-          } catch (startErr) {
-            console.error('❌ recorder.start() failed:', startErr);
-            resolved = true;
-            cleanup();
-            resolve(createMetadataOnlyFile('fallback'));
-            return;
-          }
-          video.play();
-
-          const drawFrame = () => {
-            if (resolved) return;
-
-            if (video.currentTime >= endT || video.paused || video.ended) {
-              stopRecording();
-              return;
-            }
-
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // Real progress based on actual video position
-            const elapsed = video.currentTime - startT;
-            const progress = Math.min(99, (elapsed / trimDuration) * 100);
-            setState(prev => ({ ...prev, processingProgress: progress, currentTime: video.currentTime }));
-
-            drawFrameId = requestAnimationFrame(drawFrame);
-          };
-          drawFrame();
-        }, { once: true });
-
-        // Fallback: if video ends before endT
-        video.addEventListener('ended', () => {
-          stopRecording();
-        }, { once: true });
-      });
+      // 2) Re-encode (frame-accurate)
+      await safeUnlink(ffmpeg, outputName);
+      await ffmpeg.exec([
+        '-i', inputName,
+        '-ss', ss,
+        '-t', dur,
+        '-c:v', 'libx264',
+        '-preset', 'veryfast',
+        '-crf', '23',
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-movflags', '+faststart',
+        outputName,
+      ]);
+      const data = await tryRead();
+      ffmpeg.off('progress', onProgress);
+      if (!data || data.length < 1024) {
+        await safeUnlink(ffmpeg, inputName);
+        await safeUnlink(ffmpeg, outputName);
+        return metadataOnlyFallback('FFmpeg gerou arquivo vazio');
+      }
+      const blob = new Blob([data.buffer as ArrayBuffer], { type: 'video/mp4' });
+      const trimmedFile = new File(
+        [blob],
+        file.name.replace(/\.[^.]+$/, '_trimmed.mp4'),
+        { type: 'video/mp4' }
+      );
+      await safeUnlink(ffmpeg, inputName);
+      await safeUnlink(ffmpeg, outputName);
+      setState(prev => ({ ...prev, isProcessing: false, processingProgress: 100 }));
+      console.log('✅ [TRIMMER] Reencode:', trimmedFile.size, 'bytes');
+      return trimmedFile;
     } catch (error) {
-      console.error('❌ Trim failed entirely, using fallback:', error);
-      return createMetadataOnlyFile('fallback');
+      console.error('❌ [TRIMMER] FFmpeg falhou:', error);
+      return metadataOnlyFallback(error instanceof Error ? error.message : 'erro desconhecido');
     }
   }, [state.startTime, state.duration, maxDuration, file]);
 
