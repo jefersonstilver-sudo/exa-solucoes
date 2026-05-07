@@ -289,7 +289,7 @@ const QrCodesRastreaveis: React.FC = () => {
                 >
                   <div className="flex flex-col md:flex-row gap-4 md:divide-x md:divide-slate-200">
                     {/* Info */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-between order-2">
+                    <div className="flex-1 min-w-0 flex flex-col justify-between order-2 md:pl-4">
                       <div>
                         <h3 className="font-semibold text-slate-900 truncate">
                           {log.titulo || 'Sem título'}
