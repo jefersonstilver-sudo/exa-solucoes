@@ -135,13 +135,35 @@ const QrCodesRastreaveis: React.FC = () => {
     };
   }, [clienteIds, titulo]);
 
-  // Match vídeo pelo título do log (case-insensitive, contém)
+  // Match vídeo pelo título do log — prioriza correspondência exata, depois nome do vídeo
+  // que CONTÉM o título do log (não o contrário, para evitar falsos positivos),
+  // escolhendo o nome de vídeo mais curto (mais específico).
   const findVideo = (logTitulo?: string): VideoMini | undefined => {
     if (!logTitulo) return undefined;
     const t = logTitulo.toLowerCase().trim();
-    return videos.find(
-      (v) => v.nome?.toLowerCase().includes(t) || t.includes(v.nome?.toLowerCase() || '__none__')
-    );
+    if (!t) return undefined;
+
+    const normalized = videos
+      .map((v) => ({ v, n: (v.nome || '').toLowerCase().trim() }))
+      .filter((x) => x.n);
+
+    // 1. Match exato
+    const exact = normalized.find((x) => x.n === t);
+    if (exact) return exact.v;
+
+    // 2. Nome do vídeo começa com o título do log
+    const starts = normalized
+      .filter((x) => x.n.startsWith(t))
+      .sort((a, b) => a.n.length - b.n.length);
+    if (starts[0]) return starts[0].v;
+
+    // 3. Nome do vídeo contém o título do log
+    const contains = normalized
+      .filter((x) => x.n.includes(t))
+      .sort((a, b) => a.n.length - b.n.length);
+    if (contains[0]) return contains[0].v;
+
+    return undefined;
   };
 
   // Lista de prédios disponíveis (ordenada)
