@@ -59,6 +59,7 @@ const QrCodesRastreaveis: React.FC = () => {
   const [buildingsByCid, setBuildingsByCid] = useState<Record<string, BuildingMini>>({});
   const [videos, setVideos] = useState<VideoMini[]>([]);
   const [titulo, setTitulo] = useState('');
+  const [predioFiltro, setPredioFiltro] = useState<string>('all');
   const [logs, setLogs] = useState<QrLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
