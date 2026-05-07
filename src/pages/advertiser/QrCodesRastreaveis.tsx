@@ -80,7 +80,7 @@ const QrCodesRastreaveis: React.FC = () => {
 
         const { data: buildings } = await supabase
           .from('buildings')
-          .select('id, nome, bairro, imagem_principal, imageurl')
+          .select('id, nome, bairro, imagem_principal, imageurl, image_urls')
           .in('id', buildingIdArr);
 
         const map: Record<string, BuildingMini> = {};
