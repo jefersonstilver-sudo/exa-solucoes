@@ -85,11 +85,12 @@ const QrCodesRastreaveis: React.FC = () => {
 
         const map: Record<string, BuildingMini> = {};
         (buildings || []).forEach((b: any) => {
+          const rawFoto = b.imagem_principal || b.imageurl || (b.image_urls && b.image_urls[0]) || null;
           map[deriveClienteId(b.id)] = {
             id: b.id,
             nome: b.nome,
             bairro: b.bairro,
-            foto: b.imagem_principal || b.imageurl || undefined,
+            foto: rawFoto ? (getImageUrl(rawFoto) || undefined) : undefined,
           };
         });
         setBuildingsByCid(map);
