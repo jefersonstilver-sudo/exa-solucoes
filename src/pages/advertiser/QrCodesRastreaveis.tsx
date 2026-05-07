@@ -300,6 +300,19 @@ const QrCodesRastreaveis: React.FC = () => {
                           <Calendar className="w-3.5 h-3.5" />
                           {formatDateBR(log.data_hora)}
                         </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs border-[#C7141A]/30 text-[#C7141A] hover:bg-[#C7141A]/5 hover:text-[#C7141A]"
+                          onClick={() =>
+                            navigate(
+                              `/anunciante/campanhas?q=${encodeURIComponent(log.titulo || '')}`
+                            )
+                          }
+                        >
+                          Ver campanha
+                          <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                        </Button>
                       </div>
                     </div>
 
