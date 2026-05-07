@@ -96,13 +96,47 @@ const QrCodesRastreaveis: React.FC = () => {
         cliente_ids: {clienteIds.join(', ') || '(carregando...)'}
       </p>
 
-      <input
-        type="text"
-        placeholder="Buscar por título..."
-        value={titulo}
-        onChange={(e) => setTitulo(e.target.value)}
-        className="w-full max-w-md border rounded px-3 py-2"
-      />
+      <div className="flex gap-2 max-w-2xl">
+        <input
+          type="text"
+          placeholder="Buscar por título..."
+          value={titulo}
+          onChange={(e) => setTitulo(e.target.value)}
+          className="flex-1 border rounded px-3 py-2"
+        />
+        <button
+          type="button"
+          onClick={async () => {
+            const t = window.prompt('Título para teste na API (busca em todos os cliente_ids):', titulo);
+            if (t === null) return;
+            setLoading(true);
+            setError(null);
+            try {
+              const ids = clienteIds.length > 0 ? clienteIds : [''];
+              const results = await Promise.all(
+                ids.map(async (cid) => {
+                  const url = new URL(`${API_BASE}/${cid}`);
+                  if (t.trim()) url.searchParams.set('titulo', t.trim());
+                  console.log('[QR TEST] GET', url.toString());
+                  const res = await fetch(url.toString());
+                  const data = await res.json().catch(() => []);
+                  console.log('[QR TEST] response', cid, res.status, data);
+                  return Array.isArray(data) ? data : [];
+                })
+              );
+              setLogs(results.flat());
+              setTitulo(t);
+            } catch (e: any) {
+              setError(e.message || 'Erro no teste');
+            } finally {
+              setLoading(false);
+            }
+          }}
+          className="px-4 py-2 bg-[#C7141A] text-white rounded hover:bg-[#B40D1A]"
+        >
+          Testar API
+        </button>
+      </div>
 
       {loading && <p>Carregando...</p>}
       {error && <p className="text-red-600">Erro: {error}</p>}
