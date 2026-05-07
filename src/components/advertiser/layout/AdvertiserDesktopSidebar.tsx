@@ -7,6 +7,7 @@ import {
   ShoppingBag, 
   Video, 
   BarChart3, 
+  QrCode,
   User,
   ChevronLeft,
   ChevronRight,
@@ -55,6 +56,12 @@ const AdvertiserDesktopSidebar = ({
       label: 'Relatório',
       icon: Video,
       path: '/anunciante/videos'
+    },
+    {
+      id: 'qr-codes',
+      label: 'QR Codes Rastreáveis',
+      icon: QrCode,
+      path: '/anunciante/qr-codes'
     },
     {
       id: 'campaigns',

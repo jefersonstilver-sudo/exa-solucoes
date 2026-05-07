@@ -6,7 +6,8 @@ import {
   BarChart3, 
   User,
   LogOut,
-  Crown
+  Crown,
+  QrCode
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -87,6 +88,11 @@ export function NewModernAdvertiserSidebar() {
           title: 'Relatório',
           href: '/anunciante/videos',
           icon: Video
+        },
+        {
+          title: 'QR Codes Rastreáveis',
+          href: '/anunciante/qr-codes',
+          icon: QrCode
         },
         {
           title: 'Minhas Campanhas',
