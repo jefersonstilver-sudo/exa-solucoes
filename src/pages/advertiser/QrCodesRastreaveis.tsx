@@ -5,7 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { QrCode, Search, ExternalLink, Building2, Video as VideoIcon, Calendar, Loader2 } from 'lucide-react';
+import { QrCode, Search, Building2, Video as VideoIcon, Calendar, Loader2, Link as LinkIcon } from 'lucide-react';
+import { getImageUrl } from '@/services/buildingStoreService';
 
 interface QrLog {
   cliente_id?: string;
@@ -79,16 +80,17 @@ const QrCodesRastreaveis: React.FC = () => {
 
         const { data: buildings } = await supabase
           .from('buildings')
-          .select('id, nome, bairro, imagem_principal, imageurl')
+          .select('id, nome, bairro, imagem_principal, imageurl, image_urls')
           .in('id', buildingIdArr);
 
         const map: Record<string, BuildingMini> = {};
         (buildings || []).forEach((b: any) => {
+          const rawFoto = b.imagem_principal || b.imageurl || (b.image_urls && b.image_urls[0]) || null;
           map[deriveClienteId(b.id)] = {
             id: b.id,
             nome: b.nome,
             bairro: b.bairro,
-            foto: b.imagem_principal || b.imageurl || undefined,
+            foto: rawFoto ? (getImageUrl(rawFoto) || undefined) : undefined,
           };
         });
         setBuildingsByCid(map);
@@ -250,13 +252,9 @@ const QrCodesRastreaveis: React.FC = () => {
                           className="w-full h-full object-cover"
                           muted
                           playsInline
+                          autoPlay
+                          loop
                           preload="metadata"
-                          onMouseEnter={(e) => (e.currentTarget as HTMLVideoElement).play().catch(() => {})}
-                          onMouseLeave={(e) => {
-                            const el = e.currentTarget as HTMLVideoElement;
-                            el.pause();
-                            el.currentTime = 0;
-                          }}
                         />
                       ) : (
                         <VideoIcon className="w-8 h-8 text-slate-600" />
@@ -281,25 +279,25 @@ const QrCodesRastreaveis: React.FC = () => {
                             <span className="text-slate-400">· {building.bairro}</span>
                           )}
                         </p>
+                        {log.link && (
+                          <div className="mt-2 flex items-start gap-1.5 text-xs">
+                            <LinkIcon className="w-3.5 h-3.5 flex-shrink-0 text-[#C7141A] mt-0.5" />
+                            <a
+                              href={log.link}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[#C7141A] hover:underline break-all font-mono"
+                            >
+                              {log.link}
+                            </a>
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center justify-between gap-3 mt-2 flex-wrap">
                         <span className="text-xs text-slate-500 flex items-center gap-1.5">
                           <Calendar className="w-3.5 h-3.5" />
                           {formatDateBR(log.data_hora)}
                         </span>
-                        {log.link && (
-                          <Button
-                            asChild
-                            variant="ghost"
-                            size="sm"
-                            className="text-[#C7141A] hover:text-[#B40D1A] hover:bg-[#C7141A]/5"
-                          >
-                            <a href={log.link} target="_blank" rel="noreferrer">
-                              <ExternalLink className="w-3.5 h-3.5 mr-1" />
-                              Abrir link
-                            </a>
-                          </Button>
-                        )}
                       </div>
                     </div>
                   </div>
