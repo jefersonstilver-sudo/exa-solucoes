@@ -1,5 +1,6 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { getFFmpeg, safeUnlink } from './ffmpegSingleton';
 
 interface UseVideoTrimmerProps {
   file: File;
