@@ -201,17 +201,37 @@ const QrCodesRastreaveis: React.FC = () => {
           </Card>
         </div>
 
-        {/* Search */}
+        {/* Search + Filtro Prédio */}
         <Card className="p-4 shadow-sm border-slate-200">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input
-              type="text"
-              placeholder="Buscar por título da campanha..."
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              className="pl-10 h-11 border-slate-200"
-            />
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                type="text"
+                placeholder="Buscar por título da campanha..."
+                value={titulo}
+                onChange={(e) => setTitulo(e.target.value)}
+                className="pl-10 h-11 border-slate-200"
+              />
+            </div>
+            <div className="md:w-64">
+              <Select value={predioFiltro} onValueChange={setPredioFiltro}>
+                <SelectTrigger className="h-11 border-slate-200">
+                  <div className="flex items-center gap-2 truncate">
+                    <Building2 className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <SelectValue placeholder="Filtrar por prédio" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os prédios</SelectItem>
+                  {prediosDisponiveis.map((p) => (
+                    <SelectItem key={p.cid} value={p.cid}>
+                      {p.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </Card>
 
