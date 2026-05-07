@@ -11,23 +11,23 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const clienteId = url.searchParams.get('cliente_id');
+    const clienteIds = url.searchParams.get('cliente_ids') || url.searchParams.get('cliente_id');
     const titulo = url.searchParams.get('titulo');
 
-    if (!clienteId) {
-      return new Response(JSON.stringify({ error: 'cliente_id é obrigatório' }), {
+    if (!clienteIds) {
+      return new Response(JSON.stringify({ error: 'cliente_ids é obrigatório' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const apiUrl = new URL(`http://18.228.252.149:8000/qrcode/logs/${clienteId}`);
+    const apiUrl = new URL(`http://18.228.252.149:8000/qrcode/logs/${clienteIds}`);
     if (titulo) apiUrl.searchParams.set('titulo', titulo);
 
     console.log('[qrcode-logs-proxy] GET', apiUrl.toString());
     const res = await fetch(apiUrl.toString());
     const text = await res.text();
-    console.log('[qrcode-logs-proxy] status', res.status, 'body length', text.length);
+    console.log('[qrcode-logs-proxy] status', res.status, 'len', text.length);
 
     return new Response(text, {
       status: res.status,

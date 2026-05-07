@@ -13,9 +13,9 @@ interface QrLog {
 const SUPABASE_URL = 'https://aakenoljsycyrcrchgxj.supabase.co';
 const PROXY_URL = `${SUPABASE_URL}/functions/v1/qrcode-logs-proxy`;
 
-const buildProxyUrl = (cid: string, titulo: string) => {
+const buildProxyUrl = (cids: string[], titulo: string) => {
   const url = new URL(PROXY_URL);
-  url.searchParams.set('cliente_id', cid);
+  url.searchParams.set('cliente_ids', cids.join(','));
   if (titulo.trim()) url.searchParams.set('titulo', titulo.trim());
   return url.toString();
 };
@@ -74,15 +74,9 @@ const QrCodesRastreaveis: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const results = await Promise.all(
-          clienteIds.map(async (cid) => {
-            const res = await fetch(buildProxyUrl(cid, titulo), { signal: controller.signal });
-            if (!res.ok) return [];
-            const data = await res.json();
-            return Array.isArray(data) ? data : [];
-          })
-        );
-        setLogs(results.flat());
+        const res = await fetch(buildProxyUrl(clienteIds, titulo), { signal: controller.signal });
+        const data = await res.json().catch(() => []);
+        setLogs(Array.isArray(data) ? data : []);
       } catch (e: any) {
         if (e.name !== 'AbortError') setError(e.message || 'Erro ao buscar logs');
       } finally {
@@ -113,24 +107,17 @@ const QrCodesRastreaveis: React.FC = () => {
         <button
           type="button"
           onClick={async () => {
-            const t = window.prompt('Título para teste na API (busca em todos os cliente_ids):', titulo);
+            const t = window.prompt('Título para teste na API:', titulo);
             if (t === null) return;
             setLoading(true);
             setError(null);
             try {
-              const ids = clienteIds.length > 0 ? clienteIds : [''];
-              const results = await Promise.all(
-                ids.map(async (cid) => {
-                  const proxyUrl = buildProxyUrl(cid, t);
-                  console.log('[QR TEST] GET', proxyUrl);
-                  const res = await fetch(proxyUrl);
-                  const data = await res.json().catch(() => []);
-                  console.log('[QR TEST] response', cid, res.status, data);
-                  console.log('[QR TEST] response', cid, res.status, data);
-                  return Array.isArray(data) ? data : [];
-                })
-              );
-              setLogs(results.flat());
+              const proxyUrl = buildProxyUrl(clienteIds, t);
+              console.log('[QR TEST] GET', proxyUrl);
+              const res = await fetch(proxyUrl);
+              const data = await res.json().catch(() => []);
+              console.log('[QR TEST] response', res.status, data);
+              setLogs(Array.isArray(data) ? data : []);
               setTitulo(t);
             } catch (e: any) {
               setError(e.message || 'Erro no teste');
