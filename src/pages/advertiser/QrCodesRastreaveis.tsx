@@ -267,7 +267,7 @@ const QrCodesRastreaveis: React.FC = () => {
                 >
                   <div className="flex flex-col md:flex-row gap-4">
                     {/* Info */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-between order-2 md:order-1">
+                    <div className="flex-1 min-w-0 flex flex-col justify-between order-2">
                       <div>
                         <h3 className="font-semibold text-slate-900 truncate">
                           {log.titulo || 'Sem título'}
@@ -302,7 +302,7 @@ const QrCodesRastreaveis: React.FC = () => {
                     </div>
 
                     {/* Mídias (direita) */}
-                    <div className="flex gap-3 order-1 md:order-2 md:flex-shrink-0">
+                    <div className="flex gap-3 order-1 md:flex-shrink-0">
                       {/* Foto prédio */}
                       <div className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
                         {building?.foto ? (
