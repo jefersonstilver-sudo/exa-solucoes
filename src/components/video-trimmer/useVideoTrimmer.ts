@@ -209,7 +209,6 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     };
     tick();
   }, []);
-  }, [maxDuration]);
 
   const seekPreview = useCallback((time: number) => {
     const video = videoRef.current;
