@@ -55,6 +55,7 @@ const deriveClienteId = (buildingUuid: string) =>
 const QrCodesRastreaveis: React.FC = () => {
   const { userProfile } = useAuth();
   const userId = userProfile?.id;
+  const navigate = useNavigate();
 
   const [clienteIds, setClienteIds] = useState<string[]>([]);
   const [buildingsByCid, setBuildingsByCid] = useState<Record<string, BuildingMini>>({});
