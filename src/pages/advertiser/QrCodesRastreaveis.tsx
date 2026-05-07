@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { QrCode, Search, Building2, Video as VideoIcon, Calendar, Loader2, Link as LinkIcon } from 'lucide-react';
 import { getImageUrl } from '@/services/buildingStoreService';
 
@@ -58,6 +59,7 @@ const QrCodesRastreaveis: React.FC = () => {
   const [buildingsByCid, setBuildingsByCid] = useState<Record<string, BuildingMini>>({});
   const [videos, setVideos] = useState<VideoMini[]>([]);
   const [titulo, setTitulo] = useState('');
+  const [predioFiltro, setPredioFiltro] = useState<string>('all');
   const [logs, setLogs] = useState<QrLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,13 +144,26 @@ const QrCodesRastreaveis: React.FC = () => {
     );
   };
 
+  // Lista de prédios disponíveis (ordenada)
+  const prediosDisponiveis = useMemo(() => {
+    return Object.entries(buildingsByCid)
+      .map(([cid, b]) => ({ cid, nome: b.nome }))
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [buildingsByCid]);
+
+  // Filtra logs por prédio selecionado
+  const logsFiltrados = useMemo(() => {
+    if (predioFiltro === 'all') return logs;
+    return logs.filter((l) => l.cliente_id === predioFiltro);
+  }, [logs, predioFiltro]);
+
   // Agrupa logs por título para estatísticas
   const stats = useMemo(() => {
-    const totalCliques = logs.length;
-    const titulosUnicos = new Set(logs.map((l) => l.titulo).filter(Boolean)).size;
-    const prediosAtivos = new Set(logs.map((l) => l.cliente_id).filter(Boolean)).size;
+    const totalCliques = logsFiltrados.length;
+    const titulosUnicos = new Set(logsFiltrados.map((l) => l.titulo).filter(Boolean)).size;
+    const prediosAtivos = new Set(logsFiltrados.map((l) => l.cliente_id).filter(Boolean)).size;
     return { totalCliques, titulosUnicos, prediosAtivos };
-  }, [logs]);
+  }, [logsFiltrados]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
@@ -186,17 +201,37 @@ const QrCodesRastreaveis: React.FC = () => {
           </Card>
         </div>
 
-        {/* Search */}
+        {/* Search + Filtro Prédio */}
         <Card className="p-4 shadow-sm border-slate-200">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input
-              type="text"
-              placeholder="Buscar por título da campanha..."
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              className="pl-10 h-11 border-slate-200"
-            />
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                type="text"
+                placeholder="Buscar por título da campanha..."
+                value={titulo}
+                onChange={(e) => setTitulo(e.target.value)}
+                className="pl-10 h-11 border-slate-200"
+              />
+            </div>
+            <div className="md:w-64">
+              <Select value={predioFiltro} onValueChange={setPredioFiltro}>
+                <SelectTrigger className="h-11 border-slate-200">
+                  <div className="flex items-center gap-2 truncate">
+                    <Building2 className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <SelectValue placeholder="Filtrar por prédio" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os prédios</SelectItem>
+                  {prediosDisponiveis.map((p) => (
+                    <SelectItem key={p.cid} value={p.cid}>
+                      {p.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </Card>
 
@@ -212,7 +247,7 @@ const QrCodesRastreaveis: React.FC = () => {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-[#C7141A]" />
           </div>
-        ) : logs.length === 0 ? (
+        ) : logsFiltrados.length === 0 ? (
           <Card className="p-12 text-center border-dashed border-slate-300 bg-white/50">
             <QrCode className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-600 font-medium">Nenhum clique registrado ainda</p>
@@ -222,7 +257,7 @@ const QrCodesRastreaveis: React.FC = () => {
           </Card>
         ) : (
           <div className="grid gap-3">
-            {logs.map((log, i) => {
+            {logsFiltrados.map((log, i) => {
               const building = log.cliente_id ? buildingsByCid[log.cliente_id] : undefined;
               const video = findVideo(log.titulo);
               return (
