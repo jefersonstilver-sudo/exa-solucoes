@@ -6,7 +6,8 @@ import {
   BarChart3, 
   User,
   LogOut,
-  Crown
+  Crown,
+  QrCode
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
