@@ -76,9 +76,7 @@ const QrCodesRastreaveis: React.FC = () => {
       try {
         const results = await Promise.all(
           clienteIds.map(async (cid) => {
-            const url = new URL(`${API_BASE}/${cid}`);
-            if (titulo.trim()) url.searchParams.set('titulo', titulo.trim());
-            const res = await fetch(url.toString(), { signal: controller.signal });
+            const res = await fetch(buildProxyUrl(cid, titulo), { signal: controller.signal });
             if (!res.ok) return [];
             const data = await res.json();
             return Array.isArray(data) ? data : [];
@@ -123,11 +121,11 @@ const QrCodesRastreaveis: React.FC = () => {
               const ids = clienteIds.length > 0 ? clienteIds : [''];
               const results = await Promise.all(
                 ids.map(async (cid) => {
-                  const url = new URL(`${API_BASE}/${cid}`);
-                  if (t.trim()) url.searchParams.set('titulo', t.trim());
-                  console.log('[QR TEST] GET', url.toString());
-                  const res = await fetch(url.toString());
+                  const proxyUrl = buildProxyUrl(cid, t);
+                  console.log('[QR TEST] GET', proxyUrl);
+                  const res = await fetch(proxyUrl);
                   const data = await res.json().catch(() => []);
+                  console.log('[QR TEST] response', cid, res.status, data);
                   console.log('[QR TEST] response', cid, res.status, data);
                   return Array.isArray(data) ? data : [];
                 })
