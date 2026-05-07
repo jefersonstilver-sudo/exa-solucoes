@@ -247,7 +247,7 @@ const QrCodesRastreaveis: React.FC = () => {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-[#C7141A]" />
           </div>
-        ) : logs.length === 0 ? (
+        ) : logsFiltrados.length === 0 ? (
           <Card className="p-12 text-center border-dashed border-slate-300 bg-white/50">
             <QrCode className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-600 font-medium">Nenhum clique registrado ainda</p>
@@ -257,7 +257,7 @@ const QrCodesRastreaveis: React.FC = () => {
           </Card>
         ) : (
           <div className="grid gap-3">
-            {logs.map((log, i) => {
+            {logsFiltrados.map((log, i) => {
               const building = log.cliente_id ? buildingsByCid[log.cliente_id] : undefined;
               const video = findVideo(log.titulo);
               return (
