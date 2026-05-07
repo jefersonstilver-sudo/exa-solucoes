@@ -287,7 +287,7 @@ const QrCodesRastreaveis: React.FC = () => {
                   key={i}
                   className="p-4 shadow-sm hover:shadow-md transition-shadow border-slate-200"
                 >
-                  <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex flex-col md:flex-row gap-4 md:divide-x md:divide-slate-200">
                     {/* Info */}
                     <div className="flex-1 min-w-0 flex flex-col justify-between order-2">
                       <div>
