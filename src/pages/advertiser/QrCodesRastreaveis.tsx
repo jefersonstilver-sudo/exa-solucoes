@@ -264,14 +264,9 @@ const QrCodesRastreaveis: React.FC = () => {
                     {/* Info */}
                     <div className="flex-1 min-w-0 flex flex-col justify-between">
                       <div>
-                        <div className="flex items-start justify-between gap-2 flex-wrap">
-                          <h3 className="font-semibold text-slate-900 truncate">
-                            {log.titulo || 'Sem título'}
-                          </h3>
-                          <Badge variant="secondary" className="text-xs font-mono">
-                            {log.cliente_id}
-                          </Badge>
-                        </div>
+                        <h3 className="font-semibold text-slate-900 truncate">
+                          {log.titulo || 'Sem título'}
+                        </h3>
                         <p className="text-sm text-slate-600 mt-1 flex items-center gap-1.5">
                           <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
                           {building?.nome || log.nome_cliente || '—'}
