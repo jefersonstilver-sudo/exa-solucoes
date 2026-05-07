@@ -266,38 +266,8 @@ const QrCodesRastreaveis: React.FC = () => {
                   className="p-4 shadow-sm hover:shadow-md transition-shadow border-slate-200"
                 >
                   <div className="flex flex-col md:flex-row gap-4">
-                    {/* Foto prédio */}
-                    <div className="flex-shrink-0 w-full md:w-24 h-24 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
-                      {building?.foto ? (
-                        <img
-                          src={building.foto}
-                          alt={building.nome}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Building2 className="w-8 h-8 text-slate-300" />
-                      )}
-                    </div>
-
-                    {/* Vídeo miniatura */}
-                    <div className="flex-shrink-0 w-full md:w-32 h-24 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center relative">
-                      {video?.url ? (
-                        <video
-                          src={video.url}
-                          className="w-full h-full object-cover"
-                          muted
-                          playsInline
-                          autoPlay
-                          loop
-                          preload="metadata"
-                        />
-                      ) : (
-                        <VideoIcon className="w-8 h-8 text-slate-600" />
-                      )}
-                    </div>
-
                     {/* Info */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                    <div className="flex-1 min-w-0 flex flex-col justify-between order-2 md:order-1">
                       <div>
                         <h3 className="font-semibold text-slate-900 truncate">
                           {log.titulo || 'Sem título'}
@@ -328,6 +298,39 @@ const QrCodesRastreaveis: React.FC = () => {
                           <Calendar className="w-3.5 h-3.5" />
                           {formatDateBR(log.data_hora)}
                         </span>
+                      </div>
+                    </div>
+
+                    {/* Mídias (direita) */}
+                    <div className="flex gap-3 order-1 md:order-2 md:flex-shrink-0">
+                      {/* Foto prédio */}
+                      <div className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
+                        {building?.foto ? (
+                          <img
+                            src={building.foto}
+                            alt={building.nome}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Building2 className="w-8 h-8 text-slate-300" />
+                        )}
+                      </div>
+
+                      {/* Vídeo miniatura */}
+                      <div className="flex-shrink-0 w-32 h-24 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center relative">
+                        {video?.url ? (
+                          <video
+                            src={video.url}
+                            className="w-full h-full object-cover"
+                            muted
+                            playsInline
+                            autoPlay
+                            loop
+                            preload="metadata"
+                          />
+                        ) : (
+                          <VideoIcon className="w-8 h-8 text-slate-600" />
+                        )}
                       </div>
                     </div>
                   </div>
