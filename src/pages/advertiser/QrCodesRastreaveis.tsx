@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface QrLog {
   cliente_id?: string;
@@ -19,27 +20,63 @@ const formatDateBR = (iso?: string) => {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
+const deriveClienteId = (buildingUuid: string) =>
+  buildingUuid.replace(/-/g, '').substring(0, 4);
+
 const QrCodesRastreaveis: React.FC = () => {
   const { userProfile } = useAuth();
-  const clienteId = userProfile?.id;
+  const userId = userProfile?.id;
+
+  const [clienteIds, setClienteIds] = useState<string[]>([]);
   const [titulo, setTitulo] = useState('');
   const [logs, setLogs] = useState<QrLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Carrega prédios do cliente -> deriva cliente_ids (4 primeiros dígitos do UUID do prédio)
   useEffect(() => {
-    if (!clienteId) return;
+    if (!userId) return;
+    (async () => {
+      try {
+        const { data: pedidos, error: err } = await supabase
+          .from('pedidos')
+          .select('lista_predios')
+          .eq('client_id', userId);
+        if (err) throw err;
+        const buildingIds = new Set<string>();
+        (pedidos || []).forEach((p: any) => {
+          (p.lista_predios || []).forEach((id: string) => buildingIds.add(id));
+        });
+        const ids = Array.from(buildingIds).map(deriveClienteId);
+        setClienteIds(Array.from(new Set(ids)));
+      } catch (e: any) {
+        setError(e.message || 'Erro ao carregar prédios');
+      }
+    })();
+  }, [userId]);
+
+  // Busca logs para cada cliente_id
+  useEffect(() => {
+    if (clienteIds.length === 0) {
+      setLogs([]);
+      return;
+    }
     const controller = new AbortController();
     const t = setTimeout(async () => {
       setLoading(true);
       setError(null);
       try {
-        const url = new URL(`${API_BASE}/${clienteId}`);
-        if (titulo.trim()) url.searchParams.set('titulo', titulo.trim());
-        const res = await fetch(url.toString(), { signal: controller.signal });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        setLogs(Array.isArray(data) ? data : []);
+        const results = await Promise.all(
+          clienteIds.map(async (cid) => {
+            const url = new URL(`${API_BASE}/${cid}`);
+            if (titulo.trim()) url.searchParams.set('titulo', titulo.trim());
+            const res = await fetch(url.toString(), { signal: controller.signal });
+            if (!res.ok) return [];
+            const data = await res.json();
+            return Array.isArray(data) ? data : [];
+          })
+        );
+        setLogs(results.flat());
       } catch (e: any) {
         if (e.name !== 'AbortError') setError(e.message || 'Erro ao buscar logs');
       } finally {
@@ -50,12 +87,14 @@ const QrCodesRastreaveis: React.FC = () => {
       controller.abort();
       clearTimeout(t);
     };
-  }, [clienteId, titulo]);
+  }, [clienteIds, titulo]);
 
   return (
     <div className="min-h-screen p-6 space-y-4">
       <h1 className="text-2xl font-semibold">QR Codes Rastreáveis</h1>
-      <p className="text-sm text-muted-foreground">cliente_id: {clienteId || '...'}</p>
+      <p className="text-xs text-muted-foreground">
+        cliente_ids: {clienteIds.join(', ') || '(carregando...)'}
+      </p>
 
       <input
         type="text"
