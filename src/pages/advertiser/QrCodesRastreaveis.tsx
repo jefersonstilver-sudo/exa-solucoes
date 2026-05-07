@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
@@ -6,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QrCode, Search, Building2, Video as VideoIcon, Calendar, Loader2, Link as LinkIcon } from 'lucide-react';
+import { QrCode, Search, Building2, Video as VideoIcon, Calendar, Loader2, Link as LinkIcon, ArrowRight } from 'lucide-react';
 import { getImageUrl } from '@/services/buildingStoreService';
 
 interface QrLog {
@@ -54,6 +55,7 @@ const deriveClienteId = (buildingUuid: string) =>
 const QrCodesRastreaveis: React.FC = () => {
   const { userProfile } = useAuth();
   const userId = userProfile?.id;
+  const navigate = useNavigate();
 
   const [clienteIds, setClienteIds] = useState<string[]>([]);
   const [buildingsByCid, setBuildingsByCid] = useState<Record<string, BuildingMini>>({});
@@ -298,6 +300,19 @@ const QrCodesRastreaveis: React.FC = () => {
                           <Calendar className="w-3.5 h-3.5" />
                           {formatDateBR(log.data_hora)}
                         </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs border-[#C7141A]/30 text-[#C7141A] hover:bg-[#C7141A]/5 hover:text-[#C7141A]"
+                          onClick={() =>
+                            navigate(
+                              `/anunciante/campanhas?q=${encodeURIComponent(log.titulo || '')}`
+                            )
+                          }
+                        >
+                          Ver campanha
+                          <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                        </Button>
                       </div>
                     </div>
 
