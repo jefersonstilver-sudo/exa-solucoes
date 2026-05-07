@@ -302,7 +302,7 @@ const QrCodesRastreaveis: React.FC = () => {
                     </div>
 
                     {/* Mídias (direita) */}
-                    <div className="flex gap-3 order-1 md:order-2 md:flex-shrink-0">
+                    <div className="flex gap-3 order-1 md:flex-shrink-0">
                       {/* Foto prédio */}
                       <div className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
                         {building?.foto ? (
